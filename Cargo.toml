@@ -1,0 +1,13 @@
+[package]
+name = "lampe"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+noirc_driver = { git = "https://github.com/reilabs/noir.git" }
+noirc_frontend = { git = "https://github.com/reilabs/noir.git" }
+nargo = { git = "https://github.com/reilabs/noir.git" }
+
+itertools = "0.12.1"
