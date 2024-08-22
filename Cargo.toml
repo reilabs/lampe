@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-noirc_driver = { git = "https://github.com/reilabs/noir.git" }
-noirc_frontend = { git = "https://github.com/reilabs/noir.git" }
-nargo = { git = "https://github.com/reilabs/noir.git" }
+noirc_driver = { path = "../noir/compiler/noirc_driver" }
+noirc_frontend = { path = "../noir/compiler/noirc_frontend" }
+nargo = { path = "../noir/tooling/nargo" }
 
 itertools = "0.12.1"
