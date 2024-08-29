@@ -1,11 +1,13 @@
 import Mathlib
 
+import Lampe.Data.Integers
+
 namespace Lampe
 
 variable (P : Nat)
 
 inductive Tp where
-| u64
+| u : Nat → Tp
 | bool
 | unit
 | field
@@ -15,14 +17,14 @@ deriving DecidableEq
 @[reducible]
 def InstanceOf : Tp → Type
 | .field => ZMod P
-| .u64 => UInt64
+| .u n => U n
 | .bool => Bool
 | .slice tp => List (InstanceOf tp)
 | .unit => Unit
 
 @[simp]
 theorem InstanceOf.def {tp : Tp} : InstanceOf P tp = match tp with
-  | .u64 => UInt64
+  | .u n => Fin (2^n)
   | .bool => Bool
   | .unit => Unit
   | .field => ZMod P
@@ -30,13 +32,13 @@ theorem InstanceOf.def {tp : Tp} : InstanceOf P tp = match tp with
   := by cases tp <;> rfl
 
 def InstanceOf.decidableEq : DecidableEq (InstanceOf P tp) := match tp with
-  | .u64 => inferInstanceAs (DecidableEq UInt64)
-  | .bool => inferInstanceAs (DecidableEq Bool)
-  | .unit => inferInstanceAs (DecidableEq Unit)
-  | .field => inferInstanceAs (DecidableEq (ZMod P))
+  | .u _ => inferInstance
+  | .bool => inferInstance
+  | .unit => inferInstance
+  | .field => inferInstance
   | .slice tp1 =>
     let _ : DecidableEq (InstanceOf P tp1) := decidableEq
-    inferInstanceAs (DecidableEq (List (InstanceOf P tp1)))
+    inferInstance
 
 instance : DecidableEq (InstanceOf P tp) := InstanceOf.decidableEq P
 
@@ -47,14 +49,14 @@ deriving DecidableEq
 
 namespace Value
 
-abbrev u64 (i : UInt64) : Value P := ⟨.u64, i⟩
+abbrev u64 (i : U 64) : Value P := ⟨.u 64, i⟩
 abbrev bool (b : Bool) : Value P := ⟨.bool, b⟩
 abbrev unit : Value P := ⟨.unit, ()⟩
 
 instance : Inhabited (Value P) := ⟨Value.unit P⟩
 
 @[simp]
-theorem eq_int {a b : UInt64} :  (u64 P a == u64 P b) = (a == b) := by
+theorem eq_int {a b : U 64} :  (u64 P a == u64 P b) = (a == b) := by
   simp [BEq.beq]
 
 @[simp]

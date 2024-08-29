@@ -22,8 +22,8 @@ def exampleModule := noir! {
       let mut done = false;
       for i in 0 .. num_bytes {
           if (!done) then {
-              let x_byte = as_u8(x_bytes[((num_bytes - 1) - i)]);
-              let y_byte = as_u8(y_bytes[((num_bytes - 1) - i)]);
+              let x_byte = x_bytes[((num_bytes - 1) - i)] as u8;
+              let y_byte = y_bytes[((num_bytes - 1) - i)] as u8;
               let bytes_match = (x_byte == y_byte);
               if (!bytes_match) then {
                   x_is_lt = (x_byte < y_byte);

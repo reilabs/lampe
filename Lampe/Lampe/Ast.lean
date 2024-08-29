@@ -15,13 +15,16 @@ inductive Builtin where
 | not
 | lt
 | index
+| cast : Tp → Builtin
+| modulusNumBits
+| toLeBytes
 
 inductive FunctionIdent where
 | builtin : Builtin → FunctionIdent
 | decl : Ident → FunctionIdent
 
 inductive Expr : Type where
-| lit : Nat → Expr
+| lit : Nat → Option Tp → Expr
 | var : Ident → Expr
 | declareVar : Ident → Expr → Expr
 | declareMutVar : Ident → Expr → Expr
@@ -38,7 +41,7 @@ inductive Expr : Type where
 
 def Expr.inductionOn
   {motive : Expr → Prop}
-  (lit : ∀a, motive (.lit a))
+  (lit : ∀t a, motive (.lit a t))
   (var : ∀x, motive (.var x))
   (declareVar : ∀x e, motive e → motive (.declareVar x e))
   (declareMutVar : ∀x e, motive e → motive (.declareMutVar x e))

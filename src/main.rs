@@ -34,8 +34,8 @@ fn op_to_lean(op: BinaryOpKind) -> String {
     }
 }
 
-fn expr_to_lean(context: &Context, expr: &ExprId, indent: &str) -> String {
-    let expr = context.def_interner.expression(expr);
+fn expr_to_lean(context: &Context, exprId: &ExprId, indent: &str) -> String {
+    let expr = context.def_interner.expression(exprId);
     match expr {
         HirExpression::Infix(infix) => {
             let lhs = expr_to_lean(context, &infix.lhs, indent);
@@ -83,13 +83,13 @@ fn expr_to_lean(context: &Context, expr: &ExprId, indent: &str) -> String {
             format!("{}({})", func, args)
         }
         HirExpression::Cast(cast) => {
-            format!("as_{}({})", cast.r#type, expr_to_lean(context, &cast.lhs, indent))
+            format!("({} #as {})", expr_to_lean(context, &cast.lhs, indent), cast.r#type)
         }
         HirExpression::Literal(HirLiteral::Integer(felt, neg)) => {
             if neg {
                 todo!("negative literals")
             }
-            felt.to_string()
+            format!("({}:{})", felt.to_string(), context.def_interner.id_type(exprId).to_string())
         }
         HirExpression::Literal(HirLiteral::Bool(b)) => {
             if b {

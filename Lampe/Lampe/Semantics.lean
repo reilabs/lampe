@@ -1,6 +1,9 @@
 import Lampe.Ast
 import Lampe.Value
+import Lampe.Data.Field
 import Lampe.Syntax -- TODO remove - testing
+import Lean.Meta.Tactic.Simp.Main
+import Mathlib
 
 theorem simplify_binder {p : α → Prop} (hp : ∀x, p x → y = x) : (∃x, p x) ↔ p y := by
   apply Iff.intro
@@ -9,6 +12,16 @@ theorem simplify_binder {p : α → Prop} (hp : ∀x, p x → y = x) : (∃x, p 
     assumption
   · intro hp'
     apply Exists.intro y
+    assumption
+
+theorem simplify_binder_under_ex {p : α → Prop} {q : β → α} (hp : ∀x, p x → ∃y, x = q y) : (∃x, p x) ↔ ∃y, p (q y) := by
+  apply Iff.intro
+  · intro ⟨x, hp'⟩
+    rcases hp x hp' with ⟨_, ⟨_⟩⟩
+    apply Exists.intro
+    assumption
+  · intro ⟨y, hp'⟩
+    apply Exists.intro
     assumption
 
 syntax "introB": tactic
@@ -20,7 +33,7 @@ macro_rules | `(tactic|ex_dsch) => `(tactic | (introB; (first | assumption | (sy
 syntax "binder_simp" : tactic
 macro_rules
 | `(tactic | binder_simp) =>
-  `(tactic | repeat (first | simp (disch := ex_dsch) only [and_assoc, simplify_binder, ←exists_and_left, ←exists_and_right, true_and, and_true, ite_true] | simp [-exists_and_left, -exists_and_right]))
+  `(tactic | (first | simp (disch := ex_dsch) only [simplify_binder]))
 
 namespace Lampe
 
@@ -34,7 +47,56 @@ structure State where
 memory : Nat → Option (Value P)
 nextFreeMemory : Nat
 
+namespace State
+
+instance : Inhabited (State P) := ⟨⟨fun _ => none, 0⟩⟩
+
+def nextPtr : State P → Nat := nextFreeMemory
+
+def alloc {P} : State P → Value P → State P := fun st v =>
+  ⟨(fun i => if i = st.nextFreeMemory then some v else st.memory i), st.nextFreeMemory + 1⟩
+
+def set {P} : State P → Nat → Value P → State P := fun st i v =>
+  ⟨(fun j => if j = i then some v else st.memory j), st.nextFreeMemory⟩
+
+@[simp]
+theorem alloc_inj {st : State P} {v v' : Value P} : st.alloc v = st.alloc v' ↔ v = v' := by
+  apply Iff.intro
+  · intro h
+    simp [alloc] at h
+    apply_fun (fun f => f st.nextFreeMemory) at h
+    simp at h
+    simp [h]
+  · rintro ⟨rfl⟩
+    rfl
+
+@[simp]
+theorem set_inj {st : State P} {i : Nat} {v v' : Value P} : st.set i v = st.set i v' ↔ v = v' := by
+  apply Iff.intro
+  · intro h
+    simp [set] at h
+    apply_fun (fun f => f i) at h
+    simp at h
+    simp [h]
+  · rintro ⟨rfl⟩
+    rfl
+
+@[simp]
+theorem alloc_nextPtr {st : State P} {v : Value P} : (st.alloc v).memory st.nextPtr = v := by
+  simp [nextPtr, alloc]
+
+-- @[simp]
+-- theorem alloc_nextPtr_alloc {}
+
+-- @[simp]
+-- theorem get_alloc_succ : (st.alloc v)
+
+end State
+
 def Env.ofModule (m : Module): Env := fun i => (m.decls.find? fun d => d.name == i).map (·.fn)
+
+@[reducible]
+def Env.extend (Γ₁ : Env) (Γ₂ : Env) : Env := fun i => Γ₁ i <|> Γ₂ i
 
 @[simp]
 theorem Env.ofModule_def (m : Module) (i : Ident) : Env.ofModule m i = (m.decls.find? fun d => d.name == i).map (·.fn) := by
@@ -61,10 +123,11 @@ theorem Scope.update_get_of_neq {P:Nat} {sc : Scope P} {x y: Ident} {v : LocalVa
 inductive ExprAux where
 | expr : Expr → ExprAux
 | callArgPrep : FunctionIdent → List (Value P) → List Expr → ExprAux
+| loopProgress : Nat → Nat → Nat → Ident → Expr → ExprAux
 
 def ExprAux.inductionOn
   {motive : ExprAux P → Prop}
-  (lit : ∀a, motive (.expr (.lit a)))
+  (lit : ∀a t, motive (.expr (.lit a t)))
   (var : ∀x, motive (.expr (.var x)))
   (declareVar : ∀x e, motive (.expr e) → motive (.expr (.declareVar x e)))
   (declareMutVar : ∀x e, motive (.expr e) → motive (.expr (.declareMutVar x e)))
@@ -74,12 +137,13 @@ def ExprAux.inductionOn
   (block_nil : ∀e, motive (.expr e) → motive (.expr (.block []  e)))
   (block_cons : ∀hd e es, motive (.expr hd) → motive (.expr (.block es e)) → motive (.expr (.block (hd :: es) e)))
   (call_nil : ∀f, motive (.expr (.call f [])))
-  (call_cons : ∀f a as, motive (.expr a) → motive (.expr (.call f as)) → motive (.expr (.call f (a::as))))
+  (call_cons : ∀f a args, motive (.expr a) → motive (.expr (.call f args)) → motive (.expr (.call f (a::args))))
   (ite : ∀c t e, motive (.expr c) → motive (.expr t) → motive (.expr e) → motive (.expr (.ite c t e)))
   (skip : motive (.expr .skip))
   (loop : ∀i c b e, motive (.expr c) → motive (.expr b) → motive (.expr e) → motive (.expr (.loop i c b e)))
+  (loopProgress : ∀s i j x e, motive (.expr e) → motive (.loopProgress s i j x e))
   (callArgPrep_nil : ∀f vs, motive (.callArgPrep f vs []))
-  (callArgPrep_cons : ∀f a as vs, motive (.expr a) → motive (.callArgPrep f vs as) → motive (.callArgPrep f vs (a::as))):
+  (callArgPrep_cons : ∀f a args vs, motive (.expr a) → motive (.callArgPrep f vs args) → motive (.callArgPrep f vs (a::args))):
   ∀e, motive e := by
   intro e
   cases e with
@@ -89,13 +153,36 @@ def ExprAux.inductionOn
     | cons e es ih =>
       apply callArgPrep_cons _ _ _ _ ?_ ih
       induction e using Expr.inductionOn <;> tauto
+  | loopProgress s i j x e =>
+      apply loopProgress _ _ _ _ _ ?_
+      induction e using Expr.inductionOn <;> tauto
   | expr e => induction e using Expr.inductionOn <;> tauto
 
 inductive BigStepBuiltin : Builtin → List (Value P) → Value P → Prop where
 | eq : BigStepBuiltin .eq [v1, v2] ⟨.bool, (v1 == v2)⟩
+| ltU : BigStepBuiltin .lt [⟨.u s, n1⟩, ⟨.u s, n2⟩] ⟨.bool, n1 < n2⟩
 | assert : BigStepBuiltin .assert [⟨.bool, true⟩] ⟨.unit, ()⟩
-| add : BigStepBuiltin .add [⟨.field, n1⟩, ⟨.field, n2⟩] ⟨.field, n1 + n2⟩
+| addF : BigStepBuiltin .add [⟨.field, n1⟩, ⟨.field, n2⟩] ⟨.field, n1 + n2⟩
+| addU : (n1.val + n2.val < 2 ^ s) → BigStepBuiltin .add [⟨.u s, n1⟩, ⟨.u s, n2⟩] ⟨.u s, n1 + n2⟩ -- oflow error in circuit as well?
 | sub : BigStepBuiltin .sub [⟨.field, n1⟩, ⟨.field, n2⟩] ⟨.field, n1 - n2⟩
+| subU : (n1.val ≤ n2.val) → BigStepBuiltin .sub [⟨.u s, n1⟩, ⟨.u s, n2⟩] ⟨.u s, n1 - n2⟩ -- oflow error in circuit as well?
+| divU : BigStepBuiltin .div [⟨.u s, n1⟩, ⟨.u s, n2⟩] ⟨.u s, n1 / n2⟩ -- div 0?
+| toLeBytes {result : List (U 8)} {byteLen : U 32} :
+  (n = ∑i, (result.get i : ZMod P) * 256 ^ i.val) →
+  (result.length = byteLen) →
+  BigStepBuiltin .toLeBytes [⟨.field, n⟩, ⟨.u 32, byteLen⟩] ⟨.slice (.u 8), result⟩
+| modulusNumBits : BigStepBuiltin .modulusNumBits [] ⟨.u 64, Field.numBits P⟩ -- wrap or throw?
+| castU : BigStepBuiltin (.cast (.u s)) [⟨.u s', i⟩] ⟨.u s, i⟩
+| not : BigStepBuiltin .not [⟨.bool, b⟩] ⟨.bool, !b⟩
+| index : (hp : i.val < s.length) → BigStepBuiltin .index [⟨.slice tp, s⟩, ⟨.u 32, i⟩] ⟨tp, s[i]⟩
+
+@[simp]
+theorem BigStepBuiltin.lt_u_iff : BigStepBuiltin P .lt [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.bool, n1 < n2⟩ := by
+  apply Iff.intro <;> {
+    introB
+    try casesm BigStepBuiltin _ _ _ _
+    simp_all [BigStepBuiltin.ltU]
+  }
 
 @[simp]
 theorem BigStepBuiltin.sub_field_iff : BigStepBuiltin P .sub [⟨.field, n1⟩, ⟨.field, n2⟩] v ↔ v = ⟨.field, n1 - n2⟩ := by
@@ -106,12 +193,33 @@ theorem BigStepBuiltin.sub_field_iff : BigStepBuiltin P .sub [⟨.field, n1⟩, 
     apply BigStepBuiltin.sub
 
 @[simp]
+theorem BigStepBuiltin.sub_u_iff : BigStepBuiltin P .sub [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.u s, n1 - n2⟩ ∧ n1.val ≤ n2.val := by
+  apply Iff.intro
+  · intro hp; cases hp; simpa
+  · introB
+    simp_all [BigStepBuiltin.subU]
+
+@[simp]
 theorem BigStepBuiltin.add_field_iff : BigStepBuiltin P .add [⟨.field, n1⟩, ⟨.field, n2⟩] v ↔ v = ⟨.field, n1 + n2⟩ := by
   apply Iff.intro
   · intro hp; cases hp; simp
   · intro hp
     simp [hp]
-    apply BigStepBuiltin.add
+    apply addF
+
+@[simp]
+theorem BigStepBuiltin.add_u_iff : BigStepBuiltin P .add [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.u s, n1 + n2⟩ ∧ (n1.val + n2.val < 2^s) := by
+  apply Iff.intro
+  · intro hp; cases hp; simpa
+  · introB
+    simp_all [BigStepBuiltin.addU]
+
+@[simp]
+theorem BigStepBuiltin.div_u_iff : BigStepBuiltin P .div [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.u s, n1 / n2⟩ := by
+  apply Iff.intro
+  · intro hp; cases hp; simp
+  · introB
+    simp_all [BigStepBuiltin.divU]
 
 @[simp]
 theorem BigStepBuiltin.eq_iff : BigStepBuiltin P .eq [v1, v2] v ↔ v = ⟨.bool, (v1 == v2)⟩ := by
@@ -129,13 +237,69 @@ theorem BigStepBuiltin.assert_iff : BigStepBuiltin P .assert [v] r ↔ v = ⟨.b
     simp [hp]
     apply BigStepBuiltin.assert
 
+@[simp]
+theorem BigStepBuiltin.modulusNumBits_iff : BigStepBuiltin P .modulusNumBits [] v ↔ v = ⟨.u 64, Field.numBits P⟩ := by
+  apply Iff.intro
+  · intro hp; cases hp; simp
+  · intro hp
+    simp [hp]
+    apply BigStepBuiltin.modulusNumBits
+
+@[simp]
+theorem BigStepBuiltin.toLeBytes_iff : BigStepBuiltin P .toLeBytes [⟨.field, n⟩, ⟨.u 32, len⟩] result ↔  ∃r, result = ⟨.slice (.u 8), r⟩ ∧ (n = ∑i, ((r.get i) : ZMod P) * 256 ^ i.val) ∧ (r.length = len) := by
+  apply Iff.intro
+  · intro hp
+    cases hp
+    apply Exists.intro
+    apply And.intro <;> try rfl
+    apply And.intro <;> assumption
+  · introB
+    simp_all [BigStepBuiltin.toLeBytes]
+
+@[simp]
+theorem BigStepBuiltin.castU_iff : BigStepBuiltin P (.cast (.u s)) [⟨.u s', i⟩] v ↔ v = ⟨.u s, i⟩ := by
+  apply Iff.intro
+  · intro hp; cases hp; simp
+  · intro hp
+    simp [hp]
+    apply BigStepBuiltin.castU
+
+@[simp]
+theorem BigStepBuiltin.not_iff : BigStepBuiltin P .not [⟨.bool, b⟩] v ↔ v = ⟨.bool, !b⟩ := by
+  apply Iff.intro
+  · intro hp; cases hp; simp
+  · intro hp
+    simp [hp]
+    apply BigStepBuiltin.not
+
+@[simp]
+theorem BigStepBuiltin.index_iff : BigStepBuiltin P .index [⟨.slice tp, s⟩, ⟨.u 32, i⟩] v ↔ ∃ (hp: i.val < s.length), v = ⟨tp, s[i]⟩ := by
+  apply Iff.intro
+  · intro hp; cases hp; simp_all
+  · intro hp
+    cases hp
+    simp_all
+    apply BigStepBuiltin.index
+
+
 inductive BigStepAux : Env → State P → Scope P → ExprAux P → State P → Scope P → Value P → Prop where
-| lit : BigStepAux Γ st sc (.expr (.lit n)) st sc ⟨.field, n⟩
+| skip : BigStepAux Γ st sc (.expr .skip) st sc ⟨.unit, ()⟩
+| litNone : BigStepAux Γ st sc (.expr (.lit n .none)) st sc ⟨.field, n⟩
+| litU : BigStepAux Γ st sc (.expr (.lit n (.some (.u s)))) st sc ⟨.u s, n⟩
+| litFalse : BigStepAux Γ st sc (.expr (.lit 0 (.some .bool))) st sc ⟨.bool, false⟩
+| litTrue : BigStepAux Γ st sc (.expr (.lit 1 (.some .bool))) st sc ⟨.bool, true⟩
 | varValue : sc x = some (LocalVal.value v) → BigStepAux Γ st sc (.expr (.var x)) st sc v
-| varDeref : sc x = some  (LocalVal.autoDeref ptr) → st.memory ptr = some v → BigStepAux Γ st sc (.expr (.var x)) st sc v
+| varDeref : sc x = some (LocalVal.autoDeref ptr) → st.memory ptr = some v → BigStepAux Γ st sc (.expr (.var x)) st sc v
 | declareVar :
   BigStepAux Γ st sc (.expr e) st' sc v →
   BigStepAux Γ st sc (.expr (.declareVar x e)) st' (sc.update x (.value v)) (.unit P)
+| declareMutVar :
+  BigStepAux Γ st sc (.expr e) st' sc v →
+  BigStepAux Γ st sc (.expr (.declareMutVar x e)) (st'.alloc v) (sc.update x (.autoDeref st'.nextPtr)) (.unit P)
+| assignMut :
+  sc x = some (.autoDeref ptr) →
+  BigStepAux Γ st sc (.expr e) st' sc v →
+  BigStepAux Γ st sc (.expr (.assignMut x e)) (st'.set ptr v) sc (.unit P)
 | callArgPrepBuiltinDone :
   BigStepBuiltin P b vs v →
   BigStepAux Γ st sc (.callArgPrep (.builtin b) vs []) st sc v
@@ -167,11 +331,42 @@ inductive BigStepAux : Env → State P → Scope P → ExprAux P → State P →
     BigStepAux Γ st sc (.expr c) st' sc ⟨.bool, false⟩ →
     BigStepAux Γ st' sc (.expr e) st'' sc v →
     BigStepAux Γ st sc (.expr (.ite c t e)) st'' sc v
-
+| loop:
+    BigStepAux Γ st  sc (.expr lo) st' sc ⟨.u s, lov⟩ →
+    BigStepAux Γ st' sc (.expr hi) st'' sc ⟨.u s, hiv⟩ →
+    BigStepAux Γ st'' sc (.loopProgress s lov hiv i body) st''' sc v →
+    BigStepAux Γ st sc (.expr (.loop i lo hi body)) st''' sc v
+| loopCont:
+    (lo < hi) →
+    BigStepAux Γ st  (sc.update i (.value ⟨.u s, lo⟩)) (.expr body) st' (sc.update i (.value ⟨.u s, lo⟩)) _ →
+    BigStepAux Γ st' sc (.loopProgress s lo.succ hi i body) st'' sc v →
+    BigStepAux Γ st sc (.loopProgress s lo hi i body) st'' sc v
+| loopDone:
+    (lo ≥ hi) →
+    BigStepAux Γ st sc (.loopProgress s lo hi i body) st sc ⟨.unit, ()⟩
 
 @[simp]
-theorem BigStepAux.lit_iff: BigStepAux P Γ st sc (.expr (.lit n)) st' sc' v ↔ st = st' ∧ sc = sc' ∧ v = ⟨.field, n⟩ := by
-  apply Iff.intro <;> (intro h; cases h; simp_all [BigStepAux.lit])
+theorem BigStepAux.skip_iff: BigStepAux P Γ st sc (.expr .skip) st' sc' v ↔ st = st' ∧ sc = sc' ∧ v = ⟨.unit, ()⟩ := by
+  apply Iff.intro
+  · intro hp; cases hp; simp_all
+  · intro hp
+    simp_all [BigStepAux.skip]
+
+@[simp]
+theorem BigStepAux.litNone_iff: BigStepAux P Γ st sc (.expr (.lit n .none)) st' sc' v ↔ st = st' ∧ sc = sc' ∧ v = ⟨.field, n⟩ := by
+  apply Iff.intro <;> (intro h; cases h; simp_all [BigStepAux.litNone])
+
+@[simp]
+theorem BigStepAux.litU_iff: BigStepAux P Γ st sc (.expr (.lit n (.some (.u s)))) st' sc' v ↔ st = st' ∧ sc = sc' ∧ v = ⟨.u s, n⟩ := by
+  apply Iff.intro <;> (intro h; cases h; simp_all [BigStepAux.litU])
+
+@[simp]
+theorem BigStepAux.litFalse_iff: BigStepAux P Γ st sc (.expr (.lit 0 (.some .bool))) st' sc' v ↔ st = st' ∧ sc = sc' ∧ v = ⟨.bool, false⟩ := by
+  apply Iff.intro <;> (intro h; cases h; simp_all [BigStepAux.litFalse])
+
+@[simp]
+theorem BigStepAux.litTrue_iff: BigStepAux P Γ st sc (.expr (.lit 1 (.some .bool))) st' sc' v ↔ st = st' ∧ sc = sc' ∧ v = ⟨.bool, true⟩ := by
+  apply Iff.intro <;> (intro h; cases h; simp_all [BigStepAux.litTrue])
 
 @[simp]
 theorem BigStepAux.var_iff: BigStepAux P Γ st sc (.expr (.var x)) st' sc' v ↔ (sc x = some (.value v) ∨ (∃ptr, sc x = some (.autoDeref ptr) ∧ st.memory ptr = some v)) ∧ st = st' ∧ sc = sc' := by
@@ -215,6 +410,16 @@ theorem BigStepAux.callArgPrepDeclDone_iff:
   · introB
     subst_vars
     apply BigStepAux.callArgPrepDeclDone <;> assumption
+
+theorem BigStepAux.callArgPrepDeclDone_iff2 (fname : String) (hp : Γ fname = some func):
+  BigStepAux P Γ st sc (.callArgPrep (.decl fname) args []) st' sc' v ↔
+  ∃sc'', BigStepAux P Γ st (fun x => some (.value $ args.get! (func.params.indexOf x))) (.expr func.body) st' sc'' v ∧ sc' = sc := by
+  rw [BigStepAux.callArgPrepDeclDone_iff]
+  simp [hp]
+  cases func
+  simp
+  binder_simp
+  simp
 
 @[simp]
 theorem BigStepAux.callArgPrepBultinDone_iff:
@@ -264,6 +469,38 @@ theorem BigStepAux.declareVar_iff:
     assumption
 
 @[simp]
+theorem BigStepAux.declareMutVar_iff:
+  BigStepAux P Γ st sc (.expr (.declareMutVar x e)) st' sc' v ↔
+  ∃a st'', BigStepAux P Γ st sc (.expr e) st'' sc a ∧ v = .unit P ∧ sc' = sc.update x (.autoDeref st''.nextPtr) ∧ st' = st''.alloc a := by
+  apply Iff.intro
+  · intro hp
+    cases hp
+    repeat apply Exists.intro
+    apply And.intro <;> try assumption
+    apply And.intro <;> try rfl
+    apply And.intro <;> rfl
+  · introB
+    subst_vars
+    apply BigStepAux.declareMutVar
+    assumption
+
+@[simp]
+theorem BigStepAux.assignMut_iff:
+  BigStepAux P Γ st sc (.expr (.assignMut x e)) st' sc' v ↔
+  ∃ptr a st'', sc x = some (.autoDeref ptr) ∧ BigStepAux P Γ st sc (.expr e) st'' sc a ∧ v = .unit P ∧ st' = st''.set ptr a ∧ sc = sc' := by
+  apply Iff.intro
+  · intro hp
+    cases hp
+    repeat apply Exists.intro
+    apply And.intro; assumption
+    apply And.intro; assumption
+    apply And.intro; rfl
+    apply And.intro <;> rfl
+  · introB
+    subst_vars
+    apply BigStepAux.assignMut <;> assumption
+
+@[simp]
 theorem BigStepAux.unconstrained_iff:
   BigStepAux P Γ st sc (.expr .fresh) st' sc' v ↔ st = st' ∧ sc = sc' := by
   apply Iff.intro
@@ -299,6 +536,47 @@ theorem BigStepAux.ite_iff:
     · simp_all
       apply BigStepAux.iteFalse <;> tauto
 
+@[simp]
+theorem BigStepAux.loop_iff:
+  BigStepAux P Γ st sc (.expr (.loop i lo hi body)) st''' sc' v ↔
+  ∃s st' st'' lov hiv, BigStepAux P Γ st sc (.expr lo) st' sc ⟨.u s, lov⟩ ∧ BigStepAux P Γ st' sc (.expr hi) st'' sc ⟨.u s, hiv⟩ ∧ BigStepAux P Γ st'' sc (.loopProgress s lov hiv i body) st''' sc v  ∧ sc = sc' := by
+  apply Iff.intro
+  · intro hp
+    cases hp
+    tauto
+  · introB
+    subst_vars
+    apply BigStepAux.loop <;> assumption
+
+theorem BigStepAux.loopCont_iff (hp : lo < hi):
+  BigStepAux P Γ st sc (.loopProgress s lo hi i body) st'' sc' v ↔
+  ∃a st',
+    BigStepAux P Γ st (sc.update i (.value ⟨.u s, lo⟩)) (.expr body) st' (sc.update i (.value ⟨.u s, lo⟩)) a ∧
+    BigStepAux P Γ st' sc (.loopProgress s lo.succ hi i body) st'' sc v ∧
+    sc = sc' := by
+  apply Iff.intro
+  · intro hp
+    cases hp
+    · repeat apply Exists.intro
+      apply And.intro <;> try assumption
+      apply And.intro <;> try assumption
+      rfl
+    · linarith
+  · introB
+    subst_vars
+    apply BigStepAux.loopCont <;> try assumption
+
+@[simp]
+theorem BigStepAux.loopDone_iff (hp : lo ≥ hi):
+  BigStepAux P Γ st sc (.loopProgress s lo hi i body) st' sc' v ↔
+  v = ⟨.unit, ()⟩ ∧ st = st' ∧ sc = sc':= by
+  apply Iff.intro
+  · intro hp
+    cases hp <;> try linarith
+    tauto
+  · introB; subst_vars
+    apply BigStepAux.loopDone
+    assumption
 
 end Lampe
 
@@ -319,15 +597,15 @@ abbrev testMod := noir! {
   }
 
   fn lt_fallback(x, y) {
-    let num_bytes = ((as_u32(field::modulus_num_bits()) + 7) / 8);
+    let num_bytes = (((field::modulus_num_bits() #as u 32) + (7: u 32)) / (8 : u 32));
     let x_bytes = field::Field::to_le_bytes(x, num_bytes);
     let y_bytes = field::Field::to_le_bytes(y, num_bytes);
     let mut x_is_lt = false;
     let mut done = false;
-    for i in 0 .. num_bytes {
+    for i in (0 : u 32) .. num_bytes {
         if (!done) then {
-            let x_byte = as_u8(x_bytes[((num_bytes - 1) - i)]);
-            let y_byte = as_u8(y_bytes[((num_bytes - 1) - i)]);
+            let x_byte = x_bytes[((num_bytes - (1 : u 32)) - i)] #as u 8;
+            let y_byte = y_bytes[((num_bytes - (1 : u 32)) - i)] #as u 8;
             let bytes_match = (x_byte == y_byte);
             if (!bytes_match) then {
                 x_is_lt = (x_byte < y_byte);
@@ -341,41 +619,69 @@ abbrev testMod := noir! {
 
 open Lampe
 
+-- set_option trace.Meta.Tactic.simp.discharge true
+
+syntax "ex_dsch2" :tactic
+macro_rules
+| `(tactic|ex_dsch2) =>
+  `(tactic| introB; apply Exists.intro; assumption)
+
+section macros
+open Lean Elab.Tactic Parser.Tactic Lean.Meta
+syntax "crush" : tactic
+macro_rules
+| `(tactic|crush) => `(tactic| repeat (first | simp | simp (disch := ex_dsch) only [simplify_binder] | simp (disch := ex_dsch2) only [simplify_binder_under_ex]))
+end macros
+
+
+
+@[simp]
+theorem Scope.update_inj {sc : Scope P} : sc.update x v = sc.update x v' ↔ v = v' := by
+  apply Iff.intro
+  · intro h
+    have : sc.update x v x = sc.update x v' x := by
+      apply congr <;> simp [*]
+    simp at this
+    assumption
+  · rintro ⟨rfl⟩
+    rfl
+
 theorem assignableEq:
   BigStepAux P (Lampe.Env.ofModule testMod) st sc (.callArgPrep (.decl "assertEq") [a, b] []) st' sc' v ↔
   a = b ∧ v = .unit P ∧ st = st' ∧ sc = sc' := by
   simp only [BigStepAux.callArgPrepDeclDone_iff]
-  binder_simp
-  apply Iff.intro
-  · introB
-    simp_all
-  · introB
-    subst_vars
+  crush
+  tauto
 
-    repeat apply Exists.intro
-    simp
-    repeat apply (And.intro rfl)
-    simp
-    repeat apply (And.intro rfl)
-    rfl
+@[simp] theorem zmodPrimeIsFin [Fact (Nat.Prime P)]: ZMod P = Fin P := by
+  have : ∃p, P = p + 1 := by
+    apply Nat.exists_eq_succ_of_ne_zero
+    apply Nat.Prime.ne_zero
+    apply Fact.out
+  rcases this
+  subst_vars
+  rfl
 
-abbrev P := 17
-
-theorem assignableRecursiveMul:
+theorem assignableRecursiveMul [Fact (Nat.Prime P)]:
   BigStepAux P (Lampe.Env.ofModule testMod) st sc (.callArgPrep (.decl "recursiveMul") [⟨.field, a⟩, ⟨.field, b⟩] []) st' sc' v ↔
   v = ⟨.field, a * b⟩ ∧ st = st' ∧ sc = sc' := by
+  have : ∃p, P = p + 1 := by
+    apply Nat.exists_eq_succ_of_ne_zero
+    apply Nat.Prime.ne_zero
+    apply Fact.out
+  rcases this with ⟨p, rfl⟩
   rcases a with ⟨a, ha⟩
   induction a generalizing sc sc' v with
   | zero =>
     simp only [BigStepAux.callArgPrepDeclDone_iff]
-    binder_simp
+    crush
     tauto
   | succ a ih =>
-    have ap1_def : (⟨a + 1, ha⟩ : ZMod P) = (⟨a, by linarith⟩:ZMod P) + 1 := by
+    have ap1_def : (⟨a + 1, ha⟩ : ZMod (p+1)) = (⟨a, by linarith⟩) + 1 := by
       congr
       repeat (rw [Nat.mod_eq_of_lt] <;> try linarith)
 
-    have : (⟨a, by linarith⟩: ZMod P) + 1 ≠ 0 := by
+    have : (⟨a, by linarith⟩: ZMod (p+1)) + 1 ≠ 0 := by
       intro h
       injection h with h
       repeat rw [Nat.mod_eq_of_lt] at h
@@ -384,10 +690,105 @@ theorem assignableRecursiveMul:
       any_goals linarith
 
     simp only [BigStepAux.callArgPrepDeclDone_iff]
-    binder_simp
+    crush
     simp only [this, ap1_def, ih]
-    binder_simp
+    crush
     simp only [this, ap1_def, ih]
-    binder_simp
+    crush
     ring_nf
     tauto
+
+def modulusNumBitsFn : Function := ⟨[], .call (.builtin .modulusNumBits) []⟩
+def toLeBytesFn : Function := ⟨["self", "byte_len"], .call (.builtin .toLeBytes) [.var "self", .var "byte_len"]⟩
+
+
+@[reducible]
+def stdlib : Env := fun i => match i with
+| "field::modulus_num_bits" => some modulusNumBitsFn
+| "field::Field::to_le_bytes" => some toLeBytesFn
+| _ => none
+
+-- set_option trace.Meta.Tactic.simp.discharge true
+
+def BigStepCall (P : Nat) (Γ : Env) (state : State P) (f : Function) (args : List (Value P)) (state' : State P) (v : Value P) :=
+  ∃sc', BigStepAux P Γ state (fun x => some (.value $ args.get! (f.params.indexOf x))) (.expr f.body) state' sc' v
+
+@[simp]
+theorem modulusNumBits_sem : BigStepCall P Γ st modulusNumBitsFn [] st' v ↔ st = st' ∧ v = ⟨.u 64, Field.numBits P⟩ := by
+  simp [BigStepCall, modulusNumBitsFn]; tauto
+
+-- @[simp]
+-- theorem toLeBytes_sem :
+--     BigStepCall P Γ st toLeBytesFn [⟨.field, a⟩, ⟨.u 32, len⟩] st' v ↔
+--     st = st' ∧ (Field.toLeBytes a).length ≤ len.val ∧ v = ⟨.slice (.u 8), Field.padEnd len.val $ Field.toLeBytes a⟩ := by
+--   simp [BigStepCall, toLeBytesFn]; crush; tauto
+
+theorem BigStepAux.callArgPrepDeclDone_iff3 (fname : String) (hp : Γ fname = some func) (P : Nat) {v : Value P} {st st' : State P} {args : List (Value P)} {sc sc' : Scope P}:
+  BigStepAux P Γ st sc (.callArgPrep (.decl fname) args []) st' sc' v ↔
+  BigStepCall P Γ st func args st' v ∧ sc' = sc := by
+  simp [BigStepCall, BigStepAux.callArgPrepDeclDone_iff2 _ _ hp]
+
+lemma Nat.eq_zero_of_lt_one : ∀n, n < 1 → n = 0 := by intros; linarith
+
+example :
+    ∃st' sc', BigStepAux 17 (stdlib.extend (Lampe.Env.ofModule testMod)) st sc (.callArgPrep (.decl "lt_fallback") [⟨.field, 10⟩, ⟨.field, 5⟩] []) st' sc' ⟨.bool, true⟩ := by
+  simp (disch := with_unfolding_all rfl) only [BigStepAux.callArgPrepDeclDone_iff3]
+  unfold BigStepCall
+  crush
+  simp (disch := with_unfolding_all conv_lhs => whnf) only [BigStepAux.callArgPrepDeclDone_iff3 "field::modulus_num_bits", BigStepAux.callArgPrepDeclDone_iff3 "field::Field::to_le_bytes"]
+  crush
+  unfold BigStepCall
+  unfold toLeBytesFn
+  crush
+  simp [Field.numBits, Nat.log2]
+  conv in (occs := *) (Fin.val _ / Fin.val _) => whnf
+  simp [BigStepAux.loopCont_iff]
+  crush
+  apply And.intro
+  · decide
+  · apply Exists.intro
+    use [10]
+    crush
+    apply And.intro (by decide)
+    use [22]
+    crush
+    apply And.intro (by decide)
+    apply And.intro rfl
+    simp [State.alloc, State.set]
+
+
+
+
+-- theorem ltFallbackSem : ∃a1 a2,
+--   BigStepAux (P + 1) (stdlib.extend (Lampe.Env.ofModule testMod)) st sc (.callArgPrep (.decl "lt_fallback") [⟨.field, a⟩, ⟨.field, b⟩] []) st' sc' v ↔
+--   v = ⟨.bool, a.val < b.val⟩ ∧ sc = sc' ∧ st' = (st.alloc a1).alloc a2 := by
+--   simp (disch := with_unfolding_all rfl) only [BigStepAux.callArgPrepDeclDone_iff3]
+--   unfold BigStepCall
+--   crush
+--   simp (disch := with_unfolding_all conv_lhs => whnf) only [BigStepAux.callArgPrepDeclDone_iff3 "field::modulus_num_bits", BigStepAux.callArgPrepDeclDone_iff3 "field::Field::to_le_bytes"]
+--   crush
+--   induction P using Nat.binaryRec with
+--   | z =>
+--     simp [Field.numBits, Nat.log2]
+--     conv in (occs := *) (Fin.val _ / Fin.val _) => whnf
+--     crush
+--     simp [BigStepAux.loopCont_iff]
+--     crush
+--     rcases a with ⟨a, ha⟩
+--     have : a = 0 := by linarith
+--     cases this
+--     rcases b with ⟨b, hb⟩
+--     have : b = 0 := by linarith
+--     cases this
+--     simp [Field.toLeBytes, Field.toLeBytes.go, Field.padEnd]
+--     repeat apply Exists.intro
+--     apply Iff.intro
+--     · introB
+--       subst_vars
+--     · sorry
+
+
+
+
+    -- simp
+  -- binder_simp

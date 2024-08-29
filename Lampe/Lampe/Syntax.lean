@@ -17,6 +17,13 @@ partial def elabNrIdent : Syntax → MetaM String
   pure $ s!"{x.getId.toString}::{tl}"
 | _ => throwUnsupportedSyntax
 
+declare_syntax_cat nr_type
+syntax "u" num:nr_type
+
+partial def elabNrType : Syntax → MetaM Lean.Expr
+| `(nr_type|u $n:num) => mkAppM ``Tp.u #[mkNatLit n.getNat]
+| _ => throwUnsupportedSyntax
+
 declare_syntax_cat func
 syntax:max "assert" : func
 syntax:(max-1) nr_ident : func
@@ -28,34 +35,36 @@ partial def elabFun : Syntax → MetaM Lean.Expr
   mkAppM ``FunctionIdent.decl #[mkStrLit x]
 | _ => throwUnsupportedSyntax
 
-declare_syntax_cat expr
+declare_syntax_cat nr_expr
 
-syntax:max num : expr
-syntax:max nr_ident : expr
-syntax:max "fresh" : expr
-syntax:max "(" expr ")" : expr
-syntax:max "&mut " ident : expr
-syntax:max "*" ident : expr
-syntax:max "if" expr "then" expr ("else" expr)? : expr
-syntax:max "{" sepBy(expr, ";", ";", allowTrailingSep) "}" : expr
-syntax:max "let" ident "=" expr : expr
-syntax:max "let" "mut" ident "=" expr : expr
-syntax:max ident "=" expr : expr
-syntax:max func "(" expr,* ")" : expr
+syntax:100 num (":" nr_type)? : nr_expr
+syntax:100 nr_ident : nr_expr
+syntax:100 "fresh" : nr_expr
+syntax:100 "(" nr_expr ")" : nr_expr
+syntax:100 "&mut " ident : nr_expr
+syntax:100 "*" ident : nr_expr
+syntax:100 "if" nr_expr "then" nr_expr ("else" nr_expr)? : nr_expr
+syntax:100 "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
+syntax:100 "let" ident "=" nr_expr : nr_expr
+syntax:100 "let" "mut" ident "=" nr_expr : nr_expr
+syntax:100 ident "=" nr_expr : nr_expr
+syntax:100 func "(" nr_expr,* ")" : nr_expr
 
-syntax:(max-3) expr "[" expr "]" : expr
-syntax:(max-5) "!" expr : expr
+syntax:(100-3) nr_expr "[" nr_expr "]" : nr_expr
+syntax:(100-5) "!" nr_expr : nr_expr
 
-syntax:(max-10) expr "*" expr : expr
-syntax:(max-10) expr "/" expr : expr
+syntax:(100-10) nr_expr "*" nr_expr : nr_expr
+syntax:(100-10) nr_expr "/" nr_expr : nr_expr
 
-syntax:(max-20) expr "+" expr : expr
-syntax:(max-20) expr "-" expr : expr
+syntax:(100-20) nr_expr "+" nr_expr : nr_expr
+syntax:(100-20) nr_expr "-" nr_expr : nr_expr
 
-syntax:(max-30) expr "==" expr : expr
-syntax:(max-30) expr "<" expr : expr
+syntax:(100-30) nr_expr "==" nr_expr : nr_expr
+syntax:(100-30) nr_expr "<" nr_expr : nr_expr
 
-syntax:(max-40) "for" ident "in" expr ".." expr expr : expr
+syntax:(100-35) nr_expr " #as " nr_type : nr_expr
+
+syntax:(100-40) "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 
 mutual
 
@@ -66,25 +75,34 @@ partial def elabAsBuiltin (name : Name) (args : List Syntax): MetaM Lean.Expr :=
   mkAppM ``Expr.call #[fn, args]
 
 partial def elabExpr : Syntax → MetaM Lean.Expr
-| `(expr|$n:num) => mkAppM ``Expr.lit #[mkNatLit n.getNat]
-| `(expr|$x:nr_ident) => do
+| `(nr_expr|$n:num : $tp ) => do
+  let tp ← elabNrType tp
+  let tp ← mkAppM ``Option.some #[tp]
+  mkAppM ``Expr.lit #[mkNatLit n.getNat, tp]
+| `(nr_expr|$n:num) => do
+  let tp ← mkAppOptM ``Option.none #[some (mkConst ``Tp)]
+  mkAppM ``Expr.lit #[mkNatLit n.getNat, tp]
+| `(nr_expr|$x:nr_ident) => do
   let x ← elabNrIdent x
-  mkAppM ``Expr.var #[mkStrLit x]
-| `(expr|fresh) => mkAppM ``Expr.fresh #[]
-| `(expr|($expr)) => elabExpr expr
-| `(expr|&mut $_) => throwUnsupportedSyntax
-| `(expr|*$_) => throwUnsupportedSyntax
-| `(expr|if $cond then $ifT else $ifF) => do
+  match x with
+  | "false" => mkAppM ``Expr.lit #[mkNatLit 0, ←mkAppM ``Option.some #[mkConst ``Tp.bool]]
+  | "true" => mkAppM ``Expr.lit #[mkNatLit 1, ←mkAppM ``Option.some #[mkConst ``Tp.bool]]
+  | _ => mkAppM ``Expr.var #[mkStrLit x]
+| `(nr_expr|fresh) => mkAppM ``Expr.fresh #[]
+| `(nr_expr|($expr)) => elabExpr expr
+| `(nr_expr|&mut $_) => throwUnsupportedSyntax
+| `(nr_expr|*$_) => throwUnsupportedSyntax
+| `(nr_expr|if $cond then $ifT else $ifF) => do
   let cond ← elabExpr cond
   let ifT ← elabExpr ifT
   let ifF ← elabExpr ifF
   mkAppM ``Expr.ite #[cond, ifT, ifF]
-| `(expr|if $cond then $ifT) => do
+| `(nr_expr|if $cond then $ifT) => do
   let cond ← elabExpr cond
   let ifT ← elabExpr ifT
   let ifF ← mkAppM ``Expr.skip #[]
   mkAppM ``Expr.ite #[cond, ifT, ifF]
-| `(expr|{$exprs;*}) => do
+| `(nr_expr|{$exprs;*}) => do
   let exprs ← exprs.getElems.mapM elabExpr
   let exprsInit := exprs.toList.dropLast
   let lastExpr ← match exprs.toList.getLast? with
@@ -92,49 +110,56 @@ partial def elabExpr : Syntax → MetaM Lean.Expr
   | none => throwUnsupportedSyntax
   let exprs ← mkListLit (mkConst ``Expr) exprsInit
   mkAppM ``Expr.block #[exprs, lastExpr]
-| `(expr|let $x:ident = $val) => do
+| `(nr_expr|let $x:ident = $val) => do
   let x := mkStrLit x.getId.toString
   let val ← elabExpr val
   mkAppM ``Expr.declareVar #[x, val]
-| `(expr|let mut $x:ident = $val) => do
+| `(nr_expr|let mut $x:ident = $val) => do
   let x := mkStrLit x.getId.toString
   let val ← elabExpr val
   mkAppM ``Expr.declareMutVar #[x, val]
-| `(expr| $x:ident = $val) => do
+| `(nr_expr| $x:ident = $val) => do
   let x := mkStrLit x.getId.toString
   let val ← elabExpr val
   mkAppM ``Expr.assignMut #[x, val]
-| `(expr|$fn:func($args,*)) => do
+| `(nr_expr|$fn:func($args,*)) => do
   let fn ← elabFun fn
   let args ← args.getElems.mapM elabExpr
   let args ← mkListLit (mkConst ``Expr) args.toList
   mkAppM ``Expr.call #[fn, args]
-| `(expr|$lhs * $rhs) => elabAsBuiltin ``Builtin.mul [lhs, rhs]
-| `(expr|$lhs / $rhs) => elabAsBuiltin ``Builtin.div [lhs, rhs]
-| `(expr|$lhs + $rhs) => elabAsBuiltin ``Builtin.add [lhs, rhs]
-| `(expr|$lhs - $rhs) => elabAsBuiltin ``Builtin.sub [lhs, rhs]
-| `(expr|$lhs == $rhs) => elabAsBuiltin ``Builtin.eq [lhs, rhs]
-| `(expr|$lhs < $rhs) => elabAsBuiltin ``Builtin.lt [lhs, rhs]
-| `(expr|!$expr) => elabAsBuiltin ``Builtin.not [expr]
-| `(expr|$lhs[$rhs]) => elabAsBuiltin ``Builtin.index [lhs, rhs]
-| `(expr|for $i in $s .. $e $body) => do
+| `(nr_expr|$lhs * $rhs) => elabAsBuiltin ``Builtin.mul [lhs, rhs]
+| `(nr_expr|$lhs / $rhs) => elabAsBuiltin ``Builtin.div [lhs, rhs]
+| `(nr_expr|$lhs + $rhs) => elabAsBuiltin ``Builtin.add [lhs, rhs]
+| `(nr_expr|$lhs - $rhs) => elabAsBuiltin ``Builtin.sub [lhs, rhs]
+| `(nr_expr|$lhs == $rhs) => elabAsBuiltin ``Builtin.eq [lhs, rhs]
+| `(nr_expr|$lhs < $rhs) => elabAsBuiltin ``Builtin.lt [lhs, rhs]
+| `(nr_expr|!$expr) => elabAsBuiltin ``Builtin.not [expr]
+| `(nr_expr|$lhs[$rhs]) => elabAsBuiltin ``Builtin.index [lhs, rhs]
+| `(nr_expr|for $i in $s .. $e $body) => do
   let i := mkStrLit i.getId.toString
   let s ← elabExpr s
   let e ← elabExpr e
   let body ← elabExpr body
   mkAppM ``Expr.loop #[i, s, e, body]
+| `(nr_expr|$lhs #as $rhs) => do
+  let rhs ← elabNrType rhs
+  let lhs ← elabExpr lhs
+  let bltn ← mkAppM ``Builtin.cast #[rhs]
+  let fn ← mkAppM ``FunctionIdent.builtin #[bltn]
+  let args ← mkListLit (mkConst ``Expr) [lhs]
+  mkAppM ``Expr.call #[fn, args]
 | e => do dbg_trace e; throwUnsupportedSyntax
 
 end
 
-elab "nr_expr! {" s:expr "}" : term => elabExpr s
+elab "nr_expr! {" s:nr_expr "}" : term => elabExpr s
 
-#reduce nr_expr! { 1 + 2 }
+#reduce nr_expr! { 1 : u 8 + 2 }
 #reduce nr_expr! { if n == 0 then 0 else { let n = n - 1; k + recadd(n, k) }}
 
 declare_syntax_cat decl
 
-syntax "fn" ident "(" ident,* ")" "{" sepBy1(expr, ";", ";", allowTrailingSep) "}" : decl
+syntax "fn" ident "(" ident,* ")" "{" sepBy1(nr_expr, ";", ";", allowTrailingSep) "}" : decl
 
 partial def elabDecl : Syntax → MetaM Lean.Expr
 | `(decl|fn $name:ident($params,* ) {$exprs;*}) => do
@@ -169,6 +194,7 @@ elab "noir! {" decls:decl* "}" : term => do
   let decls ← decls.mapM (fun decl => elabDecl decl.raw)
   let decls ← mkListLit (mkConst ``FunctionDecl) decls.toList
   mkAppM ``Module.mk #[decls]
+
 
 #reduce nr_expr! {
       let num_bytes = field::modulus_num_bits()
