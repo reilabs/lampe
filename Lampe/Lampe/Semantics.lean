@@ -619,6 +619,14 @@ abbrev testMod := noir! {
 
 open Lampe
 
+def BigStepCall (P : Nat) (Γ : Env) (state : State P) (f : Function) (args : List (Value P)) (state' : State P) (v : Value P) :=
+  ∃sc', BigStepAux P Γ state (fun x => some (.value $ args.get! (f.params.indexOf x))) (.expr f.body) state' sc' v
+
+theorem BigStepAux.callArgPrepDeclDone_iff3 (fname : String) (hp : Γ fname = some func) (P : Nat) {v : Value P} {st st' : State P} {args : List (Value P)} {sc sc' : Scope P}:
+  BigStepAux P Γ st sc (.callArgPrep (.decl fname) args []) st' sc' v ↔
+  BigStepCall P Γ st func args st' v ∧ sc' = sc := by
+  simp [BigStepCall, BigStepAux.callArgPrepDeclDone_iff2 _ _ hp]
+
 -- set_option trace.Meta.Tactic.simp.discharge true
 
 syntax "ex_dsch2" :tactic
@@ -630,7 +638,8 @@ section macros
 open Lean Elab.Tactic Parser.Tactic Lean.Meta
 syntax "crush" : tactic
 macro_rules
-| `(tactic|crush) => `(tactic| repeat (first | simp | simp (disch := ex_dsch) only [simplify_binder] | simp (disch := ex_dsch2) only [simplify_binder_under_ex]))
+| `(tactic|crush) => `(tactic|
+  repeat (first | simp | simp (disch := ex_dsch) only [simplify_binder] | simp (disch := ex_dsch2) only [simplify_binder_under_ex] | simp (disch := with_unfolding_all rfl) only [BigStepAux.callArgPrepDeclDone_iff3]))
 end macros
 
 
@@ -671,9 +680,10 @@ theorem assignableRecursiveMul [Fact (Nat.Prime P)]:
     apply Fact.out
   rcases this with ⟨p, rfl⟩
   rcases a with ⟨a, ha⟩
+  crush
   induction a generalizing sc sc' v with
   | zero =>
-    simp only [BigStepAux.callArgPrepDeclDone_iff]
+    unfold BigStepCall
     crush
     tauto
   | succ a ih =>
@@ -689,7 +699,7 @@ theorem assignableRecursiveMul [Fact (Nat.Prime P)]:
       rw [Nat.mod_eq_of_lt]
       any_goals linarith
 
-    simp only [BigStepAux.callArgPrepDeclDone_iff]
+    unfold BigStepCall
     crush
     simp only [this, ap1_def, ih]
     crush
@@ -709,36 +719,22 @@ def stdlib : Env := fun i => match i with
 | _ => none
 
 -- set_option trace.Meta.Tactic.simp.discharge true
-
-def BigStepCall (P : Nat) (Γ : Env) (state : State P) (f : Function) (args : List (Value P)) (state' : State P) (v : Value P) :=
-  ∃sc', BigStepAux P Γ state (fun x => some (.value $ args.get! (f.params.indexOf x))) (.expr f.body) state' sc' v
-
 @[simp]
 theorem modulusNumBits_sem : BigStepCall P Γ st modulusNumBitsFn [] st' v ↔ st = st' ∧ v = ⟨.u 64, Field.numBits P⟩ := by
   simp [BigStepCall, modulusNumBitsFn]; tauto
 
--- @[simp]
--- theorem toLeBytes_sem :
---     BigStepCall P Γ st toLeBytesFn [⟨.field, a⟩, ⟨.u 32, len⟩] st' v ↔
---     st = st' ∧ (Field.toLeBytes a).length ≤ len.val ∧ v = ⟨.slice (.u 8), Field.padEnd len.val $ Field.toLeBytes a⟩ := by
---   simp [BigStepCall, toLeBytesFn]; crush; tauto
+-- theorem BigStepBuiltin.toLeBytes_iff : BigStepBuiltin P .toLeBytes [⟨.field, n⟩, ⟨.u 32, len⟩] result ↔  ∃r, result = ⟨.slice (.u 8), r⟩ ∧ (n = ∑i, ((r.get i) : ZMod P) * 256 ^ i.val) ∧ (r.length = len) := by
 
-theorem BigStepAux.callArgPrepDeclDone_iff3 (fname : String) (hp : Γ fname = some func) (P : Nat) {v : Value P} {st st' : State P} {args : List (Value P)} {sc sc' : Scope P}:
-  BigStepAux P Γ st sc (.callArgPrep (.decl fname) args []) st' sc' v ↔
-  BigStepCall P Γ st func args st' v ∧ sc' = sc := by
-  simp [BigStepCall, BigStepAux.callArgPrepDeclDone_iff2 _ _ hp]
-
-lemma Nat.eq_zero_of_lt_one : ∀n, n < 1 → n = 0 := by intros; linarith
+@[simp]
+theorem toLeBytes_sem :
+    BigStepCall P Γ st toLeBytesFn [⟨.field, n⟩, ⟨.u 32, len⟩] st' v ↔
+    st = st' ∧ ∃r, v = ⟨.slice (.u 8), r⟩ ∧ (n = ∑i, ((r.get i) : ZMod P) * 256 ^ i.val) ∧ (r.length = len) := by
+  simp [BigStepCall, toLeBytesFn]; crush; tauto
 
 example :
     ∃st' sc', BigStepAux 17 (stdlib.extend (Lampe.Env.ofModule testMod)) st sc (.callArgPrep (.decl "lt_fallback") [⟨.field, 10⟩, ⟨.field, 5⟩] []) st' sc' ⟨.bool, true⟩ := by
   simp (disch := with_unfolding_all rfl) only [BigStepAux.callArgPrepDeclDone_iff3]
   unfold BigStepCall
-  crush
-  simp (disch := with_unfolding_all conv_lhs => whnf) only [BigStepAux.callArgPrepDeclDone_iff3 "field::modulus_num_bits", BigStepAux.callArgPrepDeclDone_iff3 "field::Field::to_le_bytes"]
-  crush
-  unfold BigStepCall
-  unfold toLeBytesFn
   crush
   simp [Field.numBits, Nat.log2]
   conv in (occs := *) (Fin.val _ / Fin.val _) => whnf
