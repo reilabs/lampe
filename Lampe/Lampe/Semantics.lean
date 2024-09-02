@@ -1,39 +1,9 @@
 import Lampe.Ast
 import Lampe.Value
 import Lampe.Data.Field
-import Lampe.Syntax -- TODO remove - testing
-import Lean.Meta.Tactic.Simp.Main
+import Lampe.Tactic.IntroCases
+import Lampe.Syntax
 import Mathlib
-
-theorem simplify_binder {p : α → Prop} (hp : ∀x, p x → y = x) : (∃x, p x) ↔ p y := by
-  apply Iff.intro
-  · intro ⟨x, hp'⟩
-    rw [hp x hp']
-    assumption
-  · intro hp'
-    apply Exists.intro y
-    assumption
-
-theorem simplify_binder_under_ex {p : α → Prop} {q : β → α} (hp : ∀x, p x → ∃y, x = q y) : (∃x, p x) ↔ ∃y, p (q y) := by
-  apply Iff.intro
-  · intro ⟨x, hp'⟩
-    rcases hp x hp' with ⟨_, ⟨_⟩⟩
-    apply Exists.intro
-    assumption
-  · intro ⟨y, hp'⟩
-    apply Exists.intro
-    assumption
-
-syntax "introB": tactic
-macro_rules | `(tactic|introB) => `(tactic | (intros ; try casesm* _ ∧ _, ∃_, _))
-
-syntax "ex_dsch" :tactic
-macro_rules | `(tactic|ex_dsch) => `(tactic | (introB; (first | assumption | (symm; assumption))))
-
-syntax "binder_simp" : tactic
-macro_rules
-| `(tactic | binder_simp) =>
-  `(tactic | (first | simp (disch := ex_dsch) only [simplify_binder]))
 
 namespace Lampe
 
@@ -133,7 +103,7 @@ def ExprAux.inductionOn
   (declareMutVar : ∀x e, motive (.expr e) → motive (.expr (.declareMutVar x e)))
   (assignMut : ∀x e, motive (.expr e) → motive (.expr (.assignMut x e)))
   (require : ∀e, motive (.expr e) → motive (.expr (.assert e)))
-  (unconstrained : motive (.expr .fresh))
+  (fresh : motive (.expr .fresh))
   (block_nil : ∀e, motive (.expr e) → motive (.expr (.block []  e)))
   (block_cons : ∀hd e es, motive (.expr hd) → motive (.expr (.block es e)) → motive (.expr (.block (hd :: es) e)))
   (call_nil : ∀f, motive (.expr (.call f [])))
@@ -165,7 +135,7 @@ inductive BigStepBuiltin : Builtin → List (Value P) → Value P → Prop where
 | addF : BigStepBuiltin .add [⟨.field, n1⟩, ⟨.field, n2⟩] ⟨.field, n1 + n2⟩
 | addU : (n1.val + n2.val < 2 ^ s) → BigStepBuiltin .add [⟨.u s, n1⟩, ⟨.u s, n2⟩] ⟨.u s, n1 + n2⟩ -- oflow error in circuit as well?
 | sub : BigStepBuiltin .sub [⟨.field, n1⟩, ⟨.field, n2⟩] ⟨.field, n1 - n2⟩
-| subU : (n1.val ≤ n2.val) → BigStepBuiltin .sub [⟨.u s, n1⟩, ⟨.u s, n2⟩] ⟨.u s, n1 - n2⟩ -- oflow error in circuit as well?
+| subU : (n2.val ≤ n1.val) → BigStepBuiltin .sub [⟨.u s, n1⟩, ⟨.u s, n2⟩] ⟨.u s, n1 - n2⟩ -- oflow error in circuit as well?
 | divU : BigStepBuiltin .div [⟨.u s, n1⟩, ⟨.u s, n2⟩] ⟨.u s, n1 / n2⟩ -- div 0?
 | toLeBytes {result : List (U 8)} {byteLen : U 32} :
   (n = ∑i, (result.get i : ZMod P) * 256 ^ i.val) →
@@ -179,7 +149,7 @@ inductive BigStepBuiltin : Builtin → List (Value P) → Value P → Prop where
 @[simp]
 theorem BigStepBuiltin.lt_u_iff : BigStepBuiltin P .lt [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.bool, n1 < n2⟩ := by
   apply Iff.intro <;> {
-    introB
+    intro_cases
     try casesm BigStepBuiltin _ _ _ _
     simp_all [BigStepBuiltin.ltU]
   }
@@ -193,10 +163,10 @@ theorem BigStepBuiltin.sub_field_iff : BigStepBuiltin P .sub [⟨.field, n1⟩, 
     apply BigStepBuiltin.sub
 
 @[simp]
-theorem BigStepBuiltin.sub_u_iff : BigStepBuiltin P .sub [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.u s, n1 - n2⟩ ∧ n1.val ≤ n2.val := by
+theorem BigStepBuiltin.sub_u_iff : BigStepBuiltin P .sub [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.u s, n1 - n2⟩ ∧ n2.val ≤ n1.val := by
   apply Iff.intro
   · intro hp; cases hp; simpa
-  · introB
+  · intro_cases
     simp_all [BigStepBuiltin.subU]
 
 @[simp]
@@ -211,14 +181,14 @@ theorem BigStepBuiltin.add_field_iff : BigStepBuiltin P .add [⟨.field, n1⟩, 
 theorem BigStepBuiltin.add_u_iff : BigStepBuiltin P .add [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.u s, n1 + n2⟩ ∧ (n1.val + n2.val < 2^s) := by
   apply Iff.intro
   · intro hp; cases hp; simpa
-  · introB
+  · intro_cases
     simp_all [BigStepBuiltin.addU]
 
 @[simp]
 theorem BigStepBuiltin.div_u_iff : BigStepBuiltin P .div [⟨.u s, n1⟩, ⟨.u s, n2⟩] v ↔ v = ⟨.u s, n1 / n2⟩ := by
   apply Iff.intro
   · intro hp; cases hp; simp
-  · introB
+  · intro_cases
     simp_all [BigStepBuiltin.divU]
 
 @[simp]
@@ -253,7 +223,7 @@ theorem BigStepBuiltin.toLeBytes_iff : BigStepBuiltin P .toLeBytes [⟨.field, n
     apply Exists.intro
     apply And.intro <;> try rfl
     apply And.intro <;> assumption
-  · introB
+  · intro_cases
     simp_all [BigStepBuiltin.toLeBytes]
 
 @[simp]
@@ -384,7 +354,7 @@ theorem BigStepAux.call_iff:
   apply Iff.intro
   · intro hp; cases hp
     assumption
-  · introB
+  · intro_cases
     apply BigStepAux.call; assumption
 
 @[simp]
@@ -395,31 +365,28 @@ theorem BigStepAux.callArgPrepNext_iff:
   · intro hp; cases hp
     repeat apply Exists.intro
     apply And.intro <;> assumption
-  · introB
+  · intro_cases
     apply BigStepAux.callArgPrepNext <;> assumption
 
-theorem BigStepAux.callArgPrepDeclDone_iff:
-  BigStepAux P Γ st sc (.callArgPrep (.decl fname) args []) st' sc' v ↔
-  ∃params body sc'', Γ fname = some ⟨params, body⟩ ∧ BigStepAux P Γ st (fun x => some (.value $ args.get! (params.indexOf x))) (.expr body) st' sc'' v ∧ sc' = sc := by
-  apply Iff.intro
-  · intro hp; cases hp
-    repeat apply Exists.intro
-    apply And.intro <;> try assumption
-    apply And.intro <;> try assumption
-    rfl
-  · introB
-    subst_vars
-    apply BigStepAux.callArgPrepDeclDone <;> assumption
+def BigStepCall (P : Nat) (Γ : Env) (state : State P) (f : Function) (args : List (Value P)) (state' : State P) (v : Value P) :=
+  ∃sc', BigStepAux P Γ state (fun x => some (.value $ args.get! (f.params.indexOf x))) (.expr f.body) state' sc' v
 
-theorem BigStepAux.callArgPrepDeclDone_iff2 (fname : String) (hp : Γ fname = some func):
+theorem BigStepAux.callArgPrepDeclDone_iff {fname : String} (hp : Γ fname = some func) {v : Value P} {st st' : State P} {args : List (Value P)} {sc sc' : Scope P}:
   BigStepAux P Γ st sc (.callArgPrep (.decl fname) args []) st' sc' v ↔
-  ∃sc'', BigStepAux P Γ st (fun x => some (.value $ args.get! (func.params.indexOf x))) (.expr func.body) st' sc'' v ∧ sc' = sc := by
-  rw [BigStepAux.callArgPrepDeclDone_iff]
-  simp [hp]
-  cases func
-  simp
-  binder_simp
-  simp
+  BigStepCall P Γ st func args st' v ∧ sc' = sc := by
+  apply Iff.intro
+  · intro hp
+    cases hp
+    rename_i h_lookup h_exe
+    unfold BigStepCall
+    rw [hp] at h_lookup
+    injection h_lookup with h_lookup
+    cases h_lookup
+    apply And.intro ?_ rfl
+    apply Exists.intro
+    assumption
+  · rintro ⟨⟨_, h⟩, rfl⟩
+    apply BigStepAux.callArgPrepDeclDone <;> assumption
 
 @[simp]
 theorem BigStepAux.callArgPrepBultinDone_iff:
@@ -438,7 +405,7 @@ theorem BigStepAux.blockNext_iff:
     simp
     repeat apply Exists.intro
     apply And.intro <;> assumption
-  · introB
+  · intro_cases
     simp_all
     apply BigStepAux.blockNext <;> assumption
 
@@ -450,7 +417,7 @@ theorem BigStepAux.blockDone_iff:
     simp
     apply Exists.intro
     assumption
-  · introB
+  · intro_cases
     simp_all
     apply BigStepAux.blockDone; assumption
 
@@ -463,7 +430,7 @@ theorem BigStepAux.declareVar_iff:
     repeat apply Exists.intro
     apply And.intro <;> try assumption
     apply And.intro <;> try rfl
-  · introB
+  · intro_cases
     subst_vars
     apply BigStepAux.declareVar
     assumption
@@ -479,7 +446,7 @@ theorem BigStepAux.declareMutVar_iff:
     apply And.intro <;> try assumption
     apply And.intro <;> try rfl
     apply And.intro <;> rfl
-  · introB
+  · intro_cases
     subst_vars
     apply BigStepAux.declareMutVar
     assumption
@@ -496,7 +463,7 @@ theorem BigStepAux.assignMut_iff:
     apply And.intro; assumption
     apply And.intro; rfl
     apply And.intro <;> rfl
-  · introB
+  · intro_cases
     subst_vars
     apply BigStepAux.assignMut <;> assumption
 
@@ -529,7 +496,7 @@ theorem BigStepAux.ite_iff:
       · assumption
       apply Or.inr
       tauto
-  · introB
+  · intro_cases
     casesm* _ ∨ _
     · simp_all
       apply BigStepAux.iteTrue <;> tauto
@@ -544,7 +511,7 @@ theorem BigStepAux.loop_iff:
   · intro hp
     cases hp
     tauto
-  · introB
+  · intro_cases
     subst_vars
     apply BigStepAux.loop <;> assumption
 
@@ -562,7 +529,7 @@ theorem BigStepAux.loopCont_iff (hp : lo < hi):
       apply And.intro <;> try assumption
       rfl
     · linarith
-  · introB
+  · intro_cases
     subst_vars
     apply BigStepAux.loopCont <;> try assumption
 
@@ -574,7 +541,7 @@ theorem BigStepAux.loopDone_iff (hp : lo ≥ hi):
   · intro hp
     cases hp <;> try linarith
     tauto
-  · introB; subst_vars
+  · intro_cases; subst_vars
     apply BigStepAux.loopDone
     assumption
 
@@ -582,67 +549,7 @@ end Lampe
 
 
 
-abbrev testMod := noir! {
-  fn recursiveMul(n,k) {
-    if n == 0 then 0 else {
-      let n = n - 1;
-      k + recursiveMul(n, k)
-    }
-  }
-
-  fn assertEq(a,b) {
-    let x = fresh;
-    assert(x == a);
-    assert(x == b);
-  }
-
-  fn lt_fallback(x, y) {
-    let num_bytes = (((field::modulus_num_bits() #as u 32) + (7: u 32)) / (8 : u 32));
-    let x_bytes = field::Field::to_le_bytes(x, num_bytes);
-    let y_bytes = field::Field::to_le_bytes(y, num_bytes);
-    let mut x_is_lt = false;
-    let mut done = false;
-    for i in (0 : u 32) .. num_bytes {
-        if (!done) then {
-            let x_byte = x_bytes[((num_bytes - (1 : u 32)) - i)] #as u 8;
-            let y_byte = y_bytes[((num_bytes - (1 : u 32)) - i)] #as u 8;
-            let bytes_match = (x_byte == y_byte);
-            if (!bytes_match) then {
-                x_is_lt = (x_byte < y_byte);
-                done = true;
-            }
-        }
-    };
-    x_is_lt
-  }
-}
-
 open Lampe
-
-def BigStepCall (P : Nat) (Γ : Env) (state : State P) (f : Function) (args : List (Value P)) (state' : State P) (v : Value P) :=
-  ∃sc', BigStepAux P Γ state (fun x => some (.value $ args.get! (f.params.indexOf x))) (.expr f.body) state' sc' v
-
-theorem BigStepAux.callArgPrepDeclDone_iff3 (fname : String) (hp : Γ fname = some func) (P : Nat) {v : Value P} {st st' : State P} {args : List (Value P)} {sc sc' : Scope P}:
-  BigStepAux P Γ st sc (.callArgPrep (.decl fname) args []) st' sc' v ↔
-  BigStepCall P Γ st func args st' v ∧ sc' = sc := by
-  simp [BigStepCall, BigStepAux.callArgPrepDeclDone_iff2 _ _ hp]
-
--- set_option trace.Meta.Tactic.simp.discharge true
-
-syntax "ex_dsch2" :tactic
-macro_rules
-| `(tactic|ex_dsch2) =>
-  `(tactic| introB; apply Exists.intro; assumption)
-
-section macros
-open Lean Elab.Tactic Parser.Tactic Lean.Meta
-syntax "crush" : tactic
-macro_rules
-| `(tactic|crush) => `(tactic|
-  repeat (first | simp | simp (disch := ex_dsch) only [simplify_binder] | simp (disch := ex_dsch2) only [simplify_binder_under_ex] | simp (disch := with_unfolding_all rfl) only [BigStepAux.callArgPrepDeclDone_iff3]))
-end macros
-
-
 
 @[simp]
 theorem Scope.update_inj {sc : Scope P} : sc.update x v = sc.update x v' ↔ v = v' := by
@@ -655,62 +562,8 @@ theorem Scope.update_inj {sc : Scope P} : sc.update x v = sc.update x v' ↔ v =
   · rintro ⟨rfl⟩
     rfl
 
-theorem assignableEq:
-  BigStepAux P (Lampe.Env.ofModule testMod) st sc (.callArgPrep (.decl "assertEq") [a, b] []) st' sc' v ↔
-  a = b ∧ v = .unit P ∧ st = st' ∧ sc = sc' := by
-  simp only [BigStepAux.callArgPrepDeclDone_iff]
-  crush
-  tauto
-
-@[simp] theorem zmodPrimeIsFin [Fact (Nat.Prime P)]: ZMod P = Fin P := by
-  have : ∃p, P = p + 1 := by
-    apply Nat.exists_eq_succ_of_ne_zero
-    apply Nat.Prime.ne_zero
-    apply Fact.out
-  rcases this
-  subst_vars
-  rfl
-
-theorem assignableRecursiveMul [Fact (Nat.Prime P)]:
-  BigStepAux P (Lampe.Env.ofModule testMod) st sc (.callArgPrep (.decl "recursiveMul") [⟨.field, a⟩, ⟨.field, b⟩] []) st' sc' v ↔
-  v = ⟨.field, a * b⟩ ∧ st = st' ∧ sc = sc' := by
-  have : ∃p, P = p + 1 := by
-    apply Nat.exists_eq_succ_of_ne_zero
-    apply Nat.Prime.ne_zero
-    apply Fact.out
-  rcases this with ⟨p, rfl⟩
-  rcases a with ⟨a, ha⟩
-  crush
-  induction a generalizing sc sc' v with
-  | zero =>
-    unfold BigStepCall
-    crush
-    tauto
-  | succ a ih =>
-    have ap1_def : (⟨a + 1, ha⟩ : ZMod (p+1)) = (⟨a, by linarith⟩) + 1 := by
-      congr
-      repeat (rw [Nat.mod_eq_of_lt] <;> try linarith)
-
-    have : (⟨a, by linarith⟩: ZMod (p+1)) + 1 ≠ 0 := by
-      intro h
-      injection h with h
-      repeat rw [Nat.mod_eq_of_lt] at h
-      any_goals linarith
-      rw [Nat.mod_eq_of_lt]
-      any_goals linarith
-
-    unfold BigStepCall
-    crush
-    simp only [this, ap1_def, ih]
-    crush
-    simp only [this, ap1_def, ih]
-    crush
-    ring_nf
-    tauto
-
 def modulusNumBitsFn : Function := ⟨[], .call (.builtin .modulusNumBits) []⟩
 def toLeBytesFn : Function := ⟨["self", "byte_len"], .call (.builtin .toLeBytes) [.var "self", .var "byte_len"]⟩
-
 
 @[reducible]
 def stdlib : Env := fun i => match i with
@@ -718,73 +571,22 @@ def stdlib : Env := fun i => match i with
 | "field::Field::to_le_bytes" => some toLeBytesFn
 | _ => none
 
--- set_option trace.Meta.Tactic.simp.discharge true
 @[simp]
 theorem modulusNumBits_sem : BigStepCall P Γ st modulusNumBitsFn [] st' v ↔ st = st' ∧ v = ⟨.u 64, Field.numBits P⟩ := by
   simp [BigStepCall, modulusNumBitsFn]; tauto
-
--- theorem BigStepBuiltin.toLeBytes_iff : BigStepBuiltin P .toLeBytes [⟨.field, n⟩, ⟨.u 32, len⟩] result ↔  ∃r, result = ⟨.slice (.u 8), r⟩ ∧ (n = ∑i, ((r.get i) : ZMod P) * 256 ^ i.val) ∧ (r.length = len) := by
 
 @[simp]
 theorem toLeBytes_sem :
     BigStepCall P Γ st toLeBytesFn [⟨.field, n⟩, ⟨.u 32, len⟩] st' v ↔
     st = st' ∧ ∃r, v = ⟨.slice (.u 8), r⟩ ∧ (n = ∑i, ((r.get i) : ZMod P) * 256 ^ i.val) ∧ (r.length = len) := by
-  simp [BigStepCall, toLeBytesFn]; crush; tauto
-
-example :
-    ∃st' sc', BigStepAux 17 (stdlib.extend (Lampe.Env.ofModule testMod)) st sc (.callArgPrep (.decl "lt_fallback") [⟨.field, 10⟩, ⟨.field, 5⟩] []) st' sc' ⟨.bool, true⟩ := by
-  simp (disch := with_unfolding_all rfl) only [BigStepAux.callArgPrepDeclDone_iff3]
-  unfold BigStepCall
-  crush
-  simp [Field.numBits, Nat.log2]
-  conv in (occs := *) (Fin.val _ / Fin.val _) => whnf
-  simp [BigStepAux.loopCont_iff]
-  crush
-  apply And.intro
-  · decide
-  · apply Exists.intro
-    use [10]
-    crush
-    apply And.intro (by decide)
-    use [22]
-    crush
-    apply And.intro (by decide)
-    apply And.intro rfl
-    simp [State.alloc, State.set]
-
-
-
-
--- theorem ltFallbackSem : ∃a1 a2,
---   BigStepAux (P + 1) (stdlib.extend (Lampe.Env.ofModule testMod)) st sc (.callArgPrep (.decl "lt_fallback") [⟨.field, a⟩, ⟨.field, b⟩] []) st' sc' v ↔
---   v = ⟨.bool, a.val < b.val⟩ ∧ sc = sc' ∧ st' = (st.alloc a1).alloc a2 := by
---   simp (disch := with_unfolding_all rfl) only [BigStepAux.callArgPrepDeclDone_iff3]
---   unfold BigStepCall
---   crush
---   simp (disch := with_unfolding_all conv_lhs => whnf) only [BigStepAux.callArgPrepDeclDone_iff3 "field::modulus_num_bits", BigStepAux.callArgPrepDeclDone_iff3 "field::Field::to_le_bytes"]
---   crush
---   induction P using Nat.binaryRec with
---   | z =>
---     simp [Field.numBits, Nat.log2]
---     conv in (occs := *) (Fin.val _ / Fin.val _) => whnf
---     crush
---     simp [BigStepAux.loopCont_iff]
---     crush
---     rcases a with ⟨a, ha⟩
---     have : a = 0 := by linarith
---     cases this
---     rcases b with ⟨b, hb⟩
---     have : b = 0 := by linarith
---     cases this
---     simp [Field.toLeBytes, Field.toLeBytes.go, Field.padEnd]
---     repeat apply Exists.intro
---     apply Iff.intro
---     · introB
---       subst_vars
---     · sorry
-
-
-
-
-    -- simp
-  -- binder_simp
+  simp [BigStepCall, toLeBytesFn]
+  apply Iff.intro
+  · intro_cases
+    rename BigStepBuiltin _ _ _ _ => hp
+    cases hp
+    simp_all
+  · intro_cases
+    repeat (any_goals first | apply Exists.intro | apply And.intro)
+    any_goals rfl
+    convert BigStepBuiltin.toLeBytes _ _ <;> assumption
+    assumption

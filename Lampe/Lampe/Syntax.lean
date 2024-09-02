@@ -39,7 +39,6 @@ declare_syntax_cat nr_expr
 
 syntax:100 num (":" nr_type)? : nr_expr
 syntax:100 nr_ident : nr_expr
-syntax:100 "fresh" : nr_expr
 syntax:100 "(" nr_expr ")" : nr_expr
 syntax:100 "&mut " ident : nr_expr
 syntax:100 "*" ident : nr_expr
@@ -62,7 +61,7 @@ syntax:(100-20) nr_expr "-" nr_expr : nr_expr
 syntax:(100-30) nr_expr "==" nr_expr : nr_expr
 syntax:(100-30) nr_expr "<" nr_expr : nr_expr
 
-syntax:(100-35) nr_expr " #as " nr_type : nr_expr
+syntax:(100-35) nr_expr "#as" nr_type : nr_expr
 
 syntax:(100-40) "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 
@@ -82,13 +81,10 @@ partial def elabExpr : Syntax → MetaM Lean.Expr
 | `(nr_expr|$n:num) => do
   let tp ← mkAppOptM ``Option.none #[some (mkConst ``Tp)]
   mkAppM ``Expr.lit #[mkNatLit n.getNat, tp]
-| `(nr_expr|$x:nr_ident) => do
-  let x ← elabNrIdent x
-  match x with
-  | "false" => mkAppM ``Expr.lit #[mkNatLit 0, ←mkAppM ``Option.some #[mkConst ``Tp.bool]]
-  | "true" => mkAppM ``Expr.lit #[mkNatLit 1, ←mkAppM ``Option.some #[mkConst ``Tp.bool]]
-  | _ => mkAppM ``Expr.var #[mkStrLit x]
 | `(nr_expr|fresh) => mkAppM ``Expr.fresh #[]
+| `(nr_expr|true) => do mkAppM ``Expr.lit #[mkNatLit 1, ←mkAppM ``Option.some #[mkConst ``Tp.bool]]
+| `(nr_expr|false) => do mkAppM ``Expr.lit #[mkNatLit 0, ←mkAppM ``Option.some #[mkConst ``Tp.bool]]
+| `(nr_expr|$x:nr_ident) => do mkAppM ``Expr.var #[mkStrLit (←elabNrIdent x)]
 | `(nr_expr|($expr)) => elabExpr expr
 | `(nr_expr|&mut $_) => throwUnsupportedSyntax
 | `(nr_expr|*$_) => throwUnsupportedSyntax
