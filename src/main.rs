@@ -2,10 +2,7 @@ use std::any::Any;
 use std::path::Path;
 use nargo::parse_all;
 use noirc_driver::{file_manager_with_stdlib, prepare_crate};
-use noirc_frontend::{
-    graph::{CrateId, CrateName},
-    hir::{def_map::parse_file, Context, ParsedFiles},
-};
+use noirc_frontend::{graph::{CrateId, CrateName}, hir::{def_map::parse_file, Context, ParsedFiles}, Type, TypeVariable, TypeVariableId, TypeVariableKind};
 use noirc_frontend::ast::{BinaryOpKind, UnaryOp};
 use noirc_frontend::hir_def::expr::HirIdent;
 use noirc_frontend::hir_def::stmt::{HirAssignStatement, HirConstrainStatement, HirForStatement, HirLetStatement, HirLValue, HirPattern};
@@ -113,6 +110,15 @@ fn expr_to_lean(context: &Context, exprId: &ExprId, indent: &str) -> String {
             let idx = expr_to_lean(context, &index.index, indent);
             format!("{}[{}]", collection, idx)
         }
+        HirExpression::Constructor(cons) => {
+            let cons_name = cons.r#type.borrow().name.clone();
+            let ty_args = cons.struct_generics.iter().map(|t| format!("{}", t)).join(", ");
+            let fields = cons.fields.iter().map(|(name, expr)| {
+                let expr_str = expr_to_lean(context, expr, indent);
+                format!("(\"{}\", {})", name, expr_str)
+            }).join(", ");
+            format!("Expr.constructor ({}.apply [{}]) [{}]", cons_name, ty_args, fields)
+        }
 
         _ => { panic!("nope! {:?}", expr) }
     }
@@ -177,26 +183,35 @@ fn main() {
     let file_name = Path::new("main.nr");
     let mut file_manager = file_manager_with_stdlib(root);
     let source = r"
-        use std::field;
+        use std::hash::{Hash, Hasher};
+        use std::cmp::{Ordering, Ord, Eq};
+        use std::default::Default;
 
-        fn lt_fallback(x: Field, y: Field) -> bool {
-            let num_bytes = (field::modulus_num_bits() as u32 + 7) / 8;
-            let x_bytes = x.to_le_bytes(num_bytes);
-            let y_bytes = y.to_le_bytes(num_bytes);
-            let mut x_is_lt = false;
-            let mut done = false;
-            for i in 0..num_bytes {
-                if (!done) {
-                    let x_byte = x_bytes[num_bytes - 1 - i] as u8;
-                    let y_byte = y_bytes[num_bytes - 1 - i] as u8;
-                    let bytes_match = x_byte == y_byte;
-                    if !bytes_match {
-                        x_is_lt = x_byte < y_byte;
-                        done = true;
-                    }
-                }
+        struct Option2<T> {
+            _is_some: bool,
+            _value: T,
+        }
+
+        impl <T> Option2<T> {
+            /// Constructs a None value
+            pub fn none() -> Self {
+                Self { _is_some: false, _value: std::unsafe::zeroed() }
             }
-            x_is_lt
+
+            /// Constructs a Some wrapper around the given value
+            pub fn some(_value: T) -> Self {
+                Self { _is_some: true, _value }
+            }
+
+            /// True if this Option is None
+            pub fn is_none(self) -> bool {
+                !self._is_some
+            }
+
+            /// True if this Option is Some
+            pub fn is_some(self) -> bool {
+                self._is_some
+            }
         }
     ";
     let fid = file_manager.add_file_with_source(file_name, source.to_string()).expect(
@@ -206,6 +221,7 @@ fn main() {
     let mut context = Context::new(file_manager, parsed_files);
     context.track_references();
 
+
     let root_crate_id = prepare_crate(&mut context, file_name);
     let check_result = noirc_driver::check_crate(&mut context, root_crate_id, false, false, None);
     println!("{:?}", check_result);
@@ -214,6 +230,7 @@ fn main() {
     //     println!("impl! id:{:?} of {:?} for {:?}", trait_id, imp.trait_id, imp.typ);
     // }
     for module in context.def_map(&root_crate_id).unwrap().modules() {
+        println!("module: {:?}", module.location);
         // println!("{:?}", module.parent);
         // for def in module.type_definitions() {
         //     match def {
@@ -225,12 +242,41 @@ fn main() {
         //         _ => {}
         //     }
         // }
+        for def in module.type_definitions() {
+            match def {
+                ModuleDefId::TypeId(structId) => {
+                    let meta = context.def_interner.get_struct(structId);
+                    let meta = meta.borrow();
+                    let name = meta.name.clone();
+                    let generics_count = meta.generics.len();
+                    let generics: Vec<_> = meta.generics.iter().enumerate().map(|(i, g)| {
+                        let var_id = TypeVariableId(generics_count - i - 1);
+                        Type::TypeVariable(TypeVariable::unbound(var_id), TypeVariableKind::Normal)
+                    }).collect();
+                    let fields = meta.get_fields(&generics).iter().map(|(name, tpe)| {
+                        let tpe_rep = match tpe {
+                            Type::TypeVariable(tyVar, _) => format!("(BVar {})", tyVar.id().0),
+                            other => format!("{}", other)
+                        };
+                        format!("(\"{}\", {})", name, tpe_rep)
+                    }).join(", ");
+
+                    // let tname = context.def_interner.definition_name(traitId);
+                    println!("def {} : Lampe.Type := .forall {} $ .struct \"{}\" [{}]", name, generics.len(), name, fields);
+                }
+                other => {
+                    println!("{:?}", other);
+                }
+            }
+        }
         for def in module.value_definitions() {
             match def {
                 ModuleDefId::FunctionId(fun) => {
                     println!("{}", function_to_lean(&context, &fun));
                 }
-                _ => {}
+                other => {
+                    println!("{:?}", other);
+                }
             }
         }
     }
