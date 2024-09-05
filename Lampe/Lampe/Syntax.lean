@@ -71,17 +71,16 @@ partial def elabAsBuiltin (name : Name) (args : List Syntax): MetaM Lean.Expr :=
   let fn ← mkAppM ``FunctionIdent.builtin #[mkConst name]
   let args ← args.mapM elabExpr
   let args ← mkListLit (mkConst ``Expr) args
-  mkAppM ``Expr.call #[fn, args]
+  mkAppM ``Expr'.call #[fn, args]
 
 partial def elabExpr : Syntax → MetaM Lean.Expr
 | `(nr_expr|$n:num : $tp ) => do
   let tp ← elabNrType tp
-  let tp ← mkAppM ``Option.some #[tp]
   mkAppM ``Expr.lit #[mkNatLit n.getNat, tp]
 | `(nr_expr|$n:num) => do
-  let tp ← mkAppOptM ``Option.none #[some (mkConst ``Tp)]
+  let tp := mkConst ``Tp.field
   mkAppM ``Expr.lit #[mkNatLit n.getNat, tp]
-| `(nr_expr|fresh) => mkAppM ``Expr.fresh #[]
+| `(nr_expr|fresh) => elabAsBuiltin ``Builtin.fresh []
 | `(nr_expr|true) => do mkAppM ``Expr.lit #[mkNatLit 1, ←mkAppM ``Option.some #[mkConst ``Tp.bool]]
 | `(nr_expr|false) => do mkAppM ``Expr.lit #[mkNatLit 0, ←mkAppM ``Option.some #[mkConst ``Tp.bool]]
 | `(nr_expr|$x:nr_ident) => do mkAppM ``Expr.var #[mkStrLit (←elabNrIdent x)]
