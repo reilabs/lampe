@@ -38,13 +38,58 @@ import Lean.Meta.Tactic.Simp.Main
 --   }
 -- }
 
-def assertEq : Lampe.Function := Sigma.mk [.field, .field] $ Sigma.mk .unit $ fun h![a, b] =>
-  .letIn (.call [] .field (.builtin .fresh) h![]) (fun x => .seq
-    (.call [.bool] .unit (.builtin .assert) h![.call [.field, .field] .bool (.builtin .eq) h![.var x, .var a]])
-    (.call [.bool] .unit (.builtin .assert) h![.call [.field, .field] .bool (.builtin .eq) h![.var x, .var b]])
-  )
 
-def testMod : Lampe.Module := ⟨[⟨"assertEq", assertEq⟩]⟩
+#check HList.below
+#check HList.brecOn
+#check HList.casesOn
+#check HList.rec
+
+def testHListCasesOn : HList α [] → Nat
+| h![] => 0
+
+set_option pp.match false
+
+#print testHListCasesOn
+#print testHListCasesOn.match_1
+
+def testHListCasesOn2 : HList α [] → Nat :=
+fun l => HList.casesOn (motive := fun a) l 17 (fun _ _ => nomatch)
+
+def assertEq : Lampe.Function := {
+  generics := []
+  inTps := fun _ => [.field, .field]
+  outTp := fun _ => .unit
+  body := fun _ => fun h![] => fun h![a, b] =>
+    .letIn (.call h![] [] .field (.builtin .fresh) h![]) fun f =>
+      .seq
+        (.call h![] [.bool] .unit (.builtin .assert) h![
+          .call h![] [.field, .field] .bool (.builtin .eq) h![.var f, .var a]
+        ])
+        (.call h![] [.bool] .unit (.builtin .assert) h![
+          .call h![] [.field, .field] .bool (.builtin .eq) h![.var f, .var b]
+        ])
+}
+
+#print assertEq
+
+def recursiveMul : Lampe.Function := {
+  generics := []
+  inTps := fun _ => [.u 64, .u 64]
+  outTp := fun _ => .u 64
+  body := fun _ => fun h![] => fun h![n, k] =>
+    .ite
+      (.call h![] [.u 64, .u 64] .bool (.builtin .eq) h![.var n, .lit (.u 64) 0])
+      (.lit (.u 64) 0)
+      (.letIn (.call h![] [.u 64, .u 64] (.u 64) (.builtin .sub) h![.var n, .lit (.u 64) 1]) fun n =>
+        .call h![] [.u 64, .u 64] (.u 64) (.builtin .add) h![
+          .var k,
+          .call h![] [.u 64, .u 64] (.u 64) (.decl "recursiveMul") h![.var n, .var k]
+        ]
+      )
+
+}
+
+def testMod : Lampe.Module := ⟨[⟨"assertEq", assertEq⟩, ⟨"recursiveMul", recursiveMul⟩]⟩
 
 theorem simplify_binder {p : α → Prop} (hp : ∀x, p x → y = x) : (∃x, p x) ↔ p y := by
   apply Iff.intro
@@ -112,14 +157,14 @@ end macros
 
 open Lampe
 
-def ConvergeWithPostCond (Γ : Env) (st : State P) (e : Expr' (InstanceOf P) tp) (Q : State P → (InstanceOf P tp) → Prop) : Prop :=
+def ConvergeWithPostCond (Γ : Env) (st : State P) (e : Expr' (ClosedType.denote P) tp) (Q : State P → (tp.denote P) → Prop) : Prop :=
   ∃st' v, BigStepAux P Γ st e st' v ∧ Q st' v
 
-def ArgsWPC {atps : List Tp} (Γ : Env) (st : State P) (es : HList (Expr' (InstanceOf P)) atps) (Q: State P → HList (InstanceOf P) atps → Prop): Prop :=
+def ArgsWPC {atps : List ClosedType} (Γ : Env) (st : State P) (es : HListI (Expr' (ClosedType.denote P)) atps) (Q: State P → HListI (ClosedType.denote P) atps → Prop): Prop :=
   ∃st' vs, BigStepArgs P Γ st es st' vs ∧ Q st' vs
 
 theorem ArgsWPC.nil_iff:
-    ArgsWPC Γ st HList.nil Q ↔ Q st HList.nil := by
+    ArgsWPC Γ st HListI.nil Q ↔ Q st HListI.nil := by
   simp [ArgsWPC]
   apply Iff.intro
   · intro_cases
@@ -129,8 +174,8 @@ theorem ArgsWPC.nil_iff:
     tauto
 
 theorem ArgsWPC.cons_iff:
-    ArgsWPC Γ st (HList.cons e es) Q ↔
-    ConvergeWithPostCond Γ st e (fun st' v => ArgsWPC Γ st' es (fun st' vs => Q st' (HList.cons v vs))) := by
+    ArgsWPC Γ st (HListI.cons e es) Q ↔
+    ConvergeWithPostCond Γ st e (fun st' v => ArgsWPC Γ st' es (fun st' vs => Q st' (HListI.cons v vs))) := by
   simp [ArgsWPC]
   apply Iff.intro
   · intro_cases
@@ -263,12 +308,14 @@ theorem ConvergeWithPostCond.letIn_iff:
 --   }
 
 theorem ConvergeWithPostCond.callDecl_iff
-  {P} {args : HList (Expr' (InstanceOf P)) inTps} {Q : State P → InstanceOf P outTp → Prop} {st : State P}
-  (hlookup : Γ fname = some fn) (hin : fn.1 = inTps) (hout : fn.2.1 = outTp):
-    ConvergeWithPostCond (P := P) Γ st (.call inTps outTp (.decl fname) args) Q ↔
-    ArgsWPC (P := P) Γ st args fun st' vs =>
-      ConvergeWithPostCond Γ st' (hout ▸ fn.2.2 (hin ▸ vs)) Q
-     := by
+  {P} {generics : HListI PrimKind.denote tyKinds} {args : HListI (Expr' (ClosedType.denote P)) inTps} {Q : State P → ClosedType.denote P outTp → Prop} {st : State P}
+  (hlookup : Γ fname = some fn)
+  (hc : fn.generics = tyKinds)
+  (htci : fn.inTps (hc ▸ generics) = inTps)
+  (htco : fn.outTp (hc ▸ generics) = outTp):
+    ConvergeWithPostCond Γ st (.call generics inTps outTp (.decl fname) args) Q ↔
+    ArgsWPC Γ st args (fun st' vs =>
+      ConvergeWithPostCond Γ st' (htco ▸ fn.body _ (hc ▸ generics) (htci ▸ vs)) Q) := by
   unfold ConvergeWithPostCond
   apply Iff.intro
   · intro_cases
@@ -285,12 +332,23 @@ theorem ConvergeWithPostCond.callDecl_iff
     rfl
     assumption
   · rintro ⟨st', args, bsa, _, _, body, q⟩
-    cases hin
-    cases hout
+    rcases fn
+    cases htci
+    cases htco
+    rcases hc
     repeat apply Exists.intro
     apply And.intro
-    apply BigStepAux.callDecl <;> assumption
+    apply BigStepAux.callDecl
     assumption
+    assumption
+    rotate_left
+    rfl
+    rfl
+    rfl
+    assumption
+    assumption
+
+
 
 theorem ConvergeWithPostCond.var_iff:
     ConvergeWithPostCond Γ st (.var x) Q ↔
@@ -316,11 +374,13 @@ theorem ConvergeWithPostCond.var_iff:
 --     subst_vars
 --     tauto
 
-def BuiltinCWPC (argTypes : List Tp) (resType : Tp) (b : Builtin) (as : HList (InstanceOf P) argTypes) (Q : InstanceOf P resType → Prop): Prop :=
+-- (inp: List ClosedType) → (out : ClosedType) → Builtin → HListI (ClosedType.denote P) inp
+
+def BuiltinCWPC (argTypes : List ClosedType) (resType : ClosedType) (b : Builtin) (as : HListI (ClosedType.denote P) argTypes) (Q : ClosedType.denote P resType → Prop): Prop :=
   ∃r, BigStepBuiltin P argTypes resType b as r ∧ Q r
 
 theorem ConvergeWithPostCond.callBuiltin_iff:
-    ConvergeWithPostCond Γ st (.call intps outtp (.builtin b) args) Q ↔
+    ConvergeWithPostCond Γ st (@Expr'.call _ [] HListI.nil intps outtp (.builtin b) args) Q ↔
     ArgsWPC Γ st args (fun st' args => BuiltinCWPC intps outtp b args fun v => Q st' v) := by
   apply Iff.intro
   · intro h
@@ -372,8 +432,8 @@ theorem ConvergeWithPostCond.callArgPrepDeclDone_iff (hpr : Γ fName = some f) (
     · apply BigStepAux.callArgPrepDeclDone <;> assumption
     · assumption
 
-theorem BuiltinCWPC.eq_iff :
-    BuiltinCWPC (P := P) [tp, tp] .bool .eq h![a, b] Q ↔ Q (a == b) := by
+theorem BuiltinCWPC.eq_f_iff :
+    BuiltinCWPC (P := P) [.field, .field] .bool .eq h![a, b] Q ↔ Q (a == b) := by
   unfold BuiltinCWPC
   apply Iff.intro
   · intro_cases
@@ -382,7 +442,20 @@ theorem BuiltinCWPC.eq_iff :
   · intro
     apply Exists.intro
     apply And.intro
-    apply BigStepBuiltin.eq
+    apply BigStepBuiltin.eqF
+    assumption
+
+theorem BuiltinCWPC.eq_u_iff :
+    BuiltinCWPC (P := P) [.u n, .u n] .bool .eq h![a, b] Q ↔ Q (a == b) := by
+  unfold BuiltinCWPC
+  apply Iff.intro
+  · intro_cases
+    casesm BigStepBuiltin _ _ _ _ _ _
+    assumption
+  · intro
+    apply Exists.intro
+    apply And.intro
+    apply BigStepBuiltin.eqU
     assumption
 
 
@@ -398,35 +471,55 @@ theorem BuiltinCWPC.assert_iff :
     tauto
 
 theorem BuiltinCWPC.sub_u_iff :
-  BuiltinCWPC .sub [⟨.u n, a⟩, ⟨.u n, b⟩] Q ↔ b.val ≤ a.val ∧ Q ⟨.u n, a - b⟩ := by
+  BuiltinCWPC [.u n, .u n] (.u n) .sub h![a, b] Q ↔ b.val ≤ a.val ∧ Q (a - b) := by
   simp [BuiltinCWPC, and_assoc]
+  apply Iff.intro
+  · intro_cases
+    casesm BigStepBuiltin _ _ _ _ _ _
+    tauto
+  · intro_cases
+    subst_vars
+    tauto
 
 theorem BuiltinCWPC.add_u_iff :
-  BuiltinCWPC .add [⟨.u n, a⟩, ⟨.u n, b⟩] Q ↔ a.val + b.val < 2 ^ n ∧ Q ⟨.u n, a + b⟩ := by
+  BuiltinCWPC [.u n, .u n] (.u n) .add h![a, b] Q ↔ a.val + b.val < 2^n ∧ Q (a + b) := by
   simp [BuiltinCWPC, and_assoc]
+  apply Iff.intro
+  · intro_cases
+    casesm BigStepBuiltin _ _ _ _ _ _
+    tauto
+  · intro_cases
+    subst_vars
+    tauto
 
 theorem BuiltinCWPC.fresh_iff :
-  BuiltinCWPC [] tp .fresh h![] Q ↔ ∃v, Q v := by
+  BuiltinCWPC [] tp .fresh HListI.nil Q ↔ ∃v, Q v := by
   unfold BuiltinCWPC; tauto
 
-def IteWPC (Γ : Env) (st : State P) (b : Value P) (t e : Expr' (Value P) Nat) (Q : State P → Value P → Prop): Prop :=
-    (b = ⟨.bool, true⟩ ∧ ConvergeWithPostCond Γ st (.expr t) Q) ∨
-    (b = ⟨.bool, false⟩ ∧ ConvergeWithPostCond Γ st (.expr e) Q)
+def IteWPC (Γ : Env) (st : State P) (b : Bool) (t e : Expr' (ClosedType.denote P) a) (Q : State P → ClosedType.denote P a → Prop): Prop :=
+    (b ∧ ConvergeWithPostCond Γ st t Q) ∨
+    (!b ∧ ConvergeWithPostCond Γ st e Q)
 
 theorem ConvergeWithPostCond.ite_iff:
-    ConvergeWithPostCond Γ st (.expr (.ite b t e)) Q ↔
-    ConvergeWithPostCond Γ st (.expr b) (fun st' v => IteWPC Γ st' v t e Q) := by
+    ConvergeWithPostCond Γ st (.ite b t e) Q ↔
+    ConvergeWithPostCond Γ st b (fun st' v => IteWPC Γ st' v t e Q) := by
   simp [ConvergeWithPostCond, IteWPC]
   apply Iff.intro
   · intro_cases
     rename BigStepAux _ _ _ _ _ _ => h
-    cases h <;> {
-      repeat apply Exists.intro
-      apply And.intro (by assumption)
-      simp only [Value.mk.injEq, heq_eq_eq, Bool.true_eq_false, true_and, false_and, false_or, or_false]
+    cases h
+    · repeat apply Exists.intro
+      apply Or.inr
+      apply And.intro
+      assumption
       repeat apply Exists.intro
       apply And.intro <;> assumption
-    }
+    · repeat apply Exists.intro
+      apply Or.inl
+      apply And.intro
+      assumption
+      repeat apply Exists.intro
+      apply And.intro <;> assumption
   · intro_cases
     casesm* _ ∨ _ <;> {
       casesm* _ ∧ _, ∃ _, _
@@ -439,11 +532,11 @@ theorem ConvergeWithPostCond.ite_iff:
     }
 
 theorem IteWPC.iff_true (hb : b = true):
-    IteWPC Γ st ⟨.bool, b⟩ t e Q ↔ ConvergeWithPostCond Γ st (.expr t) Q := by
+    IteWPC Γ st b t e Q ↔ ConvergeWithPostCond Γ st t Q := by
   simp [IteWPC, hb]
 
 theorem IteWPC.iff_false (hb : b = false):
-    IteWPC Γ st ⟨.bool, b⟩ t e Q ↔ ConvergeWithPostCond Γ st (.expr e) Q := by
+    IteWPC Γ st b t e Q ↔ ConvergeWithPostCond Γ st e Q := by
   simp [IteWPC, hb]
 
 theorem ConvergeWithPostCond.lit_field_iff : ConvergeWithPostCond (P:=P) Γ st (.expr (.lit v .field)) Q ↔ Q st ⟨.field, (v : ZMod P)⟩ := by
@@ -456,10 +549,11 @@ theorem ConvergeWithPostCond.lit_field_iff : ConvergeWithPostCond (P:=P) Γ st (
     subst_vars
     tauto
 
-theorem ConvergeWithPostCond.lit_u_iff : ConvergeWithPostCond (P:=P) Γ st (.expr (.lit v (.u n))) Q ↔ Q st ⟨.u n, (v : U n)⟩ := by
-  simp [ConvergeWithPostCond]
+theorem ConvergeWithPostCond.lit_u_iff : ConvergeWithPostCond (P:=P) Γ st  (.lit (.u n) v ) Q ↔ Q st v := by
+  simp only [ConvergeWithPostCond]
   apply Iff.intro
   · intro_cases
+    casesm BigStepAux _ _ _ _ _ _
     subst_vars
     tauto
   · intro_cases
@@ -480,22 +574,24 @@ theorem Mathlib.Vector.get_mk_cons {n : Nat} {a b : α} {as : List α} {h : (a :
 syntax "nr_simp_wip" : tactic
 macro_rules
 |`(tactic|nr_simp_wip) => `(tactic|
-  simp (disch := (first | noir_simp_discharge | decide)) [
+  simp (disch := (first | noir_simp_discharge | decide)) only [
     -- true_and,
     -- and_true,
     -- ConvergeWithPostCond.of_BigStepAux,
     -- ConvergeWithPostCond.blockNext_iff,
-    ConvergeWithPostCond.letIn_iff,
-    ConvergeWithPostCond.seq_iff,
-
-    -- ConvergeWithPostCond.fresh_iff,
-    ConvergeWithPostCond.callDecl_iff,
     ConvergeWithPostCond.callBuiltin_iff,
+    ConvergeWithPostCond.callDecl_iff,
+    ConvergeWithPostCond.ite_iff,
+    ConvergeWithPostCond.letIn_iff,
+    ConvergeWithPostCond.lit_u_iff,
+    ConvergeWithPostCond.seq_iff,
+    ConvergeWithPostCond.var_iff,
+
+
 
     ArgsWPC.nil_iff,
     ArgsWPC.cons_iff,
     -- ConvergeWithPostCond.callArgPrepNext_iff,
-    ConvergeWithPostCond.var_iff,
     -- ConvergeWithPostCond.callArgsPrepDoneBuiltin_iff,
     -- ConvergeWithPostCond.blockDone_iff,
     -- List.nil_append,
@@ -505,95 +601,75 @@ macro_rules
     -- List.get!_cons_succ,
     -- List.get!_cons_zero,
     -- decide_eq_true_iff,
-    BuiltinCWPC.eq_iff,
+    -- BuiltinCWPC.assert_iff,
+    BuiltinCWPC.add_u_iff,
     BuiltinCWPC.assert_iff,
-    -- BuiltinCWPC.add_u_iff,
-    -- BuiltinCWPC.sub_u_iff,
+    BuiltinCWPC.eq_f_iff,
+    BuiltinCWPC.eq_u_iff,
     BuiltinCWPC.fresh_iff,
+    BuiltinCWPC.sub_u_iff,
+
     -- Mathlib.Vector.get_mk_cons,
     -- Mathlib.Vector.get_mk_zero,
-    -- ConvergeWithPostCond.ite_iff,
-    -- IteWPC.iff_true,
-    -- IteWPC.iff_false,
+    IteWPC.iff_true,
+    IteWPC.iff_false,
     -- ConvergeWithPostCond.lit_field_iff,
-    -- ConvergeWithPostCond.lit_u_iff,
 
   ]
 )
 
 
 theorem assignableEq:
-  ConvergeWithPostCond (Lampe.Env.ofModule testMod) st (assertEq.2.2 h![a, b]) Q ↔
+  ConvergeWithPostCond (Lampe.Env.ofModule testMod) st (assertEq.body _ h![] h![a, b]) Q ↔
   a = b ∧ Q st () := by
-  unfold assertEq
+  simp only [assertEq]
   nr_simp_wip
+  simp
 
+
+theorem Fin.succ_mul : Fin.succ a * b = b + a.castSucc * b := by
+  cases a
+  cases b
+  conv => lhs; whnf
+  conv => rhs; whnf
+  simp_arith [Nat.add_mul, add_comm]
+
+
+theorem Fin.castSucc_val : Fin.val (Fin.castSucc a) = a := by
+  rfl
+
+theorem Fin.succ_val : Fin.val (Fin.succ a) = a.val + 1 := by
+  rfl
 
 theorem assignableRecursiveMul [Fact (Nat.Prime P)]:
-    ConvergeWithPostCond (P := P) (Lampe.Env.ofModule testMod) st sc (.callArgPrep (.decl "recursiveMul") [⟨.u 64, a⟩, ⟨.u 64, b⟩] []) Q ↔
-    (a.val * b.val < 2 ^ 64) ∧ Q st sc ⟨.u 64, a * b⟩ := by
-  rcases a with ⟨a, ha⟩
-  induction a generalizing sc Q with
+    ConvergeWithPostCond (P := P) (Lampe.Env.ofModule testMod) st (recursiveMul.body _ h![] h![a, b]) Q ↔
+    (a.val * b.val < 2 ^ 64) ∧ Q st (a * b) := by
+  induction a using Fin.induction generalizing Q with
   | zero =>
-      simp (disch := noir_simp_discharge) only [
-        ConvergeWithPostCond.callArgPrepDeclDone_iff,
-      ]
-      simp only [CallWithPostCond]
+      simp only [recursiveMul]
       nr_simp_wip
       simp
   | succ a ih =>
-      simp (disch := noir_simp_discharge) only [
-        ConvergeWithPostCond.callArgPrepDeclDone_iff,
-      ]
-      simp only [CallWithPostCond]
-      have : decide (Value.mk (P := P) (.u 64) ⟨a + 1, ha⟩ = ⟨.u 64, 0⟩) = false := by
-        simp
-        rintro ⟨rfl⟩
+      simp only [recursiveMul]
       nr_simp_wip
-      have : (Fin.mk (a + 1) ha) - ↑1 = Fin.mk a (by linarith) := by
-        conv_lhs => whnf
-        conv_rhs => whnf
+      have : a.succ - Nat.cast 1 = a.castSucc := by
+        cases a
+        conv => lhs; whnf
+        conv => rhs; whnf
         simp_arith
         linarith
-      have : a < 2 ^ 64 := by linarith
-      simp only [Nat.cast_one, *]
-      nr_simp_wip
-
-
-
-
-  -- noir_simp only
-  -- crush
-  -- induction a generalizing sc sc' v with
-  -- | zero =>
-  --   unfold BigStepCall
-  --   crush
-  --   tauto
-  -- | succ a ih =>
-  --   have ap1_def : (⟨a + 1, ha⟩ : ZMod (p+1)) = (⟨a, by linarith⟩) + 1 := by
-  --     congr
-  --     repeat (rw [Nat.mod_eq_of_lt] <;> try linarith)
-
-  --   have : (⟨a, by linarith⟩: ZMod (p+1)) + 1 ≠ 0 := by
-  --     intro h
-  --     injection h with h
-  --     repeat rw [Nat.mod_eq_of_lt] at h
-  --     any_goals linarith
-  --     rw [Nat.mod_eq_of_lt]
-  --     any_goals linarith
-
-  --   noir_simp only [this, ap1_def, ih]
-  --   unfold BigStepCall
-  --   crush
-  --   simp only [this, ap1_def, ih]
-  --   crush
-  --   simp only [this, ap1_def, ih]
-  --   crush
-  --   ring_nf
-  --   tauto
-
-  -- crush
-  -- tauto
+      simp only [this, ih, Fin.mul_def, Fin.add_def, Fin.castSucc_val, Fin.succ_val]
+      simp_arith [Nat.add_mul, Nat.add_comm]
+      apply Iff.intro
+      · intro_cases
+        apply And.intro <;> try assumption
+        rename _ + _ * _ % _ ≤ _ => h
+        rw [Nat.mod_eq_of_lt] at h <;> linarith
+      · intro_cases
+        apply And.intro (by linarith)
+        apply And.intro
+        · rw [Nat.mod_eq_of_lt] <;> linarith
+        · assumption
 
 example :
     ∃st' sc', BigStepAux 17 (stdlib.extend (Lampe.Env.ofModule testMod)) st sc (.callArgPrep (.decl "lt_fallback") [⟨.field, 10⟩, ⟨.field, 5⟩] []) st' sc' ⟨.bool, true⟩ := by

@@ -48,14 +48,28 @@ fn expr_to_lean(context: &Context, exprId: &ExprId, indent: &str) -> String {
             };
             format!("({}{})", op, rhs)
         }
-        HirExpression::Ident(ident, _) => {
+        HirExpression::Ident(ident, generics) => {
             let def = context.def_interner.definition(ident.id);
+            let generics2 = context.def_interner.get_instantiation_bindings(*exprId);
+            println!("assigned gens: {:?}", generics2);
             let pfx = match def.kind {
                 DefinitionKind::Function(id) => {
                     let fun = context.def_interner.function(&id);
+                    let idType = context.def_interner.id_type(exprId);
+                    match idType {
+                        Type::Function(args, ret, boop) => {
+                            println!("{} -> {}", args.iter().map(|t| format!("{}", t)).join(", "), ret);
+                            let ret = ret.clone();
+                            println!("{} -> {}", args.iter().map(|t| format!("{}", t)).join(", "), ret);
+                        }
+                        _ => panic!("expected function type, got {:?}", idType)
+                    }
+                    // let id_type_str = format!("{}", idType);
                     let meta = context.def_interner.function_meta(&id);
+                    println!("all generics: {:?}", meta.all_generics);
                     let module_id = context.def_interner.function_module(id);
                     let krate = context.def_map(&module_id.krate).unwrap();
+                    let name = context.fully_qualified_function_name(&module_id.krate, &id);
                     let (ix, data) = krate.modules().iter().find(|(i, _)| *i == module_id.local_id.0).unwrap();
                     let module = krate.get_module_path_with_separator(ix, data.parent, "::");
                     let self_type = match &meta.self_type {
@@ -202,16 +216,16 @@ fn main() {
             pub fn some(_value: T) -> Self {
                 Self { _is_some: true, _value }
             }
-
-            /// True if this Option is None
-            pub fn is_none(self) -> bool {
-                !self._is_some
-            }
-
-            /// True if this Option is Some
-            pub fn is_some(self) -> bool {
-                self._is_some
-            }
+            //
+            // /// True if this Option is None
+            // pub fn is_none(self) -> bool {
+            //     !self._is_some
+            // }
+            //
+            // /// True if this Option is Some
+            // pub fn is_some(self) -> bool {
+            //     self._is_some
+            // }
         }
     ";
     let fid = file_manager.add_file_with_source(file_name, source.to_string()).expect(
@@ -248,21 +262,21 @@ fn main() {
                     let meta = context.def_interner.get_struct(structId);
                     let meta = meta.borrow();
                     let name = meta.name.clone();
-                    let generics_count = meta.generics.len();
-                    let generics: Vec<_> = meta.generics.iter().enumerate().map(|(i, g)| {
-                        let var_id = TypeVariableId(generics_count - i - 1);
-                        Type::TypeVariable(TypeVariable::unbound(var_id), TypeVariableKind::Normal)
-                    }).collect();
-                    let fields = meta.get_fields(&generics).iter().map(|(name, tpe)| {
-                        let tpe_rep = match tpe {
-                            Type::TypeVariable(tyVar, _) => format!("(BVar {})", tyVar.id().0),
-                            other => format!("{}", other)
-                        };
-                        format!("(\"{}\", {})", name, tpe_rep)
-                    }).join(", ");
+                    // let generics_count = meta.generics.len();
+                    // let generics: Vec<_> = meta.generics.iter().enumerate().map(|(i, g)| {
+                    //     let var_id = TypeVariableId(generics_count - i - 1);
+                    //     Type::TypeVariable(TypeVariable::unbound(var_id), TypeVariableKind::Normal)
+                    // }).collect();
+                    // let fields = meta.get_fields(&generics).iter().map(|(name, tpe)| {
+                    //     let tpe_rep = match tpe {
+                    //         Type::TypeVariable(tyVar, _) => format!("(BVar {})", tyVar.id().0),
+                    //         other => format!("{}", other)
+                    //     };
+                    //     format!("(\"{}\", {})", name, tpe_rep)
+                    // }).join(", ");
 
                     // let tname = context.def_interner.definition_name(traitId);
-                    println!("def {} : Lampe.Type := .forall {} $ .struct \"{}\" [{}]", name, generics.len(), name, fields);
+                    println!("def {} : Lampe.Type", name);
                 }
                 other => {
                     println!("{:?}", other);
@@ -272,6 +286,15 @@ fn main() {
         for def in module.value_definitions() {
             match def {
                 ModuleDefId::FunctionId(fun) => {
+                    let local_generics = context.function_meta(&fun).all_generics.clone();
+                    println!("defining gens: {:?}", local_generics);
+                    let tp = context.function_meta(&fun).typ.clone();
+                    match &tp {
+                        Type::Forall(tvas, tp) =>
+                            println!("{:?} -> {}", tvas, tp),
+                        _ => {}
+                    }
+                    println!("{}", tp);
                     println!("{}", function_to_lean(&context, &fun));
                 }
                 other => {
