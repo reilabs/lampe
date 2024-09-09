@@ -3,11 +3,30 @@ name = "lampe"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "A tool for extracting Noir programs to equivalent definitions in Lean."
+categories = ["compilers", "command-line-utilities"]
+keywords = ["compiler", "transpiler", "lean", "noir"]
+
+repository = "https://github.com/reilabs/lampe"
+license = "MIT"
 
 [dependencies]
-noirc_driver = { path = "../noir/compiler/noirc_driver" }
-noirc_frontend = { path = "../noir/compiler/noirc_frontend" }
+fm = { path = "../noir/compiler/fm" }
 nargo = { path = "../noir/tooling/nargo" }
+noirc_driver = { path = "../noir/compiler/noirc_driver" }
+noirc_errors = { path = "../noir/compiler/noirc_errors" }
+noirc_frontend = { path = "../noir/compiler/noirc_frontend" }
 
-itertools = "0.12.1"
+clap = { version = "4.5.17", features = ["unstable-v5"] }
+derivative = "2.2.0"
+indoc = "2.0.5"
+itertools = "0.13.0"
+log = "0.4.22"
+thiserror = "1.0.63"
+
+[dev-dependencies]
+anyhow = "1.0.87"
+
+[[bin]]
+name = "cli"
+path = "src/bin/main.rs"
