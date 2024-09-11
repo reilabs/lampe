@@ -62,4 +62,20 @@ fn : Function
 structure Module where
 decls : List FunctionDecl
 
+structure Struct where
+  name : String
+  tyArgKinds : List Kind
+  fieldTypes : HList Kind.denote tyArgKinds → List Tp
+
+@[reducible]
+def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=
+  fun tyArgs => .struct $ s.fieldTypes tyArgs
+
+@[reducible]
+def Struct.constructor (s: Struct):
+  (tyArgs: HList Kind.denote s.tyArgKinds) →
+  HList (Expr rep) (s.fieldTypes tyArgs) →
+  Expr rep (s.tp tyArgs) :=
+  fun _ fieldExprs => .struct fieldExprs
+
 end Lampe
