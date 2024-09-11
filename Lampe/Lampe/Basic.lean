@@ -1,4 +1,5 @@
 import Lampe.Semantics
--- import Lampe.Syntax
+import Lampe.Assignable
+import Lampe.Syntax
 import Lampe.Ast
 import Lampe.Tp

@@ -16,6 +16,7 @@ inductive Tp where
 | unit
 | field
 | slice (element : Tp)
+| struct (fields : List Tp)
 
 mutual
 
@@ -31,6 +32,7 @@ def Tp.denote : Tp → Type
 | .unit => Unit
 | .field => ZMod P
 | .slice tp => List (denote tp)
+| .struct fields => Tp.denoteArgs fields
 
 end
 

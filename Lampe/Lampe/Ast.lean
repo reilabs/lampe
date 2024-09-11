@@ -25,12 +25,18 @@ inductive FunctionIdent : Type where
 | builtin : Builtin → FunctionIdent
 | decl : Ident → FunctionIdent
 
+inductive Member : Tp → List Tp → Type where
+| head : Member tp (tp :: tps)
+| tail : Member tp tps → Member tp (tp' :: tps)
+
 inductive Expr (rep : Tp → Type): Tp → Type where
 | lit : (tp : Tp) → Nat → Expr rep tp
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
 | seq : Expr rep _ → Expr rep t → Expr rep t
-| call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → FunctionIdent → HList (Expr rep) argTypes → Expr rep res
+| call {argTypes : List Tp} : HList Kind.denote tyKinds → (res : Tp) → FunctionIdent → HList (Expr rep) argTypes → Expr rep res
+| struct {fieldTps}: HList (Expr rep) fieldTps → Expr rep (Tp.struct fieldTps)
+| proj : (mem : Member tp fieldTps) → Expr rep (Tp.struct fieldTps) → Expr rep tp
 | ite : Expr rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : Expr rep (.u s) → Expr rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
