@@ -67,13 +67,13 @@ partial def mkBuiltin (i : String) : MetaM (TSyntax `term) := match i with
 | "fresh"          => `(Builtin.fresh)
 | _ => throwError "Unknown builtin {i}"
 
-syntax:100 "(" num ":" nr_type ")" : nr_expr
-syntax:100 ident : nr_expr
-syntax:100 "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
-syntax:100 nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" : nr_expr
-syntax:100 nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr
-syntax:100 "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
-syntax:100 "let" ident "=" nr_expr : nr_expr
+syntax "(" num ":" nr_type ")" : nr_expr
+syntax ident : nr_expr
+syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
+syntax nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" : nr_expr
+syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr
+syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
+syntax "let" ident "=" nr_expr : nr_expr
 
 mutual
 
