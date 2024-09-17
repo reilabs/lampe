@@ -1,142 +1,41 @@
 -- This module serves as the root of the `Lampe` library.
 -- Import modules here that should be built as part of the library.
 import «Lampe».Basic
+-- import Lampe.Hoare
 import Lean.Meta.Tactic.Simp.Main
 
 open Lampe
 
-def weirdEq : Lampe.FunctionDecl := nrfn![ fn weirdEq<I>(x : I, y : I) -> Unit {
+variable (P : Prime)
+
+nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
   #assert(#eq(a, x) : bool) : Unit;
   #assert(#eq(a, y) : bool) : Unit;
-}]
-
-def assertEq : Lampe.FunctionDecl := .mk "assertEq"
-    { generics := [.type]
-      inTps := fun h![T] => [T, T]
-      outTp := fun _ => .unit
-      body := fun _ => fun h![T] => fun h![a, b] =>
-        .letIn (.call h![] T (.builtin .fresh) h![]) fun x =>
-          .seq
-            (.call h![] .unit (.builtin .assert) h![
-              .call h![] .bool (.builtin .eq) h![.var x, .var a]
-            ])
-            (.call h![] .unit (.builtin .assert) h![
-              .call h![] .bool (.builtin .eq) h![.var x, .var b]
-            ])
-    }
-
-#print weirdEq
-#print assertEq
-
-def recursiveMul : Lampe.Function := {
-  generics := []
-  inTps := fun _ => [.u 64, .u 64]
-  outTp := fun _ => .u 64
-  body := fun _ => fun h![] => fun h![n, k] =>
-    .ite
-      (.call h![] .bool (.builtin .eq) h![.var n, .lit (.u 64) 0])
-      (.lit (.u 64) 0)
-      (.letIn (.call h![] (.u 64) (.builtin .sub) h![.var n, .lit (.u 64) 1]) fun n =>
-        .call h![] (.u 64) (.builtin .add) h![
-          .var k,
-          .call h![] (.u 64) (.decl "recursiveMul") h![.var n, .var k]
-        ]
-      )
 }
 
-def testMod : Lampe.Module := ⟨[assertEq, ⟨"recursiveMul", recursiveMul⟩]⟩
+nr_def recursiveMul<>(n: u64, k: u64) -> u64 {
+  if #eq(n, (0:u64)):bool (0:u64)
+  else {
+    let n = #sub(n, (1:u64)) : u64;
+    #add(k, recursiveMul<>(n, k) : u64):u64
+  }
+}
 
-section macros
-open Lean Elab.Tactic Parser.Tactic Lean.Meta
-
-def discharge (prop : Expr) : SimpM (Option Expr) := do
-    try
-      let mvar ← mkFreshExprMVar prop
-      withTransparency TransparencyMode.all mvar.mvarId!.refl
-      return some mvar
-    catch _ => pure ()
-
-    Simp.dischargeDefault? prop
-
-elab "noir_simp_discharge" : tactic => wrapSimpDischarger discharge
-
-syntax "noir_simp" (config)? (discharger)? (&" only")? (simpArgs)? (location)? : tactic
-
-elab_rules : tactic
-| `(tactic|noir_simp $[$cfg:config]? $[(discharger := $dis)]? $[only%$only?]?
-    $[$sa:simpArgs]? $[$loc:location]?) => withMainContext do
-  let _ ← elabSimpConfig (mkOptionalNode cfg) .simp
-end macros
+def testMod : Lampe.Module := ⟨[weirdEq, recursiveMul]⟩
 
 open Lampe
-
-syntax "nr_simp_wip" : tactic
-macro_rules
-|`(tactic|nr_simp_wip) => `(tactic|
-  simp (disch := (first | noir_simp_discharge | decide)) only [
-    -- true_and,
-    -- and_true,
-    -- Assignable.of_BigStep,
-    -- Assignable.blockNext_iff,
-    Assignable.callBuiltin_iff,
-    Assignable.callDecl_iff,
-    Assignable.ite_iff,
-    Assignable.letIn_iff,
-    Assignable.lit_u_iff,
-    Assignable.lit_true_iff,
-    Assignable.lit_false_iff,
-    Assignable.proj_iff,
-    Assignable.seq_iff,
-    Assignable.struct_iff,
-    Assignable.var_iff,
-
-
-
-    Assignable.Args.nil_iff,
-    Assignable.Args.cons_iff,
-    -- Assignable.callArgPrepNext_iff,
-    -- Assignable.callArgsPrepDoneBuiltin_iff,
-    -- Assignable.blockDone_iff,
-    -- List.nil_append,
-    -- List.cons_append,
-    -- List.indexOf_cons_ne,
-    -- List.indexOf_cons_eq,
-    -- List.get!_cons_succ,
-    -- List.get!_cons_zero,
-    -- decide_eq_true_iff,
-    -- Assignable.Builtin.assert_iff,
-    Assignable.Builtin.add_u_iff,
-    Assignable.Builtin.assert_iff,
-    Assignable.Builtin.eq_f_iff,
-    Assignable.Builtin.eq_u_iff,
-    Assignable.Builtin.fresh_iff,
-    Assignable.Builtin.sub_u_iff,
-
-    -- Mathlib.Vector.get_mk_cons,
-    -- Mathlib.Vector.get_mk_zero,
-    Assignable.Ite.iff_true,
-    Assignable.Ite.iff_false,
-    -- Assignable.lit_field_iff,
-
-    Assignable.Fields.nil_iff,
-    Assignable.Fields.cons_iff,
-  ]
-)
-
-theorem assignable_assertEq_field_iff:
-  Assignable Γ st (assertEq.fn.body _ h![.field] h![a, b]) Q ↔
-  a = b ∧ Q st () := by
-  simp only [assertEq]
-  nr_simp_wip
-  simp
 
 theorem assignable_weirdEq_field_iff:
   Assignable Γ st (weirdEq.fn.body _ h![.field] h![a, b]) Q ↔
   a = b ∧ Q st () := by
-  simp only [weirdEq]
-  nr_simp_wip
-  simp
+  noir_simp [weirdEq]
+
+-- theorem weirdEq_u_hoare { Q : State P → Tp.denote P .unit → Prop}:
+    -- Hoare.Call Γ (tps := [.u s, .u s]) (fun st h![a, b] => a == b ∧ Q st .unit) (weirdEq.fn.body _ h![.u s]) Q := by
+
+
+
 
 theorem Fin.castSucc_val : Fin.val (Fin.castSucc a) = a := by
   rfl
@@ -144,24 +43,20 @@ theorem Fin.castSucc_val : Fin.val (Fin.castSucc a) = a := by
 theorem Fin.succ_val : Fin.val (Fin.succ a) = a.val + 1 := by
   rfl
 
-theorem assignableRecursiveMul [Fact (Nat.Prime P)]:
-    Assignable (P := P) (Lampe.Env.ofModule testMod) st (recursiveMul.body _ h![] h![a, b]) Q ↔
+theorem assignableRecursiveMul:
+    Assignable (P := P) (Lampe.Env.ofModule testMod) st (recursiveMul.fn.body _ h![] h![a, b]) Q ↔
     (a.val * b.val < 2 ^ 64) ∧ Q st (a * b) := by
   induction a using Fin.induction generalizing Q with
-  | zero =>
-      simp only [recursiveMul]
-      nr_simp_wip
-      simp
+  | zero => noir_simp [recursiveMul]
   | succ a ih =>
       simp only [recursiveMul]
-      nr_simp_wip
       have : a.succ - Nat.cast 1 = a.castSucc := by
         cases a
         conv => lhs; whnf
         conv => rhs; whnf
         simp_arith
         linarith
-      simp only [this, ih, Fin.mul_def, Fin.add_def, Fin.castSucc_val, Fin.succ_val]
+      noir_simp only [this, ih, Fin.mul_def, Fin.add_def, Fin.castSucc_val, Fin.succ_val]
       simp_arith [Nat.add_mul, Nat.add_comm]
       apply Iff.intro
       · intro_cases
@@ -174,27 +69,6 @@ theorem assignableRecursiveMul [Fact (Nat.Prime P)]:
         · rw [Nat.mod_eq_of_lt] <;> linarith
         · assumption
 
-example :
-    ∃st' sc', BigStep 17 (stdlib.extend (Lampe.Env.ofModule testMod)) st sc (.callArgPrep (.decl "lt_fallback") [⟨.field, 10⟩, ⟨.field, 5⟩] []) st' sc' ⟨.bool, true⟩ := by
-  simp (disch := with_unfolding_all rfl) only [BigStep.callArgPrepDeclDone_iff3]
-  unfold BigStepCall
-  crush
-  simp [Field.numBits, Nat.log2]
-  conv in (occs := *) (Fin.val _ / Fin.val _) => whnf
-  simp [BigStep.loopCont_iff]
-  crush
-  apply And.intro
-  · decide
-  · apply Exists.intro
-    use [10]
-    crush
-    apply And.intro (by decide)
-    use [22]
-    crush
-    apply And.intro (by decide)
-    apply And.intro rfl
-    simp [State.alloc, State.set]
-
 
 @[reducible]
 def «std::Option» : Struct :=
@@ -204,40 +78,26 @@ def «std::Option» : Struct :=
   fieldTypes := fun h![T] => [.bool, T]
 }
 
-def «std::Option::some» : Lampe.FunctionDecl := .mk "std::Option::some"
-  {
-    generics := [.type]
-    inTps := fun h![T] => [T]
-    outTp := fun h![T] => «std::Option».tp h![T]
-    body := fun _ => fun h![T] => fun h![x] =>
-      «std::Option».constructor h![T] h![.lit .bool 1, .var x]
-  }
+nr_def std::Option::some<T>(x : T) -> std::Option <T> {
+  std::Option <T> { true, x }
+}
 
-def «std::Option::unwrap» : Lampe.FunctionDecl := .mk "std::Option::unwrap"
-  {
-    generics := [.type]
-    inTps := fun h![T] => [«std::Option».tp h![T]]
-    outTp := fun h![T] => T
-    body := fun _ h![_] h![opt] =>
-      (Expr.call h![] .unit (.builtin .assert) h![
-        .proj .head (.var opt)
-      ]).seq (.proj Member.head.tail (.var opt))
-  }
+nr_def std::Option::unwrap<T>(opt : std::Option <T>) -> T {
+  #assert(opt.0) : Unit;
+  opt.1
+}
+
+#print «std::Option::some»
 
 @[reducible]
 def mod := Env.ofModule ⟨[«std::Option::some», «std::Option::unwrap»]⟩
 
-theorem unwrap_some {st : State P} {T e Q} :
-  Assignable mod st (
-    .call h![T] T (.decl "std::Option::unwrap") h![
-      .call h![T] («std::Option».tp h![T]) (.decl "std::Option::some") h![e]
-    ]
-  ) Q ↔ Assignable mod st e Q := by
-  nr_simp_wip
-  simp only [«std::Option::unwrap», «std::Option::some»]
-  nr_simp_wip
-  simp
-
+theorem unwrap_some {st : State P} {T e Q}:
+    Assignable mod st expr![
+      std::Option::unwrap<T>(std::Option::some<T>(${e}) : std::Option<T>) : T
+    ] Q
+    ↔ Assignable mod st e Q := by
+  noir_simp [«std::Option::unwrap», «std::Option::some»]
 
 def «std::U128» : Struct :=
 {
@@ -246,25 +106,106 @@ def «std::U128» : Struct :=
   fieldTypes := fun _ => [.field, .field]
 }
 
-def «std::U128::from_u64s_le» : FunctionDecl := .mk "std::U128::from_u64s_le"
-{
-  generics := []
-  inTps := fun _ => [.u 64, .u 64]
-  outTp := fun _ => «std::U128».tp h![]
-  body := fun _ => fun h![] h![lo, hi] =>
-    .seq
-      (.call h![] .unit (.builtin .assert) h![
-        .call h![] .bool (.builtin .)
-      ])
-      («std::U128».constructor h![] h![
-        .call h![] .field (.builtin .cast) h![.var lo],
-        .call h![] .field (.builtin .cast) h![.var hi]
-      ])
+variable (pLarge : P.natVal > 2 ^ 128)
+
+def fromU128 (x : U 128) : («std::U128».tp h![]).denote P :=
+  (⟨x.val % 2 ^ 64, by apply Nat.lt_trans; apply Nat.mod_lt; decide; apply Nat.lt_trans ?_ pLarge; decide⟩,
+  (⟨x.val / 2 ^ 64, by apply Nat.div_lt_of_lt_mul; simp only [Prime.natVal] at pLarge; linarith [x.prop]⟩,
+  ()))
+
+nr_def std::U128::from_u64s_le<>(lo: u64, hi: u64) -> std::U128<> {
+  #assert(#lt((128 : u32), #cast(#modulus_num_bits():u64):u32):bool):Unit;
+  std::U128<> { #cast(lo):Field, #cast(hi):Field }
 }
 
+nr_def std::U128::add<>(self : std::U128<>, b : std::U128<>) -> std::U128<> {
+  let low = #add(self.0, b.0):Field;
+  let lo = #cast(#cast(low):u64):Field;
+  let carry = #div(#sub(low, lo):Field, 18446744073709551616:Field):Field;
+  let high = #add(#add(self.1, b.1):Field, carry):Field;
+  let hi = #cast(#cast(high):u64):Field;
+  std::U128<> { lo, hi }
+}
 
-theorem test {n : Nat}: ∃foo, n = foo := by apply Exists.intro n rfl
+theorem «std::U128::add».correct :
+    Assignable (P:=P) Γ st («std::U128::add».fn.body _ h![] h![fromU128 P pLarge a, fromU128 P pLarge b]) Q ↔
+    Q st (fromU128 P pLarge $ a + b) := by
+  rcases a with ⟨a, pa⟩; rcases b with ⟨b, pb⟩;
+  noir_simp [«std::U128::add», getProj, fromU128]
+  apply Iff.of_eq
+  sorry
 
-theorem test2 : 1 + 2 = n := by
-  rcases test with ⟨_, h⟩
-  simp only [h]
+nr_def lt_fallback<>(x: Field, y: Field) -> bool {
+  let num_bytes = #div(#add(#cast(#modulus_num_bits():u64):u32, 7:u32):u32, 8:u32):u32;
+  let x_bytes = #to_le_bytes(x, num_bytes):[u8];
+  let y_bytes = #to_le_bytes(y, num_bytes):[u8];
+  let mut x_is_lt = false;
+  let mut done = false;
+  for i in 0:u32 .. num_bytes {
+    if #not(done):bool {
+      let x_byte = #index(x_bytes, #sub(#sub(num_bytes, 1:u32):u32, i):u32):u8;
+      let y_byte = #index(y_bytes, #sub(#sub(num_bytes, 1:u32):u32, i):u32):u8;
+      let bytes_match = #eq(x_byte, y_byte):bool;
+      if #not(bytes_match):bool {
+        x_is_lt = #lt(x_byte, y_byte):bool;
+        done = true;
+      }
+    }
+  };
+  x_is_lt
+}
+
+def lt_mod : Lampe.Module := ⟨[lt_fallback]⟩
+
+abbrev seventeen : Lampe.Prime := ⟨16, by decide⟩
+
+lemma Lampe.State.allocs_nextRef {st : State P} : (st.allocs P as).nextRef = st.nextRef.forward as.length := by
+  simp [allocs, Ref.forward, nextRef]
+
+-- set_option trace.Meta.Tactic.simp.discharge true
+
+lemma State.get_set_of_ne (h : r' ≠ r) (hn : State.get? P st r' = some res) :
+    (State.set P st r tp v).get? P r' = some res := by
+  cases r; cases r'
+  simp_all [State.get?, State.set, State.get]
+
+lemma State.get_set_of_eq (h : r.val < st.size):
+    (State.set P st r tp v).get? P r = some ⟨tp, v⟩ := by
+  simp [State.get?, State.get, State.set, h]
+
+example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
+    #assert(lt_fallback<>(1:Field, 2:Field):bool):Unit
+  ] fun _ _ => True := by
+  have : numBits seventeen.natVal = 5 := by rfl
+  noir_simp only [lt_fallback, this]
+  exists [1]
+  noir_simp only
+  exists [2]
+  noir_simp only
+  rw [Assignable.readRef_iff ?mem]
+  case mem =>
+    simp only [
+      State.allocs_nextRef,
+      List.length_cons,
+      List.length_nil,
+      State.allocs_get?_forward,
+      Ref.forward_zero,
+      State.allocs_get?_nextRef
+    ]
+    rfl
+  noir_simp only
+  rw [Assignable.readRef_iff ?mem]
+  case mem =>
+    simp only [
+      State.allocs_nextRef,
+      List.length_cons,
+      List.length_nil,
+      Nat.add_one,
+    ]
+    apply State.get_set_of_ne
+    · simp [Ref.forward, State.nextRef] -- todo direct strat
+    · apply State.get_set_of_eq
+      simp -- todo direct
+  tauto
+
+#print lt_fallback

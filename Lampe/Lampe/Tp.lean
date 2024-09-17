@@ -1,10 +1,14 @@
 import Mathlib
 
 import Lampe.Data.Integers
+import Lampe.Data.Field
 
 namespace Lampe
 
-variable (P : Nat)
+structure Ref where
+val : Nat
+
+variable (P : Prime)
 
 inductive Kind where
 | nat
@@ -17,6 +21,7 @@ inductive Tp where
 | field
 | slice (element : Tp)
 | struct (fields : List Tp)
+| ref (tp : Tp)
 
 mutual
 
@@ -30,8 +35,9 @@ def Tp.denote : Tp → Type
 | .u n => U n
 | .bool => Bool
 | .unit => Unit
-| .field => ZMod P
+| .field => Fp P
 | .slice tp => List (denote tp)
+| .ref _ => Ref
 | .struct fields => Tp.denoteArgs fields
 
 end

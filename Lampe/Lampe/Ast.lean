@@ -40,6 +40,9 @@ inductive Expr (rep : Tp → Type): Tp → Type where
 | ite : Expr rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : Expr rep (.u s) → Expr rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
+| letMutIn : Expr rep t₁ → (rep (.ref t₁) → Expr rep t₂) → Expr rep t₂
+| readRef : Expr rep (.ref t) → Expr rep t
+| writeRef : Expr rep (.ref t) → Expr rep t → Expr rep .unit
 
 structure Function : Type _ where
   generics : List Kind
