@@ -162,14 +162,12 @@ abbrev seventeen : Lampe.Prime := ⟨16, by decide⟩
 lemma Lampe.State.allocs_nextRef {st : State P} : (st.allocs P as).nextRef = st.nextRef.forward as.length := by
   simp [allocs, Ref.forward, nextRef]
 
--- set_option trace.Meta.Tactic.simp.discharge true
-
-lemma State.get_set_of_ne (h : r' ≠ r) (hn : State.get? P st r' = some res) :
+lemma Lampe.State.get_set_of_ne (h : r' ≠ r) (hn : State.get? P st r' = some res) :
     (State.set P st r tp v).get? P r' = some res := by
   cases r; cases r'
   simp_all [State.get?, State.set, State.get]
 
-lemma State.get_set_of_eq (h : r.val < st.size):
+lemma Lampe.State.get_set_of_eq (h : r.val < st.size):
     (State.set P st r tp v).get? P r = some ⟨tp, v⟩ := by
   simp [State.get?, State.get, State.set, h]
 
@@ -181,6 +179,40 @@ example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
   exists [1]
   noir_simp only
   exists [2]
+  noir_simp only
+  rw [Assignable.readRef_iff ?mem]
+  case mem =>
+    simp only [
+      State.allocs_nextRef,
+      List.length_cons,
+      List.length_nil,
+      State.allocs_get?_forward,
+      Ref.forward_zero,
+      State.allocs_get?_nextRef
+    ]
+    rfl
+  noir_simp only
+  rw [Assignable.readRef_iff ?mem]
+  case mem =>
+    simp only [
+      State.allocs_nextRef,
+      List.length_cons,
+      List.length_nil,
+    ]
+    apply State.get_set_of_ne
+    · simp [Ref.forward, State.nextRef] -- todo direct strat
+    · apply State.get_set_of_eq
+      simp -- todo direct
+  tauto
+
+example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
+    #assert(lt_fallback<>(2:Field, 1:Field):bool):Unit
+  ] fun _ _ => True := by
+  have : numBits seventeen.natVal = 5 := by rfl
+  noir_simp only [lt_fallback, this]
+  exists [2]
+  noir_simp only
+  exists [18]
   noir_simp only
   rw [Assignable.readRef_iff ?mem]
   case mem =>

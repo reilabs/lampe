@@ -108,12 +108,12 @@ theorem call_builtin_intro
   noir_simp [←hbuiltin, ←hargs]
 
 theorem call_decl_intro {es : HList (Expr (Tp.denote p)) inTps}
-    (hlookup : Γ fName = some fn)
-    (hc : fn.generics = tyKinds)
-    (htci : fn.inTps (hc ▸ generics) = inTps)
-    (htco : fn.outTp (hc ▸ generics) = tp)
+    (hlookup : Γ fName = some func)
+    (hc : func.generics = tyKinds)
+    (htci : func.inTps (hc ▸ generics) = inTps)
+    (htco : func.outTp (hc ▸ generics) = tp)
     (hargs : Hoare.Args Γ P es Q)
-    (hbody : Hoare.Call Γ Q (fun args => htco ▸ fn.body _ (hc ▸ generics) (htci ▸ args)) R)
+    (hbody : Hoare.Call Γ Q (fun args => htco ▸ func.body _ (hc ▸ generics) (htci ▸ args)) R)
     : Hoare Γ P (Expr.call generics tp (.decl fName) es) R := by
   unfold Hoare Hoare.Args Hoare.Call at *
   intro
@@ -157,7 +157,7 @@ theorem Builtin.fresh_intro {P: State p → Tp.denote p tp → Prop}:
   unfold Hoare.Builtin
   intros;
   casesm* HList _ _
-  noir_simp only
+  noir_simp
 
 theorem Builtin.assert_intro {P : State p → Tp.unit.denote p → Prop}:
     Hoare.Builtin

@@ -3,6 +3,7 @@ import Lampe.Tp
 import Lampe.Data.Field
 import Lampe.Tactic.IntroCases
 import Lampe.Semantics
+import Lampe.Syntax
 import Mathlib
 
 namespace Lampe
@@ -108,13 +109,13 @@ theorem Assignable.letMutIn_iff {e : Expr _ tp}:
 
 theorem Assignable.callDecl_iff
   {generics : HList Kind.denote tyKinds} {args : HList (Expr (Tp.denote P)) inTps} {Q : State P → Tp.denote P outTp → Prop} {st : State P}
-  (hlookup : Γ fname = some fn)
-  (hc : fn.generics = tyKinds)
-  (htci : fn.inTps (hc ▸ generics) = inTps)
-  (htco : fn.outTp (hc ▸ generics) = outTp):
+  (hlookup : Γ fname = some func)
+  (hc : func.generics = tyKinds)
+  (htci : func.inTps (hc ▸ generics) = inTps)
+  (htco : func.outTp (hc ▸ generics) = outTp):
     Assignable Γ st (.call generics outTp (.decl fname) args) Q ↔
     Assignable.Args Γ st args (fun st' vs =>
-      Assignable Γ st' (htco ▸ fn.body _ (hc ▸ generics) (htci ▸ vs)) Q) := by
+      Assignable Γ st' (htco ▸ func.body _ (hc ▸ generics) (htci ▸ vs)) Q) := by
   unfold Assignable
   apply Iff.intro
   · intro_cases
@@ -131,7 +132,7 @@ theorem Assignable.callDecl_iff
     rfl
     assumption
   · rintro ⟨st', args, bsa, _, _, body, q⟩
-    rcases fn
+    rcases func
     cases htci
     cases htco
     rcases hc
@@ -580,6 +581,8 @@ def discharge (prop : Lean.Expr) : SimpM (Option Lean.Expr) := do
       return some mvar
     catch _ => pure ()
 
+    trace[Lampe.Discharge] "discharge : {prop}"
+
     Simp.dischargeDefault? prop
 
 elab "noir_simp_discharge" : tactic => wrapSimpDischarger discharge
@@ -640,11 +643,6 @@ def nrNormTheorems : List Name := [
     ``Assignable.Loop.stop_iff,
     ``Assignable.Loop.continue_iff,
 
-    ``State.alloc_allocs_singleton,
-    ``State.allocs_allocs_singleton,
-    ``List.length_cons,
-    ``List.length_nil,
-
     ``decidable_and_true,
     ``true_and,
 ]
@@ -679,5 +677,40 @@ elab_rules : tactic
 
 end macros
 
+nr_def lt_fallback<>(x: Field, y: Field) -> bool {
+  let num_bytes = #div(#add(#cast(#modulus_num_bits():u64):u32, 7:u32):u32, 8:u32):u32;
+  let x_bytes = #to_le_bytes(x, num_bytes):[u8];
+  let y_bytes = #to_le_bytes(y, num_bytes):[u8];
+  let mut x_is_lt = false;
+  let mut done = false;
+  for i in 0:u32 .. num_bytes {
+    if #not(done):bool {
+      let x_byte = #index(x_bytes, #sub(#sub(num_bytes, 1:u32):u32, i):u32):u8;
+      let y_byte = #index(y_bytes, #sub(#sub(num_bytes, 1:u32):u32, i):u32):u8;
+      let bytes_match = #eq(x_byte, y_byte):bool;
+      if #not(bytes_match):bool {
+        x_is_lt = #lt(x_byte, y_byte):bool;
+        done = true;
+      }
+    }
+  };
+  x_is_lt
+}
+
+-- def lt_mod : Lampe.Module := ⟨[lt_fallback]⟩
+
+-- abbrev seventeen : Lampe.Prime := ⟨16, by decide⟩
+
+-- set_option trace.Lampe.Discharge true
+
+-- example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
+--       #assert(lt_fallback<>(1:Field, 2:Field):bool):Unit
+--     ] fun _ _ => True := by
+--   have : numBits seventeen.natVal = 5 := by rfl
+--   noir_simp only [lt_fallback, this]
+--   exists [1]
+--   noir_simp only
+--   exists [2]
+--   noir_simp only
 
 end Lampe
