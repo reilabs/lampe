@@ -135,44 +135,6 @@ theorem «std::U128::add».correct :
   apply Iff.of_eq
   sorry
 
-nr_def lt_fallback<>(x: Field, y: Field) -> bool {
-  let num_bytes = #div(#add(#cast(#modulus_num_bits():u64):u32, 7:u32):u32, 8:u32):u32;
-  let x_bytes = #to_le_bytes(x, num_bytes):[u8];
-  let y_bytes = #to_le_bytes(y, num_bytes):[u8];
-  let mut x_is_lt = false;
-  let mut done = false;
-  for i in 0:u32 .. num_bytes {
-    if #not(done):bool {
-      let x_byte = #index(x_bytes, #sub(#sub(num_bytes, 1:u32):u32, i):u32):u8;
-      let y_byte = #index(y_bytes, #sub(#sub(num_bytes, 1:u32):u32, i):u32):u8;
-      let bytes_match = #eq(x_byte, y_byte):bool;
-      if #not(bytes_match):bool {
-        x_is_lt = #lt(x_byte, y_byte):bool;
-        done = true;
-      }
-    }
-  };
-  x_is_lt
-}
-
-def lt_mod : Lampe.Module := ⟨[lt_fallback]⟩
-
-abbrev seventeen : Lampe.Prime := ⟨16, by decide⟩
-
-lemma Lampe.State.allocs_nextRef {st : State P} : (st.allocs P as).nextRef = st.nextRef.forward as.length := by
-  simp [allocs, Ref.forward, nextRef]
-
--- set_option trace.Meta.Tactic.simp.discharge true
-
-lemma State.get_set_of_ne (h : r' ≠ r) (hn : State.get? P st r' = some res) :
-    (State.set P st r tp v).get? P r' = some res := by
-  cases r; cases r'
-  simp_all [State.get?, State.set, State.get]
-
-lemma State.get_set_of_eq (h : r.val < st.size):
-    (State.set P st r tp v).get? P r = some ⟨tp, v⟩ := by
-  simp [State.get?, State.get, State.set, h]
-
 example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
     #assert(lt_fallback<>(1:Field, 2:Field):bool):Unit
   ] fun _ _ => True := by
@@ -182,30 +144,38 @@ example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
   noir_simp only
   exists [2]
   noir_simp only
-  rw [Assignable.readRef_iff ?mem]
-  case mem =>
-    simp only [
-      State.allocs_nextRef,
-      List.length_cons,
-      List.length_nil,
-      State.allocs_get?_forward,
-      Ref.forward_zero,
-      State.allocs_get?_nextRef
-    ]
-    rfl
+
+example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
+    #assert(lt_fallback<>(2:Field, 1:Field):bool):Unit
+  ] fun _ _ => True := by
+  have : numBits seventeen.natVal = 5 := by rfl
+  noir_simp only [lt_fallback, this]
+  exists [2]
   noir_simp only
-  rw [Assignable.readRef_iff ?mem]
-  case mem =>
-    simp only [
-      State.allocs_nextRef,
-      List.length_cons,
-      List.length_nil,
-      Nat.add_one,
-    ]
-    apply State.get_set_of_ne
-    · simp [Ref.forward, State.nextRef] -- todo direct strat
-    · apply State.get_set_of_eq
-      simp -- todo direct
-  tauto
+  exists [18]
+  noir_simp only
 
 #print lt_fallback
+
+
+nr_def std::slice::append<T>(self : [T], other : [T]) -> [T] {
+  let mut self = self;
+  for i49 in 0:u32 .. #slice_len(other):u32 {
+    let elem = #index(other, i49):T;
+    self = #slice_push_back(self, elem):[T]
+  };
+  self
+}
+
+section macros
+
+open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
+
+
+
+end macros
+
+theorem «std::slice::append».correct :
+    Assignable (P:=P) Γ st («std::slice::append».fn.body _ h![T] h![a, b]) Q ↔
+    Q (st.alloc P (.slice T) (a ++ b)) (a ++ b) := by
+  noir_simp only [«std::slice::append»]
