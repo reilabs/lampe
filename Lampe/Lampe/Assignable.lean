@@ -572,18 +572,103 @@ theorem Assignable.writeRef_iff {e : Expr (Tp.denote P) tp}:
 
 section macros
 
-open Lean Elab.Tactic Parser.Tactic Lean.Meta
+open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
-def discharge (prop : Lean.Expr) : SimpM (Option Lean.Expr) := do
+inductive StateOp
+| alloc (tp : Lean.Expr) (v : Lean.Expr)
+| set (ref : Lean.Expr) (tp : Lean.Expr) (v : Lean.Expr)
+deriving BEq
+
+instance : ToString StateOp where
+  toString
+  | StateOp.alloc tp v => s!"alloc {tp} {v}"
+  | StateOp.set ref tp v => s!"set {ref} {tp} {v}"
+
+
+partial def destructStateOps {p : Q(Prime)} (state : Q(State $p)) : SimpM (Q(State $p) × List StateOp) :=
+  match state with
+  | ~q(State.alloc _ $st $tp $v) => do
+    let (st', ops) ← destructStateOps st
+    pure (st', ops ++ [StateOp.alloc tp v])
+  | ~q(State.set _ $st $ref $tp $v) => do
+    let (st', ops) ← destructStateOps st
+    pure (st', ops ++ [StateOp.set ref tp v])
+  | _ => pure (state, [])
+
+partial def destructNextRef {p : Q(Prime)} (ref : Q(Ref)) : SimpM Q(State $p) :=
+  match ref with
+  | ~q(State.nextRef (P := $p) $st) => pure st
+  | _ => throwError "destructNextRef: expected nextRef"
+
+def dischargeTraceMessage (prop : Lean.Expr): Except Exception (Option Lean.Expr) → SimpM MessageData
+| Except.ok (some _) => return m!"{checkEmoji} discharge {prop}"
+| .error e => return m!"{crossEmoji} discharge {prop} with {e.toMessageData}"
+| .ok none => return m!"{crossEmoji} discharge {prop}"
+
+theorem State.skip_alloc {st : State p} (hp : st.get? p ref = some ⟨tp, v⟩):
+  ((st.alloc p tp' v').get? p ref = some ⟨tp, v⟩) := by
+  simp_all [State.alloc, State.get?, State.get, Fin.last]
+  rcases hp with ⟨hlt, hp⟩
+  simp_all
+  apply And.intro
+  linarith
+  intro h
+  simp [h] at hlt
+
+theorem State.get?_alloc_nextRef (p : Prime) (st : State p) (tp : Tp) (v : tp.denote p): (st.alloc p tp v).get? p st.nextRef = some ⟨tp, v⟩ := by
+  simp_all [get?, alloc, Fin.last, get, nextRef]
+
+theorem State.get?_set_of_lt_size (p : Prime) (st : State p) (ref : Ref) (tp : Tp) (v : tp.denote p) (h : ref.val < st.size):
+  (st.set p ref tp v).get? p ref = some ⟨tp, v⟩ := by
+  simp_all [get?, get, set, Fin.last]
+
+def processMemOps {p : Q(Prime)}
+  (refExpr : Q(Ref))
+  (refStart : Q(State $p))
+  (refOps : List StateOp)
+  (refState : Q(State $p))
+  (targetV : Lean.Expr): List StateOp → SimpM Lean.Expr
+| [] => throwError "too short"
+| [.alloc tp v] => do
+  let tp : Q(Tp) ← pure tp
+  let v : Q(Tp.denote $p $tp) ← pure v
+  unless ←isDefEq targetV v do
+    throwError "target value mismatch"
+  pure q(State.get?_alloc_nextRef $p $refState $tp $v)
+-- | .set ref tp v :: ops => do
+  -- if ←isDefEq ref refExpr then
+  --   unless ←isDefEq targetV v do
+  --     throwError "target value mismatch"
+  --   pure q(State.get?_set_of_lt_size $p $refState ref tp v (by sorry))
+| _ => throwError "TODO"
+
+def discharge (prop : Lean.Expr) : SimpM (Option Lean.Expr) :=
+  withTraceNode `Lampe.Discharge (dischargeTraceMessage prop) do
     try
       let mvar ← mkFreshExprMVar prop
       withTransparency TransparencyMode.all mvar.mvarId!.refl
       return some mvar
     catch _ => pure ()
 
-    trace[Lampe.Discharge] "discharge : {prop}"
+    let (p : Q(Prop)) := prop
 
-    Simp.dischargeDefault? prop
+    match p with
+    | ~q(State.get? $p $state $ref = some ⟨$t, $v⟩) => do
+      trace[Lampe.Discharge] "discharging memory goal \n\t(state = {state})\n\t(ref = {ref})\n\t(out = {v})"
+      let (stateBase, stateTrans) ← destructStateOps state
+      let refFull ← destructNextRef ref
+      let (refBase, refTrans) ← destructStateOps (p := p) refFull
+      unless ←isDefEq stateBase refBase do
+        throwError "state and ref do not match"
+      trace[Lampe.Discharge] "stateOps = {stateTrans}; nextRefOps = {refTrans}"
+      let opsToProcess ← match refTrans.isPrefixOf? stateTrans with
+        | some ops => pure ops
+        | none => throwError "state and ref trans do not match"
+      trace[Lampe.Discharge] "processing {opsToProcess}"
+      let proofTerm ← processMemOps ref refBase refTrans refFull v opsToProcess
+      trace[Lampe.Discharge] "proofTerm = {proofTerm}; tp = {←inferType proofTerm}"
+      return some proofTerm
+    | _ => Simp.dischargeDefault? prop
 
 elab "noir_simp_discharge" : tactic => wrapSimpDischarger discharge
 
@@ -697,20 +782,22 @@ nr_def lt_fallback<>(x: Field, y: Field) -> bool {
   x_is_lt
 }
 
--- def lt_mod : Lampe.Module := ⟨[lt_fallback]⟩
+def lt_mod : Lampe.Module := ⟨[lt_fallback]⟩
 
--- abbrev seventeen : Lampe.Prime := ⟨16, by decide⟩
+abbrev seventeen : Lampe.Prime := ⟨16, by decide⟩
 
--- set_option trace.Lampe.Discharge true
+set_option trace.Lampe.Discharge true
+set_option trace.Meta.Tactic.simp.discharge true
 
--- example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
---       #assert(lt_fallback<>(1:Field, 2:Field):bool):Unit
---     ] fun _ _ => True := by
---   have : numBits seventeen.natVal = 5 := by rfl
---   noir_simp only [lt_fallback, this]
---   exists [1]
---   noir_simp only
---   exists [2]
---   noir_simp only
+example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
+      #assert(lt_fallback<>(1:Field, 2:Field):bool):Unit
+    ] fun _ _ => True := by
+  have : numBits seventeen.natVal = 5 := by rfl
+  noir_simp only [lt_fallback, this]
+  exists [1]
+  noir_simp only
+  exists [2]
+  noir_simp
+  noir_simp only
 
 end Lampe

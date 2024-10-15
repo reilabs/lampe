@@ -53,11 +53,11 @@ def get? (st : State P) (r : Ref): Option (AnyValue P) := if h : r.val < st.size
 def set (st : State P) (r : Ref) (tp : Tp) (v : Tp.denote P tp): State P :=
   {st with memory := fun i => if i.val = r.val then ⟨tp, v⟩ else st.memory i}
 
-@[simp]
+-- @[simp]
 theorem nextRef_val {state : State P} : state.nextRef.val = state.size := by
   simp [nextRef]
 
-@[simp]
+-- @[simp]
 theorem allocs_size {state : State P} : (state.allocs P as).size = state.size + as.length := by
   induction as generalizing state with
   | nil => rfl
@@ -65,7 +65,7 @@ theorem allocs_size {state : State P} : (state.allocs P as).size = state.size + 
     simp [allocs, ih, alloc]
     simp_arith
 
-@[simp]
+-- @[simp]
 theorem alloc_get_size {state : State P} : (state.alloc P tp v).nextRef = state.nextRef.forward 1 := by
   simp [alloc, nextRef, Ref.forward]
 
@@ -84,62 +84,62 @@ lemma allocs_snoc {state : State P} : (state.allocs P (as ++ [a])) = alloc P (st
   | cons a as ih =>
     simp [allocs, ih]
 
-lemma alloc_get_lt {state : State P} {h'} (h : r.val < state.size) :
-    (state.alloc P tp v).get P r h' = state.get P r h := by
-  have : r.val ≠ state.size := Nat.ne_of_lt h
-  simp [get, alloc, Fin.last, this]
-  rfl
+-- lemma alloc_get_lt {state : State P} {h'} (h : r.val < state.size) :
+--     (state.alloc P tp v).get P r h' = state.get P r h := by
+--   have : r.val ≠ state.size := Nat.ne_of_lt h
+--   simp [get, alloc, Fin.last, this]
+--   rfl
 
-lemma allocs_get_nextRef {state : State P} {h} :
-    (state.allocs P (a :: as)).get P state.nextRef h = a := by
-  induction as using List.list_reverse_induction with
-  | base => simp [allocs, alloc, nextRef, get, Fin.last]
-  | ind a as ih =>
-    simp only [←List.cons_append, allocs_snoc]
-    rw [alloc_get_lt]
-    · simp [ih]
-    · simp
+-- lemma allocs_get_nextRef {state : State P} {h} :
+--     (state.allocs P (a :: as)).get P state.nextRef h = a := by
+--   induction as using List.list_reverse_induction with
+--   | base => simp [allocs, alloc, nextRef, get, Fin.last]
+--   | ind a as ih =>
+--     simp only [←List.cons_append, allocs_snoc]
+--     rw [alloc_get_lt]
+--     · simp [ih]
+--     · simp
 
-lemma allocs_get?_nextRef {state : State P}:
-    (state.allocs P (a :: as)).get? P state.nextRef = some a := by
-  simp [get?, allocs_get_nextRef]
+-- lemma allocs_get?_nextRef {state : State P}:
+--     (state.allocs P (a :: as)).get? P state.nextRef = some a := by
+--   simp [get?, allocs_get_nextRef]
 
-lemma alloc_nextRef {state : State P} {tp : Tp} {v : tp.denote P} :
-    (state.alloc P tp v).nextRef = state.nextRef.forward 1 := by
-  simp [alloc, nextRef, Ref.forward]
+-- lemma alloc_nextRef {state : State P} {tp : Tp} {v : tp.denote P} :
+--     (state.alloc P tp v).nextRef = state.nextRef.forward 1 := by
+--   simp [alloc, nextRef, Ref.forward]
 
-@[simp]
-theorem allocs_get_forward {state : State P} {h : (state.nextRef.forward (k + 1)).val < (state.allocs P (a::as)).size}:
-    (state.allocs P (a::as)).get P (state.nextRef.forward (k + 1)) h =
-    (state.allocs P as).get P (state.nextRef.forward k) (by simp [Ref.forward, allocs_size] at *; linarith) := by
-  induction as generalizing a state k with
-  | nil => simp [Ref.forward] at h
-  | cons hh tt ih =>
-    simp [Ref.forward] at h
-    simp [allocs_cons_cons]
-    apply Eq.trans (b := (get P (allocs P (alloc P state a.fst a.snd) (hh :: tt)) ((state.alloc P a.1 a.2).nextRef.forward k)) ?_)
-    · simp_arith [Ref.forward]
-      congr 2
-      simp_arith
-    · cases k with
-      | zero => simp only [Ref.forward_zero, allocs_get_nextRef]
-      | succ k =>
-        simp only [ih]
-        conv_lhs =>
-          simp only [alloc_nextRef, Ref.forward_forward, add_comm]
-          simp only [alloc_allocs_singleton, allocs_allocs_singleton, ih]
-    · simp [alloc, nextRef, Ref.forward, h]
+-- @[simp]
+-- theorem allocs_get_forward {state : State P} {h : (state.nextRef.forward (k + 1)).val < (state.allocs P (a::as)).size}:
+--     (state.allocs P (a::as)).get P (state.nextRef.forward (k + 1)) h =
+--     (state.allocs P as).get P (state.nextRef.forward k) (by simp [Ref.forward, allocs_size] at *; linarith) := by
+--   induction as generalizing a state k with
+--   | nil => simp [Ref.forward] at h
+--   | cons hh tt ih =>
+--     simp [Ref.forward] at h
+--     simp [allocs_cons_cons]
+--     apply Eq.trans (b := (get P (allocs P (alloc P state a.fst a.snd) (hh :: tt)) ((state.alloc P a.1 a.2).nextRef.forward k)) ?_)
+--     · simp_arith [Ref.forward]
+--       congr 2
+--       simp_arith
+--     · cases k with
+--       | zero => simp only [Ref.forward_zero, allocs_get_nextRef]
+--       | succ k =>
+--         simp only [ih]
+--         conv_lhs =>
+--           simp only [alloc_nextRef, Ref.forward_forward, add_comm]
+--           simp only [alloc_allocs_singleton, allocs_allocs_singleton, ih]
+--     · simp [alloc, nextRef, Ref.forward, h]
 
-theorem allocs_get?_forward {state : State P}:
-    (state.allocs P (a::as)).get? P (state.nextRef.forward (k + 1)) = (state.allocs P as).get? P (state.nextRef.forward k) := by
-  simp [get?]
-  split <;> {
-    split <;> {
-      simp [Ref.forward] at *
-      try simp [Ref.forward] at *
-      try linarith
-    }
-  }
+-- theorem allocs_get?_forward {state : State P}:
+--     (state.allocs P (a::as)).get? P (state.nextRef.forward (k + 1)) = (state.allocs P as).get? P (state.nextRef.forward k) := by
+--   simp [get?]
+--   split <;> {
+--     split <;> {
+--       simp [Ref.forward] at *
+--       try simp [Ref.forward] at *
+--       try linarith
+--     }
+--   }
 
 end State
 
