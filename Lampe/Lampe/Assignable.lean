@@ -672,14 +672,65 @@ theorem State.get?_set_of_neq_ref
   cases ref'
   simp_all [get?, get, set, Fin.last]
 
--- theorem State.get?_set_of_neq_ref (p : Prime) (st : State p) ()
+theorem State.nextRef_val_le_size {p} (st : State p): st.nextRef.val ≤ st.size := by
+  simp [nextRef, size]
+
+theorem State.nextRef_val_lt_size_alloc_of_le_prev {p} {st : State p} {ref : Ref} (tp v) (prev : ref.val ≤ st.size):
+  ref.val < (st.alloc p tp v).size := by
+  simp_all [nextRef, size, alloc, Fin.last]
+  linarith
+
+theorem State.nextRef_val_lt_size_set_of_lt_prev {p tp v} {st : State p} {ref ref': Ref} (prev : ref.val < st.size):
+  ref.val < (st.set p ref' tp v).size := by
+  simp_all [nextRef, size, set, Fin.last]
+
+theorem State.nextRef_val_le_size_set_of_le_prev {p tp v} {st : State p} {ref ref': Ref} (prev : ref.val ≤ st.size):
+  ref.val ≤ (st.set p ref' tp v).size := by
+  simp_all [nextRef, size, set, Fin.last]
+
+theorem Ref.ne_of_st_size_lt {p} {st : State p} {ref : Ref} (h : ref.val < st.size): ref ≠ st.nextRef := by
+  cases ref
+  simp_all [State.nextRef, State.size]
+  linarith
+
+theorem Ref.ne_of_st_size_lt' {p} {st : State p} {ref : Ref} (h : ref.val < st.size): st.nextRef ≠ ref := by
+  cases ref
+  simp_all [State.nextRef, State.size]
+  linarith
+
+partial def mkRefValLtStSizeProof
+    (ref : Lean.Expr)
+    (st : StateHistory)
+    (retLe : Bool): SimpM Lean.Expr := do
+  match st.cons? with
+  | none => do
+    unless retLe do throwError "cannot prove ref.val < st.size"
+    mkAppM ``State.nextRef_val_le_size #[st.initial]
+  | some (st, _, .alloc tp v, _) => do
+    let next ← mkRefValLtStSizeProof ref st true
+    let mut ltProof ← mkAppM ``State.nextRef_val_lt_size_alloc_of_le_prev #[tp, v, next]
+    if retLe then
+      ltProof ← mkAppM ``Nat.le_of_lt #[ltProof]
+    pure ltProof
+  | some (st, _, .set _ _ _, _) => do
+    let next ← mkRefValLtStSizeProof ref st retLe
+    if retLe then
+      mkAppM ``State.nextRef_val_lt_size_set_of_lt_prev #[next]
+    else
+      mkAppM ``State.nextRef_val_le_size_set_of_le_prev #[next]
+
 def mkRefNeProof
-  (lRef : Lean.Expr)
-  (lRefBase : Lean.Expr)
-  (lRefCons : List (Lean.Expr × StateOp))
-  (rRef : Lean.Expr)
-  (rRefBase : Lean.Expr)
-  (rRefCons : List (Lean.Expr × StateOp)): SimpM Lean.Expr := do sorry
+    (lRef : RefData)
+    (rRef : RefData): SimpM Lean.Expr := do
+  if lRef.stateHistory.steps.length < rRef.stateHistory.steps.length then
+    let newR ← rRef.stateHistory.forwardTo lRef.stateHistory.final
+    mkAppM ``Ref.ne_of_st_size_lt #[←mkRefValLtStSizeProof lRef.ref newR false]
+  else if lRef.stateHistory.steps.length > rRef.stateHistory.steps.length then
+    let newL ← lRef.stateHistory.forwardTo rRef.stateHistory.final
+    mkAppM ``Ref.ne_of_st_size_lt' #[←mkRefValLtStSizeProof rRef.ref newL false]
+  else
+    throwError "impossible: equal length"
+
 
 partial def mkReadProof
   (p : Q(Prime))
@@ -687,24 +738,22 @@ partial def mkReadProof
   (targetTp : Q(Tp))
   (targetV : Lean.Expr)
   (history: StateHistory): SimpM Lean.Expr := match history.cons? with
-| none => throwError "too short"
-| some (history, preState, .alloc tp v, postState) => do
+| none => throwError "State history is too short for the ref."
+| some (history, preState, .alloc tp v, _) => do
   if history.isEmpty then
     unless ←isDefEq targetV v do
       throwError "target value mismatch"
     mkAppM ``State.get?_alloc_nextRef #[p, preState, tp, v]
   else throwError "TODO: skip alloc"
-| some (history, preState, .set ref tp v, postState) => do
+| some (history, preState, .set ref tp v, _) => do
   if ←isDefEq ref targetRef.ref then
     unless ←isDefEq targetV v do
       throwError "target value mismatch"
-    let ltProof ← mkSorry (←mkLt (←mkAppM ``Ref.val #[ref]) (←mkAppM ``State.size #[preState])) true
-    mkAppM ``State.get?_set_of_lt_size #[p, preState, ref, tp, v, ltProof]
-   else do
-     let nextProof ← mkReadProof p targetRef targetTp targetV history
-     let rRef ← destructRef ref
-     let x ← mkSorry (mkNot $ ←Meta.mkEq targetRef.ref ref) true
-     mkAppM ``State.get?_set_of_neq_ref #[p, preState, targetRef.ref, ref, targetTp, tp, targetV, v, x, nextProof]
+    mkAppM ``State.get?_set_of_lt_size #[p, preState, ref, tp, v, ←mkRefValLtStSizeProof ref history false]
+  else do
+    let nextProof ← mkReadProof p targetRef targetTp targetV history
+    let neq ← mkRefNeProof targetRef (←destructRef ref)
+    mkAppM ``State.get?_set_of_neq_ref #[p, preState, targetRef.ref, ref, targetTp, tp, targetV, v, neq, nextProof]
 
 def discharge (prop : Lean.Expr) : SimpM (Option Lean.Expr) :=
   withTraceNode `Lampe.Discharge (dischargeTraceMessage prop) do
@@ -715,7 +764,6 @@ def discharge (prop : Lean.Expr) : SimpM (Option Lean.Expr) :=
     catch _ => pure ()
 
     let (p : Q(Prop)) := prop
-
     match p with
     | ~q(State.get? $p $state $ref = some ⟨$t, $v⟩) => do
       trace[Lampe.Discharge] "discharging memory goal \n\t(state = {state})\n\t(ref = {ref})\n\t(out = {v})"
@@ -723,7 +771,6 @@ def discharge (prop : Lean.Expr) : SimpM (Option Lean.Expr) :=
       let refData ← destructRef ref
       unless ←isDefEq stateHistory.initial refData.stateHistory.initial do
         throwError "state and ref do not match"
-      -- trace[Lampe.Discharge] "stateOps = {stateTrans}; nextRefOps = {refTrans}"
       let stateDiff ← stateHistory.forwardTo refData.stateHistory.final
       let proofTerm ← mkReadProof p refData t v stateDiff
       trace[Lampe.Discharge] "proofTerm = {proofTerm}; tp = {←inferType proofTerm}"
