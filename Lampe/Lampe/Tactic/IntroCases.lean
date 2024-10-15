@@ -6,3 +6,4 @@ macro_rules | `(tactic|intro_cases) => `(tactic | (intros ; try casesm* _ ∧ _,
 initialize
   Lean.registerTraceClass `Lampe
   Lean.registerTraceClass `Lampe.Discharge
+  Lean.registerTraceClass `Lampe.Discharge.Memory

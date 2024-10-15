@@ -579,26 +579,62 @@ inductive StateOp
 | set (ref : Lean.Expr) (tp : Lean.Expr) (v : Lean.Expr)
 deriving BEq
 
+structure StateHistory where
+  initial : Lean.Expr
+  steps : List (Lean.Expr × StateOp)
+  final : Lean.Expr
+
+def StateHistory.isEmpty (history : StateHistory) : Bool :=
+  history.steps.isEmpty
+
+def StateHistory.cons (history : StateHistory) (op : StateOp) (result : Lean.Expr): StateHistory :=
+  {history with steps := (history.final, op) :: history.steps, final := result}
+
+def StateHistory.cons? : (history : StateHistory) → Option (StateHistory × Lean.Expr × StateOp × Lean.Expr)
+| StateHistory.mk init ((r, op) :: ops) final => some (StateHistory.mk init ops r, r, op, final)
+| _ => none
+
+partial def StateHistory.forwardTo (history : StateHistory) (final : Lean.Expr) : Option StateHistory :=
+  if history.final == final then some (StateHistory.mk final [] final)
+  else match history.cons? with
+  | some (h, _, op, post) => do
+    let next ← (h.forwardTo final)
+    pure $ next.cons op post
+  | none => none
+
+structure RefData where
+  ref : Lean.Expr
+  stateHistory : StateHistory
+
 instance : ToString StateOp where
   toString
   | StateOp.alloc tp v => s!"alloc {tp} {v}"
   | StateOp.set ref tp v => s!"set {ref} {tp} {v}"
 
+partial def destructState (state : Lean.Expr) : SimpM StateHistory := do
+  if state.isAppOf' ``State.alloc then
+    let args := state.getAppArgs
+    let st ← args[1]?
+    let tp ← args[2]?
+    let v ← args[3]?
+    let prev ← destructState st
+    pure $ prev.cons (StateOp.alloc tp v) state
+  else if state.isAppOf' ``State.set then
+    let st ← state.getAppArgs[1]?
+    let ref ← state.getAppArgs[2]?
+    let tp ← state.getAppArgs[3]?
+    let v ← state.getAppArgs[4]?
+    let prev ← destructState st
+    pure $ prev.cons (StateOp.set ref tp v) state
+  else
+    pure $ StateHistory.mk state [] state
 
-partial def destructStateOps {p : Q(Prime)} (state : Q(State $p)) : SimpM (Q(State $p) × List StateOp) :=
-  match state with
-  | ~q(State.alloc _ $st $tp $v) => do
-    let (st', ops) ← destructStateOps st
-    pure (st', ops ++ [StateOp.alloc tp v])
-  | ~q(State.set _ $st $ref $tp $v) => do
-    let (st', ops) ← destructStateOps st
-    pure (st', ops ++ [StateOp.set ref tp v])
-  | _ => pure (state, [])
-
-partial def destructNextRef {p : Q(Prime)} (ref : Q(Ref)) : SimpM Q(State $p) :=
-  match ref with
-  | ~q(State.nextRef (P := $p) $st) => pure st
-  | _ => throwError "destructNextRef: expected nextRef"
+partial def destructRef (ref : Lean.Expr) : SimpM RefData := do
+  unless ref.isAppOf' ``State.nextRef do
+    throwError "destructRef: expected nextRef"
+  let state ← ref.getAppArgs[1]?
+  let stateHistory ← destructState state
+  pure $ RefData.mk ref stateHistory
 
 def dischargeTraceMessage (prop : Lean.Expr): Except Exception (Option Lean.Expr) → SimpM MessageData
 | Except.ok (some _) => return m!"{checkEmoji} discharge {prop}"
@@ -622,25 +658,53 @@ theorem State.get?_set_of_lt_size (p : Prime) (st : State p) (ref : Ref) (tp : T
   (st.set p ref tp v).get? p ref = some ⟨tp, v⟩ := by
   simp_all [get?, get, set, Fin.last]
 
-def processMemOps {p : Q(Prime)}
-  (refExpr : Q(Ref))
-  (refStart : Q(State $p))
-  (refOps : List StateOp)
-  (refState : Q(State $p))
-  (targetV : Lean.Expr): List StateOp → SimpM Lean.Expr
-| [] => throwError "too short"
-| [.alloc tp v] => do
-  let tp : Q(Tp) ← pure tp
-  let v : Q(Tp.denote $p $tp) ← pure v
-  unless ←isDefEq targetV v do
-    throwError "target value mismatch"
-  pure q(State.get?_alloc_nextRef $p $refState $tp $v)
--- | .set ref tp v :: ops => do
-  -- if ←isDefEq ref refExpr then
-  --   unless ←isDefEq targetV v do
-  --     throwError "target value mismatch"
-  --   pure q(State.get?_set_of_lt_size $p $refState ref tp v (by sorry))
-| _ => throwError "TODO"
+theorem State.get?_set_of_neq_ref
+    (p : Prime)
+    (st : State p)
+    (ref ref' : Ref)
+    (tp tp': Tp)
+    (v: tp.denote p)
+    (v')
+    (h : ref ≠ ref')
+    (hnext : State.get? p st ref = some ⟨tp, v⟩):
+    (st.set p ref' tp' v').get? p ref = some ⟨tp, v⟩ := by
+  cases ref
+  cases ref'
+  simp_all [get?, get, set, Fin.last]
+
+-- theorem State.get?_set_of_neq_ref (p : Prime) (st : State p) ()
+def mkRefNeProof
+  (lRef : Lean.Expr)
+  (lRefBase : Lean.Expr)
+  (lRefCons : List (Lean.Expr × StateOp))
+  (rRef : Lean.Expr)
+  (rRefBase : Lean.Expr)
+  (rRefCons : List (Lean.Expr × StateOp)): SimpM Lean.Expr := do sorry
+
+partial def mkReadProof
+  (p : Q(Prime))
+  (targetRef : RefData)
+  (targetTp : Q(Tp))
+  (targetV : Lean.Expr)
+  (history: StateHistory): SimpM Lean.Expr := match history.cons? with
+| none => throwError "too short"
+| some (history, preState, .alloc tp v, postState) => do
+  if history.isEmpty then
+    unless ←isDefEq targetV v do
+      throwError "target value mismatch"
+    mkAppM ``State.get?_alloc_nextRef #[p, preState, tp, v]
+  else throwError "TODO: skip alloc"
+| some (history, preState, .set ref tp v, postState) => do
+  if ←isDefEq ref targetRef.ref then
+    unless ←isDefEq targetV v do
+      throwError "target value mismatch"
+    let ltProof ← mkSorry (←mkLt (←mkAppM ``Ref.val #[ref]) (←mkAppM ``State.size #[preState])) true
+    mkAppM ``State.get?_set_of_lt_size #[p, preState, ref, tp, v, ltProof]
+   else do
+     let nextProof ← mkReadProof p targetRef targetTp targetV history
+     let rRef ← destructRef ref
+     let x ← mkSorry (mkNot $ ←Meta.mkEq targetRef.ref ref) true
+     mkAppM ``State.get?_set_of_neq_ref #[p, preState, targetRef.ref, ref, targetTp, tp, targetV, v, x, nextProof]
 
 def discharge (prop : Lean.Expr) : SimpM (Option Lean.Expr) :=
   withTraceNode `Lampe.Discharge (dischargeTraceMessage prop) do
@@ -655,17 +719,13 @@ def discharge (prop : Lean.Expr) : SimpM (Option Lean.Expr) :=
     match p with
     | ~q(State.get? $p $state $ref = some ⟨$t, $v⟩) => do
       trace[Lampe.Discharge] "discharging memory goal \n\t(state = {state})\n\t(ref = {ref})\n\t(out = {v})"
-      let (stateBase, stateTrans) ← destructStateOps state
-      let refFull ← destructNextRef ref
-      let (refBase, refTrans) ← destructStateOps (p := p) refFull
-      unless ←isDefEq stateBase refBase do
+      let stateHistory ← destructState state
+      let refData ← destructRef ref
+      unless ←isDefEq stateHistory.initial refData.stateHistory.initial do
         throwError "state and ref do not match"
-      trace[Lampe.Discharge] "stateOps = {stateTrans}; nextRefOps = {refTrans}"
-      let opsToProcess ← match refTrans.isPrefixOf? stateTrans with
-        | some ops => pure ops
-        | none => throwError "state and ref trans do not match"
-      trace[Lampe.Discharge] "processing {opsToProcess}"
-      let proofTerm ← processMemOps ref refBase refTrans refFull v opsToProcess
+      -- trace[Lampe.Discharge] "stateOps = {stateTrans}; nextRefOps = {refTrans}"
+      let stateDiff ← stateHistory.forwardTo refData.stateHistory.final
+      let proofTerm ← mkReadProof p refData t v stateDiff
       trace[Lampe.Discharge] "proofTerm = {proofTerm}; tp = {←inferType proofTerm}"
       return some proofTerm
     | _ => Simp.dischargeDefault? prop
@@ -786,9 +846,6 @@ def lt_mod : Lampe.Module := ⟨[lt_fallback]⟩
 
 abbrev seventeen : Lampe.Prime := ⟨16, by decide⟩
 
-set_option trace.Lampe.Discharge true
-set_option trace.Meta.Tactic.simp.discharge true
-
 example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
       #assert(lt_fallback<>(1:Field, 2:Field):bool):Unit
     ] fun _ _ => True := by
@@ -797,7 +854,6 @@ example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
   exists [1]
   noir_simp only
   exists [2]
-  noir_simp
   noir_simp only
 
 end Lampe
