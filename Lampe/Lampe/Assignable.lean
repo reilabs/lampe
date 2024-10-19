@@ -362,6 +362,17 @@ theorem Assignable.Builtin.index_iff {slice : List (t.denote P)} (h : List.lengt
   · intro_cases
     tauto
 
+theorem Assignable.Builtin.sliceLen_iff {slice : List (t.denote P)}:
+  Assignable.Builtin (P:=P) [.slice t] (.u 32) .sliceLen h![slice] Q ↔
+  Q slice.length := by
+  simp only [Assignable.Builtin]
+  apply Iff.intro
+  · intro_cases
+    casesm BigStepBuiltin _ _ _ _ _ _
+    tauto
+  · intro_cases
+    tauto
+
 theorem Assignable.ite_iff:
     Assignable (P:=P) Γ st (.ite b t e) Q ↔
     Assignable Γ st b (fun st' v => Assignable.Ite Γ st' v t e Q) := by
@@ -818,6 +829,7 @@ def nrNormTheorems : List Name := [
     ``Assignable.Builtin.index_iff,
     ``Assignable.Builtin.lt_u_iff,
     ``Assignable.Builtin.not_iff,
+    ``Assignable.Builtin.sliceLen_iff,
     ``Assignable.Builtin.sub_f_iff,
     ``Assignable.Builtin.sub_u_iff,
     ``Assignable.Builtin.toLeBytes_iff,

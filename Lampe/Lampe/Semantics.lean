@@ -180,6 +180,7 @@ inductive BigStepBuiltin : (inp: List Tp) → (out : Tp) → Builtin → HList (
     BigStepBuiltin [.field, .u 32] (.slice (.u 8)) .toLeBytes h![n, s] result
 | index {slice : List (t.denote P)} : (h : List.length slice > i.val) →
     BigStepBuiltin [.slice t, .u s] t .index h![slice, i] (slice.get ⟨i, h⟩)
+| sliceLen {slice : List (t.denote P)} : BigStepBuiltin [.slice t] (.u 32) .sliceLen h![slice] slice.length
 
 
 mutual

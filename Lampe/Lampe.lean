@@ -156,3 +156,26 @@ example : Assignable (P := seventeen) (Env.ofModule lt_mod) st expr![
   noir_simp only
 
 #print lt_fallback
+
+
+nr_def std::slice::append<T>(self : [T], other : [T]) -> [T] {
+  let mut self = self;
+  for i49 in 0:u32 .. #slice_len(other):u32 {
+    let elem = #index(other, i49):T;
+    self = #slice_push_back(self, elem):[T]
+  };
+  self
+}
+
+section macros
+
+open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
+
+
+
+end macros
+
+theorem «std::slice::append».correct :
+    Assignable (P:=P) Γ st («std::slice::append».fn.body _ h![T] h![a, b]) Q ↔
+    Q (st.alloc P (.slice T) (a ++ b)) (a ++ b) := by
+  noir_simp only [«std::slice::append»]

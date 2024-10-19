@@ -69,6 +69,12 @@ partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | "modulus_num_bits" => `(Builtin.modulusNumBits)
 | "to_le_bytes"      => `(Builtin.toLeBytes)
 | "fresh"          => `(Builtin.fresh)
+| "slice_len"      => `(Builtin.sliceLen)
+| "slice_push_back" => `(Builtin.slicePushBack)
+| "slice_push_front" => `(Builtin.slicePushFront)
+| "slice_pop_back" => `(Builtin.slicePopBack)
+| "slice_pop_front" => `(Builtin.slicePopFront)
+| "slice_insert"   => `(Builtin.sliceInsert)
 | _ => throwError "Unknown builtin {i}"
 
 syntax num ":" nr_type : nr_expr

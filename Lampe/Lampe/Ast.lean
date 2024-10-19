@@ -20,6 +20,13 @@ inductive Builtin : Type where
 | modulusNumBits
 | toLeBytes
 | fresh
+| sliceLen
+| slicePushBack
+| slicePushFront
+| slicePopBack
+| slicePopFront
+| sliceInsert
+| sliceRemove
 
 inductive FunctionIdent : Type where
 | builtin : Builtin → FunctionIdent

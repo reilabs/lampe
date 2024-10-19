@@ -49,114 +49,273 @@ theorem StatePredicate.comap_eval {sp : StatePredicate p α} {f : β → α} {st
     (sp.comap f).eval st b ↔ sp.eval st (f b) := by
   rfl
 
-def PHoare
+def EHoare
     {tp : Tp}
     (Γ : Env)
-    (P : StatePredicate p Unit)
+    (Q : StatePredicate p Unit)
     (e : Expr (Tp.denote p) tp)
-    (Q : StatePredicate p (tp.denote p)): Prop :=
-  ∀st st' v, P.eval st () → BigStep p Γ st e st' v → Q.eval st' v
+    (P : StatePredicate p (tp.denote p)): Prop :=
+  ∀st, Assignable Γ st e P → Q.eval st ()
 
-def PHoare.Args
+def EHoare.Args
     {tps : List Tp}
     (Γ : Env)
-    (P : StatePredicate p Unit)
+    (Q : StatePredicate p Unit)
     (es : HList (Expr (Tp.denote p)) tps)
-    (Q : StatePredicate p (HList (Tp.denote p) tps)): Prop :=
-  ∀st st' vs, P.eval st () → BigStepArgs p Γ st es st' vs → Q.eval st' vs
+    (P : StatePredicate p (HList (Tp.denote p) tps)): Prop :=
+  ∀st, Assignable.Args Γ st es P → Q.eval st ()
 
-def PHoare.Call
-    {tps : List Tp}
-    {tp : Tp}
-    (Γ : Env)
-    (P : StatePredicate p (HList (Tp.denote p) tps))
-    (body : HList (Tp.denote p) tps → Expr (Tp.denote p) tp)
-    (Q : StatePredicate p (HList (Tp.denote p) tps × tp.denote p))
-    : Prop
-  := ∀st st' args v, P.eval st args → BigStep p Γ st (body args) st' v → Q.eval st' (args, v)
-
-def PHoare.Builtin
-    {tps : List Tp}
-    {tp : Tp}
-    (P : StatePredicate p (HList (Tp.denote p) tps))
+def EHoare.Builtin
+    (tps : List Tp)
+    (tp : Tp)
+    (Q : StatePredicate p (HList (Tp.denote p) tps))
     (builtin : Builtin)
-    (Q : StatePredicate p (HList (Tp.denote p) tps × tp.denote p))
-    : Prop
-  := ∀st args v, P.eval st args → BigStepBuiltin p tps tp builtin args v → Q.eval st (args, v)
+    (P : StatePredicate p (Tp.denote p tp)): Prop :=
+  ∀st args, Assignable.Builtin tps tp builtin args (fun v => P st v) → Q.eval st args
 
-namespace PHoare
+theorem Assignable.Args.weaken : Assignable.Args Γ st es P → (∀ st vs, P st vs → P' st vs) → Assignable.Args Γ st es P' := by
+  intro h h'
+  rcases h with ⟨st, v, bs, P⟩
+  apply Exists.intro
+  apply Exists.intro
+  apply And.intro
+  assumption
+  apply h'
+  assumption
 
-theorem Args.nil_intro {p Γ Q}:
-    PHoare.Args p Γ (Q.comap fun _ => h![]) h![] Q := by
-  unfold PHoare.Args
+theorem Assignable.weaken : Assignable Γ st es P → (∀ st vs, P st vs → P' st vs) → Assignable Γ st es P' := by
+  intro h h'
+  rcases h with ⟨st, v, bs, P⟩
+  apply Exists.intro
+  apply Exists.intro
+  apply And.intro
+  assumption
+  apply h'
+  assumption
+
+namespace EHoare
+
+theorem Args.nil_intro:
+    EHoare.Args p Γ (fun st _ => Q st h![]) HList.nil Q := by
+  unfold Args
+  noir_simp [StatePredicate.eval]
+
+theorem Args.nil_intro':
+    (∀st, Q st h![] → P st ()) →
+    EHoare.Args p Γ P HList.nil Q := by
+  noir_simp [Args, StatePredicate.eval]
+
+theorem Args.nil_intro'':
+    EHoare.Args p Γ P HList.nil (fun st _ => P st ()) := by
+  noir_simp [Args, StatePredicate.eval]
+
+theorem Args.cons_intro {R : StatePredicate p (HList (Tp.denote p) (tp :: tps))}:
+    EHoare p Γ P e Q →
+    (∀ v, EHoare.Args p Γ (fun st _ => Q st v) es (fun st vs => R st (HList.cons v vs))) →
+    EHoare.Args p Γ P (HList.cons e es) R := by
+  unfold EHoare Args Assignable Assignable.Args
+  simp only [StatePredicate.eval]
+  rintro e es st ⟨st, ⟨st', ba, r⟩⟩
+  apply e
+  cases ba
+  repeat apply Exists.intro
+  apply And.intro
+  assumption
+  apply es
+  repeat apply Exists.intro
+  apply And.intro
+  assumption
+  assumption
+
+theorem Builtin.assert_intro:
+    EHoare.Builtin p [.bool] .unit (fun st h![a] => a ∧ P st ()) .assert P := by
+  unfold Builtin
+  intro _ args
+  casesm* HList _ _
+  noir_simp [StatePredicate.eval]
+
+theorem Builtin.post_weaken:
+    EHoare.Builtin p tps tp Q builtin P →
+    (∀ st v, Q st v → Q' st v) →
+    EHoare.Builtin p tps tp Q' builtin P := by
+  intro h h' _
   intros
-  casesm* _ ∧ _, BigStepArgs _ _ _ _ _ _
-  simp_all
+  noir_simp [StatePredicate.eval]
+  apply_assumption
+  unfold Builtin at h
+  simp [StatePredicate.eval] at h
+  apply h
+  assumption
 
-theorem Args.cons_intro (e : Expr (Tp.denote p) tp) (es : HList (Expr (Tp.denote p)) tps) {Γ P Q R}:
-    PHoare p Γ P e Q →
-    (∀v, PHoare.Args p Γ (Q.comap (fun _ => v)) es (R.comap (fun vs => HList.cons v vs))) →
-    PHoare.Args p Γ P (HList.cons e es) R := by
-  rintro he hes st st' vs hP hAs
-  cases hAs
-  simp only [Args, StatePredicate.comap_eval] at hes
-  apply hes
-  simp only [PHoare] at he
-  apply he
-  all_goals assumption
+theorem Builtin.fresh_intro:
+    EHoare.Builtin p [] .field (fun st _ => ∃ a, P st a) .fresh P := by
+  intro _ _
+  casesm* HList _ _
+  noir_simp [StatePredicate.eval]
 
-theorem Call.intro {p Γ P tp}
-    {Q : StatePredicate p (HList (Tp.denote p) tps × tp.denote p)}
-    {body : HList (Tp.denote p) tps → Expr (Tp.denote p) tp}:
-    (∀ args, PHoare p Γ (P.comap fun _ => args) (body args) (Q.comap fun r => (args, r))) →
-    PHoare.Call p Γ P body Q := by
-  intro hb st st' args v hP hBS
-  simp [PHoare] at hb
-  apply hb
-  apply hP
-  apply hBS
+theorem Builtin.fresh_intro':
+    EHoare.Builtin p [] .field Q .fresh (fun st _ => Q st h![]) := by
+  intro _ _
+  casesm* HList _ _
+  noir_simp [StatePredicate.eval]
+
+theorem Builtin.eq_f_intro:
+    EHoare.Builtin p [.field, .field] .bool (fun st h![a, b] => P st (a == b)) .eq P := by
+  intro _ _
+  casesm* HList _ _
+  noir_simp [StatePredicate.eval]
+
+theorem call_builtin_intro:
+    EHoare.Args (tps := tps) p Γ P es Q →
+    EHoare.Builtin p tps tp Q builtin R →
+    EHoare p Γ P (Expr.call HList.nil tp (.builtin builtin) es) R := by
+  intro hA hB st
+  noir_simp
+  intro hAA
+  apply hA
+  apply Assignable.Args.weaken
+  apply hAA
+  exact hB
+
+theorem var_intro:
+    EHoare p Γ (fun st _ => Q st v) (Expr.var v) Q := by
+  unfold EHoare
+  noir_simp [StatePredicate.eval]
 
 theorem letIn_intro:
-    PHoare p Γ P e₁ Q →
-    (∀v, PHoare p Γ (Q.comap (fun _ => v)) (e₂ v) R) →
-    PHoare p Γ P (Expr.letIn e₁ e₂) R := by
-  intro he₁ he₂ st st' v hP hBS
-  cases hBS
-  apply he₂
-  simp
-  apply he₁
-  all_goals assumption
+    EHoare p Γ P e₁ Q →
+    (∀v, EHoare p Γ (fun st _ => Q st v) (e₂ v) R) →
+    EHoare p Γ P (Expr.letIn e₁ e₂) R := by
+  noir_simp only [EHoare, StatePredicate.eval]
+  intros
+  apply_assumption
+  apply Assignable.weaken
+  assumption
+  intros
+  apply_assumption
+  assumption
 
-theorem lit_u_intro:
-    PHoare p Γ (Q.comap fun _ => n) (Expr.lit (.u s) n) Q := by sorry
+theorem letIn_intro' {P Q : StatePredicate p (Tp.denote p tp)}:
+    (∀v, Q st v → v = v') →
+    EHoare p Γ (fun st _ => P st v') e₁ Q →
+    EHoare p Γ (fun st _ => Q st v') (e₂ v') R →
+    EHoare p Γ (fun st _ => P st v') (Expr.letIn e₁ e₂) R := by
+  noir_simp only [EHoare, StatePredicate.eval]
+  intro h
+  intros
+  apply_assumption
+  apply Assignable.weaken
+  assumption
+  intros
+  have : Q st v' := by apply_assumption
 
-theorem lit_u_intro':
-    PHoare p Γ P (Expr.lit (.u s) n) (fun st v => P st () ∧ v = n) := by sorry
 
-theorem callBuiltin_intro {R: StatePredicate p (Tp.denote p tp)}:
-    PHoare.Args p Γ P es Q →
-    PHoare.Builtin p Q builtin R →
-    PHoare p Γ P (Expr.call HList.nil tp (.builtin builtin) es) R := by
-  intro hA hB st st' v hP hBS
-  cases hBS
-  apply hB
-  apply hA
-  all_goals assumption
 
-end PHoare
+
+
+
+
+theorem seq_intro:
+    EHoare p Γ P e₁ (fun st _ => Q st ()) →
+    EHoare p Γ Q e₂ R →
+    EHoare p Γ P (Expr.seq e₁ e₂) R := by
+  noir_simp only [EHoare, StatePredicate.eval]
+  intros
+  apply_assumption
+  apply Assignable.weaken
+  assumption
+  intros
+  apply_assumption
+  assumption
+
+end EHoare
 
 end Lampe
 
-nr_def weirdEq<I>(x : I, y : I) -> Unit {
-  let a = #fresh() : I;
+nr_def assert<>(x : bool) -> Unit {
+  #assert(x) : Unit;
+}
+
+nr_def weirdEq<>(x : Field, y : Field) -> Unit {
+  let a = #fresh() : Field;
   #assert(#eq(a, x) : bool) : Unit;
   #assert(#eq(a, y) : bool) : Unit;
 }
 
 open Lampe
 
+example {a : Bool}:
+    EHoare p Γ (fun st _ => a ∧ P st ()) (assert.fn.body _ h![] h![a]) P := by
+  apply EHoare.call_builtin_intro
+  rotate_left
+  apply EHoare.Builtin.assert_intro
+  apply EHoare.Args.cons_intro
+  apply EHoare.var_intro
+  intro
+  apply EHoare.Args.nil_intro'
+  tauto
+
+example {a b : Fp p}:
+    EHoare p Γ (fun st _ => a = b ∧ P st ()) (weirdEq.fn.body _ h![] h![a, b]) P := by
+  apply EHoare.letIn_intro
+  apply EHoare.call_builtin_intro
+  apply EHoare.Args.nil_intro''
+  apply EHoare.Builtin.post_weaken
+  apply EHoare.Builtin.fresh_intro
+  intro st _
+  rotate_left
+  intro v
+  apply EHoare.seq_intro
+
+  apply EHoare.call_builtin_intro
+  apply EHoare.Args.cons_intro
+  apply EHoare.call_builtin_intro
+  apply EHoare.Args.cons_intro
+  apply EHoare.var_intro
+  intro
+  apply EHoare.Args.cons_intro
+  apply EHoare.var_intro
+  intro
+  apply EHoare.Args.nil_intro'
+  rotate_left
+  apply EHoare.Builtin.eq_f_intro
+  intro
+  apply EHoare.Args.nil_intro
+  apply EHoare.Builtin.assert_intro
+
+  apply EHoare.call_builtin_intro
+  apply EHoare.Args.cons_intro
+  apply EHoare.call_builtin_intro
+  apply EHoare.Args.cons_intro
+  apply EHoare.var_intro
+  intro
+  apply EHoare.Args.cons_intro
+  apply EHoare.var_intro
+  intro
+  apply EHoare.Args.nil_intro
+  apply EHoare.Builtin.eq_f_intro
+  intro
+  apply EHoare.Args.nil_intro
+  apply EHoare.Builtin.assert_intro
+
+  rotate_left
+
+  simp
+  intros
+  subst_vars
+  rotate_left
+  intros
+
+  apply EHoare.call_builtin_intro
+  apply EHoare.Args.nil_intro''
+  apply EHoare.Builtin.fresh_intro'
+  intros
+  subst_vars
+
+
+
 theorem callAssert (e : Expr (Tp.denote p) .bool):
-  PHoare p Γ P e Q →
+  EHoare p Γ P e Q →
   (∀ st v, Q st v → v = true) →
   PHoare p Γ P expr![#assert(${e}):Unit] (fun st v => Q st true) := by sorry
 
