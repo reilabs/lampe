@@ -75,13 +75,6 @@ inductive BigStepBuiltin : (inp: List Tp) → (out : Tp) → Builtin → HList (
 
 mutual
 
-inductive BigStepArgs : {args : List Tp} → Env → State P → HList (Expr rep) args → State P → HList (Tp.denote P) args → Prop where
-| nil : BigStepArgs Γ st .nil st .nil
-| cons :
-    BigStep Γ st e st' v →
-    BigStepArgs Γ st' exprs st'' results →
-    BigStepArgs Γ st (.cons e exprs) st'' (.cons v results)
-
 inductive BigStepFields : {fields : List Tp} → Env → State P → HList (Expr rep) fields → State P → Tp.denoteArgs P fields → Prop where
 | nil : BigStepFields Γ st .nil st ()
 | cons :
@@ -116,17 +109,15 @@ inductive BigStep : {tp : Tp} → Env → State P → Expr (Tp.denote P) tp → 
     BigStep Γ (st'.insert ref ⟨tp, v⟩) (b ref) st'' v' →
     BigStep Γ st (.letMutIn e b) st'' v'
 | callBuiltin :
-    BigStepArgs Γ st eargs st' vargs →
-    BigStepBuiltin P _ _ b vargs v →
-    BigStep Γ st (.call h![] _ (.builtin b) eargs) st' v
+    BigStepBuiltin P _ _ b args v →
+    BigStep Γ st (.call h![] _ (.builtin b) args) st v
 | callDecl:
     Γ fname = some fn →
     (hkc : fn.generics = tyKinds) →
     (htci : fn.inTps (hkc ▸ generics) = argTypes) →
     (htco : fn.outTp (hkc ▸ generics) = res) →
-    BigStepArgs Γ st args st' vargs →
-    BigStep Γ st' (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ vargs)) st'' v →
-    BigStep Γ st (@Expr.call _ tyKinds argTypes generics res (.decl fname) args) st'' v
+    BigStep Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) st' v →
+    BigStep Γ st (@Expr.call _ tyKinds argTypes generics res (.decl fname) args) st' v
 | seq:
     BigStep Γ st e1 st' v' →
     BigStep Γ st' e2 st'' v →

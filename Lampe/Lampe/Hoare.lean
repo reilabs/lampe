@@ -20,13 +20,19 @@ def lift {p} (pr : Prop) : SLP p := fun st => pr ∧ st = ∅
 
 def singleton {p} (r : Ref) (v : AnyValue p) : SLP p := fun st => st = Finmap.singleton r v
 
+def wand {p} (lhs rhs : SLP p) : SLP p :=
+  fun st => ∀st', st.Disjoint st' → lhs st' → rhs (st ∪ st')
+
 instance {p}: Coe Prop (SLP p) := ⟨lift⟩
 
 notation "[|" x "|]" => lift x
 
 notation l " ⋆ " r => star l r
 
+notation l " -⋆ " r => wand l r
+
 notation "[" l " ↦ " r "]" => singleton l r
+
 
 
 def ent {p} (a b : SLP p) := ∀st, a st → b st
@@ -98,77 +104,17 @@ def PHoare
     (Q : (tp.denote p) → SLP p): Prop :=
   ∀st st' v, P st → BigStep p Γ st e st' v → Q v st'
 
-def PHoare.Args
-    {tps : List Tp}
-    (Γ : Env)
-    (P : SLP p)
-    (es : HList (Expr (Tp.denote p)) tps)
-    (Q : HList (Tp.denote p) tps → SLP p): Prop :=
-  ∀st st' vs, P st → BigStepArgs p Γ st es st' vs → Q vs st'
-
 def PHoare.Builtin
     (tps : List Tp)
     (tp : Tp)
-    (P :  HList (Tp.denote p) tps → SLP p)
+    (P : SLP p)
     (builtin : Builtin)
+    (args : HList (Tp.denote p) tps)
     (Q : tp.denote p → SLP p)
     : Prop
-  := ∀st args v, P args st → BigStepBuiltin p tps tp builtin args v → Q v st
+  := ∀st v, P st → BigStepBuiltin p tps tp builtin args v → Q v st
 
 namespace PHoare
-
-@[aesop safe]
-theorem Args.nil_intro {p Γ Q}:
-    PHoare.Args p Γ (Q h![]) h![] Q := by
-  unfold PHoare.Args
-  intros
-  casesm* _ ∧ _, BigStepArgs _ _ _ _ _ _
-  simp_all
-
-@[aesop safe]
-theorem Args.nil_intro':
-    PHoare.Args p Γ P h![] (fun _ => P) := by
-  unfold PHoare.Args
-  intros
-  casesm* BigStepArgs _ _ _ _ _ _
-  simp_all
-
-theorem Args.nil_intro'':
-    (∀ st, P st → Q h![] st) →
-    PHoare.Args p Γ P h![] Q := by
-  unfold PHoare.Args
-  intros
-  casesm* BigStepArgs _ _ _ _ _ _
-  repeat apply_assumption
-
-theorem Args.cons_intro (e : Expr (Tp.denote p) tp) (es : HList (Expr (Tp.denote p)) tps) {Γ P Q}:
-    PHoare p Γ P e Q →
-    (∀v, PHoare.Args p Γ (Q v) es (fun vs => R (HList.cons v vs))) →
-    PHoare.Args p Γ P (HList.cons e es) R := by
-  rintro he hes st st' vs hP hAs
-  cases hAs
-  simp only [Args] at hes
-  apply hes
-  simp only [PHoare] at he
-  apply he
-  all_goals assumption
-
-@[aesop unsafe 99%]
-theorem Args.cons_intro'
-  (e : Expr (Tp.denote p) tp)
-  (es : HList (Expr (Tp.denote p)) tps)
-  {Γ P Q} {R : Tp.denote p tp → HList (Tp.denote p) tps → SLP p}:
-    PHoare p Γ P e Q →
-    (∀v, PHoare.Args p Γ (Q v) es (R v)) →
-    PHoare.Args p Γ P (HList.cons e es) (fun (HList.cons v vs) => R v vs) := by
-  rintro he hes st st' vs hP hAs
-  cases hAs
-  simp only [Args] at hes
-  apply hes
-  simp only [PHoare] at he
-  apply he
-  all_goals assumption
-
 
 @[aesop safe]
 theorem var_intro:
@@ -178,13 +124,21 @@ theorem var_intro:
   casesm* BigStep _ _ _ _ _ _
   simp_all
 
-@[aesop safe]
+@[aesop unsafe 99%]
 theorem var_intro':
-    PHoare p Γ P (Expr.var n) (fun v st => v = n ∧ P st) := by
+    (∀ st, P st → Q n st) → PHoare p Γ P (Expr.var n) Q := by
   unfold PHoare
   intros
   casesm* BigStep _ _ _ _ _ _
   simp_all
+
+-- @[aesop safe]
+-- theorem var_intro' {n : Tp.denote p tp} {P}:
+--     PHoare p Γ P (Expr.var n) (fun v st => v = n ∧ P st) := by
+--   unfold PHoare
+--   intros
+--   casesm* BigStep _ _ _ _ _ _
+--   simp_all
 
 @[aesop safe]
 theorem letIn_intro:
@@ -213,77 +167,44 @@ theorem lit_u_intro {Q : U s → SLP p}:
   simp_all
 
 @[aesop safe]
-theorem callBuiltin_intro {R} {Q : HList (Tp.denote p) tps → SLP p}:
-    PHoare.Args p Γ P es Q →
-    PHoare.Builtin p tps tp Q builtin R →
-    PHoare p Γ P (Expr.call HList.nil tp (.builtin builtin) es) R := by
-  intro hA hB st st' v hP hBS
-  cases hBS
-  apply hB
-  apply hA
-  all_goals assumption
-
--- @[aesop safe]
-theorem Builtin.assert_intro {P : HList (Tp.denote p) [.bool] → SLP p}:
-    PHoare.Builtin p [.bool] .unit (fun args st => args = h![v] ∧ P args st) Builtin.assert (fun _ st => v = true ∧ P h![v] st) := by
-  unfold PHoare.Builtin
+theorem callBuiltin_intro:
+    PHoare.Builtin p tps tp P builtin args Q →
+    PHoare p Γ P (Expr.call HList.nil tp (.builtin builtin) args) Q := by
+  unfold PHoare.Builtin PHoare
   intros
-  casesm* HList _ _
-  casesm* BigStepBuiltin _ _ _ _ _ _
+  casesm* BigStep _ _ _ _ _ _
   simp_all
 
--- @[aesop safe]
-theorem Builtin.assert_intro':
-    PHoare.Builtin p [.bool] .unit (fun args st => args = h![v]) Builtin.assert (fun _ st => v = true) := by
+@[aesop safe]
+theorem Builtin.assert_intro' {v:Bool}:
+    PHoare.Builtin p [.bool] .unit (fun st => v → P () st) Builtin.assert h![v] P := by
   unfold PHoare.Builtin
   intros
-  casesm* HList _ _
   casesm* BigStepBuiltin _ _ _ _ _ _
   simp_all
 
 @[aesop safe]
-theorem Builtin.assert_intro'' {P : HList (Tp.denote p) [.bool] → SLP p}:
-    PHoare.Builtin p [.bool] .unit P Builtin.assert (fun _ => P h![true]) := by
-  unfold PHoare.Builtin
-  intros
-  casesm* BigStepBuiltin _ _ _ _ _ _
-  assumption
-
-@[aesop unsafe 99%]
 theorem Builtin.eq_f_intro {a b}:
-    (∀ as st, P as st → as = h![a,b]) →
-    PHoare.Builtin p [.field, .field] .bool P Builtin.eq (fun v _ => v = (a == b)) := by
+    PHoare.Builtin p [.field, .field] .bool (P (a == b)) Builtin.eq h![a,b] P := by
   unfold PHoare.Builtin
-  intro h
   intros
   casesm* BigStepBuiltin _ _ _ _ _ _
-  have := h _ _ (by assumption)
   simp_all
 
 @[aesop unsafe 99%]
-theorem Builtin.eq_f_intro':
-    PHoare.Builtin p [.field, .field] .bool (fun h![a, b] => Q (a == b)) .eq Q := by
+theorem Builtin.eq_f_intro' {a b}:
+    (∀ st, P st → Q (a == b) st) →
+    PHoare.Builtin p [.field, .field] .bool P Builtin.eq h![a,b] Q := by
   unfold PHoare.Builtin
   intros
-  casesm* HList _ _
   casesm* BigStepBuiltin _ _ _ _ _ _
   simp_all
-
-@[aesop safe]
-theorem Builtin.fresh_intro:
-    PHoare.Builtin p [] tp (fun _ st => ∀v, Q v st) Builtin.fresh Q := by
-  unfold PHoare.Builtin
-  intros
-  casesm* HList _ _
-  casesm* BigStepBuiltin _ _ _ _ _ _
-  apply_assumption
 
 @[aesop safe]
 theorem Builtin.fresh_intro':
-    PHoare.Builtin p [] tp P Builtin.fresh (fun _ => P h![]) := by
+    PHoare.Builtin p [] tp P Builtin.fresh h![] (fun _ => P) := by
   unfold PHoare.Builtin
   intros
-  casesm* HList _ _
   casesm* BigStepBuiltin _ _ _ _ _ _
   apply_assumption
 
@@ -296,19 +217,19 @@ theorem strengthen_pre:
   intros
   repeat apply_assumption
 
-theorem Builtin.strengthen_pre {P P' : HList (Tp.denote p) tps → SLP p}:
-    (∀ args st, P' args st → P args st) →
-    PHoare.Builtin p tps tp P builtin Q →
-    PHoare.Builtin p tps tp P' builtin Q := by
+theorem Builtin.strengthen_pre {P P' : SLP p}:
+    (∀ st, P' st → P st) →
+    PHoare.Builtin p tps tp P builtin args Q →
+    PHoare.Builtin p tps tp P' builtin args Q := by
   unfold PHoare.Builtin
   intros
   repeat apply_assumption
 
 @[aesop unsafe 1%]
 theorem Builtin.weaken_post {Q Q' : tp.denote p → SLP p}:
-    PHoare.Builtin p tps tp P builtin Q →
+    PHoare.Builtin p tps tp P builtin args Q →
     (∀ v st, Q v st → Q' v st) →
-    PHoare.Builtin p tps tp P builtin Q' := by
+    PHoare.Builtin p tps tp P builtin args Q' := by
   unfold PHoare.Builtin
   intros
   repeat apply_assumption
@@ -334,130 +255,180 @@ nr_def assert2<>(x : bool, y: bool) -> Unit {
 
 open Lampe
 
-example : PHoare p Γ (fun _ => True) (assert.fn.body _ h![] h![v]) (fun _ _ => v = true) := by
+example : PHoare p Γ (fun _ => True) (assert.fn.body _ h![] h![v]) (fun _ _ => v) := by
   unfold assert
   aesop
 
--- set_option trace.aesop true
-
 example : PHoare p Γ (fun _ => True) (assert2.fn.body _ h![] h![a, b]) (fun _ _ => a ∧ b) := by
   unfold assert2
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-
+  aesop
 
 example : PHoare p Γ (fun _ => True) (weirdEq.fn.body _ h![.field] h![a, b]) (fun _ _ => (a = b)) := by
   unfold weirdEq
+  simp only
+  apply PHoare.letIn_intro
+  apply PHoare.callBuiltin_intro
+  apply PHoare.Builtin.fresh_intro'
+  intro
+  apply PHoare.seq_intro
+  repeat apply PHoare.letIn_intro
+  apply PHoare.var_intro'
+  rotate_left
+  intro
+  apply PHoare.letIn_intro
+  apply PHoare.var_intro'
+  rotate_left
+  intro
+  apply PHoare.callBuiltin_intro
+  apply PHoare.Builtin.eq_f_intro
+  rotate_left
+  intro
+  apply PHoare.callBuiltin_intro
+  apply PHoare.Builtin.assert_intro'
+  repeat apply PHoare.letIn_intro
+  apply PHoare.var_intro
+  intro
+  repeat apply PHoare.letIn_intro
+  apply PHoare.var_intro'
+  rotate_left
+  intro
+  apply PHoare.callBuiltin_intro
+  apply PHoare.Builtin.eq_f_intro
+  rotate_left
+  intro
+  apply PHoare.callBuiltin_intro
+  apply PHoare.Builtin.assert_intro'
+  sorry
 
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  apply PHoare.Args.cons_intro'
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  apply PHoare.Builtin.eq_f_intro
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  apply PHoare.Args.cons_intro'
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  apply PHoare.Builtin.eq_f_intro
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
-  aesop (add 10% cases HList) (config := {maxRuleApplications := 10})
+
 
 def SPHoare p Γ P e (Q : Tp.denote p tp → SLP p) := ∀H, PHoare p Γ (P ⋆ H) e (fun v => (Q v) ⋆ H)
-def SPHoare.Args p Γ P e (Q : HList (Tp.denote p) tps → SLP p) := ∀H, PHoare.Args p Γ (P ⋆ H) e (fun v => (Q v) ⋆ H)
-def SPHoare.Builtin p tps tp (P: HList (Tp.denote p) tps → SLP p) e (Q : Tp.denote p tp → SLP p) := ∀H, PHoare.Builtin p tps tp (fun as => P as ⋆ H) e (fun v => Q v ⋆ H)
 
 @[aesop safe]
-theorem callBuiltin_intro {R} {Q : HList (Tp.denote p) tps → SLP p}:
-    SPHoare.Args p Γ P es Q →
-    SPHoare.Builtin p tps tp Q builtin R →
-    SPHoare p Γ P (Expr.call HList.nil tp (.builtin builtin) es) R := by
-  intro hA hB H
-  aesop
-
-@[aesop unsafe 99%]
-theorem Args.cons_intro
-  (e : Expr (Tp.denote p) tp)
-  (es : HList (Expr (Tp.denote p)) tps)
-  {Γ P Q} {R : Tp.denote p tp → HList (Tp.denote p) tps → SLP p}:
-    SPHoare p Γ P e Q →
-    (∀v, SPHoare.Args p Γ (Q v) es (R v)) →
-    SPHoare.Args p Γ P (HList.cons e es) (fun (HList.cons v vs) => R v vs) := by
-  intro hE hA H
-  simp only
-  have {x: HList (Tp.denote p) (tp :: tps)} :
-      Lampe.star (match x with | HList.cons v vs => R v vs) H =
-      (match x with | HList.cons v vs => Lampe.star (R v vs) H) := by
-    cases x
-    rfl
-  simp_rw [this]
-  aesop
-
--- @[aesop safe]
--- theorem var_intro:
---     SPHoare p Γ (P n) (Expr.var n) P := by
---   intro H
---   have {n}: (P n ⋆ H) = (fun n => P n ⋆ H) n := by rfl
---   rw [this]
---   apply PHoare.var_intro (P := fun n => P n ⋆ H)
+theorem var_intro':
+    SPHoare p Γ (P n) (Expr.var n) P := by
+  intro H
+  have {n}: (P n ⋆ H) = (fun n => P n ⋆ H) n := by rfl
+  rw [this]
+  apply PHoare.var_intro (P := fun n => P n ⋆ H)
 
 @[aesop safe]
-theorem var_intro:
-    SPHoare p Γ True (Expr.var n) (fun v => [|v = n|]) := by
+theorem var_intro :
+    SPHoare p Γ [|True|] (Expr.var n) (fun v => [|v = n|]) := by sorry
+
+@[aesop safe]
+theorem assert_intro {v:Bool}:
+    SPHoare p Γ
+    [|True|]
+    (.call (argTypes := [.bool]) h![] .unit (.builtin .assert) h![v])
+    (fun _ => [|v|]) := by
   intro H
   unfold PHoare
   intros
-  casesm* BigStep _ _ _ _ _ _
+  casesm* BigStep _ _ _ _ _ _, BigStepBuiltin _ _ _ _ _ _
   simp_all
 
 @[aesop safe]
-theorem nil_intro:
-    SPHoare.Args p Γ [|True|] h![] (fun _ => [|True|]) := by
-  intro H
-  unfold PHoare.Args
-  intros
-  casesm* BigStepArgs _ _ _ _ _ _
-  simp_all
+theorem assert_intro' {v:Bool}:
+    SPHoare p Γ
+    ([|v|] -⋆ Q ())
+    (.call (argTypes := [.bool]) h![] .unit (.builtin .assert) h![v])
+    Q := by sorry
+  -- intro H
+  -- unfold PHoare
+  -- intros
+  -- casesm* BigStep _ _ _ _ _ _, BigStepBuiltin _ _ _ _ _ _
+  -- simp_all
 
-@[aesop safe]
-theorem Builtin.assert_intro {P : HList (Tp.denote p) [.bool] → SLP p}:
-    SPHoare.Builtin p [.bool] .unit P Builtin.assert (fun _ => P h![true]) := by
-  intro h
-  unfold PHoare.Builtin
-  intros
-  casesm* BigStepBuiltin _ _ _ _ _ _
-  assumption
-
-@[aesop unsafe 1%]
-theorem Args.conseq_frame:
-    SPHoare.Args p Γ P e Q →
-    (P' ⊢ P ⋆ H) →
-    (∀ v, (Q v ⋆ H) ⊢ Q' v) →
-    SPHoare.Args p Γ P' e Q' := by sorry
-
-@[aesop unsafe 1%]
+-- @[aesop unsafe 1%]
 theorem conseq_frame:
     SPHoare p Γ P e Q →
     (P' ⊢ P ⋆ H) →
     (∀ v, (Q v ⋆ H) ⊢ Q' v) →
     SPHoare p Γ P' e Q' := by sorry
 
-@[aesop unsafe 1%]
-theorem SPHoare.Builtin.weaken_post:
-    SPHoare.Builtin p tps tp P e Q →
+-- @[aesop unsafe 1%]
+theorem conseq:
+    SPHoare p Γ P e Q →
+    (P' ⊢ P) →
     (∀ v, Q v ⊢ Q' v) →
-    SPHoare.Builtin p tps tp P e Q' := by sorry
+    SPHoare p Γ P' e Q' := by sorry
+
+@[aesop unsafe 1%]
+theorem ramified_frame {Q Q₁ : Tp.denote p tp → SLP p}:
+    SPHoare p Γ H₁ e Q₁ →
+    (∀ v, H ⊢ (H₁ ⋆ (Q₁ v -⋆ Q v))) →
+    SPHoare p Γ H e Q := by sorry
+
+@[aesop safe]
+theorem letIn_intro:
+    SPHoare p Γ P e₁ Q →
+    (∀v, SPHoare p Γ (Q v) (e₂ v) R) →
+    SPHoare p Γ P (Expr.letIn e₁ e₂) R := by
+  unfold SPHoare PHoare
+  intros
+  casesm BigStep _ _ _ _ _ _
+  apply_assumption
+  apply_assumption
+  assumption
+  assumption
+  assumption
+
+@[aesop safe]
+theorem seq_intro:
+    SPHoare p Γ P e₁ (fun _ => Q) →
+    SPHoare p Γ Q e₂ R →
+    SPHoare p Γ P (e₁.seq e₂) R := by
+  unfold SPHoare
+  intros
+  apply PHoare.seq_intro <;> apply_assumption
+
+@[simp]
+theorem lift_star_lift {P Q : Prop} : ((lift P : SLP p) ⋆ [|Q|]) = [|P ∧ Q|] := by
+  unfold Lampe.star lift
+  funext
+  rw [eq_iff_iff]
+  apply Iff.intro
+  · intro_cases; subst_vars; simp_all
+  · intro_cases; exists ∅; exists ∅; simp_all [Finmap.disjoint_empty]
+
+@[simp]
+theorem ent_lift_iff_implies {P Q : Prop} : (lift (p:=p) P ⊢ [|Q|]) = (P → Q) := by
+  unfold ent lift
+  funext
+  rw [eq_iff_iff]
+  apply Iff.intro
+  · intro_cases; simp_all
+  · intro_cases; simp_all
+
+@[simp]
+theorem lift_wand_lift_eq_imp {P Q : Prop} : ((lift P : SLP p) -⋆ [|Q|]) = [|P → Q|] := by
+  sorry
 
 example : SPHoare p Γ True (assert.fn.body _ h![] h![v]) (fun _ => [|v|]) := by
   unfold assert
+  simp only
+  apply letIn_intro
+  apply var_intro
+  intro
+  apply ramified_frame
+  apply assert_intro
+  aesop
+
+
+
+  -- aesop
+
+example : SPHoare p Γ True (assert2.fn.body _ h![] h![a, b]) (fun _ => [|a ∧ b|]) := by
+  unfold assert2
+  simp only
+  aesop
+  aesop
+  apply ramified_frame
+  apply assert_intro
+  rotate_left
+  apply var_intro'
+  apply assert_intro'
   aesop
 
 lemma Finmap.insert_eq_singleton_union [DecidableEq α] {ref : α}:
@@ -467,15 +438,6 @@ lemma Finmap.insert_eq_singleton_union [DecidableEq α] {ref : α}:
 lemma Finmap.singleton_disjoint_of_not_mem (hp : ref ∉ s):
     Finmap.Disjoint (singleton ref v) s := by
   simp_all [Disjoint]
-
-@[aesop unsafe 99%]
-theorem seq_intro:
-    SPHoare p Γ P e₁ (fun _ => Q) →
-    SPHoare p Γ Q e₂ R →
-    SPHoare p Γ P (e₁.seq e₂) R := by
-  unfold SPHoare
-  intros
-  apply PHoare.seq_intro <;> apply_assumption
 
 @[aesop unsafe 99%]
 theorem letMutIn_intro {e₁ : Expr (Tp.denote p) tp}:
@@ -503,7 +465,7 @@ theorem letMutIn_intro {e₁ : Expr (Tp.denote p) tp}:
 @[aesop unsafe 99%]
 theorem writeRef_intro {e₁ : Expr (Tp.denote p) tp}:
     SPHoare p Γ (P ⋆ [ref ↦ v₀]) e₁ (fun v => Q v ⋆ [ref ↦ v₁]) →
-    (∀ v, SPHoare p Γ (P ⋆ [ref ↦ v₀])
+    (∀ v, SPHoare p Γ (P ⋆ [ref ↦ v₀]) (Expr.writeRef)
 -- theorem frame:
 --     PHoare p Γ P e Q →
 

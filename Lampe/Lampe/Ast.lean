@@ -41,7 +41,7 @@ inductive Expr (rep : Tp → Type): Tp → Type where
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
 | seq : Expr rep _ → Expr rep t → Expr rep t
-| call {argTypes : List Tp} : HList Kind.denote tyKinds → (res : Tp) → FunctionIdent → HList (Expr rep) argTypes → Expr rep res
+| call {argTypes : List Tp} : HList Kind.denote tyKinds → (res : Tp) → FunctionIdent → HList rep argTypes → Expr rep res
 | struct {fieldTps}: HList (Expr rep) fieldTps → Expr rep (Tp.struct fieldTps)
 | proj : (mem : Member tp fieldTps) → Expr rep (Tp.struct fieldTps) → Expr rep tp
 | ite : Expr rep .bool → Expr rep a → Expr rep a → Expr rep a
@@ -50,6 +50,7 @@ inductive Expr (rep : Tp → Type): Tp → Type where
 | letMutIn : Expr rep t₁ → (rep (.ref t₁) → Expr rep t₂) → Expr rep t₂
 | readRef : Expr rep (.ref t) → Expr rep t
 | writeRef : Expr rep (.ref t) → Expr rep t → Expr rep .unit
+
 
 structure Function : Type _ where
   generics : List Kind

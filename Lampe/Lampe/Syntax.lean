@@ -120,6 +120,19 @@ partial def mkProj [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
 | 0 => `(Member.head)
 | n+1 => do `(Member.tail $(←mkProj n))
 
+partial def mkCall [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
+    (args : List (TSyntax `term))
+    (argsBuffer : Array (TSyntax `term))
+    (idx : Nat)
+    (mkRest : Array (TSyntax `term) → m (TSyntax `term))
+    : m (TSyntax `term) := match args with
+| [] => mkRest argsBuffer
+| e :: rest => do
+  let argName := mkIdent $ Name.mkSimple s!"#arg_{idx}"
+  let rest ← mkCall rest (argsBuffer.push argName) (idx+1) mkRest
+  `(Lampe.Expr.letIn $e fun $argName => $rest)
+
+
 partial def mkExpr [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (autoDeref : Name → Bool) : TSyntax `nr_expr → m (TSyntax `term)
 | `(nr_expr|$n:num : $tp) => do `(Lampe.Expr.lit $(←mkNrType tp) $n)
 | `(nr_expr| true) => `(Lampe.Expr.lit Tp.bool 1)
@@ -130,13 +143,17 @@ partial def mkExpr [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
   if autoDeref i.getId then `(Lampe.Expr.readRef $v) else pure v
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
   let args ← args.getElems.toList.mapM (mkExpr autoDeref)
-  `(Lampe.Expr.call h![] $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit args))
+  let r ← mkCall args #[] 0 fun args => do
+    `(Lampe.Expr.call h![] $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit args.toList))
+  dbg_trace r
+  pure r
 | `(nr_expr| $i:nr_ident < $generics,* > ($args,*) : $tp) => do
   let name ← mkNrIdent i
   let generics ← generics.getElems.toList.mapM mkNrType
   let args ← args.getElems.toList.mapM (mkExpr autoDeref)
   let tyKinds ← mkListLit $ List.replicate generics.length (←`(Kind.type))
-  `(Lampe.Expr.call (tyKinds := $tyKinds) $(←mkHListLit generics) $(←mkNrType tp) (.decl $(Syntax.mkStrLit name)) $(←mkHListLit args))
+  mkCall args #[] 0 fun args => do
+    `(Lampe.Expr.call (tyKinds := $tyKinds) $(←mkHListLit generics) $(←mkNrType tp) (.decl $(Syntax.mkStrLit name)) $(←mkHListLit args.toList))
 | `(nr_expr| $i:nr_ident < $generics,* > {$args,*}) => do
   let name := mkIdent $ Name.mkSimple $ ← mkNrIdent i
   let generics ← generics.getElems.toList.mapM mkNrType
@@ -205,6 +222,8 @@ elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do Elab.Term.elabTerm (←mkFnDec
 #check nrfn![ fn myFn<>() -> Unit {}]
 
 #check nrfn![ fn myFn<A, B, C>(x : u8, y : A, z : B, w : C) -> u8 { let x = (1 : u8); x } ]
+
+#check expr![ #assert(#assert(true,false):Unit):Unit ]
 
 #check nrfn![ fn weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
