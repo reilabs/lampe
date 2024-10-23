@@ -3,35 +3,14 @@ import Lampe.Tp
 import Lampe.Data.Field
 import Lampe.Tactic.IntroCases
 import Mathlib
+import Lampe.State
+
 
 namespace Lampe
 
 variable (P : Prime)
 
-def Ref.forward : Ref → Nat → Ref
-| ⟨i⟩, n => ⟨ i + n ⟩
-
-namespace Ref
-
-@[simp]
-lemma forward_zero {r:Ref} : r.forward 0 = r := by
-  rfl
-
-@[simp]
-lemma forward_forward {r:Ref} {n m : Nat} : (r.forward n).forward m = r.forward (n + m) := by
-  simp_arith [forward]
-
-end Ref
-
 def Env := Ident → Option Function
-
-def AnyValue := (tp : Tp) × tp.denote P
-
-abbrev State := Finmap (fun (_ : Ref) => AnyValue P)
-
-namespace State
-
-end State
 
 def Env.ofModule (m : Module): Env := fun i => (m.decls.find? fun d => d.name == i).map (·.fn)
 
@@ -43,44 +22,37 @@ def getProj {fields : List Tp} (mem : Member tp fields) (v : Tp.denote P (.struc
 | .head => v.1
 | .tail mem => getProj mem v.2
 
-def fpToU : Fp P → U s := fun x => ⟨x.val % 2 ^ s, by apply Nat.mod_lt; apply Nat.zero_lt_of_ne_zero; apply pow_ne_zero; decide⟩
-def uToU : U s → U t := fun x => ⟨x.val % 2 ^ t, by apply Nat.mod_lt; apply Nat.zero_lt_of_ne_zero; apply pow_ne_zero; decide⟩
-def uToFp : U s → Fp P := fun x => ⟨x.val % P.natVal, by apply Nat.mod_lt; apply Nat.zero_lt_of_ne_zero; apply Nat.Prime.ne_zero; apply P.prop⟩
+-- def fpToU : Fp P → U s := fun x => ⟨x.val % 2 ^ s, by apply Nat.mod_lt; apply Nat.zero_lt_of_ne_zero; apply pow_ne_zero; decide⟩
+-- def uToU : U s → U t := fun x => ⟨x.val % 2 ^ t, by apply Nat.mod_lt; apply Nat.zero_lt_of_ne_zero; apply pow_ne_zero; decide⟩
+-- def uToFp : U s → Fp P := fun x => ⟨x.val % P.natVal, by apply Nat.mod_lt; apply Nat.zero_lt_of_ne_zero; apply Nat.Prime.ne_zero; apply P.prop⟩
 
-inductive BigStepBuiltin : (inp: List Tp) → (out : Tp) → Builtin → HList (Tp.denote P) inp → out.denote P → Prop where
-| eqU : BigStepBuiltin [.u s, .u s] .bool .eq h![v1, v2] (v1 == v2)
-| eqF : BigStepBuiltin [.field, .field] .bool .eq h![v1, v2] (v1 == v2)
-| ltU : BigStepBuiltin [.u s, .u s] .bool .lt h![n1, n2] (n1 < n2)
-| assert : BigStepBuiltin [.bool] .unit .assert h![true] .unit
-| addF : BigStepBuiltin [.field, .field] .field .add h![n1, n2] (n1 + n2)
-| addU : (n1.val + n2.val < 2 ^ s) → BigStepBuiltin [.u s, .u s] (.u s) .add h![n1, n2] (n1 + n2) -- oflow error in circuit as well?
-| divF {n2 : Fp P}: (n2 ≠ 0) → BigStepBuiltin [.field, .field] .field .div h![n1, n2] (n1 / n2)
-| divU {n1 n2 : U s} : (n2 ≠ 0) → BigStepBuiltin [.u s, .u s] (.u s) .div h![n1, n2] (n1 / n2) -- div by zero error in circuit?
-| subF : BigStepBuiltin [.field, .field] .field .sub h![n1, n2] (n1 - n2)
-| subU : (n2.val ≤ n1.val) → BigStepBuiltin [.u s, .u s] (.u s) .sub h![n1, n2] (n1 - n2) -- oflow error in circuit as well?
-| castUU : BigStepBuiltin [.u s] (.u t) .cast h![n] n
-| castUF : BigStepBuiltin [.u s] .field .cast h![n] (uToFp P n)
-| castFU : BigStepBuiltin [.field] (.u s) .cast h![n] (fpToU P n)
-| not : BigStepBuiltin [.bool] .bool .not h![b] (!b)
-| fresh : BigStepBuiltin [] tp .fresh h![] v
-| modulusNumBits : BigStepBuiltin [] (.u 64) .modulusNumBits h![] (numBits P.natVal)
-| toLeBytes {result : List (U 8)} {s : U 32} {n : Fp P} :
-    result.length = s.val →
-    ∑i, (result.get i).val * 2^i.val = n →
-    BigStepBuiltin [.field, .u 32] (.slice (.u 8)) .toLeBytes h![n, s] result
-| index {slice : List (t.denote P)} : (h : List.length slice > i.val) →
-    BigStepBuiltin [.slice t, .u s] t .index h![slice, i] (slice.get ⟨i, h⟩)
-| sliceLen {slice : List (t.denote P)} : BigStepBuiltin [.slice t] (.u 32) .sliceLen h![slice] slice.length
+-- inductive BigStepBuiltin : (inp: List Tp) → (out : Tp) → Builtin → HList (Tp.denote P) inp → out.denote P → Prop where
+-- | eqU : BigStepBuiltin [.u s, .u s] .bool .eq h![v1, v2] (v1 == v2)
+-- | eqF : BigStepBuiltin [.field, .field] .bool .eq h![v1, v2] (v1 == v2)
+-- | ltU : BigStepBuiltin [.u s, .u s] .bool .lt h![n1, n2] (n1 < n2)
+-- | assert : BigStepBuiltin [.bool] .unit .assert h![true] .unit
+-- | addF : BigStepBuiltin [.field, .field] .field .add h![n1, n2] (n1 + n2)
+-- | addU : (n1.val + n2.val < 2 ^ s) → BigStepBuiltin [.u s, .u s] (.u s) .add h![n1, n2] (n1 + n2) -- oflow error in circuit as well?
+-- | divF {n2 : Fp P}: (n2 ≠ 0) → BigStepBuiltin [.field, .field] .field .div h![n1, n2] (n1 / n2)
+-- | divU {n1 n2 : U s} : (n2 ≠ 0) → BigStepBuiltin [.u s, .u s] (.u s) .div h![n1, n2] (n1 / n2) -- div by zero error in circuit?
+-- | subF : BigStepBuiltin [.field, .field] .field .sub h![n1, n2] (n1 - n2)
+-- | subU : (n2.val ≤ n1.val) → BigStepBuiltin [.u s, .u s] (.u s) .sub h![n1, n2] (n1 - n2) -- oflow error in circuit as well?
+-- | castUU : BigStepBuiltin [.u s] (.u t) .cast h![n] n
+-- | castUF : BigStepBuiltin [.u s] .field .cast h![n] (uToFp P n)
+-- | castFU : BigStepBuiltin [.field] (.u s) .cast h![n] (fpToU P n)
+-- | not : BigStepBuiltin [.bool] .bool .not h![b] (!b)
+-- | fresh : BigStepBuiltin [] tp .fresh h![] v
+-- | modulusNumBits : BigStepBuiltin [] (.u 64) .modulusNumBits h![] (numBits P.natVal)
+-- | toLeBytes {result : List (U 8)} {s : U 32} {n : Fp P} :
+--     result.length = s.val →
+--     ∑i, (result.get i).val * 2^i.val = n →
+--     BigStepBuiltin [.field, .u 32] (.slice (.u 8)) .toLeBytes h![n, s] result
+-- | index {slice : List (t.denote P)} : (h : List.length slice > i.val) →
+--     BigStepBuiltin [.slice t, .u s] t .index h![slice, i] (slice.get ⟨i, h⟩)
+-- | sliceLen {slice : List (t.denote P)} : BigStepBuiltin [.slice t] (.u 32) .sliceLen h![slice] slice.length
 
 
 mutual
-
-inductive BigStepFields : {fields : List Tp} → Env → State P → HList (Expr rep) fields → State P → Tp.denoteArgs P fields → Prop where
-| nil : BigStepFields Γ st .nil st ()
-| cons :
-    BigStep Γ st e st' v →
-    BigStepFields Γ st' exprs st'' results →
-    BigStepFields Γ st (.cons e exprs) st'' (v, results)
 
 inductive BigStepLoop : {s : Nat} → Env → State P → Nat → Nat → (U s → Expr (Tp.denote P) tp) → State P → Prop where
 | cont {lo hi : ℕ} {body : U s → Expr (Tp.denote P) tp}:
@@ -103,21 +75,16 @@ inductive BigStep : {tp : Tp} → Env → State P → Expr (Tp.denote P) tp → 
     BigStep Γ st e st' v →
     BigStep Γ st' (b v) st'' v' →
     BigStep Γ st (.letIn e b) st'' v'
-| letMutIn {e : Expr _ tp}:
-    BigStep Γ st e st' v →
-    (ref ∉ st') →
-    BigStep Γ (st'.insert ref ⟨tp, v⟩) (b ref) st'' v' →
-    BigStep Γ st (.letMutIn e b) st'' v'
 | callBuiltin :
-    BigStepBuiltin P _ _ b args v →
-    BigStep Γ st (.call h![] _ (.builtin b) args) st v
+    b P st argTypes resType args v st'  →
+    BigStep Γ st (Expr.call h![] argTypes resType (.builtin b) args) st' v
 | callDecl:
     Γ fname = some fn →
     (hkc : fn.generics = tyKinds) →
     (htci : fn.inTps (hkc ▸ generics) = argTypes) →
     (htco : fn.outTp (hkc ▸ generics) = res) →
     BigStep Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) st' v →
-    BigStep Γ st (@Expr.call _ tyKinds argTypes generics res (.decl fname) args) st' v
+    BigStep Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) st' v
 | seq:
     BigStep Γ st e1 st' v' →
     BigStep Γ st' e2 st'' v →
@@ -141,12 +108,6 @@ inductive BigStep : {tp : Tp} → Env → State P → Expr (Tp.denote P) tp → 
 | proj:
     BigStep Γ st struct st' v →
     BigStep Γ st (.proj mem struct) st' (getProj P mem v)
-| readRef {refE : Expr (Tp.denote P) (.ref tp)}:
-    st.lookup ref = some ⟨tp, v⟩ →
-    BigStep Γ st (.readRef (.var ref)) st v
-| writeRef {e : Expr (Tp.denote P) tp}:
-    BigStep Γ st e st' v →
-    BigStep Γ st (.writeRef (.var ref) e) (st'.replace ref ⟨tp, v⟩) ()
 
 end
 

@@ -1,6 +1,7 @@
 import Mathlib
 import Lean
 import Lampe.Ast
+import Lampe.Builtin
 import Qq
 
 namespace Lampe
@@ -56,25 +57,28 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | _ => throwUnsupportedSyntax
 
 partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) := match i with
-| "add"            => `(Builtin.add)
-| "sub"            => `(Builtin.sub)
-| "mul"            => `(Builtin.mul)
-| "div"            => `(Builtin.div)
-| "eq"             => `(Builtin.eq)
-| "assert"         => `(Builtin.assert)
-| "not"            => `(Builtin.not)
-| "lt"             => `(Builtin.lt)
-| "index"          => `(Builtin.index)
-| "cast"           => `(Builtin.cast)
-| "modulus_num_bits" => `(Builtin.modulusNumBits)
-| "to_le_bytes"      => `(Builtin.toLeBytes)
-| "fresh"          => `(Builtin.fresh)
-| "slice_len"      => `(Builtin.sliceLen)
-| "slice_push_back" => `(Builtin.slicePushBack)
-| "slice_push_front" => `(Builtin.slicePushFront)
-| "slice_pop_back" => `(Builtin.slicePopBack)
-| "slice_pop_front" => `(Builtin.slicePopFront)
-| "slice_insert"   => `(Builtin.sliceInsert)
+| "add"            => ``(Builtin.add)
+| "sub"            => ``(Builtin.sub)
+| "mul"            => ``(Builtin.mul)
+| "div"            => ``(Builtin.div)
+| "eq"             => ``(Builtin.eq)
+| "assert"         => ``(Builtin.assert)
+| "not"            => ``(Builtin.not)
+| "lt"             => ``(Builtin.lt)
+| "index"          => ``(Builtin.index)
+| "cast"           => ``(Builtin.cast)
+| "modulus_num_bits" => ``(Builtin.modulusNumBits)
+| "to_le_bytes"      => ``(Builtin.toLeBytes)
+| "fresh"          => ``(Builtin.fresh)
+| "slice_len"      => ``(Builtin.sliceLen)
+| "slice_push_back" => ``(Builtin.slicePushBack)
+| "slice_push_front" => ``(Builtin.slicePushFront)
+| "slice_pop_back" => ``(Builtin.slicePopBack)
+| "slice_pop_front" => ``(Builtin.slicePopFront)
+| "slice_insert"   => ``(Builtin.sliceInsert)
+| "ref"   => ``(Builtin.ref)
+| "read_ref"   => ``(Builtin.readRef)
+| "write_ref"   => ``(Builtin.writeRef)
 | _ => throwError "Unknown builtin {i}"
 
 syntax num ":" nr_type : nr_expr
@@ -94,6 +98,13 @@ syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 syntax "(" nr_expr ")" : nr_expr
 syntax "*(" nr_expr ")" : nr_expr
 
+def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'): Expr rep tp' :=
+  let refDef := Expr.letIn definition fun v => Expr.call h![] _ (tp.ref) (.builtin .ref) h![v]
+  Expr.letIn refDef body
+
+def Expr.readRef (ref : rep tp.ref): Expr rep tp :=
+  Expr.call h![] _ tp (.builtin .readRef) h![ref]
+
 mutual
 
 partial def mkBlock [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (autoDeref : Name → Bool) : List (TSyntax `nr_expr) → m (TSyntax `term)
@@ -105,7 +116,7 @@ partial def mkBlock [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mo
   | `(nr_expr | let mut $v = $e) => do
     let definition ← mkExpr autoDeref e
     let body ← mkBlock (fun i => if i = v.getId then true else autoDeref i) (n::rest)
-    `(Lampe.Expr.letMutIn $definition fun $v => $body)
+    ``(Expr.letMutIn $definition fun $v => $body)
   | e => do
     let fst ← mkExpr autoDeref e
     let rest ← mkBlock autoDeref (n::rest)
@@ -132,19 +143,17 @@ partial def mkCall [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
   let rest ← mkCall rest (argsBuffer.push argName) (idx+1) mkRest
   `(Lampe.Expr.letIn $e fun $argName => $rest)
 
-
 partial def mkExpr [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (autoDeref : Name → Bool) : TSyntax `nr_expr → m (TSyntax `term)
 | `(nr_expr|$n:num : $tp) => do `(Lampe.Expr.lit $(←mkNrType tp) $n)
 | `(nr_expr| true) => `(Lampe.Expr.lit Tp.bool 1)
 | `(nr_expr| false) => `(Lampe.Expr.lit Tp.bool 0)
 | `(nr_expr| { $exprs;* }) => mkBlock autoDeref exprs.getElems.toList
 | `(nr_expr| $i:ident) => do
-  let v ← `(Lampe.Expr.var $i)
-  if autoDeref i.getId then `(Lampe.Expr.readRef $v) else pure v
+  if autoDeref i.getId then ``(Lampe.Expr.readRef $i) else `(Lampe.Expr.var $i)
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
   let args ← args.getElems.toList.mapM (mkExpr autoDeref)
   let r ← mkCall args #[] 0 fun args => do
-    `(Lampe.Expr.call h![] $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit args.toList))
+    `(Lampe.Expr.call h![] _ $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit args.toList))
   dbg_trace r
   pure r
 | `(nr_expr| $i:nr_ident < $generics,* > ($args,*) : $tp) => do
@@ -153,7 +162,7 @@ partial def mkExpr [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
   let args ← args.getElems.toList.mapM (mkExpr autoDeref)
   let tyKinds ← mkListLit $ List.replicate generics.length (←`(Kind.type))
   mkCall args #[] 0 fun args => do
-    `(Lampe.Expr.call (tyKinds := $tyKinds) $(←mkHListLit generics) $(←mkNrType tp) (.decl $(Syntax.mkStrLit name)) $(←mkHListLit args.toList))
+    `(Lampe.Expr.call (tyKinds := $tyKinds) $(←mkHListLit generics) _ $(←mkNrType tp) (.decl $(Syntax.mkStrLit name)) $(←mkHListLit args.toList))
 | `(nr_expr| $i:nr_ident < $generics,* > {$args,*}) => do
   let name := mkIdent $ Name.mkSimple $ ← mkNrIdent i
   let generics ← generics.getElems.toList.mapM mkNrType
@@ -225,13 +234,15 @@ elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do Elab.Term.elabTerm (←mkFnDec
 
 #check expr![ #assert(#assert(true,false):Unit):Unit ]
 
-#check nrfn![ fn weirdEq<I>(x : I, y : I) -> Unit {
-  let a = #fresh() : I;
+#check nrfn![ fn weirdEq<>(x : Field, y : Field) -> Unit {
+  let a = #fresh() : Field;
   #assert(#eq(a, x) : bool) : Unit;
   #assert(#eq(a, y) : bool) : Unit;
 }]
 
 #check fun x => expr![ ${x} ]
+
+#reduce expr![{ let mut y = 1 : u8; y }]
 
 elab "nr_def" decl:nr_fn_decl : command => do
   let (name, decl) ← mkFnDecl decl

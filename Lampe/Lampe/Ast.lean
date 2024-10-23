@@ -1,32 +1,21 @@
 import Mathlib
 import Lampe.Tp
 import Lampe.Data.HList
+import Lampe.State
 
 namespace Lampe
 
 abbrev Ident := String
 
-inductive Builtin : Type where
-| add
-| sub
-| mul
-| div
-| eq
-| assert
-| not
-| lt
-| index
-| cast
-| modulusNumBits
-| toLeBytes
-| fresh
-| sliceLen
-| slicePushBack
-| slicePushFront
-| slicePopBack
-| slicePopFront
-| sliceInsert
-| sliceRemove
+def Builtin :=
+    ∀(P:Prime),
+    State P →
+    (args: List Tp) →
+    (out: Tp) →
+    HList (Tp.denote P) args →
+    Tp.denote P out →
+    State P →
+    Prop
 
 inductive FunctionIdent : Type where
 | builtin : Builtin → FunctionIdent
@@ -41,16 +30,12 @@ inductive Expr (rep : Tp → Type): Tp → Type where
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
 | seq : Expr rep _ → Expr rep t → Expr rep t
-| call {argTypes : List Tp} : HList Kind.denote tyKinds → (res : Tp) → FunctionIdent → HList rep argTypes → Expr rep res
+| call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → FunctionIdent → HList rep argTypes → Expr rep res
 | struct {fieldTps}: HList (Expr rep) fieldTps → Expr rep (Tp.struct fieldTps)
 | proj : (mem : Member tp fieldTps) → Expr rep (Tp.struct fieldTps) → Expr rep tp
 | ite : Expr rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : Expr rep (.u s) → Expr rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
-| letMutIn : Expr rep t₁ → (rep (.ref t₁) → Expr rep t₂) → Expr rep t₂
-| readRef : Expr rep (.ref t) → Expr rep t
-| writeRef : Expr rep (.ref t) → Expr rep t → Expr rep .unit
-
 
 structure Function : Type _ where
   generics : List Kind
