@@ -21,7 +21,9 @@ theorem omni_conseq:
     constructor
     all_goals tauto
   )
-  case callBuiltin => sorry
+  case callBuiltin =>
+    cases_type Builtin
+    tauto
 
 def THoare
     {tp : Tp}
@@ -136,18 +138,15 @@ theorem omni_frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
     ) := by
   intro h
   induction h with
-  | litField hq =>
+  | litField hq
+  | litFalse hq
+  | litTrue hq
+  | var hq =>
     intro
     constructor
-    simp [star]
-    apply Exists.intro
-    apply Exists.intro
-    apply And.intro (by assumption)
-    simp_all
-  | litFalse hq => sorry
-  | litTrue hq => sorry
-  | var hq => sorry
-  | letIn hE hB hN ihE ihB =>
+    repeat apply Exists.intro
+    tauto
+  | letIn _ _ hN ihE ihB =>
     intro
     constructor
     apply ihE
@@ -160,14 +159,14 @@ theorem omni_frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
       assumption
       assumption
     · simp_all
-  | callBuiltin hq => sorry
-  | callDecl hl hkc htci htco hB ih =>
+  | callBuiltin hq =>
+    cases_type Builtin
+    tauto
+  | callDecl _ _ _ _ _ ih =>
     intro
     constructor
     all_goals (try assumption)
-    apply ih
-    assumption
-
+    tauto
 
 @[aesop safe]
 theorem letIn_intro:
@@ -263,14 +262,6 @@ example : STHoare p Γ True (assert2.fn.body _ h![] h![a, b]) (fun _ => [|a ∧ 
   apply var_intro'
   apply assert_intro'
   aesop
-
-lemma Finmap.insert_eq_singleton_union [DecidableEq α] {ref : α}:
-    m.insert ref v = Finmap.singleton ref v ∪ m := by rfl
-
-@[simp]
-lemma Finmap.singleton_disjoint_of_not_mem (hp : ref ∉ s):
-    Finmap.Disjoint (Finmap.singleton ref v) s := by
-  simp_all [Finmap.Disjoint]
 
 
 nr_def simple_rw<>(x : bool) -> bool {

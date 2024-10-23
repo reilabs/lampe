@@ -1,63 +1,150 @@
-import Lampe.Ast
 import Lampe.State
+import Lampe.Data.Field
+import Lampe.Data.HList
+import Lampe.SeparationLogic
+import Mathlib
 
-namespace Lampe.Builtin
+namespace Lampe
 
-private abbrev BigStep :=
-  (P : Prime) → State P → (argTps : List Tp) → (outTp: Tp) → HList (Tp.denote P) argTps → Option (State P × Tp.denote P outTp) → Prop
+abbrev Builtin.Omni := ∀(P:Prime),
+    State P →
+    (argTps : List Tp) →
+    (outTp : Tp) →
+    HList (Tp.denote P) argTps →
+    (Option (State P × Tp.denote P outTp) → Prop) →
+    Prop
 
-private abbrev Omni :=
-  (P: Prime) → State P → (argTps : List Tp) → (outTp: Tp) → HList (Tp.denote P) argTps → (Option (State P × Tp.denote P outTp) → Prop) → Prop
+def Builtin.omni_conseq (omni : Builtin.Omni) : Prop :=
+  ∀{P st argTps outTp args Q Q'}, omni P st argTps outTp args Q → (∀ r, Q r → Q' r) → omni P st argTps outTp args Q'
 
-inductive assertBS : BigStep where
-| mkT {st} : assertBS P st [.bool] .unit h![true] (some (st, unit)) -- TODO FIX
-| mkF {st} : assertBS P st [.bool] .unit h![false] none
+def Builtin.omni_frame (omni : Builtin.Omni) : Prop :=
+  ∀{P st₁ st₂ argTps outTp args Q}, omni P st₁ argTps outTp args Q → st₁.Disjoint st₂ →
+    omni P (st₁ ∪ st₂) argTps outTp args (fun r => match r with
+      | some (st, v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st
+      | none => Q none
+    )
+
+structure Builtin where
+  omni : Builtin.Omni
+  conseq : Builtin.omni_conseq omni
+  frame : Builtin.omni_frame omni
+
+namespace Builtin
 
 inductive assertOmni : Omni where
 | t {st Q} : Q (some (st, ())) → assertOmni P st [.bool] .unit h![true] Q
 | f {st Q} : Q none → assertOmni P st [.bool] .unit h![false] Q
 
--- theorem assertOmni_conseq :
-
-def assert : Builtin := ⟨assertBS, assertOmni⟩
-
-inductive eqBS : BigStep
-| f {P st a b} : eqBS P st [.field, .field] .bool h![a, b] (some (st, (a == b)))
-| u {P st s a b} : eqBS P st [.u s, .u s] .bool h![a, b] (some (st, (a == b)))
+def assert : Builtin := {
+  omni := assertOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type assertOmni <;> tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type assertOmni
+    · constructor
+      repeat apply Exists.intro
+      tauto
+    · constructor; tauto
+}
 
 inductive eqOmni : Omni
 | f {P st a b Q} : Q (some (st, a == b)) → eqOmni P st [.field, .field] .bool h![a, b] Q
 | u {P st s a b Q} : Q (some (st, a == b)) → eqOmni P st [.u s, .u s] .bool h![a, b] Q
 
-def eq : Builtin := ⟨eqBS, eqOmni⟩
-
-inductive freshBS : BigStep where
-| mk {P st tp v} : freshBS P st [] tp h![] (some (st, v))
+def eq : Builtin := {
+  omni := eqOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type eqOmni <;> tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type eqOmni <;> {
+      constructor
+      repeat apply Exists.intro
+      tauto
+    }
+}
 
 inductive freshOmni : Omni where
 | mk {P st tp Q} : (∀ v, Q (some (st, v))) → freshOmni P st [] tp h![] Q
 
-def fresh : Builtin := ⟨freshBS, freshOmni⟩
-
-inductive refBS : BigStep where
-| mk {P st tp ref} {v : Tp.denote P tp} :
-  ref ∉ st → refBS P st [tp] (tp.ref) h![v] (some (st.insert ref ⟨tp, v⟩, ref))
+def fresh : Builtin := {
+  omni := freshOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type freshOmni
+    tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type freshOmni
+    constructor
+    intro
+    repeat apply Exists.intro
+    tauto
+}
 
 inductive refOmni : Omni where
 | mk {P st tp Q v}: (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, ref))) →
   refOmni P st [tp] (tp.ref) h![v] Q
 
-def ref : Builtin := ⟨refBS, refOmni⟩
-
-inductive readRefBS : BigStep where
-| mk {P st ref tp} {v : Tp.denote P tp} :
-  st.lookup ref = some ⟨tp, v⟩ → readRefBS P st [tp.ref] tp h![ref] (some (st, v))
+def ref : Builtin := {
+  omni := refOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type refOmni
+    constructor
+    tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type refOmni
+    constructor
+    intros
+    repeat apply Exists.intro
+    apply And.intro ?_
+    apply And.intro ?_
+    apply And.intro
+    apply_assumption
+    simp_all
+    rfl
+    simp [Finmap.insert_union]
+    simp_all [Finmap.insert_eq_singleton_union, Finmap.disjoint_union_left]
+}
 
 inductive readRefOmni : Omni where
 | mk {P st tp Q ref} {v : Tp.denote P tp} :
   st.lookup ref = some ⟨tp, v⟩ → Q (some (st, v)) →
   readRefOmni P st [tp.ref] tp h![ref] Q
 
-def readRef : Builtin := ⟨readRefBS, readRefOmni⟩
+def readRef : Builtin := {
+  omni := readRefOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type readRefOmni
+    constructor
+    assumption
+    tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type readRefOmni
+    constructor
+    rw [Finmap.lookup_union_left]
+    assumption
+    apply Finmap.mem_of_lookup_eq_some
+    assumption
+    repeat apply Exists.intro
+    tauto
+}
 
 end Lampe.Builtin

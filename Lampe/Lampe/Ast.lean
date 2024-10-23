@@ -2,48 +2,11 @@ import Mathlib
 import Lampe.Tp
 import Lampe.Data.HList
 import Lampe.State
+import Lampe.Builtin
 
 namespace Lampe
 
 abbrev Ident := String
-
-abbrev BuiltinOmni := ∀(P:Prime),
-    State P →
-    (argTps : List Tp) →
-    (outTp : Tp) →
-    HList (Tp.denote P) argTps →
-    (Option (State P × Tp.denote P outTp) → Prop) →
-    Prop
-
--- def omni_conseq (omni : BuiltinOmni) {P st atps otp args Q Q'}: Prop :=
-
-
-structure Builtin where
-  bigStep: ∀(P:Prime),
-    State P →
-    (args: List Tp) →
-    (out: Tp) →
-    HList (Tp.denote P) args →
-    Option (State P × Tp.denote P out) →
-    Prop
-  omni: ∀(P:Prime),
-    State P →
-    (argTps : List Tp) →
-    (outTp : Tp) →
-    HList (Tp.denote P) argTps →
-    (Option (State P × Tp.denote P outTp) → Prop) →
-    Prop
-  -- omni_conseq {P st atps otp args Q Q'}: omni P st atps otp args Q → (∀ r, Q r → Q' r) → omni P st atps otp args Q'
-  -- omni_frame:
-  --   Omni p Γ st₁ e Q →
-  --   st₁.Disjoint st₂ →
-  --   Omni p Γ (st₁ ∪ st₂) e (fun st => match st with
-  --     | some (st', v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st'
-  --     | none => Q none
-  --   )
-
-
-
 
 inductive FunctionIdent : Type where
 | builtin : Builtin → FunctionIdent
