@@ -120,6 +120,13 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
 | callBuiltin {Q} :
     (b.omni P st argTypes resType args Q) →
     Omni Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
+| callDecl:
+    Γ fname = some fn →
+    (hkc : fn.generics = tyKinds) →
+    (htci : fn.inTps (hkc ▸ generics) = argTypes) →
+    (htco : fn.outTp (hkc ▸ generics) = res) →
+    Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+    Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 
 end Lampe
 

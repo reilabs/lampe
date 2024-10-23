@@ -10,11 +10,14 @@ private abbrev Omni :=
   (P: Prime) → State P → (argTps : List Tp) → (outTp: Tp) → HList (Tp.denote P) argTps → (Option (State P × Tp.denote P outTp) → Prop) → Prop
 
 inductive assertBS : BigStep where
-| mk {st} : assertBS P st [.bool] .unit h![true] (some (st, unit))
+| mkT {st} : assertBS P st [.bool] .unit h![true] (some (st, unit)) -- TODO FIX
+| mkF {st} : assertBS P st [.bool] .unit h![false] none
 
 inductive assertOmni : Omni where
 | t {st Q} : Q (some (st, ())) → assertOmni P st [.bool] .unit h![true] Q
 | f {st Q} : Q none → assertOmni P st [.bool] .unit h![false] Q
+
+-- theorem assertOmni_conseq :
 
 def assert : Builtin := ⟨assertBS, assertOmni⟩
 

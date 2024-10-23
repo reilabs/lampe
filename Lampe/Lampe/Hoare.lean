@@ -6,103 +6,26 @@ import Lampe.Tactic.IntroCases
 import Lampe.Semantics
 import Lampe.Syntax
 import Lampe.State
+import Lampe.SeparationLogic
 import Mathlib
 
 namespace Lampe
 
-variable (p : Prime)
+theorem omni_conseq:
+    Omni p Γ st e Q →
+    (∀ v, Q v → Q' v) →
+    Omni p Γ st e Q' := by
+  intro h
+  induction h <;> try (
+    intro
+    constructor
+    all_goals tauto
+  )
+  case callBuiltin => sorry
 
-def SLP : Type := State p → Prop
-
-def star {p} (lhs rhs : SLP p) : SLP p := fun st =>
-  ∃ st₁ st₂, Finmap.Disjoint st₁ st₂ ∧ st = st₁ ∪ st₂ ∧ lhs st₁ ∧ rhs st₂
-
-def lift {p} (pr : Prop) : SLP p := fun st => pr ∧ st = ∅
-
-def singleton {p} (r : Ref) (v : AnyValue p) : SLP p := fun st => st = Finmap.singleton r v
-
-def wand {p} (lhs rhs : SLP p) : SLP p :=
-  fun st => ∀st', st.Disjoint st' → lhs st' → rhs (st ∪ st')
-
-def top {p} : SLP p := fun _ => True
-
-instance {p}: Coe Prop (SLP p) := ⟨lift⟩
-
-notation "[|" x "|]" => lift x
-
-notation l " ⋆ " r => star l r
-
-notation l " -⋆ " r => wand l r
-
-notation "[" l " ↦ " r "]" => singleton l r
-
-
-def ent {p} (a b : SLP p) := ∀st, a st → b st
-
-def exis (x : α → SLP p): SLP p := fun st => ∃ v, x v st
-
-@[simp]
-theorem true_star : ([|True|] ⋆ H) = H := by
-  unfold Lampe.star
-  unfold lift
-  simp
-  funext x
-  simp only [eq_iff_iff]
-  apply Iff.intro
-  · rintro ⟨st1, st2, dis, x, y, z⟩
-    subst_vars
-    simp_all
-  · intro
-    repeat apply Exists.intro
-    apply And.intro
-    rotate_left
-    apply And.intro
-    rotate_left
-    apply And.intro
-    rfl
-    assumption
-    apply Finmap.disjoint_empty
-    simp
-
-theorem star_comm : (a ⋆ b) = (b ⋆ a) := by
-  unfold Lampe.star
-  funext st
-  simp only [eq_iff_iff]
-  apply Iff.intro
-  · intro_cases
-    repeat apply Exists.intro
-    apply And.intro
-    apply Finmap.Disjoint.symm
-    assumption
-    simp_all
-    apply Finmap.union_comm_of_disjoint
-    assumption
-  · intro_cases
-    repeat apply Exists.intro
-    apply And.intro
-    apply Finmap.Disjoint.symm
-    assumption
-    simp_all
-    apply Finmap.union_comm_of_disjoint
-    assumption
-
-theorem star_assoc : ((a ⋆ b) ⋆ c) = (a ⋆ (b ⋆ c)) := by
-  sorry
-
-syntax (priority := low) term "⊢" term : term
-macro_rules
-| `($a ⊢ $b) => `(ent $a $b)
-
-
-@[aesop safe]
-theorem ent_self : H ⊢ H := by
-  simp [ent]
-
-theorem ent_self' (H : α → SLP p): H v ⊢ H v := by
-  simp [ent]
-
-def PHoare
+def THoare
     {tp : Tp}
+    (p : Prime)
     (Γ : Env)
     (P : SLP p)
     (e : Expr (Tp.denote p) tp)
@@ -111,76 +34,98 @@ def PHoare
     | none => True
     | some (st', v) => Q v st')
 
-def SPHoare p Γ P e (Q : Tp.denote p tp → SLP p) := ∀H, PHoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ top)
+theorem THoare.consequence {p Γ tp}  {e : Expr (Tp.denote p) tp} {H₁ H₂ Q₁ Q₂}:
+    (H₂ ⊢ H₁) →
+    THoare p Γ H₁ e Q₁ →
+    (∀ v, Q₁ v ⊢ Q₂ v) →
+    THoare p Γ H₂ e Q₂ := by
+  unfold THoare
+  intros
+  apply omni_conseq
+  · tauto
+  rintro (_ | _) <;> tauto
 
-@[simp]
-lemma top_st : top st := by trivial
+theorem THoare.var_intro {p Γ P tp} {n : Tp.denote p tp} {Q: Tp.denote p tp → SLP p}:
+    (P ⊢ Q n) →
+    THoare p Γ P (Expr.var n) Q := by
+  unfold THoare SLP.entails
+  tauto
 
-@[simp]
-lemma star_top_of_self {P : SLP p} (hp : P st) : (P ⋆ top) st := by
-  unfold star
-  exists st
-  exists ∅
-  apply And.intro (by apply Finmap.Disjoint.symm; simp [Finmap.disjoint_empty])
-  simp_all
-
-lemma ent_star_top : H ⊢ (H ⋆ top) := by
-  intro st h
-  exists st
-  exists ∅
-  simp_all [Finmap.Disjoint.symm, Finmap.disjoint_empty]
-
-@[aesop safe]
-theorem var_intro':
-    SPHoare p Γ (P n) (Expr.var n) P := by
-  unfold SPHoare PHoare
+theorem THoare.assert_intro {p Γ P} {v : Bool} {Q : Unit → SLP p}:
+    (v ⋆ P ⊢ Q ()) → THoare p Γ P (.call h![] [.bool] .unit (.builtin .assert) h![v]) Q := by
+  unfold THoare
   intros
   constructor
-  simp_all
-
-@[aesop safe]
-theorem var_intro :
-    SPHoare p Γ [|True|] (Expr.var n) (fun v => [|v = n|]) := by
-  unfold SPHoare PHoare
-  intros
-  constructor
-  simp_all
-
-@[aesop safe]
-theorem assert_intro {v:Bool}:
-    SPHoare p Γ
-    [|True|]
-    (.call (argTypes := [.bool]) h![] .unit (.builtin .assert) h![v])
-    (fun _ => [|v|]) := by
-  unfold SPHoare PHoare
-  intros
-  constructor
-  simp only [Builtin.assert]
+  unfold Builtin.assert
   cases v
   · constructor
     simp
-  · constructor
-    simp_all
+  · constructor; apply_assumption; simp_all
 
--- @[aesop unsafe 1%]
-theorem conseq_frame:
-    SPHoare p Γ P e Q →
-    (P' ⊢ P ⋆ H) →
-    (∀ v, (Q v ⋆ H) ⊢ Q' v) →
-    SPHoare p Γ P' e Q' := by sorry
+def STHoare p Γ P e (Q : Tp.denote p tp → SLP p) := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
 
--- @[aesop unsafe 1%]
-theorem conseq:
-    SPHoare p Γ P e Q →
-    (P' ⊢ P) →
-    (∀ v, Q v ⊢ Q' v) →
-    SPHoare p Γ P' e Q' := by sorry
+theorem frame : STHoare p Γ P e Q → STHoare p Γ (P ⋆ H) e (fun v => Q v ⋆ H) := by
+  unfold STHoare
+  intro h H'
+  have := h (H ⋆ H')
+  simp_all [SLP.star_assoc]
+
+theorem consequence_top {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : Tp.denote p tp → SLP p}:
+    (H₁ ⊢ H₂) → (∀ v, Q₂ v ⋆ ⊤ ⊢ Q₁ v ⋆ ⊤) → STHoare p Γ H₂ e Q₂ → STHoare p Γ H₁ e Q₁ := by
+  unfold STHoare
+  intro hHs hQs hE H
+  apply THoare.consequence ?_ (hE H) ?_
+  · apply SLP.star_mono_r
+    tauto
+  · intro
+    rw [SLP.star_assoc, SLP.star_assoc]
+    conv in (occs := *) (H ⋆ ⊤) => rw [SLP.star_comm]
+    rw [←SLP.star_assoc, ←SLP.star_assoc]
+    apply SLP.star_mono_r
+    apply_assumption
 
 @[aesop unsafe 1%]
-theorem ramified_frame_top {Q Q₁ : Tp.denote p tp → SLP p}:
-    SPHoare p Γ H₁ e Q₁ →
-    (∀v, H ⊢ (H₁ ⋆ (Q₁ v -⋆ (Q v ⋆ top)))) →
-    SPHoare p Γ H e Q := by sorry
+theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}:
+    STHoare p Γ H₁ e Q₁ →
+    (H₂ ⊢ (H₁ ⋆ (∀∀v, Q₁ v -⋆ Q₂ v ⋆ ⊤))) →
+    STHoare p Γ H₂ e Q₂ := by
+  intro hST hHE
+  apply consequence_top
+  rotate_left
+  rotate_left
+  apply frame
+  rotate_left
+  assumption
+  apply_assumption
+  intro v
+  apply SLP.entails_trans
+  rw [SLP.star_assoc, SLP.star_comm, SLP.star_assoc]
+  exact SLP.forall_star
+  apply SLP.forall_left
+  rw [SLP.star_comm, SLP.star_assoc, SLP.star_comm]
+  apply SLP.entails_trans
+  apply SLP.star_mono_r
+  apply SLP.wand_cancel
+  rw [SLP.star_assoc]
+  simp
+  tauto
+
+@[aesop unsafe 50%]
+theorem var_intro :
+    STHoare p Γ ⟦⟧ (Expr.var n) (fun v => v = n) := by
+  intro
+  apply THoare.var_intro
+  simp
+
+@[aesop safe]
+theorem assert_intro {v:Bool}:
+    STHoare p Γ
+    ⟦⟧
+    (.call (argTypes := [.bool]) h![] .unit (.builtin .assert) h![v])
+    (fun _ => v) := by
+  intro H
+  apply THoare.assert_intro
+  simp [←SLP.star_assoc]
 
 theorem omni_frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
     Omni p Γ st₁ e Q →
@@ -216,18 +161,20 @@ theorem omni_frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
       assumption
     · simp_all
   | callBuiltin hq => sorry
+  | callDecl hl hkc htci htco hB ih =>
+    intro
+    constructor
+    all_goals (try assumption)
+    apply ih
+    assumption
 
-theorem omni_conseq:
-    Omni p Γ st e Q →
-    (∀ v, Q v → Q' v) →
-    Omni p Γ st e Q' := by sorry
 
 @[aesop safe]
 theorem letIn_intro:
-    SPHoare p Γ P e₁ Q →
-    (∀v, SPHoare p Γ (Q v) (e₂ v) R) →
-    SPHoare p Γ P (Expr.letIn e₁ e₂) R := by
-  unfold SPHoare PHoare
+    STHoare p Γ P e₁ Q →
+    (∀v, STHoare p Γ (Q v) (e₂ v) R) →
+    STHoare p Γ P (Expr.letIn e₁ e₂) R := by
+  unfold STHoare THoare
   intro he hb H
   intros
   constructor
@@ -260,7 +207,7 @@ theorem letIn_intro:
     rotate_left
     apply And.intro
     assumption
-    simp [top]
+    simp [SLP.top]
     rotate_left
     rotate_left
     rw [Finmap.union_assoc]
@@ -272,43 +219,6 @@ theorem letIn_intro:
     · simp only [Finmap.Disjoint, Finmap.mem_union] at *
       tauto
   simp
-
-
-@[aesop safe]
-theorem seq_intro:
-    SPHoare p Γ P e₁ (fun _ => Q) →
-    SPHoare p Γ Q e₂ R →
-    SPHoare p Γ P (e₁.seq e₂) R := by
-  unfold SPHoare PHoare
-  intros
-  cases_type BigStep
-  apply_assumption
-  apply_assumption
-  assumption
-  assumption
-  assumption
-
-@[simp]
-theorem lift_star_lift {P Q : Prop} : ((lift P : SLP p) ⋆ [|Q|]) = [|P ∧ Q|] := by
-  unfold Lampe.star lift
-  funext
-  rw [eq_iff_iff]
-  apply Iff.intro
-  · intro_cases; subst_vars; simp_all
-  · intro_cases; exists ∅; exists ∅; simp_all [Finmap.disjoint_empty]
-
-@[simp]
-theorem ent_lift_iff_implies {P Q : Prop} : (lift (p:=p) P ⊢ [|Q|]) = (P → Q) := by
-  unfold ent lift
-  funext
-  rw [eq_iff_iff]
-  apply Iff.intro
-  · intro_cases; simp_all
-  · intro_cases; simp_all
-
-@[simp]
-theorem lift_wand_lift_eq_imp {P Q : Prop} : ((lift P : SLP p) -⋆ [|Q|]) = [|P → Q|] := by
-  sorry
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
@@ -326,13 +236,13 @@ nr_def assert2<>(x : bool, y: bool) -> Unit {
 }
 
 
-example : SPHoare p Γ True (assert.fn.body _ h![] h![v]) (fun _ => [|v|]) := by
+example : STHoare p Γ True (assert.fn.body _ h![] h![v]) (fun _ => ⟦v⟧) := by
   unfold assert
   simp only
   apply letIn_intro
   apply var_intro
   intro
-  apply ramified_frame
+  apply ramified_frame_top
   apply assert_intro
   aesop
 
@@ -340,9 +250,8 @@ example : SPHoare p Γ True (assert.fn.body _ h![] h![v]) (fun _ => [|v|]) := by
 
   -- aesop
 
-example : SPHoare p Γ True (assert2.fn.body _ h![] h![a, b]) (fun _ => [|a ∧ b|]) := by
+example : STHoare p Γ True (assert2.fn.body _ h![] h![a, b]) (fun _ => [|a ∧ b|]) := by
   unfold assert2
-  simp only
   apply seq_intro
   apply letIn_intro
   apply var_intro
@@ -370,11 +279,11 @@ nr_def simple_rw<>(x : bool) -> bool {
 }
 
 theorem ref_intro:
-    SPHoare p Γ
-    [|True|]
+    STHoare p Γ
+    ⟦⟧
     (.call h![] [tp] tp.ref (.builtin .ref) h![v])
     (fun r => [r ↦ ⟨tp, v⟩]) := by
-  unfold SPHoare PHoare
+  unfold STHoare THoare
   intros
   cases_type BigStep
   cases_type Builtin.ref
@@ -428,8 +337,11 @@ lemma ent_self_top:
 
 lemma ent_top: H ⊢ top := by intro st; unfold top; tauto
 
-example : SPHoare p Γ [|True|] (simple_rw.fn.body _ h![] h![x]) fun v => [|v = x|] := by
+example : STHoare p Γ ⟦⟧ (simple_rw.fn.body _ h![] h![x]) fun v => v = x := by
   simp only [simple_rw, Lampe.Expr.letMutIn]
+  aesop
+  aesop
+
   apply letIn_intro
   apply letIn_intro
   apply var_intro
