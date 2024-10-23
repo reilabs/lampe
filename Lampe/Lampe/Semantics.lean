@@ -52,64 +52,74 @@ def getProj {fields : List Tp} (mem : Member tp fields) (v : Tp.denote P (.struc
 -- | sliceLen {slice : List (t.denote P)} : BigStepBuiltin [.slice t] (.u 32) .sliceLen h![slice] slice.length
 
 
-mutual
+-- mutual
 
-inductive BigStepLoop : {s : Nat} → Env → State P → Nat → Nat → (U s → Expr (Tp.denote P) tp) → State P → Prop where
-| cont {lo hi : ℕ} {body : U s → Expr (Tp.denote P) tp}:
-    (lo < hi) →
-    BigStep Γ st (body (lo : U s)) st' v' →
-    BigStepLoop Γ st' lo.succ hi body st'' →
-    BigStepLoop Γ st lo hi body st''
-| done :
-    (lo ≥ hi) →
-    BigStepLoop Γ st lo hi body st
+-- inductive BigStepLoop : {s : Nat} → Env → State P → Nat → Nat → (U s → Expr (Tp.denote P) tp) → State P → Prop where
+-- | cont {lo hi : ℕ} {body : U s → Expr (Tp.denote P) tp}:
+--     (lo < hi) →
+--     BigStep Γ st (body (lo : U s)) st' v' →
+--     BigStepLoop Γ st' lo.succ hi body st'' →
+--     BigStepLoop Γ st lo hi body st''
+-- | done :
+--     (lo ≥ hi) →
+--     BigStepLoop Γ st lo hi body st
 
-inductive BigStep : {tp : Tp} → Env → State P → Expr (Tp.denote P) tp → State P → tp.denote P → Prop where
-| skip : BigStep Γ st .skip st ()
-| litField : BigStep Γ st (.lit .field n) st n
-| litU : BigStep Γ st (.lit (.u s) n) st n
-| litFalse : BigStep Γ st (.lit .bool 0) st false
-| litTrue : BigStep Γ st (.lit .bool 1) st true
-| var : BigStep Γ st (.var v) st v
-| letIn :
-    BigStep Γ st e st' v →
-    BigStep Γ st' (b v) st'' v' →
-    BigStep Γ st (.letIn e b) st'' v'
+inductive BigStep : {tp : Tp} → Env → State P → Expr (Tp.denote P) tp → Option (State P × tp.denote P) → Prop where
+| skip : BigStep Γ st .skip (some (st, ()))
+| litField : BigStep Γ st (.lit .field n) (some (st, n))
+| litU : BigStep Γ st (.lit (.u s) n) (some (st, n))
+| litFalse : BigStep Γ st (.lit .bool 0) (some (st, false))
+| litTrue : BigStep Γ st (.lit .bool 1) (some (st, true))
+| var : BigStep Γ st (.var v) (some (st, v))
+| letIn_success :
+    BigStep Γ st e (some (st', v)) →
+    BigStep Γ st' (b v) r →
+    BigStep Γ st (.letIn e b) r
+| letIn_fail :
+    BigStep Γ st e none →
+    BigStep Γ st (.letIn e b) none
 | callBuiltin :
-    b P st argTypes resType args v st'  →
-    BigStep Γ st (Expr.call h![] argTypes resType (.builtin b) args) st' v
+    b.bigStep P st argTypes resType args r  →
+    BigStep Γ st (Expr.call h![] argTypes resType (.builtin b) args) r
 | callDecl:
     Γ fname = some fn →
     (hkc : fn.generics = tyKinds) →
     (htci : fn.inTps (hkc ▸ generics) = argTypes) →
     (htco : fn.outTp (hkc ▸ generics) = res) →
-    BigStep Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) st' v →
-    BigStep Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) st' v
-| seq:
-    BigStep Γ st e1 st' v' →
-    BigStep Γ st' e2 st'' v →
-    BigStep Γ st (.seq e1 e2) st'' v
+    BigStep Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) r →
+    BigStep Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) r
+| seq_success:
+    BigStep Γ st e1 (some (st', v')) →
+    BigStep Γ st' e2 r →
+    BigStep Γ st (.seq e1 e2) r
+| seq_fail:
+    BigStep Γ st e1 none →
+    BigStep Γ st (.seq e1 e2) none
 | iteTrue:
-    BigStep Γ st c st' true →
-    BigStep Γ st' t st'' v →
-    BigStep Γ st (.ite c t e) st'' v
+    BigStep Γ st c (some (st', true)) →
+    BigStep Γ st' t r →
+    BigStep Γ st (.ite c t e) r
 | iteFalse:
-    BigStep Γ st c st' false →
-    BigStep Γ st' e st'' v →
-    BigStep Γ st (.ite c t e) st'' v
-| loop:
-    BigStep Γ st lo st' vlo →
-    BigStep Γ st' hi st'' vhi →
-    BigStepLoop Γ st'' vlo vhi body st''' →
-    BigStep Γ st (.loop lo hi body) st''' ()
-| struct:
-    BigStepFields Γ st fields st' values →
-    BigStep Γ st (.struct fields) st' values
-| proj:
-    BigStep Γ st struct st' v →
-    BigStep Γ st (.proj mem struct) st' (getProj P mem v)
+    BigStep Γ st c (some (st', false)) →
+    BigStep Γ st' e r →
+    BigStep Γ st (.ite c t e) r
+| iteFail:
+    BigStep Γ st c none →
+    BigStep Γ st (.ite c t e) none
 
-end
+inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P × tp.denote P) → Prop) → Prop where
+| litField : Q (some (st, n)) → Omni Γ st (.lit .field n) Q
+| litFalse : Q (some (st, false)) → Omni Γ st (.lit .bool 0) Q
+| litTrue : Q (some (st, true)) → Omni Γ st (.lit .bool 1) Q
+| var : Q (some (st, v)) → Omni Γ st (.var v) Q
+| letIn :
+    Omni Γ st e Q₁ →
+    (∀v s, Q₁ (some (s, v)) → Omni Γ s (b v) Q) →
+    (Q₁ none → Q none) →
+    Omni Γ st (.letIn e b) Q
+| callBuiltin {Q} :
+    (b.omni P st argTypes resType args Q) →
+    Omni Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
 
 end Lampe
 

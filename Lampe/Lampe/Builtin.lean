@@ -3,22 +3,58 @@ import Lampe.State
 
 namespace Lampe.Builtin
 
-inductive assert : Builtin where
-| mk {P st} : assert P st [.bool] .unit h![true] .unit st
+private abbrev BigStep :=
+  (P : Prime) → State P → (argTps : List Tp) → (outTp: Tp) → HList (Tp.denote P) argTps → Option (State P × Tp.denote P outTp) → Prop
 
-inductive eq : Builtin where
-| f {P st a b} : eq P st [.field, .field] .bool h![a, b] (a == b) st
-| u {P st s a b} : eq P st [.u s, .u s] .bool h![a, b] (a == b) st
+private abbrev Omni :=
+  (P: Prime) → State P → (argTps : List Tp) → (outTp: Tp) → HList (Tp.denote P) argTps → (Option (State P × Tp.denote P outTp) → Prop) → Prop
 
-inductive fresh : Builtin where
-| mk {P st tp v} : fresh P st [] tp h![] v st
+inductive assertBS : BigStep where
+| mk {st} : assertBS P st [.bool] .unit h![true] (some (st, unit))
 
-inductive ref : Builtin where
+inductive assertOmni : Omni where
+| t {st Q} : Q (some (st, ())) → assertOmni P st [.bool] .unit h![true] Q
+| f {st Q} : Q none → assertOmni P st [.bool] .unit h![false] Q
+
+def assert : Builtin := ⟨assertBS, assertOmni⟩
+
+inductive eqBS : BigStep
+| f {P st a b} : eqBS P st [.field, .field] .bool h![a, b] (some (st, (a == b)))
+| u {P st s a b} : eqBS P st [.u s, .u s] .bool h![a, b] (some (st, (a == b)))
+
+inductive eqOmni : Omni
+| f {P st a b Q} : Q (some (st, a == b)) → eqOmni P st [.field, .field] .bool h![a, b] Q
+| u {P st s a b Q} : Q (some (st, a == b)) → eqOmni P st [.u s, .u s] .bool h![a, b] Q
+
+def eq : Builtin := ⟨eqBS, eqOmni⟩
+
+inductive freshBS : BigStep where
+| mk {P st tp v} : freshBS P st [] tp h![] (some (st, v))
+
+inductive freshOmni : Omni where
+| mk {P st tp Q} : (∀ v, Q (some (st, v))) → freshOmni P st [] tp h![] Q
+
+def fresh : Builtin := ⟨freshBS, freshOmni⟩
+
+inductive refBS : BigStep where
 | mk {P st tp ref} {v : Tp.denote P tp} :
-  ref ∉ st → Lampe.Builtin.ref P st [tp] (tp.ref) h![v] ref (st.insert ref ⟨tp, v⟩)
+  ref ∉ st → refBS P st [tp] (tp.ref) h![v] (some (st.insert ref ⟨tp, v⟩, ref))
 
-inductive readRef : Builtin where
+inductive refOmni : Omni where
+| mk {P st tp Q v}: (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, ref))) →
+  refOmni P st [tp] (tp.ref) h![v] Q
+
+def ref : Builtin := ⟨refBS, refOmni⟩
+
+inductive readRefBS : BigStep where
 | mk {P st ref tp} {v : Tp.denote P tp} :
-  st.lookup ref = some ⟨tp, v⟩ → readRef P st [tp.ref] tp h![ref] v st
+  st.lookup ref = some ⟨tp, v⟩ → readRefBS P st [tp.ref] tp h![ref] (some (st, v))
+
+inductive readRefOmni : Omni where
+| mk {P st tp Q ref} {v : Tp.denote P tp} :
+  st.lookup ref = some ⟨tp, v⟩ → Q (some (st, v)) →
+  readRefOmni P st [tp.ref] tp h![ref] Q
+
+def readRef : Builtin := ⟨readRefBS, readRefOmni⟩
 
 end Lampe.Builtin

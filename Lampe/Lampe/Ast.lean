@@ -7,15 +7,22 @@ namespace Lampe
 
 abbrev Ident := String
 
-def Builtin :=
-    ∀(P:Prime),
+structure Builtin where
+  bigStep: ∀(P:Prime),
     State P →
     (args: List Tp) →
     (out: Tp) →
     HList (Tp.denote P) args →
-    Tp.denote P out →
-    State P →
+    Option (State P × Tp.denote P out) →
     Prop
+  omni: ∀(P:Prime),
+    State P →
+    (argTps : List Tp) →
+    (outTp : Tp) →
+    HList (Tp.denote P) argTps →
+    (Option (State P × Tp.denote P outTp) → Prop) →
+    Prop
+
 
 inductive FunctionIdent : Type where
 | builtin : Builtin → FunctionIdent
