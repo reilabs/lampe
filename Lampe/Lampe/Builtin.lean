@@ -6,7 +6,8 @@ import Mathlib
 
 namespace Lampe
 
-abbrev Builtin.Omni := ∀(P:Prime),
+abbrev Builtin.Omni: Type :=
+  ∀(P : Prime),
     State P →
     (argTps : List Tp) →
     (outTp : Tp) →
@@ -15,10 +16,12 @@ abbrev Builtin.Omni := ∀(P:Prime),
     Prop
 
 def Builtin.omni_conseq (omni : Builtin.Omni) : Prop :=
-  ∀{P st argTps outTp args Q Q'}, omni P st argTps outTp args Q → (∀ r, Q r → Q' r) → omni P st argTps outTp args Q'
+  ∀{P st argTps outTp args Q Q'},
+  omni P st argTps outTp args Q → (∀ r, Q r → Q' r) → omni P st argTps outTp args Q'
 
 def Builtin.omni_frame (omni : Builtin.Omni) : Prop :=
-  ∀{P st₁ st₂ argTps outTp args Q}, omni P st₁ argTps outTp args Q → st₁.Disjoint st₂ →
+  ∀{P st₁ st₂ argTps outTp args Q},
+  omni P st₁ argTps outTp args Q → Finmap.Disjoint st₁ st₂ →
     omni P (st₁ ∪ st₂) argTps outTp args (fun r => match r with
       | some (st, v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st
       | none => Q none
@@ -147,20 +150,27 @@ def readRef : Builtin := {
     tauto
 }
 
-inductive addUOmni : Omni where
+inductive addUOmni' : Omni where
 | mk {P st s a b Q} :
     (noOverflowHp: a.val + b.val < 2^s → Q (some (st, a + b))) →
     (overFlow: a.val + b.val ≥ 2^s → Q none) →
-    addUOmni P st [.u s, .u s] (.u s) h![a, b] Q
+    addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
 
--- [TODO: Utknan – pick one representation]
-inductive addUOmni' : Omni where
+-- a + b
+inductive addUOmni : Omni where
 | noOverflow {P st s a b Q} :
-    a.val + b.val < 2^s → Q (some (st, a + b)) → addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
+    a.val + b.val < 2^s → Q (some (st, a + b)) → addUOmni P st [.u s, .u s] (.u s) h![a, b] Q
 | overflow {P st s a b Q} :
-    a.val + b.val ≥ 2^s → Q none → addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
+    a.val + b.val ≥ 2^s → Q none → addUOmni P st [.u s, .u s] (.u s) h![a, b] Q
 
-theorem both_defs_are_the_same : addUOmni = addUOmni' := by
+-- a - b
+inductive subUOmni : Omni where
+| noUnderflow {P s st a b Q} :
+  b.val ≤ a.val → Q (some (st, a - b)) → subUOmni P st [.u s, .u s] (.u s) h![a, b] Q
+| underflow {P s st a b Q} :
+  (b.val > a.val) → Q none → subUOmni P st [.u s, .u s] (.u s) h![a, b] Q
+
+theorem both_defs_are_the_same : addUOmni' = addUOmni := by
   funext
   simp only [eq_iff_iff]
   apply Iff.intro
@@ -169,18 +179,37 @@ theorem both_defs_are_the_same : addUOmni = addUOmni' := by
     | @mk P st s a b Q _ _ =>
       cases Nat.lt_or_ge (a.val + b.val) (2^s) with
       | inl h =>
-        apply addUOmni'.noOverflow <;> tauto
+        apply addUOmni.noOverflow <;> tauto
       | inr h =>
-        apply addUOmni'.overflow <;> tauto
+        apply addUOmni.overflow <;> tauto
   · rintro (_ | _) <;> (constructor <;> (first | tauto | intro; linarith))
+
 
 def addU : Builtin := {
   omni := addUOmni
   conseq := by
     unfold omni_conseq
-    sorry
-  frame := by sorry
+    intros
+    cases_type addUOmni
+    . constructor <;> tauto
+    apply addUOmni.overflow
+    repeat tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type addUOmni
+    constructor
+    tauto
+    constructor
+    tauto
+    apply addUOmni.overflow
+    repeat tauto
+}
 
+def subU : Builtin := {
+  omni := subUOmni
+  conseq := by sorry
+  frame := by sorry
 }
 
 end Lampe.Builtin
