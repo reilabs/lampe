@@ -237,6 +237,9 @@ nr_def assert2<>(x : bool, y: bool) -> Unit {
 
 example : STHoare p Γ True (assert.fn.body _ h![] h![v]) (fun _ => ⟦v⟧) := by
   unfold assert
+  aesop
+  aesop
+  aesop
   simp only
   apply letIn_intro
   apply var_intro

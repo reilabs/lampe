@@ -147,4 +147,40 @@ def readRef : Builtin := {
     tauto
 }
 
+inductive addUOmni : Omni where
+| mk {P st s a b Q} :
+    (noOverflowHp: a.val + b.val < 2^s → Q (some (st, a + b))) →
+    (overFlow: a.val + b.val ≥ 2^s → Q none) →
+    addUOmni P st [.u s, .u s] (.u s) h![a, b] Q
+
+-- [TODO: Utknan – pick one representation]
+inductive addUOmni' : Omni where
+| noOverflow {P st s a b Q} :
+    a.val + b.val < 2^s → Q (some (st, a + b)) → addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
+| overflow {P st s a b Q} :
+    a.val + b.val ≥ 2^s → Q none → addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
+
+theorem both_defs_are_the_same : addUOmni = addUOmni' := by
+  funext
+  simp only [eq_iff_iff]
+  apply Iff.intro
+  · intro hp
+    cases hp with
+    | @mk P st s a b Q _ _ =>
+      cases Nat.lt_or_ge (a.val + b.val) (2^s) with
+      | inl h =>
+        apply addUOmni'.noOverflow <;> tauto
+      | inr h =>
+        apply addUOmni'.overflow <;> tauto
+  · rintro (_ | _) <;> (constructor <;> (first | tauto | intro; linarith))
+
+def addU : Builtin := {
+  omni := addUOmni
+  conseq := by
+    unfold omni_conseq
+    sorry
+  frame := by sorry
+
+}
+
 end Lampe.Builtin
