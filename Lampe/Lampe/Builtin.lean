@@ -147,40 +147,264 @@ def readRef : Builtin := {
     tauto
 }
 
-inductive addUOmni : Omni where
-| mk {P st s a b Q} :
-    (noOverflowHp: a.val + b.val < 2^s → Q (some (st, a + b))) →
-    (overFlow: a.val + b.val ≥ 2^s → Q none) →
-    addUOmni P st [.u s, .u s] (.u s) h![a, b] Q
+inductive builtinOmni
+  (argTps : List Tp)
+  (outTp : Tp)
+  (pred : {p : Prime} → (HList (Tp.denote p) argTps) → Prop)
+  (comp : {p : Prime} → (args: HList (Tp.denote p) argTps) → (pred args) → (Tp.denote p outTp)) : Omni where
+  | ok {p st args Q}:
+    (h : pred args)
+      → Q (some (st, comp args h))
+      → (builtinOmni argTps outTp pred comp) p st argTps outTp args Q
+  | err {p st args Q}:
+    ¬(pred args)
+      → Q none
+      → (builtinOmni argTps outTp pred comp) p st argTps outTp args Q
 
--- [TODO: Utknan – pick one representation]
-inductive addUOmni' : Omni where
-| noOverflow {P st s a b Q} :
-    a.val + b.val < 2^s → Q (some (st, a + b)) → addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
-| overflow {P st s a b Q} :
-    a.val + b.val ≥ 2^s → Q none → addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
+/--
+A `Builtin` definition.
+Takes a list of input types `argTps : List Tp`, an output type `outTp : Tp`, a predicate `pred` and evaluation function `comp`.
+For `args: HList (Tp.denote p) argTps`, we assume that a builtin function *fails* when `¬(pred args)`, and it *succeeds* when `pred args`.
 
-theorem both_defs_are_the_same : addUOmni = addUOmni' := by
-  funext
-  simp only [eq_iff_iff]
-  apply Iff.intro
-  · intro hp
-    cases hp with
-    | @mk P st s a b Q _ _ =>
-      cases Nat.lt_or_ge (a.val + b.val) (2^s) with
-      | inl h =>
-        apply addUOmni'.noOverflow <;> tauto
-      | inr h =>
-        apply addUOmni'.overflow <;> tauto
-  · rintro (_ | _) <;> (constructor <;> (first | tauto | intro; linarith))
-
-def addU : Builtin := {
-  omni := addUOmni
+If the builtin succeeds, it evaluates to `some (comp args (h : pred))`.
+Otherwise, it evaluates to `none`.
+```
+```
+-/
+def newBuiltin
+  (argTps : List Tp)
+  (outTp : Tp)
+  (pred : {p : Prime} → (HList (Tp.denote p) argTps) → Prop)
+  (comp : {p : Prime} → (args: HList (Tp.denote p) argTps) → (pred args) → (Tp.denote p outTp)) : Builtin := {
+  omni := (builtinOmni argTps outTp pred comp)
   conseq := by
     unfold omni_conseq
-    sorry
-  frame := by sorry
-
+    intros
+    cases_type builtinOmni
+    . constructor <;> simp_all
+    . apply builtinOmni.err <;> simp_all
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type builtinOmni
+    . constructor
+      . constructor <;> tauto
+    . apply builtinOmni.err <;> assumption
 }
+
+/--
+For `s ∈ ℕ`, defines the addition of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+We make the following assumptions:
+- If `(a + b) < 2^s`, then the builtin returns `(a + b) : Tp.denote (Tp.u s)`
+- Else (integer overflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a + b` for unsigned integers `a`, `b` of bit-length `s`.
+-/
+def uAdd {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![a, b] => (a + b) < 2^s)
+  (fun h![a, b] _ => a + b)
+
+/--
+For `s ∈ ℕ`, defines the multiplication of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+We make the following assumptions:
+- If `(a * b) < 2^s`, then the builtin returns `(a * b) : Tp.denote (Tp.u s)`
+- Else (integer overflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a * b` for unsigned integers `a`, `b` of bit-length `s`.
+-/
+def uMul {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![a, b] => (a * b) < 2^s)
+  (fun h![a, b] _ => a * b)
+
+/--
+For `s ∈ ℕ`, defines the subtraction of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+We make the following assumptions:
+- If `(a - b) ≥ 0`, then the builtin returns `(a - b) : Tp.denote (Tp.u s)`
+- Else (integer underflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a - b` for unsigned integers `a`, `b` of bit-length `s`.
+-/
+def uSub {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![a, b] => b ≤ a)
+  (fun h![a, b] _ => a - b)
+
+/--
+For `s ∈ ℕ`, defines the division of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+We make the following assumptions:
+- If `b ≠ 0`, then the builtin returns `(a / b) : Tp.denote (Tp.u s)`
+- Else (divide by zero), an exception is thrown.
+- If `a / b` is not an integer, then the result is truncated.
+
+In Noir, this builtin corresponds to `a / b` for unsigned integers `a`, `b` of bit-length `s`.
+-/
+def uDiv {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![_, b] => b ≠ 0)
+  (fun h![a, b] _ => a / b)
+
+/--
+For `s ∈ ℕ`, defines the modulus of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+We make the following assumptions:
+- If `b ≠ 0`, then the builtin returns `(a % b) : Tp.denote (Tp.u s)`
+- Else (mod by zero), an exception is thrown.
+
+In Noir, this builtin corresponds to `a % b` for unsigned integers `a`, `b` of bit-length `s`.
+-/
+def uRem {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![_, b] => b ≠ 0)
+  (fun h![a, b] _ => a % b)
+
+def bigIntAdd : Builtin := sorry
+def bigIntSub : Builtin := sorry
+def bigIntMul : Builtin := sorry
+def bigIntDiv : Builtin := sorry
+def bigIntFromLeBytes : Builtin := sorry
+def bigIntToLeBytes : Builtin := sorry
+
+/--
+For `tp : Tp`, defines the indexing of a slice `l : Tp.denote (.slice tp)` with `i : Tp.denote (.u 32)`
+We make the following assumptions:
+- If `i < l.length`, then the builtin returns `l[i] : Tp.denote tp`
+- Else (out of bounds access), an exception is thrown.
+
+In Noir, this builtin corresponds to `T[i]` for `T: [T]` and `i: uint32`.
+-/
+def sliceIndex {tp} := newBuiltin
+  [(.slice tp), (.u 32)] tp
+  (fun h![l, i] => i.val < l.length)
+  (fun h![l, i] v => l.get (Fin.mk i v))
+
+/--
+For `tp : Tp`, defines the builtin that returns the length of a slice `l : Tp.denote (.slice tp)`
+We make the following assumptions:
+- If `l.length < 2^32`, then the builtin returns `l.length : Tp.denote (.u 32)`
+- Else (integer overflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `fn len(self) -> u32` implemented for `[T]`.
+-/
+def sliceLen {tp} := newBuiltin
+  [(.slice tp)] (.u 32)
+  (fun h![l] => l.length < 2^(32))
+  (fun h![l] _ => l.length)
+
+/--
+For `tp : Tp`, defines the builtin that pushes back an element `e : Tp.denote tp` to a slice `l : Tp.denote (.slice tp)`.
+On these inputs, the builtin is assumed to return `l ++ [e]`.
+
+In Noir, this builtin corresponds to `fn push_back(self, elem: T) -> Self` implemented for `[T]`.
+-/
+def slicePushBack {tp} := newBuiltin
+  [(.slice tp), tp] (.slice tp)
+  (fun _ => True)
+  (fun h![l, e] _ => l ++ [e])
+
+/--
+For `tp : Tp`, defines the builtin that pushes front an element `e : Tp.denote tp` to a slice `l : Tp.denote (.slice tp)`.
+On these inputs, the builtin is assumed to return `[e] ++ l`.
+
+In Noir, this builtin corresponds to `fn push_front(self, elem: T) -> Self` implemented for `[T]`.
+-/
+def slicePushFront {tp} := newBuiltin
+  [(.slice tp), tp] (.slice tp)
+  (fun _ => True)
+  (fun h![l, e] _ => [e] ++ l)
+
+/--
+For `tp : Tp`, defines the insertion of an element `e : Tp.denote tp` at index `i : Tp.denote (.u 32)` to a slice `l : Tp.denote (.slice tp)`.
+We make the following assumptions:
+- If `0 ≤ i < l.length`, then the builtin returns `l'`
+where `l'` is `l` except that `e` is inserted at index `i`, and all the elements with indices larger than `i` are shifted to the right.
+- Else (out of bounds access), an exception is thrown.
+
+In Noir, this builtin corresponds to `fn insert(self, index: u32, elem: T) -> Self` implemented for `[T]`.
+-/
+def sliceInsert {tp} := newBuiltin
+  [(.slice tp), (.u 32), tp] (.slice tp)
+  (fun h![l, i, _] => i < l.length)
+  (fun h![l, i, e] _ => List.insertNth i e l)
+
+/--
+For `tp : Tp`, defines the builtin that pops the first element of a slice `l : Tp.denote (.slice tp)`.
+We make the following assumptions:
+- If `l ≠ []`, then the builtin returns `(l[0], l[1:])`.
+- Else (empty slice), an exception is thrown.
+
+In Noir, this builtin corresponds to `fn pop_front(self) -> (T, Self)` implemented for `[T]`.
+-/
+def slicePopFront {tp} := newBuiltin
+  [(.slice tp)] (.struct [tp, .slice tp])
+  (fun h![l] => l ≠ [])
+  (fun h![l] v => (l.head v, (l.tail, ())))
+
+/--
+For `tp : Tp`, defines the builtin that pops the last element of a slice `l : Tp.denote (.slice tp)`.
+We make the following assumptions:
+- If `l ≠ []`, then the builtin returns `(l[:l.length-1], l[l.length-1])`.
+- Else (empty slice), an exception is thrown.
+
+In Noir, this builtin corresponds to `fn pop_back(self) -> (Self, T)` implemented for `[T]`.
+-/
+def slicePopBack {tp} := newBuiltin
+  [(.slice tp)] (.struct [.slice tp, tp])
+  (fun h![l] => l ≠ [])
+  (fun h![l] v => (l.dropLast, (l.getLast v, ())))
+
+/--
+For `tp : Tp`, defines the removal of the element at the index `i : Tp.denote (.u 32)` from a slice `l : Tp.denote (.slice tp)`.
+We make the following assumptions:
+- If `i < l.length`, then the builtin returns `(l', l[i])`
+where `l'` is `l` except that the element at index `i` is removed, and all the elements with indices larger than `i` are shifted to the left.
+- Else (out of bounds access), an exception is thrown.
+
+In Noir, this builtin corresponds to `fn remove(self, index: u32) -> (Self, T)` implemented for `[T]`.
+-/
+def sliceRemove {tp} := newBuiltin
+  [(.slice tp), (.u 32)] (.struct [.slice tp, tp])
+  (fun h![l, i] => i.val < l.length)
+  (fun h![l, i] v => (l.eraseIdx i, (l.get (Fin.mk i v), ())))
+
+def arrayLen : Builtin := sorry
+def arrayAsSlice : Builtin := sorry
+
+def strAsBytes : Builtin := sorry
+
+def fToLeBits : Builtin := sorry
+def fToBeBits : Builtin := sorry
+def fToLeRadix : Builtin := sorry
+def fToBeRadix : Builtin := sorry
+def fApplyRangeConstraint : Builtin := sorry
+def fModNumBits : Builtin := sorry
+def fModBeBits : Builtin := sorry
+def fModLeBits : Builtin := sorry
+def fModBeBytes : Builtin := sorry
+def fModLeBytes : Builtin := sorry
+
+def zeroed : Builtin := sorry
+def fromField : Builtin := sorry
+def asField : Builtin := sorry
+def asWitness : Builtin := sorry
+
+def assertConstant : Builtin := sorry
+def staticAssert : Builtin := sorry
+
+def isUnconstrained : Builtin := sorry
+
+def derivePedersenGenerators : Builtin := sorry
+
+def qtAsTraitConstraint : Builtin := sorry
+def qtAsType : Builtin := sorry
+
+def traitConstraintEq : Builtin := sorry
+def traintConstraintHash : Builtin := sorry
+
+def traitDefAsTraitConstraint : Builtin := sorry
+
+def structDefAsType : Builtin := sorry
+def structDefGenerics : Builtin := sorry
+def structDefFields : Builtin := sorry
 
 end Lampe.Builtin
