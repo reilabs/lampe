@@ -243,7 +243,7 @@ In Noir, this builtin corresponds to `a / b` for unsigned integers `a`, `b` of b
 def uDiv {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
   (fun h![_, b] => b ≠ 0)
-  (fun h![a, b] _ => a / b)
+  (fun h![a, b] _ => a.udiv b)
 
 /--
 For `s ∈ ℕ`, defines the modulus of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
@@ -275,8 +275,8 @@ In Noir, this builtin corresponds to `T[i]` for `T: [T]` and `i: uint32`.
 -/
 def sliceIndex {tp} := newBuiltin
   [(.slice tp), (.u 32)] tp
-  (fun h![l, i] => i.val < l.length)
-  (fun h![l, i] v => l.get (Fin.mk i v))
+  (fun h![l, i] => i.toNat < l.length)
+  (fun h![l, i] v => l.get (Fin.mk i.toNat v))
 
 /--
 For `tp : Tp`, defines the builtin that returns the length of a slice `l : Tp.denote (.slice tp)`
@@ -325,7 +325,7 @@ In Noir, this builtin corresponds to `fn insert(self, index: u32, elem: T) -> Se
 def sliceInsert {tp} := newBuiltin
   [(.slice tp), (.u 32), tp] (.slice tp)
   (fun h![l, i, _] => i < l.length)
-  (fun h![l, i, e] _ => List.insertNth i e l)
+  (fun h![l, i, e] _ => List.insertNth i.toNat e l)
 
 /--
 For `tp : Tp`, defines the builtin that pops the first element of a slice `l : Tp.denote (.slice tp)`.
@@ -364,8 +364,8 @@ In Noir, this builtin corresponds to `fn remove(self, index: u32) -> (Self, T)` 
 -/
 def sliceRemove {tp} := newBuiltin
   [(.slice tp), (.u 32)] (.struct [.slice tp, tp])
-  (fun h![l, i] => i.val < l.length)
-  (fun h![l, i] v => (l.eraseIdx i, (l.get (Fin.mk i v), ())))
+  (fun h![l, i] => i.toNat < l.length)
+  (fun h![l, i] v => (l.eraseIdx i.toNat, (l.get (Fin.mk i.toNat v), ())))
 
 def arrayLen : Builtin := sorry
 def arrayAsSlice : Builtin := sorry
