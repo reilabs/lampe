@@ -127,6 +127,13 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
     (htco : fn.outTp (hkc ▸ generics) = res) →
     Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
+| loopDone :
+    lo ≥ hi →
+    Omni Γ st (.loop lo hi body) Q
+| loopNext {s} {lo hi : U s} {body} :
+    lo < hi →
+    Omni Γ st (.letIn (body lo) (fun _ => .loop (lo + 1) hi body)) Q →
+    Omni Γ st (.loop lo hi body) Q
 
 end Lampe
 

@@ -24,9 +24,9 @@ inductive Expr (rep : Tp → Type): Tp → Type where
 | call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → FunctionIdent → HList rep argTypes → Expr rep res
 | struct {fieldTps}: HList (Expr rep) fieldTps → Expr rep (Tp.struct fieldTps)
 | proj : (mem : Member tp fieldTps) → Expr rep (Tp.struct fieldTps) → Expr rep tp
-| ite : Expr rep .bool → Expr rep a → Expr rep a → Expr rep a
+| ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
-| loop : Expr rep (.u s) → Expr rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
+| loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
 
 structure Function : Type _ where
   generics : List Kind

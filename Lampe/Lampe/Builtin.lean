@@ -147,6 +147,71 @@ def readRef : Builtin := {
     tauto
 }
 
+inductive writeRefOmni : Omni where
+| mk {P st tp Q ref} {v : Tp.denote P tp} :
+  ref ∈ st →
+  Q (some (st.insert ref ⟨tp, v⟩, ())) →
+  writeRefOmni P st [tp.ref, tp] .unit h![ref, v] Q
+
+def writeRef : Builtin := {
+  omni := writeRefOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type writeRefOmni
+    constructor
+    tauto
+    tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type writeRefOmni
+    constructor
+    simp_all
+    repeat apply Exists.intro
+    apply And.intro ?_
+    simp_all [Finmap.insert_union]
+    apply And.intro rfl
+    simp_all
+    intro x
+    simp
+    rintro (_ | _)
+    · subst_vars
+      apply_assumption
+      assumption
+    · apply_assumption
+      assumption
+}
+
+inductive sliceLenOmni : Omni where
+| ok {P st l Q} : List.length l < 2^32 → Q (some (st, l.length)) → sliceLenOmni P st [.slice tp] (.u 32) h![l] Q
+| tooLong {P st l Q} : List.length l ≥ 2^32 → Q none → sliceLenOmni P st [.slice tp] (.u 32) h![l] Q
+
+def sliceLen : Builtin := {
+  omni := sliceLenOmni
+  conseq := by sorry
+  frame := by sorry
+}
+
+inductive slicePushBackOmni : Omni where
+| ok {P st l v Q} : Q (some (st, l ++ [v])) → slicePushBackOmni P st [.slice tp, tp] (.slice tp) h![l, v] Q
+
+def slicePushBack : Builtin := {
+  omni := slicePushBackOmni
+  conseq := by sorry
+  frame := by sorry
+}
+
+inductive sliceIndexOmni : Omni where
+| ok {P st l i Q} : (h: i < List.length l) → Q (some (st, l.get ⟨i, h⟩)) → sliceIndexOmni P st [.slice tp, .u 32] tp h![l, i] Q
+| oob {P st l i Q} : i ≥ List.length l → Q none → sliceIndexOmni P st [.slice tp, .u 32] tp h![l, i] Q
+
+def sliceIndex : Builtin := {
+  omni := sliceIndexOmni
+  conseq := by sorry
+  frame := by sorry
+}
+
 inductive addUOmni : Omni where
 | mk {P st s a b Q} :
     (noOverflowHp: a.val + b.val < 2^s → Q (some (st, a + b))) →

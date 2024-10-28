@@ -91,7 +91,7 @@ syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
 syntax "let" ident "=" nr_expr : nr_expr
 syntax "let" "mut" ident "=" nr_expr : nr_expr
-syntax nr_expr "=" nr_expr : nr_expr
+syntax ident "=" nr_expr : nr_expr
 syntax nr_expr "." num : nr_expr
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
@@ -104,6 +104,10 @@ def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'
 
 def Expr.readRef (ref : rep tp.ref): Expr rep tp :=
   Expr.call h![] _ tp (.builtin .readRef) h![ref]
+
+def Expr.writeRef (ref : rep tp.ref) (val : Expr rep tp): Expr rep .unit :=
+  Expr.letIn val fun val =>
+    Expr.call h![] _ .unit (.builtin .writeRef) h![ref, val]
 
 mutual
 
@@ -120,7 +124,7 @@ partial def mkBlock [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mo
   | e => do
     let fst ← mkExpr autoDeref e
     let rest ← mkBlock autoDeref (n::rest)
-    `(Lampe.Expr.seq $fst $rest)
+    `(Lampe.Expr.letIn $fst fun _ => $rest)
 | [e] => match e with
   | `(nr_expr | let $_ = $e)
   | `(nr_expr | let mut $_ = $e)
@@ -185,10 +189,9 @@ partial def mkExpr [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
   let hi ← mkExpr autoDeref hi
   let body ← mkExpr autoDeref body
   `(Lampe.Expr.loop $lo $hi fun $i => $body)
-| `(nr_expr| $v = $e) => do
-  let ptr ← mkExpr (fun _ => false) v -- this is a bit hacky, but prevents auto-deref of the LHS var
+| `(nr_expr| $v:ident = $e) => do
   let newVal ← mkExpr autoDeref e
-  `(Lampe.Expr.writeRef $ptr $newVal)
+  `(Lampe.Expr.writeRef $(v) $newVal)
 | `(nr_expr| *($e)) => do
   let ptr ← mkExpr autoDeref e
   `(Lampe.Expr.readRef $ptr)
