@@ -147,40 +147,170 @@ def readRef : Builtin := {
     tauto
 }
 
-inductive addUOmni : Omni where
-| mk {P st s a b Q} :
-    (noOverflowHp: a.val + b.val < 2^s → Q (some (st, a + b))) →
-    (overFlow: a.val + b.val ≥ 2^s → Q none) →
-    addUOmni P st [.u s, .u s] (.u s) h![a, b] Q
+inductive builtinOmni
+  (argTps : List Tp)
+  (outTp : Tp)
+  (pred : {p : Prime} → (HList (Tp.denote p) argTps) → Prop)
+  (comp : {p : Prime} → (args: HList (Tp.denote p) argTps) → (pred args) → (Tp.denote p outTp)) : Omni where
+  | ok {p st args Q}:
+    (h : pred args)
+      → Q (some (st, comp args h))
+      → (builtinOmni argTps outTp pred comp) p st argTps outTp args Q
+  | err {p st args Q}:
+    ¬(pred args)
+      → Q none
+      → (builtinOmni argTps outTp pred comp) p st argTps outTp args Q
 
--- [TODO: Utknan – pick one representation]
-inductive addUOmni' : Omni where
-| noOverflow {P st s a b Q} :
-    a.val + b.val < 2^s → Q (some (st, a + b)) → addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
-| overflow {P st s a b Q} :
-    a.val + b.val ≥ 2^s → Q none → addUOmni' P st [.u s, .u s] (.u s) h![a, b] Q
-
-theorem both_defs_are_the_same : addUOmni = addUOmni' := by
-  funext
-  simp only [eq_iff_iff]
-  apply Iff.intro
-  · intro hp
-    cases hp with
-    | @mk P st s a b Q _ _ =>
-      cases Nat.lt_or_ge (a.val + b.val) (2^s) with
-      | inl h =>
-        apply addUOmni'.noOverflow <;> tauto
-      | inr h =>
-        apply addUOmni'.overflow <;> tauto
-  · rintro (_ | _) <;> (constructor <;> (first | tauto | intro; linarith))
-
-def addU : Builtin := {
-  omni := addUOmni
+-- Generic Builtin definition constructor
+def newBuiltin
+  (argTps : List Tp)
+  (outTp : Tp)
+  (pred : {p : Prime} → (HList (Tp.denote p) argTps) → Prop)
+  (comp : {p : Prime} → (args: HList (Tp.denote p) argTps) → (pred args) → (Tp.denote p outTp)) : Builtin := {
+  omni := (builtinOmni argTps outTp pred comp)
   conseq := by
     unfold omni_conseq
-    sorry
-  frame := by sorry
-
+    intros
+    cases_type builtinOmni
+    . constructor <;> simp_all
+    . apply builtinOmni.err <;> simp_all
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type builtinOmni
+    . constructor
+      . constructor <;> tauto
+    . apply builtinOmni.err <;> assumption
 }
+
+-- a + b
+-- Assumption: Integer overflow throws a runtime exception.
+def uAdd {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![a, b] => (a + b) < 2^s)
+  (fun h![a, b] _ => a + b)
+
+-- a * b
+-- Assumption: Integer overflow throws a runtime exception.
+def uMul {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![a, b] => (a * b) < 2^s)
+  (fun h![a, b] _ => a * b)
+
+-- a - b
+-- Assumption: Integer underflow throws a runtime exception.
+def uSub {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![a, b] => b ≤ a)
+  (fun h![a, b] _ => a - b)
+
+-- a / b
+-- Assumption: Divide by zero throws a runtime exception.
+def uDiv {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![_, b] => b ≠ 0)
+  (fun h![a, b] _ => a / b)
+
+-- a % b
+-- Assumption: Mod by 0 throws a runtime exception.
+def uRem {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun h![_, b] => b ≠ 0)
+  (fun h![a, b] _ => a % b)
+
+def bigIntAdd : Builtin := sorry
+def bigIntSub : Builtin := sorry
+def bigIntMul : Builtin := sorry
+def bigIntDiv : Builtin := sorry
+def bigIntFromLeBytes : Builtin := sorry
+def bigIntToLeBytes : Builtin := sorry
+
+-- Assumption: Out of bounds access throws a runtime exception.
+def sliceIndex {tp} := newBuiltin
+  [(.slice tp), (.u 32)] tp
+  (fun h![l, i] => i.val < l.length)
+  (fun h![l, i] v => l.get (Fin.mk i v))
+
+-- Assumption: If the slice's size cannot be represented by a u32, an exception is thrown.
+def sliceLen {tp} := newBuiltin
+  [(.slice tp)] (.u 32)
+  (fun h![l] => l.length < 2^(32))
+  (fun h![l] _ => l.length)
+
+-- Assumption: Slices can grow infinitely.
+def slicePushBack {tp} := newBuiltin
+  [(.slice tp), tp] (.slice tp)
+  (fun _ => True)
+  (fun h![l, e] _ => l ++ [e])
+
+-- Assumption: Slices can grow infinitely.
+def slicePushFront {tp} := newBuiltin
+  [(.slice tp), tp] (.slice tp)
+  (fun _ => True)
+  (fun h![l, e] _ => [e] ++ l)
+
+-- Assumption: Trying to insert at an index that doesn't exist throws a runtime exception.
+def sliceInsert {tp} := newBuiltin
+  [(.slice tp), (.u 32), tp] (.slice tp)
+  (fun h![l, i, _] => i < l.length)
+  (fun h![l, i, e] _ => List.insertNth i e l)
+
+-- Assumption: Popping from an empty slice throws a runtime exception.
+def slicePopFront {tp} := newBuiltin
+  [(.slice tp)] (.struct [tp, .slice tp])
+  (fun h![l] => l ≠ [])
+  (fun h![l] v => (l.head v, (l.tail, ())))
+
+-- Assumption: Popping from an empty slice throws a runtime exception.
+def slicePopBack {tp} := newBuiltin
+  [(.slice tp)] (.struct [.slice tp, tp])
+  (fun h![l] => l ≠ [])
+  (fun h![l] v => (l.dropLast, (l.getLast v, ())))
+
+-- Assumption (5): Removing an index that doesn't exist throws a runtime exception.
+def sliceRemove {tp} := newBuiltin
+  [(.slice tp), (.u 32)] (.struct [.slice tp, tp])
+  (fun h![l, i] => i.val < l.length)
+  (fun h![l, i] v => (l.eraseIdx i, (l.get (Fin.mk i v), ())))
+
+def arrayLen : Builtin := sorry
+def arrayAsSlice : Builtin := sorry
+
+def strAsBytes : Builtin := sorry
+
+def fToLeBits : Builtin := sorry
+def fToBeBits : Builtin := sorry
+def fToLeRadix : Builtin := sorry
+def fToBeRadix : Builtin := sorry
+def fApplyRangeConstraint : Builtin := sorry
+def fModNumBits : Builtin := sorry
+def fModBeBits : Builtin := sorry
+def fModLeBits : Builtin := sorry
+def fModBeBytes : Builtin := sorry
+def fModLeBytes : Builtin := sorry
+
+def zeroed : Builtin := sorry
+def fromField : Builtin := sorry
+def asField : Builtin := sorry
+def asWitness : Builtin := sorry
+
+def assertConstant : Builtin := sorry
+def staticAssert : Builtin := sorry
+
+def isUnconstrained : Builtin := sorry
+
+def derivePedersenGenerators : Builtin := sorry
+
+def qtAsTraitConstraint : Builtin := sorry
+def qtAsType : Builtin := sorry
+
+def traitConstraintEq : Builtin := sorry
+def traintConstraintHash : Builtin := sorry
+
+def traitDefAsTraitConstraint : Builtin := sorry
+
+def structDefAsType : Builtin := sorry
+def structDefGenerics : Builtin := sorry
+def structDefFields : Builtin := sorry
 
 end Lampe.Builtin
