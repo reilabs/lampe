@@ -20,13 +20,10 @@ inductive Expr (rep : Tp → Type): Tp → Type where
 | lit : (tp : Tp) → Nat → Expr rep tp
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
-| seq : Expr rep _ → Expr rep t → Expr rep t
 | call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → FunctionIdent → HList rep argTypes → Expr rep res
-| struct {fieldTps}: HList (Expr rep) fieldTps → Expr rep (Tp.struct fieldTps)
-| proj : (mem : Member tp fieldTps) → Expr rep (Tp.struct fieldTps) → Expr rep tp
-| ite : Expr rep .bool → Expr rep a → Expr rep a → Expr rep a
+| ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
-| loop : Expr rep (.u s) → Expr rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
+| loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
 
 structure Function : Type _ where
   generics : List Kind
@@ -54,15 +51,15 @@ structure Struct where
   tyArgKinds : List Kind
   fieldTypes : HList Kind.denote tyArgKinds → List Tp
 
-@[reducible]
-def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=
-  fun tyArgs => .struct $ s.fieldTypes tyArgs
+-- @[reducible]
+-- def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=
+--   fun tyArgs => .struct $ s.fieldTypes tyArgs
 
-@[reducible]
-def Struct.constructor (s: Struct):
-  (tyArgs: HList Kind.denote s.tyArgKinds) →
-  HList (Expr rep) (s.fieldTypes tyArgs) →
-  Expr rep (s.tp tyArgs) :=
-  fun _ fieldExprs => .struct fieldExprs
+-- @[reducible]
+-- def Struct.constructor (s: Struct):
+--   (tyArgs: HList Kind.denote s.tyArgKinds) →
+--   HList (Expr rep) (s.fieldTypes tyArgs) →
+--   Expr rep (s.tp tyArgs) :=
+--   fun _ fieldExprs => .struct fieldExprs
 
 end Lampe

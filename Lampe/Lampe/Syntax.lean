@@ -74,6 +74,7 @@ partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | "slice_push_back" => ``(Builtin.slicePushBack)
 | "slice_push_front" => ``(Builtin.slicePushFront)
 | "slice_pop_back" => ``(Builtin.slicePopBack)
+| "slice_index" => ``(Builtin.sliceIndex)
 | "slice_pop_front" => ``(Builtin.slicePopFront)
 | "slice_insert"   => ``(Builtin.sliceInsert)
 | "ref"   => ``(Builtin.ref)
@@ -91,7 +92,7 @@ syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
 syntax "let" ident "=" nr_expr : nr_expr
 syntax "let" "mut" ident "=" nr_expr : nr_expr
-syntax nr_expr "=" nr_expr : nr_expr
+syntax ident "=" nr_expr : nr_expr
 syntax nr_expr "." num : nr_expr
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
@@ -102,97 +103,90 @@ def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'
   let refDef := Expr.letIn definition fun v => Expr.call h![] _ (tp.ref) (.builtin .ref) h![v]
   Expr.letIn refDef body
 
+def Expr.ref (val : rep tp): Expr rep tp.ref :=
+  Expr.call h![] _ tp.ref (.builtin .ref) h![val]
+
 def Expr.readRef (ref : rep tp.ref): Expr rep tp :=
   Expr.call h![] _ tp (.builtin .readRef) h![ref]
 
+def Expr.writeRef (ref : rep tp.ref) (val : rep tp): Expr rep .unit :=
+  Expr.call h![] _ .unit (.builtin .writeRef) h![ref, val]
+
+structure DesugarState where
+  autoDeref : Name → Bool
+  nextFresh : Nat
+
+class MonadSyntax (m: Type → Type) extends Monad m, MonadQuotation m, MonadExceptOf Exception m, MonadError m, MonadStateOf DesugarState m
+
+instance [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]: MonadSyntax (StateT DesugarState m) where
+  add x y := StateT.lift $ AddErrorMessageContext.add x y
+
+def isAutoDeref [MonadSyntax m] (i : Name): m Bool := do
+  let s ← get
+  pure $ s.autoDeref i
+
+def registerAutoDeref [MonadSyntax m] (i : Name): m Unit := do
+  modify fun s => { s with autoDeref := fun id => if id = i then true else s.autoDeref id }
+
+def MonadSyntax.run [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (a : StateT DesugarState m α): m α :=
+  StateT.run' a (DesugarState.mk (fun _ => false) 0)
+
+def getName [MonadSyntax m] : Option Lean.Ident → m Lean.Ident
+| none =>
+  modifyGet fun s => (mkIdent (Name.mkSimple s!"#v_{s.nextFresh}"), { s with nextFresh := s.nextFresh + 1 })
+| some n => pure n
+
+def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)) : m (TSyntax `term) := do
+  let ident ← getName ident
+  let rest ← k ident
+  `(Lampe.Expr.letIn $e fun $ident => $rest)
+
 mutual
 
-partial def mkBlock [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (autoDeref : Name → Bool) : List (TSyntax `nr_expr) → m (TSyntax `term)
+partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
 | h :: n :: rest => match h with
   | `(nr_expr | let $v = $e ) => do
-    let definition ← mkExpr autoDeref e
-    let body ← mkBlock autoDeref (n::rest)
-    `(Lampe.Expr.letIn $definition fun $v => $body)
+    mkExpr e (some v) fun _ => mkBlock (n::rest) k
   | `(nr_expr | let mut $v = $e) => do
-    let definition ← mkExpr autoDeref e
-    let body ← mkBlock (fun i => if i = v.getId then true else autoDeref i) (n::rest)
-    ``(Expr.letMutIn $definition fun $v => $body)
+    mkExpr e none fun eVal => do
+      registerAutoDeref v.getId
+      let body ← mkBlock (n::rest) k
+      `(Lampe.Expr.letIn (Expr.ref $eVal) fun $v => $body)
   | e => do
-    let fst ← mkExpr autoDeref e
-    let rest ← mkBlock autoDeref (n::rest)
-    `(Lampe.Expr.seq $fst $rest)
+  mkExpr e none fun _ => mkBlock (n::rest) k
 | [e] => match e with
   | `(nr_expr | let $_ = $e)
   | `(nr_expr | let mut $_ = $e)
-  | `(nr_expr | $e) => mkExpr autoDeref e
-| _ => `(Lampe.Expr.skip)
+  | `(nr_expr | $e) => mkExpr e none k
+| _ => do wrapSimple (←`(Lampe.Expr.skip)) none k
 
-partial def mkProj [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Nat → m (TSyntax `term)
-| 0 => `(Member.head)
-| n+1 => do `(Member.tail $(←mkProj n))
+partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (TSyntax `term) → m (TSyntax `term)) : m (TSyntax `term) := match args with
+| [] => k []
+| h :: t =>
+  mkExpr h none fun h => do
+    mkArgs t fun t => k (h :: t)
 
-partial def mkCall [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
-    (args : List (TSyntax `term))
-    (argsBuffer : Array (TSyntax `term))
-    (idx : Nat)
-    (mkRest : Array (TSyntax `term) → m (TSyntax `term))
-    : m (TSyntax `term) := match args with
-| [] => mkRest argsBuffer
-| e :: rest => do
-  let argName := mkIdent $ Name.mkSimple s!"#arg_{idx}"
-  let rest ← mkCall rest (argsBuffer.push argName) (idx+1) mkRest
-  `(Lampe.Expr.letIn $e fun $argName => $rest)
-
-partial def mkExpr [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (autoDeref : Name → Bool) : TSyntax `nr_expr → m (TSyntax `term)
-| `(nr_expr|$n:num : $tp) => do `(Lampe.Expr.lit $(←mkNrType tp) $n)
-| `(nr_expr| true) => `(Lampe.Expr.lit Tp.bool 1)
-| `(nr_expr| false) => `(Lampe.Expr.lit Tp.bool 0)
-| `(nr_expr| { $exprs;* }) => mkBlock autoDeref exprs.getElems.toList
+partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
+| `(nr_expr|$n:num : $tp) => do wrapSimple (←``(Lampe.Expr.lit $(←mkNrType tp) $n)) vname k
+| `(nr_expr| true) => do wrapSimple (←``(Lampe.Expr.lit Tp.bool 1)) vname k
+| `(nr_expr| false) => do wrapSimple (←``(Lampe.Expr.lit Tp.bool 0)) vname k
+| `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
 | `(nr_expr| $i:ident) => do
-  if autoDeref i.getId then ``(Lampe.Expr.readRef $i) else `(Lampe.Expr.var $i)
+  if ←isAutoDeref i.getId then wrapSimple (← ``(Lampe.Expr.readRef $i)) vname k else match vname with
+  | none => k i
+  | some _ => wrapSimple (←``(Lampe.Expr.var $i)) vname k
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
-  let args ← args.getElems.toList.mapM (mkExpr autoDeref)
-  let r ← mkCall args #[] 0 fun args => do
-    `(Lampe.Expr.call h![] _ $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit args.toList))
-  dbg_trace r
-  pure r
-| `(nr_expr| $i:nr_ident < $generics,* > ($args,*) : $tp) => do
-  let name ← mkNrIdent i
-  let generics ← generics.getElems.toList.mapM mkNrType
-  let args ← args.getElems.toList.mapM (mkExpr autoDeref)
-  let tyKinds ← mkListLit $ List.replicate generics.length (←`(Kind.type))
-  mkCall args #[] 0 fun args => do
-    `(Lampe.Expr.call (tyKinds := $tyKinds) $(←mkHListLit generics) _ $(←mkNrType tp) (.decl $(Syntax.mkStrLit name)) $(←mkHListLit args.toList))
-| `(nr_expr| $i:nr_ident < $generics,* > {$args,*}) => do
-  let name := mkIdent $ Name.mkSimple $ ← mkNrIdent i
-  let generics ← generics.getElems.toList.mapM mkNrType
-  let args ← args.getElems.toList.mapM (mkExpr autoDeref)
-  `(Struct.constructor $name $(←mkHListLit generics) $(←mkHListLit args))
-| `(nr_expr| ${ $term:term }) => pure term
-| `(nr_expr| $ $i:ident) => pure i
-| `(nr_expr| $e . $n:num) => do `(Lampe.Expr.proj $(←mkProj n.getNat) $(←mkExpr autoDeref e))
-| `(nr_expr| if $cond $t else $e) => do
-  let cond ← mkExpr autoDeref cond
-  let t ← mkExpr autoDeref t
-  let e ← mkExpr autoDeref e
-  `(Lampe.Expr.ite $cond $t $e)
-| `(nr_expr| if $cond $t) => do
-  let cond ← mkExpr autoDeref cond
-  let t ← mkExpr autoDeref t
-  `(Lampe.Expr.ite $cond $t Lampe.Expr.skip)
+  mkArgs args.getElems.toList fun argVals => do
+    wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit argVals))) vname k
 | `(nr_expr| for $i in $lo .. $hi $body) => do
-  let lo ← mkExpr autoDeref lo
-  let hi ← mkExpr autoDeref hi
-  let body ← mkExpr autoDeref body
-  `(Lampe.Expr.loop $lo $hi fun $i => $body)
-| `(nr_expr| $v = $e) => do
-  let ptr ← mkExpr (fun _ => false) v -- this is a bit hacky, but prevents auto-deref of the LHS var
-  let newVal ← mkExpr autoDeref e
-  `(Lampe.Expr.writeRef $ptr $newVal)
-| `(nr_expr| *($e)) => do
-  let ptr ← mkExpr autoDeref e
-  `(Lampe.Expr.readRef $ptr)
-| `(nr_expr| ( $e )) => mkExpr autoDeref e
+  mkExpr lo none fun lo =>
+  mkExpr hi none fun hi => do
+    let body ← mkExpr body none (fun x => ``(Lampe.Expr.var $x))
+    wrapSimple (←`(Lampe.Expr.loop $lo $hi fun $i => $body)) vname k
+| `(nr_expr| $v:ident = $e) => do
+  mkExpr e none fun eVal => do
+    wrapSimple (←`(Lampe.Expr.writeRef $v $eVal)) vname k
+| `(nr_expr| ( $e )) => mkExpr e vname k
 | _ => throwUnsupportedSyntax
 
 end
@@ -212,7 +206,7 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
   let inputsDecl ← `(fun generics => match generics with | $(←mkHListLit generics) => $(←mkListLit $ params.map Prod.snd ))
   let outType ← mkNrType outTp
   let outDecl ← `(fun generics => match generics with | $(←mkHListLit generics) => $outType)
-  let body ← mkBlock (fun _ => false) bExprs.getElems.toList
+  let body ← MonadSyntax.run ((mkBlock bExprs.getElems.toList) (fun x => `(Expr.var $x)))
   let bodyDecl ← `(
     fun rep generics => match generics with
       | $(←mkHListLit generics) => fun arguments => match arguments with
@@ -222,42 +216,14 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
   pure (name, syn)
 | _ => throwUnsupportedSyntax
 
-elab "expr![" expr:nr_expr "]" : term => do (Elab.Term.elabTerm (←mkExpr (fun _ => false) expr).raw none)
+elab "expr![" expr:nr_expr "]" : term => do
+  let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
+  Elab.Term.elabTerm term.raw none
 elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do Elab.Term.elabTerm (←mkFnDecl fn).2 none
-
-#check expr![ (1 : u8)]
-#check expr![ { let y = (1 : u8) ; let y = y ; y} ]
-
-#check nrfn![ fn myFn<>() -> Unit {}]
-
-#check nrfn![ fn myFn<A, B, C>(x : u8, y : A, z : B, w : C) -> u8 { let x = (1 : u8); x } ]
-
-#check expr![ #assert(#assert(true,false):Unit):Unit ]
-
-#check nrfn![ fn weirdEq<>(x : Field, y : Field) -> Unit {
-  let a = #fresh() : Field;
-  #assert(#eq(a, x) : bool) : Unit;
-  #assert(#eq(a, y) : bool) : Unit;
-}]
-
-#check fun x => expr![ ${x} ]
-
-#reduce expr![{ let mut y = 1 : u8; y }]
 
 elab "nr_def" decl:nr_fn_decl : command => do
   let (name, decl) ← mkFnDecl decl
   let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
-
-
--- nr_def weirdEq<I>(x : I, y : I) -> Unit {
---   let a = #fresh() : I;
---   #assert(#eq(a, x) : bool) : Unit;
---   #assert(#eq(a, y) : bool) : Unit;
--- }
-
--- #print weirdEq
-
--- #check expr![  std::foo <u8> ( (1 : u8) ) : u8   ]
 
 end Lampe
