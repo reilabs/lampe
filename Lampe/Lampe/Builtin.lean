@@ -198,7 +198,7 @@ We make the following assumptions:
 - If `(a + b) < 2^s`, then the builtin returns `(a + b) : Tp.denote (Tp.u s)`
 - Else (integer overflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a + b` for unsigned integers `a`, `b` of bit-length `s`.
+In Noir, this builtin corresponds to `a + b` for unsigned integers `a`, `b` of width `s`.
 -/
 def uAdd {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
@@ -211,7 +211,7 @@ We make the following assumptions:
 - If `(a * b) < 2^s`, then the builtin returns `(a * b) : Tp.denote (Tp.u s)`
 - Else (integer overflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a * b` for unsigned integers `a`, `b` of bit-length `s`.
+In Noir, this builtin corresponds to `a * b` for unsigned integers `a`, `b` of width `s`.
 -/
 def uMul {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
@@ -224,7 +224,7 @@ We make the following assumptions:
 - If `(a - b) ≥ 0`, then the builtin returns `(a - b) : Tp.denote (Tp.u s)`
 - Else (integer underflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a - b` for unsigned integers `a`, `b` of bit-length `s`.
+In Noir, this builtin corresponds to `a - b` for unsigned integers `a`, `b` of width `s`.
 -/
 def uSub {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
@@ -238,7 +238,7 @@ We make the following assumptions:
 - Else (divide by zero), an exception is thrown.
 - If `a / b` is not an integer, then the result is truncated.
 
-In Noir, this builtin corresponds to `a / b` for unsigned integers `a`, `b` of bit-length `s`.
+In Noir, this builtin corresponds to `a / b` for unsigned integers `a`, `b` of width `s`.
 -/
 def uDiv {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
@@ -251,12 +251,91 @@ We make the following assumptions:
 - If `b ≠ 0`, then the builtin returns `(a % b) : Tp.denote (Tp.u s)`
 - Else (mod by zero), an exception is thrown.
 
-In Noir, this builtin corresponds to `a % b` for unsigned integers `a`, `b` of bit-length `s`.
+In Noir, this builtin corresponds to `a % b` for unsigned integers `a`, `b` of width `s`.
 -/
 def uRem {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
   (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => a % b)
+
+/--
+For `s ∈ ℕ`, defines the addition of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ (a + b) < 2^(s-1)`, then the builtin returns `(a + b) : Tp.denote (Tp.i s)`
+- Else (integer overflow/underflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a + b` for signed integers `a`, `b` of width `s`.
+-/
+def iAdd {s : Nat}: Builtin := newBuiltin
+  [(.i s), (.i s)] (.i s)
+  (fun h![a, b] => canContain s (a.toInt + b.toInt))
+  (fun h![a, b] _ => a + b)
+
+/--
+For `s ∈ ℕ`, defines the subtraction of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ (a - b) < 2^(s-1)`, then the builtin returns `(a - b) : Tp.denote (Tp.i s)`
+- Else (integer overflow/underflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a - b` for signed integers `a`, `b` of width `s`.
+-/
+def iSub {s : Nat}: Builtin := newBuiltin
+  [(.i s), (.i s)] (.i s)
+  (fun h![a, b] => canContain s (a.toInt - b.toInt))
+  (fun h![a, b] _ => a - b)
+
+/--
+For `s ∈ ℕ`, defines the multiplication of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ (a * b) < 2^(s-1)`, then the builtin returns `(a * b) : Tp.denote (Tp.i s)`
+- Else (integer overflow/underflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a * b` for signed integers `a`, `b` of width `s`.
+-/
+def iMul {s : Nat}: Builtin := newBuiltin
+  [(.i s), (.i s)] (.i s)
+  (fun h![a, b] => canContain s (a.toInt * b.toInt))
+  (fun h![a, b] _ => a * b)
+
+/--
+For `s ∈ ℕ`, defines the division of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ (a / b) < 2^(s-1)` and `b ≠ 0`, then the builtin returns `(a / b) : Tp.denote (Tp.i s)`
+- Else (integer overflow/underflow or division-by-zero), an exception is thrown.
+
+In Noir, this builtin corresponds to `a % b` for signed integers `a`, `b` of width `s`.
+-/
+def iDiv {s : Nat}: Builtin := newBuiltin
+  [(.i s), (.i s)] (.i s)
+  (fun h![a, b] => canContain s (a.toInt / b.toInt) ∧ b ≠ 0)
+  (fun h![a, b] _ => a.sdiv b)
+
+/--
+For `s ∈ ℕ`, defines the modulus of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ (a % b) < 2^(s-1)` and `b ≠ 0`, then the builtin returns `(a % b) : Tp.denote (Tp.i s)`
+- Else (integer overflow/underflow or mod-by-zero), an exception is thrown.
+
+In Noir, this builtin corresponds to `a % b` for signed integers `a`, `b` of width `s`.
+-/
+def iRem {s : Nat}: Builtin := newBuiltin
+  [(.i s), (.i s)] (.i s)
+  (fun h![a, b] => canContain s (a.toInt % b.toInt) ∧ b ≠ 0)
+  (fun h![a, b] _ => a % b)
+
+/--
+For `s ∈ ℕ`, defines the negation of a `s`-bit int: `a: Tp.denote (Tp.i s)`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ -a < 2^(s-1)`, then the builtin returns `-a : Tp.denote (Tp.i s)`
+- Else (integer overflow/underflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `-a` for a signed integer `a` of width `s`.
+-/
+def iNeg {s : Nat}: Builtin := newBuiltin
+  [(.i s)] (.i s)
+  (fun h![a] => canContain s (-a.toInt))
+  (fun h![a] _ => -a)
+
 
 def bigIntAdd : Builtin := sorry
 def bigIntSub : Builtin := sorry
