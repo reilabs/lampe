@@ -17,10 +17,14 @@ inductive Kind where
 
 inductive Tp where
 | u (size : Nat)
+| i (size : Nat)
+| bi -- BigInt
 | bool
 | unit
+| str (size: U 32)
 | field
 | slice (element : Tp)
+| array (element: Tp) (size: U 32)
 | struct (fields : List Tp)
 | ref (tp : Tp)
 
@@ -75,10 +79,14 @@ def Tp.denoteArgs : List Tp → Type
 @[reducible]
 def Tp.denote : Tp → Type
 | .u n => U n
+| .i n => I n
+| .bi => Int
 | .bool => Bool
 | .unit => Unit
+| .str n => Mathlib.Vector Char n.toNat
 | .field => Fp P
 | .slice tp => List (denote tp)
+| .array tp n => Mathlib.Vector (denote tp) n.toNat
 | .ref _ => Ref
 | .struct fields => Tp.denoteArgs fields
 
