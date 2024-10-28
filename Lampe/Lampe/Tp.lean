@@ -18,6 +18,7 @@ inductive Kind where
 inductive Tp where
 | u (size : Nat)
 | i (size : Nat)
+| bi -- BigInt
 | bool
 | unit
 | field
@@ -77,6 +78,7 @@ def Tp.denoteArgs : List Tp → Type
 def Tp.denote : Tp → Type
 | .u n => U n
 | .i n => I n
+| .bi => Int
 | .bool => Bool
 | .unit => Unit
 | .field => Fp P

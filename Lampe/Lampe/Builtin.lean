@@ -336,13 +336,62 @@ def iNeg {s : Nat}: Builtin := newBuiltin
   (fun h![a] => canContain s (-a.toInt))
   (fun h![a] _ => -a)
 
+/--
+Defines the addition of two bigints `(a b : Tp.denote Tp.bi)`.
+The builtin is assumed to return `a + b`.
 
-def bigIntAdd : Builtin := sorry
-def bigIntSub : Builtin := sorry
-def bigIntMul : Builtin := sorry
-def bigIntDiv : Builtin := sorry
-def bigIntFromLeBytes : Builtin := sorry
-def bigIntToLeBytes : Builtin := sorry
+In Noir, this builtin corresponds to `a + b` for bigints `a`, `b`.
+-/
+def bigIntAdd : Builtin := newBuiltin
+  [.bi, .bi] (.bi)
+  (fun _ => True)
+  (fun h![a, b] _  => a + b)
+
+/--
+Defines the subtraction of two bigints `(a b : Tp.denote Tp.bi)`.
+The builtin is assumed to return `a - b`.
+
+In Noir, this builtin corresponds to `a - b` for bigints `a`, `b`.
+-/
+def bigIntSub : Builtin := newBuiltin
+  [.bi, .bi] (.bi)
+  (fun _ => True)
+  (fun h![a, b] _  => a - b)
+
+/--
+Defines the multiplication of two bigints `(a b : Tp.denote Tp.bi)`.
+The builtin is assumed to return `a * b`.
+
+In Noir, this builtin corresponds to `a * b` for bigints `a`, `b`.
+-/
+def bigIntMul : Builtin := newBuiltin
+  [.bi, .bi] (.bi)
+  (fun _ => True)
+  (fun h![a, b] _  => a * b)
+
+/--
+Defines the division of two bigints `(a b : Tp.denote Tp.bi)`.
+The builtin is assumed to return `a / b`.
+
+In Noir, this builtin corresponds to `a / b` for bigints `a`, `b`.
+-/
+def bigIntDiv : Builtin := newBuiltin
+  [.bi, .bi] .bi
+  (fun _ => True)
+  (fun h![a, b] _  => a / b)
+
+
+def bigIntFromLeBytes : Builtin := newBuiltin
+  [.slice (.u 8), .slice (.u 8)] .bi
+  (fun _ => True)
+  (fun h![bs, m] _ => sorry)
+
+def decompose {w : Nat} (v : BitVec w): List (BitVec 8) := sorry
+
+def bigIntToLeBytes : Builtin := newBuiltin
+  [.bi] (.slice (.u 8))
+  (fun _ => True)
+  (fun h![a] _ => sorry)
 
 /--
 For `tp : Tp`, defines the indexing of a slice `l : Tp.denote (.slice tp)` with `i : Tp.denote (.u 32)`
