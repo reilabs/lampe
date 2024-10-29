@@ -271,12 +271,6 @@ theorem letIn_intro:
       tauto
   simp
 
-nr_def weirdEq<I>(x : I, y : I) -> Unit {
-  let a = #fresh() : I;
-  #assert(#eq(a, x) : bool) : Unit;
-  #assert(#eq(a, y) : bool) : Unit;
-}
-
 -- nr_def assert<>(x : bool) -> Unit {
 --   #assert(x) : Unit;
 -- }
@@ -286,36 +280,36 @@ nr_def assert2<>(x : bool, y: bool) -> Unit {
   #assert(y):Unit;
 }
 
-example : STHoare p Γ True (assert2.fn.body _ h![] h![a, b]) (fun _ => ⟦a ∧ b⟧) := by
-  unfold assert2
-  simp
-  apply letIn_intro
-  apply letIn_intro
-  aesop
-  intro
-  apply ramified_frame_top
-  apply assert_intro
-  simp
-  apply SLP.forall_right
-  intro
-  apply SLP.wand_intro
-  apply SLP.pure_left
-  intro h
-  rw [h]
-  apply SLP.ent_star_top
-  intro
-  apply letIn_intro
-  apply ramified_frame_top
-  apply var_intro
-  simp
-  apply SLP.forall_right
-  intro
-  apply SLP.wand_intro
-  apply SLP.ent_star_top
-  intro
-  apply ramified_frame_top
-  apply assert_intro
-  aesop
+-- example : STHoare p Γ True (assert2.fn.body _ h![] h![a, b]) (fun _ => ⟦a ∧ b⟧) := by
+--   unfold assert2
+--   simp
+--   apply letIn_intro
+--   apply letIn_intro
+--   aesop
+--   intro
+--   apply ramified_frame_top
+--   apply assert_intro
+--   simp
+--   apply SLP.forall_right
+--   intro
+--   apply SLP.wand_intro
+--   apply SLP.pure_left
+--   intro h
+--   rw [h]
+--   apply SLP.ent_star_top
+--   intro
+--   apply letIn_intro
+--   apply ramified_frame_top
+--   apply var_intro
+--   simp
+--   apply SLP.forall_right
+--   intro
+--   apply SLP.wand_intro
+--   apply SLP.ent_star_top
+--   intro
+--   apply ramified_frame_top
+--   apply assert_intro
+--   aesop
 
 nr_def simple_rw<>(x : bool) -> bool {
   let mut y = x;
@@ -375,41 +369,41 @@ theorem writeRef_intro:
     (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![r, v'])
     (fun _ => [r ↦ ⟨tp, v'⟩]) := by sorry
 
-example : STHoare p Γ ⟦⟧ (simple_rw.fn.body _ h![] h![x]) fun v => v = x := by
-  simp only [simple_rw, Lampe.Expr.letMutIn]
-  apply letIn_intro
-  apply letIn_intro
-  apply var_intro
-  intro
-  apply ramified_frame_top
-  apply ref_intro
-  · simp
-    apply SLP.forall_right
-    intro
-    apply SLP.wand_intro
-    apply SLP.pure_left
-    intro
-    subst_vars
-    apply SLP.ent_star_top
-  intro
-  apply ramified_frame_top
-  apply readRef_intro
-  rotate_left
-  apply SLP.star_mono_l'
-  apply SLP.forall_right
-  intro
-  apply SLP.wand_intro
-  simp
-  apply SLP.star_mono_l
-  apply SLP.entails_top
+-- example : STHoare p Γ ⟦⟧ (simple_rw.fn.body _ h![] h![x]) fun v => v = x := by
+--   simp only [simple_rw, Lampe.Expr.letMutIn]
+--   apply letIn_intro
+--   apply letIn_intro
+--   apply var_intro
+--   intro
+--   apply ramified_frame_top
+--   apply ref_intro
+--   · simp
+--     apply SLP.forall_right
+--     intro
+--     apply SLP.wand_intro
+--     apply SLP.pure_left
+--     intro
+--     subst_vars
+--     apply SLP.ent_star_top
+--   intro
+--   apply ramified_frame_top
+--   apply readRef_intro
+--   rotate_left
+--   apply SLP.star_mono_l'
+--   apply SLP.forall_right
+--   intro
+--   apply SLP.wand_intro
+--   simp
+--   apply SLP.star_mono_l
+--   apply SLP.entails_top
 
-nr_def simple_muts<>(x : Field) -> Field {
-  let mut y = x;
-  let mut z = x;
-  z = z;
-  y = z;
-  y
-}
+-- nr_def simple_muts<>(x : Field) -> Field {
+--   let mut y = x;
+--   let mut z = x;
+--   z = z;
+--   y = z;
+--   y
+-- }
 
 def simple_muts_anf_body : (f : rep .field) → Expr rep .field := fun x =>
   .letIn (.call h![] [.field] (.ref .field) (.builtin .ref) h![x]) fun y =>

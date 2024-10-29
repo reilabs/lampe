@@ -235,18 +235,37 @@ elab "steps" : tactic => do
   replaceMainGoal newGoals
 
 syntax "loop_inv" term : tactic
-macro "loop_inv" inv:term : tactic => `(tactic|
+macro "loop_inv" inv:term : tactic => `(tactic|(
   (first
-    | apply loop_inv_intro $inv
+    | apply loop_inv_intro $inv ?_
     | apply consequence_frame_left; apply loop_inv_intro $inv ?_
-    | apply ramified_frame_top; apply loop_inv_intro $inv
+    | apply ramified_frame_top; apply loop_inv_intro $inv ?_
   )
-)
+  on_goal 3 => sp_slp
+))
 
+nr_def simple_muts<>(x : Field) -> Field {
+  let mut y = x;
+  let mut z = x;
+  z = z;
+  y = z;
+  y
+}
 
-example : STHoare p Γ ⟦⟧ (simple_muts_anf_body x) fun v => v = x := by
-  simp only [simple_muts_anf_body]
+example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] h![x]) fun v => v = x := by
+  simp only [simple_muts]
   steps
+
+nr_def weirdEq<I>(x : I, y : I) -> Unit {
+  let a = #fresh() : I;
+  #assert(#eq(a, x) : bool) : Unit;
+  #assert(#eq(a, y) : bool) : Unit;
+}
+
+example {P} {x y : Tp.denote P .field} : STHoare P Γ ⟦⟧ (weirdEq.fn.body _ h![.field] h![x, y]) fun _ => x = y := by
+  simp only [weirdEq]
+  steps
+  aesop
 
 example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppendBody self that) fun v => v = self ++ that := by
   simp only [sliceAppendBody]
@@ -266,21 +285,7 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
     simp at hp
     simp [←hp]
   · simp
-  · sp_slp
-    simp
+  · simp
   steps
   simp_all [Nat.mod_eq_of_lt]
   sp_slp!
-
-def weirdEq {P} (x y : Tp.denote P .field): Lampe.Expr (Tp.denote P) .unit :=
-  .letIn (fresh .field) fun z =>
-  .letIn (eqF z x) fun eqzx =>
-  .letIn (assert eqzx) fun _ =>
-  .letIn (eqF z y) fun eqzy =>
-  .letIn (assert eqzy) fun r =>
-  .var r
-
-example {P} {x y : Tp.denote P .field} : STHoare P Γ ⟦⟧ (weirdEq x y) fun _ => x = y := by
-  simp only [_root_.weirdEq]
-  steps
-  aesop
