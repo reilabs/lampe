@@ -380,18 +380,37 @@ def bigIntDiv : Builtin := newBuiltin
   (fun _ => True)
   (fun h![a, b] _  => a / b)
 
+/-- Not implemented yet.
 
+In Noir, this builtin corresponds to `fn from_le_bytes(bytes: [u8], modulus: [u8])` implemented for `BigInt`.
+ -/
 def bigIntFromLeBytes : Builtin := newBuiltin
   [.slice (.u 8), .slice (.u 8)] .bi
   (fun _ => True)
   (fun h![bs, m] _ => sorry)
 
-def decompose {w : Nat} (v : BitVec w): List (BitVec 8) := sorry
+/-- Converts a bitvector of width `w` to a list of `BitVec 8`s in little-endian encoding -/
+def bitsToBytes (v : BitVec w) : List (BitVec 8) := match w with
+| .zero => List.nil
+| .succ w' => List.cons (BitVec.truncate 8 v) (bitsToBytes (BitVec.truncate (w' - 7) (v >>> 8)))
 
+#eval bitsToBytes (BitVec.ofNat 256 300) -- [44, 1, 0, 0, ...]
+#eval bitsToBytes (BitVec.ofNat 256 1234567) -- [-121, -42, 18, 0, 0, ...]
+
+/--
+Defines the conversion of `a : Tp.denote .bi` to its byte slice representation `l : Tp.denote (.slice (.u 8))` in little-endian encoding.
+Note that `l` always contains 32 elements. Hence, for integers that can be represented by less than 32 bytes, the higher bytes are set to zero.
+
+We make the following assumptions:
+- If `a` cannot be represented by 32 bytes, an exception is thrown
+- Else, the builtin returns `l`.
+
+In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemented for `BigInt`.
+-/
 def bigIntToLeBytes : Builtin := newBuiltin
   [.bi] (.slice (.u 8))
-  (fun _ => True)
-  (fun h![a] _ => sorry)
+  (fun h![a] => canContain 256 a)
+  (fun h![a] _ =>  (bitsToBytes (BitVec.ofInt 256 a)))
 
 /--
 For `tp : Tp`, defines the indexing of a slice `l : Tp.denote (.slice tp)` with `i : Tp.denote (.u 32)`
