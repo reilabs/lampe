@@ -2,6 +2,7 @@ import Lampe.State
 import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.SeparationLogic
+import Lampe.Helpers
 import Mathlib
 
 namespace Lampe
@@ -239,9 +240,9 @@ def bXor := newBuiltin
 
 
 /--
-For `s ∈ ℕ`, defines the addition of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+Defines the addition of two `s`-bit uints: `(a b: Tp.denote _ (Tp.u s))`.
 We make the following assumptions:
-- If `(a + b) < 2^s`, then the builtin returns `(a + b) : Tp.denote (Tp.u s)`
+- If `(a + b) < 2^s`, then the builtin returns `(a + b) : Tp.denote _ (Tp.u s)`
 - Else (integer overflow), an exception is thrown.
 
 In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of width `s`.
@@ -252,9 +253,9 @@ def uAdd {s} := newBuiltin
   (fun h![a, b] _ => a + b)
 
 /--
-For `s ∈ ℕ`, defines the multiplication of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+Defines the multiplication of two `s`-bit uints: `(a b: Tp.denote _ (Tp.u s))`.
 We make the following assumptions:
-- If `(a * b) < 2^s`, then the builtin returns `(a * b) : Tp.denote (Tp.u s)`
+- If `(a * b) < 2^s`, then the builtin returns `(a * b) : Tp.denote _ (Tp.u s)`
 - Else (integer overflow), an exception is thrown.
 
 In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of width `s`.
@@ -265,9 +266,9 @@ def uMul {s} := newBuiltin
   (fun h![a, b] _ => a * b)
 
 /--
-For `s ∈ ℕ`, defines the subtraction of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+Defines the subtraction of two `s`-bit uints: `(a b: Tp.denote _ (Tp.u s))`.
 We make the following assumptions:
-- If `(a - b) ≥ 0`, then the builtin returns `(a - b) : Tp.denote (Tp.u s)`
+- If `(a - b) ≥ 0`, then the builtin returns `(a - b) : Tp.denote _ (Tp.u s)`
 - Else (integer underflow), an exception is thrown.
 
 In Noir, this builtin corresponds to `a - b` for uints `a`, `b` of width `s`.
@@ -278,9 +279,9 @@ def uSub {s} := newBuiltin
   (fun h![a, b] _ => a - b)
 
 /--
-For `s ∈ ℕ`, defines the division of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+Defines the division of two `s`-bit uints: `(a b: Tp.denote _ (Tp.u s))`.
 We make the following assumptions:
-- If `b ≠ 0`, then the builtin returns `(a / b) : Tp.denote (Tp.u s)`
+- If `b ≠ 0`, then the builtin returns `(a / b) : Tp.denote _ (Tp.u s)`
 - Else (divide by zero), an exception is thrown.
 - If `a / b` is not an integer, then the result is truncated.
 
@@ -292,9 +293,9 @@ def uDiv {s} := newBuiltin
   (fun h![a, b] _ => a.udiv b)
 
 /--
-For `s ∈ ℕ`, defines the modulus of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
+Defines the modulus of two `s`-bit uints: `(a b: Tp.denote _ (Tp.u s))`.
 We make the following assumptions:
-- If `b ≠ 0`, then the builtin returns `(a % b) : Tp.denote (Tp.u s)`
+- If `b ≠ 0`, then the builtin returns `(a % b) : Tp.denote _ (Tp.u s)`
 - Else (mod by zero), an exception is thrown.
 
 In Noir, this builtin corresponds to `a % b` for uints `a`, `b` of width `s`.
@@ -305,8 +306,8 @@ def uRem {s} := newBuiltin
   (fun h![a, b] _ => a % b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise negation of an `s`-bit uint: `a: Tp.denote (Tp.u s)`
-which evaluates to `(¬a) : Tp.denote (Tp.u s)`.
+Defines the bitwise negation of an `s`-bit uint: `a: Tp.denote _ (Tp.u s)`
+which evaluates to `(¬a) : Tp.denote _ (Tp.u s)`.
 
 In Noir, this builtin corresponds to `!a` for uint `a` of width `s`.
 -/
@@ -316,8 +317,8 @@ def uNot {s} := newBuiltin
   (fun h![a] _ => a.not)
 
 /--
-For `s ∈ ℕ`, defines the bitwise OR of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`
-which evaluates to `(a ||| b) : Tp.denote (Tp.u s)`.
+Defines the bitwise OR of two `s`-bit uints: `(a b: Tp.denote _ (Tp.u s))`
+which evaluates to `(a ||| b) : Tp.denote _ (Tp.u s)`.
 
 In Noir, this builtin corresponds to `a | b` for uints `a`, `b` of width `s`.
 -/
@@ -327,8 +328,8 @@ def uOr {s} := newBuiltin
   (fun h![a, b] _ => a ||| b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise AND of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`
-which evaluates to `(a &&& b) : Tp.denote (Tp.u s)`.
+Defines the bitwise AND of two `s`-bit uints: `(a b: Tp.denote _ (Tp.u s))`
+which evaluates to `(a &&& b) : Tp.denote _ (Tp.u s)`.
 
 In Noir, this builtin corresponds to `a & b` for uints `a`, `b` of width `s`.
 -/
@@ -338,8 +339,8 @@ def uAnd {s} := newBuiltin
   (fun h![a, b] _ => a &&& b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise XOR of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`
-which evaluates to `(a.xor b) : Tp.denote (Tp.u s)`.
+Defines the bitwise XOR of two `s`-bit uints: `(a b: Tp.denote _ (Tp.u s))`
+which evaluates to `(a.xor b) : Tp.denote _ (Tp.u s)`.
 
 In Noir, this builtin corresponds to `a ^ b` for uints `a`, `b` of width `s`.
 -/
@@ -349,9 +350,9 @@ def uXor {s} := newBuiltin
   (fun h![a, b] _ => a.xor b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise left shift of an `s`-bit uint `a: Tp.denote (Tp.u s)`
-with an amount represented by an 8-bit uint `b : Tp.denote (Tp.u 8)`.
-This is assumed to evaluate to `(a <<< b) : Tp.denote (Tp.u s)`.
+Defines the bitwise left shift of an `s`-bit uint `a: Tp.denote _ (Tp.u s)`
+with an amount represented by an 8-bit uint `b : Tp.denote _ (Tp.u 8)`.
+This is assumed to evaluate to `(a <<< b) : Tp.denote _ (Tp.u s)`.
 
 In Noir, this builtin corresponds to `a <<< b` for an uint `a` of width `s` and an uint `b` of width `8`.
 -/
@@ -361,9 +362,9 @@ def uShl {s} := newBuiltin
   (fun h![a, b] _ => a <<< b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise right shift of an `s`-bit uint `a: Tp.denote (Tp.u s)`
-with an amount represented by an 8-bit uint `b : Tp.denote (Tp.u 8)`.
-This is assumed to evaluate to `(a >>> b) : Tp.denote (Tp.u s)`.
+Defines the bitwise right shift of an `s`-bit uint `a: Tp.denote _ (Tp.u s)`
+with an amount represented by an 8-bit uint `b : Tp.denote _ (Tp.u 8)`.
+This is assumed to evaluate to `(a >>> b) : Tp.denote _ (Tp.u s)`.
 
 In Noir, this builtin corresponds to `a >>> b` for an uint `a` of width `s` and an uint `b` of width `8`.
 -/
@@ -373,12 +374,12 @@ def uShr {s} := newBuiltin
   (fun h![a, b] _ => a >>> b)
 
 /--
-For `s ∈ ℕ`, defines the addition of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+Defines the addition of two `s`-bit ints: `(a b: Tp.denote _ (Tp.i s))`.
 We make the following assumptions:
-- If `-2^(s-1) ≤ (a + b) < 2^(s-1)`, then the builtin returns `(a + b) : Tp.denote (Tp.i s)`
+- If `-2^(s-1) ≤ (a + b) < 2^(s-1)`, then the builtin returns `(a + b) : Tp.denote _ (Tp.i s)`
 - Else (integer overflow/underflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a + b` for signed integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a + b` for signed ints `a`, `b` of width `s`.
 -/
 def iAdd {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
@@ -386,12 +387,12 @@ def iAdd {s : Nat}: Builtin := newBuiltin
   (fun h![a, b] _ => a + b)
 
 /--
-For `s ∈ ℕ`, defines the subtraction of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+Defines the subtraction of two `s`-bit ints: `(a b: Tp.denote _ (Tp.i s))`.
 We make the following assumptions:
-- If `-2^(s-1) ≤ (a - b) < 2^(s-1)`, then the builtin returns `(a - b) : Tp.denote (Tp.i s)`
+- If `-2^(s-1) ≤ (a - b) < 2^(s-1)`, then the builtin returns `(a - b) : Tp.denote _ (Tp.i s)`
 - Else (integer overflow/underflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a - b` for signed integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a - b` for signed ints `a`, `b` of width `s`.
 -/
 def iSub {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
@@ -399,12 +400,12 @@ def iSub {s : Nat}: Builtin := newBuiltin
   (fun h![a, b] _ => a - b)
 
 /--
-For `s ∈ ℕ`, defines the multiplication of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+Defines the multiplication of two `s`-bit ints: `(a b: Tp.denote _ (Tp.i s))`.
 We make the following assumptions:
-- If `-2^(s-1) ≤ (a * b) < 2^(s-1)`, then the builtin returns `(a * b) : Tp.denote (Tp.i s)`
+- If `-2^(s-1) ≤ (a * b) < 2^(s-1)`, then the builtin returns `(a * b) : Tp.denote _ (Tp.i s)`
 - Else (integer overflow/underflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a * b` for signed integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a * b` for signed ints `a`, `b` of width `s`.
 -/
 def iMul {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
@@ -412,12 +413,12 @@ def iMul {s : Nat}: Builtin := newBuiltin
   (fun h![a, b] _ => a * b)
 
 /--
-For `s ∈ ℕ`, defines the division of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+Defines the division of two `s`-bit ints: `(a b: Tp.denote _ (Tp.i s))`.
 We make the following assumptions:
-- If `-2^(s-1) ≤ (a / b) < 2^(s-1)` and `b ≠ 0`, then the builtin returns `(a / b) : Tp.denote (Tp.i s)`
+- If `-2^(s-1) ≤ (a / b) < 2^(s-1)` and `b ≠ 0`, then the builtin returns `(a / b) : Tp.denote _ (Tp.i s)`
 - Else (integer overflow/underflow or division-by-zero), an exception is thrown.
 
-In Noir, this builtin corresponds to `a % b` for signed integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a / b` for signed ints `a`, `b` of width `s`.
 -/
 def iDiv {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
@@ -425,12 +426,12 @@ def iDiv {s : Nat}: Builtin := newBuiltin
   (fun h![a, b] _ => a.sdiv b)
 
 /--
-For `s ∈ ℕ`, defines the modulus of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
+Defines the modulus of two `s`-bit ints: `(a b: Tp.denote _ (Tp.i s))`.
 We make the following assumptions:
-- If `-2^(s-1) ≤ (a % b) < 2^(s-1)` and `b ≠ 0`, then the builtin returns `(a % b) : Tp.denote (Tp.i s)`
+- If `-2^(s-1) ≤ (a % b) < 2^(s-1)` and `b ≠ 0`, then the builtin returns `(a % b) : Tp.denote _ (Tp.i s)`
 - Else (integer overflow/underflow or mod-by-zero), an exception is thrown.
 
-In Noir, this builtin corresponds to `a % b` for signed integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a % b` for signed ints `a`, `b` of width `s`.
 -/
 def iRem {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
@@ -438,9 +439,9 @@ def iRem {s : Nat}: Builtin := newBuiltin
   (fun h![a, b] _ => a % b)
 
 /--
-For `s ∈ ℕ`, defines the negation of a `s`-bit int: `a: Tp.denote (Tp.i s)`.
+Defines the negation of a `s`-bit int: `a: Tp.denote _ (Tp.i s)`.
 We make the following assumptions:
-- If `-2^(s-1) ≤ -a < 2^(s-1)`, then the builtin returns `-a : Tp.denote (Tp.i s)`
+- If `-2^(s-1) ≤ -a < 2^(s-1)`, then the builtin returns `-a : Tp.denote _ (Tp.i s)`
 - Else (integer overflow/underflow), an exception is thrown.
 
 In Noir, this builtin corresponds to `-a` for a signed integer `a` of width `s`.
@@ -451,8 +452,8 @@ def iNeg {s : Nat}: Builtin := newBuiltin
   (fun h![a] _ => -a)
 
 /--
-For `s ∈ ℕ`, defines the bitwise negation of an `s`-bit int: `a: Tp.denote (Tp.i s)`
-which evaluates to `(¬a) : Tp.denote (Tp.u s)`.
+Defines the bitwise negation of an `s`-bit int: `a: Tp.denote _ (Tp.i s)`
+which evaluates to `(¬a) : Tp.denote _ (Tp.u s)`.
 
 In Noir, this builtin corresponds to `!a` for an int `a` of width `s`.
 -/
@@ -462,8 +463,8 @@ def iNot {s} := newBuiltin
   (fun h![a] _ => a.not)
 
 /--
-For `s ∈ ℕ`, defines the bitwise OR of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`
-which evaluates to `(a ||| b) : Tp.denote (Tp.i s)`.
+Defines the bitwise OR of two `s`-bit ints: `(a b: Tp.denote _ (Tp.i s))`
+which evaluates to `(a ||| b) : Tp.denote _ (Tp.i s)`.
 
 In Noir, this builtin corresponds to `a | b` for ints `a`, `b` of width `s`.
 -/
@@ -473,8 +474,8 @@ def iOr {s} := newBuiltin
   (fun h![a, b] _ => a ||| b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise AND of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`
-which evaluates to `(a &&& b) : Tp.denote (Tp.i s)`.
+Defines the bitwise AND of two `s`-bit ints: `(a b: Tp.denote _ (Tp.i s))`
+which evaluates to `(a &&& b) : Tp.denote _ (Tp.i s)`.
 
 In Noir, this builtin corresponds to `a & b` for ints `a`, `b` of width `s`.
 -/
@@ -484,8 +485,8 @@ def iAnd {s} := newBuiltin
   (fun h![a, b] _ => a &&& b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise XOR of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`
-which evaluates to `(a.xor b) : Tp.denote (Tp.i s)`.
+Defines the bitwise XOR of two `s`-bit ints: `(a b: Tp.denote _ (Tp.i s))`
+which evaluates to `(a.xor b) : Tp.denote _ (Tp.i s)`.
 
 In Noir, this builtin corresponds to `a ^ b` for ints `a`, `b` of width `s`.
 -/
@@ -495,9 +496,9 @@ def iXor {s} := newBuiltin
   (fun h![a, b] _ => a.xor b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise left shift of an `s`-bit int `a: Tp.denote (Tp.i s)`
-with an amount represented by an 8-bit uint `b : Tp.denote (Tp.u 8)`.
-This is assumed to evaluate to `(a <<< b) : Tp.denote (Tp.i s)`.
+Defines the bitwise left shift of an `s`-bit int `a: Tp.denote _ (Tp.i s)`
+with an amount represented by an 8-bit uint `b : Tp.denote _ (Tp.u 8)`.
+This is assumed to evaluate to `(a <<< b) : Tp.denote _ (Tp.i s)`.
 
 In Noir, this builtin corresponds to `a <<< b` for an int `a` of width `s` and an uint `b` of width `8`.
 -/
@@ -507,9 +508,9 @@ def iShl {s} := newBuiltin
   (fun h![a, b] _ => a <<< b)
 
 /--
-For `s ∈ ℕ`, defines the bitwise right shift of an `s`-bit int `a: Tp.denote (Tp.i s)`
-with an amount represented by an 8-bit uint `b : Tp.denote (Tp.u 8)`.
-This is assumed to evaluate to `(a >>> b) : Tp.denote (Tp.i s)`.
+Defines the bitwise right shift of an `s`-bit int `a: Tp.denote _ (Tp.i s)`
+with an amount represented by an 8-bit uint `b : Tp.denote _ (Tp.u 8)`.
+This is assumed to evaluate to `(a >>> b) : Tp.denote _ (Tp.i s)`.
 
 In Noir, this builtin corresponds to `a >>> b` for an int `a` of width `s` and an uint `b` of width `8`.
 -/
@@ -517,6 +518,167 @@ def iShr {s} := newBuiltin
   [(.u s), (.u 8)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a >>> b)
+
+/--
+Defines the addition of two field elements `(a b: Tp.denote p Tp.field)` in `ZMod p`.
+This is assumed to evaluate to `(a + b) : Tp.denote p Tp.field`.
+
+In Noir, this builtin corresponds to `a + b` for field elements `a`, `b`.
+-/
+def fAdd : Builtin := newBuiltin
+  [(.field), (.field)] .field
+  (fun _ => True)
+  (fun h![a, b] _ => a + b)
+
+/--
+Defines the multiplication of two field elements `(a b: Tp.denote p Tp.field)` in `ZMod p`.
+This is assumed to evaluate to `(a * b) : Tp.denote p Tp.field`.
+
+In Noir, this builtin corresponds to `a * b` for field elements `a`, `b`.
+-/
+def fMul : Builtin := newBuiltin
+  [(.field), (.field)] .field
+  (fun _ => True)
+  (fun h![a, b] _ => a * b)
+
+/--
+Defines the subtraction of two field elements `(a b: Tp.denote p Tp.field)` in `ZMod p`.
+This is assumed to evaluate to `(a - b) : Tp.denote p Tp.field`.
+
+In Noir, this builtin corresponds to `a - b` for field elements `a`, `b`.
+-/
+def fSub : Builtin := newBuiltin
+  [(.field), (.field)] .field
+  (fun _ => True)
+  (fun h![a, b] _ => a - b)
+
+/--
+Defines the division of two field elements `(a b: Tp.denote p Tp.field)` in `ZMod p`.
+We assume the following:
+- If `b ≠ 0`, it evaluates to `(a / b) : Tp.denote p Tp.field`.
+- Else, an exception is thrown.
+
+In Noir, this builtin corresponds to `a / b` for field elements `a`, `b`.
+-/
+def fDiv : Builtin := newBuiltin
+  [(.field), (.field)] .field
+  (fun h![_, b] => b ≠ 0)
+  (fun h![a, b] _ => a / b)
+
+/--
+Defines the additive inverse of a field element `a: Tp.denote p Tp.field` in `ZMod p`.
+This is assumed to evaluate to `-a : Tp.denote p Tp.field`.
+
+In Noir, this builtin corresponds to `-a` for a field element `a`.
+-/
+def fNeg : Builtin := newBuiltin
+  [(.field)] .field
+  (fun _ => True)
+  (fun h![a] _ => -a)
+
+/--
+For a field element `a : Tp.denote p Tp.field` in `ZMod p`, and a bit size `w : Tp.denote p (Tp.u 32)`,
+we assume the following:
+- If `a < 2^w`, then this builtin evaluates to a list of 1-bit uints `l`, which is the little-endian bit representation of `a`.
+Note that `l` is padded up to `w` elements with `0`.
+- Otherwise, an exception is thrown.
+
+In Noir, this builtin corresponds to ` fn __to_le_bits(self, bit_size: u32) -> [u1]` implemented for `Field`.
+-/
+def fToLeBits : Builtin := newBuiltin
+  [(.field), (.u 32)] (.slice (.u 1))
+  (fun h![a, w] => a.val < 2^w.toNat)
+  (fun h![a, w] _ => extList
+    (withRadix 2 a.val (by tauto)) (w.toNat) 0)
+
+/--
+For a field element `a : Tp.denote p Tp.field` in `ZMod p`, and a bit size `w : Tp.denote p (Tp.u 32)`,
+we assume the following:
+- If `a < 2^w`, then this builtin evaluates to a list of 1-bit uints `l`, which is the big-endian bit representation of `a`.
+Note that `l` is padded down to `w` elements with `0`.
+- Otherwise, an exception is thrown.
+
+In Noir, this builtin corresponds to ` fn __to_be_bits(self, bit_size: u32) -> [u1]` implemented for `Field`.
+-/
+def fToBeBits : Builtin := newBuiltin
+  [(.field), (.u 32)] (.slice (.u 1))
+  (fun h![a, w] => a.val < 2^w.toNat)
+  (fun h![a, w] _ => .reverse (extList
+    (withRadix 2 a.val (by tauto)) (w.toNat) 0))
+
+/--
+Assumption: 1 < rad < 256
+In Noir, this builtin corresponds to `fn __to_le_radix(self, radix: u32, result_len: u32) -> [u8]` implemented for `Field`.
+-/
+def fToLeRadix : Builtin := newBuiltin
+  [(.field), (.u 32), (.u 32)] (.slice (.u 8))
+  (fun h![_, rad, _] => 1 < rad ∧ rad < 256)
+  (fun h![a, rad, l] _ => extList
+    (withRadix rad.toNat a.val (by tauto)) l.toNat 0)
+
+/--
+Assumption: 1 < rad < 256
+In Noir, this builtin corresponds to `fn __to_be_radix(self, radix: u32, result_len: u32) -> [u8]` implemented for `Field`.
+-/
+def fToBeRadix : Builtin :=  newBuiltin
+  [(.field), (.u 32), (.u 32)] (.slice (.u 8))
+  (fun h![_, rad, _] => 1 < rad ∧ rad < 256)
+  (fun h![a, rad, l] _ => .reverse (extList
+    (withRadix rad.toNat a.val (by tauto)) l.toNat 0))
+
+/--
+Assumption: a < 2^w
+In Noir, this builtin corresponds to `fn __assert_max_bit_size(self, bit_size: u32)` implemented for `Field`.
+-/
+def fApplyRangeConstraint : Builtin := newBuiltin
+  [.field, (.u 32)] .unit
+  (fun h![a, w] => a.val < 2^w.toNat)
+  (fun _ _ => ())
+
+/--
+Assumption: p < 2^64
+In Noir, this builtin corresponds to `fn modulus_num_bits() -> u64` implemented for `Field`.
+-/
+def fModNumBits : Builtin := newBuiltin
+  [.field] (.u 64)
+  (@fun P _ => P.val < 2^64)
+  (@fun P h![_] _ => numBits P.val)
+
+/--
+
+In Noir, this builtin corresponds to `fn modulus_le_bits() -> [u1]` implemented for `Field`.
+-/
+def fModLeBits : Builtin := newBuiltin
+  [.field] (.slice (.u 1))
+  (@fun p _ => True)
+  (@fun p h![_] _ => withRadix 2 p.val (by tauto))
+
+/--
+
+In Noir, this builtin corresponds to `fn modulus_be_bits() -> [u1]` implemented for `Field`.
+-/
+def fModBeBits : Builtin := newBuiltin
+  [.field] (.slice (.u 1))
+  (@fun p _ => True)
+  (@fun p h![_] _ => .reverse (withRadix 2 p.val (by tauto)))
+
+/--
+
+In Noir, this builtin corresponds to `fn modulus_le_bytes() -> [u8]` implemented for `Field`.
+-/
+def fModLeBytes : Builtin := newBuiltin
+  [.field] (.slice (.u 8))
+  (@fun p _ => True)
+  (@fun p h![_] _ => withRadix 256 p.val (by linarith))
+
+/--
+
+In Noir, this builtin corresponds to `fn modulus_be_bytes() -> [u8]` implemented for `Field`.
+-/
+def fModBeBytes : Builtin := newBuiltin
+  [.field] (.slice (.u 8))
+  (@fun p _ => True)
+  (@fun p h![_] _ => .reverse (withRadix 256 p.val (by linarith)))
 
 /--
 Defines the addition of two bigints `(a b : Tp.denote Tp.bi)`.
@@ -571,16 +733,8 @@ def bigIntFromLeBytes : Builtin := newBuiltin
   (fun _ => True)
   (fun h![bs, m] _ => sorry)
 
-/-- Converts a bitvector of width `w` to a list of `BitVec 8`s in little-endian encoding -/
-def bitsToBytes (v : BitVec w) : List (BitVec 8) := match w with
-| .zero => List.nil
-| .succ w' => List.cons (BitVec.truncate 8 v) (bitsToBytes (BitVec.truncate (w' - 7) (v >>> 8)))
-
-#eval bitsToBytes (BitVec.ofNat 256 300) -- [44, 1, 0, 0, ...]
-#eval bitsToBytes (BitVec.ofNat 256 1234567) -- [-121, -42, 18, 0, 0, ...]
-
 /--
-Defines the conversion of `a : Tp.denote .bi` to its byte slice representation `l : Tp.denote (.slice (.u 8))` in little-endian encoding.
+Defines the conversion of `a : Tp.denote .bi` to its byte slice representation `l : Tp.denote _ (.slice (.u 8))` in little-endian encoding.
 Note that `l` always contains 32 elements. Hence, for integers that can be represented by less than 32 bytes, the higher bytes are set to zero.
 
 We make the following assumptions:
@@ -592,10 +746,10 @@ In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemen
 def bigIntToLeBytes : Builtin := newBuiltin
   [.bi] (.slice (.u 8))
   (fun h![a] => canContain 256 a)
-  (fun h![a] _ =>  (bitsToBytes (BitVec.ofInt 256 a)))
+  (fun h![a] _ => chunksOf (BitVec.ofInt 256 a) 8 (by linarith))
 
 /--
-For `tp : Tp`, defines the indexing of a slice `l : Tp.denote (.slice tp)` with `i : Tp.denote (.u 32)`
+Defines the indexing of a slice `l : Tp.denote _ (.slice tp)` with `i : Tp.denote _ (.u 32)`
 We make the following assumptions:
 - If `i < l.length`, then the builtin returns `l[i] : Tp.denote tp`
 - Else (out of bounds access), an exception is thrown.
@@ -608,9 +762,9 @@ def sliceIndex {tp} := newBuiltin
   (fun h![l, i] v => l.get (Fin.mk i.toNat v))
 
 /--
-For `tp : Tp`, defines the builtin that returns the length of a slice `l : Tp.denote (.slice tp)`
+Defines the builtin that returns the length of a slice `l : Tp.denote _ (.slice tp)`
 We make the following assumptions:
-- If `l.length < 2^32`, then the builtin returns `l.length : Tp.denote (.u 32)`
+- If `l.length < 2^32`, then the builtin returns `l.length : Tp.denote _ (.u 32)`
 - Else (integer overflow), an exception is thrown.
 
 In Noir, this builtin corresponds to `fn len(self) -> u32` implemented for `[T]`.
@@ -621,7 +775,7 @@ def sliceLen {tp} := newBuiltin
   (fun h![l] _ => l.length)
 
 /--
-For `tp : Tp`, defines the builtin that pushes back an element `e : Tp.denote tp` to a slice `l : Tp.denote (.slice tp)`.
+Defines the builtin that pushes back an element `e : Tp.denote tp` to a slice `l : Tp.denote _ (.slice tp)`.
 On these inputs, the builtin is assumed to return `l ++ [e]`.
 
 In Noir, this builtin corresponds to `fn push_back(self, elem: T) -> Self` implemented for `[T]`.
@@ -632,7 +786,7 @@ def slicePushBack {tp} := newBuiltin
   (fun h![l, e] _ => l ++ [e])
 
 /--
-For `tp : Tp`, defines the builtin that pushes front an element `e : Tp.denote tp` to a slice `l : Tp.denote (.slice tp)`.
+Defines the builtin that pushes front an element `e : Tp.denote tp` to a slice `l : Tp.denote _ (.slice tp)`.
 On these inputs, the builtin is assumed to return `[e] ++ l`.
 
 In Noir, this builtin corresponds to `fn push_front(self, elem: T) -> Self` implemented for `[T]`.
@@ -643,7 +797,7 @@ def slicePushFront {tp} := newBuiltin
   (fun h![l, e] _ => [e] ++ l)
 
 /--
-For `tp : Tp`, defines the insertion of an element `e : Tp.denote tp` at index `i : Tp.denote (.u 32)` to a slice `l : Tp.denote (.slice tp)`.
+Defines the insertion of an element `e : Tp.denote tp` at index `i : Tp.denote _ (.u 32)` to a slice `l : Tp.denote _ (.slice tp)`.
 We make the following assumptions:
 - If `0 ≤ i < l.length`, then the builtin returns `l'`
 where `l'` is `l` except that `e` is inserted at index `i`, and all the elements with indices larger than `i` are shifted to the right.
@@ -657,7 +811,7 @@ def sliceInsert {tp} := newBuiltin
   (fun h![l, i, e] _ => List.insertNth i.toNat e l)
 
 /--
-For `tp : Tp`, defines the builtin that pops the first element of a slice `l : Tp.denote (.slice tp)`.
+Defines the builtin that pops the first element of a slice `l : Tp.denote _ (.slice tp)`.
 We make the following assumptions:
 - If `l ≠ []`, then the builtin returns `(l[0], l[1:])`.
 - Else (empty slice), an exception is thrown.
@@ -670,7 +824,7 @@ def slicePopFront {tp} := newBuiltin
   (fun h![l] v => (l.head v, (l.tail, ())))
 
 /--
-For `tp : Tp`, defines the builtin that pops the last element of a slice `l : Tp.denote (.slice tp)`.
+Defines the builtin that pops the last element of a slice `l : Tp.denote _ (.slice tp)`.
 We make the following assumptions:
 - If `l ≠ []`, then the builtin returns `(l[:l.length-1], l[l.length-1])`.
 - Else (empty slice), an exception is thrown.
@@ -683,7 +837,7 @@ def slicePopBack {tp} := newBuiltin
   (fun h![l] v => (l.dropLast, (l.getLast v, ())))
 
 /--
-For `tp : Tp`, defines the removal of the element at the index `i : Tp.denote (.u 32)` from a slice `l : Tp.denote (.slice tp)`.
+Defines the removal of the element at the index `i : Tp.denote _ (.u 32)` from a slice `l : Tp.denote _ (.slice tp)`.
 We make the following assumptions:
 - If `i < l.length`, then the builtin returns `(l', l[i])`
 where `l'` is `l` except that the element at index `i` is removed, and all the elements with indices larger than `i` are shifted to the left.
@@ -700,17 +854,6 @@ def arrayLen : Builtin := sorry
 def arrayAsSlice : Builtin := sorry
 
 def strAsBytes : Builtin := sorry
-
-def fToLeBits : Builtin := sorry
-def fToBeBits : Builtin := sorry
-def fToLeRadix : Builtin := sorry
-def fToBeRadix : Builtin := sorry
-def fApplyRangeConstraint : Builtin := sorry
-def fModNumBits : Builtin := sorry
-def fModBeBits : Builtin := sorry
-def fModLeBits : Builtin := sorry
-def fModBeBytes : Builtin := sorry
-def fModLeBytes : Builtin := sorry
 
 def zeroed : Builtin := sorry
 def fromField : Builtin := sorry
