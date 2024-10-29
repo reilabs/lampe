@@ -9,7 +9,6 @@ which evaluates to `(¬a) : Tp.denote Tp.bool`.
 
 In Noir, this builtin corresponds to `!a` for bool `a`.
 -/
-
 def bNot := newBuiltin
   [(.bool)] .bool
   (fun _ => True)

@@ -55,8 +55,6 @@ For `args: HList (Tp.denote p) argTps`, we assume that a builtin function *fails
 
 If the builtin succeeds, it evaluates to `some (comp args (h : pred))`.
 Otherwise, it evaluates to `none`.
-```
-```
 -/
 def newBuiltin
   (argTps : List Tp)
