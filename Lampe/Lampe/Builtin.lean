@@ -193,12 +193,58 @@ def newBuiltin
 }
 
 /--
+Defines the negation of a bool: `a: Tp.denote Tp.bool`
+which evaluates to `(¬a) : Tp.denote Tp.bool`.
+
+In Noir, this builtin corresponds to `!a` for bool `a`.
+-/
+
+def bNot := newBuiltin
+  [(.bool)] .bool
+  (fun _ => True)
+  (fun h![a] _ => a.not)
+
+/--
+Defines the OR of two bools: `(a b: Tp.denote Tp.bool)`
+which evaluates to `(a || b) : Tp.denote Tp.bool`.
+
+In Noir, this builtin corresponds to `a | b` for bools `a`, `b`.
+-/
+def bOr := newBuiltin
+  [(.bool), (.bool)] .bool
+  (fun _ => True)
+  (fun h![a, b] _ => a || b)
+
+/--
+Defines the AND of two bools: `(a b: Tp.denote Tp.bool)`
+which evaluates to `(a && b) : Tp.denote Tp.bool`.
+
+In Noir, this builtin corresponds to `a & b` for bools `a`, `b`.
+-/
+def bAnd := newBuiltin
+  [(.bool), (.bool)] .bool
+  (fun _ => True)
+  (fun h![a, b] _ => a && b)
+
+/--
+Defines the XOR of two bools: `(a b: Tp.denote Tp.bool)`
+which evaluates to `(a.xor b) : Tp.denote Tp.bool`.
+
+In Noir, this builtin corresponds to `a ^ b` for bools `a`, `b`.
+-/
+def bXor := newBuiltin
+  [(.bool), (.bool)] .bool
+  (fun _ => True)
+  (fun h![a, b] _ => a.xor b)
+
+
+/--
 For `s ∈ ℕ`, defines the addition of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`.
 We make the following assumptions:
 - If `(a + b) < 2^s`, then the builtin returns `(a + b) : Tp.denote (Tp.u s)`
 - Else (integer overflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a + b` for unsigned integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of width `s`.
 -/
 def uAdd {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
@@ -211,7 +257,7 @@ We make the following assumptions:
 - If `(a * b) < 2^s`, then the builtin returns `(a * b) : Tp.denote (Tp.u s)`
 - Else (integer overflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a * b` for unsigned integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of width `s`.
 -/
 def uMul {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
@@ -224,7 +270,7 @@ We make the following assumptions:
 - If `(a - b) ≥ 0`, then the builtin returns `(a - b) : Tp.denote (Tp.u s)`
 - Else (integer underflow), an exception is thrown.
 
-In Noir, this builtin corresponds to `a - b` for unsigned integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a - b` for uints `a`, `b` of width `s`.
 -/
 def uSub {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
@@ -238,7 +284,7 @@ We make the following assumptions:
 - Else (divide by zero), an exception is thrown.
 - If `a / b` is not an integer, then the result is truncated.
 
-In Noir, this builtin corresponds to `a / b` for unsigned integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a / b` for uints `a`, `b` of width `s`.
 -/
 def uDiv {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
@@ -251,12 +297,80 @@ We make the following assumptions:
 - If `b ≠ 0`, then the builtin returns `(a % b) : Tp.denote (Tp.u s)`
 - Else (mod by zero), an exception is thrown.
 
-In Noir, this builtin corresponds to `a % b` for unsigned integers `a`, `b` of width `s`.
+In Noir, this builtin corresponds to `a % b` for uints `a`, `b` of width `s`.
 -/
 def uRem {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
   (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => a % b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise negation of an `s`-bit uint: `a: Tp.denote (Tp.u s)`
+which evaluates to `(¬a) : Tp.denote (Tp.u s)`.
+
+In Noir, this builtin corresponds to `!a` for uint `a` of width `s`.
+-/
+def uNot {s} := newBuiltin
+  [(.u s)] (.u s)
+  (fun _ => True)
+  (fun h![a] _ => a.not)
+
+/--
+For `s ∈ ℕ`, defines the bitwise OR of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`
+which evaluates to `(a ||| b) : Tp.denote (Tp.u s)`.
+
+In Noir, this builtin corresponds to `a | b` for uints `a`, `b` of width `s`.
+-/
+def uOr {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a ||| b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise AND of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`
+which evaluates to `(a &&& b) : Tp.denote (Tp.u s)`.
+
+In Noir, this builtin corresponds to `a & b` for uints `a`, `b` of width `s`.
+-/
+def uAnd {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a &&& b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise XOR of two `s`-bit uints: `(a b: Tp.denote (Tp.u s))`
+which evaluates to `(a.xor b) : Tp.denote (Tp.u s)`.
+
+In Noir, this builtin corresponds to `a ^ b` for uints `a`, `b` of width `s`.
+-/
+def uXor {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a.xor b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise left shift of an `s`-bit uint `a: Tp.denote (Tp.u s)`
+with an amount represented by an 8-bit uint `b : Tp.denote (Tp.u 8)`.
+This is assumed to evaluate to `(a <<< b) : Tp.denote (Tp.u s)`.
+
+In Noir, this builtin corresponds to `a <<< b` for an uint `a` of width `s` and an uint `b` of width `8`.
+-/
+def uShl {s} := newBuiltin
+  [(.u s), (.u 8)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a <<< b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise right shift of an `s`-bit uint `a: Tp.denote (Tp.u s)`
+with an amount represented by an 8-bit uint `b : Tp.denote (Tp.u 8)`.
+This is assumed to evaluate to `(a >>> b) : Tp.denote (Tp.u s)`.
+
+In Noir, this builtin corresponds to `a >>> b` for an uint `a` of width `s` and an uint `b` of width `8`.
+-/
+def uShr {s} := newBuiltin
+  [(.u s), (.u 8)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a >>> b)
 
 /--
 For `s ∈ ℕ`, defines the addition of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`.
@@ -335,6 +449,74 @@ def iNeg {s : Nat}: Builtin := newBuiltin
   [(.i s)] (.i s)
   (fun h![a] => canContain s (-a.toInt))
   (fun h![a] _ => -a)
+
+/--
+For `s ∈ ℕ`, defines the bitwise negation of an `s`-bit int: `a: Tp.denote (Tp.i s)`
+which evaluates to `(¬a) : Tp.denote (Tp.u s)`.
+
+In Noir, this builtin corresponds to `!a` for an int `a` of width `s`.
+-/
+def iNot {s} := newBuiltin
+  [(.i s)] (.i s)
+  (fun _ => True)
+  (fun h![a] _ => a.not)
+
+/--
+For `s ∈ ℕ`, defines the bitwise OR of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`
+which evaluates to `(a ||| b) : Tp.denote (Tp.i s)`.
+
+In Noir, this builtin corresponds to `a | b` for ints `a`, `b` of width `s`.
+-/
+def iOr {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a ||| b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise AND of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`
+which evaluates to `(a &&& b) : Tp.denote (Tp.i s)`.
+
+In Noir, this builtin corresponds to `a & b` for ints `a`, `b` of width `s`.
+-/
+def iAnd {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a &&& b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise XOR of two `s`-bit ints: `(a b: Tp.denote (Tp.i s))`
+which evaluates to `(a.xor b) : Tp.denote (Tp.i s)`.
+
+In Noir, this builtin corresponds to `a ^ b` for ints `a`, `b` of width `s`.
+-/
+def iXor {s} := newBuiltin
+  [(.u s), (.u s)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a.xor b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise left shift of an `s`-bit int `a: Tp.denote (Tp.i s)`
+with an amount represented by an 8-bit uint `b : Tp.denote (Tp.u 8)`.
+This is assumed to evaluate to `(a <<< b) : Tp.denote (Tp.i s)`.
+
+In Noir, this builtin corresponds to `a <<< b` for an int `a` of width `s` and an uint `b` of width `8`.
+-/
+def iShl {s} := newBuiltin
+  [(.u s), (.u 8)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a <<< b)
+
+/--
+For `s ∈ ℕ`, defines the bitwise right shift of an `s`-bit int `a: Tp.denote (Tp.i s)`
+with an amount represented by an 8-bit uint `b : Tp.denote (Tp.u 8)`.
+This is assumed to evaluate to `(a >>> b) : Tp.denote (Tp.i s)`.
+
+In Noir, this builtin corresponds to `a >>> b` for an int `a` of width `s` and an uint `b` of width `8`.
+-/
+def iShr {s} := newBuiltin
+  [(.u s), (.u 8)] (.u s)
+  (fun _ => True)
+  (fun h![a, b] _ => a >>> b)
 
 /--
 Defines the addition of two bigints `(a b : Tp.denote Tp.bi)`.
