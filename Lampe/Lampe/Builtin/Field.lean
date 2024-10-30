@@ -34,32 +34,32 @@ def fToBeBits : Builtin := newBuiltin
     (withRadix 2 a.val (by tauto)) (w.toNat) 0))
 
 /--
-For a prime `p`, a field element `a : Fp p`, a radix `rad : U32`, and an output length `l : U32`,
-this builtin evaluates to a list of `l` little-endian radix `rad` digits representing `a`.
+For a prime `p`, a field element `a : Fp p`, a radix `rad : U 32`, and an output length `w : U 32`,
+this builtin evaluates to a list of `w` little-endian radix `rad` digits representing `a`.
 We assume the following:
-- `a < rad^l` is not enforced
+- `a < rad^w` is not enforced, so the output may be truncated.
 - `1 < rad < 256` must hold, or this builtin throws an exception.
 In Noir, this builtin corresponds to `fn __to_le_radix(self, radix: u32, result_len: u32) -> [u8]` implemented for `Field`.
 -/
 def fToLeRadix : Builtin := newBuiltin
   [(.field), (.u 32), (.u 32)] (.slice (.u 8))
   (fun h![_, rad, _] => 1 < rad ∧ rad < 256)
-  (fun h![a, rad, l] _ => extList
-    (withRadix rad.toNat a.val (by tauto)) l.toNat 0)
+  (fun h![a, rad, w] _ => extList
+    (withRadix rad.toNat a.val (by tauto)) w.toNat 0)
 
 /--
-For a prime `p`, a field element `a : Fp p`, a radix `rad : U32`, and an output length `l : U32`,
-this builtin evaluates to a list of `l` big-endian radix `rad` digits representing `a`.
+For a prime `p`, a field element `a : Fp p`, a radix `rad : U 32`, and an output length `w : U 32`,
+this builtin evaluates to a list of `w` big-endian radix `rad` digits representing `a`.
 We assume the following:
-- `a < rad^l` is not enforced
+- `a < rad^w` is not enforced, so the output may be truncated.
 - `1 < rad < 256` must hold, or this builtin throws an exception.
 In Noir, this builtin corresponds to `fn __to_be_radix(self, radix: u32, result_len: u32) -> [u8]` implemented for `Field`.
 -/
 def fToBeRadix : Builtin :=  newBuiltin
   [(.field), (.u 32), (.u 32)] (.slice (.u 8))
   (fun h![_, rad, _] => 1 < rad ∧ rad < 256)
-  (fun h![a, rad, l] _ => .reverse (extList
-    (withRadix rad.toNat a.val (by tauto)) l.toNat 0))
+  (fun h![a, rad, w] _ => .reverse (extList
+    (withRadix rad.toNat a.val (by tauto)) w.toNat 0))
 
 /--
 For a prime `p`, a field element `a : Fp p`, and a bit size `w : U 32`,
@@ -75,15 +75,15 @@ def fApplyRangeConstraint : Builtin := newBuiltin
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the number of bits of `p`.
-We assume that `p < 2^64`, i.e., `p` can be represented by a `u64`.
+We assume that `log p + 1 < 2^64`, i.e., `p`'s size can be represented by a uint of bit-size `64`.
 Otherwise, this builtin throws an exception.
 
 In Noir, this builtin corresponds to `fn modulus_num_bits() -> u64` implemented for `Field`.
 -/
 def fModNumBits : Builtin := newBuiltin
   [.field] (.u 64)
-  (@fun P _ => P.val < 2^64)
-  (@fun P h![_] _ => numBits P.val)
+  (@fun p _ => numBits p.val < 2^64)
+  (@fun p h![_] _ => numBits p.val)
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in little-endian format.

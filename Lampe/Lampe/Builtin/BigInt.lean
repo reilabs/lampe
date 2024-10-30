@@ -4,7 +4,7 @@ namespace Lampe.Builtin
 open Lampe.Builtin
 
 /--
-Defines the addition of two bigints `(a b : Tp.denote Tp.bi)`.
+Defines the addition of two bigints `(a b : Int)`.
 The builtin is assumed to return `a + b`.
 
 In Noir, this builtin corresponds to `a + b` for bigints `a`, `b`.
@@ -15,7 +15,7 @@ def bigIntAdd : Builtin := newBuiltin
   (fun h![a, b] _  => a + b)
 
 /--
-Defines the subtraction of two bigints `(a b : Tp.denote Tp.bi)`.
+Defines the subtraction of two bigints `(a b : Int)`.
 The builtin is assumed to return `a - b`.
 
 In Noir, this builtin corresponds to `a - b` for bigints `a`, `b`.
@@ -26,7 +26,7 @@ def bigIntSub : Builtin := newBuiltin
   (fun h![a, b] _  => a - b)
 
 /--
-Defines the multiplication of two bigints `(a b : Tp.denote Tp.bi)`.
+Defines the multiplication of two bigints `(a b : Int)`.
 The builtin is assumed to return `a * b`.
 
 In Noir, this builtin corresponds to `a * b` for bigints `a`, `b`.
@@ -37,7 +37,7 @@ def bigIntMul : Builtin := newBuiltin
   (fun h![a, b] _  => a * b)
 
 /--
-Defines the division of two bigints `(a b : Tp.denote Tp.bi)`.
+Defines the division of two bigints `(a b : Int)`.
 The builtin is assumed to return `a / b`.
 
 In Noir, this builtin corresponds to `a / b` for bigints `a`, `b`.
@@ -57,8 +57,8 @@ def bigIntFromLeBytes : Builtin := newBuiltin
   (fun h![bs, m] _ => sorry)
 
 /--
-Defines the conversion of `a : Tp.denote .bi` to its byte slice representation `l : Tp.denote _ (.slice (.u 8))` in little-endian encoding.
-Note that `l` always contains 32 elements. Hence, for integers that can be represented by less than 32 bytes, the higher bytes are set to zero.
+Defines the conversion of `a : Int` to its byte slice representation `l : Array 32 (U 8)` in little-endian encoding.
+For integers that can be represented by less than 32 bytes, the higher bytes of `l` are set to zero.
 
 We make the following assumptions:
 - If `a` cannot be represented by 32 bytes, an exception is thrown
@@ -67,8 +67,8 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemented for `BigInt`.
 -/
 def bigIntToLeBytes : Builtin := newBuiltin
-  [.bi] (.slice (.u 8))
+  [.bi] (.array (.u 8) 32)
   (fun h![a] => canContain 256 a)
-  (fun h![a] _ => chunksOf (BitVec.ofInt 256 a) 8 (by linarith))
+  (fun h![a] _ => Array.mk (extList (withRadix 256 a.toNat (by linarith)) 32 0))
 
 end Lampe.Builtin

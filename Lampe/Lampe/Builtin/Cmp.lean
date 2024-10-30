@@ -5,7 +5,7 @@ open Lampe.Builtin
 
 /--
 Defines the equality comparison between unit values.
-We assume that the comparison between two unit values always evaluates to `true`.
+We assume that `() == ()` always evaluates to `true`.
 
 In Noir, this builtin corresponds to `() == ()` implemented for `Unit`.
 -/

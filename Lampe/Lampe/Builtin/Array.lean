@@ -5,7 +5,7 @@ open Lampe.Builtin
 
 /--
 Defines the function that evaluates to an array's length `n`.
-We assume that `n < 2^32`. Hence, this builtin evaluates to an `U 32`.
+This builtin evaluates to an `U 32`. Hence, we assume that `n < 2^32`.
 
 In Noir, this corresponds to `fn len(self) -> u32` implemented for `[_; n]`.
 -/
