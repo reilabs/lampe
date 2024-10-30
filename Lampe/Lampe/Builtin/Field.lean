@@ -109,25 +109,41 @@ def fModBeBytes : Builtin := newBuiltin
   (@fun p _ => True)
   (@fun p h![_] _ => .reverse (withRadix 256 p.val (by linarith)))
 
-/-- Specs are not clear. -/
+/--
+Specs are not clear.
+
+In Noir, this builtin corresponds to `fn from_field(a: Field) -> u32` implemented for uints of bit size `s`.
+ -/
 def uFromField {s : Nat} : Builtin := newBuiltin
   [.field] (.u s)
   (fun _ => True)
   (fun h![f] _ => f.val)
 
-/-- Specs are not clear. -/
+/--
+Specs are not clear.
+
+In Noir, this builtin corresponds to `fn from_field(a: Field) -> u32` implemented for ints of bit size `s`.
+-/
 def iFromField {s : Nat} : Builtin := newBuiltin
   [.field] (.i s)
   (fun _ => True)
   (fun h![f] _ => f.val)
 
-/-- Specs are not clear. -/
+/--
+Specs are not clear.
+
+In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for uints of bit size `s`.
+-/
 def uAsField {s : Nat} : Builtin := newBuiltin
   [.u s] (.field)
   (fun _ => True)
   (fun h![a] _ => a.toNat)
 
-/-- Specs are not clear. -/
+/--
+Specs are not clear.
+
+In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for uints of bit size `s`.
+-/
 def iAsField {s : Nat} : Builtin := newBuiltin
   [.i s] (.field)
   (fun _ => True)
