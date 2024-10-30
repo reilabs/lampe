@@ -96,7 +96,7 @@ Defines the bitwise left shift of an `s`-bit uint `a: Tp.denote _ (Tp.u s)`
 with an amount represented by an 8-bit uint `b : Tp.denote _ (Tp.u 8)`.
 This is assumed to evaluate to `(a <<< b) : Tp.denote _ (Tp.u s)`.
 
-In Noir, this builtin corresponds to `a <<< b` for an uint `a` of width `s` and an uint `b` of width `8`.
+In Noir, this builtin corresponds to `a << b` for an uint `a` of width `s` and an uint `b` of width `8`.
 -/
 def uShl {s} := newBuiltin
   [(.u s), (.u 8)] (.u s)
@@ -108,7 +108,7 @@ Defines the bitwise right shift of an `s`-bit uint `a: Tp.denote _ (Tp.u s)`
 with an amount represented by an 8-bit uint `b : Tp.denote _ (Tp.u 8)`.
 This is assumed to evaluate to `(a >>> b) : Tp.denote _ (Tp.u s)`.
 
-In Noir, this builtin corresponds to `a >>> b` for an uint `a` of width `s` and an uint `b` of width `8`.
+In Noir, this builtin corresponds to `a >> b` for an uint `a` of width `s` and an uint `b` of width `8`.
 -/
 def uShr {s} := newBuiltin
   [(.u s), (.u 8)] (.u s)
@@ -164,7 +164,7 @@ Defines the bitwise left shift of an `s`-bit int `a: Tp.denote _ (Tp.i s)`
 with an amount represented by an 8-bit uint `b : Tp.denote _ (Tp.u 8)`.
 This is assumed to evaluate to `(a <<< b) : Tp.denote _ (Tp.i s)`.
 
-In Noir, this builtin corresponds to `a <<< b` for an int `a` of width `s` and an uint `b` of width `8`.
+In Noir, this builtin corresponds to `a << b` for an int `a` of width `s` and an uint `b` of width `8`.
 -/
 def iShl {s} := newBuiltin
   [(.u s), (.u 8)] (.u s)
@@ -176,7 +176,7 @@ Defines the bitwise right shift of an `s`-bit int `a: Tp.denote _ (Tp.i s)`
 with an amount represented by an 8-bit uint `b : Tp.denote _ (Tp.u 8)`.
 This is assumed to evaluate to `(a >>> b) : Tp.denote _ (Tp.i s)`.
 
-In Noir, this builtin corresponds to `a >>> b` for an int `a` of width `s` and an uint `b` of width `8`.
+In Noir, this builtin corresponds to `a >> b` for an int `a` of width `s` and an uint `b` of width `8`.
 -/
 def iShr {s} := newBuiltin
   [(.u s), (.u 8)] (.u s)
