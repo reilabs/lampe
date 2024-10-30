@@ -21,8 +21,10 @@ inductive Tp where
 | bi -- BigInt
 | bool
 | unit
+| str
 | field
 | slice (element : Tp)
+| array (element: Tp) (size: U 32)
 | struct (fields : List Tp)
 | ref (tp : Tp)
 
@@ -81,8 +83,10 @@ def Tp.denote : Tp → Type
 | .bi => Int
 | .bool => Bool
 | .unit => Unit
+| .str => String
 | .field => Fp P
 | .slice tp => List (denote tp)
+| .array tp _ => Array (denote tp)
 | .ref _ => Ref
 | .struct fields => Tp.denoteArgs fields
 

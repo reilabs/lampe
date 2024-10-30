@@ -34,6 +34,7 @@ def fToBeBits : Builtin := newBuiltin
     (withRadix 2 a.val (by tauto)) (w.toNat) 0))
 
 /--
+Assumption: a < rad^l is not enforced
 Assumption: 1 < rad < 256
 In Noir, this builtin corresponds to `fn __to_le_radix(self, radix: u32, result_len: u32) -> [u8]` implemented for `Field`.
 -/
@@ -44,6 +45,7 @@ def fToLeRadix : Builtin := newBuiltin
     (withRadix rad.toNat a.val (by tauto)) l.toNat 0)
 
 /--
+Assumption: a < rad^l is not enforced
 Assumption: 1 < rad < 256
 In Noir, this builtin corresponds to `fn __to_be_radix(self, radix: u32, result_len: u32) -> [u8]` implemented for `Field`.
 -/
