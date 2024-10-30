@@ -126,8 +126,6 @@ def readRef : Builtin := {
 }
 
 def zeroed : Builtin := sorry
-def fromField : Builtin := sorry
-def asField : Builtin := sorry
 def asWitness : Builtin := sorry
 
 def assertConstant : Builtin := sorry

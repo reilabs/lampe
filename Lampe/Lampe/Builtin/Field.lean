@@ -4,7 +4,7 @@ namespace Lampe.Builtin
 open Lampe.Builtin
 
 /--
-For a field element `a : Tp.denote p Tp.field` in `ZMod p`, and a bit size `w : Tp.denote p (Tp.u 32)`,
+For a field element `a : Tp.denote p Tp.field` in `Fp p`, and a bit size `w : Tp.denote p (Tp.u 32)`,
 we assume the following:
 - If `a < 2^w`, then this builtin evaluates to a list of 1-bit uints `l`, which is the little-endian bit representation of `a`.
 Note that `l` is padded up to `w` elements with `0`.
@@ -19,7 +19,7 @@ def fToLeBits : Builtin := newBuiltin
     (withRadix 2 a.val (by tauto)) (w.toNat) 0)
 
 /--
-For a field element `a : Tp.denote p Tp.field` in `ZMod p`, and a bit size `w : Tp.denote p (Tp.u 32)`,
+For a field element `a : Tp.denote p Tp.field` in `Fp p`, and a bit size `w : Tp.denote p (Tp.u 32)`,
 we assume the following:
 - If `a < 2^w`, then this builtin evaluates to a list of 1-bit uints `l`, which is the big-endian bit representation of `a`.
 Note that `l` is padded down to `w` elements with `0`.
@@ -109,5 +109,28 @@ def fModBeBytes : Builtin := newBuiltin
   (@fun p _ => True)
   (@fun p h![_] _ => .reverse (withRadix 256 p.val (by linarith)))
 
+/-- Specs are not clear. -/
+def uFromField {s : Nat} : Builtin := newBuiltin
+  [.field] (.u s)
+  (fun _ => True)
+  (fun h![f] _ => f.val)
+
+/-- Specs are not clear. -/
+def iFromField {s : Nat} : Builtin := newBuiltin
+  [.field] (.i s)
+  (fun _ => True)
+  (fun h![f] _ => f.val)
+
+/-- Specs are not clear. -/
+def uAsField {s : Nat} : Builtin := newBuiltin
+  [.u s] (.field)
+  (fun _ => True)
+  (fun h![a] _ => a.toNat)
+
+/-- Specs are not clear. -/
+def iAsField {s : Nat} : Builtin := newBuiltin
+  [.i s] (.field)
+  (fun _ => True)
+  (fun h![a] _ => a.toInt)
 
 end Lampe.Builtin
