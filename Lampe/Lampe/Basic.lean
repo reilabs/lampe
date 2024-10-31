@@ -1,5 +1,7 @@
 import Lampe.Semantics
-import Lampe.Assignable
+import Lampe.SeparationLogic
 import Lampe.Syntax
 import Lampe.Ast
 import Lampe.Tp
+import Lampe.Hoare.Total
+import Lampe.Hoare.SepTotal

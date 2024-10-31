@@ -46,7 +46,7 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
     Omni Γ st (.letIn (body lo) (fun _ => .loop (lo + 1) hi body)) Q →
     Omni Γ st (.loop lo hi body) Q
 
-theorem Omni.conseq:
+theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'}:
     Omni p Γ st e Q →
     (∀ v, Q v → Q' v) →
     Omni p Γ st e Q' := by
@@ -60,6 +60,54 @@ theorem Omni.conseq:
     cases_type Builtin
     tauto
   case loopNext =>
+    intro
+    apply loopNext (by assumption)
+    tauto
+
+theorem Omni.frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
+    Omni p Γ st₁ e Q →
+    st₁.Disjoint st₂ →
+    Omni p Γ (st₁ ∪ st₂) e (fun st => match st with
+      | some (st', v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st'
+      | none => Q none
+    ) := by
+  intro h
+  induction h with
+  | litField hq
+  | litFalse hq
+  | litTrue hq
+  | litU _
+  | var hq =>
+    intro
+    constructor
+    repeat apply Exists.intro
+    tauto
+  | letIn _ _ hN ihE ihB =>
+    intro
+    constructor
+    apply ihE
+    assumption
+    · intro _ _ h
+      cases h
+      casesm* ∃ _, _, _∧_
+      subst_vars
+      apply ihB
+      assumption
+      assumption
+    · simp_all
+  | callBuiltin hq =>
+    cases_type Builtin
+    tauto
+  | callDecl _ _ _ _ _ ih =>
+    intro
+    constructor
+    all_goals (try assumption)
+    tauto
+  | loopDone =>
+    intro
+    constructor
+    assumption
+  | loopNext =>
     intro
     apply loopNext (by assumption)
     tauto

@@ -47,7 +47,6 @@ macro "∃∃" xs:Lean.explicitBinders ", " b:term : term => Lean.expandExplicit
 open Lean.TSyntax.Compat in
 macro "∀∀" xs:Lean.explicitBinders ", " b:term : term => Lean.expandExplicitBinders ``forall' xs b
 
-@[aesop unsafe 1%]
 theorem entails_trans {p} {P Q R : SLP p}: (P ⊢ Q) → (Q ⊢ R) → (P ⊢ R) := by tauto
 
 section basic
@@ -57,28 +56,23 @@ variable {p : Prime}
 @[simp]
 theorem apply_top : ⊤ st := by trivial
 
-@[aesop safe 2]
 theorem forall_left {a} {P : α → SLP p} : (P a ⊢ Q) → ((∀∀a, P a) ⊢ Q) := by
   unfold forall'
   tauto
 
-@[aesop safe 2]
 theorem forall_right {H' : α → SLP p}: (∀x, H ⊢ H' x) → (H ⊢ ∀∀x, H' x) := by
   unfold forall' entails
   tauto
 
-@[aesop safe 2]
 theorem pure_left: (P → (H ⊢ H')) → (P ⋆ H ⊢ H') := by
   unfold star entails lift
   intro_cases
   simp_all
 
-@[aesop safe 2]
 theorem pure_left' {P} {H : SLP p} : (P → (⟦⟧ ⊢ H)) → (P ⊢ H) := by
   unfold entails lift
   tauto
 
-@[aesop safe 2]
 theorem pure_right: P → (H₁ ⊢ H₂) → (H₁ ⊢ P ⋆ H₂) := by
   unfold star entails lift
   intros
@@ -92,10 +86,8 @@ theorem pure_right: P → (H₁ ⊢ H₂) → (H₁ ⊢ P ⋆ H₂) := by
   simp
   simp [Finmap.disjoint_empty]
 
-@[aesop safe]
 theorem entails_self : H ⊢ H := by tauto
 
-@[aesop safe 2]
 theorem entails_top : H ⊢ ⊤ := by tauto
 
 @[simp]
@@ -116,7 +108,6 @@ section star
 
 variable {p : Prime}
 
-@[aesop unsafe 1%]
 theorem star_comm {G H:SLP p} : (G ⋆ H) = (H ⋆ G) := by
   funext
   unfold star
@@ -188,17 +179,14 @@ theorem ent_star_top {H : SLP p} : H ⊢ H ⋆ ⊤ := by
   rw [Finmap.Disjoint.symm_iff]
   simp_all [Finmap.disjoint_empty]
 
-@[aesop safe 10]
 theorem star_mono_r : (P ⊢ Q) → (P ⋆ R ⊢ Q ⋆ R) := by
   unfold star entails
   tauto
 
-@[aesop safe 10]
 theorem star_mono_l : (P ⊢ Q) → (R ⋆ P ⊢ R ⋆ Q) := by
   unfold star entails
   tauto
 
-@[aesop safe 10]
 theorem star_mono_l' : (⟦⟧ ⊢ Q) → (P ⊢ P ⋆ Q) := by
   unfold star entails lift
   intros
@@ -210,17 +198,14 @@ theorem star_mono_l' : (⟦⟧ ⊢ Q) → (P ⊢ P ⋆ Q) := by
   simp
   tauto
 
-@[aesop safe 10]
 theorem star_mono : (H₁ ⊢ H₂) → (Q₁ ⊢ Q₂) → (H₁ ⋆ Q₁ ⊢ H₂ ⋆ Q₂) := by
   unfold star entails
   tauto
 
-@[aesop safe 5]
 theorem forall_star {P : α → SLP p} : (∀∀x, P x) ⋆ Q ⊢ ∀∀x, P x ⋆ Q := by
   unfold star forall'
   tauto
 
-@[aesop safe 5]
 theorem star_forall {P : α → SLP p} : Q ⋆ (∀∀x, P x) ⊢ ∀∀x, Q ⋆ P x := by
   unfold star forall'
   tauto
@@ -260,7 +245,6 @@ theorem wand_self_star {H:SLP p}: (H -⋆ H ⋆ top) = top := by
     assumption
 
 
-@[aesop safe 2]
 theorem wand_intro {A B C : SLP p} : (A ⋆ B ⊢ C) → (A ⊢ B -⋆ C) := by
   unfold wand star entails
   intros
@@ -268,7 +252,6 @@ theorem wand_intro {A B C : SLP p} : (A ⋆ B ⊢ C) → (A ⊢ B -⋆ C) := by
   apply_assumption
   tauto
 
-@[aesop safe 2]
 theorem wand_cancel : (P ⋆ (P -⋆ Q)) ⊢ Q := by
   unfold star wand entails
   intro_cases
