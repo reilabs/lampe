@@ -74,6 +74,7 @@ partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | "slice_push_back" => ``(Builtin.slicePushBack)
 | "slice_push_front" => ``(Builtin.slicePushFront)
 | "slice_pop_back" => ``(Builtin.slicePopBack)
+| "slice_index" => ``(Builtin.sliceIndex)
 | "slice_pop_front" => ``(Builtin.slicePopFront)
 | "slice_insert"   => ``(Builtin.sliceInsert)
 | "ref"   => ``(Builtin.ref)
@@ -202,11 +203,11 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 --   let cond ← mkExpr cond
 --   let t ← mkExpr t
 --   `(Lampe.Expr.ite $cond $t Lampe.Expr.skip)
--- | `(nr_expr| for $i in $lo .. $hi $body) => do
---   let lo ← mkExpr lo
---   let hi ← mkExpr hi
---   let body ← mkExpr body
---   `(Lampe.Expr.loop $lo $hi fun $i => $body)
+| `(nr_expr| for $i in $lo .. $hi $body) => do
+  mkExpr lo none fun lo =>
+  mkExpr hi none fun hi => do
+    let body ← mkExpr body none (fun x => ``(Lampe.Expr.var $x))
+    wrapSimple (←`(Lampe.Expr.loop $lo $hi fun $i => $body)) vname k
 | `(nr_expr| $v:ident = $e) => do
   mkExpr e none fun eVal => do
     wrapSimple (←`(Lampe.Expr.writeRef $v $eVal)) vname k
@@ -275,6 +276,15 @@ elab "nr_def" decl:nr_fn_decl : command => do
   let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
+-- nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
+--   let mut self = x;
+--   for i in (0 : u32) .. #slice_len(y):u32 {
+--     self = #slice_push_back(self, #slice_index(y, i): I): [I]
+--   };
+--   self
+-- }
+
+-- #print sliceAppend
 
 -- nr_def weirdEq<I>(x : I, y : I) -> Unit {
 --   let a = #fresh() : I;

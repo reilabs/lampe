@@ -1,5 +1,4 @@
 import Lampe.Ast
--- import Lampe.Assignable
 import Lampe.Tp
 import Lampe.Data.Field
 import Lampe.Tactic.IntroCases
@@ -24,7 +23,10 @@ theorem omni_conseq:
   case callBuiltin =>
     cases_type Builtin
     tauto
-  sorry
+  case loopNext =>
+    intro
+    apply Omni.loopNext (by assumption)
+    tauto
 
 def THoare
     {tp : Tp}
@@ -191,6 +193,7 @@ theorem omni_frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
   | litField hq
   | litFalse hq
   | litTrue hq
+  | litU _
   | var hq =>
     intro
     constructor
@@ -217,8 +220,14 @@ theorem omni_frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
     constructor
     all_goals (try assumption)
     tauto
-  | loopDone => sorry
-  | loopNext => sorry
+  | loopDone =>
+    intro
+    constructor
+    assumption
+  | loopNext =>
+    intro
+    apply Omni.loopNext (by assumption)
+    tauto
 
 @[aesop safe]
 theorem letIn_intro:
@@ -367,102 +376,15 @@ theorem writeRef_intro:
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
     (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![r, v'])
-    (fun _ => [r ↦ ⟨tp, v'⟩]) := by sorry
-
--- example : STHoare p Γ ⟦⟧ (simple_rw.fn.body _ h![] h![x]) fun v => v = x := by
---   simp only [simple_rw, Lampe.Expr.letMutIn]
---   apply letIn_intro
---   apply letIn_intro
---   apply var_intro
---   intro
---   apply ramified_frame_top
---   apply ref_intro
---   · simp
---     apply SLP.forall_right
---     intro
---     apply SLP.wand_intro
---     apply SLP.pure_left
---     intro
---     subst_vars
---     apply SLP.ent_star_top
---   intro
---   apply ramified_frame_top
---   apply readRef_intro
---   rotate_left
---   apply SLP.star_mono_l'
---   apply SLP.forall_right
---   intro
---   apply SLP.wand_intro
---   simp
---   apply SLP.star_mono_l
---   apply SLP.entails_top
-
--- nr_def simple_muts<>(x : Field) -> Field {
---   let mut y = x;
---   let mut z = x;
---   z = z;
---   y = z;
---   y
--- }
-
-def simple_muts_anf_body : (f : rep .field) → Expr rep .field := fun x =>
-  .letIn (.call h![] [.field] (.ref .field) (.builtin .ref) h![x]) fun y =>
-  .letIn (.call h![] [.field] (.ref .field) (.builtin .ref) h![x]) fun z =>
-  .letIn (.call h![] [.ref .field] (.field) (.builtin .readRef) h![z]) fun zVal =>
-  .letIn (.call h![] [.ref .field, .field] (.unit) (.builtin .writeRef) h![z, zVal]) fun _ =>
-  .letIn (.call h![] [.ref .field, .field] (.unit) (.builtin .writeRef) h![y, zVal]) fun _ =>
-  .letIn (.call h![] [.ref .field] (.field) (.builtin .readRef) h![y]) fun yVal =>
-  .var yVal
-
-example : STHoare p Γ ⟦⟧ (simple_muts_anf_body x) fun v => v = x := by sorry
-  -- simp only [simple_muts_anf_body]
-  -- apply letIn_intro
-  -- apply ref_intro
-  -- intro
-  -- apply letIn_intro
-  -- apply consequence_frame_left ref_intro
-  -- · simp
-  --   apply SLP.entails_self
-  -- intro
-  -- apply letIn_intro
-  -- apply consequence_frame_left readRef_intro
-  -- · apply SLP.star_mono_l
-  --   apply SLP.entails_self
-  -- intro
-  -- apply letIn_intro
-  -- apply consequence_frame_left writeRef_intro
-  -- · rw [SLP.star_assoc, SLP.star_comm, SLP.star_assoc]
-  --   apply SLP.star_mono_l
-  --   apply SLP.entails_self
-  -- intro
-  -- apply letIn_intro
-  -- apply consequence_frame_left writeRef_intro
-  -- · rw [SLP.star_comm, SLP.star_assoc]
-  --   apply SLP.star_mono_l
-  --   apply SLP.entails_self
-  -- intro
-  -- apply letIn_intro
-  -- apply consequence_frame_left readRef_intro
-  -- · apply SLP.star_mono_l
-  --   apply SLP.entails_self
-  -- intro
-  -- apply ramified_frame_top var_intro
-  -- · simp
-  --   apply SLP.forall_right
-  --   intro
-  --   apply SLP.wand_intro
-  --   rw [SLP.star_comm]
-  --   apply SLP.pure_left
-  --   intro
-  --   rw [SLP.star_assoc]
-  --   apply SLP.pure_left
-  --   intro
-  --   rw [SLP.star_comm, SLP.star_assoc]
-  --   apply SLP.pure_left
-  --   intro
-  --   apply SLP.pure_right
-  --   subst_vars; rfl
-  --   apply SLP.entails_top
+    (fun _ => [r ↦ ⟨tp, v'⟩]) := by
+  unfold STHoare THoare
+  intros
+  casesm* (_ ⋆ _) _
+  casesm* ∃ _, _, _∧_
+  constructor
+  constructor
+  · simp_all [SLP.singleton]
+  · sorry -- obvious
 
 def writeRef {rep tp} (ref : rep $ Tp.ref tp) (val : rep tp): Expr rep .unit :=
   .call h![] [.ref tp, tp] .unit (.builtin .writeRef) h![ref, val]
@@ -490,16 +412,6 @@ def sliceIndex {rep tp} (slice : rep $ Tp.slice tp) (i : rep (.u 32)): Expr rep 
 
 def eqF {rep} (x y : rep .field): Expr rep .bool :=
   .call h![] [.field, .field] .bool (.builtin .eq) h![x, y]
-
-def sliceAppendBody {P tp} (self that : Tp.denote P (.slice tp)): Expr (Tp.denote P) (.slice tp) :=
-  .letIn (ref self) fun self =>
-  .letIn (sliceLen that) fun thatLen =>
-  .letIn (.loop 0 thatLen fun i =>
-    .letIn (readRef self) fun selfVal =>
-    .letIn (sliceIndex that i) fun thatVal =>
-    .letIn (slicePushBack selfVal thatVal) fun pushed =>
-    writeRef self pushed
-  ) fun _ => readRef self
 
 theorem fresh_intro:
     STHoare P Γ ⟦⟧ (fresh tp) (fun _ => ⟦⟧) := by
@@ -531,23 +443,17 @@ theorem eqF_intro {a b : Tp.denote P .field}:
 
 
 theorem sliceLen_intro {slice : Tp.denote P (.slice tp)}:
-    STHoare P Γ ⟦⟧ (sliceLen slice) fun v => v = List.length slice ∧ slice.length < 2^32 := by sorry
+    STHoare P Γ ⟦⟧ (sliceLen slice) fun v => v = List.length slice ∧ slice.length < 2^32 := by
+  sorry -- becomes trivial with the builtins PR
 
 theorem sliceIndex_intro {slice : Tp.denote P (.slice tp)} {i : U 32}:
-    STHoare P Γ ⟦⟧ (sliceIndex slice i) fun v => some v = slice.get? i := by sorry
+    STHoare P Γ ⟦⟧ (sliceIndex slice i) fun v => some v = slice.get? i := by
+  sorry -- becomes trivial with the builtins PR
 
 theorem slicePushBack_intro {slice : Tp.denote P (.slice tp)} {val : Tp.denote P tp}:
-    STHoare P Γ ⟦⟧ (slicePushBack slice val) fun v => v = slice ++ [val] := by sorry
+    STHoare P Γ ⟦⟧ (slicePushBack slice val) fun v => v = slice ++ [val] := by
+  sorry -- becomes trivial with the builtins PR
 
-theorem loop_intro {a b : U s} {H : SLP p} {Q : Unit → SLP p}:
-    (a ≥ b → (H ⊢ Q ())) →
-    (a < b → STHoare p Γ H (.letIn (body a) fun _ => .loop (a + 1) b body) Q) →
-    STHoare p Γ H (.loop a b body) Q := by sorry
-
-theorem loop_intro' {a b : U s} {H : SLP p} {Q : Unit → SLP p}:
-    (a ≥ b → (H ⊢ Q ())) →
-    (a < b → STHoare p Γ H ((Expr.loop a (b-1) body).letIn fun _ => .letIn (body b) fun _ => .skip) Q) →
-    STHoare p Γ H (.loop a b body) Q := by sorry
 
 lemma U.le_add_one_of_exists_lt {i : U s}  (h: i < j) : i ≤ i + 1 := by
   cases i
@@ -571,73 +477,89 @@ lemma U.le_plus_one_of_lt {i j : U s} (h: i < j): i + 1 ≤ j := by
   linarith
   linarith
 
-theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p):
-    (h: lo ≤ hi) →
-    (∀i, (hlo: lo ≤ i) → (hhi: i < hi) → STHoare p Γ (Inv i hlo (le_of_lt hhi)) (body i) (fun _ => Inv (i + 1) (le_trans hlo (U.le_add_one_of_exists_lt hhi)) (U.le_plus_one_of_lt hhi))) →
-    STHoare p Γ (Inv lo (le_refl _) h ) (.loop lo hi body) (fun _ => Inv hi h (le_refl _)) := by
-  sorry
-  -- rcases lo with ⟨lo, _⟩
-  -- rcases hi with ⟨hi, _⟩
-  -- intro h
-  -- simp only [Fin.le_def] at h
-  -- generalize h' : hi - lo = d
-  -- have : hi = lo + d := by
-  --   rw [←h']
-  --   rw [Nat.add_sub_of_le h]
-  -- cases this
-  -- clear h'
-  -- have Inv_rw {a b h₁ h₂} (h : a = b): Inv a h₁ h₂ = Inv b (h ▸ h₁) (h ▸ h₂) := by
-  --   funext
-  --   rw [eq_iff_iff]
-  --   apply Iff.intro
-  --   · intro h'; exact (h ▸ h')
-  --   · intro h'; exact (h.symm ▸ h')
+-- lemma loop_inv_intro_ind (Inv : (i : U s) → (lo ≤ i) → (i < hi) → SLP p):
+    -- (∀i, (hlo: lo ≤ i) → (hhi: i < (hi)) → STHoare p Γ (Inv i hlo (le_of_lt hhi)) (body i) (fun _ => Inv (i + 1) (le_trans hlo (U.le_add_one_of_exists_lt hhi)) (U.le_plus_one_of_lt hhi))) →
 
-  -- induction d generalizing lo with
-  -- | zero =>
-  --   intro
-  --   apply loop_intro
-  --   · simp [SLP.entails_self]
-  --   · intro h; simp at h
-  -- | succ d ih =>
-  --   intro hp
-  --   apply loop_intro
-  --   · intro h; simp at h
-  --   · intro h; simp only [Fin.lt_def] at h;
-  --     apply letIn_intro
-  --     · apply hp
-  --       simp
-  --     · intro
-  --       have : Fin.mk (n := 2^s) lo (by assumption) + 1 = Fin.mk (lo + 1) (by linarith) := by
-  --         simp only [Fin.add_def, Fin.val_one']
-  --         ext
-  --         simp only
-  --         rw [Nat.mod_eq_of_lt]
-  --         · simp
-  --           by_contra
-  --           have : s = 0 := by simp_all
-  --           cases this
-  --           simp_all
-  --           have : lo = 0 := by apply Nat.lt_one_iff.mp; assumption
-  --           cases this
-  --           linarith
-  --         · rw [Nat.mod_eq_of_lt]
-  --           linarith
-  --           linarith
-  --       rw [Inv_rw this]
-  --       conv => arg 4; arg 1; rw [this]
-  --       have : Fin.mk (n := 2^s) (lo + (d + 1)) (by assumption) = Fin.mk ((lo + 1) + d) (by linarith) := by
-  --         simp_arith
-  --       rw [Inv_rw this]
-  --       conv => arg 4; arg 2; rw [this]
-  --       apply ih (Inv := fun i hlo hhi => Inv i (by simp [Fin.le_def, Fin.lt_def] at *; linarith) (by simp [Fin.le_def, Fin.lt_def] at *; linarith))
-  --       · simp
-  --       · simp
-  --       · intros; rename_i h; cases h; rfl
-  --       · intros
-  --         apply_assumption
-  --         simp [Fin.lt_def, Fin.le_def] at *
-  --         linarith
+-- lemma loop_inv_intro_ind
+
+theorem loopDone_intro : STHoare p Γ ⟦⟧ (.loop lo lo body) (fun _ => ⟦⟧) := by
+  intro _ _ _
+  apply Omni.loopDone
+  simp
+
+theorem loopNext_intro {lo hi : U s} :
+    lo < hi →
+    STHoare p Γ P (body lo) (fun _ => Q) →
+    STHoare p Γ Q (.loop (lo + 1) hi body) R →
+    STHoare p Γ P (.loop lo hi body) R := by
+  intro _ _ _ _ _ _
+  apply Omni.loopNext
+  · assumption
+  apply letIn_intro
+  all_goals tauto
+
+lemma inv_congr  (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p) {i j hlo hhi} (hEq : i = j):
+    Inv i hlo hhi = Inv j (hEq ▸ hlo) (hEq ▸ hhi) := by
+  cases hEq
+  rfl
+
+theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p):
+    (∀i, (hlo: lo ≤ i) → (hhi: i < hi) → STHoare p Γ (Inv i hlo (le_of_lt hhi)) (body i) (fun _ => Inv (i + 1) (le_trans hlo (U.le_add_one_of_exists_lt hhi)) (U.le_plus_one_of_lt hhi))) →
+    STHoare p Γ (∃∃h, Inv lo (le_refl _) h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi h (le_refl _)) := by
+  cases Fin.le_or_lt lo hi with
+  | inr =>
+    intro _ H st h
+    simp only [SLP.star, SLP.exists'] at h
+    casesm* ∃ _, _, _∧_
+    rw [←Fin.not_lt] at *
+    contradiction
+  | inl =>
+    rcases lo with ⟨lo, _⟩
+    rcases hi with ⟨hi, _⟩
+    have : hi = lo + (hi - lo) := by simp_all
+    generalize h : hi - lo = d at *
+    cases this
+    intro h
+    apply consequence_top (H₂ := Inv ⟨lo, by assumption⟩ (by simp) (by simp)) (Q₂ := fun _ => Inv ⟨lo + d, by assumption⟩ (by simp) (by simp))
+    · intro st h
+      cases h
+      assumption
+    · intro
+      apply SLP.star_mono_r
+      intro st h
+      use (by simp)
+    induction d generalizing lo with
+    | zero =>
+      apply ramified_frame_top loopDone_intro
+      -- TODO this should be solved by the SL tactic
+      simp only [SLP.true_star]
+      apply SLP.forall_right
+      intro _
+      apply SLP.wand_intro
+      simp
+    | succ d ih =>
+      apply loopNext_intro
+      · simp
+      · apply_assumption
+        simp
+      · have : Fin.mk lo (by assumption) + 1 = Fin.mk (lo + 1) (by linarith) := by
+          simp [Fin.add_def]
+          rw [Nat.mod_eq_of_lt]
+          · linarith
+        rw [inv_congr Inv this]
+        simp_rw [this]
+        have : Fin.mk (lo + (d + 1)) (by assumption) = Fin.mk ((lo + 1) + d) (by linarith) := by
+          simp_arith
+        rw [inv_congr Inv this]
+        simp_rw [this]
+        apply ih (lo := lo + 1) (Inv := fun i hlo hhi =>
+          Inv i (by cases i; simp [Fin.le_def] at hlo; simp [Fin.le_def]; linarith)
+                (by cases i; simp [Fin.le_def] at hhi; simp [Fin.le_def]; linarith))
+        · simp
+        · simp
+        · intros
+          apply h
+          simp [*]
 
 theorem STHoare.pure_left : (P → STHoare p Γ H e Q) → STHoare p Γ (⟦P⟧ ⋆ H) e Q := by
   intro
@@ -652,71 +574,3 @@ theorem STHoare.pure_left : (P → STHoare p Γ H e Q) → STHoare p Γ (⟦P⟧
   apply_assumption
   simp_all
   simp_all
-
--- macro "steps" : tactic => `(tactic|
---   try (first
---   | apply letIn_intro; (on_goal 2 => intro; try steps)
---   )
--- )
-
--- example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppendBody self that) fun v => v = self ++ that := by
---   simp only [sliceAppendBody]
---   steps
-
---   apply letIn_intro; (on_goal 2 => intro; steps); (on_goal 1 => steps);
---   steps
-
-
-
-  -- steps
-
-/-
-  apply letIn_intro ref_intro
-  intro selfRef
-  apply letIn_intro
-  apply consequence_frame_left sliceLen_intro
-  · aesop
-  intro
-  apply STHoare.pure_left
-  intro_cases
-  subst_vars
-  apply letIn_intro
-  apply consequence_frame_left
-  apply loop_inv_intro (fun i _ _ => [selfRef ↦ ⟨.slice tp, self ++ that.take i.val⟩]) (by simp)
-  · intro i _ _
-    rcases i with ⟨i, _⟩
-    have : i + 1 < 2^32 := by
-      simp_all [Fin.lt_def, Nat.mod_eq_of_lt]
-      linarith
-    apply letIn_intro
-    apply readRef_intro
-    intro selfV
-    apply letIn_intro
-    apply consequence_frame_left sliceIndex_intro
-    · simp; aesop
-    intro
-    apply STHoare.pure_left
-    intro
-    apply STHoare.pure_left
-    intro
-    subst_vars
-    apply letIn_intro
-    apply consequence_frame_left slicePushBack_intro
-    · simp; apply SLP.entails_self
-    intro
-    apply STHoare.pure_left
-    rintro rfl
-    simp_all [Fin.lt_def, Fin.add_def, Nat.mod_eq_of_lt, List.take_succ]
-    apply writeRef_intro
-  · simp
-    apply SLP.star_mono_l'
-    apply SLP.entails_self
-  · intro
-    apply ramified_frame_top readRef_intro
-    · apply SLP.star_mono_l
-      apply SLP.forall_right; intro
-      apply SLP.wand_intro
-      apply SLP.pure_left; intro
-      apply SLP.pure_left; rintro rfl
-      simp_all [Nat.mod_eq_of_lt, SLP.entails_top]
--/
