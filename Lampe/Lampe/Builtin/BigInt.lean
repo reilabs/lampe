@@ -36,14 +36,15 @@ def bigIntMul : Builtin := newBuiltin
   (fun h![a, b] _  => a * b)
 
 /--
-Defines the division of two bigints `(a b : Int)`.
-The builtin is assumed to return `a / b`.
+Defines the division of two bigints `(a b : Int)`. We make the following assumptions:
+- If `b = 0`, an exception is thrown.
+- Otherwise, the builtin is assumed to return `a / b`.
 
 In Noir, this builtin corresponds to `a / b` for bigints `a`, `b`.
 -/
 def bigIntDiv : Builtin := newBuiltin
   [.bi, .bi] .bi
-  (fun _ => True)
+  (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _  => a / b)
 
 /-- Not implemented yet.
@@ -60,7 +61,7 @@ Defines the conversion of `a : Int` to its byte slice representation `l : Array 
 For integers that can be represented by less than 32 bytes, the higher bytes of `l` are set to zero.
 
 We make the following assumptions:
-- If `a` cannot be represented by 32 bytes, an exception is thrown
+- If `a` cannot be represented by 32 bytes, an exception is thrown.
 - Else, the builtin returns `l`.
 
 In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemented for `BigInt`.
@@ -68,6 +69,12 @@ In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemen
 def bigIntToLeBytes : Builtin := newBuiltin
   [.bi] (.array (.u 8) 32)
   (fun h![a] => bitsCanRepresent 256 a)
-  (fun h![a] _ => Array.mk (extList (withRadix 256 a.toNat (by linarith)) 32 0))
+  (fun h![a] _ =>
+    let l := (withRadix 256 a.toNat (by linarith))
+    Mathlib.Vector.ofFn (fun i =>
+      if h: i.val < l.length then
+        l.get (Fin.mk i.val h)
+      else 0 -- higher bytes are set to zero
+    ))
 
 end Lampe.Builtin
