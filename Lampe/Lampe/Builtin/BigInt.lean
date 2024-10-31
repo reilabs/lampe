@@ -1,5 +1,4 @@
-import Lampe.Builtin.Prelude
-
+import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 open Lampe.Builtin
 
@@ -68,7 +67,7 @@ In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemen
 -/
 def bigIntToLeBytes : Builtin := newBuiltin
   [.bi] (.array (.u 8) 32)
-  (fun h![a] => canContain 256 a)
+  (fun h![a] => bitsCanRepresent 256 a)
   (fun h![a] _ => Array.mk (extList (withRadix 256 a.toNat (by linarith)) 32 0))
 
 end Lampe.Builtin

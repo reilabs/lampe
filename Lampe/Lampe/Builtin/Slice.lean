@@ -1,5 +1,4 @@
-import Lampe.Builtin.Prelude
-
+import Lampe.Builtin.Basic
 namespace Lean.Builtin
 open Lampe.Builtin
 

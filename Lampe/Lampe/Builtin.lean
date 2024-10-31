@@ -1,2 +1,2 @@
-import Lampe.Builtin.Prelude
+import Lampe.Builtin.Basic
 import Lampe.Builtin.All

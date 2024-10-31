@@ -21,7 +21,7 @@ inductive Tp where
 | bi -- BigInt
 | bool
 | unit
-| str
+| str (size: U 32)
 | field
 | slice (element : Tp)
 | array (element: Tp) (size: U 32)
@@ -83,10 +83,10 @@ def Tp.denote : Tp → Type
 | .bi => Int
 | .bool => Bool
 | .unit => Unit
-| .str => String
+| .str n => Mathlib.Vector Char n.toNat
 | .field => Fp P
 | .slice tp => List (denote tp)
-| .array tp _ => Array (denote tp)
+| .array tp n => Mathlib.Vector (denote tp) n.toNat
 | .ref _ => Ref
 | .struct fields => Tp.denoteArgs fields
 

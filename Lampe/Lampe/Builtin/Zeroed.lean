@@ -1,5 +1,4 @@
-import Lampe.Builtin.Prelude
-
+import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 open Lampe.Builtin
 
@@ -11,9 +10,9 @@ def tpZeroed (tp : Tp) : (Tp.denote p tp) := match tp with
 | .field => 0
 | .bool => false
 | .unit => ()
-| .str => ""
+| .str _ => Mathlib.Vector.ofFn (fun _ => (Char.ofNat 0))
 | .slice _ => List.nil
-| .array innerTp n => Array.mk (List.replicate n.toNat (tpZeroed innerTp))
+| .array innerTp _ => Mathlib.Vector.ofFn (fun _ => (tpZeroed innerTp))
 | .ref _ => { val := 0 }
 | .struct (a :: as) => (tpZeroed a, tpZeroed (Tp.struct as))
 | .struct [] => ()

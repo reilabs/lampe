@@ -1,5 +1,4 @@
-import Lampe.Builtin.Prelude
-
+import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 open Lampe.Builtin
 
@@ -13,7 +12,7 @@ In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of bit size `s`.
 -/
 def uAdd {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
-  (fun h![a, b] => (a + b) < 2^s)
+  (fun h![a, b] => (a.toInt + b.toInt) < 2^s)
   (fun h![a, b] _ => a + b)
 
 /--
@@ -26,7 +25,7 @@ In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of bit size `s`.
 -/
 def uMul {s} := newBuiltin
   [(.u s), (.u s)] (.u s)
-  (fun h![a, b] => (a * b) < 2^s)
+  (fun h![a, b] => (a.toInt * b.toInt) < 2^s)
   (fun h![a, b] _ => a * b)
 
 /--
@@ -79,7 +78,7 @@ In Noir, this builtin corresponds to `a + b` for signed ints `a`, `b` of bit siz
 -/
 def iAdd {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
-  (fun h![a, b] => canContain s (a.toInt + b.toInt))
+  (fun h![a, b] => bitsCanRepresent s (a.toInt + b.toInt))
   (fun h![a, b] _ => a + b)
 
 /--
@@ -92,7 +91,7 @@ In Noir, this builtin corresponds to `a - b` for signed ints `a`, `b` of bit siz
 -/
 def iSub {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
-  (fun h![a, b] => canContain s (a.toInt - b.toInt))
+  (fun h![a, b] => bitsCanRepresent s (a.toInt - b.toInt))
   (fun h![a, b] _ => a - b)
 
 /--
@@ -105,39 +104,44 @@ In Noir, this builtin corresponds to `a * b` for signed ints `a`, `b` of bit siz
 -/
 def iMul {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
-  (fun h![a, b] => canContain s (a.toInt * b.toInt))
+  (fun h![a, b] => bitsCanRepresent s (a.toInt * b.toInt))
   (fun h![a, b] _ => a * b)
 
 /--
 Defines the division of two `s`-bit ints: `(a b: I s)`.
 We make the following assumptions:
-- If `-2^(s-1) ≤ (a / b) < 2^(s-1)` and `b ≠ 0`, then the builtin evaluates to `(a / b) : I s`
-- Else (integer overflow/underflow or division-by-zero), an exception is thrown.
+- If `b ≠ 0`, then the builtin evaluates to `(a.sdiv b) : I s`
+- Else (division-by-zero), an exception is thrown.
 
 In Noir, this builtin corresponds to `a / b` for signed ints `a`, `b` of bit size `s`.
 -/
 def iDiv {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
-  (fun h![a, b] => canContain s (a.toInt / b.toInt) ∧ b ≠ 0)
+  (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => a.sdiv b)
 
 /--
 Captures the behavior of the signed integer remainder operation % in Noir.
-In particular, for two signed integers `a` and `b`, returns ` a - ((a/b) * b)`
+In particular, for two signed integers `a` and `b`, this returns ` a - ((a.sdiv b) * b)`
 -/
-def intRem {s: Nat} (a b : I s) : I s := (a.toInt - (a.sdiv b) * b.toInt)
+def intRem {s: Nat} (a b : I s) : I s := (a - (a.sdiv b) * b)
+
+#eval intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-1)) -- 0
+#eval intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-3)) -- -2
+#eval intRem (BitVec.ofInt 8 (6)) (BitVec.ofInt 8 (-100)) -- 6
+#eval intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) -- 1
 
 /--
-Defines the modulus of two `s`-bit ints: `(a b: I s)`.
+Defines the integer remainder operation between two `s`-bit ints: `(a b: I s)`.
 We make the following assumptions:
-- If `-2^(s-1) ≤ (intRem a b) < 2^(s-1)` and `b ≠ 0`, then the builtin evaluates to `(intRem a b) : I s`
-- Else (integer overflow/underflow or mod-by-zero), an exception is thrown.
+- If `b ≠ 0`, then the builtin evaluates to `(intRem a b) : I s`
+- Else (mod-by-zero), an exception is thrown.
 
 In Noir, this builtin corresponds to `a % b` for signed ints `a`, `b` of bit size `s`.
 -/
 def iRem {s : Nat}: Builtin := newBuiltin
   [(.i s), (.i s)] (.i s)
-  (fun h![a, b] => canContain s (intRem a b).toInt ∧ b ≠ 0)
+  (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => intRem a b)
 
 /--
@@ -150,7 +154,7 @@ In Noir, this builtin corresponds to `-a` for a signed integer `a` of bit size `
 -/
 def iNeg {s : Nat}: Builtin := newBuiltin
   [(.i s)] (.i s)
-  (fun h![a] => canContain s (-a.toInt))
+  (fun h![a] => bitsCanRepresent s (-a.toInt))
   (fun h![a] _ => -a)
 
 /--
