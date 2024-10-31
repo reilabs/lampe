@@ -73,7 +73,14 @@ theorem assert_intro {v: Bool}:
   apply THoare.assert_intro
   simp [SLP.entails_self, SLP.star_mono_l]
 
-theorem letIn_intro
+theorem var_intro {v : Tp.denote p tp}:
+    STHoare p Γ ⟦⟧ (.var v) (fun v' => ⟦v' = v⟧) := by
+  unfold STHoare
+  intro H
+  apply THoare.consequence ?_ THoare.var_intro (fun _ => SLP.entails_self)
+  simp
+
+theorem letIn_intro {tp} {P} {Q : Tp.denote p tp → SLP p} {e₁ e₂}
     (h_first: STHoare p Γ P e₁ Q)
     (h_rest: ∀v, STHoare p Γ (Q v) (e₂ v) R):
     STHoare p Γ P (Expr.letIn e₁ e₂) R := by
@@ -178,7 +185,7 @@ theorem eqF_intro:
     STHoare p Γ
       ⟦⟧
       (.call h![] [.field, .field] .bool (.builtin .eq) h![a, b])
-      (fun v' => v = (a = b)) := by
+      (· = (a = b)) := by
   sorry -- [TODO] becomes trivial with the builtins PR
 
 theorem sliceLen_intro {slice : Tp.denote p (.slice tp)}:
@@ -192,7 +199,7 @@ theorem sliceIndex_intro {slice : Tp.denote p (.slice tp)} {i : U 32}:
     STHoare p Γ
       ⟦⟧
       (.call h![] [.slice tp, .u 32] tp (.builtin .sliceIndex) h![slice, i])
-      fun v => some v = slice[i]? := by
+      fun v => some v = slice[i.val]? := by
   sorry -- becomes trivial with the builtins PR
 
 theorem slicePushBack_intro {slice : Tp.denote p (.slice tp)} {val : Tp.denote p tp}:

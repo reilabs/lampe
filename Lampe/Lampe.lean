@@ -1,12 +1,12 @@
 -- This module serves as the root of the `Lampe` library.
 -- Import modules here that should be built as part of the library.
 -- import «Lampe».Basic
-import Lampe.Hoare
+import Lampe.Basic
 import Lean.Meta.Tactic.Simp.Main
 
 open Lampe
 
-open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
+open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq Lampe.STHoare
 
 inductive SLTerm where
 | top : SLTerm
@@ -59,7 +59,7 @@ theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.lit (.u s) n) fun v => v
   assumption
 
 theorem ref_intro' {p} {x : Tp.denote p tp} {Γ P}:
-    STHoare p Γ P (ref x) fun v => [v ↦ ⟨tp, x⟩] ⋆ P := by
+    STHoare p Γ P (.ref x) fun v => [v ↦ ⟨tp, x⟩] ⋆ P := by
   apply ramified_frame_top
   apply ref_intro
   simp
@@ -286,7 +286,11 @@ theorem star_top_of_star_mvar : (H ⊢ Q ⋆ R) → (H ⊢ Q ⋆ ⊤) := by
   apply SLP.entails_top
 
 theorem solve_left_with_leftovers : (H ⊢ Q ⋆ R) → (R ⊢ P) → (H ⊢ Q ⋆ P) := by
-  aesop
+  intros
+  apply SLP.entails_trans
+  assumption
+  apply SLP.star_mono_l
+  assumption
 
 theorem solve_with_true : (H ⊢ Q) → (H ⊢ Q ⋆ ⟦⟧) := by
   aesop
@@ -582,9 +586,9 @@ elab "steps" : tactic => do
 syntax "loop_inv" term : tactic
 macro "loop_inv" inv:term : tactic => `(tactic|(
   (first
-    | apply loop_inv_intro' $inv ?_
-    | apply consequence_frame_left; apply loop_inv_intro' $inv ?_
-    | apply ramified_frame_top; apply loop_inv_intro' $inv ?_
+    | apply loop_inv_intro $inv ?_
+    | apply consequence_frame_left; apply loop_inv_intro $inv ?_
+    | apply ramified_frame_top; apply loop_inv_intro $inv ?_
   )
   on_goal 2 => testSL
 ))
@@ -609,7 +613,6 @@ nr_def weirdEq<I>(x : I, y : I) -> Unit {
   #assert(#eq(a, x) : bool) : Unit;
   #assert(#eq(a, y) : bool) : Unit;
 }
-
 
 example {P} {x y : Tp.denote P .field} : STHoare P Γ ⟦⟧ (weirdEq.fn.body _ h![.field] h![x, y]) fun _ => x = y := by
   simp only [weirdEq]
@@ -639,7 +642,6 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
       linarith
     simp only [this, List.take_succ]
     rename some _ = _ => h
-    simp only [List.get?_eq_getElem?] at h
     simp_all [←h]
   · simp_all
   · simp_all
