@@ -12,6 +12,16 @@ jobs:
             - name: Set up Lean 4
               uses: leanprover/lean-action@v1
               with:
-                build: true
+                auto-config: false
+                build: false
+                test: false
+                lint: false
                 use-mathlib-cache: true
                 lake-package-directory: Lampe
+            - name: Build Lampe
+              uses: leanprover/lean-action@v1
+              with:
+                auto-config: true
+                use-mathlib-cache: true
+                lake-package-directory: Lampe
+  
