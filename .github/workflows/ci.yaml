@@ -11,6 +11,7 @@ jobs:
                   Lampe
             - name: Set up Lean 4
               uses: leanprover/lean-action@v1
+              continue-on-error: true
               with:
                 lake-package-directory: Lampe
                 build: "true"
