@@ -14,7 +14,4 @@ jobs:
               continue-on-error: true
               with:
                 lake-package-directory: Lampe
-                build: "true"
-                test: "true"
-                lint: "true"
                 use-mathlib-cache: "true"
