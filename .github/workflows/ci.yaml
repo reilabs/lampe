@@ -1,7 +1,7 @@
 name: CI
 on: [push, pull_request]
 jobs:
-    build:
+    check-lean:
         runs-on: ubuntu-latest
         steps:
             - name: Cheeckout repository
@@ -18,10 +18,23 @@ jobs:
                 lint: false
                 use-mathlib-cache: true
                 lake-package-directory: Lampe
-            - name: Build Lampe
+            - name: Build (lake)
               uses: leanprover/lean-action@v1
               with:
                 auto-config: true
                 use-mathlib-cache: true
                 lake-package-directory: Lampe
+    check-cargo:
+      runs-on: ubuntu-latest
+      steps:
+          - name: Cheeckout repository
+            uses: actions/checkout@v4
+          - name: Set up Rust
+            uses: actions-rs/toolchain@v1
+            with:
+              toolchain: stable
+          - name: Build (cargo)
+            run: cargo build --release
+          - name: Test (cargo)
+            run: cargo test
   
