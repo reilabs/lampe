@@ -4,7 +4,7 @@ jobs:
     build-lake:
         runs-on: ubuntu-latest
         steps:
-            - name: Cheeckout repository
+            - name: Checkout current repo
               uses: actions/checkout@v4
               with:
                 sparse-checkout: |
@@ -24,11 +24,20 @@ jobs:
     build-cargo:
       runs-on: ubuntu-latest
       steps:
-          - name: Cheeckout repository
+          - name: Checkout current repo
             uses: actions/checkout@v4
+            with:
+              path: lampe
+          - name: Checkout reilabs/noir
+            uses: actions/checkout@v4
+            with:
+              path: noir
+              ref: lampe
+              repository: reilabs/noir
           - name: Set up Rust
             uses: actions-rs/toolchain@v1
             with:
               toolchain: stable
           - name: Build (cargo)
+            working-directory: lampe
             run: cargo build --release  
