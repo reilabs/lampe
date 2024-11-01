@@ -8,7 +8,7 @@ which evaluates to `(¬a) : Bool`.
 
 In Noir, this builtin corresponds to `!a` for bool `a`.
 -/
-def bNot := newBuiltin
+def bNot := newPureBuiltin
   [(.bool)] .bool
   (fun _ => True)
   (fun h![a] _ => a.not)
@@ -19,7 +19,7 @@ which evaluates to `(a || b) : Bool`.
 
 In Noir, this builtin corresponds to `a | b` for bools `a`, `b`.
 -/
-def bOr := newBuiltin
+def bOr := newPureBuiltin
   [(.bool), (.bool)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a || b)
@@ -30,7 +30,7 @@ which evaluates to `(a && b) : Bool`.
 
 In Noir, this builtin corresponds to `a & b` for bools `a`, `b`.
 -/
-def bAnd := newBuiltin
+def bAnd := newPureBuiltin
   [(.bool), (.bool)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a && b)
@@ -41,7 +41,7 @@ which evaluates to `(a.xor b) : Bool`.
 
 In Noir, this builtin corresponds to `a ^ b` for bools `a`, `b`.
 -/
-def bXor := newBuiltin
+def bXor := newPureBuiltin
   [(.bool), (.bool)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a.xor b)
@@ -52,7 +52,7 @@ which evaluates to `(¬a) : U s`.
 
 In Noir, this builtin corresponds to `!a` for uint `a` of bit-size `s`.
 -/
-def uNot {s} := newBuiltin
+def uNot {s} := newPureBuiltin
   [(.u s)] (.u s)
   (fun _ => True)
   (fun h![a] _ => a.not)
@@ -63,7 +63,7 @@ which evaluates to `(a ||| b) : U s`.
 
 In Noir, this builtin corresponds to `a | b` for uints `a`, `b` of bit-size `s`.
 -/
-def uOr {s} := newBuiltin
+def uOr {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a ||| b)
@@ -74,7 +74,7 @@ which evaluates to `(a &&& b) : U s`.
 
 In Noir, this builtin corresponds to `a & b` for uints `a`, `b` of bit-size `s`.
 -/
-def uAnd {s} := newBuiltin
+def uAnd {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a &&& b)
@@ -85,7 +85,7 @@ which evaluates to `(a.xor b) : U s`.
 
 In Noir, this builtin corresponds to `a ^ b` for uints `a`, `b` of bit-size `s`.
 -/
-def uXor {s} := newBuiltin
+def uXor {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a.xor b)
@@ -97,7 +97,7 @@ This is assumed to evaluate to `(a <<< b) : U s`.
 
 In Noir, this builtin corresponds to `a << b` for an uint `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
-def uShl {s} := newBuiltin
+def uShl {s} := newPureBuiltin
   [(.u s), (.u 8)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a <<< b)
@@ -109,7 +109,7 @@ This is assumed to evaluate to `(a >>> b) : U s`.
 
 In Noir, this builtin corresponds to `a >> b` for an uint `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
-def uShr {s} := newBuiltin
+def uShr {s} := newPureBuiltin
   [(.u s), (.u 8)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a >>> b)
@@ -120,7 +120,7 @@ which evaluates to `(¬a) : U s`.
 
 In Noir, this builtin corresponds to `!a` for an int `a` of bit-size `s`.
 -/
-def iNot {s} := newBuiltin
+def iNot {s} := newPureBuiltin
   [(.i s)] (.i s)
   (fun _ => True)
   (fun h![a] _ => a.not)
@@ -131,7 +131,7 @@ which evaluates to `(a ||| b) : I s`.
 
 In Noir, this builtin corresponds to `a | b` for ints `a`, `b` of bit-size `s`.
 -/
-def iOr {s} := newBuiltin
+def iOr {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a ||| b)
@@ -142,7 +142,7 @@ which evaluates to `(a &&& b) : I s`.
 
 In Noir, this builtin corresponds to `a & b` for ints `a`, `b` of bit-size `s`.
 -/
-def iAnd {s} := newBuiltin
+def iAnd {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a &&& b)
@@ -153,7 +153,7 @@ which evaluates to `(a.xor b) : I s`.
 
 In Noir, this builtin corresponds to `a ^ b` for ints `a`, `b` of bit-size `s`.
 -/
-def iXor {s} := newBuiltin
+def iXor {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a.xor b)
@@ -165,7 +165,7 @@ This is assumed to evaluate to `(a <<< b) : I s`.
 
 In Noir, this builtin corresponds to `a << b` for an int `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
-def iShl {s} := newBuiltin
+def iShl {s} := newPureBuiltin
   [(.u s), (.u 8)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a <<< b)
@@ -177,7 +177,7 @@ This is assumed to evaluate to `(a >>> b) : I s`.
 
 In Noir, this builtin corresponds to `a >> b` for an int `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
-def iShr {s} := newBuiltin
+def iShr {s} := newPureBuiltin
   [(.u s), (.u 8)] (.u s)
   (fun _ => True)
   (fun h![a, b] _ => a >>> b)

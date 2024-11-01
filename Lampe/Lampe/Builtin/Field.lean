@@ -9,19 +9,19 @@ Otherwise, an exception is thrown.
 
 In Noir, this builtin corresponds to `fn __assert_max_bit_size(self, bit_size: u32)` implemented for `Field`.
 -/
-def fApplyRangeConstraint : Builtin := newBuiltin
+def fApplyRangeConstraint : Builtin := newPureBuiltin
   [.field, (.u 32)] .unit
   (fun h![a, w] => a.val < 2^w.toNat)
   (fun _ _ => ())
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the number of bits of `p`.
-We assume that `log p + 1 < 2^64`, i.e., `p`'s size can be represented by a uint of bit-size `64`.
+We asdecomposeWithRadix `log p + 1 < 2^64`, i.e., `p`'s size can be represented by a uint of bit-size `64`.
 Otherwise, this builtin throws an exception.
 
 In Noir, this builtin corresponds to `fn modulus_num_bits() -> u64` implemented for `Field`.
 -/
-def fModNumBits : Builtin := newBuiltin
+def fModNumBits : Builtin := newPureBuiltin
   [.field] (.u 64)
   (@fun p _ => numBits p.val < 2^64)
   (@fun p h![_] _ => numBits p.val)
@@ -31,40 +31,40 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit r
 
 In Noir, this builtin corresponds to `fn modulus_le_bits() -> [u1]` implemented for `Field`.
 -/
-def fModLeBits : Builtin := newBuiltin
+def fdecomposeWithRadix : Builtin := newPureBuiltin
   [.field] (.slice (.u 1))
   (@fun p _ => True)
-  (@fun p h![_] _ => withRadix 2 p.val (by tauto))
+  (@fun p h![_] _ => decomposeToRadix 2 p.val (by tauto))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
 
 In Noir, this builtin corresponds to `fn modulus_be_bits() -> [u1]` implemented for `Field`.
 -/
-def fModBeBits : Builtin := newBuiltin
+def fModBeBits : Builtin := newPureBuiltin
   [.field] (.slice (.u 1))
   (@fun p _ => True)
-  (@fun p h![_] _ => .reverse (withRadix 2 p.val (by tauto)))
+  (@fun p h![_] _ => .reverse (decomposeToRadix 2 p.val (by tauto)))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the byte representation of `p` in little-endian format.
 
 In Noir, this builtin corresponds to `fn modulus_le_bytes() -> [u8]` implemented for `Field`.
 -/
-def fModLeBytes : Builtin := newBuiltin
+def fModLeBytes : Builtin := newPureBuiltin
   [.field] (.slice (.u 8))
   (@fun p _ => True)
-  (@fun p h![_] _ => withRadix 256 p.val (by linarith))
+  (@fun p h![_] _ => decomposeToRadix 256 p.val (by linarith))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
 
 In Noir, this builtin corresponds to `fn modulus_be_bytes() -> [u8]` implemented for `Field`.
 -/
-def fModBeBytes : Builtin := newBuiltin
+def fModBeBytes : Builtin := newPureBuiltin
   [.field] (.slice (.u 8))
   (@fun p _ => True)
-  (@fun p h![_] _ => .reverse (withRadix 256 p.val (by linarith)))
+  (@fun p h![_] _ => .reverse (decomposeToRadix 256 p.val (by linarith)))
 
 /--
 Represents the builtin that converts a field element to an unsigned integer.
@@ -72,7 +72,7 @@ We assume that this conversion is done by truncating the field element when nece
 
 In Noir, this builtin corresponds to `fn from_field(a: Field) -> u32` implemented for uints of bit size `s`.
  -/
-def uFromField {s : Nat} : Builtin := newBuiltin
+def uFromField {s : Nat} : Builtin := newPureBuiltin
   [.field] (.u s)
   (fun _ => True)
   (fun h![f] _ => BitVec.ofNat s f.val)
@@ -85,7 +85,7 @@ We assume that this conversion is done by truncating the field element when nece
 
 In Noir, this builtin corresponds to `fn from_field(a: Field) -> u32` implemented for ints of bit size `s`.
 -/
-def iFromField {s : Nat} : Builtin := newBuiltin
+def iFromField {s : Nat} : Builtin := newPureBuiltin
   [.field] (.i s)
   (fun _ => True)
   (fun h![f] _ => BitVec.ofNat s f.val)
@@ -93,21 +93,21 @@ def iFromField {s : Nat} : Builtin := newBuiltin
 /--
 Specs are not clear.
 - What happens when P < 2^s for while converting (Fp p) to (U s)?
-
+decomposeWithRadix
 In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for uints of bit size `s`.
 -/
-def uAsField {s : Nat} : Builtin := newBuiltin
+def uAsField {s : Nat} : Builtin := newPureBuiltin
   [.u s] (.field)
   (fun _ => True)
   (fun h![a] _ => sorry)
 
 /--
 Specs are not clear.
-- What happens when P < 2^s for while converting (Fp p) to (U s)?
+- What happens when P < 2^s fordecomposeWithRadixnverting (Fp p) to (U s)?
 
 In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for uints of bit size `s`.
 -/
-def iAsField {s : Nat} : Builtin := newBuiltin
+def iAsField {s : Nat} : Builtin := newPureBuiltin
   [.i s] (.field)
   (fun _ => True)
   (fun h![a] _ => sorry)

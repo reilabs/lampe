@@ -34,7 +34,7 @@ end Lampe
 
 namespace Lampe.Builtin
 
-inductive builtinOmni
+inductive pureBuiltinOmni
   (argTps : List Tp)
   (outTp : Tp)
   (pred : {p : Prime} → (HList (Tp.denote p) argTps) → Prop)
@@ -42,39 +42,39 @@ inductive builtinOmni
   | ok {p st args Q}:
     (h : pred args)
       → Q (some (st, comp args h))
-      → (builtinOmni argTps outTp pred comp) p st argTps outTp args Q
+      → (pureBuiltinOmni argTps outTp pred comp) p st argTps outTp args Q
   | err {p st args Q}:
     ¬(pred args)
       → Q none
-      → (builtinOmni argTps outTp pred comp) p st argTps outTp args Q
+      → (pureBuiltinOmni argTps outTp pred comp) p st argTps outTp args Q
 
 /--
-A `Builtin` definition.
+A pure deterministic `Builtin` definition.
 Takes a list of input types `argTps : List Tp`, an output type `outTp : Tp`, a predicate `pred` and evaluation function `comp`.
 For `args: HList (Tp.denote p) argTps`, we assume that a builtin function *fails* when `¬(pred args)`, and it *succeeds* when `pred args`.
 
 If the builtin succeeds, it evaluates to `some (comp args (h : pred))`.
 Otherwise, it evaluates to `none`.
 -/
-def newBuiltin
+def newPureBuiltin
   (argTps : List Tp)
   (outTp : Tp)
   (pred : {p : Prime} → (HList (Tp.denote p) argTps) → Prop)
   (comp : {p : Prime} → (args: HList (Tp.denote p) argTps) → (pred args) → (Tp.denote p outTp)) : Builtin := {
-  omni := (builtinOmni argTps outTp pred comp)
+  omni := (pureBuiltinOmni argTps outTp pred comp)
   conseq := by
     unfold omni_conseq
     intros
-    cases_type builtinOmni
+    cases_type pureBuiltinOmni
     . constructor <;> simp_all
-    . apply builtinOmni.err <;> simp_all
+    . apply pureBuiltinOmni.err <;> simp_all
   frame := by
     unfold omni_frame
     intros
-    cases_type builtinOmni
+    cases_type pureBuiltinOmni
     . constructor
       . constructor <;> tauto
-    . apply builtinOmni.err <;> assumption
+    . apply pureBuiltinOmni.err <;> assumption
 }
 
 end Lampe.Builtin

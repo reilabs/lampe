@@ -10,7 +10,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of bit size `s`.
 -/
-def uAdd {s} := newBuiltin
+def uAdd {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun h![a, b] => (a.toInt + b.toInt) < 2^s)
   (fun h![a, b] _ => a + b)
@@ -23,7 +23,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of bit size `s`.
 -/
-def uMul {s} := newBuiltin
+def uMul {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun h![a, b] => (a.toInt * b.toInt) < 2^s)
   (fun h![a, b] _ => a * b)
@@ -36,7 +36,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a - b` for uints `a`, `b` of bit size `s`.
 -/
-def uSub {s} := newBuiltin
+def uSub {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun h![a, b] => b ≤ a)
   (fun h![a, b] _ => a - b)
@@ -50,7 +50,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a / b` for uints `a`, `b` of bit size `s`.
 -/
-def uDiv {s} := newBuiltin
+def uDiv {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => a.udiv b)
@@ -63,7 +63,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a % b` for uints `a`, `b` of bit size `s`.
 -/
-def uRem {s} := newBuiltin
+def uRem {s} := newPureBuiltin
   [(.u s), (.u s)] (.u s)
   (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => a % b)
@@ -76,7 +76,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a + b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iAdd {s : Nat}: Builtin := newBuiltin
+def iAdd {s : Nat}: Builtin := newPureBuiltin
   [(.i s), (.i s)] (.i s)
   (fun h![a, b] => bitsCanRepresent s (a.toInt + b.toInt))
   (fun h![a, b] _ => a + b)
@@ -89,7 +89,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a - b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iSub {s : Nat}: Builtin := newBuiltin
+def iSub {s : Nat}: Builtin := newPureBuiltin
   [(.i s), (.i s)] (.i s)
   (fun h![a, b] => bitsCanRepresent s (a.toInt - b.toInt))
   (fun h![a, b] _ => a - b)
@@ -102,7 +102,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a * b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iMul {s : Nat}: Builtin := newBuiltin
+def iMul {s : Nat}: Builtin := newPureBuiltin
   [(.i s), (.i s)] (.i s)
   (fun h![a, b] => bitsCanRepresent s (a.toInt * b.toInt))
   (fun h![a, b] _ => a * b)
@@ -115,7 +115,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a / b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iDiv {s : Nat}: Builtin := newBuiltin
+def iDiv {s : Nat}: Builtin := newPureBuiltin
   [(.i s), (.i s)] (.i s)
   (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => a.sdiv b)
@@ -139,7 +139,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a % b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iRem {s : Nat}: Builtin := newBuiltin
+def iRem {s : Nat}: Builtin := newPureBuiltin
   [(.i s), (.i s)] (.i s)
   (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => intRem a b)
@@ -152,7 +152,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `-a` for a signed integer `a` of bit size `s`.
 -/
-def iNeg {s : Nat}: Builtin := newBuiltin
+def iNeg {s : Nat}: Builtin := newPureBuiltin
   [(.i s)] (.i s)
   (fun h![a] => bitsCanRepresent s (-a.toInt))
   (fun h![a] _ => -a)
@@ -163,7 +163,7 @@ This is assumed to evaluate to `(a + b) : Fp p`.
 
 In Noir, this builtin corresponds to `a + b` for field elements `a`, `b`.
 -/
-def fAdd : Builtin := newBuiltin
+def fAdd : Builtin := newPureBuiltin
   [(.field), (.field)] .field
   (fun _ => True)
   (fun h![a, b] _ => a + b)
@@ -174,7 +174,7 @@ This is assumed to evaluate to `(a * b) : Fp p`.
 
 In Noir, this builtin corresponds to `a * b` for field elements `a`, `b`.
 -/
-def fMul : Builtin := newBuiltin
+def fMul : Builtin := newPureBuiltin
   [(.field), (.field)] .field
   (fun _ => True)
   (fun h![a, b] _ => a * b)
@@ -185,7 +185,7 @@ This is assumed to evaluate to `(a - b) : Fp p`.
 
 In Noir, this builtin corresponds to `a - b` for field elements `a`, `b`.
 -/
-def fSub : Builtin := newBuiltin
+def fSub : Builtin := newPureBuiltin
   [(.field), (.field)] .field
   (fun _ => True)
   (fun h![a, b] _ => a - b)
@@ -198,7 +198,7 @@ We assume the following:
 
 In Noir, this builtin corresponds to `a / b` for field elements `a`, `b`.
 -/
-def fDiv : Builtin := newBuiltin
+def fDiv : Builtin := newPureBuiltin
   [(.field), (.field)] .field
   (fun h![_, b] => b ≠ 0)
   (fun h![a, b] _ => a / b)
@@ -209,7 +209,7 @@ This is assumed to evaluate to `-a : Fp p`.
 
 In Noir, this builtin corresponds to `-a` for a field element `a`.
 -/
-def fNeg : Builtin := newBuiltin
+def fNeg : Builtin := newPureBuiltin
   [(.field)] .field
   (fun _ => True)
   (fun h![a] _ => -a)

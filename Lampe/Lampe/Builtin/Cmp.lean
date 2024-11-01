@@ -8,7 +8,7 @@ We assume that `() == ()` always evaluates to `true`.
 
 In Noir, this builtin corresponds to `() == ()` implemented for `Unit`.
 -/
-def unitEq : Builtin := newBuiltin
+def unitEq : Builtin := newPureBuiltin
   [(.unit), (.unit)] .bool
   (fun _ => True)
   (fun _ _ => True)
@@ -19,7 +19,7 @@ We assume that the comparison between two boolean values evaluates to `true` if 
 
 In Noir, this builtin corresponds to `a == b` for booleans `a`, `b`.
  -/
-def bEq : Builtin := newBuiltin
+def bEq : Builtin := newPureBuiltin
   [(.bool), (.bool)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a == b)
@@ -30,7 +30,7 @@ We assume that the comparison between two uints evaluates to `true` if and only 
 
 In Noir, this builtin corresponds to `a == b` for uints `a`, `b`.
  -/
-def uEq {s : Nat} : Builtin := newBuiltin
+def uEq {s : Nat} : Builtin := newPureBuiltin
   [(.u s), (.u s)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a == b)
@@ -41,7 +41,7 @@ We assume that the comparison between two ints evaluates to `true` if and only i
 
 In Noir, this builtin corresponds to `a == b` for ints `a`, `b`.
  -/
-def iEq {s : Nat} : Builtin := newBuiltin
+def iEq {s : Nat} : Builtin := newPureBuiltin
   [(.i s), (.i s)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a == b)
@@ -52,7 +52,7 @@ We assume that the comparison between two field elements evaluates to `true` if 
 
 In Noir, this builtin corresponds to `a == b` for field elements `a`, `b`.
  -/
-def fEq : Builtin := newBuiltin
+def fEq : Builtin := newPureBuiltin
   [(.field), (.field)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a == b)
@@ -63,7 +63,7 @@ We assume that the comparison between two uints evaluates to `true` if and only 
 
 In Noir, this builtin corresponds to `a < b` for uints `a`, `b`.
 -/
-def uLt {s : Nat} : Builtin := newBuiltin
+def uLt {s : Nat} : Builtin := newPureBuiltin
   [(.u s), (.u s)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a < b)
@@ -74,7 +74,7 @@ We assume that the comparison between two ints evaluates to `true` if and only i
 
 In Noir, this builtin corresponds to `a < b` for ints `a`, `b`.
 -/
-def iLt {s : Nat} : Builtin := newBuiltin
+def iLt {s : Nat} : Builtin := newPureBuiltin
   [(.i s), (.i s)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a < b)
@@ -85,7 +85,7 @@ We assume that the comparison between two uints evaluates to `true` if and only 
 
 In Noir, this builtin corresponds to `a > b` for uints `a`, `b`.
 -/
-def uGt {s : Nat} : Builtin := newBuiltin
+def uGt {s : Nat} : Builtin := newPureBuiltin
   [(.u s), (.u s)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a > b)
@@ -96,7 +96,7 @@ We assume that the comparison between two ints evaluates to `true` if and only i
 
 In Noir, this builtin corresponds to `a > b` for ints `a`, `b`.
 -/
-def iGt {s : Nat} : Builtin := newBuiltin
+def iGt {s : Nat} : Builtin := newPureBuiltin
   [(.i s), (.i s)] .bool
   (fun _ => True)
   (fun h![a, b] _ => a > b)
