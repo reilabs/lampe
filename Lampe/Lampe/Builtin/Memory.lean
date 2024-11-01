@@ -1,53 +1,6 @@
-import Lampe.Builtin.Arith
-import Lampe.Builtin.Array
-import Lampe.Builtin.BigInt
-import Lampe.Builtin.Bit
-import Lampe.Builtin.Cmp
-import Lampe.Builtin.Field
-import Lampe.Builtin.Slice
-import Lampe.Builtin.Str
-
+import Lampe.Builtin.Basic
 namespace Lampe.Builtin
-
-inductive assertOmni : Omni where
-| t {st Q} : Q (some (st, ())) → assertOmni P st [.bool] .unit h![true] Q
-| f {st Q} : Q none → assertOmni P st [.bool] .unit h![false] Q
-
-def assert : Builtin := {
-  omni := assertOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type assertOmni <;> tauto
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type assertOmni
-    · constructor
-      repeat apply Exists.intro
-      tauto
-    · constructor; tauto
-}
-
-inductive eqOmni : Omni
-| f {P st a b Q} : Q (some (st, a == b)) → eqOmni P st [.field, .field] .bool h![a, b] Q
-| u {P st s a b Q} : Q (some (st, a == b)) → eqOmni P st [.u s, .u s] .bool h![a, b] Q
-
-def eq : Builtin := {
-  omni := eqOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type eqOmni <;> tauto
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type eqOmni <;> {
-      constructor
-      repeat apply Exists.intro
-      tauto
-    }
-}
+open Lampe.Builtin
 
 inductive freshOmni : Omni where
 | mk {P st tp Q} : (∀ v, Q (some (st, v))) → freshOmni P st [] tp h![] Q

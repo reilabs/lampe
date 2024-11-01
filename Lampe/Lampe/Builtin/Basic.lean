@@ -77,4 +77,14 @@ def newPureBuiltin
     . apply pureBuiltinOmni.err <;> assumption
 }
 
+/--
+Defines the assertion builtin that takes a boolean. We assume the following:
+- If `a == true`, it evaluates to `()`.
+- Else, an exception is thrown.
+-/
+def assert : Builtin := newPureBuiltin
+  [.bool] .unit
+  (fun h![a] => a == true)
+  (fun _ _ => ())
+
 end Lampe.Builtin
