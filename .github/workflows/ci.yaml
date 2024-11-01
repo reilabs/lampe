@@ -6,9 +6,13 @@ jobs:
         steps:
             - name: Cheeckout repository
               uses: actions/checkout@v4
+              with:
+                sparse-checkout: |
+                  Lampe
             - name: Set up Lean 4
               uses: leanprover/lean-action@v1
               with:
+                lake-package-directory: Lampe
                 build: "true"
                 test: "true"
                 lint: "true"
