@@ -4,7 +4,7 @@ jobs:
     build-lake:
         runs-on: ubuntu-latest
         steps:
-            - name: Checkout current repo
+            - name: Checkout current branch (sparse)
               uses: actions/checkout@v4
               with:
                 sparse-checkout: |
@@ -24,11 +24,11 @@ jobs:
     build-cargo:
       runs-on: ubuntu-latest
       steps:
-          - name: Checkout current repo
+          - name: Checkout current branch
             uses: actions/checkout@v4
             with:
               path: lampe
-          - name: Checkout reilabs/noir
+          - name: "Checkout reilabs/noir (branch: lampe)"
             uses: actions/checkout@v4
             with:
               path: noir
