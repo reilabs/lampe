@@ -11,7 +11,7 @@ jobs:
                   Lampe
             - name: Set up Lean 4
               uses: leanprover/lean-action@v1
-              continue-on-error: true
               with:
+                build: true
+                use-mathlib-cache: true
                 lake-package-directory: Lampe
-                use-mathlib-cache: "true"
