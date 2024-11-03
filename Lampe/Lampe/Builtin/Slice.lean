@@ -10,11 +10,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `T[i]` for `T: [T]` and `i: uint32`.
 -/
-def sliceIndex : Builtin := newGenPureBuiltin
-  (fun tp => [Tp.slice tp, Tp.i 32])
-  (fun tp => tp)
-  (fun _ h![l, i] => i.toNat < l.length)
-  (fun _ h![l, i] h => l.get (Fin.mk i.toNat h))
+def sliceIndex := newGenPureBuiltin
+  (fun tp => ⟨[.slice tp, .i 32], tp⟩)
+  (fun _ h![l, i] => ⟨i.toNat < l.length,
+    fun h => l.get (Fin.mk i.toNat h)⟩)
 
 /--
 Defines the builtin that returns the length of a slice `l : List tp`
@@ -24,11 +23,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `fn len(self) -> u32` implemented for `[T]`.
 -/
-def sliceLen : Builtin := newGenPureBuiltin
-  (fun tp => [Tp.slice tp])
-  (fun _ => Tp.i 32)
-  (fun _ h![l] => l.length < 2^32)
-  (fun _ h![l] _ => l.length)
+def sliceLen := newGenPureBuiltin
+  (fun tp => ⟨[.slice tp], .i 32⟩)
+  (fun _ h![l] => ⟨l.length < 2^32,
+    fun _ => l.length⟩)
 
 
 /--
@@ -37,11 +35,10 @@ On these inputs, the builtin is assumed to return `l ++ [e]`.
 
 In Noir, this builtin corresponds to `fn push_back(self, elem: T) -> Self` implemented for `[T]`.
 -/
-def slicePushBack : Builtin := newGenPureBuiltin
-  (fun tp => [Tp.slice tp, tp])
-  (fun tp => Tp.slice tp)
-  (fun _ _ => True)
-  (fun _ h![l, e] _ => l ++ [e])
+def slicePushBack := newGenPureBuiltin
+  (fun tp => ⟨[.slice tp, tp], .slice tp⟩)
+  (fun _ h![l, e] => ⟨True,
+    fun _ => l ++ [e]⟩)
 
 /--
 Defines the builtin that pushes front an element `e : Tp.denote tp` to a slice `l : List tp`.
@@ -49,11 +46,10 @@ On these inputs, the builtin is assumed to return `[e] ++ l`.
 
 In Noir, this builtin corresponds to `fn push_front(self, elem: T) -> Self` implemented for `[T]`.
 -/
-def slicePushFront : Builtin := newGenPureBuiltin
-  (fun tp => [Tp.slice tp, tp])
-  (fun tp => Tp.slice tp)
-  (fun _ _ => True)
-  (fun _ h![l, e] _ => [e] ++ l)
+def slicePushFront := newGenPureBuiltin
+  (fun tp => ⟨[.slice tp, tp], .slice tp⟩)
+  (fun _ h![l, e] => ⟨True,
+    fun _ => [e] ++ l⟩)
 
 /--
 Defines the insertion of an element `e : Tp.denote tp` at index `i : U 32` to a slice `l : List tp`.
@@ -64,11 +60,10 @@ where `l'` is `l` except that `e` is inserted at index `i`, and all the elements
 
 In Noir, this builtin corresponds to `fn insert(self, index: u32, elem: T) -> Self` implemented for `[T]`.
 -/
-def sliceInsert : Builtin := newGenPureBuiltin
-  (fun tp => [Tp.slice tp, Tp.i 32, tp])
-  (fun tp => Tp.slice tp)
-  (fun _ h![l, i, _] => i.toNat < l.length)
-  (fun _ h![l, i, e] _ => l.insertNth i.toNat e)
+def sliceInsert := newGenPureBuiltin
+  (fun tp => ⟨[.slice tp, .i 32, tp], .slice tp⟩)
+  (fun _ h![l, i, e] => ⟨i.toNat < l.length,
+    fun _ => l.insertNth i.toNat e⟩)
 
 
 /--
@@ -79,11 +74,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `fn pop_front(self) -> (T, Self)` implemented for `[T]`.
 -/
-def slicePopFront : Builtin := newGenPureBuiltin
-  (fun tp => [Tp.slice tp])
-  (fun tp => Tp.struct [tp, Tp.slice tp])
-  (fun _ h![l] => l ≠ [])
-  (fun _ h![l] h => (l.head h, l.tail, ()))
+def slicePopFront := newGenPureBuiltin
+  (fun tp => ⟨[.slice tp], .struct [tp, .slice tp]⟩)
+  (fun _ h![l] => ⟨l ≠ [],
+    fun h => (l.head h, l.tail, ())⟩)
 
 /--
 Defines the builtin that pops the last element of a slice `l : List tp`.
@@ -93,11 +87,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `fn pop_back(self) -> (Self, T)` implemented for `[T]`.
 -/
-def slicePopBack : Builtin := newGenPureBuiltin
-  (fun tp => [Tp.slice tp])
-  (fun tp => Tp.struct [Tp.slice tp, tp])
-  (fun _ h![l] => l ≠ [])
-  (fun _ h![l] h => (l.dropLast, l.getLast h, ()))
+def slicePopBack := newGenPureBuiltin
+  (fun tp => ⟨[Tp.slice tp], Tp.struct [Tp.slice tp, tp]⟩)
+  (fun _ h![l] => ⟨l ≠ [],
+    fun h => (l.dropLast, l.getLast h, ())⟩)
 
 /--
 Defines the removal of the element at the index `i : U 32` from a slice `l : List tp`.
@@ -108,10 +101,9 @@ where `l'` is `l` except that the element at index `i` is removed, and all the e
 
 In Noir, this builtin corresponds to `fn remove(self, index: u32) -> (Self, T)` implemented for `[T]`.
 -/
-def sliceRemove : Builtin := newGenPureBuiltin
-  (fun tp => [Tp.slice tp, Tp.i 32])
-  (fun tp => Tp.struct [Tp.slice tp, tp])
-  (fun _ h![l, i] => i.toNat < l.length)
-  (fun _ h![l, i] h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ()))
+def sliceRemove := newGenPureBuiltin
+  (fun tp => ⟨[.slice tp, Tp.i 32], .struct [.slice tp, tp]⟩)
+  (fun _ h![l, i] => ⟨i.toNat < l.length,
+    fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
 
 end Lampe.Builtin

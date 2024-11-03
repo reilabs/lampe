@@ -35,18 +35,19 @@ end Lampe
 namespace Lampe.Builtin
 
 inductive pureBuiltinOmni
-  (argTps : List Tp)
-  (outTp : Tp)
-  (pred : {p : Prime} → (HList (Tp.denote p) argTps) → Prop)
-  (comp : {p : Prime} → (args: HList (Tp.denote p) argTps) → (pred args) → (Tp.denote p outTp)) : Omni where
+  (sgn : List Tp × Tp)
+  (desc : {p : Prime}
+    → (args : HList (Tp.denote p) sgn.fst)
+    → (h : Prop) × (h → (Tp.denote p sgn.snd)))
+  : Omni where
   | ok {p st args Q}:
-    (h : pred args)
-      → Q (some (st, comp args h))
-      → (pureBuiltinOmni argTps outTp pred comp) p st argTps outTp args Q
+    (h : (desc args).fst)
+      → Q (some (st, (desc args).snd h))
+      → (pureBuiltinOmni sgn desc) p st sgn.fst sgn.snd args Q
   | err {p st args Q}:
-    ¬(pred args)
+    ¬((desc args).fst)
       → Q none
-      → (pureBuiltinOmni argTps outTp pred comp) p st argTps outTp args Q
+      → (pureBuiltinOmni sgn desc) p st sgn.fst sgn.snd args Q
 
 /--
 A pure deterministic `Builtin` definition.
@@ -57,11 +58,12 @@ If the builtin succeeds, it evaluates to `some (comp args (h : pred))`.
 Otherwise, it evaluates to `none`.
 -/
 def newPureBuiltin
-  (argTps : List Tp)
-  (outTp : Tp)
-  (pred : {p : Prime} → (HList (Tp.denote p) argTps) → Prop)
-  (comp : {p : Prime} → (args: HList (Tp.denote p) argTps) → (pred args) → (Tp.denote p outTp)) : Builtin := {
-  omni := (pureBuiltinOmni argTps outTp pred comp)
+  (sgn : List Tp × Tp)
+  (desc : {p : Prime}
+    → (args : HList (Tp.denote p) sgn.fst)
+    → (h : Prop) × (h → (Tp.denote p sgn.snd)))
+   : Builtin := {
+  omni := (pureBuiltinOmni sgn desc)
   conseq := by
     unfold omni_conseq
     intros
@@ -78,41 +80,29 @@ def newPureBuiltin
 }
 
 inductive genPureOmni {A : Type}
-  (argTps : A → List Tp)
-  (outTp : A → Tp)
-  (pred : {p : Prime}
+  (sgn : A → List Tp × Tp)
+  (desc : {p : Prime}
     → (a : A)
-    → (args: HList (Tp.denote p) (argTps a))
-    → Prop)
-  (comp : {p : Prime}
-    → (a : A)
-    → (args: HList (Tp.denote p) (argTps a))
-    → (pred a args)
-    → (Tp.denote p (outTp a)))
+    → (args : HList (Tp.denote p) (sgn a).fst)
+    → (h : Prop) × (h → (Tp.denote p (sgn a).snd)))
    : Omni where
   | ok {p st a args Q}:
-    (h : pred a args)
-      → Q (some (st, comp a args h))
-      → (genPureOmni argTps outTp pred comp) p st (argTps a) (outTp a) args Q
+    (h : (desc a args).fst)
+      → Q (some (st, (desc a args).snd h))
+      → (genPureOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
   | err {p st a args Q}:
-    ¬(pred a args)
+    ¬((desc a args).fst)
       → Q none
-      → (genPureOmni argTps outTp pred comp) p st (argTps a) (outTp a) args Q
+      → (genPureOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
 
-def newGenPureBuiltin {A : Type}
-  (argTps : A → List Tp)
-  (outTp : A → Tp)
-  (pred : {p : Prime}
+def newGenPureBuiltin{A : Type}
+  (sgn : A → List Tp × Tp)
+  (desc : {p : Prime}
     → (a : A)
-    → (args: HList (Tp.denote p) (argTps a))
-    → Prop)
-  (comp : {p : Prime}
-    → (a : A)
-    → (args: HList (Tp.denote p) (argTps a))
-    → (pred a args)
-    → (Tp.denote p (outTp a)))
+    → (args : HList (Tp.denote p) (sgn a).fst)
+    → (h : Prop) × (h → (Tp.denote p (sgn a).snd)))
 : Builtin := {
-  omni := genPureOmni argTps outTp pred comp
+  omni := genPureOmni sgn desc
   conseq := by
     unfold omni_conseq
     intros
@@ -134,8 +124,8 @@ Defines the assertion builtin that takes a boolean. We assume the following:
 - Else, an exception is thrown.
 -/
 def assert : Builtin := newPureBuiltin
-  [.bool] .unit
-  (fun h![a] => a == true)
-  (fun _ _ => ())
+  ⟨[.bool], .unit⟩
+  (fun h![a] => ⟨a == true,
+    fun _ => ()⟩)
 
 end Lampe.Builtin
