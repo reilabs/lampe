@@ -8,10 +8,10 @@ The builtin is assumed to return `a + b`.
 
 In Noir, this builtin corresponds to `a + b` for bigints `a`, `b`.
 -/
-def bigIntAdd : Builtin := newPureBuiltin
-  [.bi, .bi] (.bi)
-  (fun _ => True)
-  (fun h![a, b] _  => a + b)
+def bigIntAdd := newPureBuiltin
+  ⟨[.bi, .bi], (.bi)⟩
+  (fun h![a, b]  => ⟨True,
+    fun _ => a + b⟩)
 
 /--
 Defines the subtraction of two bigints `(a b : Int)`.
@@ -19,10 +19,10 @@ The builtin is assumed to return `a - b`.
 
 In Noir, this builtin corresponds to `a - b` for bigints `a`, `b`.
 -/
-def bigIntSub : Builtin := newPureBuiltin
-  [.bi, .bi] (.bi)
-  (fun _ => True)
-  (fun h![a, b] _  => a - b)
+def bigIntSub := newPureBuiltin
+  ⟨[.bi, .bi], (.bi)⟩
+  (fun h![a, b]  => ⟨True,
+    fun _ => a - b⟩)
 
 /--
 Defines the multiplication of two bigints `(a b : Int)`.
@@ -30,10 +30,10 @@ The builtin is assumed to return `a * b`.
 
 In Noir, this builtin corresponds to `a * b` for bigints `a`, `b`.
 -/
-def bigIntMul : Builtin := newPureBuiltin
-  [.bi, .bi] (.bi)
-  (fun _ => True)
-  (fun h![a, b] _  => a * b)
+def bigIntMul := newPureBuiltin
+  ⟨[.bi, .bi], (.bi)⟩
+  (fun h![a, b]  => ⟨True,
+    fun _ => a * b⟩)
 
 /--
 Defines the division of two bigints `(a b : Int)`. We make the following assumptions:
@@ -42,10 +42,10 @@ Defines the division of two bigints `(a b : Int)`. We make the following assumpt
 
 In Noir, this builtin corresponds to `a / b` for bigints `a`, `b`.
 -/
-def bigIntDiv : Builtin := newPureBuiltin
-  [.bi, .bi] .bi
-  (fun h![_, b] => b ≠ 0)
-  (fun h![a, b] _  => a / b)
+def bigIntDiv := newPureBuiltin
+  ⟨[.bi, .bi], (.bi)⟩
+  (fun h![a, b]  => ⟨b ≠ 0,
+    fun _ => a / b⟩)
 
 /--
 Defines the conversion of a byte slice `bytes : List (U 8)` in little-endian encoding to a `BigInt`.
@@ -54,9 +54,9 @@ Modulus parameter is ignored.
 In Noir, this builtin corresponds to `fn from_le_bytes(bytes: [u8], modulus: [u8])` implemented for `BigInt`.
  -/
 def bigIntFromLeBytes : Builtin := newPureBuiltin
-  [.slice (.u 8), .slice (.u 8)] .bi
-  (fun _ => True)
-  (fun h![bs, _] _ => composeFromRadix 256 (bs.map (fun u => u.toNat)))
+  ⟨[.slice (.u 8), .slice (.u 8)], .bi⟩
+  (fun h![bs, _] => ⟨True,
+    fun _ => composeFromRadix 256 (bs.map (fun u => u.toNat))⟩)
 
 /--
 Defines the conversion of `a : Int` to its byte slice representation `l : Array 32 (U 8)` in little-endian encoding.
@@ -69,14 +69,13 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemented for `BigInt`.
 -/
 def bigIntToLeBytes : Builtin := newPureBuiltin
-  [.bi] (.array (.u 8) 32)
-  (fun h![a] => bitsCanRepresent 256 a)
-  (fun h![a] _ =>
+  ⟨[.bi], (.array (.u 8) 32)⟩
+  (fun h![a] => ⟨bitsCanRepresent 256 a, fun _ =>
     let l := (decomposeToRadix 256 a.toNat (by linarith))
     Mathlib.Vector.ofFn (fun i =>
       if h: i.val < l.length then
         l.get (Fin.mk i.val h)
       else 0 -- higher bytes are set to zero
-    ))
+    )⟩)
 
 end Lampe.Builtin

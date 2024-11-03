@@ -10,10 +10,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of bit size `s`.
 -/
-def uAdd {s} := newPureBuiltin
-  [(.u s), (.u s)] (.u s)
-  (fun h![a, b] => (a.toInt + b.toInt) < 2^s)
-  (fun h![a, b] _ => a + b)
+def uAdd := newGenPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun s h![a, b] => ⟨(a.toInt + b.toInt) < 2^s,
+    fun _ => a + b⟩)
 
 /--
 Defines the multiplication of two `s`-bit uints: `(a b : U s)`.
@@ -23,10 +23,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of bit size `s`.
 -/
-def uMul {s} := newPureBuiltin
-  [(.u s), (.u s)] (.u s)
-  (fun h![a, b] => (a.toInt * b.toInt) < 2^s)
-  (fun h![a, b] _ => a * b)
+def uMul := newGenPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun s h![a, b] => ⟨(a.toInt * b.toInt) < 2^s,
+    fun _ => a * b⟩)
 
 /--
 Defines the subtraction of two `s`-bit uints: `(a b : U s)`.
@@ -36,10 +36,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a - b` for uints `a`, `b` of bit size `s`.
 -/
-def uSub {s} := newPureBuiltin
-  [(.u s), (.u s)] (.u s)
-  (fun h![a, b] => b ≤ a)
-  (fun h![a, b] _ => a - b)
+def uSub := newGenPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun _ h![a, b] => ⟨b ≤ a,
+    fun _ => a - b⟩)
 
 /--
 Defines the division of two `s`-bit uints: `(a b : U s)`.
@@ -50,10 +50,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a / b` for uints `a`, `b` of bit size `s`.
 -/
-def uDiv {s} := newPureBuiltin
-  [(.u s), (.u s)] (.u s)
-  (fun h![_, b] => b ≠ 0)
-  (fun h![a, b] _ => a.udiv b)
+def uDiv := newGenPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun _ h![a, b] => ⟨b ≠ 0,
+    fun _ => a.udiv b⟩)
 
 /--
 Defines the modulus of two `s`-bit uints: `(a b : U s)`.
@@ -63,10 +63,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a % b` for uints `a`, `b` of bit size `s`.
 -/
-def uRem {s} := newPureBuiltin
-  [(.u s), (.u s)] (.u s)
-  (fun h![_, b] => b ≠ 0)
-  (fun h![a, b] _ => a % b)
+def uRem := newGenPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun _ h![a, b] => ⟨b ≠ 0,
+    fun _ => a % b⟩)
 
 /--
 Defines the addition of two `s`-bit ints: `(a b: I s)`.
@@ -76,10 +76,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a + b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iAdd {s : Nat}: Builtin := newPureBuiltin
-  [(.i s), (.i s)] (.i s)
-  (fun h![a, b] => bitsCanRepresent s (a.toInt + b.toInt))
-  (fun h![a, b] _ => a + b)
+def iAdd := newGenPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt + b.toInt),
+    fun _ => a + b⟩)
 
 /--
 Defines the subtraction of two `s`-bit ints: `(a b: I s)`.
@@ -89,10 +89,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a - b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iSub {s : Nat}: Builtin := newPureBuiltin
-  [(.i s), (.i s)] (.i s)
-  (fun h![a, b] => bitsCanRepresent s (a.toInt - b.toInt))
-  (fun h![a, b] _ => a - b)
+def iSub := newGenPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt - b.toInt),
+    fun _ => a - b⟩)
 
 /--
 Defines the multiplication of two `s`-bit ints: `(a b: I s)`.
@@ -102,10 +102,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a * b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iMul {s : Nat}: Builtin := newPureBuiltin
-  [(.i s), (.i s)] (.i s)
-  (fun h![a, b] => bitsCanRepresent s (a.toInt * b.toInt))
-  (fun h![a, b] _ => a * b)
+def iMul := newGenPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt * b.toInt),
+    fun _ => a * b⟩)
 
 /--
 Defines the division of two `s`-bit ints: `(a b: I s)`.
@@ -115,10 +115,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a / b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iDiv {s : Nat}: Builtin := newPureBuiltin
-  [(.i s), (.i s)] (.i s)
-  (fun h![_, b] => b ≠ 0)
-  (fun h![a, b] _ => a.sdiv b)
+def iDiv := newGenPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun _ h![a, b] => ⟨b ≠ 0,
+    fun _ => a.sdiv b⟩)
 
 /--
 Captures the behavior of the signed integer remainder operation % in Noir.
@@ -139,10 +139,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a % b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iRem {s : Nat}: Builtin := newPureBuiltin
-  [(.i s), (.i s)] (.i s)
-  (fun h![_, b] => b ≠ 0)
-  (fun h![a, b] _ => intRem a b)
+def iRem := newGenPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun _ h![a, b] => ⟨b ≠ 0,
+    fun _ => intRem a b⟩)
 
 /--
 Defines the negation of a `s`-bit int: `a: I s`.
@@ -152,10 +152,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `-a` for a signed integer `a` of bit size `s`.
 -/
-def iNeg {s : Nat}: Builtin := newPureBuiltin
-  [(.i s)] (.i s)
-  (fun h![a] => bitsCanRepresent s (-a.toInt))
-  (fun h![a] _ => -a)
+def iNeg := newGenPureBuiltin
+  (fun s => ⟨[(.i s)], (.i s)⟩)
+  (fun s h![a] => ⟨bitsCanRepresent s (-a.toInt),
+    fun _ => -a⟩)
 
 /--
 Defines the addition of two field elements `(a b: Fp p)` in `ZMod p`.
@@ -163,10 +163,10 @@ This is assumed to evaluate to `(a + b) : Fp p`.
 
 In Noir, this builtin corresponds to `a + b` for field elements `a`, `b`.
 -/
-def fAdd : Builtin := newPureBuiltin
-  [(.field), (.field)] .field
-  (fun _ => True)
-  (fun h![a, b] _ => a + b)
+def fAdd := newPureBuiltin
+  ⟨[(.field), (.field)], .field⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a + b⟩)
 
 /--
 Defines the multiplication of two field elements `(a b: Fp p)` in `ZMod p`.
@@ -174,10 +174,10 @@ This is assumed to evaluate to `(a * b) : Fp p`.
 
 In Noir, this builtin corresponds to `a * b` for field elements `a`, `b`.
 -/
-def fMul : Builtin := newPureBuiltin
-  [(.field), (.field)] .field
-  (fun _ => True)
-  (fun h![a, b] _ => a * b)
+def fMul := newPureBuiltin
+  ⟨[(.field), (.field)], .field⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a * b⟩)
 
 /--
 Defines the subtraction of two field elements `(a b: Fp p)` in `ZMod p`.
@@ -185,10 +185,10 @@ This is assumed to evaluate to `(a - b) : Fp p`.
 
 In Noir, this builtin corresponds to `a - b` for field elements `a`, `b`.
 -/
-def fSub : Builtin := newPureBuiltin
-  [(.field), (.field)] .field
-  (fun _ => True)
-  (fun h![a, b] _ => a - b)
+def fSub := newPureBuiltin
+  ⟨[(.field), (.field)], .field⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a - b⟩)
 
 /--
 Defines the division of two field elements `(a b: Fp p)` in `ZMod p`.
@@ -198,10 +198,10 @@ We assume the following:
 
 In Noir, this builtin corresponds to `a / b` for field elements `a`, `b`.
 -/
-def fDiv : Builtin := newPureBuiltin
-  [(.field), (.field)] .field
-  (fun h![_, b] => b ≠ 0)
-  (fun h![a, b] _ => a / b)
+def fDiv := newPureBuiltin
+  ⟨[(.field), (.field)], .field⟩
+  (fun h![a, b] => ⟨b ≠ 0,
+    fun _ => a / b⟩)
 
 /--
 Defines the additive inverse of a field element `a: Fp p` in `ZMod p`.
@@ -209,9 +209,9 @@ This is assumed to evaluate to `-a : Fp p`.
 
 In Noir, this builtin corresponds to `-a` for a field element `a`.
 -/
-def fNeg : Builtin := newPureBuiltin
-  [(.field)] .field
-  (fun _ => True)
-  (fun h![a] _ => -a)
+def fNeg := newPureBuiltin
+  ⟨[(.field)], .field⟩
+  (fun h![a] => ⟨True,
+    fun _ => -a⟩)
 
 end Lampe.Builtin
