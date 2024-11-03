@@ -77,6 +77,57 @@ def newPureBuiltin
     . apply pureBuiltinOmni.err <;> assumption
 }
 
+inductive genPureOmni {A : Type}
+  (argTps : A → List Tp)
+  (outTp : A → Tp)
+  (pred : {p : Prime}
+    → (a : A)
+    → (args: HList (Tp.denote p) (argTps a))
+    → Prop)
+  (comp : {p : Prime}
+    → (a : A)
+    → (args: HList (Tp.denote p) (argTps a))
+    → (pred a args)
+    → (Tp.denote p (outTp a)))
+   : Omni where
+  | ok {p st a args Q}:
+    (h : pred a args)
+      → Q (some (st, comp a args h))
+      → (genPureOmni argTps outTp pred comp) p st (argTps a) (outTp a) args Q
+  | err {p st a args Q}:
+    ¬(pred a args)
+      → Q none
+      → (genPureOmni argTps outTp pred comp) p st (argTps a) (outTp a) args Q
+
+def newGenPureBuiltin {A : Type}
+  (argTps : A → List Tp)
+  (outTp : A → Tp)
+  (pred : {p : Prime}
+    → (a : A)
+    → (args: HList (Tp.denote p) (argTps a))
+    → Prop)
+  (comp : {p : Prime}
+    → (a : A)
+    → (args: HList (Tp.denote p) (argTps a))
+    → (pred a args)
+    → (Tp.denote p (outTp a)))
+: Builtin := {
+  omni := genPureOmni argTps outTp pred comp
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type genPureOmni
+    . constructor <;> simp_all
+    . apply genPureOmni.err <;> simp_all
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type genPureOmni
+    . constructor
+      . constructor <;> tauto
+    . apply genPureOmni.err <;> assumption
+}
+
 /--
 Defines the assertion builtin that takes a boolean. We assume the following:
 - If `a == true`, it evaluates to `()`.
