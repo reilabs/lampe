@@ -2,6 +2,47 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 open Lampe.Builtin
 
+def tpEq {p : Prime} (tp : Tp) : Option (BEq (Tp.denote p tp)) :=
+  match tp with
+  -- references cannot be compared
+  | .ref _ => none
+  -- () == () always evaluates to true
+  | .unit => some ⟨fun _ _ => true⟩
+  | .bool => some ⟨fun a b => a == b⟩
+  | .u _ => some ⟨fun a b => a == b⟩
+  | .i _ => some ⟨fun a b => a == b⟩
+  | .field => some ⟨fun a b => a == b⟩
+  | .str _ => some ⟨fun a b => a == b⟩
+  | .bi => some ⟨fun a b => a == b⟩
+  -- two structs are equal if all of their fields can be compared and are equal
+  | .struct fields =>
+    match fields with
+    | [] => some ⟨fun _ _ => true⟩
+    | tp :: fs => do
+      let f ← tpEq tp
+      let g ← tpEq (.struct fs)
+      some ⟨fun (a, a') (b, b') => (f.beq a b) && (g.beq a' b')⟩
+  -- two arrays are equal if their elements can be compared and are equal
+  | .array tp' _ => do
+    let f ← tpEq tp'
+    some ⟨fun a b => (a.toList.zip b.toList).all (fun (a, b) => f.beq a b)⟩
+  -- two slices are equal if their lengths are equal and their elements can be compared and are equal
+  | .slice tp' => do
+    let f ← tpEq tp'
+    some ⟨fun a b => a.length == b.length
+      ∧ (a.zip b).all (fun (a, b) => f.beq a b)⟩
+
+/--
+Defines the equality comparison between two values of type `T : Tp.denote _ tp` where the equality operation is defined by `(tpEq _ tp)`.
+If `T` cannot be compared, i.e., `tpEq _ tp` is `none`, then this builtin throws an exception.
+
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `T`.
+-/
+def eq := newGenPureBuiltin
+  (fun tp => ⟨[tp, tp], .bool⟩)
+  (fun tp h![a, b] => ⟨(tpEq tp).isSome,
+    fun h => ((tpEq tp).get h).beq a b⟩)
+
 /--
 Defines the equality comparison between unit values.
 We assume that `() == ()` always evaluates to `true`.
