@@ -31,7 +31,7 @@ We assume the following:
 
 In Noir, this builtin corresponds to `fn zeroed<T>() -> T` implemented for `T`.
 -/
-def zeroed := newGenPureBuiltin
+def zeroed := newGenericPureBuiltin
   (fun tp => ⟨[], tp⟩)
   (fun tp h![] => ⟨True,
     fun _ => tpZeroed tp⟩)

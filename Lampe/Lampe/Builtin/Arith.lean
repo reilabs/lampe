@@ -10,7 +10,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of bit size `s`.
 -/
-def uAdd := newGenPureBuiltin
+def uAdd := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun s h![a, b] => ⟨(a.toInt + b.toInt) < 2^s,
     fun _ => a + b⟩)
@@ -23,7 +23,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of bit size `s`.
 -/
-def uMul := newGenPureBuiltin
+def uMul := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun s h![a, b] => ⟨(a.toInt * b.toInt) < 2^s,
     fun _ => a * b⟩)
@@ -36,7 +36,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a - b` for uints `a`, `b` of bit size `s`.
 -/
-def uSub := newGenPureBuiltin
+def uSub := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun _ h![a, b] => ⟨b ≤ a,
     fun _ => a - b⟩)
@@ -50,7 +50,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a / b` for uints `a`, `b` of bit size `s`.
 -/
-def uDiv := newGenPureBuiltin
+def uDiv := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun _ h![a, b] => ⟨b ≠ 0,
     fun _ => a.udiv b⟩)
@@ -63,7 +63,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a % b` for uints `a`, `b` of bit size `s`.
 -/
-def uRem := newGenPureBuiltin
+def uRem := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun _ h![a, b] => ⟨b ≠ 0,
     fun _ => a % b⟩)
@@ -76,7 +76,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a + b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iAdd := newGenPureBuiltin
+def iAdd := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt + b.toInt),
     fun _ => a + b⟩)
@@ -89,7 +89,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a - b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iSub := newGenPureBuiltin
+def iSub := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt - b.toInt),
     fun _ => a - b⟩)
@@ -102,7 +102,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a * b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iMul := newGenPureBuiltin
+def iMul := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt * b.toInt),
     fun _ => a * b⟩)
@@ -115,7 +115,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a / b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iDiv := newGenPureBuiltin
+def iDiv := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun _ h![a, b] => ⟨b ≠ 0,
     fun _ => a.sdiv b⟩)
@@ -139,7 +139,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a % b` for signed ints `a`, `b` of bit size `s`.
 -/
-def iRem := newGenPureBuiltin
+def iRem := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun _ h![a, b] => ⟨b ≠ 0,
     fun _ => intRem a b⟩)
@@ -152,7 +152,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `-a` for a signed integer `a` of bit size `s`.
 -/
-def iNeg := newGenPureBuiltin
+def iNeg := newGenericPureBuiltin
   (fun s => ⟨[(.i s)], (.i s)⟩)
   (fun s h![a] => ⟨bitsCanRepresent s (-a.toInt),
     fun _ => -a⟩)

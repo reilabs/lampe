@@ -51,10 +51,13 @@ inductive pureBuiltinOmni
 
 /--
 A pure deterministic `Builtin` definition.
-Takes a list of input types `argTps : List Tp`, an output type `outTp : Tp`, a predicate `pred` and evaluation function `comp`.
-For `args: HList (Tp.denote p) argTps`, we assume that a builtin function *fails* when `¬(pred args)`, and it *succeeds* when `pred args`.
+Takes a signature `sgn : List Tp × Tp`,
+where the first element is a list of input types and the second element is the output type.
+Takes a description `desc`,
+which is a function that takes arguments `args : HList (Tp.denote p) sgn.fst`
+and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote p sgn.snd)`.
 
-If the builtin succeeds, it evaluates to `some (comp args (h : pred))`.
+If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc args).snd`.
 Otherwise, it evaluates to `none`.
 -/
 def newPureBuiltin
@@ -79,7 +82,7 @@ def newPureBuiltin
     . apply pureBuiltinOmni.err <;> assumption
 }
 
-inductive genPureOmni {A : Type}
+inductive genericPureOmni {A : Type}
   (sgn : A → List Tp × Tp)
   (desc : {p : Prime}
     → (a : A)
@@ -89,33 +92,44 @@ inductive genPureOmni {A : Type}
   | ok {p st a args Q}:
     (h : (desc a args).fst)
       → Q (some (st, (desc a args).snd h))
-      → (genPureOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
+      → (genericPureOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
   | err {p st a args Q}:
     ¬((desc a args).fst)
       → Q none
-      → (genPureOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
+      → (genericPureOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
 
-def newGenPureBuiltin{A : Type}
+/--
+A generic pure deterministic `Builtin` definition.
+Takes a signature `sgn : A → List Tp × Tp`,
+where the first element evaluates to a list of input types and the second element evaluates to the output type.
+Takes a description `desc`,
+which is a function that takes the type evaluation input `a : A` and arguments `args : HList (Tp.denote p) sgn.fst`
+and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote p sgn.snd)`.
+
+If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc a args).snd`.
+Otherwise, it evaluates to `none`.
+-/
+def newGenericPureBuiltin {A : Type}
   (sgn : A → List Tp × Tp)
   (desc : {p : Prime}
     → (a : A)
     → (args : HList (Tp.denote p) (sgn a).fst)
     → (h : Prop) × (h → (Tp.denote p (sgn a).snd)))
 : Builtin := {
-  omni := genPureOmni sgn desc
+  omni := genericPureOmni sgn desc
   conseq := by
     unfold omni_conseq
     intros
-    cases_type genPureOmni
+    cases_type genericPureOmni
     . constructor <;> simp_all
-    . apply genPureOmni.err <;> simp_all
+    . apply genericPureOmni.err <;> simp_all
   frame := by
     unfold omni_frame
     intros
-    cases_type genPureOmni
+    cases_type genericPureOmni
     . constructor
       . constructor <;> tauto
-    . apply genPureOmni.err <;> assumption
+    . apply genericPureOmni.err <;> assumption
 }
 
 /--

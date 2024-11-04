@@ -38,7 +38,7 @@ If `T` cannot be compared, i.e., `tpEq _ tp` is `none`, then this builtin throws
 
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `T`.
 -/
-def eq := newGenPureBuiltin
+def eq := newGenericPureBuiltin
   (fun tp => ⟨[tp, tp], .bool⟩)
   (fun tp h![a, b] => ⟨(tpEq tp).isSome,
     fun h => ((tpEq tp).get h).beq a b⟩)
@@ -71,7 +71,7 @@ We assume that the comparison between two uints evaluates to `true` if and only 
 
 In Noir, this builtin corresponds to `a == b` for uints `a`, `b`.
  -/
-def uEq := newGenPureBuiltin
+def uEq := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], .bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a == b⟩)
@@ -82,7 +82,7 @@ We assume that the comparison between two ints evaluates to `true` if and only i
 
 In Noir, this builtin corresponds to `a == b` for ints `a`, `b`.
  -/
-def iEq := newGenPureBuiltin
+def iEq := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], .bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a == b⟩)
@@ -104,7 +104,7 @@ We assume that the comparison between two uints evaluates to `true` if and only 
 
 In Noir, this builtin corresponds to `a < b` for uints `a`, `b`.
 -/
-def uLt := newGenPureBuiltin
+def uLt := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], .bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a < b⟩)
@@ -115,7 +115,7 @@ We assume that the comparison between two ints evaluates to `true` if and only i
 
 In Noir, this builtin corresponds to `a < b` for ints `a`, `b`.
 -/
-def iLt := newGenPureBuiltin
+def iLt := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], .bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a < b⟩)
@@ -126,7 +126,7 @@ We assume that the comparison between two uints evaluates to `true` if and only 
 
 In Noir, this builtin corresponds to `a > b` for uints `a`, `b`.
 -/
-def uGt := newGenPureBuiltin
+def uGt := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], .bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a > b⟩)
@@ -137,7 +137,7 @@ We assume that the comparison between two ints evaluates to `true` if and only i
 
 In Noir, this builtin corresponds to `a > b` for ints `a`, `b`.
 -/
-def iGt := newGenPureBuiltin
+def iGt := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], .bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a > b⟩)

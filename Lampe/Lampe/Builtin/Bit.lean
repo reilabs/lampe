@@ -52,7 +52,7 @@ which evaluates to `(¬a) : U s`.
 
 In Noir, this builtin corresponds to `!a` for uint `a` of bit-size `s`.
 -/
-def uNot := newGenPureBuiltin
+def uNot := newGenericPureBuiltin
   (fun s => ⟨[(.u s)], (.u s)⟩)
   (fun _ h![a] => ⟨True,
     fun _ => a.not⟩)
@@ -63,7 +63,7 @@ which evaluates to `(a ||| b) : U s`.
 
 In Noir, this builtin corresponds to `a | b` for uints `a`, `b` of bit-size `s`.
 -/
-def uOr := newGenPureBuiltin
+def uOr := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a ||| b⟩)
@@ -74,7 +74,7 @@ which evaluates to `(a &&& b) : U s`.
 
 In Noir, this builtin corresponds to `a & b` for uints `a`, `b` of bit-size `s`.
 -/
-def uAnd := newGenPureBuiltin
+def uAnd := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a &&& b⟩)
@@ -85,7 +85,7 @@ which evaluates to `(a.xor b) : U s`.
 
 In Noir, this builtin corresponds to `a ^ b` for uints `a`, `b` of bit-size `s`.
 -/
-def uXor := newGenPureBuiltin
+def uXor := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a.xor b⟩)
@@ -97,7 +97,7 @@ This is assumed to evaluate to `(a <<< b) : U s`.
 
 In Noir, this builtin corresponds to `a << b` for an uint `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
-def uShl := newGenPureBuiltin
+def uShl := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u 8)], (.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a <<< b⟩)
@@ -109,7 +109,7 @@ This is assumed to evaluate to `(a >>> b) : U s`.
 
 In Noir, this builtin corresponds to `a >> b` for an uint `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
-def uShr := newGenPureBuiltin
+def uShr := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u 8)], (.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a >>> b⟩)
@@ -120,7 +120,7 @@ which evaluates to `(¬a) : U s`.
 
 In Noir, this builtin corresponds to `!a` for an int `a` of bit-size `s`.
 -/
-def iNot := newGenPureBuiltin
+def iNot := newGenericPureBuiltin
   (fun s => ⟨[(.i s)], (.i s)⟩)
   (fun _ h![a] => ⟨True,
     fun _ => a.not⟩)
@@ -131,7 +131,7 @@ which evaluates to `(a ||| b) : I s`.
 
 In Noir, this builtin corresponds to `a | b` for ints `a`, `b` of bit-size `s`.
 -/
-def iOr := newGenPureBuiltin
+def iOr := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a ||| b⟩)
@@ -142,7 +142,7 @@ which evaluates to `(a &&& b) : I s`.
 
 In Noir, this builtin corresponds to `a & b` for ints `a`, `b` of bit-size `s`.
 -/
-def iAnd := newGenPureBuiltin
+def iAnd := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a &&& b⟩)
@@ -153,7 +153,7 @@ which evaluates to `(a.xor b) : I s`.
 
 In Noir, this builtin corresponds to `a ^ b` for ints `a`, `b` of bit-size `s`.
 -/
-def iXor := newGenPureBuiltin
+def iXor := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a.xor b⟩)
@@ -165,7 +165,7 @@ This is assumed to evaluate to `(a <<< b) : I s`.
 
 In Noir, this builtin corresponds to `a << b` for an int `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
-def iShl := newGenPureBuiltin
+def iShl := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.u 8)], (.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a <<< b⟩)
@@ -177,7 +177,7 @@ This is assumed to evaluate to `(a >>> b) : I s`.
 
 In Noir, this builtin corresponds to `a >> b` for an int `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
-def iShr := newGenPureBuiltin
+def iShr := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.u 8)], (.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a >>> b⟩)

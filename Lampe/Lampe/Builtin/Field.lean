@@ -72,7 +72,7 @@ We assume that this conversion is done by truncating the field element when nece
 
 In Noir, this builtin corresponds to `fn from_field(a: Field) -> T` implemented for uints of bit size `s`.
  -/
-def uFromField := newGenPureBuiltin
+def uFromField := newGenericPureBuiltin
   (fun s => ⟨[.field], (.u s)⟩)
   (fun s h![f] => ⟨True,
     fun _ => BitVec.ofNat s f.val⟩)
@@ -85,7 +85,7 @@ We assume that this conversion is done by truncating the field element when nece
 
 In Noir, this builtin corresponds to `fn from_field(a: Field) -> T` implemented for ints of bit size `s`.
 -/
-def iFromField := newGenPureBuiltin
+def iFromField := newGenericPureBuiltin
   (fun s => ⟨[.field], (.i s)⟩)
   (fun s h![f] => ⟨True,
     fun _ => BitVec.ofNat s f.val⟩)
@@ -96,7 +96,7 @@ Specs are not clear.
 
 In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for uints of bit size `s`.
 -/
-def uAsField := newGenPureBuiltin
+def uAsField := newGenericPureBuiltin
   (fun s => ⟨[.u s], (.field)⟩)
   (fun s h![a] => sorry)
 
@@ -106,7 +106,7 @@ Specs are not clear.
 
 In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for ints of bit size `s`.
 -/
-def iAsField := newGenPureBuiltin
+def iAsField := newGenericPureBuiltin
   (fun s => ⟨[.i s], (.field)⟩)
   (fun s h![a] => sorry)
 
