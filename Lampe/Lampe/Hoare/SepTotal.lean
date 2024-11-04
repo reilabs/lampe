@@ -199,7 +199,7 @@ theorem sliceIndex_intro {slice : Tp.denote p (.slice tp)} {i : U 32}:
     STHoare p Γ
       ⟦⟧
       (.call h![] [.slice tp, .u 32] tp (.builtin .sliceIndex) h![slice, i])
-      fun v => some v = slice[i.val]? := by
+      fun v => some v = slice[i.toNat]? := by
   sorry -- becomes trivial with the builtins PR
 
 theorem slicePushBack_intro {slice : Tp.denote p (.slice tp)} {val : Tp.denote p tp}:
@@ -209,10 +209,41 @@ theorem slicePushBack_intro {slice : Tp.denote p (.slice tp)} {val : Tp.denote p
       fun v => v = slice ++ [val] := by
   sorry -- becomes trivial with the builtins PR
 
+
+-- [TODO] BitVec should be a `Preorder` but it isn't?
+lemma BitVec.le_refl {a : BitVec w} : a ≤ a := by
+  cases a
+  simp [BitVec.le_def]
+
+-- [TODO] BitVec should be a `Preorder` but it isn't?
+lemma BitVec.le_trans {a b c : BitVec w}: a ≤ b → b ≤ c → a ≤ c := by
+  intros
+  cases_type* BitVec
+  simp only [BitVec.le_ofFin] at *
+  apply _root_.le_trans <;> assumption
+
+-- [TODO] BitVec should be a `Preorder` but it isn't?
+lemma BitVec.le_of_lt {a b : BitVec w}: a < b → a ≤ b := by
+  intros
+  cases_type* BitVec
+  simp only [BitVec.le_ofFin, BitVec.lt_ofFin] at *
+  apply _root_.le_of_lt
+  assumption
+
+-- [TODO] BitVec should be a `Preorder` but it isn't?
+lemma BitVec.le_or_lt (a b : BitVec w): a ≤ b ∨ b < a := by
+  cases_type* BitVec
+  simp only [BitVec.le_ofFin, BitVec.lt_ofFin] at *
+  apply _root_.le_or_lt
+
+lemma BitVec.not_lt {a b : BitVec w}: ¬ a < b ↔ b ≤ a := by
+  cases_type* BitVec
+  simp [BitVec.le_ofFin, BitVec.lt_ofFin] at *
+
 theorem loopDone_intro : STHoare p Γ ⟦⟧ (.loop lo lo body) (fun _ => ⟦⟧) := by
   intro _ _ _
   apply Omni.loopDone
-  simp
+  apply BitVec.le_refl
 
 theorem loopNext_intro {lo hi : U s} :
     lo < hi →
@@ -231,36 +262,31 @@ lemma inv_congr  (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p) {i j 
   rfl
 
 lemma U.le_add_one_of_exists_lt {i : U s}  (h: i < j) : i ≤ i + 1 := by
-  cases i
-  cases j
-  simp only [Fin.lt_def] at h
-  simp only [Fin.add_def, Fin.le_def]
-  rw [Nat.mod_eq_of_lt]
-  linarith
-  rw [Fin.val_one', Nat.mod_eq_of_lt]
-  linarith
-  linarith
+  rcases i with ⟨⟨_, _⟩⟩
+  rcases j with ⟨⟨_, _⟩⟩
+  simp only [BitVec.lt_def, BitVec.toNat] at h
+  simp only [BitVec.le_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat, Fin.ofNat']
+  rw [Nat.mod_eq_of_lt] <;>
+    (rw [Nat.mod_eq_of_lt] <;> linarith)
 
 lemma U.le_plus_one_of_lt {i j : U s} (h: i < j): i + 1 ≤ j := by
-  cases i
-  cases j
-  simp only [Fin.lt_def, Fin.le_def, Fin.add_def, Fin.val_one'] at *
-  rw [Nat.mod_eq_of_lt, Nat.mod_eq_of_lt]
-  linarith
-  linarith
-  rw [Nat.mod_eq_of_lt]
-  linarith
-  linarith
+  rcases i with ⟨⟨_, _⟩⟩
+  rcases j with ⟨⟨_, _⟩⟩
+  simp only [BitVec.le_def, BitVec.lt_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat, Fin.ofNat'] at *
+  rw [Nat.mod_eq_of_lt] <;> (
+    have : 1 % 2^s ≤ 1 := by apply Nat.mod_le;
+    linarith
+  )
 
 theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p) {body : U s → Expr (Tp.denote p) tp}:
-    (∀i, (hlo: lo ≤ i) → (hhi: i < hi) → STHoare p Γ (Inv i hlo (le_of_lt hhi)) (body i) (fun _ => Inv (i + 1) (le_trans hlo (U.le_add_one_of_exists_lt hhi)) (U.le_plus_one_of_lt hhi))) →
-    STHoare p Γ (∃∃h, Inv lo (le_refl _) h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi h (le_refl _)) := by
-  cases Fin.le_or_lt lo hi with
+    (∀i, (hlo: lo ≤ i) → (hhi: i < hi) → STHoare p Γ (Inv i hlo (BitVec.le_of_lt hhi)) (body i) (fun _ => Inv (i + 1) (BitVec.le_trans hlo (U.le_add_one_of_exists_lt hhi)) (U.le_plus_one_of_lt hhi))) →
+    STHoare p Γ (∃∃h, Inv lo BitVec.le_refl h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi h BitVec.le_refl) := by
+  cases BitVec.le_or_lt lo hi with
   | inr =>
     intro _ H st h
     simp only [SLP.star, SLP.exists'] at h
     casesm* ∃ _, _, _∧_
-    rw [←Fin.not_lt] at *
+    rw [←BitVec.not_lt] at *
     contradiction
   | inl =>
     rcases lo with ⟨lo, _⟩
@@ -291,13 +317,13 @@ theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p)
       · simp
       · apply_assumption
         simp
-      · have : Fin.mk lo (by assumption) + 1 = Fin.mk (lo + 1) (by linarith) := by
+      · have : BitVec.ofFin (Fin.mk lo (by assumption)) + 1 = BitVec.ofFin (Fin.mk (lo + 1) (by linarith)) := by
           simp [Fin.add_def]
           rw [Nat.mod_eq_of_lt]
           · linarith
         rw [inv_congr Inv this]
         simp_rw [this]
-        have : Fin.mk (lo + (d + 1)) (by assumption) = Fin.mk ((lo + 1) + d) (by linarith) := by
+        have : BitVec.ofFin (Fin.mk (lo + (d + 1)) (by assumption)) = BitVec.ofFin (Fin.mk ((lo + 1) + d) (by linarith)) := by
           simp_arith
         rw [inv_congr Inv this]
         simp_rw [this]

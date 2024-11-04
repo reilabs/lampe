@@ -632,14 +632,19 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
   simp only [sliceAppend]
   steps
   rename Tp.denote _ tp.slice.ref => selfRef
-  loop_inv (fun i _ _ => [selfRef ↦ ⟨.slice tp, self ++ that.take i.val⟩])
+  loop_inv (fun i _ _ => [selfRef ↦ ⟨.slice tp, self ++ that.take i.toNat⟩])
   · intros i _ _
     steps
-    have : (i + 1).val = i.val + 1 := by
+    have : (i + 1).toNat = i.toNat + 1 := by
       casesm* Tp.denote P (.u 32)
       casesm* (U 32)
-      simp [Fin.add_def, Fin.lt_def, Fin.le_def] at *
+      simp only [BitVec.toNat_ofFin, OfNat.ofNat, BitVec.ofNat, BitVec.add_def, Fin.ofNat'] at *
+      rw [Nat.mod_eq_of_lt]
+      rw [Nat.mod_eq_of_lt]
+      cases_type* Fin
+      simp at *
       linarith
+      simp
     simp only [this, List.take_succ]
     rename some _ = _ => h
     simp_all [←h]

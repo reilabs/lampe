@@ -40,6 +40,7 @@ theorem var_intro {v} {P : Tp.denote p tp → SLP p}:
     THoare p Γ (P v) (.var v) P := by
   tauto
 
+/-- [TODO] there's probably a generic lemma for pure builtins to abstract this proof structure? -/
 theorem assert_intro {v: Bool} (h : v ⋆ P ⊢ Q ()):
     THoare p Γ P (.call h![] [.bool] .unit (.builtin .assert) h![v]) Q := by
   unfold THoare
@@ -47,11 +48,14 @@ theorem assert_intro {v: Bool} (h : v ⋆ P ⊢ Q ()):
   constructor
   simp only [Builtin.assert]
   cases v
-  · constructor
-    simp
-  · constructor
-    apply_assumption
-    simp_all
+  · apply Builtin.genericPureOmni.err
+    · simp
+    · simp
+    · exact ()
+  · apply Builtin.genericPureOmni.ok
+    · simp_all; tauto
+    · exact ()
+    · simp_all
 
 theorem letIn_intro {P Q}
     (h₁ : THoare p Γ H e₁ P)
