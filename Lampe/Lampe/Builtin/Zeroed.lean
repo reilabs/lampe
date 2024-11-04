@@ -1,6 +1,5 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
-open Lampe.Builtin
 
 /-- Returns a `zero` instance of a type -/
 def tpZeroed (tp : Tp) : (Tp.denote p tp) := match tp with

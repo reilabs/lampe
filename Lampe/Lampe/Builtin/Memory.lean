@@ -1,26 +1,5 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
-open Lampe.Builtin
-
-inductive freshOmni : Omni where
-| mk {P st tp Q} : (∀ v, Q (some (st, v))) → freshOmni P st [] tp h![] Q
-
-def fresh : Builtin := {
-  omni := freshOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type freshOmni
-    tauto
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type freshOmni
-    constructor
-    intro
-    repeat apply Exists.intro
-    tauto
-}
 
 inductive refOmni : Omni where
 | mk {P st tp Q v}: (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, ref))) →

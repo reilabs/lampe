@@ -1,6 +1,5 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
-open Lampe.Builtin
 
 /--
 Defines the negation of a bool: `a: Bool`

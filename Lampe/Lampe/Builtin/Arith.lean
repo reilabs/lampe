@@ -1,6 +1,5 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
-open Lampe.Builtin
 
 /--
 Defines the addition of two `s`-bit uints: `(a b : U s)`.
@@ -126,10 +125,10 @@ In particular, for two signed integers `a` and `b`, this returns ` a - ((a.sdiv 
 -/
 def intRem {s: Nat} (a b : I s) : I s := (a - (a.sdiv b) * b)
 
-#eval intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-1)) -- 0
-#eval intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-3)) -- -2
-#eval intRem (BitVec.ofInt 8 (6)) (BitVec.ofInt 8 (-100)) -- 6
-#eval intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) -- 1
+example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-1)) = 0 := by rfl
+example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-3)) = -2 := by rfl
+example : intRem (BitVec.ofInt 8 (6)) (BitVec.ofInt 8 (-100)) = 6 := by rfl
+example : intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) = 1 := by rfl
 
 /--
 Defines the integer remainder operation between two `s`-bit ints: `(a b: I s)`.

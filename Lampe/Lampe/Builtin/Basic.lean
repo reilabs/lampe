@@ -34,54 +34,6 @@ end Lampe
 
 namespace Lampe.Builtin
 
-inductive pureBuiltinOmni
-  (sgn : List Tp × Tp)
-  (desc : {p : Prime}
-    → (args : HList (Tp.denote p) sgn.fst)
-    → (h : Prop) × (h → (Tp.denote p sgn.snd)))
-  : Omni where
-  | ok {p st args Q}:
-    (h : (desc args).fst)
-      → Q (some (st, (desc args).snd h))
-      → (pureBuiltinOmni sgn desc) p st sgn.fst sgn.snd args Q
-  | err {p st args Q}:
-    ¬((desc args).fst)
-      → Q none
-      → (pureBuiltinOmni sgn desc) p st sgn.fst sgn.snd args Q
-
-/--
-A pure deterministic `Builtin` definition.
-Takes a signature `sgn : List Tp × Tp`,
-where the first element is a list of input types and the second element is the output type.
-Takes a description `desc`,
-which is a function that takes arguments `args : HList (Tp.denote p) sgn.fst`
-and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote p sgn.snd)`.
-
-If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc args).snd`.
-Otherwise, it evaluates to `none`.
--/
-def newPureBuiltin
-  (sgn : List Tp × Tp)
-  (desc : {p : Prime}
-    → (args : HList (Tp.denote p) sgn.fst)
-    → (h : Prop) × (h → (Tp.denote p sgn.snd)))
-   : Builtin := {
-  omni := (pureBuiltinOmni sgn desc)
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type pureBuiltinOmni
-    . constructor <;> simp_all
-    . apply pureBuiltinOmni.err <;> simp_all
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type pureBuiltinOmni
-    . constructor
-      . constructor <;> tauto
-    . apply pureBuiltinOmni.err <;> assumption
-}
-
 inductive genericPureOmni {A : Type}
   (sgn : A → List Tp × Tp)
   (desc : {p : Prime}
@@ -133,6 +85,26 @@ def newGenericPureBuiltin {A : Type}
 }
 
 /--
+A pure deterministic `Builtin` definition.
+Takes a signature `sgn : List Tp × Tp`,
+where the first element is a list of input types and the second element is the output type.
+Takes a description `desc`,
+which is a function that takes arguments `args : HList (Tp.denote p) sgn.fst`
+and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote p sgn.snd)`.
+
+If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc args).snd`.
+Otherwise, it evaluates to `none`.
+-/
+def newPureBuiltin
+  (sgn : List Tp × Tp)
+  (desc : {p : Prime}
+    → (args : HList (Tp.denote p) sgn.fst)
+    → (h : Prop) × (h → (Tp.denote p sgn.snd)))
+   : Builtin := newGenericPureBuiltin
+    (fun (_ : Unit) => sgn)
+    (fun _ args => desc args)
+
+/--
 Defines the assertion builtin that takes a boolean. We assume the following:
 - If `a == true`, it evaluates to `()`.
 - Else, an exception is thrown.
@@ -141,5 +113,28 @@ def assert : Builtin := newPureBuiltin
   ⟨[.bool], .unit⟩
   (fun h![a] => ⟨a == true,
     fun _ => ()⟩)
+
+inductive freshOmni : Omni where
+| mk {P st tp Q} : (∀ v, Q (some (st, v))) → freshOmni P st [] tp h![] Q
+
+/--
+Corresponds to an unconstrained function call
+-/
+def fresh : Builtin := {
+  omni := freshOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type freshOmni
+    tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type freshOmni
+    constructor
+    intro
+    repeat apply Exists.intro
+    tauto
+}
 
 end Lampe.Builtin

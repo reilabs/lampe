@@ -1,6 +1,5 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
-open Lampe.Builtin
 
 /--
 For a prime `p`, a field element `a : Fp p`, and a bit size `w : U 32`,
@@ -77,7 +76,7 @@ def uFromField := newGenericPureBuiltin
   (fun s h![f] => ⟨True,
     fun _ => BitVec.ofNat s f.val⟩)
 
-#eval (BitVec.ofNat 8 200).toInt -- ((200 as i8) as Field) == -56
+example : (BitVec.ofNat 8 200).toInt = -56 := by rfl
 
 /--
 Represents the builtin that converts a field element to an integer.

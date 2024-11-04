@@ -1,6 +1,5 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
-open Lampe.Builtin
 
 /--
 Defines the indexing of a slice `l : List tp` with `i : U 32`

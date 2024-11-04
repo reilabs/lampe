@@ -12,7 +12,7 @@ instance : DecidableEq (I n) := inferInstanceAs (DecidableEq (BitVec _))
 instance : Repr (U n) where
   reprPrec := fun a _ => a.toNat.repr
 
-#eval ((BitVec.ofInt 8 (-128)).sdiv (BitVec.ofInt 8 (-1))).toInt
+example : (BitVec.ofInt 8 (-128)).sdiv (BitVec.ofInt 8 (-1)) = -128 := by rfl
 
 instance : Repr (I n) where
   reprPrec := fun a _ => a.toInt.repr

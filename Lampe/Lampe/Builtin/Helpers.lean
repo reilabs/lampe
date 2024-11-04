@@ -17,16 +17,12 @@ decreasing_by
   rw [<-Nat.ne_zero_iff_zero_lt]
   aesop
 
--- [3, 2, 1]
-#eval (decomposeToRadix 10 123 (by linarith))
--- [1, 1, 0, 1, 1, 1, 1]
-#eval (decomposeToRadix 2 123 (by linarith))
+example : decomposeToRadix 10 123 (by linarith) = [3, 2, 1] := by rfl
+example : decomposeToRadix 2 123 (by linarith) = [1, 1, 0, 1, 1, 1, 1] := by rfl
 
 def composeFromRadix (r : Nat) (l : List Nat) : Nat := (l.reverse.foldl (fun acc d => acc * r + d) 0)
 
--- 123
-#eval (composeFromRadix 10 [3, 2, 1])
--- 123
-#eval (composeFromRadix 2 [1, 1, 0, 1, 1, 1, 1])
+example : (composeFromRadix 10 [3, 2, 1]) = 123 := by rfl
+example : (composeFromRadix 2 [1, 1, 0, 1, 1, 1, 1]) = 123 := by rfl
 
 end Lampe
