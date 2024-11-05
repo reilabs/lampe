@@ -60,16 +60,47 @@ theorem forall_left {a} {P : α → SLP p} : (P a ⊢ Q) → ((∀∀a, P a) ⊢
   unfold forall'
   tauto
 
-@[aesop safe]
 theorem forall_right {H' : α → SLP p}: (∀x, H ⊢ H' x) → (H ⊢ ∀∀x, H' x) := by
   unfold forall' entails
   tauto
 
-@[aesop safe]
 theorem pure_left: (P → (H ⊢ H')) → (P ⋆ H ⊢ H') := by
   unfold star entails lift
   intro_cases
   simp_all
+
+theorem pure_left' {P} {H : SLP p} : (P → (⟦⟧ ⊢ H)) → (P ⊢ H) := by
+  unfold entails lift
+  tauto
+
+theorem pure_right: P → (H₁ ⊢ H₂) → (H₁ ⊢ P ⋆ H₂) := by
+  unfold star entails lift
+  intros
+  repeat apply Exists.intro
+  simp_all
+  apply And.intro ?_
+  apply And.intro ?_
+  apply And.intro rfl
+  apply_assumption
+  assumption
+  simp
+  simp [Finmap.disjoint_empty]
+
+theorem entails_self : H ⊢ H := by tauto
+
+theorem entails_top : H ⊢ ⊤ := by tauto
+
+@[simp]
+theorem forall_unused {α : Type u} [Inhabited α] {P : SLP p} : (∀∀(_:α), P) = P := by
+  funext
+  unfold forall'
+  rw [eq_iff_iff]
+  apply Iff.intro
+  · intro
+    apply_assumption
+    apply Inhabited.default
+  · intros
+    apply_assumption
 
 end basic
 
@@ -104,6 +135,7 @@ theorem true_star {H:SLP p} : (⟦⟧ ⋆ H) = H := by
 @[simp]
 theorem star_true {H:SLP p} : (H ⋆ ⟦⟧) = H := by rw [star_comm]; simp
 
+@[simp]
 theorem star_assoc {F G H:SLP p} : ((F ⋆ G) ⋆ H) = (F ⋆ G ⋆ H) := by
   funext
   rw [eq_iff_iff]
@@ -151,6 +183,25 @@ theorem star_mono_r : (P ⊢ Q) → (P ⋆ R ⊢ Q ⋆ R) := by
   unfold star entails
   tauto
 
+theorem star_mono_l : (P ⊢ Q) → (R ⋆ P ⊢ R ⋆ Q) := by
+  unfold star entails
+  tauto
+
+theorem star_mono_l' : (⟦⟧ ⊢ Q) → (P ⊢ P ⋆ Q) := by
+  unfold star entails lift
+  intros
+  simp_all
+  repeat apply Exists.intro
+  apply And.intro ?_
+  apply And.intro ?_
+  tauto
+  simp
+  tauto
+
+theorem star_mono : (H₁ ⊢ H₂) → (Q₁ ⊢ Q₂) → (H₁ ⋆ Q₁ ⊢ H₂ ⋆ Q₂) := by
+  unfold star entails
+  tauto
+
 theorem forall_star {P : α → SLP p} : (∀∀x, P x) ⋆ Q ⊢ ∀∀x, P x ⋆ Q := by
   unfold star forall'
   tauto
@@ -172,6 +223,34 @@ end star
 section wand
 
 variable {p : Prime}
+
+@[simp]
+theorem wand_self_star {H:SLP p}: (H -⋆ H ⋆ top) = top := by
+  funext
+  unfold wand star
+  apply eq_iff_iff.mpr
+  apply Iff.intro
+  · intro
+    simp [lift]
+  · intros
+    repeat apply Exists.intro
+    apply And.intro ?_
+    apply And.intro ?_
+    apply And.intro (by assumption)
+    simp
+    rotate_left
+    rotate_left
+    rw [Finmap.union_comm_of_disjoint (by assumption)]
+    rw [Finmap.Disjoint.symm_iff]
+    assumption
+
+
+theorem wand_intro {A B C : SLP p} : (A ⋆ B ⊢ C) → (A ⊢ B -⋆ C) := by
+  unfold wand star entails
+  intros
+  intros
+  apply_assumption
+  tauto
 
 theorem wand_cancel : (P ⋆ (P -⋆ Q)) ⊢ Q := by
   unfold star wand entails
