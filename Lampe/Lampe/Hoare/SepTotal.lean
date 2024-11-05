@@ -6,7 +6,8 @@ import Lampe.Hoare.Total
 
 namespace Lampe
 
-def STHoare p Γ P e (Q : Tp.denote p tp → SLP p) := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
+def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
+  := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
 
 namespace STHoare
 
@@ -170,6 +171,25 @@ theorem writeRef_intro:
   apply And.intro (by simp [SLP.singleton])
   apply SLP.ent_star_top
   assumption
+
+theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args}:
+  STHoare p Γ
+    ⟦⟧
+    (.call h![] (sgn a).fst (sgn a).snd (.builtin (.newGenericPureBuiltin sgn desc)) args)
+    (fun v => ∃h, (v = (desc a args).snd h) ∧ (desc a args).fst) := by
+  unfold STHoare
+  intro H
+  unfold THoare
+  intros st p
+  cases Decidable.em ((desc a args).fst = True) <;> constructor
+  . apply Builtin.genericPureOmni.ok
+    . simp_all
+      apply SLP.ent_star_top
+      assumption
+    . tauto
+  . apply Builtin.genericPureOmni.err
+    . tauto
+    . simp
 
 theorem fresh_intro:
     STHoare p Γ
