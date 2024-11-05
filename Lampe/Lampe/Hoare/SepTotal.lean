@@ -176,12 +176,13 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args}:
   STHoare p Γ
     ⟦⟧
     (.call h![] (sgn a).fst (sgn a).snd (.builtin (.newGenericPureBuiltin sgn desc)) args)
-    (fun v => ∃h, (v = (desc a args).snd h) ∧ (desc a args).fst) := by
+    (fun v => ∃h, (v = (desc a args).snd h)) := by
   unfold STHoare
   intro H
   unfold THoare
   intros st p
-  cases Decidable.em ((desc a args).fst = True) <;> constructor
+  constructor
+  cases em (desc a args).fst
   . apply Builtin.genericPureOmni.ok
     . simp_all
       apply SLP.ent_star_top
