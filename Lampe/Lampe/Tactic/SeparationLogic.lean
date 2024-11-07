@@ -1,5 +1,6 @@
 import Lampe.SeparationLogic
 import Lampe.Hoare.SepTotal
+import Lampe.Hoare.Builtin.Memory
 import Lampe.Syntax
 
 import Lean.Meta.Tactic.Simp.Main

@@ -2,20 +2,12 @@ import Lampe.Hoare.SepTotal
 
 namespace Lampe.STHoare
 
-theorem arrayLen_intro {tp n} {arr}:
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.array tp n] (.u 32) (.builtin .arrayLen) h![arr])
-      fun v => v = arr.length ∧ arr.length < 2^32 := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  simp
+theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen h![arr] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
 
-theorem arrayAsSlice_intro {tp n} {arr}:
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.array tp n] (.slice tp) (.builtin .arrayAsSlice) h![arr])
-      fun v => v = arr.toList := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  simp
+theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice h![arr] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
 
 end Lampe.STHoare

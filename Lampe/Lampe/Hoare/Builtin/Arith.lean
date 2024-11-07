@@ -2,132 +2,68 @@ import Lampe.Hoare.SepTotal
 
 namespace Lampe.STHoare
 
-theorem uAdd_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u s] (.u s) (.builtin .uAdd) h![a, b])
-      (fun v => v = a + b  ∧ (a.toInt + b.toInt) < 2^s) := by
+theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem uSub_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u s] (.u s) (.builtin .uSub) h![a, b])
-      (fun v => v = a - b ∧ b ≤ a) := by
+theorem uSub_intro : STHoarePureBuiltin p Γ Builtin.uSub h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem uMul_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u s] (.u s) (.builtin .uMul) h![a, b])
-      (fun v => v = a * b  ∧ (a.toInt * b.toInt) < 2^s) := by
+theorem uMul_intro : STHoarePureBuiltin p Γ Builtin.uAdd h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem uDiv_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u s] (.u s) (.builtin .uDiv) h![a, b])
-      (fun v => v = a.udiv b ∧ b ≠ 0) := by
+theorem uDiv_intro : STHoarePureBuiltin p Γ Builtin.uDiv h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem uRem_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u s] (.u s) (.builtin .uRem) h![a, b])
-      (fun v => v = a % b ∧ b ≠ 0) := by
+theorem uRem_intro : STHoarePureBuiltin p Γ Builtin.uRem h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem iAdd_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .i s] (.i s) (.builtin .iAdd) h![a, b])
-      (fun v => v = a + b ∧ bitsCanRepresent s (a.toInt + b.toInt)) := by
+theorem iAdd_intro : STHoarePureBuiltin p Γ Builtin.iAdd h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem iSub_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .i s] (.i s) (.builtin .iSub) h![a, b])
-      (fun v => v = a - b ∧ bitsCanRepresent s (a.toInt - b.toInt)) := by
+theorem iSub_intro : STHoarePureBuiltin p Γ Builtin.iSub h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem iMul_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .i s] (.i s) (.builtin .iMul) h![a, b])
-      (fun v => v = a * b ∧ bitsCanRepresent s (a.toInt * b.toInt)) := by
+theorem iMul_intro : STHoarePureBuiltin p Γ Builtin.iMul h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem iDiv_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .i s] (.i s) (.builtin .iDiv) h![a, b])
-      (fun v => v = a.sdiv b ∧ b ≠ 0) := by
+theorem iDiv_intro : STHoarePureBuiltin p Γ Builtin.iDiv h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem iRem_intro {s a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .i s] (.i s) (.builtin .iRem) h![a, b])
-      (fun v => v = Builtin.intRem a b ∧ b ≠ 0) := by
+theorem iRem_intro : STHoarePureBuiltin p Γ Builtin.iRem h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem iNeg_intro {s a} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s] (.i s) (.builtin .iNeg) h![a])
-      (fun v => v = -a) := by
+theorem iNeg_intro : STHoarePureBuiltin p Γ Builtin.iNeg h![a] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem fAdd_intro {a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.field, .field] (.field) (.builtin .fAdd) h![a, b])
-      (fun v => v = a + b) := by
+theorem fAdd_intro : STHoarePureBuiltin p Γ Builtin.fAdd h![a, b] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem fSub_intro {a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.field, .field] (.field) (.builtin .fSub) h![a, b])
-      (fun v => v = a - b) := by
+theorem fSub_intro : STHoarePureBuiltin p Γ Builtin.fSub h![a, b] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem fMul_intro {a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.field, .field] (.field) (.builtin .fMul) h![a, b])
-      (fun v => v = a * b) := by
+theorem fMul_intro : STHoarePureBuiltin p Γ Builtin.fMul h![a, b] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem fDiv_intro {a b} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.field, .field] (.field) (.builtin .fDiv) h![a, b])
-      (fun v => v = a / b ∧ b ≠ 0) := by
+theorem fDiv_intro : STHoarePureBuiltin p Γ Builtin.fDiv h![a, b] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem fNeg_intro {a} :
-  STHoare p Γ
-      ⟦⟧
-      (.call h![] [.field] (.field) (.builtin .fNeg) h![a])
-      (fun v => v = -a) := by
+theorem fNeg_intro : STHoarePureBuiltin p Γ Builtin.fNeg h![a] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
 end Lampe.STHoare

@@ -30,6 +30,14 @@ structure Builtin where
   conseq : Builtin.omni_conseq omni
   frame : Builtin.omni_frame omni
 
+structure PureBuiltin (A : Type) where
+  sgn : A → List Tp × Tp
+  desc : {p : Prime}
+    → (a : A)
+    → (args : HList (Tp.denote p) (sgn a).fst)
+    → (h : Prop) × (h → (Tp.denote p (sgn a).snd))
+  inner : Builtin
+
 end Lampe
 
 namespace Lampe.Builtin
@@ -67,21 +75,25 @@ def newGenericPureBuiltin {A : Type}
     → (a : A)
     → (args : HList (Tp.denote p) (sgn a).fst)
     → (h : Prop) × (h → (Tp.denote p (sgn a).snd)))
-: Builtin := {
-  omni := genericPureOmni sgn desc
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type genericPureOmni
-    . constructor <;> simp_all
-    . apply genericPureOmni.err <;> simp_all
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type genericPureOmni
-    . constructor
-      . constructor <;> tauto
-    . apply genericPureOmni.err <;> assumption
+: PureBuiltin A := {
+  sgn := sgn,
+  desc := desc,
+  inner := {
+    omni := genericPureOmni sgn desc
+    conseq := by
+      unfold omni_conseq
+      intros
+      cases_type genericPureOmni
+      . constructor <;> simp_all
+      . apply genericPureOmni.err <;> simp_all
+    frame := by
+      unfold omni_frame
+      intros
+      cases_type genericPureOmni
+      . constructor
+        . constructor <;> tauto
+      . apply genericPureOmni.err <;> assumption
+  }
 }
 
 /--
@@ -99,17 +111,17 @@ def newPureBuiltin
   (sgn : List Tp × Tp)
   (desc : {p : Prime}
     → (args : HList (Tp.denote p) sgn.fst)
-    → (h : Prop) × (h → (Tp.denote p sgn.snd)))
-   : Builtin := newGenericPureBuiltin
-    (fun (_ : Unit) => sgn)
-    (fun _ args => desc args)
+    → (h : Prop) × (h → (Tp.denote p sgn.snd))) :=
+    newGenericPureBuiltin
+      (fun (_ : Unit) => sgn)
+      (fun _ args => desc args)
 
 /--
 Defines the assertion builtin that takes a boolean. We assume the following:
 - If `a == true`, it evaluates to `()`.
 - Else, an exception is thrown.
 -/
-def assert : Builtin := newPureBuiltin
+def assert := newPureBuiltin
   ⟨[.bool], .unit⟩
   (fun h![a] => ⟨a == true,
     fun _ => ()⟩)

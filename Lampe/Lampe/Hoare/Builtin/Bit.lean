@@ -2,132 +2,68 @@ import Lampe.Hoare.SepTotal
 
 namespace Lampe.STHoare
 
-theorem bNot_intro {a} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.bool] (.bool) (.builtin .bNot) h![a])
-      fun v => v = a.not := by
+theorem bNot_intro : STHoarePureBuiltin p Γ Builtin.bNot h![a] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem bAnd_intro {a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.bool, .bool] (.bool) (.builtin .bAnd) h![a, b])
-      fun v => v = a.and b := by
+theorem bAnd_intro : STHoarePureBuiltin p Γ Builtin.bAnd h![a, b] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem bOr_intro {a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.bool, .bool] (.bool) (.builtin .bOr) h![a, b])
-      fun v => v = a.or b := by
+theorem bOr_intro : STHoarePureBuiltin p Γ Builtin.bOr h![a, b] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem bXor_intro {a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.bool, .bool] (.bool) (.builtin .bXor) h![a, b])
-      fun v => v = a.xor b := by
+theorem bXor_intro : STHoarePureBuiltin p Γ Builtin.bXor h![a, b] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem uNot_intro {s a} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s] (.u s) (.builtin .uNot) h![a])
-      fun v => v = a.not := by
+theorem uNot_intro : STHoarePureBuiltin p Γ Builtin.uNot h![a] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem uOr_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u s] (.u s) (.builtin .uOr) h![a, b])
-      fun v => v = a.or b := by
+theorem uOr_intro : STHoarePureBuiltin p Γ Builtin.uOr h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem uAnd_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u s] (.u s) (.builtin .uAnd) h![a, b])
-      fun v => v = a.and b := by
+theorem uAnd_intro : STHoarePureBuiltin p Γ Builtin.uAnd h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem uXor_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u s] (.u s) (.builtin .uXor) h![a, b])
-      fun v => v = a.xor b := by
+theorem uXor_intro : STHoarePureBuiltin p Γ Builtin.uXor h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem uShl_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u 8] (.u s) (.builtin .uShl) h![a, b])
-      fun v => v = a <<< b := by
+theorem uShl_intro : STHoarePureBuiltin p Γ Builtin.uShl h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem uShr_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.u s, .u 8] (.u s) (.builtin .uShr) h![a, b])
-      fun v => v = a >>> b := by
+theorem uShr_intro : STHoarePureBuiltin p Γ Builtin.uShl h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem iNot_intro {s a} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s] (.i s) (.builtin .iNot) h![a])
-      fun v => v = a.not := by
+theorem iNot_intro : STHoarePureBuiltin p Γ Builtin.iNot h![a] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem iAnd_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .i s] (.i s) (.builtin .iAnd) h![a, b])
-      fun v => v = a.and b := by
+theorem iAnd_intro : STHoarePureBuiltin p Γ Builtin.iAnd h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem iOr_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .i s] (.i s) (.builtin .iOr) h![a, b])
-      fun v => v = a.or b := by
+theorem iOr_intro : STHoarePureBuiltin p Γ Builtin.iOr h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem iXor_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .i s] (.i s) (.builtin .iXor) h![a, b])
-      fun v => v = a.xor b := by
+theorem iXor_intro : STHoarePureBuiltin p Γ Builtin.iXor h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem iShl_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .u 8] (.i s) (.builtin .iShl) h![a, b])
-      fun v => v = a <<< b := by
+theorem iShl_intro : STHoarePureBuiltin p Γ Builtin.iShl h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
-theorem iShr_intro {s a b} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.i s, .u 8] (.i s) (.builtin .iShr) h![a, b])
-      fun v => v = a >>> b := by
+theorem iShr_intro : STHoarePureBuiltin p Γ Builtin.iShr h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
-  simp
+  tauto
 
 end Lampe.STHoare

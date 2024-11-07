@@ -2,68 +2,36 @@ import Lampe.Hoare.SepTotal
 
 namespace Lampe.STHoare
 
-theorem sliceLen_intro {sl} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp] (.u 32) (.builtin .sliceLen) h![sl])
-      fun v => v = sl.length ∧ sl.length < 2^32 := by
+theorem sliceLen_intro : STHoarePureBuiltin p Γ Builtin.sliceLen h![s] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem sliceIndex_intro {sl i} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp, .u 32] tp (.builtin .sliceIndex) h![sl, i])
-      fun v => some v = sl[i.toNat]? ∧ i.toNat < sl.length := by
+theorem sliceIndex_intro : STHoarePureBuiltin p Γ Builtin.sliceIndex h![sl, i] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem slicePushBack_intro {sl e} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp, tp] (.slice tp) (.builtin .slicePushBack) h![sl, e])
-      fun v => v = sl ++ [e] := by
+theorem slicePushBack_intro : STHoarePureBuiltin p Γ Builtin.slicePushBack h![sl, e] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem slicePushFront_intro {sl e} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp, tp] (.slice tp) (.builtin .slicePushFront) h![sl, e])
-      fun v => v = [e] ++ sl := by
+theorem slicePushFront_intro : STHoarePureBuiltin p Γ Builtin.slicePushFront h![sl, e] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem sliceInsert_intro {sl i e} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp, .u 32, tp] (.slice tp) (.builtin .sliceInsert) h![sl, i, e])
-      fun v => v = sl.insertNth i.toNat e ∧ i.toNat < sl.length := by
+theorem sliceInsert_intro : STHoarePureBuiltin p Γ Builtin.sliceInsert h![sl, i, e] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem slicePopFront_intro {sl} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp] (.struct [tp, .slice tp]) (.builtin .slicePopFront) h![sl])
-      fun v => ∃h, v = (sl.head h, sl.tail, ()) := by
+theorem slicePopFront_intro : STHoarePureBuiltin p Γ Builtin.slicePopFront h![sl] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem slicePopBack_intro {sl} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp] (.struct [.slice tp, tp]) (.builtin .slicePopBack) h![sl])
-      fun v => ∃h, v = (sl.dropLast, sl.getLast h, ()) := by
+theorem slicePopBack_intro : STHoarePureBuiltin p Γ Builtin.slicePopBack h![sl] := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
-theorem sliceRemove_intro {sl i} :
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp, .u 32] (.struct [.slice tp, tp]) (.builtin .sliceRemove) h![sl, i])
-      fun v => ∃h, v = (sl.eraseIdx i.toNat, sl.get (Fin.mk i.toNat h), ()) := by
+theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove h![sl, i]  := by
   apply pureBuiltin_intro_consequence <;> try rfl
-  simp
+  tauto
 
 end Lampe.STHoare

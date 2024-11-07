@@ -52,7 +52,7 @@ Modulus parameter is ignored.
 
 In Noir, this builtin corresponds to `fn from_le_bytes(bytes: [u8], modulus: [u8])` implemented for `BigInt`.
  -/
-def bigIntFromLeBytes : Builtin := newPureBuiltin
+def bigIntFromLeBytes := newPureBuiltin
   ⟨[.slice (.u 8), .slice (.u 8)], .bi⟩
   (fun h![bs, _] => ⟨True,
     fun _ => composeFromRadix 256 (bs.map (fun u => u.toNat))⟩)
@@ -78,7 +78,7 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemented for `BigInt`.
 -/
-def bigIntToLeBytes : Builtin := newPureBuiltin
+def bigIntToLeBytes := newPureBuiltin
   ⟨[.bi], (.array (.u 8) 32)⟩
   (fun h![a] => ⟨bitsCanRepresent 256 a, fun _ =>
     (.map (fun n => BitVec.ofNat 8 n)

@@ -30,6 +30,12 @@ namespace Lampe
 def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
 
+abbrev STHoarePureBuiltin (p : Prime) (Γ : Env) {a : A}
+  (pb : Lampe.PureBuiltin A)
+  (args : HList (Tp.denote p) (pb.sgn a).1) : Prop := STHoare p Γ ⟦⟧
+    (.call h![] (pb.sgn a).fst (pb.sgn a).snd (.builtin pb.inner) args)
+    (fun v => ∃h, v = (pb.desc a args).snd h ∧ (pb.desc a args).fst)
+
 namespace STHoare
 
 /--
@@ -120,7 +126,7 @@ theorem consequence_frame_left {H H₁ H₂ : SLP p}
   apply SLP.ent_star_top
 
 theorem assert_intro {v: Bool}:
-    STHoare p Γ ⟦⟧ (.call h![] [.bool] .unit (.builtin .assert) h![v]) (fun _ => v) := by
+    STHoare p Γ ⟦⟧ (.call h![] [.bool] .unit (.builtin Builtin.assert.inner) h![v]) (fun _ => v) := by
   unfold STHoare
   intro H
   apply THoare.assert_intro
@@ -170,7 +176,7 @@ lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v
 theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   STHoare p Γ
     ⟦⟧
-    (.call h![] (sgn a).fst (sgn a).snd (.builtin (.newGenericPureBuiltin sgn desc)) args)
+    (.call h![] (sgn a).fst (sgn a).snd (.builtin (Builtin.newGenericPureBuiltin sgn desc).inner) args)
     (fun v => ∃h, (v = (desc a args).snd h)) := by
   unfold STHoare
   intro H
@@ -193,7 +199,7 @@ lemma pureBuiltin_intro_consequence
     (h2 : outTp = (sgn a).snd)
     (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h))
     : STHoare p Γ ⟦⟧
-      (.call h![] argTps outTp (.builtin (.newGenericPureBuiltin sgn desc)) args)
+      (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc).inner) args)
       fun v => Q v := by
   subst_vars
   dsimp only at *
