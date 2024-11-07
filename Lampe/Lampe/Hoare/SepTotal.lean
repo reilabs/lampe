@@ -269,44 +269,6 @@ lemma eq (a b : Tp.denote p tp)
   : (a == b) = true → a = b := h1.eq_of_beq
 
 
-theorem eq_intro {tp} {a b : tp.denote p}
-  {h2 : BEq (tp.denote p)}
-  {h3 : LawfulBEq (tp.denote p)}
-  : STHoare p Γ
-      ⟦⟧
-      (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b])
-      (fun v => v = (a = b)) := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  simp only [Builtin.tpEq]
-  intro h
-  simp only [eq_iff_iff]
-  apply Iff.intro
-  <;> sorry
-  -- have heq : (a == b) = true → a = b := h3.eq_of_beq
-  -- exact heq
-
-theorem sliceLen_intro {slice : Tp.denote p (.slice tp)}:
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp] (.u 32) (.builtin .sliceLen) h![slice])
-      fun v => v = List.length slice ∧ slice.length < 2^32 := by
-  sorry -- becomes trivial with the builtins PR
-
-theorem sliceIndex_intro {slice : Tp.denote p (.slice tp)} {i : U 32}:
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp, .u 32] tp (.builtin .sliceIndex) h![slice, i])
-      fun v => some v = slice[i.toNat]? := by
-  sorry -- becomes trivial with the builtins PR
-
-theorem slicePushBack_intro {slice : Tp.denote p (.slice tp)} {val : Tp.denote p tp}:
-    STHoare p Γ
-      ⟦⟧
-      (.call h![] [.slice tp, tp] (.slice tp) (.builtin .slicePushBack) h![slice, val])
-      fun v => v = slice ++ [val] := by
-  sorry -- becomes trivial with the builtins PR
-
-
 -- [TODO] BitVec should be a `Preorder` but it isn't?
 lemma BitVec.le_refl {a : BitVec w} : a ≤ a := by
   cases a

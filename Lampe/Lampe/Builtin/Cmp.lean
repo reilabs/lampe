@@ -1,7 +1,7 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
-def tpEq {p : Prime} (tp : Tp) : Option (BEq (Tp.denote p tp)) :=
+def tpBEq {p : Prime} (tp : Tp) : Option (BEq (Tp.denote p tp)) :=
   match tp with
   | .bool => some ⟨fun a b => a == b⟩
   | .u _ => some ⟨fun a b => a == b⟩
@@ -18,16 +18,16 @@ def tpEq {p : Prime} (tp : Tp) : Option (BEq (Tp.denote p tp)) :=
     match fields with
     | [] => some ⟨fun _ _ => true⟩
     | tp :: fs => do
-      let f ← tpEq tp
-      let g ← tpEq (.struct fs)
+      let f ← tpBEq tp
+      let g ← tpBEq (.struct fs)
       some ⟨fun (a, a') (b, b') => (f.beq a b) && (g.beq a' b')⟩
   -- Two arrays are equal iff their elements can be compared and are equal
   | .array tp' _ => do
-    let f ← tpEq tp'
+    let f ← tpBEq tp'
     some ⟨fun a b => (a.toList.zip b.toList).all (fun (a, b) => f.beq a b)⟩
   -- Two slices are equal iff (1) their lengths are equal, and (2) their elements can be compared and are equal
   | .slice tp' => do
-    let f ← tpEq tp'
+    let f ← tpBEq tp'
     some ⟨fun a b => a.length == b.length
       ∧ (a.zip b).all (fun (a, b) => f.beq a b)⟩
 
@@ -39,8 +39,8 @@ In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `T`.
 -/
 def eq := newGenericPureBuiltin
   (fun tp => ⟨[tp, tp], .bool⟩)
-  (fun tp h![a, b] => ⟨(tpEq tp).isSome,
-    fun h => ((tpEq tp).get h).beq a b⟩)
+  (fun tp h![a, b] => ⟨(tpBEq tp).isSome,
+    fun h => ((tpBEq tp).get h).beq a b⟩)
 
 /--
 Defines the less-than comparison between uint values of bit size `s`.
