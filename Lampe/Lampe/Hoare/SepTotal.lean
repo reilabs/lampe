@@ -7,10 +7,24 @@ import Lampe.Hoare.Total
 namespace Lampe
 
 /--
-  Separation logic Hoare triplet.
+  Separation logic (total) Hoare triplet.
   ```
   {P} e {λv. Q v} ≡ ∀H, [P ⋆ H] e [λv. Q v ⋆ H ⋆ ⊤]
   ```
+
+  A Hoare triplet `{P} e {λv. Q v}` has the following meaning:
+  if the state of the program satisfies the pre-condition `P`,
+  then the expression `e` terminates and evaluates to `v` such that the post-condition `Q v` holds.
+
+  Note that even if `e` terminates, it may evaluate to an error, e.g., division-by-zero.
+  Accordingly, we interpret `{P} e {λv. Q v}` as follows:
+  if `P` holds, then `e` terminates and it either (1) fails or (2) *successfully* evaluates to `v` such that `Q v` holds.
+  This is logically equivalent to saying that if `P` holds, then `e` terminates and (`Q v` holds if `e` succeeds and evaluates to `v`).
+
+  Hence, the triplets are *partial* with respect failure and *total* with respect to termination.
+  An intuitive way of looking at this is thinking in terms of "knowledge discovery".
+  For example, if the operation `a + b` succeeds, then we know that it evaluates to `v = a + b` **and** `a + b < 2^32`, i.e., no overflow has happened.
+  Accordingly, to maintain the strongest post-condition, we would let `Q := λv. (v = a + b) ∧ (a + b < 2^32)`.
  -/
 def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
