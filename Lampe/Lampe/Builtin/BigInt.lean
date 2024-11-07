@@ -81,7 +81,7 @@ In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemen
 def bigIntToLeBytes := newPureBuiltin
   ⟨[.bi], (.array (.u 8) 32)⟩
   (fun h![a] => ⟨bitsCanRepresent 256 a, fun _ =>
-    (.map (fun n => BitVec.ofNat 8 n)
-      (Builtin.listToVec (decomposeToRadix 256 a.toNat (by linarith)) 0))⟩)
+    Builtin.listToVec (decomposeToRadix 256 a.toNat (by linarith)) 0
+      |>.map (fun n => BitVec.ofNat 8 n)⟩)
 
 end Lampe.Builtin
