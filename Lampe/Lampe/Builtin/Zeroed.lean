@@ -24,9 +24,9 @@ We assume the following:
 - If `tp` is unit, this evaluates to `()`.
 - If `tp` is a string, this evaluates to `""`.
 - If `tp` is a slice, this evaluates to `[]`.
-- If `tp` is an array, this evaluates to an array of length `n` with all elements `zeroed`.
+- If `tp` is an array, this evaluates to an array of length `n` with all elements zeroed.
 - If `tp` is a reference, this evaluates to a reference with value `0`.
-- If `tp` is a struct, this evaluates to a struct with all fields `zeroed`.
+- If `tp` is a struct, this evaluates to a struct with all fields zeroed.
 
 In Noir, this builtin corresponds to `fn zeroed<T>() -> T` implemented for `T`.
 -/
