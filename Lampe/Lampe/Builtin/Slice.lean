@@ -10,7 +10,7 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `T[i]` for `T: [T]` and `i: uint32`.
 -/
 def sliceIndex := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp, .i 32], tp⟩)
+  (fun tp => ⟨[.slice tp, .u 32], tp⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => l.get (Fin.mk i.toNat h)⟩)
 
@@ -23,7 +23,7 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `fn len(self) -> u32` implemented for `[T]`.
 -/
 def sliceLen := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp], .i 32⟩)
+  (fun tp => ⟨[.slice tp], .u 32⟩)
   (fun _ h![l] => ⟨l.length < 2^32,
     fun _ => l.length⟩)
 
