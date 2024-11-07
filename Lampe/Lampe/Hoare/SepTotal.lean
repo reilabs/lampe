@@ -6,19 +6,41 @@ import Lampe.Hoare.Total
 
 namespace Lampe
 
+/--
+  Separation logic Hoare triplet.
+  ```
+  {P} e {λv. Q v} ≡ ∀H, [P ⋆ H] e [λv. Q v ⋆ H ⋆ ⊤]
+  ```
+ -/
 def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
 
 namespace STHoare
 
+/--
+  Separation logic frame rule.
+  ```
+  ⬝ {P} e {Q}
+  ⊢ {P ⋆ H} e {λv. Q v ⋆ H}
+  ```
+-/
 theorem frame (h_hoare: STHoare p Γ P e Q): STHoare p Γ (P ⋆ H) e (fun v => Q v ⋆ H) := by
   unfold STHoare
   intro H'
   apply THoare.consequence ?_ (h_hoare (H ⋆ H')) ?_ <;> {
-    simp_all [SLP.star_assoc] -- [TODO] use SL-normalizer
+    simp_all only [SLP.star_assoc] -- [TODO] use SL-normalizer
     tauto
   }
 
+/--
+  Separation logic consequence rule.
+  ```
+  ⬝ H₂ ⊢ H₁
+  ⬝ ∀v, Q₁ v ⋆ ⊤ ⊢ Q₂ v ⋆ ⊤
+  ⬝ {H₁} e {λv. Q₁ v}
+  ⊢ {H₂} e {λv. Q₂ v}
+  ```
+-/
 theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : Tp.denote p tp → SLP p}
     (h_pre_conseq : H₂ ⊢ H₁)
     (h_post_conseq : ∀ v, Q₁ v ⋆ ⊤ ⊢ Q₂ v ⋆ ⊤)
@@ -33,9 +55,17 @@ theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : 
     apply SLP.star_mono_l
     apply_assumption
 
+/--
+  Ramified frame rule.
+  ```
+  ⬝ {H₁} e {λv. Q₁ v}
+  ⬝ H₂ ⊢ H₁ ⋆ (λv. Q₁ v -⋆ (Q₂ v ⋆ ⊤))
+  ⊢ {H₂} e {Q₂}
+  ```
+-/
 theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}
     (h_hoare: STHoare p Γ H₁ e Q₁)
-    (h_ent: H₂ ⊢ (H₁ ⋆ (∀∀v, Q₁ v -⋆ Q₂ v ⋆ ⊤))):
+    (h_ent: H₂ ⊢ H₁ ⋆ (∀∀v, Q₁ v -⋆ (Q₂ v ⋆ ⊤))):
     STHoare p Γ H₂ e Q₂ := by
   unfold STHoare
   intro H
@@ -53,6 +83,13 @@ theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}
     apply SLP.wand_cancel
   simp [SLP.entails_self]
 
+/--
+  ```
+  ⬝ {H₁} e {λv. Q v}
+  ⬝ H ⊢ H₁ ⋆ H₂
+  ⊢ {H} e {λv. Q v ⋆ H₂}
+  ```
+-/
 theorem consequence_frame_left {H H₁ H₂ : SLP p}
     (h_hoare: STHoare p Γ H₁ e Q)
     (h_ent : H ⊢ (H₁ ⋆ H₂)):
@@ -172,7 +209,10 @@ theorem writeRef_intro:
   apply SLP.ent_star_top
   assumption
 
-theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args}:
+/--
+  Introduction rule for pure builtins.
+-/
+theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   STHoare p Γ
     ⟦⟧
     (.call h![] (sgn a).fst (sgn a).snd (.builtin (.newGenericPureBuiltin sgn desc)) args)
@@ -184,7 +224,7 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args}:
   constructor
   cases em (desc a args).fst
   . apply Builtin.genericPureOmni.ok
-    . simp_all
+    . simp_all only [SLP.true_star, exists_const]
       apply SLP.ent_star_top
       assumption
     . tauto
@@ -192,8 +232,29 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args}:
     . tauto
     . simp
 
-theorem fresh_intro:
-    STHoare p Γ
+lemma pureBuiltin_intro_consequence
+    {A : Type} {a : A} {sgn desc args} {Q : Tp.denote p outTp → Prop}
+    (h1 : argTps = (sgn a).fst)
+    (h2 : outTp = (sgn a).snd)
+    (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h))
+    : STHoare p Γ ⟦⟧
+      (.call h![] argTps outTp (.builtin (.newGenericPureBuiltin sgn desc)) args)
+      fun v => Q v := by
+  subst_vars
+  dsimp only at *
+  apply ramified_frame_top
+  apply pureBuiltin_intro
+  simp only [SLP.true_star]
+  apply SLP.forall_right
+  intro
+  apply SLP.wand_intro
+  simp only [SLP.true_star]
+  apply SLP.pure_left'
+  rintro ⟨_, _⟩
+  simp_all [SLP.entails_top]
+
+theorem fresh_intro
+  : STHoare p Γ
       ⟦⟧
       (.call h![] [] tp (.builtin .fresh) h![])
       (fun _ => ⟦⟧) := by
@@ -202,12 +263,27 @@ theorem fresh_intro:
   apply THoare.consequence ?_ THoare.fresh_intro (fun _ => SLP.entails_self)
   simp [SLP.entails_self, SLP.forall_right]
 
-theorem eqF_intro:
-    STHoare p Γ
+lemma eq (a b : Tp.denote p tp)
+  (_ : BEq (Tp.denote p tp))
+  (h1 : LawfulBEq (Tp.denote p tp))
+  : (a == b) = true → a = b := h1.eq_of_beq
+
+
+theorem eq_intro {tp} {a b : tp.denote p}
+  {h2 : BEq (tp.denote p)}
+  {h3 : LawfulBEq (tp.denote p)}
+  : STHoare p Γ
       ⟦⟧
-      (.call h![] [.field, .field] .bool (.builtin .eq) h![a, b])
-      (· = (a = b)) := by
-  sorry -- [TODO] becomes trivial with the builtins PR
+      (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b])
+      (fun v => v = (a = b)) := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  simp only [Builtin.tpEq]
+  intro h
+  simp only [eq_iff_iff]
+  apply Iff.intro
+  <;> sorry
+  -- have heq : (a == b) = true → a = b := h3.eq_of_beq
+  -- exact heq
 
 theorem sliceLen_intro {slice : Tp.denote p (.slice tp)}:
     STHoare p Γ
