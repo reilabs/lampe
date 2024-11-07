@@ -58,6 +58,17 @@ def bigIntFromLeBytes : Builtin := newPureBuiltin
     fun _ => composeFromRadix 256 (bs.map (fun u => u.toNat))⟩)
 
 /--
+Converts a list `l` to a vector of size `n`s.
+- If `n < l.length`, then the output is truncated from the end.
+- If `n > l.length`, then the higher indices are populated with `zero`.
+-/
+def listToVec (l : List α) (zero : α) : Mathlib.Vector α n :=
+  Mathlib.Vector.ofFn (fun (i : Fin n) =>
+    if h: i.val < l.length then
+      (l.get (Fin.mk i.val h))
+    else zero)
+
+/--
 Defines the conversion of `a : Int` to its byte slice representation `l : Array 32 (U 8)` in little-endian encoding.
 For integers that can be represented by less than 32 bytes, the higher bytes of `l` are set to zero.
 
@@ -70,11 +81,7 @@ In Noir, this builtin corresponds to `fn to_le_bytes(self) -> [u8; 32]` implemen
 def bigIntToLeBytes : Builtin := newPureBuiltin
   ⟨[.bi], (.array (.u 8) 32)⟩
   (fun h![a] => ⟨bitsCanRepresent 256 a, fun _ =>
-    let l := (decomposeToRadix 256 a.toNat (by linarith))
-    Mathlib.Vector.ofFn (fun i =>
-      if h: i.val < l.length then
-        l.get (Fin.mk i.val h)
-      else 0 -- higher bytes are set to zero
-    )⟩)
+    (.map (fun n => BitVec.ofNat 8 n)
+      (Builtin.listToVec (decomposeToRadix 256 a.toNat (by linarith)) 0))⟩)
 
 end Lampe.Builtin

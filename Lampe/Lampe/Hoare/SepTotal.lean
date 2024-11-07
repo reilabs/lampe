@@ -22,9 +22,10 @@ namespace Lampe
   This is logically equivalent to saying that if `P` holds, then `e` terminates and (`Q v` holds if `e` succeeds and evaluates to `v`).
 
   Hence, the triplets are *partial* with respect failure and *total* with respect to termination.
+
   An intuitive way of looking at this is thinking in terms of "knowledge discovery".
   For example, if the operation `a + b` succeeds, then we know that it evaluates to `v = a + b` **and** `a + b < 2^32`, i.e., no overflow has happened.
-  Accordingly, to maintain the strongest post-condition, we would let `Q := λv. (v = a + b) ∧ (a + b < 2^32)`.
+  Then, we would define the post-condition as `Q := λv. (v = a + b) ∧ (a + b < 2^32)`.
  -/
 def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)

@@ -1,4 +1,5 @@
 import Lampe.Hoare.SepTotal
+import Lampe.Builtin.BigInt
 
 namespace Lampe.STHoare
 
@@ -47,11 +48,8 @@ theorem bigIntToLeBytes_intro {a} :
       ⟦⟧
       (.call h![] [.bi] (.array (.u 8) 32) (.builtin .bigIntToLeBytes) h![a])
       (fun v => bitsCanRepresent 256 a ∧ v = (
-        let l := (decomposeToRadix 256 a.toNat (by linarith))
-        Mathlib.Vector.ofFn (fun (i : Fin 32) =>
-          if h: i.val < l.length then
-            BitVec.ofNat 8 (l.get (Fin.mk i.val h))
-          else 0)
+        (.map (fun n => BitVec.ofNat 8 n)
+          (Builtin.listToVec (decomposeToRadix 256 a.toNat (by linarith)) 0))
       )) := by
   apply pureBuiltin_intro_consequence <;> try rfl
   . simp
