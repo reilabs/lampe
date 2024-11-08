@@ -1,34 +1,23 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
-/--
-In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `T`.
--/
-
-instance {tp} : BEq (Tp.denote p tp) where
-  beq := fun a b => match tp with
-    | .unit => true
-    | .bool => (a == b)
-    | .u _ => (a == b)
-    | .i _ => (a == b)
-    | .field => (a == b)
-    | .bi => (a == b)
-    | .str _ => (a == b)
-    | _ => false
 
 inductive eqOmni : Omni where
+-- () == () is always true
 | unit {p st Q} : Q (some (st, true)) → eqOmni p st [.unit, .unit] .bool h![a, b] Q
 | u {p st a b Q} : Q (some (st, BEq.beq a b)) → eqOmni p st [.u s, .u s] .bool h![a, b] Q
 | i {p st a b Q} : Q (some (st, BEq.beq a b)) → eqOmni p st [.i s, .i s] .bool h![a, b] Q
-| b {p st a b Q} : Q (some (st, BEq.beq a b)) → eqOmni p st [.bool, .bool] .bool h![a, b] Q
-| f {p st Q a b} : Q (some (st, BEq.beq a b)) → eqOmni p st [.field, .field] .bool h![a, b] Q
+| bool {p st a b Q} : Q (some (st, BEq.beq a b)) → eqOmni p st [.bool, .bool] .bool h![a, b] Q
+| field {p st Q a b} : Q (some (st, BEq.beq a b)) → eqOmni p st [.field, .field] .bool h![a, b] Q
 | bi {p st Q a b} : Q (some (st, BEq.beq a b)) → eqOmni p st [.bi, .bi] .bool h![a, b] Q
 | str {p st Q a b} : Q (some (st, BEq.beq a b)) → eqOmni p st [.str n, .str n] .bool h![a, b] Q
-| slice {p st tp a b Q} : Q none → eqOmni p st [.slice tp, .slice tp] .bool h![a, b] Q
-| array {p st tp n a b Q} : Q none → eqOmni p st [.array tp n, .array tp n] .bool h![a, b] Q
-| struct {p st fields a b Q} : Q none → eqOmni p st [.struct fields, .struct fields] .bool h![a, b] Q
-| ref {p st tp a b Q} : Q none → eqOmni p st [.ref tp, .ref tp] .bool h![a, b] Q
+| _ {p st tp a b Q} : Q none → eqOmni p st [tp, tp] .bool h![a, b] Q
 
+/--
+Defines the equality comparison between values.
+
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `T`.
+-/
 def eq : Builtin := {
   omni := eqOmni
   conseq := by
@@ -39,7 +28,7 @@ def eq : Builtin := {
     unfold omni_frame
     intros
     cases_type eqOmni <;> (constructor; try constructor; tauto)
-    <;> tauto
+    tauto
 }
 
 /--

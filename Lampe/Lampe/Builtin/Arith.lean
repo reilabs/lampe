@@ -2,6 +2,202 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 /--
+Captures the behavior of the signed integer remainder operation % in Noir.
+In particular, for two signed integers `a` and `b`, this returns ` a - ((a.sdiv b) * b)`
+-/
+def intRem {s: Nat} (a b : I s) : I s := (a - (a.sdiv b) * b)
+
+example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-1)) = 0 := by rfl
+example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-3)) = -2 := by rfl
+example : intRem (BitVec.ofInt 8 (6)) (BitVec.ofInt 8 (-100)) = 6 := by rfl
+example : intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) = 1 := by rfl
+
+inductive addOmni : Omni where
+| u {p st s a b Q} :
+  ((a.toInt + b.toInt) < 2^s → Q (some (st, a + b)))
+  → ((a.toInt + b.toInt) >= 2^s → Q none)
+  → addOmni p st [.u s, .u s] (.u s) h![a, b] Q
+| i {p st s a b Q} :
+  (bitsCanRepresent s (a.toInt + b.toInt) → Q (some (st, a + b)))
+  → (¬(bitsCanRepresent s (a.toInt + b.toInt)) → Q none)
+  → addOmni p st [.i s, .i s] (.i s) h![a, b] Q
+| field {p st a b Q} :
+  Q (some (st, a + b))
+  → addOmni p st [.field, .field] .field h![a, b] Q
+| bi {p st a b Q} :
+  Q (some (st, a + b))
+  → addOmni p st [.bi, .bi] .bi h![a, b] Q
+| _ {p st a b Q} : Q none → addOmni p st [tp, tp] tp h![a, b] Q
+
+def add : Builtin := {
+  omni := addOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type addOmni <;> tauto
+    rename _ + _ < 2^_ → _ => hok
+    rename _ + _ ≥ 2^_ → _ => herr
+    rename_i hm
+    repeat (constructor; aesop; aesop)
+  frame := by
+    unfold omni_frame
+    intros p st1 st2 argTps outTp args Q omni1 hd
+    cases_type addOmni
+    rename_i s a b _ _ _
+    repeat (first | constructor | tauto | intro)
+}
+
+inductive mulOmni : Omni where
+| u {p st s a b Q} :
+  ((a.toInt * b.toInt) < 2^s → Q (some (st, a * b)))
+  → ((a.toInt * b.toInt) >= 2^s → Q none)
+  → mulOmni p st [.u s, .u s] (.u s) h![a, b] Q
+| i {p st s a b Q} :
+  (bitsCanRepresent s (a.toInt * b.toInt) → Q (some (st, a * b)))
+  → (¬(bitsCanRepresent s (a.toInt * b.toInt)) → Q none)
+  → mulOmni p st [.i s, .i s] (.i s) h![a, b] Q
+| field {p st a b Q} :
+  Q (some (st, a * b))
+  → mulOmni p st [.field, .field] .field h![a, b] Q
+| bi {p st a b Q} :
+  Q (some (st, a * b))
+  → mulOmni p st [.bi, .bi] .bi h![a, b] Q
+| _ {p st a b Q} : Q none → mulOmni p st [tp, tp] tp h![a, b] Q
+
+def mul : Builtin := {
+  omni := mulOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type mulOmni <;> tauto
+    repeat (constructor; aesop; aesop)
+  frame := by
+    unfold omni_frame
+    intros p st1 st2 argTps outTp args Q omni1 hd
+    cases_type mulOmni
+    rename_i s a b _ _ _
+    repeat (first | constructor | tauto | intro)
+}
+
+inductive subOmni : Omni where
+| u {p st s a b Q} :
+  (b ≤ a → Q (some (st, a - b)))
+  → (b > a → Q none)
+  → subOmni p st [.u s, .u s] (.u s) h![a, b] Q
+| i {p st s a b Q} :
+  (bitsCanRepresent s (a.toInt - b.toInt) → Q (some (st, a - b)))
+  → (¬(bitsCanRepresent s (a.toInt - b.toInt)) → Q none)
+  → subOmni p st [.i s, .i s] (.i s) h![a, b] Q
+| field {p st a b Q} :
+  Q (some (st, a - b))
+  → subOmni p st [.field, .field] .field h![a, b] Q
+| bi {p st a b Q} :
+  Q (some (st, a - b))
+  → subOmni p st [.bi, .bi] .bi h![a, b] Q
+| _ {p st a b Q} : Q none → subOmni p st [tp, tp] tp h![a, b] Q
+
+def sub : Builtin := {
+  omni := subOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type subOmni <;> tauto
+    repeat (constructor; aesop; aesop)
+  frame := by
+    unfold omni_frame
+    intros p st1 st2 argTps outTp args Q omni1 hd
+    cases_type subOmni
+    rename_i s a b _ _ _
+    repeat (first | constructor | tauto | intro)
+}
+
+inductive divOmni : Omni where
+| u {p st s a b Q} :
+  (b ≠ 0 → Q (some (st, a.udiv b)))
+  → (b = 0 → Q none)
+  → divOmni p st [.u s, .u s] (.u s) h![a, b] Q
+| i {p st s a b Q} :
+  (b ≠ 0 → Q (some (st, a.sdiv b)))
+  → (b = 0 → Q none)
+  → divOmni p st [.i s, .i s] (.i s) h![a, b] Q
+| field {p st a b Q} :
+  (b ≠ 0 → Q (some (st, a / b)))
+  → (b = 0 → Q none)
+  → divOmni p st [.field, .field] (.field) h![a, b] Q
+| bi {p st a b Q} :
+  (b ≠ 0 → Q (some (st, a / b)))
+  → (b = 0 → Q none)
+  → divOmni p st [.bi, .bi] (.bi) h![a, b] Q
+| _ {p st a b Q} : Q none → divOmni p st [tp, tp] tp h![a, b] Q
+
+def div : Builtin := {
+  omni := divOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type divOmni <;> tauto
+    repeat (constructor; aesop; aesop)
+  frame := by
+    unfold omni_frame
+    intros p st1 st2 argTps outTp args Q omni1 hd
+    cases_type divOmni
+    rename_i s a b _ _ _
+    repeat (first | constructor | tauto | intro)
+}
+
+inductive remOmni : Omni where
+| u {p st s a b Q} :
+  (b ≠ 0 → Q (some (st, a % b)))
+  → (b = 0 → Q none)
+  → remOmni p st [.u s, .u s] (.u s) h![a, b] Q
+| i {p st s a b Q} :
+  (b ≠ 0 → Q (some (st, intRem a b)))
+  → (b = 0 → Q none)
+  → remOmni p st [.i s, .i s] (.i s) h![a, b] Q
+| _ {p st a b Q} : Q none → remOmni p st [tp, tp] tp h![a, b] Q
+
+def rem : Builtin := {
+  omni := remOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type remOmni <;> tauto
+    repeat (constructor; aesop; aesop)
+  frame := by
+    unfold omni_frame
+    intros p st1 st2 argTps outTp args Q omni1 hd
+    cases_type remOmni
+    rename_i s a b _ _ _
+    repeat (first | constructor | tauto | intro)
+}
+
+inductive negOmni : Omni where
+| i {p st s a Q} :
+  Q (some (st, -a))
+  → negOmni p st [.i s] (.i s) h![a] Q
+| field {p st a Q} :
+  Q (some (st, -a))
+  → negOmni p st [.field] (.field) h![a] Q
+| bi {p st a Q} :
+  Q (some (st, -a))
+  → negOmni p st [.bi] (.bi) h![a] Q
+| _ {p st a b Q} : Q none → negOmni p st [tp, tp] tp h![a, b] Q
+
+def neg : Builtin := {
+  omni := negOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type negOmni <;> tauto
+  frame := by
+    unfold omni_frame
+    intros p st1 st2 argTps outTp args Q omni1 hd
+    cases_type negOmni
+    repeat (first | constructor | tauto | intro)
+}
+
+
+/--
 Defines the addition of two `s`-bit uints: `(a b : U s)`.
 We make the following assumptions:
 - If `(a + b) < 2^s`, then the builtin evaluates to `(a + b) : U s`
@@ -118,17 +314,6 @@ def iDiv := newGenericPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
   (fun _ h![a, b] => ⟨b ≠ 0,
     fun _ => a.sdiv b⟩)
-
-/--
-Captures the behavior of the signed integer remainder operation % in Noir.
-In particular, for two signed integers `a` and `b`, this returns ` a - ((a.sdiv b) * b)`
--/
-def intRem {s: Nat} (a b : I s) : I s := (a - (a.sdiv b) * b)
-
-example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-1)) = 0 := by rfl
-example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-3)) = -2 := by rfl
-example : intRem (BitVec.ofInt 8 (6)) (BitVec.ofInt 8 (-100)) = 6 := by rfl
-example : intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) = 1 := by rfl
 
 /--
 Defines the integer remainder operation between two `s`-bit ints: `(a b: I s)`.

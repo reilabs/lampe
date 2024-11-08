@@ -4,6 +4,120 @@ namespace Lampe.STHoare
 
 -- Arithmetics
 
+instance {tp} : Add (Tp.denote p tp) where
+  add := fun a b => match tp with
+    | .u _ => a + b
+    | .i _ => a + b
+    | .field => a + b
+    | .bi => a + b
+    | _ => sorry
+
+/-- [WARNING] Post-condition is weak! Use the typed versions. -/
+theorem weak_add_intro : STHoare p Γ ⟦⟧
+    (.call h![] [tp, tp] tp (.builtin .add) h![a, b])
+    (fun v => v = a + b) := by
+  unfold STHoare
+  intro H
+  intros st h
+  beta_reduce
+  constructor
+  simp only [Builtin.add]
+  rw [SLP.true_star] at h
+  apply SLP.ent_star_top at h
+  cases tp
+  <;> (constructor; simp only [SLP.true_star])
+  <;> repeat (first | assumption | intro)
+  . simp
+  . simp
+
+instance {tp} : Sub (Tp.denote p tp) where
+  sub := fun a b => match tp with
+    | .u _ => a - b
+    | .i _ => a - b
+    | .field => a - b
+    | .bi => a - b
+    | _ => sorry
+
+instance {tp} : LE (Tp.denote p tp) where
+  le := fun a b => match tp with
+    | .u _ => a ≤ b
+    | .i _ => a ≤ b
+    | .field => a.val ≤ b.val
+    | .bi => a ≤ b
+    | _ => sorry
+
+/-- [WARNING] Post-condition is weak! Use the typed versions. -/
+theorem weak_sub_intro : STHoare p Γ ⟦⟧
+    (.call h![] [tp, tp] tp (.builtin .sub) h![a, b])
+    (fun v => v = a - b) := by
+  unfold STHoare
+  intro H
+  intros st h
+  beta_reduce
+  constructor
+  simp only [Builtin.sub]
+  rw [SLP.true_star] at h
+  apply SLP.ent_star_top at h
+  cases tp
+  <;> (constructor; simp only [SLP.true_star])
+  <;> repeat (first | assumption | intro)
+  . aesop
+  . simp
+
+instance {tp} : Mul (Tp.denote p tp) where
+  mul := fun a b => match tp with
+    | .u _ => a * b
+    | .i _ => a * b
+    | .field => a * b
+    | .bi => a * b
+    | _ => sorry
+
+/-- [WARNING] Post-condition is weak! Use the typed versions. -/
+theorem weak_mul_intro : STHoare p Γ ⟦⟧
+    (.call h![] [tp, tp] tp (.builtin .mul) h![a, b])
+    (fun v => v = a * b) := by
+  unfold STHoare
+  intro H
+  intros st h
+  beta_reduce
+  constructor
+  simp only [Builtin.mul]
+  rw [SLP.true_star] at h
+  apply SLP.ent_star_top at h
+  cases tp
+  <;> (constructor; simp only [SLP.true_star])
+  <;> repeat (first | assumption | intro)
+  . simp
+  . simp
+
+instance {tp} : Div (Tp.denote p tp) where
+  div := fun a b => match tp with
+    | .u _ => a.udiv b
+    | .i _ => a.sdiv b
+    | .field => a / b
+    | .bi => a / b
+    | _ => sorry
+
+/-- [WARNING] Post-condition is weak! Use the typed versions. -/
+theorem weak_div_intro : STHoare p Γ ⟦⟧
+    (.call h![] [tp, tp] tp (.builtin .div) h![a, b])
+    (fun v => v = match tp with | .u _ => a.udiv b | .i _ => a.sdiv b | _ => a / b) := by
+  unfold STHoare
+  intro H
+  intros st h
+  beta_reduce
+  constructor
+  simp only [Builtin.div]
+  rw [SLP.true_star] at h
+  apply SLP.ent_star_top at h
+  cases tp
+  <;> (constructor; simp only [SLP.true_star])
+  <;> repeat (first | assumption | intro)
+  . simp
+  . simp
+  . simp
+  . simp
+
 theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
@@ -175,6 +289,17 @@ theorem iShr_intro : STHoarePureBuiltin p Γ Builtin.iShr (by tauto) h![a, b] :=
 
 -- Comparison
 
+instance {tp} : BEq (Tp.denote p tp) where
+  beq := fun a b => match tp with
+    | .unit => true
+    | .bool => (a == b)
+    | .u _ => (a == b)
+    | .i _ => (a == b)
+    | .field => (a == b)
+    | .bi => (a == b)
+    | .str _ => (a == b)
+    | _ => sorry
+
 theorem eq_intro : STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b])
     (fun v => v = (a == b)) := by
@@ -187,7 +312,9 @@ theorem eq_intro : STHoare p Γ ⟦⟧
   simp only [Builtin.eq]
   rw [SLP.true_star] at h
   apply SLP.ent_star_top at h
-  cases tp <;> (constructor; simp only [beq_self_eq_true, SLP.true_star]; try assumption)
+  cases tp
+  <;> (constructor; simp only [beq_self_eq_true, SLP.true_star])
+  <;> assumption
 
 theorem uLt_intro : STHoarePureBuiltin p Γ Builtin.uLt (by tauto) h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto

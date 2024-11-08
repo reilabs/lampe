@@ -67,7 +67,7 @@ partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | "lt"             => ``(Builtin.lt)
 | "index"          => ``(Builtin.index)
 | "cast"           => ``(Builtin.cast)
-| "modulus_num_bits" => ``(Builtin.modulusNumBits)
+| "modulus_num_bits" => ``(Builtin.fModNumBits)
 | "to_le_bytes"      => ``(Builtin.toLeBytes)
 | "fresh"          => ``(Builtin.fresh)
 | "slice_len"      => ``(Builtin.sliceLen)
