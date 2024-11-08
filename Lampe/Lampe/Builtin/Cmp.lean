@@ -5,45 +5,42 @@ namespace Lampe.Builtin
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `T`.
 -/
 
-def eq := newPureBuiltin
-  ⟨[.field, .field], .bool⟩
-  (fun h![a, b] => ⟨True,
-    fun _ => a == b⟩)
+instance {tp} : BEq (Tp.denote p tp) where
+  beq := fun a b => match tp with
+    | .unit => true
+    | .bool => (a == b)
+    | .u _ => (a == b)
+    | .i _ => (a == b)
+    | .field => (a == b)
+    | .bi => (a == b)
+    | .str _ => (a == b)
+    | _ => false
 
-def unitEq := newPureBuiltin
-  ⟨[.unit, .unit], .bool⟩
-  (fun _ => ⟨True,
-    fun _ => true⟩)
+inductive eqOmni : Omni where
+| unit {p st Q} : Q (some (st, true)) → eqOmni p st [.unit, .unit] .bool h![a, b] Q
+| u {p st a b Q} : Q (some (st, BEq.beq a b)) → eqOmni p st [.u s, .u s] .bool h![a, b] Q
+| i {p st a b Q} : Q (some (st, BEq.beq a b)) → eqOmni p st [.i s, .i s] .bool h![a, b] Q
+| b {p st a b Q} : Q (some (st, BEq.beq a b)) → eqOmni p st [.bool, .bool] .bool h![a, b] Q
+| f {p st Q a b} : Q (some (st, BEq.beq a b)) → eqOmni p st [.field, .field] .bool h![a, b] Q
+| bi {p st Q a b} : Q (some (st, BEq.beq a b)) → eqOmni p st [.bi, .bi] .bool h![a, b] Q
+| str {p st Q a b} : Q (some (st, BEq.beq a b)) → eqOmni p st [.str n, .str n] .bool h![a, b] Q
+| slice {p st tp a b Q} : Q none → eqOmni p st [.slice tp, .slice tp] .bool h![a, b] Q
+| array {p st tp n a b Q} : Q none → eqOmni p st [.array tp n, .array tp n] .bool h![a, b] Q
+| struct {p st fields a b Q} : Q none → eqOmni p st [.struct fields, .struct fields] .bool h![a, b] Q
+| ref {p st tp a b Q} : Q none → eqOmni p st [.ref tp, .ref tp] .bool h![a, b] Q
 
-def bEq := newPureBuiltin
-  ⟨[.bool, .bool], .bool⟩
-  (fun h![a, b] => ⟨True,
-    fun _ => a == b⟩)
-
-def uEq := newGenericPureBuiltin
-  (fun s => ⟨[.u s, .u s], .bool⟩)
-  (fun _ h![a, b] => ⟨True,
-    fun _ => a == b⟩)
-
-def iEq := newGenericPureBuiltin
-  (fun s => ⟨[.u s, .u s], .bool⟩)
-  (fun _ h![a, b] => ⟨True,
-    fun _ => a == b⟩)
-
-def fEq := newPureBuiltin
-  ⟨[.field, .field], .bool⟩
-  (fun h![a, b] => ⟨True,
-    fun _ => a == b⟩)
-
-def biEq := newPureBuiltin
-  ⟨[.bi, .bi], .bool⟩
-  (fun h![a, b] => ⟨True,
-    fun _ => a == b⟩)
-
-def strEq := newGenericPureBuiltin
-  (fun n => ⟨[.str n, .str n], .bool⟩)
-  (fun _ h![a, b] => ⟨True,
-    fun _ => a == b⟩)
+def eq : Builtin := {
+  omni := eqOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type eqOmni <;> tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type eqOmni <;> (constructor; try constructor; tauto)
+    <;> tauto
+}
 
 /--
 Defines the less-than comparison between uint values of bit size `s`.

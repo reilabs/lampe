@@ -175,13 +175,19 @@ theorem iShr_intro : STHoarePureBuiltin p Γ Builtin.iShr (by tauto) h![a, b] :=
 
 -- Comparison
 
-theorem eq_intro : STHoarePureBuiltin p Γ Builtin.eq (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem fEq_intro : STHoarePureBuiltin p Γ Builtin.fEq (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
+theorem eq_intro : STHoare p Γ ⟦⟧
+    (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b])
+    (fun v => v = (a == b)) := by
+  unfold STHoare
+  intro H
+  unfold THoare
+  intros st h
+  beta_reduce
+  constructor
+  simp only [Builtin.eq]
+  rw [SLP.true_star] at h
+  apply SLP.ent_star_top at h
+  cases tp <;> (constructor; simp only [beq_self_eq_true, SLP.true_star]; try assumption)
 
 theorem uLt_intro : STHoarePureBuiltin p Γ Builtin.uLt (by tauto) h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
