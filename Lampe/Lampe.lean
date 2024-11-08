@@ -52,8 +52,7 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
       simp at *
       linarith
     simp only [this, List.take_succ]
-    rename some _ = _ => h
-    simp_all [←h]
+    aesop
   · simp_all
   · simp_all
   steps

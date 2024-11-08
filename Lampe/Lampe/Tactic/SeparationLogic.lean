@@ -1,6 +1,6 @@
 import Lampe.SeparationLogic
 import Lampe.Hoare.SepTotal
-import Lampe.Hoare.Builtin.Memory
+import Lampe.Hoare.Builtins
 import Lampe.Syntax
 
 import Lean.Meta.Tactic.Simp.Main
@@ -448,7 +448,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litU_intro
     | apply fresh_intro
     | apply assert_intro
-    | apply eqF_intro
+    | apply eq_intro
     | apply var_intro
     | apply ref_intro
     | apply readRef_intro
@@ -464,7 +464,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left Lampe.STHoare.litU_intro
     | apply consequence_frame_left assert_intro
-    | apply consequence_frame_left eqF_intro
+    | apply consequence_frame_left eq_intro
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
     | apply consequence_frame_left readRef_intro
@@ -481,7 +481,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top Lampe.STHoare.litU_intro
     | apply ramified_frame_top assert_intro
-    | apply ramified_frame_top eqF_intro
+    | apply ramified_frame_top eq_intro
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
     | apply ramified_frame_top readRef_intro

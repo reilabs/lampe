@@ -30,14 +30,6 @@ structure Builtin where
   conseq : Builtin.omni_conseq omni
   frame : Builtin.omni_frame omni
 
-structure PureBuiltin (A : Type) where
-  sgn : A → List Tp × Tp
-  desc : {p : Prime}
-    → (a : A)
-    → (args : HList (Tp.denote p) (sgn a).fst)
-    → (h : Prop) × (h → (Tp.denote p (sgn a).snd))
-  inner : Builtin
-
 end Lampe
 
 namespace Lampe.Builtin
@@ -74,26 +66,21 @@ def newGenericPureBuiltin {A : Type}
   (desc : {p : Prime}
     → (a : A)
     → (args : HList (Tp.denote p) (sgn a).fst)
-    → (h : Prop) × (h → (Tp.denote p (sgn a).snd)))
-: PureBuiltin A := {
-  sgn := sgn,
-  desc := desc,
-  inner := {
-    omni := genericPureOmni sgn desc
-    conseq := by
-      unfold omni_conseq
-      intros
-      cases_type genericPureOmni
-      . constructor <;> simp_all
-      . apply genericPureOmni.err <;> simp_all
-    frame := by
-      unfold omni_frame
-      intros
-      cases_type genericPureOmni
-      . constructor
-        . constructor <;> tauto
-      . apply genericPureOmni.err <;> assumption
-  }
+    → (h : Prop) × (h → (Tp.denote p (sgn a).snd))) : Builtin := {
+  omni := genericPureOmni sgn desc
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type genericPureOmni
+    . constructor <;> simp_all
+    . apply genericPureOmni.err <;> simp_all
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type genericPureOmni
+    . constructor
+      . constructor <;> tauto
+    . apply genericPureOmni.err <;> assumption
 }
 
 /--

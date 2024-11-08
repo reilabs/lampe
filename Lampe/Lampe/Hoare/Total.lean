@@ -48,7 +48,7 @@ theorem var_intro {v} {P : Tp.denote p tp → SLP p}:
 
 /-- [TODO] there's probably a generic lemma for pure builtins to abstract this proof structure? -/
 theorem assert_intro {v: Bool} (h : v ⋆ P ⊢ Q ()):
-    THoare p Γ P (.call h![] [.bool] .unit (.builtin Builtin.assert.inner) h![v]) Q := by
+    THoare p Γ P (.call h![] [.bool] .unit (.builtin Builtin.assert) h![v]) Q := by
   unfold THoare
   intros
   constructor

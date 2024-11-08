@@ -30,12 +30,14 @@ Then, we would define the post-condition as `Q := λv. (v = a + b) ∧ (a + b < 
 def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
 
-abbrev STHoarePureBuiltin (p : Prime) (Γ : Env) {a : A}
-  (pb : Lampe.PureBuiltin A)
-  (args : HList (Tp.denote p) (pb.sgn a).1) : Prop :=
+abbrev STHoarePureBuiltin p (Γ : Env)
+  (b : Lampe.Builtin)
+  {a : A}
+  (_ : b = @Builtin.newGenericPureBuiltin A sgn desc)
+  (args : HList (Tp.denote p) (sgn a).fst) : Prop :=
     STHoare p Γ ⟦⟧
-      (.call h![] (pb.sgn a).fst (pb.sgn a).snd (.builtin pb.inner) args)
-      (fun v => ∃h, v = (pb.desc a args).snd h ∧ (pb.desc a args).fst)
+      (.call h![] (sgn a).fst (sgn a).snd (.builtin b) args)
+      (fun v => ∃h, v = (desc a (args)).snd h)
 
 namespace STHoare
 
@@ -126,13 +128,6 @@ theorem consequence_frame_left {H H₁ H₂ : SLP p}
   rw [SLP.star_comm]
   apply SLP.ent_star_top
 
-theorem assert_intro {v: Bool}:
-    STHoare p Γ ⟦⟧ (.call h![] [.bool] .unit (.builtin Builtin.assert.inner) h![v]) (fun _ => v) := by
-  unfold STHoare
-  intro H
-  apply THoare.assert_intro
-  simp [SLP.entails_self, SLP.star_mono_l]
-
 theorem var_intro {v : Tp.denote p tp}:
     STHoare p Γ ⟦⟧ (.var v) (fun v' => ⟦v' = v⟧) := by
   unfold STHoare
@@ -177,7 +172,7 @@ Introduction rule for pure builtins.
 theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   STHoare p Γ
     ⟦⟧
-    (.call h![] (sgn a).fst (sgn a).snd (.builtin (Builtin.newGenericPureBuiltin sgn desc).inner) args)
+    (.call h![] (sgn a).fst (sgn a).snd (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
     (fun v => ∃h, (v = (desc a args).snd h)) := by
   unfold STHoare
   intro H
@@ -200,7 +195,7 @@ lemma pureBuiltin_intro_consequence
     (h2 : outTp = (sgn a).snd)
     (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h))
     : STHoare p Γ ⟦⟧
-      (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc).inner) args)
+      (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
       fun v => Q v := by
   subst_vars
   dsimp only at *
