@@ -455,6 +455,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
+    | apply ite_intro
   )
 ))
 
@@ -471,6 +472,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
+    | apply consequence_frame_left ite_intro
   )
   repeat sl
 ))
@@ -488,6 +490,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
+    | apply ramified_frame_top ite_intro
   )
   repeat sl
 ))

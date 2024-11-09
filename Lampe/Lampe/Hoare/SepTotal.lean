@@ -336,4 +336,26 @@ theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p)
           apply h
           simp [*]
 
+theorem iteTrue_intro :
+    STHoare p Γ P mainBody Q →
+    STHoare p Γ P (.ite true mainBody elseBody) Q := by
+  tauto
+
+theorem iteFalse_intro :
+    STHoare p Γ P elseBody Q →
+    STHoare p Γ P (.ite false mainBody elseBody) Q := by
+  tauto
+
+theorem ite_intro :
+  (cnd == true → STHoare p Γ P mainBody Q) →
+  (cnd == false → STHoare p Γ P elseBody Q) →
+  STHoare p Γ P (.ite cnd mainBody elseBody) Q := by
+  unfold STHoare
+  intros
+  cases cnd
+  . apply iteFalse_intro
+    tauto
+  . apply iteTrue_intro
+    tauto
+
 end Lampe.STHoare
