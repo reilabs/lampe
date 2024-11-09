@@ -16,15 +16,18 @@ example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] h![x]) fun v => v = x 
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
+  #add(x, y) : I;
   #assert(#eq(a, x) : bool) : Unit;
   #assert(#eq(a, y) : bool) : Unit;
 }
 
-example {P} {x y : Tp.denote P .field} : STHoare P Γ ⟦⟧ (weirdEq.fn.body _ h![.field] h![x, y]) fun _ => x = y := by
+example {P} {x y : Tp.denote P .field} : STHoare P Γ ⟦⟧ (weirdEq.fn.body _ h![.field] h![x, y]) fun _ => Builtin.eqOp (by tauto) x y := by
   simp only [weirdEq]
   steps
-  intros
+  repeat tauto -- show that (Builtin.ArithTp tp) and (Builtin.EqTp tp)
   simp_all
+  simp only [Builtin.eqOp, Builtin.addOp] at *
+  aesop
 
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;

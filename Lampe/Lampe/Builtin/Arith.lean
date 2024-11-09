@@ -1,30 +1,68 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
+inductive ArithTp : Tp → Prop
+  | u s : ArithTp (.u s)
+  | i s : ArithTp (.i s)
+  | field : ArithTp .field
+  | bi : ArithTp .bi
+
+@[reducible]
+def addOp (_ : ArithTp tp) (a b : tp.denote p) : tp.denote p :=
+  match tp with
+  | .u _ => a + b
+  | .i _ => a + b
+  | .field => a + b
+  | .bi => a + b
+
+@[reducible]
+def subOp (_ : ArithTp tp) (a b : tp.denote p) : tp.denote p :=
+  match tp with
+  | .u _ => a - b
+  | .i _ => a - b
+  | .field => a - b
+  | .bi => a - b
+
+@[reducible]
+def mulOp (_ : ArithTp tp) (a b : tp.denote p) : tp.denote p :=
+  match tp with
+  | .u _ => a * b
+  | .i _ => a * b
+  | .field => a * b
+  | .bi => a * b
+
+@[reducible]
+def divOp (_ : ArithTp tp) (a b : tp.denote p) : tp.denote p :=
+  match tp with
+  | .u _ => a.udiv b
+  | .i _ => a.sdiv b
+  | .field => a * b
+  | .bi => a * b
+
 @[reducible]
 def noOverflow {tp : Tp}
   (a b : tp.denote p)
-  (op : Int → Int → Int) : Prop := match tp with
-| .u s => (op a.toInt b.toInt) < 2^s
-| .i s => bitsCanRepresent s (op a.toInt b.toInt)
+  (intOp : Int → Int → Int) : Prop := match tp with
+| .u s => (intOp a.toInt b.toInt) < 2^s
+| .i s => bitsCanRepresent s (intOp a.toInt b.toInt)
 | .field => True
 | .bi => True
 | _ => False
 
 inductive addOmni : Omni where
 | u {p st s a b Q} :
-  (noOverflow a b (·+·) → Q (some (st, a + b)))
+  (noOverflow a b (·+·) → Q (some (st, addOp (by tauto) a b)))
   → (¬noOverflow a b (·+·) → Q none)
   → addOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (noOverflow a b (·+·) → Q (some (st, a + b)))
+  (noOverflow a b (·+·) → Q (some (st, addOp (by tauto) a b)))
   → (¬noOverflow a b (·+·) → Q none)
   → addOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | field {p st a b Q} :
-  Q (some (st, a + b))
+  Q (some (st, addOp (by tauto) a b))
   → addOmni p st [.field, .field] .field h![a, b] Q
 | bi {p st a b Q} :
-  Q (some (st, a + b))
+  Q (some (st, addOp (by tauto) a b))
   → addOmni p st [.bi, .bi] .bi h![a, b] Q
 | _ {p st a b Q} : Q none → addOmni p st [tp, tp] tp h![a, b] Q
 
@@ -45,18 +83,18 @@ def add : Builtin := {
 
 inductive mulOmni : Omni where
 | u {p st s a b Q} :
-  (noOverflow a b (·*·) → Q (some (st, a * b)))
+  (noOverflow a b (·*·) → Q (some (st, mulOp (by tauto) a b)))
   → (¬noOverflow a b (·*·) → Q none)
   → mulOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (noOverflow a b (·*·) → Q (some (st, a * b)))
+  (noOverflow a b (·*·) → Q (some (st, mulOp (by tauto) a b)))
   → (¬noOverflow a b (·*·) → Q none)
   → mulOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | field {p st a b Q} :
-  Q (some (st, a * b))
+  Q (some (st, mulOp (by tauto) a b))
   → mulOmni p st [.field, .field] .field h![a, b] Q
 | bi {p st a b Q} :
-  Q (some (st, a * b))
+  Q (some (st, mulOp (by tauto) a b))
   → mulOmni p st [.bi, .bi] .bi h![a, b] Q
 | _ {p st a b Q} : Q none → mulOmni p st [tp, tp] tp h![a, b] Q
 
@@ -87,18 +125,18 @@ def noUnderflow {tp : Tp}
 
 inductive subOmni : Omni where
 | u {p st s a b Q} :
-  (noUnderflow a b (·-·) → Q (some (st, a - b)))
+  (noUnderflow a b (·-·) → Q (some (st, subOp (by tauto) a b)))
   → (¬noUnderflow a b (·-·) → Q none)
   → subOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (noUnderflow a b (·-·) → Q (some (st, a - b)))
+  (noUnderflow a b (·-·) → Q (some (st, subOp (by tauto) a b)))
   → (¬noUnderflow a b (·-·) → Q none)
   → subOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | field {p st a b Q} :
-  Q (some (st, a - b))
+  Q (some (st, subOp (by tauto) a b))
   → subOmni p st [.field, .field] .field h![a, b] Q
 | bi {p st a b Q} :
-  Q (some (st, a - b))
+  Q (some (st, subOp (by tauto) a b))
   → subOmni p st [.bi, .bi] .bi h![a, b] Q
 | _ {p st a b Q} : Q none → subOmni p st [tp, tp] tp h![a, b] Q
 
@@ -128,19 +166,19 @@ def canDivide {tp : Tp}
 
 inductive divOmni : Omni where
 | u {p st s a b Q} :
-  (canDivide a b → Q (some (st, a.udiv b)))
+  (canDivide a b → Q (some (st, divOp (by tauto) a b)))
   → (¬canDivide a b → Q none)
   → divOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (canDivide a b → Q (some (st, a.sdiv b)))
+  (canDivide a b → Q (some (st, divOp (by tauto) a b)))
   → (¬canDivide a b → Q none)
   → divOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | field {p st a b Q} :
-  (canDivide a b → Q (some (st, a / b)))
+  (canDivide a b → Q (some (st, divOp (by tauto) a b)))
   → (¬canDivide a b → Q none)
   → divOmni p st [.field, .field] (.field) h![a, b] Q
 | bi {p st a b Q} :
-  (canDivide a b → Q (some (st, a / b)))
+  (canDivide a b → Q (some (st, divOp (by tauto) a b)))
   → (¬canDivide a b → Q none)
   → divOmni p st [.bi, .bi] (.bi) h![a, b] Q
 | _ {p st a b Q} : Q none → divOmni p st [tp, tp] tp h![a, b] Q

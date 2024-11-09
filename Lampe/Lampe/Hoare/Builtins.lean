@@ -4,25 +4,16 @@ namespace Lampe.STHoare
 
 -- Arithmetics
 
-instance {tp} : Add (Tp.denote p tp) where
-  add := fun a b => match tp with
-    | .u _ => a + b
-    | .i _ => a + b
-    | .field => a + b
-    | .bi => a + b
-    | _ => sorry
-
-theorem add_intro : STHoare p Γ ⟦⟧
-    (.call h![] [tp, tp] tp (.builtin .add) h![a, b])
-    (fun v => v = a + b ∧ (Builtin.noOverflow a b (·+·))) := by
+theorem add_intro {ha : Builtin.ArithTp tp}
+   : STHoare p Γ ⟦⟧
+   (.call h![] [tp, tp] tp (.builtin .add) h![a, b])
+   (fun v => v = Builtin.addOp ha a b ∧ (Builtin.noOverflow a b (·+·))) := by
   unfold STHoare
-  intro H
-  intros st h
-  beta_reduce
-  constructor
-  simp only [Builtin.add]
+  intros H st h
   rw [SLP.true_star] at h
   apply SLP.ent_star_top at h
+  constructor
+  simp only [Builtin.add]
   cases tp
   <;> (constructor; simp only [SLP.true_star])
   <;> (
@@ -42,17 +33,9 @@ theorem add_intro : STHoare p Γ ⟦⟧
   . simp only [and_self, SLP.true_star]
     tauto
 
-instance {tp} : Mul (Tp.denote p tp) where
-  mul := fun a b => match tp with
-    | .u _ => a * b
-    | .i _ => a * b
-    | .field => a * b
-    | .bi => a * b
-    | _ => sorry
-
-theorem mul_intro : STHoare p Γ ⟦⟧
+theorem mul_intro {ha : Builtin.ArithTp tp} : STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .mul) h![a, b])
-    (fun v => v = a * b ∧ (Builtin.noOverflow a b (·*·))) := by
+    (fun v => v = Builtin.mulOp ha a b ∧ (Builtin.noOverflow a b (·*·))) := by
   unfold STHoare
   intro H
   intros st h
@@ -80,26 +63,9 @@ theorem mul_intro : STHoare p Γ ⟦⟧
   . simp only [and_self, SLP.true_star]
     tauto
 
-
-instance {tp} : Sub (Tp.denote p tp) where
-  sub := fun a b => match tp with
-    | .u _ => a - b
-    | .i _ => a - b
-    | .field => a - b
-    | .bi => a - b
-    | _ => sorry
-
-instance {tp} : LE (Tp.denote p tp) where
-  le := fun a b => match tp with
-    | .u _ => a ≤ b
-    | .i _ => a ≤ b
-    | .field => a.val ≤ b.val
-    | .bi => a ≤ b
-    | _ => sorry
-
-theorem sub_intro : STHoare p Γ ⟦⟧
+theorem sub_intro {ha : Builtin.ArithTp tp}: STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .sub) h![a, b])
-    (fun v => v = a - b ∧ (Builtin.noUnderflow a b (·-·))) := by
+    (fun v => v = Builtin.subOp h a b ∧ (Builtin.noUnderflow a b (·-·))) := by
   unfold STHoare
   intro H
   intros st h
@@ -127,21 +93,9 @@ theorem sub_intro : STHoare p Γ ⟦⟧
   . simp only [and_self, SLP.true_star]
     tauto
 
-instance {tp} : Div (Tp.denote p tp) where
-  div := fun a b => match tp with
-    | .u _ => a.udiv b
-    | .i _ => a.sdiv b
-    | .field => a / b
-    | .bi => a / b
-    | _ => sorry
-
-theorem div_intro : STHoare p Γ ⟦⟧
+theorem div_intro {ha : Builtin.ArithTp tp}: STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .div) h![a, b])
-    (fun v => Builtin.canDivide a b ∧
-      v = match tp with
-      | .u _ => a.udiv b
-      | .i _ => a.sdiv b
-      | _ => a / b) := by
+    (fun v => v = Builtin.divOp ha a b ∧ Builtin.canDivide a b) := by
   unfold STHoare
   intro H
   intros st h
@@ -362,20 +316,9 @@ theorem iShr_intro : STHoarePureBuiltin p Γ Builtin.iShr (by tauto) h![a, b] :=
 
 -- Comparison
 
-instance {tp} : BEq (Tp.denote p tp) where
-  beq := fun a b => match tp with
-    | .unit => true
-    | .bool => (a == b)
-    | .u _ => (a == b)
-    | .i _ => (a == b)
-    | .field => (a == b)
-    | .bi => (a == b)
-    | .str _ => (a == b)
-    | _ => sorry
-
-theorem eq_intro : STHoare p Γ ⟦⟧
+theorem eq_intro {heq : Builtin.EqTp tp}: STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b])
-    (fun v => v = (a == b)) := by
+    (fun v => v = (Builtin.eqOp heq a b)) := by
   unfold STHoare
   intro H
   unfold THoare
@@ -387,7 +330,8 @@ theorem eq_intro : STHoare p Γ ⟦⟧
   apply SLP.ent_star_top at h
   cases tp
   <;> (constructor; simp only [beq_self_eq_true, SLP.true_star])
-  <;> assumption
+  <;> try assumption
+
 
 theorem uLt_intro : STHoarePureBuiltin p Γ Builtin.uLt (by tauto) h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto
