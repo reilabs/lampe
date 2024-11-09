@@ -97,10 +97,9 @@ instance {tp} : LE (Tp.denote p tp) where
     | .bi => a ≤ b
     | _ => sorry
 
-/-- [WARNING] Post-condition is weak! Use the typed versions. -/
-theorem weak_sub_intro : STHoare p Γ ⟦⟧
+theorem sub_intro : STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .sub) h![a, b])
-    (fun v => v = a - b) := by
+    (fun v => v = a - b ∧ (Builtin.noUnderflow a b (·-·))) := by
   unfold STHoare
   intro H
   intros st h
@@ -111,9 +110,22 @@ theorem weak_sub_intro : STHoare p Γ ⟦⟧
   apply SLP.ent_star_top at h
   cases tp
   <;> (constructor; simp only [SLP.true_star])
-  <;> repeat (first | assumption | intro)
-  . aesop
-  . simp
+  <;> (
+    simp only [Builtin.noUnderflow] at *
+    intros
+  )
+  <;> try tauto
+  all_goals try unfold bitsCanRepresent
+  . rename_i hno
+    simp only [hno, and_self, SLP.true_star]
+    tauto
+  . rename_i hno
+    simp only [hno, and_self, SLP.true_star]
+    tauto
+  . simp only [and_self, SLP.true_star]
+    tauto
+  . simp only [and_self, SLP.true_star]
+    tauto
 
 instance {tp} : Div (Tp.denote p tp) where
   div := fun a b => match tp with
@@ -123,10 +135,9 @@ instance {tp} : Div (Tp.denote p tp) where
     | .bi => a / b
     | _ => sorry
 
-/-- [WARNING] Post-condition is weak! Use the typed versions. -/
-theorem weak_div_intro : STHoare p Γ ⟦⟧
+theorem div_intro : STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .div) h![a, b])
-    (fun v =>
+    (fun v => Builtin.canDivide a b ∧
       v = match tp with
       | .u _ => a.udiv b
       | .i _ => a.sdiv b
@@ -141,11 +152,44 @@ theorem weak_div_intro : STHoare p Γ ⟦⟧
   apply SLP.ent_star_top at h
   cases tp
   <;> (constructor; simp only [SLP.true_star])
-  <;> repeat (first | assumption | intro)
-  . simp
-  . simp
-  . simp
-  . simp
+  <;> (
+    simp only [Builtin.canDivide] at *
+    intros
+  )
+  <;> try tauto
+  all_goals (
+    have hno : b ≠ 0 ↔ True := by tauto
+    simp only [hno, and_self, SLP.true_star]
+    tauto
+  )
+
+theorem rem_intro : STHoare p Γ ⟦⟧
+    (.call h![] [tp, tp] tp (.builtin .rem) h![a, b])
+    (fun v => Builtin.canDivide a b ∧
+      v = match tp with
+      | .u _ => a % b
+      | .i _ => Builtin.intRem a b
+      | _ => a) := by
+  unfold STHoare
+  intro H
+  intros st h
+  beta_reduce
+  constructor
+  simp only [Builtin.rem]
+  rw [SLP.true_star] at h
+  apply SLP.ent_star_top at h
+  cases tp
+  <;> (constructor; simp only [SLP.true_star])
+  <;> (
+    simp only [Builtin.canDivide] at *
+    intros
+  )
+  <;> try tauto
+  all_goals (
+    have hno : b ≠ 0 ↔ True := by tauto
+    simp only [hno, and_self, SLP.true_star]
+    tauto
+  )
 
 theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try rfl

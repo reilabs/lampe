@@ -75,14 +75,24 @@ def mul : Builtin := {
     repeat (first | constructor | tauto | intro)
 }
 
+@[reducible]
+def noUnderflow {tp : Tp}
+  (a b : tp.denote p)
+  (op : Int → Int → Int) : Prop := match tp with
+| .u _ => b ≤ a
+| .i s => bitsCanRepresent s (op a.toInt b.toInt)
+| .field => True
+| .bi => True
+| _ => False
+
 inductive subOmni : Omni where
 | u {p st s a b Q} :
-  (b ≤ a → Q (some (st, a - b)))
-  → (b > a → Q none)
+  (noUnderflow a b (·-·) → Q (some (st, a - b)))
+  → (¬noUnderflow a b (·-·) → Q none)
   → subOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (bitsCanRepresent s (a.toInt - b.toInt) → Q (some (st, a - b)))
-  → (¬(bitsCanRepresent s (a.toInt - b.toInt)) → Q none)
+  (noUnderflow a b (·-·) → Q (some (st, a - b)))
+  → (¬noUnderflow a b (·-·) → Q none)
   → subOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | field {p st a b Q} :
   Q (some (st, a - b))
@@ -107,22 +117,31 @@ def sub : Builtin := {
     repeat (first | constructor | tauto | intro)
 }
 
+@[reducible]
+def canDivide {tp : Tp}
+  (_ b : tp.denote p) : Prop := match tp with
+| .u _ => b ≠ 0
+| .i _ => b ≠ 0
+| .field => b ≠ 0
+| .bi => b ≠ 0
+| _ => False
+
 inductive divOmni : Omni where
 | u {p st s a b Q} :
-  (b ≠ 0 → Q (some (st, a.udiv b)))
-  → (b = 0 → Q none)
+  (canDivide a b → Q (some (st, a.udiv b)))
+  → (¬canDivide a b → Q none)
   → divOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (b ≠ 0 → Q (some (st, a.sdiv b)))
-  → (b = 0 → Q none)
+  (canDivide a b → Q (some (st, a.sdiv b)))
+  → (¬canDivide a b → Q none)
   → divOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | field {p st a b Q} :
-  (b ≠ 0 → Q (some (st, a / b)))
-  → (b = 0 → Q none)
+  (canDivide a b → Q (some (st, a / b)))
+  → (¬canDivide a b → Q none)
   → divOmni p st [.field, .field] (.field) h![a, b] Q
 | bi {p st a b Q} :
-  (b ≠ 0 → Q (some (st, a / b)))
-  → (b = 0 → Q none)
+  (canDivide a b → Q (some (st, a / b)))
+  → (¬canDivide a b → Q none)
   → divOmni p st [.bi, .bi] (.bi) h![a, b] Q
 | _ {p st a b Q} : Q none → divOmni p st [tp, tp] tp h![a, b] Q
 
@@ -154,12 +173,12 @@ example : intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) = 1 := by rfl
 
 inductive remOmni : Omni where
 | u {p st s a b Q} :
-  (b ≠ 0 → Q (some (st, a % b)))
-  → (b = 0 → Q none)
+  (canDivide a b → Q (some (st, a % b)))
+  → (¬canDivide a b → Q none)
   → remOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (b ≠ 0 → Q (some (st, intRem a b)))
-  → (b = 0 → Q none)
+  (canDivide a b → Q (some (st, intRem a b)))
+  → (¬canDivide a b → Q none)
   → remOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | _ {p st a b Q} : Q none → remOmni p st [tp, tp] tp h![a, b] Q
 
