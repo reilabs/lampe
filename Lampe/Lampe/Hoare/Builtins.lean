@@ -12,10 +12,9 @@ instance {tp} : Add (Tp.denote p tp) where
     | .bi => a + b
     | _ => sorry
 
-/-- [WARNING] Post-condition is weak! Use the typed versions. -/
-theorem weak_add_intro : STHoare p Γ ⟦⟧
+theorem add_intro : STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .add) h![a, b])
-    (fun v => v = a + b) := by
+    (fun v => v = a + b ∧ (Builtin.noOverflow a b (·+·))) := by
   unfold STHoare
   intro H
   intros st h
@@ -26,9 +25,61 @@ theorem weak_add_intro : STHoare p Γ ⟦⟧
   apply SLP.ent_star_top at h
   cases tp
   <;> (constructor; simp only [SLP.true_star])
-  <;> repeat (first | assumption | intro)
-  . simp
-  . simp
+  <;> (
+    simp only [Builtin.noOverflow] at *
+    intros
+  )
+  <;> try tauto
+  all_goals try unfold bitsCanRepresent
+  . rename_i hno
+    simp only [hno, and_self, SLP.true_star]
+    tauto
+  . rename_i hno
+    simp only [hno, and_self, SLP.true_star]
+    tauto
+  . simp only [and_self, SLP.true_star]
+    tauto
+  . simp only [and_self, SLP.true_star]
+    tauto
+
+instance {tp} : Mul (Tp.denote p tp) where
+  mul := fun a b => match tp with
+    | .u _ => a * b
+    | .i _ => a * b
+    | .field => a * b
+    | .bi => a * b
+    | _ => sorry
+
+theorem mul_intro : STHoare p Γ ⟦⟧
+    (.call h![] [tp, tp] tp (.builtin .mul) h![a, b])
+    (fun v => v = a * b ∧ (Builtin.noOverflow a b (·*·))) := by
+  unfold STHoare
+  intro H
+  intros st h
+  beta_reduce
+  constructor
+  simp only [Builtin.mul]
+  rw [SLP.true_star] at h
+  apply SLP.ent_star_top at h
+  cases tp
+  <;> (constructor; simp only [SLP.true_star])
+  <;> (
+    simp only [Builtin.noOverflow] at *
+    intros
+  )
+  <;> try tauto
+  all_goals try unfold bitsCanRepresent
+  . rename_i hno
+    simp only [hno, and_self, SLP.true_star]
+    tauto
+  . rename_i hno
+    simp only [hno, and_self, SLP.true_star]
+    tauto
+  . simp only [and_self, SLP.true_star]
+    tauto
+  . simp only [and_self, SLP.true_star]
+    tauto
+
 
 instance {tp} : Sub (Tp.denote p tp) where
   sub := fun a b => match tp with
@@ -64,32 +115,6 @@ theorem weak_sub_intro : STHoare p Γ ⟦⟧
   . aesop
   . simp
 
-instance {tp} : Mul (Tp.denote p tp) where
-  mul := fun a b => match tp with
-    | .u _ => a * b
-    | .i _ => a * b
-    | .field => a * b
-    | .bi => a * b
-    | _ => sorry
-
-/-- [WARNING] Post-condition is weak! Use the typed versions. -/
-theorem weak_mul_intro : STHoare p Γ ⟦⟧
-    (.call h![] [tp, tp] tp (.builtin .mul) h![a, b])
-    (fun v => v = a * b) := by
-  unfold STHoare
-  intro H
-  intros st h
-  beta_reduce
-  constructor
-  simp only [Builtin.mul]
-  rw [SLP.true_star] at h
-  apply SLP.ent_star_top at h
-  cases tp
-  <;> (constructor; simp only [SLP.true_star])
-  <;> repeat (first | assumption | intro)
-  . simp
-  . simp
-
 instance {tp} : Div (Tp.denote p tp) where
   div := fun a b => match tp with
     | .u _ => a.udiv b
@@ -101,7 +126,11 @@ instance {tp} : Div (Tp.denote p tp) where
 /-- [WARNING] Post-condition is weak! Use the typed versions. -/
 theorem weak_div_intro : STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .div) h![a, b])
-    (fun v => v = match tp with | .u _ => a.udiv b | .i _ => a.sdiv b | _ => a / b) := by
+    (fun v =>
+      v = match tp with
+      | .u _ => a.udiv b
+      | .i _ => a.sdiv b
+      | _ => a / b) := by
   unfold STHoare
   intro H
   intros st h

@@ -1,25 +1,24 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
-/--
-Captures the behavior of the signed integer remainder operation % in Noir.
-In particular, for two signed integers `a` and `b`, this returns ` a - ((a.sdiv b) * b)`
--/
-def intRem {s: Nat} (a b : I s) : I s := (a - (a.sdiv b) * b)
-
-example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-1)) = 0 := by rfl
-example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-3)) = -2 := by rfl
-example : intRem (BitVec.ofInt 8 (6)) (BitVec.ofInt 8 (-100)) = 6 := by rfl
-example : intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) = 1 := by rfl
+@[reducible]
+def noOverflow {tp : Tp}
+  (a b : tp.denote p)
+  (op : Int → Int → Int) : Prop := match tp with
+| .u s => (op a.toInt b.toInt) < 2^s
+| .i s => bitsCanRepresent s (op a.toInt b.toInt)
+| .field => True
+| .bi => True
+| _ => False
 
 inductive addOmni : Omni where
 | u {p st s a b Q} :
-  ((a.toInt + b.toInt) < 2^s → Q (some (st, a + b)))
-  → ((a.toInt + b.toInt) >= 2^s → Q none)
+  (noOverflow a b (·+·) → Q (some (st, a + b)))
+  → (¬noOverflow a b (·+·) → Q none)
   → addOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (bitsCanRepresent s (a.toInt + b.toInt) → Q (some (st, a + b)))
-  → (¬(bitsCanRepresent s (a.toInt + b.toInt)) → Q none)
+  (noOverflow a b (·+·) → Q (some (st, a + b)))
+  → (¬noOverflow a b (·+·) → Q none)
   → addOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | field {p st a b Q} :
   Q (some (st, a + b))
@@ -35,9 +34,6 @@ def add : Builtin := {
     unfold omni_conseq
     intros
     cases_type addOmni <;> tauto
-    rename _ + _ < 2^_ → _ => hok
-    rename _ + _ ≥ 2^_ → _ => herr
-    rename_i hm
     repeat (constructor; aesop; aesop)
   frame := by
     unfold omni_frame
@@ -49,12 +45,12 @@ def add : Builtin := {
 
 inductive mulOmni : Omni where
 | u {p st s a b Q} :
-  ((a.toInt * b.toInt) < 2^s → Q (some (st, a * b)))
-  → ((a.toInt * b.toInt) >= 2^s → Q none)
+  (noOverflow a b (·*·) → Q (some (st, a * b)))
+  → (¬noOverflow a b (·*·) → Q none)
   → mulOmni p st [.u s, .u s] (.u s) h![a, b] Q
 | i {p st s a b Q} :
-  (bitsCanRepresent s (a.toInt * b.toInt) → Q (some (st, a * b)))
-  → (¬(bitsCanRepresent s (a.toInt * b.toInt)) → Q none)
+  (noOverflow a b (·*·) → Q (some (st, a * b)))
+  → (¬noOverflow a b (·*·) → Q none)
   → mulOmni p st [.i s, .i s] (.i s) h![a, b] Q
 | field {p st a b Q} :
   Q (some (st, a * b))
@@ -144,6 +140,17 @@ def div : Builtin := {
     rename_i s a b _ _ _
     repeat (first | constructor | tauto | intro)
 }
+
+/--
+Captures the behavior of the signed integer remainder operation % in Noir.
+In particular, for two signed integers `a` and `b`, this returns ` a - ((a.sdiv b) * b)`
+-/
+def intRem {s: Nat} (a b : I s) : I s := (a - (a.sdiv b) * b)
+
+example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-1)) = 0 := by rfl
+example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-3)) = -2 := by rfl
+example : intRem (BitVec.ofInt 8 (6)) (BitVec.ofInt 8 (-100)) = 6 := by rfl
+example : intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) = 1 := by rfl
 
 inductive remOmni : Omni where
 | u {p st s a b Q} :
