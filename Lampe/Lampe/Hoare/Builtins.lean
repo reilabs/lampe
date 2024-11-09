@@ -113,10 +113,10 @@ theorem div_intro {ha : Builtin.ArithTp tp}: STHoare p Γ ⟦⟧
 theorem rem_intro : STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .rem) h![a, b])
     (fun v => Builtin.canDivide a b ∧
-      v = match tp with
-      | .u _ => a % b
-      | .i _ => Builtin.intRem a b
-      | _ => a) := by
+      match tp with
+      | .u _ => v = a % b
+      | .i _ => v = Builtin.intRem a b
+      | _ => False) := by
   unfold STHoare
   intros H st h
   constructor
@@ -138,11 +138,11 @@ theorem rem_intro : STHoare p Γ ⟦⟧
 
 theorem neg_intro : STHoare p Γ ⟦⟧
   (.call h![] [tp, tp] tp (.builtin .neg) h![a, b])
-  (fun v => v = match tp with
-    | .i _ => -a
-    | .field => -a
-    | .bi => -a
-    | _ => a) := by
+  (fun v => match tp with
+    | .i _ => v = -a
+    | .field => v = -a
+    | .bi => v = -a
+    | _ => False) := by
   unfold STHoare
   intros H st h
   constructor
@@ -162,23 +162,7 @@ theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by ta
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
--- BigInt
-
-theorem bigIntAdd_intro : STHoarePureBuiltin p Γ Builtin.bigIntAdd (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem bigIntSub_intro : STHoarePureBuiltin p Γ Builtin.bigIntSub (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem bigIntMul_intro : STHoarePureBuiltin p Γ Builtin.bigIntMul (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem bigIntDiv_intro : STHoarePureBuiltin p Γ Builtin.bigIntDiv (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
+-- BigInt misc
 
 theorem bigIntFromLeBytes_intro : STHoarePureBuiltin p Γ Builtin.bigIntFromLeBytes (by tauto) h![bs, mbs] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
