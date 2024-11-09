@@ -25,9 +25,7 @@ example {P} {x y : Tp.denote P .field} : STHoare P Γ ⟦⟧ (weirdEq.fn.body _ 
   simp only [weirdEq]
   steps
   repeat tauto -- show that (Builtin.ArithTp tp) and (Builtin.EqTp tp)
-  simp_all
-  simp only [Builtin.eqOp, Builtin.addOp] at *
-  aesop
+  simp_all [Builtin.eqOp, Builtin.addOp]
 
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;

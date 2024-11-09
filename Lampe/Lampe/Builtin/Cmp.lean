@@ -1,6 +1,7 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
+/-- Defines the types that can be equality checked -/
 inductive EqTp : Tp → Prop
   | u s : EqTp (.u s)
   | i s : EqTp (.i s)
@@ -10,10 +11,10 @@ inductive EqTp : Tp → Prop
   | unit : EqTp .unit
   | str n : EqTp (.str n)
 
-@[reducible]
+/-- Defines the semantics of a successful equality check in Noir -/
 def eqOp (_ : EqTp tp) (a b : tp.denote p) : Tp.denote p .bool :=
   match tp with
-  -- () == () is always true
+  -- () == () is always true in Noir
   | .unit => true
   | .u _ => a == b
   | .i _ => a == b
@@ -21,10 +22,6 @@ def eqOp (_ : EqTp tp) (a b : tp.denote p) : Tp.denote p .bool :=
   | .field => a == b
   | .bi => a == b
   | .str _ => a == b
-
-def eq_ := newGenericPureBuiltin
-  (fun tp => ⟨[tp, tp], .bool⟩)
-  (fun tp h![a, b] => ⟨EqTp tp, fun h => eqOp (by tauto) a b⟩)
 
 inductive eqOmni : Omni where
 | unit {p st Q} : Q (some (st, true)) → eqOmni p st [.unit, .unit] .bool h![a, b] Q

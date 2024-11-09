@@ -37,9 +37,7 @@ theorem mul_intro {ha : Builtin.ArithTp tp} : STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .mul) h![a, b])
     (fun v => v = Builtin.mulOp ha a b ∧ (Builtin.noOverflow a b (·*·))) := by
   unfold STHoare
-  intro H
-  intros st h
-  beta_reduce
+  intros H st h
   constructor
   simp only [Builtin.mul]
   rw [SLP.true_star] at h
@@ -67,11 +65,8 @@ theorem sub_intro {ha : Builtin.ArithTp tp}: STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .sub) h![a, b])
     (fun v => v = Builtin.subOp h a b ∧ (Builtin.noUnderflow a b (·-·))) := by
   unfold STHoare
-  intro H
-  intros st h
-  beta_reduce
+  intros H st h
   constructor
-  simp only [Builtin.sub]
   rw [SLP.true_star] at h
   apply SLP.ent_star_top at h
   cases tp
@@ -97,9 +92,7 @@ theorem div_intro {ha : Builtin.ArithTp tp}: STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] tp (.builtin .div) h![a, b])
     (fun v => v = Builtin.divOp ha a b ∧ Builtin.canDivide a b) := by
   unfold STHoare
-  intro H
-  intros st h
-  beta_reduce
+  intros H st h
   constructor
   simp only [Builtin.div]
   rw [SLP.true_star] at h
@@ -320,17 +313,14 @@ theorem eq_intro {heq : Builtin.EqTp tp}: STHoare p Γ ⟦⟧
     (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b])
     (fun v => v = (Builtin.eqOp heq a b)) := by
   unfold STHoare
-  intro H
   unfold THoare
-  intros st h
-  beta_reduce
-  constructor
-  simp only [Builtin.eq]
+  intros H st h
   rw [SLP.true_star] at h
   apply SLP.ent_star_top at h
+  constructor
   cases tp
-  <;> (constructor; simp only [beq_self_eq_true, SLP.true_star])
-  <;> try assumption
+  <;> (constructor; simp only [Builtin.eqOp, beq_self_eq_true, SLP.true_star])
+  <;> assumption
 
 
 theorem uLt_intro : STHoarePureBuiltin p Γ Builtin.uLt (by tauto) h![a, b] := by
