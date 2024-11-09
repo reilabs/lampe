@@ -118,9 +118,7 @@ theorem rem_intro : STHoare p Γ ⟦⟧
       | .i _ => Builtin.intRem a b
       | _ => a) := by
   unfold STHoare
-  intro H
-  intros st h
-  beta_reduce
+  intros H st h
   constructor
   simp only [Builtin.rem]
   rw [SLP.true_star] at h
@@ -138,69 +136,21 @@ theorem rem_intro : STHoare p Γ ⟦⟧
     tauto
   )
 
-theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem uSub_intro : STHoarePureBuiltin p Γ Builtin.uSub (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem uMul_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem uDiv_intro : STHoarePureBuiltin p Γ Builtin.uDiv (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem uRem_intro : STHoarePureBuiltin p Γ Builtin.uRem (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem iAdd_intro : STHoarePureBuiltin p Γ Builtin.iAdd (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem iSub_intro : STHoarePureBuiltin p Γ Builtin.iSub (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem iMul_intro : STHoarePureBuiltin p Γ Builtin.iMul (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem iDiv_intro : STHoarePureBuiltin p Γ Builtin.iDiv (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem iRem_intro : STHoarePureBuiltin p Γ Builtin.iRem (by tauto) h![a, b] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem iNeg_intro : STHoarePureBuiltin p Γ Builtin.iNeg (by tauto) h![a] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem fAdd_intro : STHoarePureBuiltin p Γ Builtin.fAdd (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem fSub_intro : STHoarePureBuiltin p Γ Builtin.fSub (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem fMul_intro : STHoarePureBuiltin p Γ Builtin.fMul (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem fDiv_intro : STHoarePureBuiltin p Γ Builtin.fDiv (by tauto) h![a, b] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem fNeg_intro : STHoarePureBuiltin p Γ Builtin.fNeg (by tauto) h![a] (a := ()) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
+theorem neg_intro : STHoare p Γ ⟦⟧
+  (.call h![] [tp, tp] tp (.builtin .neg) h![a, b])
+  (fun v => v = match tp with
+    | .i _ => -a
+    | .field => -a
+    | .bi => -a
+    | _ => a) := by
+  unfold STHoare
+  intros H st h
+  constructor
+  simp only [Builtin.rem]
+  rw [SLP.true_star] at h
+  apply SLP.ent_star_top at h
+  cases tp
+  <;> (constructor; simp)
 
 -- Arrays
 
