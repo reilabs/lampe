@@ -400,6 +400,9 @@ partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
     let (_, newGoal) ← newGoal.intro1
     let gls ← solveEntailment newGoal
     return gls ++ newGoals
+  | SLTerm.top => do
+    let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.entails_top)
+    return newGoals
   | _ => pure ()
 
   match post with

@@ -346,9 +346,9 @@ theorem iteFalse_intro :
     STHoare p Γ P (.ite false mainBody elseBody) Q := by
   tauto
 
-theorem ite_intro :
-  ((cnd = true → STHoare p Γ P mainBody Q) ∧
-  (cnd = false → STHoare p Γ P elseBody Q)) →
+theorem ite_intro {cnd : Bool}
+  (h₁ : cnd = true → STHoare p Γ P mainBody Q)
+  (h₂ : cnd = false → STHoare p Γ P elseBody Q) :
   STHoare p Γ P (.ite cnd mainBody elseBody) Q := by
   unfold STHoare
   intros

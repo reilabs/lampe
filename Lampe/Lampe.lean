@@ -59,13 +59,23 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
   steps
   simp_all [Nat.mod_eq_of_lt]
 
-nr_def simple_if<>(x : Field, y : Field) -> u32 {
-  let y = if #eq(x, y) : bool { 4 : u32 } else { 4 : u32 };
-  4 : u32
+nr_def simple_if<>(x : Field, y : Field) -> Field {
+  let z = if #eq(x, x) : bool { x } else { y };
+  z
 }
 
-example {p Γ x y}: STHoare p Γ ⟦x = y⟧ (simple_if.fn.body (Tp.denote p) h![] h![x, y])
-  fun v => v = BitVec.ofNat 32 4 := by
+example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if.fn.body (Tp.denote p) h![] h![x, y])
+  fun v => v = x := by
   simp only [simple_if]
   steps
-  sorry
+  simp_all
+  tauto
+  simp_all
+  . unfold SLP.entails
+    unfold SLP.lift
+    tauto
+  . simp_all
+    sl
+    intro
+    subst_vars
+    rfl
