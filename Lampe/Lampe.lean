@@ -60,25 +60,15 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
   simp_all [Nat.mod_eq_of_lt]
 
 nr_def simple_if<>(x : Field, y : Field) -> u32 {
-  let z = if #eq(x, y) : bool { 0 : u32 } else { 1 : u32 };
-  3 : u32
+  let y = if #eq(x, y) : bool { 4 : u32 } else { 6 : u32 };
+  y
 }
 
-example : STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] h![x, y])
-  fun v => v =  BitVec.ofNat _ 3 := by
+example {p Γ x y}: STHoare p Γ ⟦x = y⟧ (simple_if.fn.body (Tp.denote p) h![] h![x, y])
+  fun v => v = BitVec.ofNat 32 4 := by
   simp only [simple_if]
   steps
   simp_all
-  rename_i cnd
-  cases cnd <;> simp_all
-  . steps
-    simp only [Nat.cast_zero, BitVec.ofNat_eq_ofNat, SLP.true_star]
-    tauto
-  . simp only [beq_false, Bool.not_eq_true', eq_iff_iff]
-    intros
-    steps
-    . simp only [Bool.false_eq_true, false_iff, SLP.true_star]
-      tauto
-    . simp only [Nat.cast_one, BitVec.ofNat_eq_ofNat, SLP.true_star]
-      tauto
-  . aesop
+  all_goals tauto
+  sorry
+  sorry

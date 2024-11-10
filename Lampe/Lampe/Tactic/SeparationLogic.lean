@@ -455,7 +455,6 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
-    | apply ite_intro
   )
 ))
 
@@ -472,7 +471,6 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
-    | apply consequence_frame_left ite_intro
   )
   repeat sl
 ))
@@ -490,7 +488,6 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
-    | apply ramified_frame_top ite_intro
   )
   repeat sl
 ))
@@ -510,6 +507,16 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
           try steps snd
           catch _ => pure [snd]
         return fstGoals ++ sndGoals ++ [trd]
+      else return [mvar]
+    else if body.isAppOf ``Lampe.Expr.ite then
+      if let [fGoal, tGoal] ← mvar.apply (← mkConstWithFreshMVarLevels ``ite_intro) then
+        let fGoal ← if let [fGoal] ← evalTacticAt (←`(tactic|intro)) fGoal then pure fGoal
+          else throwError "couldn't intro into false branch"
+        let tGoal ← if let [tGoal] ← evalTacticAt (←`(tactic|intro)) tGoal then pure tGoal
+          else throwError "couldn't intro into true branch"
+        let fSubGoals ← try steps fGoal catch _ => pure [fGoal]
+        let tSubGoals ← try steps tGoal catch _ => pure [tGoal]
+        return fSubGoals ++ tSubGoals
       else return [mvar]
     else
       try evalTacticAt (←`(tactic|stephelper1)) mvar
