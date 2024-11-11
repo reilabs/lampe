@@ -4,153 +4,69 @@ namespace Lampe.STHoare
 
 -- Arithmetics
 
-theorem add_intro {ha : Builtin.ArithTp tp}
-   : STHoare p Γ ⟦⟧
-   (.call h![] [tp, tp] tp (.builtin .add) h![a, b])
-   (fun v => v = Builtin.addOp ha a b ∧ (Builtin.noOverflow a b (·+·))) := by
-  unfold STHoare
-  intros H st h
-  rw [SLP.true_star] at h
-  apply SLP.ent_star_top at h
-  constructor
-  simp only [Builtin.add]
-  cases tp
-  <;> (constructor; simp only [SLP.true_star])
-  <;> (
-    simp only [Builtin.noOverflow] at *
-    intros
-  )
-  <;> try tauto
-  all_goals try unfold bitsCanRepresent
-  . rename_i hno
-    simp only [hno, and_self, SLP.true_star]
-    tauto
-  . rename_i hno
-    simp only [hno, and_self, SLP.true_star]
-    tauto
-  . simp only [and_self, SLP.true_star]
-    tauto
-  . simp only [and_self, SLP.true_star]
-    tauto
+ theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
 
-theorem mul_intro {ha : Builtin.ArithTp tp} : STHoare p Γ ⟦⟧
-    (.call h![] [tp, tp] tp (.builtin .mul) h![a, b])
-    (fun v => v = Builtin.mulOp ha a b ∧ (Builtin.noOverflow a b (·*·))) := by
-  unfold STHoare
-  intros H st h
-  constructor
-  simp only [Builtin.mul]
-  rw [SLP.true_star] at h
-  apply SLP.ent_star_top at h
-  cases tp
-  <;> (constructor; simp only [SLP.true_star])
-  <;> (
-    simp only [Builtin.noOverflow] at *
-    intros
-  )
-  <;> try tauto
-  all_goals try unfold bitsCanRepresent
-  . rename_i hno
-    simp only [hno, and_self, SLP.true_star]
-    tauto
-  . rename_i hno
-    simp only [hno, and_self, SLP.true_star]
-    tauto
-  . simp only [and_self, SLP.true_star]
-    tauto
-  . simp only [and_self, SLP.true_star]
-    tauto
+ theorem uSub_intro : STHoarePureBuiltin p Γ Builtin.uSub (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
 
-theorem sub_intro {ha : Builtin.ArithTp tp}: STHoare p Γ ⟦⟧
-    (.call h![] [tp, tp] tp (.builtin .sub) h![a, b])
-    (fun v => v = Builtin.subOp h a b ∧ (Builtin.noUnderflow a b (·-·))) := by
-  unfold STHoare
-  intros H st h
-  constructor
-  rw [SLP.true_star] at h
-  apply SLP.ent_star_top at h
-  cases tp
-  <;> (constructor; simp only [SLP.true_star])
-  <;> (
-    simp only [Builtin.noUnderflow] at *
-    intros
-  )
-  <;> try tauto
-  all_goals try unfold bitsCanRepresent
-  . rename_i hno
-    simp only [hno, and_self, SLP.true_star]
-    tauto
-  . rename_i hno
-    simp only [hno, and_self, SLP.true_star]
-    tauto
-  . simp only [and_self, SLP.true_star]
-    tauto
-  . simp only [and_self, SLP.true_star]
-    tauto
+ theorem uMul_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
 
-theorem div_intro {ha : Builtin.ArithTp tp}: STHoare p Γ ⟦⟧
-    (.call h![] [tp, tp] tp (.builtin .div) h![a, b])
-    (fun v => v = Builtin.divOp ha a b ∧ Builtin.canDivide a b) := by
-  unfold STHoare
-  intros H st h
-  constructor
-  simp only [Builtin.div]
-  rw [SLP.true_star] at h
-  apply SLP.ent_star_top at h
-  cases tp
-  <;> (constructor; simp only [SLP.true_star])
-  <;> (
-    simp only [Builtin.canDivide] at *
-    intros
-  )
-  <;> try tauto
-  all_goals (
-    have hno : b ≠ 0 ↔ True := by tauto
-    simp only [hno, and_self, SLP.true_star]
-    tauto
-  )
+ theorem uDiv_intro : STHoarePureBuiltin p Γ Builtin.uDiv (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
 
-theorem rem_intro : STHoare p Γ ⟦⟧
-    (.call h![] [tp, tp] tp (.builtin .rem) h![a, b])
-    (fun v => Builtin.canDivide a b ∧
-      match tp with
-      | .u _ => v = a % b
-      | .i _ => v = Builtin.intRem a b
-      | _ => False) := by
-  unfold STHoare
-  intros H st h
-  constructor
-  simp only [Builtin.rem]
-  rw [SLP.true_star] at h
-  apply SLP.ent_star_top at h
-  cases tp
-  <;> (constructor; simp only [SLP.true_star])
-  <;> (
-    simp only [Builtin.canDivide] at *
-    intros
-  )
-  <;> try tauto
-  all_goals (
-    have hno : b ≠ 0 ↔ True := by tauto
-    simp only [hno, and_self, SLP.true_star]
-    tauto
-  )
+ theorem uRem_intro : STHoarePureBuiltin p Γ Builtin.uRem (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
 
-theorem neg_intro : STHoare p Γ ⟦⟧
-  (.call h![] [tp, tp] tp (.builtin .neg) h![a, b])
-  (fun v => match tp with
-    | .i _ => v = -a
-    | .field => v = -a
-    | .bi => v = -a
-    | _ => False) := by
-  unfold STHoare
-  intros H st h
-  constructor
-  simp only [Builtin.rem]
-  rw [SLP.true_star] at h
-  apply SLP.ent_star_top at h
-  cases tp
-  <;> (constructor; simp)
+ theorem iAdd_intro : STHoarePureBuiltin p Γ Builtin.iAdd (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
+
+ theorem iSub_intro : STHoarePureBuiltin p Γ Builtin.iSub (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
+
+ theorem iMul_intro : STHoarePureBuiltin p Γ Builtin.iMul (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
+
+ theorem iDiv_intro : STHoarePureBuiltin p Γ Builtin.iDiv (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
+
+ theorem iRem_intro : STHoarePureBuiltin p Γ Builtin.iRem (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
+
+ theorem iNeg_intro : STHoarePureBuiltin p Γ Builtin.iNeg (by tauto) h![a] := by
+   apply pureBuiltin_intro_consequence <;> try rfl
+   tauto
+
+ theorem fAdd_intro : STHoarePureBuiltin p Γ Builtin.fAdd (by tauto) h![a, b] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+ theorem fSub_intro : STHoarePureBuiltin p Γ Builtin.fSub (by tauto) h![a, b] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+ theorem fMul_intro : STHoarePureBuiltin p Γ Builtin.fMul (by tauto) h![a, b] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+ theorem fDiv_intro : STHoarePureBuiltin p Γ Builtin.fDiv (by tauto) h![a, b] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+ theorem fNeg_intro : STHoarePureBuiltin p Γ Builtin.fNeg (by tauto) h![a] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
 
 -- Arrays
 
@@ -162,7 +78,27 @@ theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by ta
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
--- BigInt misc
+-- BigInt
+
+theorem bigIntEq_intro : STHoarePureBuiltin p Γ Builtin.bigIntEq (by tauto) h![a, b] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+theorem bigIntAdd_intro : STHoarePureBuiltin p Γ Builtin.bigIntAdd (by tauto) h![a, b] (a := ()) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem bigIntSub_intro : STHoarePureBuiltin p Γ Builtin.bigIntSub (by tauto) h![a, b] (a := ()) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem bigIntMul_intro : STHoarePureBuiltin p Γ Builtin.bigIntMul (by tauto) h![a, b] (a := ()) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem bigIntDiv_intro : STHoarePureBuiltin p Γ Builtin.bigIntDiv (by tauto) h![a, b] (a := ()) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
 
 theorem bigIntFromLeBytes_intro : STHoarePureBuiltin p Γ Builtin.bigIntFromLeBytes (by tauto) h![bs, mbs] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
@@ -243,19 +179,28 @@ theorem iShr_intro : STHoarePureBuiltin p Γ Builtin.iShr (by tauto) h![a, b] :=
 
 -- Comparison
 
-theorem eq_intro {heq : Builtin.EqTp tp}: STHoare p Γ ⟦⟧
-    (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b])
-    (fun v => v = (Builtin.eqOp heq a b)) := by
-  unfold STHoare
-  unfold THoare
-  intros H st h
-  rw [SLP.true_star] at h
-  apply SLP.ent_star_top at h
-  constructor
-  cases tp
-  <;> (constructor; simp only [Builtin.eqOp, beq_self_eq_true, SLP.true_star])
-  <;> assumption
+theorem unitEq_intro : STHoarePureBuiltin p Γ Builtin.unitEq (by tauto) h![a, b] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
 
+theorem boolEq_intro : STHoarePureBuiltin p Γ Builtin.boolEq (by tauto) h![a, b] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+theorem fEq_intro : STHoarePureBuiltin p Γ Builtin.fEq (by tauto) h![a, b] (a := ()) := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+theorem uEq_intro : STHoarePureBuiltin p Γ Builtin.uEq (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+theorem iEq_intro : STHoarePureBuiltin p Γ Builtin.uEq (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
+
+theorem strEq_intro : STHoarePureBuiltin p Γ Builtin.strEq (by tauto) h![a, b] := by
+   apply pureBuiltin_intro_consequence <;> tauto
+   tauto
 
 theorem uLt_intro : STHoarePureBuiltin p Γ Builtin.uLt (by tauto) h![a, b] := by
   apply pureBuiltin_intro_consequence <;> tauto

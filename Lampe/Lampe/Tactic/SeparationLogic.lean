@@ -448,7 +448,8 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litU_intro
     | apply fresh_intro
     | apply assert_intro
-    | apply eq_intro
+    | apply fEq_intro
+    | apply boolEq_intro
     | apply var_intro
     | apply ref_intro
     | apply readRef_intro
@@ -456,7 +457,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
-    | apply add_intro
+    | apply fAdd_intro
     | apply sub_intro
     | apply div_intro
     | apply mul_intro
@@ -468,7 +469,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left Lampe.STHoare.litU_intro
     | apply consequence_frame_left assert_intro
-    | apply consequence_frame_left eq_intro
+    | apply consequence_frame_left fEq_intro
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
     | apply consequence_frame_left readRef_intro
@@ -476,7 +477,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
-    | apply consequence_frame_left add_intro
+    | apply consequence_frame_left fAdd_intro
     | apply consequence_frame_left sub_intro
     | apply consequence_frame_left div_intro
     | apply consequence_frame_left mul_intro
@@ -489,7 +490,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top Lampe.STHoare.litU_intro
     | apply ramified_frame_top assert_intro
-    | apply ramified_frame_top eq_intro
+    | apply ramified_frame_top fEq_intro
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
     | apply ramified_frame_top readRef_intro
@@ -497,7 +498,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
-    | apply ramified_frame_top add_intro
+    | apply ramified_frame_top fAdd_intro
     | apply ramified_frame_top sub_intro
     | apply ramified_frame_top div_intro
     | apply ramified_frame_top mul_intro

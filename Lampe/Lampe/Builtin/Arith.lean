@@ -1,223 +1,123 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
-/-- Defines the types that are arithmetic -/
-inductive ArithTp : Tp → Prop
-  | u s : ArithTp (.u s)
-  | i s : ArithTp (.i s)
-  | field : ArithTp .field
-  | bi : ArithTp .bi
+/--
+Defines the addition of two `s`-bit uints: `(a b : U s)`.
+We make the following assumptions:
+- If `(a + b) < 2^s`, then the builtin evaluates to `(a + b) : U s`
+- Else (integer overflow), an exception is thrown.
 
-/-- Defines the semantics of a successful addition operation -/
-def addOp (_ : ArithTp tp) (a b : tp.denote p) : tp.denote p :=
-  match tp with
-  | .u _ => a + b
-  | .i _ => a + b
-  | .field => a + b
-  | .bi => a + b
-
-/-- Defines the semantics of a successful subtraction operation -/
-def subOp (_ : ArithTp tp) (a b : tp.denote p) : tp.denote p :=
-  match tp with
-  | .u _ => a - b
-  | .i _ => a - b
-  | .field => a - b
-  | .bi => a - b
-
-/-- Defines the semantics of a successful multiplication operation -/
-def mulOp (_ : ArithTp tp) (a b : tp.denote p) : tp.denote p :=
-  match tp with
-  | .u _ => a * b
-  | .i _ => a * b
-  | .field => a * b
-  | .bi => a * b
-
-/-- Defines the semantics of a successful division operation -/
-def divOp (_ : ArithTp tp) (a b : tp.denote p) : tp.denote p :=
-  match tp with
-  | .u _ => a.udiv b
-  | .i _ => a.sdiv b
-  | .field => a * b
-  | .bi => a * b
-
-/-- Ensures the operation given with `intOp` when applied to `a` and `b`'s int representation doesn't overflow. -/
-def noOverflow {tp : Tp}
-  (a b : tp.denote p)
-  (intOp : Int → Int → Int) : Prop := match tp with
-| .u s => (intOp a.toInt b.toInt) < 2^s
-| .i s => bitsCanRepresent s (intOp a.toInt b.toInt)
-| .field => True
-| .bi => True
-| _ => False
-
-inductive addOmni : Omni where
-| u {p st s a b Q} :
-  (noOverflow a b (·+·) → Q (some (st, addOp (by tauto) a b)))
-  → (¬noOverflow a b (·+·) → Q none)
-  → addOmni p st [.u s, .u s] (.u s) h![a, b] Q
-| i {p st s a b Q} :
-  (noOverflow a b (·+·) → Q (some (st, addOp (by tauto) a b)))
-  → (¬noOverflow a b (·+·) → Q none)
-  → addOmni p st [.i s, .i s] (.i s) h![a, b] Q
-| field {p st a b Q} :
-  Q (some (st, addOp (by tauto) a b))
-  → addOmni p st [.field, .field] .field h![a, b] Q
-| bi {p st a b Q} :
-  Q (some (st, addOp (by tauto) a b))
-  → addOmni p st [.bi, .bi] .bi h![a, b] Q
-| _ {p st a b Q} : Q none → addOmni p st [tp, tp] tp h![a, b] Q
+In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of bit size `s`.
+-/
+def uAdd := newGenericPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun s h![a, b] => ⟨(a.toInt + b.toInt) < 2^s,
+    fun _ => a + b⟩)
 
 /--
-Defines the addition builtin.
+Defines the multiplication of two `s`-bit uints: `(a b : U s)`.
+We make the following assumptions:
+- If `(a * b) < 2^s`, then the builtin evaluates to `(a * b) : U s`
+- Else (integer overflow), an exception is thrown.
 
-In Noir, this corresponds to the addition of two values with `+`.
+In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of bit size `s`.
 -/
-def add : Builtin := {
-  omni := addOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type addOmni <;> tauto
-    repeat (constructor; aesop; aesop)
-  frame := by
-    unfold omni_frame
-    intros p st1 st2 argTps outTp args Q omni1 hd
-    cases_type addOmni
-    rename_i s a b _ _ _
-    repeat (first | constructor | tauto | intro)
-}
-
-inductive mulOmni : Omni where
-| u {p st s a b Q} :
-  (noOverflow a b (·*·) → Q (some (st, mulOp (by tauto) a b)))
-  → (¬noOverflow a b (·*·) → Q none)
-  → mulOmni p st [.u s, .u s] (.u s) h![a, b] Q
-| i {p st s a b Q} :
-  (noOverflow a b (·*·) → Q (some (st, mulOp (by tauto) a b)))
-  → (¬noOverflow a b (·*·) → Q none)
-  → mulOmni p st [.i s, .i s] (.i s) h![a, b] Q
-| field {p st a b Q} :
-  Q (some (st, mulOp (by tauto) a b))
-  → mulOmni p st [.field, .field] .field h![a, b] Q
-| bi {p st a b Q} :
-  Q (some (st, mulOp (by tauto) a b))
-  → mulOmni p st [.bi, .bi] .bi h![a, b] Q
-| _ {p st a b Q} : Q none → mulOmni p st [tp, tp] tp h![a, b] Q
+def uMul := newGenericPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun s h![a, b] => ⟨(a.toInt * b.toInt) < 2^s,
+    fun _ => a * b⟩)
 
 /--
-Defines the multiplication builtin.
+Defines the subtraction of two `s`-bit uints: `(a b : U s)`.
+We make the following assumptions:
+- If `(a - b) ≥ 0`, then the builtin evaluates to `(a - b) : U s`
+- Else (integer underflow), an exception is thrown.
 
-In Noir, this corresponds to the multiplication of two values with `*`.
+In Noir, this builtin corresponds to `a - b` for uints `a`, `b` of bit size `s`.
 -/
-def mul : Builtin := {
-  omni := mulOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type mulOmni <;> tauto
-    repeat (constructor; aesop; aesop)
-  frame := by
-    unfold omni_frame
-    intros p st1 st2 argTps outTp args Q omni1 hd
-    cases_type mulOmni
-    rename_i s a b _ _ _
-    repeat (first | constructor | tauto | intro)
-}
-
-/-- Ensures the operation given with `intOp` when applied to `a` and `b`'s int representation doesn't underflow. -/
-def noUnderflow {tp : Tp}
-  (a b : tp.denote p)
-  (intOp : Int → Int → Int) : Prop := match tp with
-| .u _ => b ≤ a
-| .i s => bitsCanRepresent s (intOp a.toInt b.toInt)
-| .field => True
-| .bi => True
-| _ => False
-
-inductive subOmni : Omni where
-| u {p st s a b Q} :
-  (noUnderflow a b (·-·) → Q (some (st, subOp (by tauto) a b)))
-  → (¬noUnderflow a b (·-·) → Q none)
-  → subOmni p st [.u s, .u s] (.u s) h![a, b] Q
-| i {p st s a b Q} :
-  (noUnderflow a b (·-·) → Q (some (st, subOp (by tauto) a b)))
-  → (¬noUnderflow a b (·-·) → Q none)
-  → subOmni p st [.i s, .i s] (.i s) h![a, b] Q
-| field {p st a b Q} :
-  Q (some (st, subOp (by tauto) a b))
-  → subOmni p st [.field, .field] .field h![a, b] Q
-| bi {p st a b Q} :
-  Q (some (st, subOp (by tauto) a b))
-  → subOmni p st [.bi, .bi] .bi h![a, b] Q
-| _ {p st a b Q} : Q none → subOmni p st [tp, tp] tp h![a, b] Q
+def uSub := newGenericPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun _ h![a, b] => ⟨b ≤ a,
+    fun _ => a - b⟩)
 
 /--
-Defines the subtraction builtin.
+Defines the division of two `s`-bit uints: `(a b : U s)`.
+We make the following assumptions:
+- If `b ≠ 0`, then the builtin evaluates to `(a / b) : U s`
+- Else (divide by zero), an exception is thrown.
+- If `a / b` is not an integer, then the result is truncated.
 
-In Noir, this corresponds to the subtraction of two values with `-`.
+In Noir, this builtin corresponds to `a / b` for uints `a`, `b` of bit size `s`.
 -/
-def sub : Builtin := {
-  omni := subOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type subOmni <;> tauto
-    repeat (constructor; aesop; aesop)
-  frame := by
-    unfold omni_frame
-    intros p st1 st2 argTps outTp args Q omni1 hd
-    cases_type subOmni
-    rename_i s a b _ _ _
-    repeat (first | constructor | tauto | intro)
-}
-
-/-- Ensures that `b` can divide `a`, i.e., `b ≠ 0`.-/
-def canDivide {tp : Tp}
-  (_ b : tp.denote p) : Prop := match tp with
-| .u _ => b ≠ 0
-| .i _ => b ≠ 0
-| .field => b ≠ 0
-| .bi => b ≠ 0
-| _ => False
-
-inductive divOmni : Omni where
-| u {p st s a b Q} :
-  (canDivide a b → Q (some (st, divOp (by tauto) a b)))
-  → (¬canDivide a b → Q none)
-  → divOmni p st [.u s, .u s] (.u s) h![a, b] Q
-| i {p st s a b Q} :
-  (canDivide a b → Q (some (st, divOp (by tauto) a b)))
-  → (¬canDivide a b → Q none)
-  → divOmni p st [.i s, .i s] (.i s) h![a, b] Q
-| field {p st a b Q} :
-  (canDivide a b → Q (some (st, divOp (by tauto) a b)))
-  → (¬canDivide a b → Q none)
-  → divOmni p st [.field, .field] (.field) h![a, b] Q
-| bi {p st a b Q} :
-  (canDivide a b → Q (some (st, divOp (by tauto) a b)))
-  → (¬canDivide a b → Q none)
-  → divOmni p st [.bi, .bi] (.bi) h![a, b] Q
-| _ {p st a b Q} : Q none → divOmni p st [tp, tp] tp h![a, b] Q
+def uDiv := newGenericPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun _ h![a, b] => ⟨b ≠ 0,
+    fun _ => a.udiv b⟩)
 
 /--
-Defines the division builtin.
+Defines the modulus of two `s`-bit uints: `(a b : U s)`.
+We make the following assumptions:
+- If `b ≠ 0`, then the builtin evaluates to `(a % b) : U s`
+- Else (mod by zero), an exception is thrown.
 
-In Noir, this corresponds to the division of two values with `/`.
+In Noir, this builtin corresponds to `a % b` for uints `a`, `b` of bit size `s`.
 -/
-def div : Builtin := {
-  omni := divOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type divOmni <;> tauto
-    repeat (constructor; aesop; aesop)
-  frame := by
-    unfold omni_frame
-    intros p st1 st2 argTps outTp args Q omni1 hd
-    cases_type divOmni
-    rename_i s a b _ _ _
-    repeat (first | constructor | tauto | intro)
-}
+def uRem := newGenericPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun _ h![a, b] => ⟨b ≠ 0,
+    fun _ => a % b⟩)
+
+/--
+Defines the addition of two `s`-bit ints: `(a b: I s)`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ (a + b) < 2^(s-1)`, then the builtin evaluates to `(a + b) : I s`
+- Else (integer overflow/underflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a + b` for signed ints `a`, `b` of bit size `s`.
+-/
+def iAdd := newGenericPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt + b.toInt),
+    fun _ => a + b⟩)
+
+/--
+Defines the subtraction of two `s`-bit ints: `(a b: I s)`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ (a - b) < 2^(s-1)`, then the builtin evaluates to `(a - b) : I s`
+- Else (integer overflow/underflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a - b` for signed ints `a`, `b` of bit size `s`.
+-/
+def iSub := newGenericPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt - b.toInt),
+    fun _ => a - b⟩)
+
+/--
+Defines the multiplication of two `s`-bit ints: `(a b: I s)`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ (a * b) < 2^(s-1)`, then the builtin evaluates to `(a * b) : I s`
+- Else (integer overflow/underflow), an exception is thrown.
+
+In Noir, this builtin corresponds to `a * b` for signed ints `a`, `b` of bit size `s`.
+-/
+def iMul := newGenericPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s h![a, b] => ⟨bitsCanRepresent s (a.toInt * b.toInt),
+    fun _ => a * b⟩)
+
+/--
+Defines the division of two `s`-bit ints: `(a b: I s)`.
+We make the following assumptions:
+- If `b ≠ 0`, then the builtin evaluates to `(a.sdiv b) : I s`
+- Else (division-by-zero), an exception is thrown.
+
+In Noir, this builtin corresponds to `a / b` for signed ints `a`, `b` of bit size `s`.
+-/
+def iDiv := newGenericPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun _ h![a, b] => ⟨b ≠ 0,
+    fun _ => a.sdiv b⟩)
 
 /--
 Captures the behavior of the signed integer remainder operation % in Noir.
@@ -230,65 +130,87 @@ example : intRem (BitVec.ofInt 8 (-128)) (BitVec.ofInt 8 (-3)) = -2 := by rfl
 example : intRem (BitVec.ofInt 8 (6)) (BitVec.ofInt 8 (-100)) = 6 := by rfl
 example : intRem (BitVec.ofInt 8 (127)) (BitVec.ofInt 8 (-3)) = 1 := by rfl
 
-inductive remOmni : Omni where
-| u {p st s a b Q} :
-  (canDivide a b → Q (some (st, a % b)))
-  → (¬canDivide a b → Q none)
-  → remOmni p st [.u s, .u s] (.u s) h![a, b] Q
-| i {p st s a b Q} :
-  (canDivide a b → Q (some (st, intRem a b)))
-  → (¬canDivide a b → Q none)
-  → remOmni p st [.i s, .i s] (.i s) h![a, b] Q
-| _ {p st a b Q} : Q none → remOmni p st [tp, tp] tp h![a, b] Q
+/--
+Defines the integer remainder operation between two `s`-bit ints: `(a b: I s)`.
+We make the following assumptions:
+- If `b ≠ 0`, then the builtin evaluates to `(intRem a b) : I s`
+- Else (mod-by-zero), an exception is thrown.
+
+In Noir, this builtin corresponds to `a % b` for signed ints `a`, `b` of bit size `s`.
+-/
+def iRem := newGenericPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun _ h![a, b] => ⟨b ≠ 0,
+    fun _ => intRem a b⟩)
 
 /--
-Defines the remainder operation builtin.
+Defines the negation of a `s`-bit int: `a: I s`.
+We make the following assumptions:
+- If `-2^(s-1) ≤ -a < 2^(s-1)`, then the builtin evaluates to `-a : I s`
+- Else (integer overflow), an exception is thrown.
 
-In Noir, this corresponds to the modulus of two values with `%`.
+In Noir, this builtin corresponds to `-a` for a signed integer `a` of bit size `s`.
 -/
-def rem : Builtin := {
-  omni := remOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type remOmni <;> tauto
-    repeat (constructor; aesop; aesop)
-  frame := by
-    unfold omni_frame
-    intros p st1 st2 argTps outTp args Q omni1 hd
-    cases_type remOmni
-    rename_i s a b _ _ _
-    repeat (first | constructor | tauto | intro)
-}
-
-inductive negOmni : Omni where
-| i {p st s a Q} :
-  Q (some (st, -a))
-  → negOmni p st [.i s] (.i s) h![a] Q
-| field {p st a Q} :
-  Q (some (st, -a))
-  → negOmni p st [.field] (.field) h![a] Q
-| bi {p st a Q} :
-  Q (some (st, -a))
-  → negOmni p st [.bi] (.bi) h![a] Q
-| _ {p st a b Q} : Q none → negOmni p st [tp, tp] tp h![a, b] Q
+def iNeg := newGenericPureBuiltin
+  (fun s => ⟨[(.i s)], (.i s)⟩)
+  (fun s h![a] => ⟨bitsCanRepresent s (-a.toInt),
+    fun _ => -a⟩)
 
 /--
-Defines the negation builtin.
+Defines the addition of two field elements `(a b: Fp p)` in `ZMod p`.
+This is assumed to evaluate to `(a + b) : Fp p`.
 
-In Noir, this corresponds to the negation of a value with `-`.
+In Noir, this builtin corresponds to `a + b` for field elements `a`, `b`.
 -/
-def neg : Builtin := {
-  omni := negOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type negOmni <;> tauto
-  frame := by
-    unfold omni_frame
-    intros p st1 st2 argTps outTp args Q omni1 hd
-    cases_type negOmni
-    repeat (first | constructor | tauto | intro)
-}
+def fAdd := newPureBuiltin
+  ⟨[(.field), (.field)], .field⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a + b⟩)
+
+/--
+Defines the multiplication of two field elements `(a b: Fp p)` in `ZMod p`.
+This is assumed to evaluate to `(a * b) : Fp p`.
+
+In Noir, this builtin corresponds to `a * b` for field elements `a`, `b`.
+-/
+def fMul := newPureBuiltin
+  ⟨[(.field), (.field)], .field⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a * b⟩)
+
+/--
+Defines the subtraction of two field elements `(a b: Fp p)` in `ZMod p`.
+This is assumed to evaluate to `(a - b) : Fp p`.
+
+In Noir, this builtin corresponds to `a - b` for field elements `a`, `b`.
+-/
+def fSub := newPureBuiltin
+  ⟨[(.field), (.field)], .field⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a - b⟩)
+
+/--
+Defines the division of two field elements `(a b: Fp p)` in `ZMod p`.
+We assume the following:
+- If `b ≠ 0`, it evaluates to `(a / b) : Fp p`.
+- Else, an exception is thrown.
+
+In Noir, this builtin corresponds to `a / b` for field elements `a`, `b`.
+-/
+def fDiv := newPureBuiltin
+  ⟨[(.field), (.field)], .field⟩
+  (fun h![a, b] => ⟨b ≠ 0,
+    fun _ => a / b⟩)
+
+/--
+Defines the additive inverse of a field element `a: Fp p` in `ZMod p`.
+This is assumed to evaluate to `-a : Fp p`.
+
+In Noir, this builtin corresponds to `-a` for a field element `a`.
+-/
+def fNeg := newPureBuiltin
+  ⟨[(.field)], .field⟩
+  (fun h![a] => ⟨True,
+    fun _ => -a⟩)
 
 end Lampe.Builtin

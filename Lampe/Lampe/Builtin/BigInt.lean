@@ -2,6 +2,61 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 /--
+Defines the equality comparison between two big ints.
+
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `BigInt`.
+-/
+def bigIntEq := newPureBuiltin
+  ⟨[.bi, .bi], .bool⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a = b⟩)
+
+/--
+Defines the addition of two bigints `(a b : Int)`.
+The builtin is assumed to return `a + b`.
+
+In Noir, this builtin corresponds to `a + b` for bigints `a`, `b`.
+-/
+def bigIntAdd := newPureBuiltin
+  ⟨[.bi, .bi], (.bi)⟩
+  (fun h![a, b]  => ⟨True,
+    fun _ => a + b⟩)
+
+/--
+Defines the subtraction of two bigints `(a b : Int)`.
+The builtin is assumed to return `a - b`.
+
+In Noir, this builtin corresponds to `a - b` for bigints `a`, `b`.
+-/
+def bigIntSub := newPureBuiltin
+  ⟨[.bi, .bi], (.bi)⟩
+  (fun h![a, b]  => ⟨True,
+    fun _ => a - b⟩)
+
+/--
+Defines the multiplication of two bigints `(a b : Int)`.
+The builtin is assumed to return `a * b`.
+
+In Noir, this builtin corresponds to `a * b` for bigints `a`, `b`.
+-/
+def bigIntMul := newPureBuiltin
+  ⟨[.bi, .bi], (.bi)⟩
+  (fun h![a, b]  => ⟨True,
+    fun _ => a * b⟩)
+
+/--
+Defines the division of two bigints `(a b : Int)`. We make the following assumptions:
+- If `b = 0`, an exception is thrown.
+- Otherwise, the builtin is assumed to return `a / b`.
+
+In Noir, this builtin corresponds to `a / b` for bigints `a`, `b`.
+-/
+def bigIntDiv := newPureBuiltin
+  ⟨[.bi, .bi], (.bi)⟩
+  (fun h![a, b]  => ⟨b ≠ 0,
+    fun _ => a / b⟩)
+
+/--
 Defines the conversion of a byte slice `bytes : List (U 8)` in little-endian encoding to a `BigInt`.
 Modulus parameter is ignored.
 

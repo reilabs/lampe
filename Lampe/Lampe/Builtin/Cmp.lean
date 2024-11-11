@@ -1,55 +1,66 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
-/-- Defines the types that can be equality checked -/
-inductive EqTp : Tp → Prop
-  | u s : EqTp (.u s)
-  | i s : EqTp (.i s)
-  | field : EqTp .field
-  | bi : EqTp .bi
-  | bool : EqTp .bool
-  | unit : EqTp .unit
-  | str n : EqTp (.str n)
+/--
+Defines the equality comparison between two units, which always returns `True`.
 
-/-- Defines the semantics of a successful equality check in Noir -/
-def eqOp (_ : EqTp tp) (a b : tp.denote p) : Tp.denote p .bool :=
-  match tp with
-  -- () == () is always true in Noir
-  | .unit => true
-  | .u _ => a == b
-  | .i _ => a == b
-  | .bool => a == b
-  | .field => a == b
-  | .bi => a == b
-  | .str _ => a == b
-
-inductive eqOmni : Omni where
-| unit {p st Q} : Q (some (st, true)) → eqOmni p st [.unit, .unit] .bool h![a, b] Q
-| u {p st a b Q} : Q (some (st, eqOp (by tauto) a b)) → eqOmni p st [.u s, .u s] .bool h![a, b] Q
-| i {p st a b Q} : Q (some (st, eqOp (by tauto) a b)) → eqOmni p st [.i s, .i s] .bool h![a, b] Q
-| bool {p st a b Q} : Q (some (st, eqOp (by tauto) a b)) → eqOmni p st [.bool, .bool] .bool h![a, b] Q
-| field {p st Q a b} : Q (some (st, eqOp (by tauto) a b)) → eqOmni p st [.field, .field] .bool h![a, b] Q
-| bi {p st Q a b} : Q (some (st, eqOp (by tauto) a b)) → eqOmni p st [.bi, .bi] .bool h![a, b] Q
-| str {p st Q a b} : Q (some (st, eqOp (by tauto) a b)) → eqOmni p st [.str n, .str n] .bool h![a, b] Q
-| _ {p st tp a b Q} : Q none → eqOmni p st [tp, tp] .bool h![a, b] Q
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `Unit`.
+-/
+def unitEq := newPureBuiltin
+  ⟨[.unit, .unit], .bool⟩
+  (fun _ => ⟨True,
+    fun _ => True⟩)
 
 /--
-Defines the equality comparison between values.
+Defines the equality comparison between two booleans.
 
-In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `T`.
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `bool`.
 -/
-def eq : Builtin := {
-  omni := eqOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type eqOmni <;> tauto
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type eqOmni <;> (constructor; try constructor; tauto)
-    tauto
-}
+def boolEq := newPureBuiltin
+  ⟨[.bool, .bool], .bool⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a = b⟩)
+
+/--
+Defines the equality comparison between two field elements.
+
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `Field`.
+-/
+def fEq := newPureBuiltin
+  ⟨[.field, .field], .bool⟩
+  (fun h![a, b] => ⟨True,
+    fun _ => a = b⟩)
+
+/--
+Defines the equality comparison between two uints of size `s`.
+
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of uints.
+-/
+def uEq := newGenericPureBuiltin
+  (fun s => ⟨[.u s, .u s], .bool⟩)
+  (fun _ h![a, b] => ⟨True,
+    fun _ => a = b⟩)
+
+/--
+Defines the equality comparison between two ints of size `s`.
+
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of ints.
+-/
+def iEq := newGenericPureBuiltin
+  (fun s => ⟨[.i s, .i s], .bool⟩)
+  (fun _ h![a, b] => ⟨True,
+    fun _ => a = b⟩)
+
+/--
+Defines the equality comparison between two strings of length `n`.
+
+In Noir, this builtin corresponds to `a == b` for values `a`, `b` of `str<n>`.
+-/
+def strEq := newGenericPureBuiltin
+  (fun n => ⟨[.str n, .str n], .bool⟩)
+  (fun _ h![a, b] => ⟨True,
+    fun _ => a = b⟩)
+
 
 /--
 Defines the less-than comparison between uint values of bit size `s`.
