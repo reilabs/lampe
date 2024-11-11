@@ -23,6 +23,13 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
 | litTrue : Q (some (st, true)) → Omni Γ st (.lit .bool 1) Q
 | litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.lit (.u s) n) Q
 | var : Q (some (st, v)) → Omni Γ st (.var v) Q
+| skip : Q (some (st, ())) → Omni Γ st (.skip) Q
+| iteTrue {mainBranch elseBranch} :
+  Omni Γ st mainBranch Q →
+  Omni Γ st (Expr.ite true mainBranch elseBranch) Q
+| iteFalse {mainBranch elseBranch} :
+  Omni Γ st elseBranch Q →
+  Omni Γ st (Expr.ite false mainBranch elseBranch) Q
 | letIn :
     Omni Γ st e Q₁ →
     (∀v s, Q₁ (some (s, v)) → Omni Γ s (b v) Q) →
@@ -74,6 +81,7 @@ theorem Omni.frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
   intro h
   induction h with
   | litField hq
+  | skip
   | litFalse hq
   | litTrue hq
   | litU _
@@ -111,5 +119,11 @@ theorem Omni.frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
     intro
     apply loopNext (by assumption)
     tauto
+  | iteTrue _ ih
+  | iteFalse _ ih =>
+    intro
+    constructor
+    apply ih
+    assumption
 
 end Lampe

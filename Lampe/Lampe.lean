@@ -58,3 +58,34 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
   · simp_all
   steps
   simp_all [Nat.mod_eq_of_lt]
+
+nr_def simple_if<>(x : Field, y : Field) -> Field {
+  let mut z = x;
+  if #eq(x, x) : bool {
+    z = y
+   }; -- else ()
+  z
+}
+
+example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if.fn.body (Tp.denote p) h![] h![x, y])
+  fun v => v = y := by
+  simp only [simple_if]
+  steps <;> tauto
+  . sl
+  . sl
+    simp_all
+  . subst_vars
+    rfl
+
+
+nr_def simple_if_else<>(x : Field, y : Field) -> Field {
+  let z = if #eq(x, x) : bool { x } else { y };
+  z
+}
+
+example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h![] h![x, y])
+  fun v => v = x := by
+  simp only [simple_if_else]
+  steps
+  . contradiction
+  . simp_all

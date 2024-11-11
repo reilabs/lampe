@@ -183,7 +183,7 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   else if e.isAppOf ``SLP.lift then
     let args := e.getAppArgs
     return SLTerm.lift (←args[1]?)
-  else if e.isMVar then
+  else if e.getAppFn.isMVar then
     return SLTerm.mvar e
   else if e.isAppOf ``SLP.forall' then
     let args := e.getAppArgs
@@ -400,6 +400,9 @@ partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
     let (_, newGoal) ← newGoal.intro1
     let gls ← solveEntailment newGoal
     return gls ++ newGoals
+  | SLTerm.top => do
+    let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.entails_top)
+    return newGoals
   | _ => pure ()
 
   match post with
@@ -455,6 +458,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
+    | apply skip_intro
   )
 ))
 
@@ -471,6 +475,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
+    -- | apply consequence_frame_left skip_intro
   )
   repeat sl
 ))
@@ -488,6 +493,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
+    | apply ramified_frame_top skip_intro
   )
   repeat sl
 ))
@@ -507,6 +513,16 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
           try steps snd
           catch _ => pure [snd]
         return fstGoals ++ sndGoals ++ [trd]
+      else return [mvar]
+    else if body.isAppOf ``Lampe.Expr.ite then
+      if let [fGoal, tGoal] ← mvar.apply (← mkConstWithFreshMVarLevels ``ite_intro) then
+        let fGoal ← if let [fGoal] ← evalTacticAt (←`(tactic|intro)) fGoal then pure fGoal
+          else throwError "couldn't intro into false branch"
+        let tGoal ← if let [tGoal] ← evalTacticAt (←`(tactic|intro)) tGoal then pure tGoal
+          else throwError "couldn't intro into true branch"
+        let fSubGoals ← try steps fGoal catch _ => pure [fGoal]
+        let tSubGoals ← try steps tGoal catch _ => pure [tGoal]
+        return fSubGoals ++ tSubGoals
       else return [mvar]
     else
       try evalTacticAt (←`(tactic|stephelper1)) mvar
