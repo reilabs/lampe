@@ -72,7 +72,8 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if.fn.body (Tp.denote p) h![] h!
   simp only [simple_if]
   steps <;> tauto
   . sl
-  . sorry -- we need skip_intro
+  . sl
+    simp_all
   . subst_vars
     rfl
 

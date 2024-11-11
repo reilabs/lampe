@@ -358,4 +358,17 @@ theorem ite_intro {cnd : Bool}
   . apply iteTrue_intro
     tauto
 
+theorem skip_intro :
+  STHoare p Γ ⟦⟧ (.skip) (fun v => v = ()) := by
+  unfold STHoare
+  intros
+  simp only [SLP.true_star]
+  unfold THoare
+  intros
+  constructor
+  simp only
+  . apply SLP.ent_star_top
+    tauto
+  . exact ()
+
 end Lampe.STHoare
