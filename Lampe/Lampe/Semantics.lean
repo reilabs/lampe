@@ -23,7 +23,7 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
 | litTrue : Q (some (st, true)) → Omni Γ st (.lit .bool 1) Q
 | litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.lit (.u s) n) Q
 | var : Q (some (st, v)) → Omni Γ st (.var v) Q
-| skip : ∀ st v, Q (some (st, v)) → Omni Γ st (.skip) Q
+| skip : Q (some (st, ())) → Omni Γ st (.skip) Q
 | iteTrue {mainBranch elseBranch} :
   Omni Γ st mainBranch Q →
   Omni Γ st (Expr.ite true mainBranch elseBranch) Q

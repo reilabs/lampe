@@ -369,6 +369,5 @@ theorem skip_intro :
   simp only
   . apply SLP.ent_star_top
     tauto
-  . exact ()
 
 end Lampe.STHoare
