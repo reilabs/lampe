@@ -1,6 +1,20 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
+class ArithAdd (tp : Tp) where
+  validate {p} : (a b : tp.denote p) → Prop
+  compute {p} : (a b : tp.denote p) → tp.denote p
+
+@[simp]
+instance {s} : ArithAdd (.u s) where
+  validate a b := a.toInt + b.toInt < 2^s
+  compute a b := a + b
+
+@[simp]
+instance : ArithAdd .field where
+  validate _ _ := True
+  compute a b := a + b
+
 /-- Defines the types that are arithmetic -/
 inductive ArithTp : Tp → Prop
   | u s : ArithTp (.u s)
@@ -51,21 +65,14 @@ def noOverflow {tp : Tp}
 | _ => False
 
 inductive addOmni : Omni where
-| u {p st s a b Q} :
-  (noOverflow a b (·+·) → Q (some (st, addOp (by tauto) a b)))
-  → (¬noOverflow a b (·+·) → Q none)
-  → addOmni p st [.u s, .u s] (.u s) h![a, b] Q
-| i {p st s a b Q} :
-  (noOverflow a b (·+·) → Q (some (st, addOp (by tauto) a b)))
-  → (¬noOverflow a b (·+·) → Q none)
-  → addOmni p st [.i s, .i s] (.i s) h![a, b] Q
-| field {p st a b Q} :
-  Q (some (st, addOp (by tauto) a b))
-  → addOmni p st [.field, .field] .field h![a, b] Q
-| bi {p st a b Q} :
-  Q (some (st, addOp (by tauto) a b))
-  → addOmni p st [.bi, .bi] .bi h![a, b] Q
-| _ {p st a b Q} : Q none → addOmni p st [tp, tp] tp h![a, b] Q
+| ok {tp p st a b Q} [ArithAdd tp]:
+  ArithAdd.validate a b →
+  Q (some (st, ArithAdd.compute a b)) →
+  addOmni p st [tp, tp] tp h![a, b] Q
+| err {tp p st a b Q} [ArithAdd tp]:
+  ¬ArithAdd.validate a b →
+  Q none →
+  addOmni p st [tp, tp] tp h![a, b] Q
 
 /--
 Defines the addition builtin.
@@ -77,14 +84,18 @@ def add : Builtin := {
   conseq := by
     unfold omni_conseq
     intros
-    cases_type addOmni <;> tauto
-    repeat (constructor; aesop; aesop)
+    cases_type addOmni
+    · tauto
+    · apply addOmni.err <;> tauto
   frame := by
     unfold omni_frame
-    intros p st1 st2 argTps outTp args Q omni1 hd
+    intros
     cases_type addOmni
-    rename_i s a b _ _ _
-    repeat (first | constructor | tauto | intro)
+    · constructor
+      · assumption
+      · simp only [SLP.star]
+        tauto
+    · apply addOmni.err <;> tauto
 }
 
 inductive mulOmni : Omni where
