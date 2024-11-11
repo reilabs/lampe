@@ -448,19 +448,49 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litU_intro
     | apply fresh_intro
     | apply assert_intro
-    | apply fEq_intro
-    | apply boolEq_intro
+    -- memory builtins
     | apply var_intro
     | apply ref_intro
     | apply readRef_intro
     | apply writeRef_intro
+    -- slice builtins
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
+    -- equality
+    | apply unitEq_intro
+    | apply boolEq_intro
+    | apply fEq_intro
+    | apply uEq_intro
+    | apply iEq_intro
+    | apply bigIntEq_intro
+    | apply strEq_intro
+    -- negation
+    | apply fNeg_intro
+    | apply iNeg_intro
+    -- addition
     | apply fAdd_intro
-    | apply sub_intro
-    | apply div_intro
-    | apply mul_intro
+    | apply uAdd_intro
+    | apply iAdd_intro
+    | apply bigIntAdd_intro
+    -- subtraction
+    | apply fSub_intro
+    | apply uSub_intro
+    | apply iSub_intro
+    | apply bigIntSub_intro
+    -- division
+    | apply fDiv_intro
+    | apply uDiv_intro
+    | apply iDiv_intro
+    | apply bigIntDiv_intro
+    -- multiplication
+    | apply fMul_intro
+    | apply uMul_intro
+    | apply iMul_intro
+    | apply bigIntMul_intro
+    -- remainder
+    | apply uRem_intro
+    | apply iRem_intro
   )
 ))
 
@@ -469,18 +499,49 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left Lampe.STHoare.litU_intro
     | apply consequence_frame_left assert_intro
-    | apply consequence_frame_left fEq_intro
+    -- memory builtins
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
     | apply consequence_frame_left readRef_intro
     | apply consequence_frame_left writeRef_intro
+    -- slice builtins
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
+    -- equality
+    | apply consequence_frame_left unitEq_intro
+    | apply consequence_frame_left boolEq_intro
+    | apply consequence_frame_left fEq_intro
+    | apply consequence_frame_left uEq_intro
+    | apply consequence_frame_left iEq_intro
+    | apply consequence_frame_left bigIntEq_intro
+    | apply consequence_frame_left strEq_intro
+    -- negation
+    | apply consequence_frame_left fNeg_intro
+    | apply consequence_frame_left iNeg_intro
+    -- addition
     | apply consequence_frame_left fAdd_intro
-    | apply consequence_frame_left sub_intro
-    | apply consequence_frame_left div_intro
-    | apply consequence_frame_left mul_intro
+    | apply consequence_frame_left uAdd_intro
+    | apply consequence_frame_left iAdd_intro
+    | apply consequence_frame_left bigIntAdd_intro
+    -- subtraction
+    | apply consequence_frame_left fSub_intro
+    | apply consequence_frame_left uSub_intro
+    | apply consequence_frame_left iSub_intro
+    | apply consequence_frame_left bigIntSub_intro
+    -- division
+    | apply consequence_frame_left fDiv_intro
+    | apply consequence_frame_left uDiv_intro
+    | apply consequence_frame_left iDiv_intro
+    | apply consequence_frame_left bigIntDiv_intro
+    -- multiplication
+    | apply consequence_frame_left fMul_intro
+    | apply consequence_frame_left uMul_intro
+    | apply consequence_frame_left iMul_intro
+    | apply consequence_frame_left bigIntMul_intro
+    -- remainder
+    | apply consequence_frame_left uRem_intro
+    | apply consequence_frame_left iRem_intro
   )
   repeat sl
 ))
@@ -490,18 +551,49 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top Lampe.STHoare.litU_intro
     | apply ramified_frame_top assert_intro
-    | apply ramified_frame_top fEq_intro
+    -- memory builtins
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
     | apply ramified_frame_top readRef_intro
     | apply ramified_frame_top writeRef_intro
+    -- slice builtins
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
+    -- equality
+    | apply ramified_frame_top unitEq_intro
+    | apply ramified_frame_top boolEq_intro
+    | apply ramified_frame_top fEq_intro
+    | apply ramified_frame_top uEq_intro
+    | apply ramified_frame_top iEq_intro
+    | apply ramified_frame_top bigIntEq_intro
+    | apply ramified_frame_top strEq_intro
+    -- negation
+    | apply ramified_frame_top fNeg_intro
+    | apply ramified_frame_top iNeg_intro
+    -- addition
     | apply ramified_frame_top fAdd_intro
-    | apply ramified_frame_top sub_intro
-    | apply ramified_frame_top div_intro
-    | apply ramified_frame_top mul_intro
+    | apply ramified_frame_top uAdd_intro
+    | apply ramified_frame_top iAdd_intro
+    | apply ramified_frame_top bigIntAdd_intro
+    -- subtraction
+    | apply ramified_frame_top fSub_intro
+    | apply ramified_frame_top uSub_intro
+    | apply ramified_frame_top iSub_intro
+    | apply ramified_frame_top bigIntSub_intro
+    -- division
+    | apply ramified_frame_top fDiv_intro
+    | apply ramified_frame_top uDiv_intro
+    | apply ramified_frame_top iDiv_intro
+    | apply ramified_frame_top bigIntDiv_intro
+    -- multiplication
+    | apply ramified_frame_top fMul_intro
+    | apply ramified_frame_top uMul_intro
+    | apply ramified_frame_top iMul_intro
+    | apply ramified_frame_top bigIntMul_intro
+    -- remainder
+    | apply ramified_frame_top uRem_intro
+    | apply ramified_frame_top iRem_intro
   )
   repeat sl
 ))
