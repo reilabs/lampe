@@ -192,6 +192,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
       let mainBody ← mkExpr mainBody none fun x => ``(Lampe.Expr.var $x)
       let elseBody ← mkExpr elseBody none fun x => ``(Lampe.Expr.var $x)
       wrapSimple (←`(Lampe.Expr.ite $cond $mainBody $elseBody)) vname k
+| `(nr_expr| if $cond $mainBody) => do
+    mkExpr cond none fun cond => do
+      let mainBody ← mkExpr mainBody none fun x => ``(Lampe.Expr.var $x)
+      wrapSimple (←`(Lampe.Expr.ite $cond $mainBody Lampe.Expr.skip)) vname k
 | _ => throwUnsupportedSyntax
 
 end

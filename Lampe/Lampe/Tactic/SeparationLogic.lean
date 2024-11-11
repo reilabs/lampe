@@ -183,7 +183,7 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   else if e.isAppOf ``SLP.lift then
     let args := e.getAppArgs
     return SLTerm.lift (←args[1]?)
-  else if e.isMVar then
+  else if e.getAppFn.isMVar then
     return SLTerm.mvar e
   else if e.isAppOf ``SLP.forall' then
     let args := e.getAppArgs
