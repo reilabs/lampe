@@ -86,5 +86,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h!
   fun v => v = x := by
   simp only [simple_if_else]
   steps
-  . contradiction
+  . simp only [decide_True, exists_const]
+    sl
+    contradiction
   . simp_all
