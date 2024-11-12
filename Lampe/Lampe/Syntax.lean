@@ -57,17 +57,17 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | _ => throwUnsupportedSyntax
 
 partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) := match i with
-| "add"            => ``(Builtin.add)
+| "add"            => ``(Builtin.fAdd)
 | "sub"            => ``(Builtin.sub)
 | "mul"            => ``(Builtin.mul)
 | "div"            => ``(Builtin.div)
-| "eq"             => ``(Builtin.eq)
+| "eq"             => ``(Builtin.fEq)
 | "assert"         => ``(Builtin.assert)
 | "not"            => ``(Builtin.not)
 | "lt"             => ``(Builtin.lt)
 | "index"          => ``(Builtin.index)
 | "cast"           => ``(Builtin.cast)
-| "modulus_num_bits" => ``(Builtin.modulusNumBits)
+| "modulus_num_bits" => ``(Builtin.fModNumBits)
 | "to_le_bytes"      => ``(Builtin.toLeBytes)
 | "fresh"          => ``(Builtin.fresh)
 | "slice_len"      => ``(Builtin.sliceLen)
