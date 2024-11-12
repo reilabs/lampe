@@ -16,6 +16,7 @@ example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] h![x]) fun v => v = x 
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
+  #add(x, y) : I;
   #assert(#eq(a, x) : bool) : Unit;
   #assert(#eq(a, y) : bool) : Unit;
 }
@@ -23,7 +24,6 @@ nr_def weirdEq<I>(x : I, y : I) -> Unit {
 example {P} {x y : Tp.denote P .field} : STHoare P Γ ⟦⟧ (weirdEq.fn.body _ h![.field] h![x, y]) fun _ => x = y := by
   simp only [weirdEq]
   steps
-  intros
   simp_all
 
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
@@ -52,8 +52,7 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
       simp at *
       linarith
     simp only [this, List.take_succ]
-    rename some _ = _ => h
-    simp_all [←h]
+    aesop
   · simp_all
   · simp_all
   steps
@@ -87,5 +86,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h!
   fun v => v = x := by
   simp only [simple_if_else]
   steps
-  . contradiction
+  . simp only [decide_True, exists_const]
+    sl
+    contradiction
   . simp_all

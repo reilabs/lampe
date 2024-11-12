@@ -66,8 +66,7 @@ def newGenericPureBuiltin {A : Type}
   (desc : {p : Prime}
     → (a : A)
     → (args : HList (Tp.denote p) (sgn a).fst)
-    → (h : Prop) × (h → (Tp.denote p (sgn a).snd)))
-: Builtin := {
+    → (h : Prop) × (h → (Tp.denote p (sgn a).snd))) : Builtin := {
   omni := genericPureOmni sgn desc
   conseq := by
     unfold omni_conseq
@@ -99,17 +98,17 @@ def newPureBuiltin
   (sgn : List Tp × Tp)
   (desc : {p : Prime}
     → (args : HList (Tp.denote p) sgn.fst)
-    → (h : Prop) × (h → (Tp.denote p sgn.snd)))
-   : Builtin := newGenericPureBuiltin
-    (fun (_ : Unit) => sgn)
-    (fun _ args => desc args)
+    → (h : Prop) × (h → (Tp.denote p sgn.snd))) :=
+    newGenericPureBuiltin
+      (fun (_ : Unit) => sgn)
+      (fun _ args => desc args)
 
 /--
 Defines the assertion builtin that takes a boolean. We assume the following:
 - If `a == true`, it evaluates to `()`.
 - Else, an exception is thrown.
 -/
-def assert : Builtin := newPureBuiltin
+def assert := newPureBuiltin
   ⟨[.bool], .unit⟩
   (fun h![a] => ⟨a == true,
     fun _ => ()⟩)

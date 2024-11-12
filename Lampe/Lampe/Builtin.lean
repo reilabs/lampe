@@ -8,3 +8,4 @@ import Lampe.Builtin.Field
 import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
+import Lampe.Builtin.Zeroed
