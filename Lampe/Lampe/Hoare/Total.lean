@@ -5,12 +5,6 @@ import Lampe.SeparationLogic
 
 namespace Lampe
 
-/--
-  A Hoare triplet.
-  ```
-  {P} e {Q} ≡ ∀st, P st → (e ⇓ Q)
-  ```
--/
 def THoare
     {tp : Tp}
     (p : Prime)

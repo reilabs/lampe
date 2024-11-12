@@ -73,10 +73,7 @@ Converts a list `l` to a vector of size `n`s.
 - If `n > l.length`, then the higher indices are populated with `zero`.
 -/
 def listToVec (l : List α) (zero : α) : Mathlib.Vector α n :=
-  Mathlib.Vector.ofFn (fun (i : Fin n) =>
-    if h: i.val < l.length then
-      (l.get (Fin.mk i.val h))
-    else zero)
+  ⟨l.takeD n zero, List.takeD_length _ _ _⟩
 
 /--
 Defines the conversion of `a : Int` to its byte slice representation `l : Array 32 (U 8)` in little-endian encoding.

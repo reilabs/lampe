@@ -7,12 +7,7 @@ import Lampe.Hoare.Total
 namespace Lampe
 
 /--
-Separation logic (total) Hoare triplet.
-```
-{P} e {λv. Q v} ≡ ∀H, [P ⋆ H] e [λv. Q v ⋆ H ⋆ ⊤]
-```
-
-A Hoare triplet `{P} e {λv. Q v}` has the following meaning:
+A Hoare triple `{P} e {λv. Q v}` has the following meaning:
 if the state of the program satisfies the pre-condition `P`,
 then the expression `e` terminates and evaluates to `v` such that the post-condition `Q v` holds.
 
@@ -21,11 +16,11 @@ Accordingly, we interpret `{P} e {λv. Q v}` as follows:
 if `P` holds, then `e` terminates and it either (1) fails or (2) *successfully* evaluates to `v` such that `Q v` holds.
 This is logically equivalent to saying that if `P` holds, then `e` terminates and (`Q v` holds if `e` succeeds and evaluates to `v`).
 
-Hence, the triplets are *partial* with respect failure and *total* with respect to termination.
+Hence, the triples are *partial* with respect to failure and *total* with respect to termination.
 
 An intuitive way of looking at this is thinking in terms of "knowledge discovery".
 For example, if the operation `a + b` succeeds, then we know that it evaluates to `v = a + b` **and** `a + b < 2^32`, i.e., no overflow has happened.
-Then, we would define the post-condition as `Q := λv. (v = a + b) ∧ (a + b < 2^32)`.
+Then, we would define the post-condition such that `Q v = (v = a + b) ∧ (a + b < 2^32)`.
  -/
 def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
@@ -41,13 +36,6 @@ abbrev STHoarePureBuiltin p (Γ : Env)
 
 namespace STHoare
 
-/--
-Separation logic frame rule.
-```
-⬝ {P} e {Q}
-⊢ {P ⋆ H} e {λv. Q v ⋆ H}
-```
--/
 theorem frame (h_hoare: STHoare p Γ P e Q): STHoare p Γ (P ⋆ H) e (fun v => Q v ⋆ H) := by
   unfold STHoare
   intro H'
@@ -56,15 +44,6 @@ theorem frame (h_hoare: STHoare p Γ P e Q): STHoare p Γ (P ⋆ H) e (fun v => 
     tauto
   }
 
-/--
-Separation logic consequence rule.
-```
-⬝ H₂ ⊢ H₁
-⬝ ∀v, Q₁ v ⋆ ⊤ ⊢ Q₂ v ⋆ ⊤
-⬝ {H₁} e {λv. Q₁ v}
-⊢ {H₂} e {λv. Q₂ v}
-```
--/
 theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : Tp.denote p tp → SLP p}
     (h_pre_conseq : H₂ ⊢ H₁)
     (h_post_conseq : ∀ v, Q₁ v ⋆ ⊤ ⊢ Q₂ v ⋆ ⊤)
@@ -79,14 +58,6 @@ theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : 
     apply SLP.star_mono_l
     apply_assumption
 
-/--
-Ramified frame rule.
-```
-⬝ {H₁} e {λv. Q₁ v}
-⬝ H₂ ⊢ H₁ ⋆ (λv. Q₁ v -⋆ (Q₂ v ⋆ ⊤))
-⊢ {H₂} e {Q₂}
-```
--/
 theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}
     (h_hoare: STHoare p Γ H₁ e Q₁)
     (h_ent: H₂ ⊢ H₁ ⋆ (∀∀v, Q₁ v -⋆ (Q₂ v ⋆ ⊤))):
@@ -107,13 +78,6 @@ theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}
     apply SLP.wand_cancel
   simp [SLP.entails_self]
 
-/--
-```
-⬝ {H₁} e {λv. Q v}
-⬝ H ⊢ H₁ ⋆ H₂
-⊢ {H} e {λv. Q v ⋆ H₂}
-```
--/
 theorem consequence_frame_left {H H₁ H₂ : SLP p}
     (h_hoare: STHoare p Γ H₁ e Q)
     (h_ent : H ⊢ (H₁ ⋆ H₂)):
