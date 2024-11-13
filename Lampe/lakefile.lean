@@ -2,7 +2,6 @@ import Lake
 open Lake DSL
 
 package «Lampe» where
-  version := v!"0.1.0"
   -- Settings applied to both builds and interactive editing
   leanOptions := #[
     ⟨`pp.unicode.fun, true⟩ -- pretty-prints `fun a ↦ b`
