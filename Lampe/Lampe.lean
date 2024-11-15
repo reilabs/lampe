@@ -90,3 +90,8 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h!
     sl
     contradiction
   . simp_all
+
+nr_def simple_lambda<>(x : Field) -> Field {
+  let foo = |a|: Field -> Field { a };
+  ^foo(x) : Field;
+}

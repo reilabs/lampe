@@ -11,7 +11,7 @@ abbrev Ident := String
 inductive FunctionIdent : Type where
 | builtin : Builtin → FunctionIdent
 | decl : Ident → FunctionIdent
-| ref : Ref → FunctionIdent
+| ref : Tp.denote p TpLambdaRef → FunctionIdent
 
 inductive Member : Tp → List Tp → Type where
 | head : Member tp (tp :: tps)
@@ -25,24 +25,25 @@ inductive Expr (rep : Tp → Type): Tp → Type where
 | ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
-| newLambda : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep (.ref .unit)
+| newLambda: (argTps : List Tp) →
+  (outTp : Tp) →
+  (HList rep argTps → Expr rep outTp) →
+  Expr rep (.ref .unit)
 
 structure Function : Type _ where
   generics : List Kind
   inTps : HList Kind.denote generics → List Tp
   outTp : HList Kind.denote generics → Tp
-  rep : Tp → Type
-  body : (gs : HList Kind.denote generics) →
+  body : (rep : Tp → Type) → (gs : HList Kind.denote generics) →
     HList rep (inTps gs) →
     Expr rep (outTp gs)
 
 /-- Polymorphic identity -/
-example {p : Prime}: Function := {
+example : Function := {
   generics := [.type]
-  rep := fun tp => tp.denote p
   inTps := fun h![x] => [x]
   outTp := fun h![x] => x
-  body := fun h![_] h![x] => .var x
+  body := fun _ h![_] h![x] => .var x
 }
 
 structure FunctionDecl where

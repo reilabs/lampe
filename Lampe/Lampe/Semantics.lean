@@ -43,21 +43,19 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
     (hkc : fn.generics = tyKinds) →
     (htci : fn.inTps (hkc ▸ generics) = argTypes) →
     (htco : fn.outTp (hkc ▸ generics) = res) →
-    (hrep : fn.rep = Tp.denote P) →
-    Omni Γ st (htco ▸ hrep ▸ fn.body (hkc ▸ generics) (htci ▸ hrep ▸ args)) Q →
+    Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callLambda :
   Γ (Ident.ofLambdaRef lambdaRef) = some fn →
   (hg : fn.generics = []) →
   (hi : fn.inTps (hg ▸ h![]) = argTps) →
   (ho : fn.outTp (hg ▸ h![]) = outTp) →
-  (hrep : fn.rep = Tp.denote P) →
-  Omni Γ st (ho ▸ hrep ▸ fn.body (hg ▸ h![]) (hi ▸ hrep ▸ args)) Q →
+  Omni Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
   Omni Γ st (Expr.call h![] argTps outTp (.ref lambdaRef) args) Q
 | newLambda {Q} :
   Q (some (st, lambdaRef)) →
-  Γ (Ident.ofLambdaRef lambdaRef) = some (@newLambda (Tp.denote P ·) argTps outTp body) →
-  Omni Γ st (Expr.newLambda argTps outTp body) Q
+  Γ (Ident.ofLambdaRef lambdaRef) = some (newLambda argTps outTp body) →
+  Omni Γ st (Expr.newLambda argTps outTp (body _ _)) Q
 | loopDone :
     lo ≥ hi →
     Omni Γ st (.loop lo hi body) Q

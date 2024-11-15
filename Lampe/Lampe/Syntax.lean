@@ -98,6 +98,8 @@ syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 syntax "(" nr_expr ")" : nr_expr
 syntax "*(" nr_expr ")" : nr_expr
+syntax "|" ident,* "|:" nr_type,* "->" nr_type nr_expr : nr_expr
+syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
 
 def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'): Expr rep tp' :=
   let refDef := Expr.letIn definition fun v => Expr.call h![] _ (tp.ref) (.builtin .ref) h![v]
@@ -196,6 +198,15 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     mkExpr cond none fun cond => do
       let mainBody ← mkExpr mainBody none fun x => ``(Lampe.Expr.var $x)
       wrapSimple (←`(Lampe.Expr.ite $cond $mainBody (Lampe.Expr.skip))) vname k
+| `(nr_expr| |$args,*|: $argTps,* -> $outTp $lambdaBody) => do
+  let outTp ← mkNrType outTp
+  let argTps ← mkListLit (← argTps.getElems.toList.mapM mkNrType)
+  let args ← mkHListLit args.getElems.toList
+  let body ← mkExpr lambdaBody none fun x => ``(Lampe.Expr.var $x)
+  wrapSimple (←`(Lampe.Expr.newLambda $argTps $outTp (fun $args => $body))) vname k
+| `(nr_expr| ^ $i:ident ($args,*): $tp) => do
+  mkArgs args.getElems.toList fun argVals => do
+    wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.ref $i) $(←mkHListLit argVals))) vname k
 | _ => throwUnsupportedSyntax
 
 end
