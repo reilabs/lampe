@@ -4,7 +4,7 @@ import Lampe.Data.Field
 import Lampe.Tactic.IntroCases
 import Mathlib
 import Lampe.State
-
+import Lampe.Lambda
 
 namespace Lampe
 
@@ -12,12 +12,10 @@ variable (P : Prime)
 
 def Env := Ident → Option Function
 
-def Env.ofModule (m : Module): Env := fun i => (m.decls.find? fun d => d.name == i).map (·.fn)
+def Env.ofModule (m : Module) : Env := fun i => (m.decls.find? fun d => d.name == i).map (·.fn)
 
 @[reducible]
 def Env.extend (Γ₁ : Env) (Γ₂ : Env) : Env := fun i => Γ₁ i <|> Γ₂ i
-
-def Ident.ofLambda (lambdaRef : Ref) : Ident := lambdaRef.val.toSubscriptString
 
 inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P × tp.denote P) → Prop) → Prop where
 | litField : Q (some (st, n)) → Omni Γ st (.lit .field n) Q
@@ -45,15 +43,21 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
     (hkc : fn.generics = tyKinds) →
     (htci : fn.inTps (hkc ▸ generics) = argTypes) →
     (htco : fn.outTp (hkc ▸ generics) = res) →
-    Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+    (hrep : fn.rep = Tp.denote P) →
+    Omni Γ st (htco ▸ hrep ▸ fn.body (hkc ▸ generics) (htci ▸ hrep ▸ args)) Q →
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callLambda :
-  Γ (Ident.ofLambda lambdaRef) = some fn →
+  Γ (Ident.ofLambdaRef lambdaRef) = some fn →
   (hg : fn.generics = []) →
   (hi : fn.inTps (hg ▸ h![]) = argTps) →
   (ho : fn.outTp (hg ▸ h![]) = outTp) →
-  Omni Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
+  (hrep : fn.rep = Tp.denote P) →
+  Omni Γ st (ho ▸ hrep ▸ fn.body (hg ▸ h![]) (hi ▸ hrep ▸ args)) Q →
   Omni Γ st (Expr.call h![] argTps outTp (.ref lambdaRef) args) Q
+| newLambda {Q} :
+  Q (some (st, lambdaRef)) →
+  Γ (Ident.ofLambdaRef lambdaRef) = some (@newLambda (Tp.denote P ·) argTps outTp body) →
+  Omni Γ st (Expr.newLambda argTps outTp body) Q
 | loopDone :
     lo ≥ hi →
     Omni Γ st (.loop lo hi body) Q
@@ -134,6 +138,12 @@ theorem Omni.frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
     constructor
     apply ih
     assumption
+  | newLambda =>
+    intros
+    constructor
+    all_goals (try tauto)
+    constructor
+    tauto
   | callLambda ih =>
     intros
     constructor
