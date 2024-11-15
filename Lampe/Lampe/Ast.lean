@@ -11,6 +11,7 @@ abbrev Ident := String
 inductive FunctionIdent : Type where
 | builtin : Builtin → FunctionIdent
 | decl : Ident → FunctionIdent
+| ref : Ref → FunctionIdent
 
 inductive Member : Tp → List Tp → Type where
 | head : Member tp (tp :: tps)

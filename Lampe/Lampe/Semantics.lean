@@ -17,6 +17,8 @@ def Env.ofModule (m : Module): Env := fun i => (m.decls.find? fun d => d.name ==
 @[reducible]
 def Env.extend (Γ₁ : Env) (Γ₂ : Env) : Env := fun i => Γ₁ i <|> Γ₂ i
 
+def Ident.ofLambda (lambdaRef : Ref) : Ident := lambdaRef.val.toSubscriptString
+
 inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P × tp.denote P) → Prop) → Prop where
 | litField : Q (some (st, n)) → Omni Γ st (.lit .field n) Q
 | litFalse : Q (some (st, false)) → Omni Γ st (.lit .bool 0) Q
@@ -45,6 +47,13 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
     (htco : fn.outTp (hkc ▸ generics) = res) →
     Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
+| callLambda :
+  Γ (Ident.ofLambda lambdaRef) = some fn →
+  (hg : fn.generics = []) →
+  (hi : fn.inTps (hg ▸ h![]) = argTps) →
+  (ho : fn.outTp (hg ▸ h![]) = outTp) →
+  Omni Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
+  Omni Γ st (Expr.call h![] argTps outTp (.ref lambdaRef) args) Q
 | loopDone :
     lo ≥ hi →
     Omni Γ st (.loop lo hi body) Q
@@ -125,5 +134,11 @@ theorem Omni.frame {p Γ tp st₁ st₂} {e : Expr (Tp.denote p) tp} {Q}:
     constructor
     apply ih
     assumption
+  | callLambda ih =>
+    intros
+    constructor
+    apply ih
+    all_goals (try assumption)
+    tauto
 
 end Lampe
