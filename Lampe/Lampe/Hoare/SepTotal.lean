@@ -350,4 +350,31 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
+theorem lambda_intro :
+  Γ (Ident.ofLambdaRef lambdaRef) = some (newLambda argTps outTp body) →
+  STHoare p Γ ⟦⟧ (.lambda argTps outTp (body _ h![])) fun v => v = lambdaRef := by
+  unfold STHoare
+  intros
+  unfold THoare
+  intros
+  constructor
+  all_goals (try tauto)
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem lambdaCall_intro :
+  Γ (Ident.ofLambdaRef lambdaRef) = some fn →
+  (hg : fn.generics = []) →
+  (hi : fn.inTps (hg ▸ h![]) = argTps) →
+  (ho : fn.outTp (hg ▸ h![]) = outTp) →
+  STHoare p Γ ⟦⟧ (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
+  STHoare p Γ ⟦⟧ (.call h![] argTps outTp (.lambda lambdaRef) args) Q := by
+  unfold STHoare
+  intros
+  unfold THoare
+  intros
+  constructor
+  <;> tauto
+
 end Lampe.STHoare

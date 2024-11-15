@@ -4,7 +4,6 @@ import Lampe.Data.Field
 import Lampe.Tactic.IntroCases
 import Mathlib
 import Lampe.State
-import Lampe.Lambda
 
 namespace Lampe
 
@@ -51,11 +50,11 @@ inductive Omni : Env → State P → Expr (Tp.denote P) tp → (Option (State P 
   (hi : fn.inTps (hg ▸ h![]) = argTps) →
   (ho : fn.outTp (hg ▸ h![]) = outTp) →
   Omni Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
-  Omni Γ st (Expr.call h![] argTps outTp (.ref lambdaRef) args) Q
+  Omni Γ st (Expr.call h![] argTps outTp (.lambda lambdaRef) args) Q
 | newLambda {Q} :
   Q (some (st, lambdaRef)) →
   Γ (Ident.ofLambdaRef lambdaRef) = some (newLambda argTps outTp body) →
-  Omni Γ st (Expr.newLambda argTps outTp (body _ _)) Q
+  Omni Γ st (Expr.lambda argTps outTp (body _ _)) Q
 | loopDone :
     lo ≥ hi →
     Omni Γ st (.loop lo hi body) Q

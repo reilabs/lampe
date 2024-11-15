@@ -203,10 +203,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let argTps ← mkListLit (← argTps.getElems.toList.mapM mkNrType)
   let args ← mkHListLit args.getElems.toList
   let body ← mkExpr lambdaBody none fun x => ``(Lampe.Expr.var $x)
-  wrapSimple (←`(Lampe.Expr.newLambda $argTps $outTp (fun $args => $body))) vname k
+  wrapSimple (←`(Lampe.Expr.lambda $argTps $outTp (fun $args => $body))) vname k
 | `(nr_expr| ^ $i:ident ($args,*): $tp) => do
   mkArgs args.getElems.toList fun argVals => do
-    wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.ref $i) $(←mkHListLit argVals))) vname k
+    wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.lambda $i) $(←mkHListLit argVals))) vname k
 | _ => throwUnsupportedSyntax
 
 end
