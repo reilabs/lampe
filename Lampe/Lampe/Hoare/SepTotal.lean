@@ -130,50 +130,6 @@ lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v
     · simp_all [Finmap.lookup_eq_none, eq_comm]
     simp_all [eq_comm]
 
-/--
-Introduction rule for pure builtins.
--/
-theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
-  STHoare p Γ
-    ⟦⟧
-    (.call h![] (sgn a).fst (sgn a).snd (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
-    (fun v => ∃h, (v = (desc a args).snd h)) := by
-  unfold STHoare
-  intro H
-  unfold THoare
-  intros st p
-  constructor
-  cases em (desc a args).fst
-  . apply Builtin.genericPureOmni.ok
-    . simp_all only [SLP.true_star, exists_const]
-      apply SLP.ent_star_top
-      assumption
-    . tauto
-  . apply Builtin.genericPureOmni.err
-    . tauto
-    . simp
-
-lemma pureBuiltin_intro_consequence
-    {A : Type} {a : A} {sgn desc args} {Q : Tp.denote p outTp → Prop}
-    (h1 : argTps = (sgn a).fst)
-    (h2 : outTp = (sgn a).snd)
-    (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h))
-    : STHoare p Γ ⟦⟧
-      (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
-      fun v => Q v := by
-  subst_vars
-  dsimp only at *
-  apply ramified_frame_top
-  apply pureBuiltin_intro
-  simp only [SLP.true_star]
-  apply SLP.forall_right
-  intro
-  apply SLP.wand_intro
-  simp only [SLP.true_star]
-  apply SLP.pure_left'
-  rintro ⟨_, _⟩
-  simp_all [SLP.entails_top]
-
 theorem fresh_intro
   : STHoare p Γ
       ⟦⟧
@@ -350,31 +306,18 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
-theorem lambda_intro :
-  Γ (Ident.ofLambdaRef lambdaRef) = some (newLambda argTps outTp body) →
-  STHoare p Γ ⟦⟧ (.lambda argTps outTp (body _ h![])) fun v => v = lambdaRef := by
-  unfold STHoare
-  intros
-  unfold THoare
-  intros
-  constructor
-  all_goals (try tauto)
-  simp only
-  apply SLP.ent_star_top
-  assumption
+theorem lambda_intro {ls : LambdaStore} :
+  ls lambdaRef = some (newLambda argTps outTp body) →
+  STHoare p Γ ⟦⟧ (.lambda argTps outTp (body _ h![])) (fun r => r = lambdaRef) := by
+  sorry
 
-theorem lambdaCall_intro :
-  Γ (Ident.ofLambdaRef lambdaRef) = some fn →
+theorem lambdaCall_intro {ls : LambdaStore} :
+  ls lambdaRef = some fn →
   (hg : fn.generics = []) →
   (hi : fn.inTps (hg ▸ h![]) = argTps) →
   (ho : fn.outTp (hg ▸ h![]) = outTp) →
   STHoare p Γ ⟦⟧ (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
   STHoare p Γ ⟦⟧ (.call h![] argTps outTp (.lambda lambdaRef) args) Q := by
-  unfold STHoare
-  intros
-  unfold THoare
-  intros
-  constructor
-  <;> tauto
+  sorry
 
 end Lampe.STHoare

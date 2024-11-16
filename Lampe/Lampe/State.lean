@@ -11,9 +11,9 @@ lemma Finmap.singleton_disjoint_of_not_mem (hp : ref ∉ s):
 
 namespace Lampe
 
-def AnyValue (P : Prime) := (tp : Tp) × tp.denote P
+def AnyValue (p : Prime) := (tp : Tp) × tp.denote p
 
-abbrev State (P : Prime) := Finmap (fun (_ : Ref) => AnyValue P)
+abbrev State (p : Prime) := Finmap (fun (_ : Ref) => AnyValue p)
 
 namespace State
 

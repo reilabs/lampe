@@ -2,6 +2,51 @@ import Lampe.Hoare.SepTotal
 
 namespace Lampe.STHoare
 
+/--
+Introduction rule for pure builtins.
+-/
+theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
+  STHoare p Γ
+    ⟦⟧
+    (.call h![] (sgn a).fst (sgn a).snd (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
+    (fun v => ∃h, (v = (desc a args).snd h)) := by
+  unfold STHoare
+  intro H
+  unfold THoare
+  intros st p
+  constructor
+  cases em (desc a args).fst
+  . apply Builtin.genericPureOmni.ok
+    . simp_all only [SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      assumption
+    . tauto
+  . apply Builtin.genericPureOmni.err
+    . tauto
+    . simp
+
+lemma pureBuiltin_intro_consequence
+    {A : Type} {a : A} {sgn desc args} {Q : Tp.denote p outTp → Prop}
+    (h1 : argTps = (sgn a).fst)
+    (h2 : outTp = (sgn a).snd)
+    (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h))
+    : STHoare p Γ ⟦⟧
+      (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
+      fun v => Q v := by
+  subst_vars
+  dsimp only at *
+  apply ramified_frame_top
+  apply pureBuiltin_intro
+  simp only [SLP.true_star]
+  apply SLP.forall_right
+  intro
+  apply SLP.wand_intro
+  simp only [SLP.true_star]
+  apply SLP.pure_left'
+  rintro ⟨_, _⟩
+  simp_all [SLP.entails_top]
+
+
 -- Arithmetics
 
  theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
