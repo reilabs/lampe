@@ -90,3 +90,69 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h!
     sl
     contradiction
   . simp_all
+
+def bulbulizeField : TraitImpl := {
+  traitGenericKinds := [],
+  implGenericKinds := [],
+  traitGenerics := fun _ => h![],
+  constraints := fun _ => [],
+  self := fun _ => .field,
+  impl := fun _ => [("bulbulize", nrfn![
+    fn bulbulize<>(x : Field) -> Field {
+      #add(x, x) : Field
+    }].2
+  )]
+}
+
+def bulbulizeU32 : TraitImpl := {
+  traitGenericKinds := [],
+  implGenericKinds := [],
+  traitGenerics := fun _ => h![],
+  constraints := fun _ => [],
+  self := fun _ => .u 32,
+  impl := fun _ => [("bulbulize", nrfn![
+    fn bulbulize<>(x : u32) -> u32 {
+      69 : u32
+    }].2
+  )]
+}
+
+def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
+  @Expr.call _ [] h![] [tp] tp (.trait ⟨⟨⟨"Bulbulize", [], h![]⟩, tp⟩, "bulbulize"⟩) h![arg]
+
+def simpleTraitEnv : Env := {
+  functions := [],
+  traits := [("Bulbulize", bulbulizeField), ("Bulbulize", bulbulizeU32)]
+}
+
+example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
+  simp only [simpleTraitCall]
+  apply STHoare.callTrait_intro
+  · constructor
+    · apply List.Mem.head
+    any_goals rfl
+    · simp [bulbulizeField]
+    · use h![]
+  · simp [bulbulizeField]; rfl
+  any_goals rfl
+  simp
+  steps
+  rintro rfl
+  casesm* ∃_,_
+  subst_vars
+  ring
+
+example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
+  simp only [simpleTraitCall]
+  apply STHoare.callTrait_intro
+  · constructor
+    · apply List.Mem.tail
+      apply List.Mem.head
+    any_goals rfl
+    · simp [bulbulizeU32]
+    · use h![]
+  · simp [bulbulizeU32]; rfl
+  any_goals rfl
+  simp
+  steps
+  simp_all
