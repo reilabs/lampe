@@ -350,4 +350,20 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
+theorem callTrait_intro {impl} {fname fn}
+    (h_trait : TraitResolution Γ traitRef impl)
+    (h_fn : (fname, fn) ∈ impl)
+    (h_kc : fn.generics = tyKinds)
+    (h_tci : fn.inTps (h_kc ▸ generics) = argTypes)
+    (h_tco : fn.outTp (h_kc ▸ generics) = res)
+    (h_hoare: STHoare p Γ H (h_tco ▸ fn.body _ (h_kc ▸ generics) (h_tci ▸ args)) Q):
+    STHoare p Γ H
+      (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args)
+      Q := by
+  unfold STHoare THoare
+  intros
+  apply Omni.callTrait <;> try assumption
+  apply_assumption
+  assumption
+
 end Lampe.STHoare
