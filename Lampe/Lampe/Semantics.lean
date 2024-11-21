@@ -35,24 +35,24 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
 | callBuiltin {Q} {vh₁ cls} :
     (b.omni p vh₁ argTypes resType args (mapToValHeapCondition Q cls)) →
     Omni p Γ ⟨vh₁, cls⟩ (Expr.call h![] argTypes resType (.builtin b) args) Q
-| callDecl:
+| callDecl :
     Γ fname = some fn →
     (hkc : fn.generics = tyKinds) →
     (htci : fn.inTps (hkc ▸ generics) = argTypes) →
     (htco : fn.outTp (hkc ▸ generics) = res) →
     Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
     Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
--- | callLambda :
---   Γ (Ident.ofLambdaRef lambdaRef) = some fn →
---   (hg : fn.generics = []) →
---   (hi : fn.inTps (hg ▸ h![]) = argTps) →
---   (ho : fn.outTp (hg ▸ h![]) = outTp) →
---   Omni p Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
---   Omni p Γ st (Expr.call h![] argTps outTp (.lambda lambdaRef) args) Q
--- | newLambda {Q} :
---   Q (some (st, lambdaRef)) →
---   Γ (Ident.ofLambdaRef lambdaRef) = some (newLambda argTps outTp body) →
---   Omni p Γ st (Expr.lambda argTps outTp (body _ _)) Q
+| callLambda {cls : Closures} :
+  cls.get? lambdaRef.val = some fn →
+  (hg : fn.generics = []) →
+  (hi : fn.inTps (hg ▸ h![]) = argTps) →
+  (ho : fn.outTp (hg ▸ h![]) = outTp) →
+  Omni p Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
+  Omni p Γ st (Expr.call h![] argTps outTp (.lambda lambdaRef) args) Q
+| newLambda {Q} :
+  cls' = cls ++ [(newLambda argTps outTp body)] →
+  Omni p Γ ⟨vh, cls'⟩ (Expr.lit .lambdaRef cls.length) Q →
+  Omni p Γ ⟨vh, cls⟩ (Expr.lambda argTps outTp (body _ _)) Q
 | loopDone :
     lo ≥ hi →
     Omni p Γ st (.loop lo hi body) Q
@@ -140,5 +140,11 @@ theorem Omni.frame {p Γ tp} {vh₁ vh₂ : ValHeap p}  {cls : Closures} {e : Ex
     constructor
     apply ih
     <;> tauto
+  | newLambda =>
+    intro
+    tauto
+  | callLambda =>
+    intro
+    constructor <;> try tauto
 
 end Lampe

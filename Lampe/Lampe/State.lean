@@ -4,11 +4,11 @@ import Lampe.Ast
 
 namespace Lampe
 
-abbrev Closures := Finmap fun (_ : Ref) => Function
+abbrev Closures := List Function
 
 structure State (p : Prime) where
   vals : ValHeap p
-  funcs : Closures
+  cls : Closures
 
 @[reducible]
 def mapToValHeapCondition
