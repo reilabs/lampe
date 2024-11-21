@@ -11,9 +11,6 @@ abbrev Ident := String
 /-- A reference to a lambda is represented as a reference to a unit type -/
 abbrev Tp.lambdaRef := Tp.ref .unit
 
-/-- Converts a lambda reference to a function identity -/
-def Ident.ofLambdaRef (lambdaRef : Ref) : Ident := toString lambdaRef.val
-
 inductive FunctionIdent {rep : Tp → Type} : Type where
 | builtin : Builtin → FunctionIdent
 | decl : Ident → FunctionIdent -- a function declared at the module level
@@ -49,8 +46,11 @@ example : Function := {
   body := fun _ h![_] h![x] => .var x
 }
 
+abbrev Lambda (argTps outTp) :=
+  (rep : Tp → Type) → HList Kind.denote [] → HList rep argTps → Expr rep outTp
+
 def newLambda (argTps : List Tp) (outTp : Tp)
-(body : (rep : Tp → Type) → HList Kind.denote [] → HList rep argTps → Expr rep outTp) : Function :=  {
+(body : Lambda argTps outTp) : Function :=  {
   generics := []
   inTps := fun _ => argTps
   outTp := fun _ => outTp

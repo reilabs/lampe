@@ -409,9 +409,13 @@ theorem writeRef_intro:
 -- Misc
 
 theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (a := ()) := by
-  unfold STHoarePureBuiltin
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem newLambda_intro {cl : Closures} :
+  STHoare p Γ P (.lambda argTps outTp body) Q := by
+  unfold STHoare
   intro H
-  apply THoare.assert_intro
-  simp [SLP.entails_self, SLP.star_mono_l]
+  sorry
 
 end Lampe.STHoare

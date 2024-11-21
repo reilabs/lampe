@@ -18,6 +18,7 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
 | litField {Q} : Q (some (st, n)) → Omni p Γ st (.lit .field n) Q
 | litFalse {Q} : Q (some (st, false)) → Omni p Γ st (.lit .bool 0) Q
 | litTrue {Q} : Q (some (st, true)) → Omni p Γ st (.lit .bool 1) Q
+| litRef {Q} : Q (some (st, ⟨r⟩)) → Omni p Γ st (.lit (.ref tp) r) Q
 | litU {Q} : Q (some (st, ↑n)) → Omni p Γ st (.lit (.u s) n) Q
 | var {Q} : Q (some (st, v)) → Omni p Γ st (.var v) Q
 | skip {Q} : Q (some (st, ())) → Omni p Γ st (.skip) Q
@@ -49,10 +50,6 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   (ho : fn.outTp (hg ▸ h![]) = outTp) →
   Omni p Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
   Omni p Γ st (Expr.call h![] argTps outTp (.lambda lambdaRef) args) Q
-| newLambda {Q} :
-  cls' = cls ++ [(newLambda argTps outTp body)] →
-  Omni p Γ ⟨vh, cls'⟩ (Expr.lit .lambdaRef cls.length) Q →
-  Omni p Γ ⟨vh, cls⟩ (Expr.lambda argTps outTp (body _ _)) Q
 | loopDone :
     lo ≥ hi →
     Omni p Γ st (.loop lo hi body) Q
@@ -95,6 +92,7 @@ theorem Omni.frame {p Γ tp} {vh₁ vh₂ : ValHeap p}  {cls : Closures} {e : Ex
   | litFalse hq
   | litTrue hq
   | litU hq
+  | litRef hq
   | var hq =>
     intro
     subst hc
@@ -140,9 +138,6 @@ theorem Omni.frame {p Γ tp} {vh₁ vh₂ : ValHeap p}  {cls : Closures} {e : Ex
     constructor
     apply ih
     <;> tauto
-  | newLambda =>
-    intro
-    tauto
   | callLambda =>
     intro
     constructor <;> try tauto
