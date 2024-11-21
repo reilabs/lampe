@@ -1,7 +1,7 @@
 import Mathlib
 import Lampe.Tp
 import Lampe.Data.HList
-import Lampe.State
+import Lampe.ValHeap
 import Lampe.Builtin
 
 namespace Lampe

@@ -12,9 +12,9 @@ def THoare
     (P : SLP p)
     (e : Expr (Tp.denote p) tp)
     (Q : (tp.denote p) → SLP p): Prop :=
-  ∀st, P st → Omni p Γ st e (fun r => match r with
+  ∀st, P st.vals → Omni p Γ st e (fun r => match r with
     | none => True
-    | some (st', v) => Q v st')
+    | some (st', v) => Q v st'.vals)
 
 namespace THoare
 
@@ -50,7 +50,7 @@ theorem assert_intro {v: Bool} (h : v ⋆ P ⊢ Q ()):
   cases v
   · apply Builtin.genericPureOmni.err
     · simp
-    · simp
+    · tauto
     · exact ()
   · apply Builtin.genericPureOmni.ok
     · simp_all; tauto

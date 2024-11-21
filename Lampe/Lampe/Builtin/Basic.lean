@@ -1,4 +1,4 @@
-import Lampe.State
+import Lampe.ValHeap
 import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.SeparationLogic
@@ -8,22 +8,25 @@ import Mathlib
 namespace Lampe
 
 abbrev Builtin.Omni := ∀(P:Prime),
-    State P →
+    ValHeap P →
     (argTps : List Tp) →
     (outTp : Tp) →
     HList (Tp.denote P) argTps →
-    (Option (State P × Tp.denote P outTp) → Prop) →
+    (Option (ValHeap P × Tp.denote P outTp) → Prop) →
     Prop
 
 def Builtin.omni_conseq (omni : Builtin.Omni) : Prop :=
-  ∀{P st argTps outTp args Q Q'}, omni P st argTps outTp args Q → (∀ r, Q r → Q' r) → omni P st argTps outTp args Q'
+  ∀ {P st argTps outTp args Q Q'},
+  omni P st argTps outTp args Q → (∀ r, Q r → Q' r) → omni P st argTps outTp args Q'
 
 def Builtin.omni_frame (omni : Builtin.Omni) : Prop :=
-  ∀{P st₁ st₂ argTps outTp args Q}, omni P st₁ argTps outTp args Q → st₁.Disjoint st₂ →
-    omni P (st₁ ∪ st₂) argTps outTp args (fun r => match r with
-      | some (st, v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st
-      | none => Q none
-    )
+  ∀ {P st₁ st₂ argTps outTp args Q},
+  omni P st₁ argTps outTp args Q →
+  st₁.Disjoint st₂ →
+  omni P (st₁ ∪ st₂) argTps outTp args (fun r => match r with
+    | some (st, v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st
+    | none => Q none
+  )
 
 structure Builtin where
   omni : Builtin.Omni

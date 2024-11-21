@@ -1,22 +1,19 @@
-import Lampe.Tp
 import Mathlib
-
-lemma Finmap.insert_eq_singleton_union [DecidableEq α] {ref : α}:
-    m.insert ref v = Finmap.singleton ref v ∪ m := by rfl
-
-@[simp]
-lemma Finmap.singleton_disjoint_of_not_mem (hp : ref ∉ s):
-    Finmap.Disjoint (Finmap.singleton ref v) s := by
-  simp_all [Finmap.Disjoint]
+import Lampe.ValHeap
+import Lampe.Ast
 
 namespace Lampe
 
-def AnyValue (p : Prime) := (tp : Tp) × tp.denote p
+abbrev Closures := Finmap fun (_ : Ref) => Function
 
-abbrev State (p : Prime) := Finmap (fun (_ : Ref) => AnyValue p)
+structure State (p : Prime) where
+  vals : ValHeap p
+  funcs : Closures
 
-namespace State
-
-end State
+@[reducible]
+def mapToValHeapCondition
+  (Q : Option (State p × T) → Prop)
+  (closures : Closures) : Option (ValHeap p × T) → Prop :=
+  fun vv => Q (vv.map fun (vals, v) => ⟨⟨vals, closures⟩, v⟩)
 
 end Lampe

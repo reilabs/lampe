@@ -1,10 +1,10 @@
-import Lampe.State
+import Lampe.ValHeap
 import Lampe.Tactic.IntroCases
 
 
 namespace Lampe
 
-def SLP (p : Prime) : Type := State p → Prop
+def SLP (p : Prime) : Type := ValHeap p → Prop
 
 namespace SLP
 
