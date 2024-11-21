@@ -1,9 +1,10 @@
+import Mathlib
+
 import Lampe.Ast
 import Lampe.Tp
 import Lampe.Data.Field
 import Lampe.Tactic.IntroCases
-import Mathlib
-import Lampe.State
+import Lampe.SeparationLogic.State
 
 namespace Lampe
 
@@ -29,13 +30,13 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   Omni p Γ st elseBranch Q →
   Omni p Γ st (Expr.ite false mainBranch elseBranch) Q
 | letIn :
-    Omni p Γ ⟨vh₁, cls⟩ e Q₁ →
-    (∀v vh, Q₁ (some (⟨vh, cls⟩, v)) → Omni p Γ ⟨vh, cls⟩ (b v) Q) →
+    Omni p Γ st e Q₁ →
+    (∀v st, Q₁ (some (st, v)) → Omni p Γ st (b v) Q) →
     (Q₁ none → Q none) →
-    Omni p Γ ⟨vh₁, cls⟩ (.letIn e b) Q
-| callBuiltin {Q} {vh₁ cls} :
-    (b.omni p vh₁ argTypes resType args (mapToValHeapCondition Q cls)) →
-    Omni p Γ ⟨vh₁, cls⟩ (Expr.call h![] argTypes resType (.builtin b) args) Q
+    Omni p Γ st (.letIn e b) Q
+| callBuiltin {Q} :
+    (b.omni p st.vals argTypes resType args (mapToValHeapCondition st.closures Q)) →
+    Omni p Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
 | callDecl :
     Γ fname = some fn →
     (hkc : fn.generics = tyKinds) →
@@ -44,7 +45,7 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
     Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
     Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callLambda {cls : Closures} :
-  cls.get? lambdaRef.val = some fn →
+  cls.lookup lambdaRef = some fn →
   (hg : fn.generics = []) →
   (hi : fn.inTps (hg ▸ h![]) = argTps) →
   (ho : fn.outTp (hg ▸ h![]) = outTp) →
@@ -70,22 +71,22 @@ theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'}:
   )
   case callBuiltin =>
     cases_type Builtin
+    intros
+    constructor
     tauto
   case loopNext =>
     intro
     apply loopNext (by assumption)
     tauto
 
-theorem Omni.frame {p Γ tp} {vh₁ vh₂ : ValHeap p}  {cls : Closures} {e : Expr (Tp.denote p) tp} {Q}:
-    Omni p Γ ⟨vh₁, cls⟩ e Q →
-    vh₁.Disjoint vh₂ →
-    Omni p Γ ⟨(vh₁ ∪ vh₂), cls⟩ e (fun stv => match stv with
-      | some (st, v) => ((fun vals => Q (some (⟨vals, cls⟩, v))) ⋆ (fun vals => vals = vh₂)) st.vals
+theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {cls : Closures} {e : Expr (Tp.denote p) tp} {Q}:
+    Omni p Γ st₁ e Q →
+    SLH.disjoint st₁ st₂ →
+    Omni p Γ (st₁ ∪ st₂) e (fun stv => match stv with
+      | some (st', v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st'
       | none => Q none
     ) := by
   intro h
-  generalize hc : State.mk vh₁ cls = st₁
-  rw [hc] at h
   induction h with
   | litField hq
   | skip hq
@@ -95,30 +96,33 @@ theorem Omni.frame {p Γ tp} {vh₁ vh₂ : ValHeap p}  {cls : Closures} {e : Ex
   | litRef hq
   | var hq =>
     intro
-    subst hc
     constructor
-    exists vh₁, vh₂
+    simp only
+    repeat apply Exists.intro
+    tauto
   | letIn _ _ hN ihE ihB =>
     intro
     constructor
     apply ihE
     assumption
-    assumption
     · intro _ _ h
       cases h
       casesm* ∃ _, _, _∧_
-      simp_all only
+      subst_vars
       apply ihB
-      simp_all only [State.mk.injEq]
-      tauto
-      . aesop
-      . assumption
+      assumption
+      assumption
     · simp_all
   | callBuiltin hq =>
-    cases_type Builtin
-    intro
+    rename Builtin => b
+    intros
     constructor
-    aesop
+    have uni_vals {p' : Prime} {a b : State p'} : (a ∪ b).vals = (a.vals ∪ b.vals) := by rfl
+    have uni_cls {p' : Prime} {a b : State p'} : (a ∪ b).closures = (a.closures ∪ b.closures) := by rfl
+    rw [uni_vals, uni_cls]
+    unfold mapToValHeapCondition
+    simp_all
+    sorry
   | callDecl _ _ _ _ _ ih =>
     intro
     constructor
@@ -137,7 +141,7 @@ theorem Omni.frame {p Γ tp} {vh₁ vh₂ : ValHeap p}  {cls : Closures} {e : Ex
     intro
     constructor
     apply ih
-    <;> tauto
+    tauto
   | callLambda =>
     intro
     constructor <;> try tauto

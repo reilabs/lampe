@@ -1,7 +1,8 @@
 import Mathlib
+
 import Lampe.Tp
 import Lampe.Data.HList
-import Lampe.ValHeap
+import Lampe.SeparationLogic.ValHeap
 import Lampe.Builtin
 
 namespace Lampe

@@ -1,7 +1,6 @@
-import Lampe.ValHeap
+import Lampe.SeparationLogic.ValHeap
 import Lampe.Data.Field
 import Lampe.Data.HList
-import Lampe.SeparationLogic
 import Lampe.Builtin.Helpers
 import Mathlib
 

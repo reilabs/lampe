@@ -1,7 +1,7 @@
 import Lampe.Ast
 import Lampe.Tp
 import Lampe.Semantics
-import Lampe.SeparationLogic
+import Lampe.SeparationLogic.SLH
 
 namespace Lampe
 
@@ -9,18 +9,18 @@ def THoare
     {tp : Tp}
     (p : Prime)
     (Γ : Env)
-    (P : SLP p)
+    (P : SLP (State p))
     (e : Expr (Tp.denote p) tp)
-    (Q : (tp.denote p) → SLP p): Prop :=
-  ∀st, P st.vals → Omni p Γ st e (fun r => match r with
+    (Q : (tp.denote p) → SLP (State p)) : Prop :=
+  ∀st, P st → Omni p Γ st e (fun r => match r with
     | none => True
-    | some (st', v) => Q v st'.vals)
+    | some (st', v) => Q v st')
 
 namespace THoare
 
 variable
   {p : Prime}
-  {H H₁ H₂ : SLP p}
+  {H H₁ H₂ : SLP (State p)}
   {Γ : Env}
   {tp : Tp}
   {e : Expr (Tp.denote p) tp}
@@ -36,7 +36,7 @@ theorem consequence {Q₁ Q₂}
   any_goals tauto
   rintro (_|_) <;> tauto
 
-theorem var_intro {v} {P : Tp.denote p tp → SLP p}:
+theorem var_intro {v} {P : Tp.denote p tp → SLP (State p)}:
     THoare p Γ (P v) (.var v) P := by
   tauto
 
@@ -50,7 +50,7 @@ theorem letIn_intro {P Q}
 
 theorem ref_intro {v}:
     THoare p Γ
-      (fun st => ∀r, r ∉ st → P r (st.insert r ⟨tp, v⟩))
+      (fun st => ∀r, r ∉ st → P r ⟨(st.vals.insert r ⟨tp, v⟩), st.closures⟩)
       (.call h![] [tp] (Tp.ref tp) (.builtin .ref) h![v])
       P := by
   unfold THoare
@@ -61,7 +61,7 @@ theorem ref_intro {v}:
 
 theorem readRef_intro {ref}:
     THoare p Γ
-      (fun st => st.lookup ref = some ⟨tp, v⟩ ∧ P v st)
+      (fun st => st.vals.lookup ref = some ⟨tp, v⟩ ∧ P v st)
       (.call h![] [tp.ref] tp (.builtin .readRef) h![ref])
       P := by
   unfold THoare
@@ -73,7 +73,7 @@ theorem readRef_intro {ref}:
 
 theorem writeRef_intro {ref v}:
     THoare p Γ
-      (fun st => ref ∈ st ∧ P () (st.insert ref ⟨tp, v⟩))
+      (fun st => ref ∈ st ∧ P () ⟨(st.vals.insert ref ⟨tp, v⟩), st.closures⟩)
       (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![ref, v])
       P := by
   unfold THoare

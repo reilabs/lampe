@@ -1,7 +1,6 @@
 import Lampe.Ast
 import Lampe.Tp
 import Lampe.Semantics
-import Lampe.SeparationLogic
 import Lampe.Hoare.Total
 
 namespace Lampe
@@ -22,7 +21,7 @@ An intuitive way of looking at this is thinking in terms of "knowledge discovery
 For example, if the operation `a + b` succeeds, then we know that it evaluates to `v = a + b` **and** `a + b < 2^32`, i.e., no overflow has happened.
 Then, we would define the post-condition such that `Q v = (v = a + b) ∧ (a + b < 2^32)`.
  -/
-def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
+def STHoare p Γ P e (Q : Tp.denote p tp → SLP (State p))
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
 
 abbrev STHoarePureBuiltin p (Γ : Env)
@@ -44,7 +43,7 @@ theorem frame (h_hoare: STHoare p Γ P e Q): STHoare p Γ (P ⋆ H) e (fun v => 
     tauto
   }
 
-theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : Tp.denote p tp → SLP p}
+theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : Tp.denote p tp → SLP (State p)}
     (h_pre_conseq : H₂ ⊢ H₁)
     (h_post_conseq : ∀ v, Q₁ v ⋆ ⊤ ⊢ Q₂ v ⋆ ⊤)
     (h_hoare: STHoare p Γ H₁ e Q₁):
@@ -58,7 +57,7 @@ theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : 
     apply SLP.star_mono_l
     apply_assumption
 
-theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}
+theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP (State p)}
     (h_hoare: STHoare p Γ H₁ e Q₁)
     (h_ent: H₂ ⊢ H₁ ⋆ (∀∀v, Q₁ v -⋆ (Q₂ v ⋆ ⊤))):
     STHoare p Γ H₂ e Q₂ := by
@@ -78,7 +77,7 @@ theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}
     apply SLP.wand_cancel
   simp [SLP.entails_self]
 
-theorem consequence_frame_left {H H₁ H₂ : SLP p}
+theorem consequence_frame_left {H H₁ H₂ : SLP (State p)}
     (h_hoare: STHoare p Γ H₁ e Q)
     (h_ent : H ⊢ (H₁ ⋆ H₂)):
     STHoare p Γ H e (fun v => Q v ⋆ H₂) := by
@@ -99,7 +98,7 @@ theorem var_intro {v : Tp.denote p tp}:
   apply THoare.consequence ?_ THoare.var_intro (fun _ => SLP.entails_self)
   simp
 
-theorem letIn_intro {tp} {P} {Q : Tp.denote p tp → SLP p} {e₁ e₂}
+theorem letIn_intro {tp} {P} {Q : Tp.denote p tp → SLP (State p)} {e₁ e₂}
     (h_first: STHoare p Γ P e₁ Q)
     (h_rest: ∀v, STHoare p Γ (Q v) (e₂ v) R):
     STHoare p Γ P (Expr.letIn e₁ e₂) R := by
@@ -119,7 +118,8 @@ lemma Finmap.empty_disjoint: Finmap.Disjoint st ∅ := by
   rw [Finmap.Disjoint.symm_iff]
   simp [Finmap.disjoint_empty]
 
-lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v' : β r} : Finmap.singleton r v ∪ Finmap.singleton r v' = Finmap.singleton r v := by
+lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v' : β r} :
+  Finmap.singleton r v ∪ Finmap.singleton r v' = Finmap.singleton r v := by
   apply Finmap.ext_lookup
   intro x
   cases Decidable.em (r = x)
@@ -130,8 +130,8 @@ lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v
     · simp_all [Finmap.lookup_eq_none, eq_comm]
     simp_all [eq_comm]
 
-theorem fresh_intro
-  : STHoare p Γ
+theorem fresh_intro :
+  STHoare p Γ
       ⟦⟧
       (.call h![] [] tp (.builtin .fresh) h![])
       (fun _ => ⟦⟧) := by
@@ -192,7 +192,7 @@ theorem loopNext_intro {lo hi : U s} :
   apply letIn_intro
   all_goals tauto
 
-lemma inv_congr  (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p) {i j hlo hhi} (hEq : i = j):
+lemma inv_congr  (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (State p)) {i j hlo hhi} (hEq : i = j):
     Inv i hlo hhi = Inv j (hEq ▸ hlo) (hEq ▸ hhi) := by
   cases hEq
   rfl
@@ -214,7 +214,7 @@ lemma U.le_plus_one_of_lt {i j : U s} (h: i < j): i + 1 ≤ j := by
     linarith
   )
 
-theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p) {body : U s → Expr (Tp.denote p) tp}:
+theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (State p)) {body : U s → Expr (Tp.denote p) tp}:
     (∀i, (hlo: lo ≤ i) → (hhi: i < hi) → STHoare p Γ (Inv i hlo (BitVec.le_of_lt hhi)) (body i) (fun _ => Inv (i + 1) (BitVec.le_trans hlo (U.le_add_one_of_exists_lt hhi)) (U.le_plus_one_of_lt hhi))) →
     STHoare p Γ (∃∃h, Inv lo BitVec.le_refl h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi h BitVec.le_refl) := by
   cases BitVec.le_or_lt lo hi with
