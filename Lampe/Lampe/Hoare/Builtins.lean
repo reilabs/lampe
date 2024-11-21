@@ -17,13 +17,13 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   constructor
   cases em (desc a args).fst
   . apply Builtin.genericPureOmni.ok
-    . simp_all only [SLP.true_star, exists_const]
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
       apply SLP.ent_star_top
-      assumption
+      simp_all only [SLP.true_star, exists_const]
     . tauto
   . apply Builtin.genericPureOmni.err
     . tauto
-    . simp
+    . simp_all [mapToValHeapCondition]
 
 lemma pureBuiltin_intro_consequence
     {A : Type} {a : A} {sgn desc args} {Q : Tp.denote p outTp → Prop}
