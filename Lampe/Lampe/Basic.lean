@@ -4,4 +4,4 @@ import Lampe.Ast
 import Lampe.Tp
 import Lampe.Hoare.Total
 import Lampe.Hoare.SepTotal
--- import Lampe.Tactic.SeparationLogic
+import Lampe.Tactic.SeparationLogic

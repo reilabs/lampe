@@ -9,6 +9,10 @@ lemma Finmap.singleton_disjoint_of_not_mem (hp : ref ∉ s):
     Finmap.Disjoint (Finmap.singleton ref v) s := by
   simp_all [Finmap.Disjoint]
 
+theorem Finmap.union_self [DecidableEq α] {a : Finmap fun _: α => β} :
+  a ∪ a = a := by
+  sorry
+
 namespace Lampe
 
 def AnyValue (p : Prime) := (tp : Tp) × tp.denote p

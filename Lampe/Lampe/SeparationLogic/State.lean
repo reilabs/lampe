@@ -21,7 +21,13 @@ instance : Coe (State p) (ValHeap p) where
 def mapToValHeapCondition
   (closures : Finmap fun _ : Ref => Function)
   (Q : Option (State p × T) → Prop) : Option (ValHeap p × T) → Prop :=
-  fun v => Q (v.map (fun (vals, t) => ⟨⟨vals, closures⟩, t⟩))
+  fun vv => Q (vv.map (fun (vals, t) => ⟨⟨vals, closures⟩, t⟩))
+
+/-- Maps a condition on `ValHeap`s to a condition on `State`s -/
+@[reducible]
+def mapToStateCondition
+  (Q : Option (ValHeap p × T) → Prop) : Option (State p × T) → Prop :=
+  fun stv => Q (stv.map (fun (st, t) => ⟨st.vals, t⟩))
 
 def State.insertVal (self : State p) (r : Ref) (v : AnyValue p) : State p :=
   ⟨self.vals.insert r v, self.closures⟩

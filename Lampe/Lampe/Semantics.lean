@@ -30,20 +30,20 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   Omni p Γ st elseBranch Q →
   Omni p Γ st (Expr.ite false mainBranch elseBranch) Q
 | letIn :
-    Omni p Γ st e Q₁ →
-    (∀v st, Q₁ (some (st, v)) → Omni p Γ st (b v) Q) →
-    (Q₁ none → Q none) →
-    Omni p Γ st (.letIn e b) Q
-| callBuiltin {Q} :
-    (b.omni p st.vals argTypes resType args (mapToValHeapCondition st.closures Q)) →
-    Omni p Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
+  Omni p Γ st e Q₁ →
+  (∀v st, Q₁ (some (st, v)) → Omni p Γ st (b v) Q) →
+  (Q₁ none → Q none) →
+  Omni p Γ st (.letIn e b) Q
+| callBuiltin {st : State p} {Q : Option (State p × Tp.denote p resType) → Prop} :
+  (b.omni p st.vals argTypes resType args (mapToValHeapCondition st.closures Q)) →
+  Omni p Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
 | callDecl :
-    Γ fname = some fn →
-    (hkc : fn.generics = tyKinds) →
-    (htci : fn.inTps (hkc ▸ generics) = argTypes) →
-    (htco : fn.outTp (hkc ▸ generics) = res) →
-    Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
-    Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
+  Γ fname = some fn →
+  (hkc : fn.generics = tyKinds) →
+  (htci : fn.inTps (hkc ▸ generics) = argTypes) →
+  (htco : fn.outTp (hkc ▸ generics) = res) →
+  Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+  Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callLambda {cls : Closures} :
   cls.lookup lambdaRef = some fn →
   (hg : fn.generics = []) →
@@ -52,12 +52,12 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   Omni p Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
   Omni p Γ st (Expr.call h![] argTps outTp (.lambda lambdaRef) args) Q
 | loopDone :
-    lo ≥ hi →
-    Omni p Γ st (.loop lo hi body) Q
+  lo ≥ hi →
+  Omni p Γ st (.loop lo hi body) Q
 | loopNext {s} {lo hi : U s} {body} :
-    lo < hi →
-    Omni p Γ st (.letIn (body lo) (fun _ => .loop (lo + 1) hi body)) Q →
-    Omni p Γ st (.loop lo hi body) Q
+  lo < hi →
+  Omni p Γ st (.letIn (body lo) (fun _ => .loop (lo + 1) hi body)) Q →
+  Omni p Γ st (.loop lo hi body) Q
 
 theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'}:
     Omni p Γ st e Q →
@@ -113,15 +113,10 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {cls : Closures} {e : Expr 
       assumption
       assumption
     · simp_all
-  | callBuiltin hq =>
+  | callBuiltin =>
     rename Builtin => b
     intros
-    constructor
-    have uni_vals {p' : Prime} {a b : State p'} : (a ∪ b).vals = (a.vals ∪ b.vals) := by rfl
-    have uni_cls {p' : Prime} {a b : State p'} : (a ∪ b).closures = (a.closures ∪ b.closures) := by rfl
-    rw [uni_vals, uni_cls]
-    unfold mapToValHeapCondition
-    simp_all
+    constructor <;> try tauto
     sorry
   | callDecl _ _ _ _ _ ih =>
     intro

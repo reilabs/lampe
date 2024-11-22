@@ -20,7 +20,6 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
     . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
       apply SLP.ent_star_top
       simp_all only [SLP.true_star, exists_const]
-      tauto
     . tauto
   . apply Builtin.genericPureOmni.err
     . tauto
@@ -383,15 +382,15 @@ theorem readRef_intro:
   intro st
   rintro ⟨_, _, _, _, hs, _⟩
   subst_vars
-  all_goals sorry
-  -- apply And.intro (by simp; rfl)
-  -- simp only [SLP.true_star, SLP.star_assoc]
-  -- exists (Finmap.singleton r ⟨tp, v⟩), ?_
-  -- apply And.intro (by assumption)
-  -- apply And.intro rfl
-  -- apply And.intro (by simp [SLP.singleton])
-  -- apply SLP.ent_star_top
-  -- assumption
+  apply And.intro (by sorry)
+  simp only [SLP.true_star, SLP.star_assoc]
+  rename_i st _ _ _
+  exists st, ?_
+  apply And.intro (by assumption)
+  apply And.intro rfl
+  apply And.intro (by sorry)
+  sorry
+  all_goals assumption
 
 theorem writeRef_intro:
     STHoare p Γ
@@ -405,16 +404,16 @@ theorem writeRef_intro:
   rintro ⟨_, _, _, _, hs, _⟩
   simp only [State.singleton] at hs
   subst_vars
-  sorry
-  -- apply And.intro (by simp)
-  -- simp only
-  -- simp only [Finmap.insert_eq_singleton_union, ←Finmap.union_assoc, Finmap.union_singleton, SLP.star_assoc]
-  -- use Finmap.singleton r ⟨tp, v'⟩, ?_
-  -- apply And.intro (by assumption)
-  -- apply And.intro rfl
-  -- apply And.intro (by simp [SLP.singleton])
-  -- apply SLP.ent_star_top
-  -- assumption
+  apply And.intro (by sorry)
+  simp only
+  simp only [Finmap.insert_eq_singleton_union, ←Finmap.union_assoc, Finmap.union_singleton, SLP.star_assoc]
+  rename_i st₁ st₂ _ _
+  exists st₁, st₂
+  apply And.intro (by assumption)
+  apply And.intro (by sorry)
+  apply And.intro (by sorry)
+  apply SLP.ent_star_top
+  assumption
 
 -- Misc
 

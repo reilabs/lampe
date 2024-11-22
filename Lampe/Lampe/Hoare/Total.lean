@@ -67,9 +67,7 @@ theorem readRef_intro {ref}:
   unfold THoare
   intros
   constructor
-  constructor
-  tauto
-  tauto
+  constructor <;> tauto
 
 theorem writeRef_intro {ref v}:
     THoare p Γ
@@ -79,9 +77,7 @@ theorem writeRef_intro {ref v}:
   unfold THoare
   intros
   constructor
-  constructor
-  tauto
-  tauto
+  constructor <;> tauto
 
 theorem fresh_intro:
     THoare p Γ

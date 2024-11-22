@@ -11,7 +11,7 @@ nr_def simple_muts<>(x : Field) -> Field {
 
 example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] h![x]) fun v => v = x := by
   simp only [simple_muts]
-  steps
+  steps <;> try (exact _)
   simp_all
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
@@ -89,7 +89,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h!
   . simp only [decide_True, exists_const]
     sl
     contradiction
-  . simp_all
+  . exact _
 
 nr_def simple_lambda<>(x : Field) -> Field {
   let foo = |a|: Field -> Field { a };
