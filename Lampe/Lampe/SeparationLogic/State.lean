@@ -18,14 +18,14 @@ lemma State.membership_in_val {a : State p} : e ∈ a ↔ e ∈ a.vals := by rfl
 instance : Coe (State p) (ValHeap p) where
   coe := fun s => s.vals
 
-/-- Maps a condition on `State`s to a condition on `ValHeap`s by keeping the closures fixed -/
+/-- Maps a post-condition on `State`s to a post-condition on `ValHeap`s by keeping the closures fixed -/
 @[reducible]
 def mapToValHeapCondition
   (closures : Finmap fun _ : Ref => Function)
   (Q : Option (State p × T) → Prop) : Option (ValHeap p × T) → Prop :=
   fun vv => Q (vv.map (fun (vals, t) => ⟨⟨vals, closures⟩, t⟩))
 
-/-- Maps a condition on `ValHeap`s to a condition on `State`s -/
+/-- Maps a post-condition on `ValHeap`s to a post-condition on `State`s -/
 @[reducible]
 def mapToStateCondition
   (Q : Option (ValHeap p × T) → Prop) : Option (State p × T) → Prop :=
@@ -39,6 +39,12 @@ theorem State.eq_parts :
   intros
   subst_vars
   rfl
+
+theorem State.eq_parts_inv :
+  State.mk v c = State.mk v' c' → v = v' ∧ c = c' := by
+  intro
+  sorry
+
 
 instance : SLH (State p) where
   union := fun a b => ⟨a.vals ∪ b.vals, a.closures ∪ b.closures⟩

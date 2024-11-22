@@ -15,8 +15,6 @@ def Env.ofModule (m : Module) : Env := fun i => (m.decls.find? fun d => d.name =
 @[reducible]
 def Env.extend (Γ₁ : Env) (Γ₂ : Env) : Env := fun i => Γ₁ i <|> Γ₂ i
 
--- Q none <-> Q' none where Q' = mapToValHeapCond... ()
-
 inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where
 | litField {Q} : Q (some (st, n)) → Omni p Γ st (.lit .field n) Q
 | litFalse {Q} : Q (some (st, false)) → Omni p Γ st (.lit .bool 0) Q
@@ -81,7 +79,8 @@ theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'}:
     apply loopNext (by assumption)
     tauto
 
-theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {cls : Closures} {e : Expr (Tp.denote p) tp} {Q}:
+
+theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q}:
     Omni p Γ st₁ e Q →
     SLH.disjoint st₁ st₂ →
     Omni p Γ (st₁ ∪ st₂) e (fun stv => match stv with
@@ -115,12 +114,57 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {cls : Closures} {e : Expr 
       assumption
       assumption
     · simp_all
-  | callBuiltin =>
+  | callBuiltin hq =>
     rename Builtin => b
     intros
-    constructor <;> try tauto
-    -- apply b.frame
-    sorry
+    have hf := b.frame hq (st₂ := st₂)
+    apply callBuiltin
+    simp only [State.union_closures, State.union_vals]
+    rename_i _ _ _ _ _ st₁ Q' hd
+    unfold mapToValHeapCondition at *
+    simp_all [Option.map, SLH.disjoint]
+    convert hf
+    funext
+    rename_i x _
+    cases x
+    rfl
+    rename_i v
+    simp_all only [SLP.star, eq_iff_iff]
+    apply Iff.intro
+    . intros hin
+      obtain ⟨s₁, ⟨s₂, hin'⟩⟩ := hin
+      obtain ⟨hin₁, hin₂, hin₃, hin₄⟩ := hin'
+      exists s₁, s₂
+      simp only [SLH.disjoint] at *
+      refine ⟨by tauto, ?_, ?_, ?_⟩
+      . simp only [State.union_parts] at hin₂
+        apply State.eq_parts_inv at hin₂
+        tauto
+      . have hc : s₁.closures = st₁.closures := by
+          obtain ⟨hin₅, hin₆⟩ := hin₁
+          simp only [State.union_parts] at hin₂
+          apply State.eq_parts_inv at hin₂
+          obtain ⟨hin₇, hin₈⟩ := hin₂
+          apply State.eq_parts_inv at hin₄
+          obtain ⟨hin₉, hin₀⟩ := hin₄
+          rw [←hin₀] at hin₈
+          obtain ⟨_, hl⟩ := hd
+          rw [←hin₀] at hl
+          rw [Finmap.union_cancel hl (hin₆)] at hin₈
+          tauto
+        rw [←hc]
+        tauto
+      . tauto
+    . intros hin
+      obtain ⟨s₁, ⟨s₂, hin'⟩⟩ := hin
+      obtain ⟨hin₁, hin₂, hin₃, hin₄⟩ := hin'
+      exists ⟨s₁, st₁.closures⟩, ⟨s₂, st₂.closures⟩
+      simp only [SLH.disjoint] at *
+      refine ⟨by tauto, ?_, ?_, ?_⟩
+      . simp only [State.union_parts]
+        apply State.eq_parts <;> tauto
+      . tauto
+      . rw [hin₄]
   | callDecl _ _ _ _ _ ih =>
     intro
     constructor
