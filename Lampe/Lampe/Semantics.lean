@@ -117,26 +117,24 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
   | callBuiltin hq =>
     rename Builtin => b
     intros
-    have hf := b.frame hq (st₂ := st₂)
-    apply callBuiltin
+    constructor
     simp only [State.union_closures, State.union_vals]
-    rename_i _ _ _ _ _ st₁ Q' hd
+    rename_i _ _ _ _ _ st₁ _ hd
+    have hf := b.frame hq (st₂ := st₂)
     unfold mapToValHeapCondition at *
-    simp_all [Option.map, SLH.disjoint]
+    simp_all only [Option.map, SLH.disjoint, true_implies]
     convert hf
     funext
-    rename_i x _
-    cases x
-    rfl
-    rename_i v
+    casesm Option (ValHeap _ × _) <;> try rfl
     simp_all only [SLP.star, eq_iff_iff]
     apply Iff.intro
-    . intros hin
-      obtain ⟨s₁, ⟨s₂, hin'⟩⟩ := hin
-      obtain ⟨hin₁, hin₂, hin₃, hin₄⟩ := hin'
-      exists s₁, s₂
+    all_goals (
+      intros hin
+      obtain ⟨s₁, ⟨s₂, ⟨hin₁, hin₂, hin₃, hin₄⟩⟩⟩ := hin
+    )
+    . exists s₁, s₂
       simp only [SLH.disjoint] at *
-      refine ⟨by tauto, ?_, ?_, ?_⟩
+      refine ⟨by tauto, ?_, ?_, by tauto⟩
       . simp only [State.union_parts] at hin₂
         apply State.eq_parts_inv at hin₂
         tauto
@@ -150,20 +148,15 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
           rw [←hin₀] at hin₈
           obtain ⟨_, hl⟩ := hd
           rw [←hin₀] at hl
-          rw [Finmap.union_cancel hl (hin₆)] at hin₈
+          rw [Finmap.union_cancel hl hin₆] at hin₈
           tauto
         rw [←hc]
         tauto
-      . tauto
-    . intros hin
-      obtain ⟨s₁, ⟨s₂, hin'⟩⟩ := hin
-      obtain ⟨hin₁, hin₂, hin₃, hin₄⟩ := hin'
-      exists ⟨s₁, st₁.closures⟩, ⟨s₂, st₂.closures⟩
+    . exists ⟨s₁, st₁.closures⟩, ⟨s₂, st₂.closures⟩
       simp only [SLH.disjoint] at *
-      refine ⟨by tauto, ?_, ?_, ?_⟩
+      refine ⟨by tauto, ?_, by tauto, ?_⟩
       . simp only [State.union_parts]
         apply State.eq_parts <;> tauto
-      . tauto
       . rw [hin₄]
   | callDecl _ _ _ _ _ ih =>
     intro
