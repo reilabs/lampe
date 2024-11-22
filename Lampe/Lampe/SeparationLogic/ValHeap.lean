@@ -9,9 +9,19 @@ lemma Finmap.singleton_disjoint_of_not_mem (hp : ref ∉ s):
     Finmap.Disjoint (Finmap.singleton ref v) s := by
   simp_all [Finmap.Disjoint]
 
+lemma Finmap.singleton_disjoint_iff_not_mem :
+    Finmap.Disjoint (Finmap.singleton ref v) s ↔ (ref ∉ s) := by
+  simp_all [Finmap.Disjoint]
+
 theorem Finmap.union_self [DecidableEq α] {a : Finmap fun _: α => β} :
   a ∪ a = a := by
-  sorry
+  apply Finmap.ext_lookup
+  intro x
+  cases em (x ∈ a)
+  . rw [Finmap.lookup_union_left]
+    assumption
+  . rw [Finmap.lookup_union_left_of_not_in]
+    assumption
 
 namespace Lampe
 

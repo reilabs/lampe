@@ -13,6 +13,8 @@ structure State (p : Prime) where
 instance : Membership Ref (State p) where
   mem := fun a e => e ∈ a.vals
 
+lemma State.membership_in_val {a : State p} : e ∈ a ↔ e ∈ a.vals := by rfl
+
 instance : Coe (State p) (ValHeap p) where
   coe := fun s => s.vals
 
@@ -98,12 +100,25 @@ instance : SLH (State p) where
     tauto
     tauto
 
-def State.singleton (r : Ref) (v : AnyValue p) : SLP (State p) := fun st => st.vals = Finmap.singleton r v
+@[reducible]
+def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) := fun st => st.vals = Finmap.singleton r v
 
-notation:max "[" l " ↦ " r "]" => State.singleton l r
+notation:max "[" l " ↦ " r "]" => State.valSingleton l r
 
-theorem State.union_parts :
+lemma State.union_parts_left :
   (State.mk v c ∪ st₂ = State.mk (v ∪ st₂.vals) (c ∪ st₂.closures)) := by
   aesop
+
+lemma State.union_parts :
+  st₁ ∪ st₂ = State.mk (st₁.vals ∪ st₂.vals) (st₁.closures ∪ st₂.closures) := by
+  rfl
+
+@[simp]
+lemma State.union_vals {st₁ st₂ : State p} :
+  (st₁ ∪ st₂).vals = (st₁.vals ∪ st₂.vals) := by rfl
+
+@[simp]
+lemma State.union_closures {st₁ st₂ : State p} :
+  (st₁ ∪ st₂).closures = (st₁.closures ∪ st₂.closures) := by rfl
 
 end Lampe

@@ -15,6 +15,8 @@ def Env.ofModule (m : Module) : Env := fun i => (m.decls.find? fun d => d.name =
 @[reducible]
 def Env.extend (Γ₁ : Env) (Γ₂ : Env) : Env := fun i => Γ₁ i <|> Γ₂ i
 
+-- Q none <-> Q' none where Q' = mapToValHeapCond... ()
+
 inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where
 | litField {Q} : Q (some (st, n)) → Omni p Γ st (.lit .field n) Q
 | litFalse {Q} : Q (some (st, false)) → Omni p Γ st (.lit .bool 0) Q
@@ -117,6 +119,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {cls : Closures} {e : Expr 
     rename Builtin => b
     intros
     constructor <;> try tauto
+    -- apply b.frame
     sorry
   | callDecl _ _ _ _ _ ih =>
     intro

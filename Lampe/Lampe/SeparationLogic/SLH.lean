@@ -2,6 +2,7 @@ import Lampe.Tp
 
 namespace Lampe
 
+-- [TODO] LawfulHeap
 class SLH (α : Type _) where
   union : α → α → α
   disjoint : α → α → Prop
@@ -11,7 +12,7 @@ class SLH (α : Type _) where
   union_assoc {s₁ s₂ s₃ : α} : union (union s₁ s₂) s₃ = union s₁ (union s₂ s₃)
   disjoint_symm_iff {a b : α} : disjoint a b ↔ disjoint b a
   union_comm_of_disjoint {s₁ s₂ : α} : disjoint s₁ s₂ → union s₁ s₂ = union s₂ s₁
-  disjoint_union_left (x y z : α) : disjoint (union x y) z ↔ disjoint x z ∧ disjoint y z
+  disjoint_union_left (x y z : α) : disjoint (union x y) z ↔ disjoint x z ∧ disjoint y z -- one of them should be enough
   disjoint_union_right (x y z : α) : disjoint x (union y z) ↔ disjoint x y ∧ disjoint x z
   disjoint_empty (x : α) : disjoint empty x
 
