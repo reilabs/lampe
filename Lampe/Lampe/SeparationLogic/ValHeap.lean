@@ -38,7 +38,6 @@ instance : LawfulHeap (ValHeap p) where
   disjoint_symm_iff := by tauto
   union_comm_of_disjoint := Finmap.union_comm_of_disjoint
   disjoint_union_left := Finmap.disjoint_union_left
-  disjoint_union_right := Finmap.disjoint_union_right
   disjoint_empty := Finmap.disjoint_empty
 
 -- def ValHeap.singleton (r : Ref) (v : AnyValue p) : SLP (ValHeap p) := fun st => st = Finmap.singleton r v

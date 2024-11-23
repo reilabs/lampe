@@ -86,24 +86,6 @@ instance : LawfulHeap (State p) where
     constructor
     tauto
     tauto
-  disjoint_union_right := by
-    intros x y z
-    have h1 := (Finmap.disjoint_union_right x.vals y.vals z.vals)
-    have h2 := (Finmap.disjoint_union_right x.closures y.closures z.closures)
-    constructor
-    intro h3
-    simp only [Union.union] at h3
-    constructor
-    constructor
-    cases h3
-    tauto
-    tauto
-    tauto
-    intro h3
-    simp only [Union.union] at h3
-    constructor
-    tauto
-    tauto
 
 @[reducible]
 def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) := fun st => st.vals = Finmap.singleton r v
