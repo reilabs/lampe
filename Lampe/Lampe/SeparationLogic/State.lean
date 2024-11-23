@@ -13,6 +13,7 @@ structure State (p : Prime) where
 instance : Membership Ref (State p) where
   mem := fun a e => e ∈ a.vals
 
+@[simp]
 lemma State.membership_in_val {a : State p} : e ∈ a ↔ e ∈ a.vals := by rfl
 
 instance : Coe (State p) (ValHeap p) where
@@ -44,7 +45,6 @@ lemma State.eq_closures :
   intro h
   injection h
 
-
 instance : LawfulHeap (State p) where
   union := fun a b => ⟨a.vals ∪ b.vals, a.closures ∪ b.closures⟩
   disjoint := fun a b => a.vals.Disjoint b.vals ∧ a.closures.Disjoint b.closures
@@ -75,17 +75,8 @@ instance : LawfulHeap (State p) where
     constructor
     intro h3
     simp only [Union.union] at h3
-    constructor
-    constructor
-    cases h3
-    tauto
-    tauto
-    tauto
-    intro h3
-    simp only [Union.union] at h3
-    constructor
-    tauto
-    tauto
+    constructor <;> constructor
+    all_goals tauto
 
 @[reducible]
 def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) := fun st => st.vals = Finmap.singleton r v

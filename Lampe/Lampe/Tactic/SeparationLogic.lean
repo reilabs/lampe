@@ -179,8 +179,8 @@ def isLetIn (e: Expr): Bool :=
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   if e.isAppOf ``SLP.star then
     let args := e.getAppArgs
-    let fst ← parseSLExpr (←args[1]?)
-    let snd ← parseSLExpr (←args[2]?)
+    let fst ← parseSLExpr (←args[2]?)
+    let snd ← parseSLExpr (←args[3]?)
     return SLTerm.star e fst snd
   if e.isAppOf ``State.valSingleton then
     let args := e.getAppArgs
@@ -191,19 +191,19 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
     return SLTerm.top
   else if e.isAppOf ``SLP.lift then
     let args := e.getAppArgs
-    return SLTerm.lift (←args[1]?)
+    return SLTerm.lift (←args[2]?)
   else if e.getAppFn.isMVar then
     return SLTerm.mvar e
   else if e.isAppOf ``SLP.forall' then
     let args := e.getAppArgs
-    return SLTerm.all (←args[2]?)
+    return SLTerm.all (←args[3]?)
   else if e.isAppOf ``SLP.exists' then
     let args := e.getAppArgs
-    return SLTerm.exi (←args[2]?)
+    return SLTerm.exi (←args[4]?)
   else if e.isAppOf ``SLP.wand then
     let args := e.getAppArgs
-    let lhs ← parseSLExpr (←args[1]?)
-    let rhs ← parseSLExpr (←args[2]?)
+    let lhs ← parseSLExpr (←args[2]?)
+    let rhs ← parseSLExpr (←args[3]?)
     return SLTerm.wand lhs rhs
   -- else if e.isAppOf ``SLTerm.lift then
   --   let args := e.getAppArgs
@@ -219,10 +219,10 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
 partial def parseEntailment (e: Expr): TacticM (SLTerm × SLTerm) := do
   if e.isAppOf ``SLP.entails then
     let args := e.getAppArgs
-    let pre ← parseSLExpr (←args[1]?)
-    let post ← parseSLExpr (←args[2]?)
+    let pre ← parseSLExpr (←args[2]?)
+    let post ← parseSLExpr (←args[3]?)
     return (pre, post)
-  else throwError "not an entailment"
+  else throwError "not an entailment {e}"
 
 theorem star_top_of_star_mvar [LawfulHeap α] {H Q R : SLP α} : (H ⊢ Q ⋆ R) → (H ⊢ Q ⋆ ⊤) := by
   intro h
@@ -284,7 +284,8 @@ theorem SLP.exists_intro {Q : α → SLP (State p)} {a} : (H ⊢ Q a) → (H ⊢
   tauto
 
 -- [TODO] make this generic over `LawfulHeap`s
-theorem exi_prop {Q : P → SLP (State p)} : (H ⊢ (P : SLP (State p)) ⋆ ⊤) → (∀(p : P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
+theorem exi_prop {Q : P → SLP (State p)} :
+  (H ⊢ (P : SLP (State p)) ⋆ ⊤) → (∀(p : P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
   intro h₁ h₂
   unfold SLP.entails at *
   intro st hH
@@ -295,7 +296,8 @@ theorem exi_prop {Q : P → SLP (State p)} : (H ⊢ (P : SLP (State p)) ⋆ ⊤)
   apply_assumption
   assumption
 
-theorem exi_prop_l [LawfulHeap α] {H : P → SLP α} {Q : SLP α}: ((x : P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
+theorem exi_prop_l [LawfulHeap α] {H : P → SLP α} {Q : SLP α} :
+  ((x : P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
   intro h st
   unfold SLP.entails SLP.exists' at *
   rintro ⟨v, hH⟩
