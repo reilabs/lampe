@@ -1,4 +1,4 @@
-import Lampe.SeparationLogic.SLH
+import Lampe.SeparationLogic.LawfulHeap
 import Lampe.SeparationLogic.ValHeap
 import Lampe.Ast
 
@@ -45,7 +45,7 @@ lemma State.eq_closures :
   injection h
 
 
-instance : SLH (State p) where
+instance : LawfulHeap (State p) where
   union := fun a b => ⟨a.vals ∪ b.vals, a.closures ∪ b.closures⟩
   disjoint := fun a b => a.vals.Disjoint b.vals ∧ a.closures.Disjoint b.closures
   empty := ⟨∅, ∅⟩

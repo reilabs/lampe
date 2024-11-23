@@ -81,7 +81,7 @@ theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'}:
 
 theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q}:
     Omni p Γ st₁ e Q →
-    SLH.disjoint st₁ st₂ →
+    LawfulHeap.disjoint st₁ st₂ →
     Omni p Γ (st₁ ∪ st₂) e (fun stv => match stv with
       | some (st', v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st'
       | none => Q none
@@ -121,7 +121,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     rename_i _ _ _ _ _ st₁ _ hd
     have hf := b.frame hq (st₂ := st₂)
     unfold mapToValHeapCondition at *
-    simp_all only [SLH.disjoint, true_implies]
+    simp_all only [LawfulHeap.disjoint, true_implies]
     convert hf
     funext
     rename Option _ → Prop => Q'
@@ -133,7 +133,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       obtain ⟨s₁, ⟨s₂, ⟨hin₁, hin₂, hin₃, hin₄⟩⟩⟩ := hin
     )
     . exists s₁, s₂
-      simp only [SLH.disjoint] at *
+      simp only [LawfulHeap.disjoint] at *
       refine ⟨by tauto, ?_, ?_, by tauto⟩
       . simp only [State.union_parts] at hin₂
         injection hin₂
@@ -151,7 +151,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
         rw [←hc]
         tauto
     . exists ⟨s₁, st₁.closures⟩, ⟨s₂, st₂.closures⟩
-      simp only [SLH.disjoint] at *
+      simp only [LawfulHeap.disjoint] at *
       refine ⟨by tauto, ?_, by tauto, ?_⟩
       . simp only [State.union_parts, State.mk.injEq]
         tauto

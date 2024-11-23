@@ -356,14 +356,14 @@ theorem ref_intro:
   simp only [SLP.true_star]
   intro st hH r hr
   exists (⟨Finmap.singleton r ⟨tp, v⟩, st.closures⟩ ∪ st), ∅
-  apply And.intro (by rw [SLH.disjoint_symm_iff]; apply SLH.disjoint_empty)
+  apply And.intro (by rw [LawfulHeap.disjoint_symm_iff]; apply LawfulHeap.disjoint_empty)
   constructor
-  . simp only [State.insertVal, Finmap.insert_eq_singleton_union, SLH_union_empty]
+  . simp only [State.insertVal, Finmap.insert_eq_singleton_union, LawfulHeap_union_empty]
     simp only [State.union_parts_left, Finmap.union_self]
   . apply And.intro ?_ (by simp)
     exists (⟨Finmap.singleton r ⟨tp, v⟩, ∅⟩), st
     constructor
-    . simp only [SLH.disjoint]
+    . simp only [LawfulHeap.disjoint]
       apply And.intro (by simp [Finmap.singleton_disjoint_of_not_mem hr]) (by tauto)
     . simp_all only
       apply And.intro _ (by trivial)
@@ -422,7 +422,7 @@ theorem writeRef_intro:
   rename_i st₁ st₂ _ _
   exists (⟨Finmap.singleton r ⟨tp, v'⟩, st₁.closures⟩), ?_
   refine ⟨?_, ?_, ?_, (by apply SLP.ent_star_top; assumption)⟩
-  . simp only [SLH.disjoint] at *
+  . simp only [LawfulHeap.disjoint] at *
     have _ : r ∉ st₂.vals := by
       rename_i h _
       rw [hs] at h

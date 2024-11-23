@@ -1,7 +1,7 @@
 import Lampe.Ast
 import Lampe.Tp
 import Lampe.Semantics
-import Lampe.SeparationLogic.SLH
+import Lampe.SeparationLogic.LawfulHeap
 
 namespace Lampe
 

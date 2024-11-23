@@ -1,4 +1,4 @@
-import Lampe.SeparationLogic.SLH
+import Lampe.SeparationLogic.LawfulHeap
 import Lampe.SeparationLogic.SLP
 
 lemma Finmap.insert_eq_singleton_union [DecidableEq α] {ref : α}:
@@ -29,7 +29,7 @@ def AnyValue (p : Prime) := (tp : Tp) × tp.denote p
 
 abbrev ValHeap (p : Prime) := Finmap (fun (_ : Ref) => AnyValue p)
 
-instance : SLH (ValHeap p) where
+instance : LawfulHeap (ValHeap p) where
   union := fun a b => a ∪ b
   disjoint := fun a b => a.Disjoint b
   empty := ∅

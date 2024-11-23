@@ -27,7 +27,7 @@ def ref : Builtin := {
     simp_all
     rfl
     simp [Finmap.insert_union]
-    simp_all [Finmap.insert_eq_singleton_union, SLH.disjoint, Finmap.disjoint_union_left]
+    simp_all [Finmap.insert_eq_singleton_union, LawfulHeap.disjoint, Finmap.disjoint_union_left]
 }
 
 inductive readRefOmni : Omni where
