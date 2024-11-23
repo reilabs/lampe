@@ -34,16 +34,15 @@ def mapToStateCondition
 def State.insertVal (self : State p) (r : Ref) (v : AnyValue p) : State p :=
   ⟨self.vals.insert r v, self.closures⟩
 
-theorem State.eq_parts :
-  v = v' → c = c' → State.mk v c = State.mk v' c' := by
-  intros
-  subst_vars
+lemma State.eq_constructor {st₁ : State p} :
+  (st₁ = st₂) ↔ (State.mk st₁.vals st₁.closures = State.mk st₂.vals st₂.closures) := by
   rfl
 
-theorem State.eq_parts_inv :
-  State.mk v c = State.mk v' c' → v = v' ∧ c = c' := by
-  intro
-  sorry
+@[simp]
+lemma State.eq_closures :
+  (State.mk v c = State.mk v' c') → (c = c') := by
+  intro h
+  injection h
 
 
 instance : SLH (State p) where
@@ -55,15 +54,15 @@ instance : SLH (State p) where
     simp only [Finmap.union_empty]
   union_assoc := by
     intros
-    simp only [Union.union]
-    apply State.eq_parts
+    simp only [Union.union, State.mk.injEq]
+    apply And.intro
     . apply Finmap.union_assoc
     . apply Finmap.union_assoc
   disjoint_symm_iff := by tauto
   union_comm_of_disjoint := by
     intros
-    simp only [Union.union]
-    apply State.eq_parts
+    simp only [Union.union, State.mk.injEq]
+    apply And.intro
     . apply Finmap.union_comm_of_disjoint
       tauto
     . apply Finmap.union_comm_of_disjoint
@@ -111,10 +110,23 @@ def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) := fun st => s
 
 notation:max "[" l " ↦ " r "]" => State.valSingleton l r
 
+@[reducible]
+def State.clsSingleton (r : Ref) (v : Function) : SLP (State p) := fun st => st.closures = Finmap.singleton r v
+
+notation:max "[" l " ↣ " r "]" => State.cls l r
+
+
+@[simp]
 lemma State.union_parts_left :
   (State.mk v c ∪ st₂ = State.mk (v ∪ st₂.vals) (c ∪ st₂.closures)) := by
-  aesop
+  rfl
 
+@[simp]
+lemma State.union_parts_right :
+  (st₂ ∪ State.mk v c = State.mk (st₂.vals ∪ v) (st₂.closures ∪ c)) := by
+  rfl
+
+@[simp]
 lemma State.union_parts :
   st₁ ∪ st₂ = State.mk (st₁.vals ∪ st₂.vals) (st₁.closures ∪ st₂.closures) := by
   rfl

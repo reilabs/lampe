@@ -430,8 +430,7 @@ theorem writeRef_intro:
     refine ⟨?_, by tauto⟩
     apply Finmap.singleton_disjoint_of_not_mem
     assumption
-  . simp only [State.union_vals, State.union_closures, State.union_parts_left]
-    apply State.eq_parts <;> try rfl
+  . simp only [State.mk.injEq, State.union_vals, State.union_closures, State.union_parts_left]
     rw [←Finmap.union_assoc, hs]
     simp [Finmap.union_singleton]
   . simp_all

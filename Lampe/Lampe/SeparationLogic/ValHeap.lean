@@ -41,8 +41,8 @@ instance : SLH (ValHeap p) where
   disjoint_union_right := Finmap.disjoint_union_right
   disjoint_empty := Finmap.disjoint_empty
 
-def ValHeap.singleton (r : Ref) (v : AnyValue p) : SLP (ValHeap p) := fun st => st = Finmap.singleton r v
+-- def ValHeap.singleton (r : Ref) (v : AnyValue p) : SLP (ValHeap p) := fun st => st = Finmap.singleton r v
 
-notation:max "[" l " ↦ " r "]" => ValHeap.singleton l r
+-- notation:max "[" l " ↦ " r "]" => ValHeap.singleton l r
 
 end Lampe

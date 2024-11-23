@@ -43,13 +43,13 @@ instance : ToString SLTerm := ⟨SLTerm.toString⟩
 
 instance : Inhabited SLTerm := ⟨SLTerm.top⟩
 
-theorem star_exists {Q : α → SLP (State p)} : ((∃∃x, Q x) ⋆ P) = (∃∃x, Q x ⋆ P) := by
+theorem star_exists [SLH α] {Q : α → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, Q x ⋆ P) := by
   unfold SLP.exists' SLP.star
   funext st
   simp
   tauto
 
-theorem exists_star {Q : α → SLP (State p)} : ((∃∃x, Q x) ⋆ P) = (∃∃x, P ⋆ Q x) := by
+theorem exists_star [SLH α] {Q : α → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, P ⋆ Q x) := by
   rw [star_exists]
   simp [SLP.star_comm]
 
@@ -74,8 +74,7 @@ theorem ref_intro' {p} {x : Tp.denote p tp} {Γ P}:
   apply SLP.ent_star_top
 
 
-theorem Lampe.SLP.skip_fst {Q : SLP (State p)} :
-  (R₁ ⊢ Q ⋆ X) → (([a ↦ b] : SLP (State p)) ⋆ X ⊢ R₂) → (([a ↦ b] : SLP (State p)) ⋆ R₁ ⊢ Q ⋆ R₂) := by
+theorem Lampe.SLP.skip_fst : (R₁ ⊢ Q ⋆ X) → ([a ↦ b] ⋆ X ⊢ R₂) → ([a ↦ b] ⋆ R₁ ⊢ Q ⋆ R₂) := by
   intro h₁ h₂
   apply entails_trans
   rotate_left
@@ -89,36 +88,34 @@ theorem Lampe.SLP.skip_fst {Q : SLP (State p)} :
   rw [SLP.star_comm]
   apply entails_self
 
-theorem Lampe.SLP.skip_fst' {Q : SLP (State p)} :
-  (⟦⟧ ⊢ Q ⋆ X) → (([a ↦ b] : SLP (State p)) ⋆ X ⊢ R₂) → (([a ↦ b] : SLP (State p)) ⊢ Q ⋆ R₂) := by
+theorem Lampe.SLP.skip_fst' : (⟦⟧ ⊢ Q ⋆ X) → ([a ↦ b] ⋆ X ⊢ R₂) → ([a ↦ b] ⊢ Q ⋆ R₂) := by
   intro h₁ h₂
-  rw [←SLP.star_true (H := ([a ↦ b] : SLP (State p)))]
+  rw [←SLP.star_true (H:=[a ↦ b])]
   apply Lampe.SLP.skip_fst
   assumption
   assumption
 
-theorem Lampe.SLP.entails_star_true  {H : SLP (State p)} : H ⊢ H ⋆ ⟦⟧ := by
+theorem Lampe.SLP.entails_star_true [SLH α] {H : SLP α} : H ⊢ H ⋆ ⟦⟧ := by
   simp [SLP.entails_self]
 
-theorem SLP.eq_of_iff  {Q : SLP (State p)} : (P ⊢ Q) → (Q ⊢ P) → P = Q := by
+theorem SLP.eq_of_iff [SLH α] {P Q : SLP α} : (P ⊢ Q) → (Q ⊢ P) → P = Q := by
   intros
   apply funext
   intro
   apply eq_iff_iff.mpr
   apply Iff.intro <;> apply_assumption
 
-theorem pluck_pure_l {P : Prop} :
-  (([a ↦ b] : SLP (State p)) ⋆ P) = (P ⋆ ([a ↦ b] : SLP (State p))) := by simp [SLP.star_comm]
+theorem pluck_pure_l {P : Prop} : ([a ↦ b] ⋆ P) = (P ⋆ [a ↦ b]) := by
+  simp [SLP.star_comm]
 
-theorem pluck_pure_all_l :
-  ((SLP.forall' f ⋆ P) : SLP (State p)) = (P ⋆ SLP.forall' f) := by simp [SLP.star_comm]
+theorem pluck_pure_all_l [SLH α] {P : Prop} {f : Prop → SLP α} : (SLP.forall' f ⋆ P) = (P ⋆ SLP.forall' f) := by
+  simp [SLP.star_comm]
 
-theorem pluck_pure_l_assoc { P : Prop } {Q : SLP (State p)} :
-  (([a ↦ b] : SLP (State p)) ⋆ P ⋆ Q) = (P ⋆ ([a ↦ b] : SLP (State p)) ⋆ Q) := by
+theorem pluck_pure_l_assoc {P : Prop} {Q : SLP (State p)} : ([a ↦ b] ⋆ P ⋆ Q) = (P ⋆ [a ↦ b] ⋆ Q) := by
   rw [SLP.star_comm, SLP.star_assoc]
   apply SLP.eq_of_iff <;> {apply SLP.star_mono_l; rw [SLP.star_comm]; apply SLP.entails_self}
 
-theorem SLP.pure_star_pure {p} { P Q : Prop }: (P ⋆ Q) = (⟦P ∧ Q⟧ : SLP (State p)) := by
+theorem SLP.pure_star_pure [SLH α] {P Q : Prop} : (P ⋆ Q) = (⟦P ∧ Q⟧ : SLP α) := by
   unfold SLP.star SLP.lift
   funext st
   apply eq_iff_iff.mpr
@@ -127,8 +124,9 @@ theorem SLP.pure_star_pure {p} { P Q : Prop }: (P ⋆ Q) = (⟦P ∧ Q⟧ : SLP 
     simp_all
   · intro_cases
     use ∅, ∅
-    simp_all
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
     apply SLH.disjoint_empty
+    all_goals simp_all [SLH.disjoint_empty]
 
 macro "h_norm" : tactic => `(tactic|(
   try simp only [SLP.star_assoc, pluck_pure_l, pluck_pure_l_assoc, pluck_pure_all_l, SLP.star_true, SLP.true_star, star_exists, exists_star];
@@ -137,7 +135,7 @@ macro "h_norm" : tactic => `(tactic|(
   subst_vars;
 ))
 
-theorem SLP.pure_leftX {H : SLP (State p)} : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
+theorem SLP.pure_leftX [SLH α] {H Q R : SLP α} : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
   intro
   apply SLP.pure_left
   intro
@@ -149,22 +147,21 @@ theorem SLP.pure_leftX {H : SLP (State p)} : (P → (H ⊢ Q ⋆ R)) → (P ⋆ 
   tauto
 
 /-- only finisher, will waste mvars for top! -/
-theorem SLP.pure_ent_star_top : (P → Q) → ((P : SLP (State p)) ⊢ Q ⋆ ⊤) := by
+theorem SLP.pure_ent_star_top [SLH α] : (P → Q) → ((P : SLP α) ⊢ Q ⋆ ⊤) := by
   intro h st hp
   rcases hp with ⟨_, rfl, hp⟩
   use ∅, ∅
-  simp_all [SLH.disjoint_empty, SLP.lift]
+  refine ⟨?_, ?_, ?_, ?_⟩
   apply SLH.disjoint_empty
+  all_goals simp_all [SLH.disjoint_empty, SLP.lift]
 
-theorem star_mono_l_sing {Q : SLP (State p)} :
-  (P ⊢ Q) → (v₁ = v₂) → (([r ↦ v₁] : SLP (State p)) ⋆ P ⊢ [r ↦ v₂] ⋆ Q) := by
+theorem star_mono_l_sing : (P ⊢ Q) → (v₁ = v₂) → ([r ↦ v₁] ⋆ P ⊢ [r ↦ v₂] ⋆ Q) := by
   intro h₁ h₂
   rw [h₂]
   apply SLP.star_mono_l
   apply h₁
 
-theorem star_mono_l_sing' {Q : SLP (State p)} :
-  (⟦⟧ ⊢ Q) → (v₁ = v₂) → (([r ↦ v₁] : SLP (State p)) ⊢ [r ↦ v₂] ⋆ Q) := by
+theorem star_mono_l_sing' : (⟦⟧ ⊢ Q) → (v₁ = v₂) → ([r ↦ v₁] ⊢ [r ↦ v₂] ⋆ Q) := by
   intro h₁ h₂
   rw [h₂]
   apply SLP.star_mono_l'
@@ -185,7 +182,7 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
     let fst ← parseSLExpr (←args[1]?)
     let snd ← parseSLExpr (←args[2]?)
     return SLTerm.star e fst snd
-  if e.isAppOf ``State.singleton then
+  if e.isAppOf ``State.valSingleton then
     let args := e.getAppArgs
     let fst ←args[1]?
     let snd ← args[2]?
@@ -227,25 +224,25 @@ partial def parseEntailment (e: Expr): TacticM (SLTerm × SLTerm) := do
     return (pre, post)
   else throwError "not an entailment"
 
-theorem star_top_of_star_mvar {Q : SLP (State p)} : (H ⊢ Q ⋆ R) → (H ⊢ Q ⋆ ⊤) := by
+theorem star_top_of_star_mvar [SLH α] {H Q R : SLP α} : (H ⊢ Q ⋆ R) → (H ⊢ Q ⋆ ⊤) := by
   intro h
   apply SLP.entails_trans
   assumption
   apply SLP.star_mono_l
   apply SLP.entails_top
 
-theorem solve_left_with_leftovers {Q : SLP (State p)} : (H ⊢ Q ⋆ R) → (R ⊢ P) → (H ⊢ Q ⋆ P) := by
+theorem solve_left_with_leftovers [SLH α] {H Q R : SLP α} : (H ⊢ Q ⋆ R) → (R ⊢ P) → (H ⊢ Q ⋆ P) := by
   intros
   apply SLP.entails_trans
   assumption
   apply SLP.star_mono_l
   assumption
 
-theorem solve_with_true {Q : SLP (State p)} : (H ⊢ Q) → (H ⊢ Q ⋆ ⟦⟧) := by
+theorem solve_with_true [SLH α] {H Q : SLP α}: (H ⊢ Q) → (H ⊢ Q ⋆ ⟦⟧) := by
   aesop
 -- partial def solveNonMVarEntailment (goal : MVarId) (lhs : SLTerm) (rhs : SLTerm): TacticM (List MVarId × SLTerm) := do
 
-theorem pure_ent_pure_star_mv : (P → Q) → ((P : SLP (State p)) ⊢ Q ⋆ ⟦⟧) := by
+theorem pure_ent_pure_star_mv [SLH α] : (P → Q) → ((P : SLP α) ⊢ Q ⋆ ⟦⟧) := by
   intro h
   apply SLP.pure_left'
   intro
@@ -253,7 +250,7 @@ theorem pure_ent_pure_star_mv : (P → Q) → ((P : SLP (State p)) ⊢ Q ⋆ ⟦
   tauto
   tauto
 
-theorem pure_star_H_ent_pure_star_mv {Q : SLP (State p)} : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
+theorem pure_star_H_ent_pure_star_mv [SLH α] {H Q R : SLP α} : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
   intro
   apply SLP.pure_left
   intro
@@ -263,7 +260,7 @@ theorem pure_star_H_ent_pure_star_mv {Q : SLP (State p)} : (P → (H ⊢ Q ⋆ R
   rw [SLP.star_comm]
   tauto
 
-theorem skip_left_ent_star_mv {R : SLP (State p)} : (R ⊢ P ⋆ H) → (L ⋆ R ⊢ P ⋆ L ⋆ H) := by
+theorem skip_left_ent_star_mv [SLH α] {R L P H : SLP α} : (R ⊢ P ⋆ H) → (L ⋆ R ⊢ P ⋆ L ⋆ H) := by
   intro h
   apply SLP.entails_trans
   apply SLP.star_mono_l
@@ -273,19 +270,21 @@ theorem skip_left_ent_star_mv {R : SLP (State p)} : (R ⊢ P ⋆ H) → (L ⋆ R
   rw [SLP.star_comm]
   apply SLP.entails_self
 
-theorem skip_evidence_pure : Q → ((H : Prop) ⊢ Q ⋆ (H : SLP (State p))) := by
+theorem skip_evidence_pure [SLH α] {H : SLP α} : Q → (H ⊢ Q ⋆ H) := by
   intro
   apply SLP.pure_right
   tauto
   tauto
 
+-- [TODO] make this generic over `LawfulHeap`s
 theorem SLP.exists_intro {Q : α → SLP (State p)} {a} : (H ⊢ Q a) → (H ⊢ ∃∃a, Q a) := by
   intro h st H
   unfold SLP.exists'
   exists a
   tauto
 
-theorem exi_prop {Q : P → SLP (State p)} : (H ⊢ (P : SLP (State p)) ⋆ ⊤) → (∀(p:P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
+-- [TODO] make this generic over `LawfulHeap`s
+theorem exi_prop {Q : P → SLP (State p)} : (H ⊢ (P : SLP (State p)) ⋆ ⊤) → (∀(p : P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
   intro h₁ h₂
   unfold SLP.entails at *
   intro st hH
@@ -296,17 +295,17 @@ theorem exi_prop {Q : P → SLP (State p)} : (H ⊢ (P : SLP (State p)) ⋆ ⊤)
   apply_assumption
   assumption
 
-theorem exi_prop_l {H : P → SLP (State p)} : ((x : P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
+theorem exi_prop_l [SLH α] {H : P → SLP α} {Q : SLP α}: ((x : P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
   intro h st
   unfold SLP.entails SLP.exists' at *
   rintro ⟨v, hH⟩
   apply h
   use ∅, st
-  simp_all [SLP.lift]
+  refine ⟨?_, ?_, ?_, ?_⟩
   apply SLH.disjoint_empty
-  assumption
+  all_goals simp_all [SLH.disjoint_empty, SLP.lift]
 
-theorem use_right {L : SLP (State p)} : (R ⊢ G ⋆ H) → (L ⋆ R ⊢ G ⋆ L ⋆ H) := by
+theorem use_right [SLH α] {R L G H : SLP α} : (R ⊢ G ⋆ H) → (L ⋆ R ⊢ G ⋆ L ⋆ H) := by
   intro
   apply SLP.entails_trans
   apply SLP.star_mono_l
@@ -316,17 +315,17 @@ theorem use_right {L : SLP (State p)} : (R ⊢ G ⋆ H) → (L ⋆ R ⊢ G ⋆ L
   rw [SLP.star_comm]
   apply SLP.entails_self
 
-theorem singleton_congr {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → (([r ↦ v₁] : SLP (State p)) ⊢ [r ↦ v₂]) := by
+theorem singleton_congr {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → ([r ↦ v₁] ⊢ [r ↦ v₂]) := by
   intro h
   rw [h]
   apply SLP.entails_self
 
-theorem singleton_congr_mv {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → (([r ↦ v₁] : SLP (State p)) ⊢ [r ↦ v₂] ⋆ ⟦⟧) := by
+theorem singleton_congr_mv {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → ([r ↦ v₁] ⊢ [r ↦ v₂] ⋆ ⟦⟧) := by
   rintro rfl
   simp
   apply SLP.entails_self
 
-theorem singleton_star_congr {p} {r} {v₁ v₂ : AnyValue p} {R} : (v₁ = v₂) → (([r ↦ v₁] : SLP (State p)) ⋆ R ⊢ [r ↦ v₂] ⋆ R) := by
+theorem singleton_star_congr {p} {r} {v₁ v₂ : AnyValue p} {R} : (v₁ = v₂) → ([r ↦ v₁] ⋆ R ⊢ [r ↦ v₂] ⋆ R) := by
   rintro rfl
   apply SLP.entails_self
 

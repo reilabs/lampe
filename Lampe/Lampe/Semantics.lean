@@ -79,7 +79,6 @@ theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'}:
     apply loopNext (by assumption)
     tauto
 
-
 theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q}:
     Omni p Γ st₁ e Q →
     SLH.disjoint st₁ st₂ →
@@ -122,9 +121,10 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     rename_i _ _ _ _ _ st₁ _ hd
     have hf := b.frame hq (st₂ := st₂)
     unfold mapToValHeapCondition at *
-    simp_all only [Option.map, SLH.disjoint, true_implies]
+    simp_all only [SLH.disjoint, true_implies]
     convert hf
     funext
+    rename Option _ → Prop => Q'
     casesm Option (ValHeap _ × _) <;> try rfl
     simp_all only [SLP.star, eq_iff_iff]
     apply Iff.intro
@@ -136,27 +136,25 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       simp only [SLH.disjoint] at *
       refine ⟨by tauto, ?_, ?_, by tauto⟩
       . simp only [State.union_parts] at hin₂
-        apply State.eq_parts_inv at hin₂
-        tauto
+        injection hin₂
       . have hc : s₁.closures = st₁.closures := by
-          obtain ⟨hin₅, hin₆⟩ := hin₁
-          simp only [State.union_parts] at hin₂
-          apply State.eq_parts_inv at hin₂
-          obtain ⟨hin₇, hin₈⟩ := hin₂
-          apply State.eq_parts_inv at hin₄
-          obtain ⟨hin₉, hin₀⟩ := hin₄
-          rw [←hin₀] at hin₈
-          obtain ⟨_, hl⟩ := hd
-          rw [←hin₀] at hl
-          rw [Finmap.union_cancel hl hin₆] at hin₈
+          obtain ⟨_, hd₂⟩ := hin₁
+          rw [State.union_parts] at hin₂
+          injection hin₂ with _ hu
+          rw [State.mk.injEq] at hin₄
+          obtain ⟨_, hin₀⟩ := hin₄
+          rw [←hin₀] at hu
+          obtain ⟨_, hd₁⟩ := hd
+          rw [←hin₀] at hd₁
+          rw [Finmap.union_cancel hd₁ hd₂] at hu
           tauto
         rw [←hc]
         tauto
     . exists ⟨s₁, st₁.closures⟩, ⟨s₂, st₂.closures⟩
       simp only [SLH.disjoint] at *
       refine ⟨by tauto, ?_, by tauto, ?_⟩
-      . simp only [State.union_parts]
-        apply State.eq_parts <;> tauto
+      . simp only [State.union_parts, State.mk.injEq]
+        tauto
       . rw [hin₄]
   | callDecl _ _ _ _ _ ih =>
     intro
