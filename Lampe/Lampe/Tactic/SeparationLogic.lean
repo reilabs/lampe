@@ -43,13 +43,13 @@ instance : ToString SLTerm := ⟨SLTerm.toString⟩
 
 instance : Inhabited SLTerm := ⟨SLTerm.top⟩
 
-theorem star_exists [LawfulHeap α] {Q : α → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, Q x ⋆ P) := by
+theorem star_exists [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, Q x ⋆ P) := by
   unfold SLP.exists' SLP.star
   funext st
   simp
   tauto
 
-theorem exists_star [LawfulHeap α] {Q : α → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, P ⋆ Q x) := by
+theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, P ⋆ Q x) := by
   rw [star_exists]
   simp [SLP.star_comm]
 
@@ -199,7 +199,7 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
     return SLTerm.all (←args[3]?)
   else if e.isAppOf ``SLP.exists' then
     let args := e.getAppArgs
-    return SLTerm.exi (←args[4]?)
+    return SLTerm.exi (←args[3]?)
   else if e.isAppOf ``SLP.wand then
     let args := e.getAppArgs
     let lhs ← parseSLExpr (←args[2]?)
@@ -250,7 +250,8 @@ theorem pure_ent_pure_star_mv [LawfulHeap α] : (P → Q) → ((P : SLP α) ⊢ 
   tauto
   tauto
 
-theorem pure_star_H_ent_pure_star_mv [LawfulHeap α] {H Q R : SLP α} : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
+theorem pure_star_H_ent_pure_star_mv [LawfulHeap α] {H Q R : SLP α} :
+  (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
   intro
   apply SLP.pure_left
   intro
@@ -276,16 +277,14 @@ theorem skip_evidence_pure [LawfulHeap α] {H : SLP α} : Q → (H ⊢ Q ⋆ H) 
   tauto
   tauto
 
--- [TODO] make this generic over `LawfulHeap`s
-theorem SLP.exists_intro {Q : α → SLP (State p)} {a} : (H ⊢ Q a) → (H ⊢ ∃∃a, Q a) := by
+theorem SLP.exists_intro [LawfulHeap α] {H : SLP α} {Q : β → SLP α} {a} : (H ⊢ Q a) → (H ⊢ ∃∃a, Q a) := by
   intro h st H
   unfold SLP.exists'
   exists a
   tauto
 
--- [TODO] make this generic over `LawfulHeap`s
-theorem exi_prop {Q : P → SLP (State p)} :
-  (H ⊢ (P : SLP (State p)) ⋆ ⊤) → (∀(p : P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
+theorem exi_prop [LawfulHeap α] {P : Prop} {H : SLP α} {Q : P → SLP α} :
+  (H ⊢ P ⋆ ⊤) → (∀(p : P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
   intro h₁ h₂
   unfold SLP.entails at *
   intro st hH
@@ -296,7 +295,7 @@ theorem exi_prop {Q : P → SLP (State p)} :
   apply_assumption
   assumption
 
-theorem exi_prop_l [LawfulHeap α] {H : P → SLP α} {Q : SLP α} :
+theorem exi_prop_l [LawfulHeap α] {P : Prop} {H : P → SLP α} {Q : SLP α} :
   ((x : P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
   intro h st
   unfold SLP.entails SLP.exists' at *

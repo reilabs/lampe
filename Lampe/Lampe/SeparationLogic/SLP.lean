@@ -7,7 +7,7 @@ def SLP (α) [LawfulHeap α] := α → Prop
 
 namespace SLP
 
-def star [LawfulHeap α] (lhs rhs : SLP α) := fun st =>
+def star [LawfulHeap α] (lhs rhs : SLP α) : SLP α := fun st =>
   ∃ st₁ st₂, LawfulHeap.disjoint st₁ st₂ ∧ st = st₁ ∪ st₂ ∧ lhs st₁ ∧ rhs st₂
 
 def lift [LawfulHeap α] (pr : Prop) : SLP α := fun st => pr ∧ st = ∅
