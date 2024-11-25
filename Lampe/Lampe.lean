@@ -99,5 +99,5 @@ nr_def simple_lambda<>(x : Field) -> Field {
 
 example {p Γ x} : STHoare p Γ ⟦⟧ (simple_lambda.fn.body (Tp.denote p) h![] h![x]) fun v => v = x := by
   simp only [simple_lambda]
-  steps
+  steps <;> try tauto
   all_goals sorry

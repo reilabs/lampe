@@ -306,10 +306,11 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
-theorem callLambda_intro :
-  @STHoare outTp p Γ ⟦⟧ (lambdaBody (Tp.denote p) argTps outTp args) (fun v => v = v') →
-  STHoare p Γ [ref ↣ lambdaBody] (.call h![] argTps outTp (.lambda ref) args)
-    (fun v => ⟦v = v'⟧ ⋆ [ref ↣ lambdaBody]) := by
+theorem callLambda_intro {lambdaBody} :
+  @STHoare outTp p Γ ⟦⟧ (lambdaBody args) (fun v => v = v') →
+  STHoare p Γ [ref ↣ ⟨_, argTps, outTp, lambdaBody⟩]
+    (Expr.call h![] argTps outTp (.lambda ref) args)
+    (fun v => ⟦v = v'⟧ ⋆ [ref ↣ ⟨_, argTps, outTp, lambdaBody⟩]) := by
   intros
   rename_i h
   unfold STHoare THoare
@@ -330,14 +331,15 @@ theorem callLambda_intro :
     simp only [SLP.true_star, SLP.entails_self]
 
 theorem newLambda_intro :
-  STHoare p Γ ⟦⟧ (.lambda (lambda _))
-    fun v => [v ↣ lambda] := by
+  STHoare p Γ ⟦⟧ (.lambda argTps outTp lambdaBody)
+    fun v => [v ↣ ⟨_, argTps, outTp, lambdaBody⟩] := by
   unfold STHoare THoare
   intros H st h
   constructor
   intros
   simp_all only [SLP.true_star, SLP.star_assoc]
   rename Ref => r
+  generalize (⟨_, _, _, _⟩ : Lambda) = lambda
   exists ⟨∅, Finmap.singleton r lambda⟩, st
   refine ⟨?_, ?_, ?_, ?_⟩
   . simp only [LawfulHeap.disjoint]
@@ -354,4 +356,5 @@ theorem newLambda_intro :
     tauto
   . apply SLP.ent_star_top
     tauto
+
 end Lampe.STHoare

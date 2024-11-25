@@ -9,7 +9,6 @@ lemma Finmap.singleton_disjoint_of_not_mem (hp : ref ∉ s):
     Finmap.Disjoint (Finmap.singleton ref v) s := by
   simp_all [Finmap.Disjoint]
 
-
 lemma Finmap.singleton_disjoint_iff_not_mem :
     Finmap.Disjoint (Finmap.singleton ref v) s ↔ (ref ∉ s) := by
   simp_all [Finmap.Disjoint]

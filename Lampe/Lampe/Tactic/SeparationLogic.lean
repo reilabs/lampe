@@ -14,6 +14,7 @@ inductive SLTerm where
 | star : Expr → SLTerm → SLTerm → SLTerm
 | lift : Expr → SLTerm
 | singleton : Expr → Expr → SLTerm
+| clsSingleton : Expr → Expr → SLTerm
 | mvar : Expr → SLTerm
 | all : Expr → SLTerm
 | exi : Expr → SLTerm
@@ -28,6 +29,7 @@ def SLTerm.toString : SLTerm → String
 | star _ a b => s!"({a.toString} ⋆ {b.toString})"
 | lift e => s!"⟦{e.dbgToString}⟧"
 | singleton e₁ _ => s!"[{e₁.dbgToString} ↦ _]"
+| clsSingleton e₁ _ => s!"[{e₁.dbgToString} ↣ _]"
 | mvar e => s!"MV{e.dbgToString}"
 | unrecognized e => s!"<unrecognized: {e.dbgToString}>"
 
@@ -184,9 +186,14 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
     return SLTerm.star e fst snd
   if e.isAppOf ``State.valSingleton then
     let args := e.getAppArgs
-    let fst ←args[1]?
+    let fst ← args[1]?
     let snd ← args[2]?
     return SLTerm.singleton fst snd
+  else if e.isAppOf ``State.clsSingleton then
+    let args := e.getAppArgs
+    let fst ← args[1]?
+    let snd ← args[2]?
+    return SLTerm.clsSingleton fst snd
   else if e.isAppOf ``SLP.top then
     return SLTerm.top
   else if e.isAppOf ``SLP.lift then
@@ -326,9 +333,21 @@ theorem singleton_congr_mv {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → 
   simp
   apply SLP.entails_self
 
+theorem clsSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda} : (l₁ = l₂) → (([r ↣ l₁] : SLP (State p)) ⊢ [r ↣ l₂] ⋆ ⟦⟧) := by
+  rintro rfl
+  simp
+  apply SLP.entails_self
+
+
 theorem singleton_star_congr {p} {r} {v₁ v₂ : AnyValue p} {R} : (v₁ = v₂) → ([r ↦ v₁] ⋆ R ⊢ [r ↦ v₂] ⋆ R) := by
   rintro rfl
   apply SLP.entails_self
+
+theorem clsSingleton_star_congr {p} {r} {v₁ v₂ : Lambda} {R : SLP (State p)} :
+  (v₁ = v₂) → ([r ↣ v₁] ⋆ R ⊢ [r ↣ v₂] ⋆ R) := by
+  rintro rfl
+  apply SLP.entails_self
+
 
 def canSolveSingleton (lhs : SLTerm) (rhsV : Expr): Bool :=
   match lhs with
@@ -346,12 +365,33 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
         catch _ => pure [newGoal]
       pure $ newGoal ++ newGoals
     else throwError "not equal"
+  | SLTerm.clsSingleton v _ =>
+    if v == rhs then
+      let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``clsSingleton_congr_mv)
+      let newGoal ← newGoals[0]?
+      let newGoal ← try newGoal.refl; pure []
+        catch _ => pure [newGoal]
+      pure $ newGoal ++ newGoals
+    else throwError "not equal"
   | SLTerm.star _ l r =>
     match l with
     | SLTerm.singleton v _ => do
       if v == rhs then
         -- [TODO] This should use EQ, not ent_self
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``singleton_star_congr)
+        let newGoal ← newGoals[0]?
+        let newGoal ← try newGoal.refl; pure []
+          catch _ => pure [newGoal]
+        pure $ newGoal ++ newGoals
+      else
+        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
+        let newGoal ← newGoals[0]?
+        let new' ← solveSingletonStarMV newGoal r rhs
+        return new' ++ newGoals
+    | SLTerm.clsSingleton v _ => do
+      if v == rhs then
+        -- [TODO] This should use EQ, not ent_self as well
+        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``clsSingleton_star_congr)
         let newGoal ← newGoals[0]?
         let newGoal ← try newGoal.refl; pure []
           catch _ => pure [newGoal]
@@ -392,11 +432,14 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM (List MVarId
       return ng ++ goals
   | .singleton _ _ =>
       goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
+  | .clsSingleton _ _ =>
+      goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
   | _ => throwError "not a lift {lhs}"
 
 partial def solveStarMV (goal : MVarId) (lhs : SLTerm) (rhsNonMv : SLTerm): TacticM (List MVarId) := do
   match rhsNonMv with
   | .singleton v _ => solveSingletonStarMV goal lhs v
+  | .clsSingleton v _ => solveSingletonStarMV goal lhs v
   | .lift _ => solvePureStarMV goal lhs
   | _ => throwError "not a singleton srry {rhsNonMv}"
 
@@ -465,6 +508,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply assert_intro
     | apply skip_intro
     | apply callLambda_intro
+    | apply newLambda_intro
     -- memory builtins
     | apply var_intro
     | apply ref_intro
@@ -516,8 +560,9 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left Lampe.STHoare.litU_intro
     | apply consequence_frame_left assert_intro
-    | apply consequence_frame_left callLambda_intro
     -- | apply consequence_frame_left skip_intro
+    | apply consequence_frame_left callLambda_intro
+    | apply consequence_frame_left newLambda_intro
     -- memory builtins
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
@@ -572,6 +617,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top callLambda_intro
+    | apply ramified_frame_top newLambda_intro
     -- memory builtins
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro

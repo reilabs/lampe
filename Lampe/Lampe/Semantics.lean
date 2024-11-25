@@ -45,12 +45,12 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
   Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callLambda {cls : Closures} :
-  cls.lookup ref = some lambda →
-  Omni p Γ ⟨vh, cls⟩ (lambda (Tp.denote p) argTps outTp args) Q →
+  cls.lookup ref = some ⟨Tp.denote p, argTps, outTp, lambdaBody⟩ →
+  Omni p Γ ⟨vh, cls⟩ (lambdaBody args) Q →
   Omni p Γ ⟨vh, cls⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
 | newLambda {Q} :
-  (∀ ref, ref ∉ cls → Q (some (⟨vh, cls.insert ref lambda⟩, ref))) →
-  Omni p Γ ⟨vh, cls⟩ (@Expr.lambda (Tp.denote p) (lambda _)) Q
+  (∀ ref, ref ∉ cls → Q (some (⟨vh, cls.insert ref ⟨_, argTps, outTp, lambdaBody⟩⟩, ref))) →
+  Omni p Γ ⟨vh, cls⟩ (.lambda argTps outTp lambdaBody) Q
 | loopDone :
   lo ≥ hi →
   Omni p Γ st (.loop lo hi body) Q
@@ -192,7 +192,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     rename Closures => cls
     rename ValHeap _ => vh
     rename Ref => r
-    rename Lambda => lambda
+    generalize hL : (⟨_, _, _, _⟩ : Lambda) = lambda
     have hi : r ∉ cls ∧ r ∉ st₂.closures := by aesop
     have hd₁ : Finmap.Disjoint cls (Finmap.singleton r lambda) := by
       apply Finmap.Disjoint.symm
@@ -213,6 +213,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       simp only [Finmap.union_comm_of_disjoint hd₁, Finmap.union_assoc]
     . simp [Finmap.union_comm_of_disjoint, Finmap.insert_eq_singleton_union]
       rename (∀ref ∉ cls, _) => hQ
+      rw [hL] at hQ
       simp only [Finmap.insert_eq_singleton_union] at hQ
       rw [Finmap.union_comm_of_disjoint hd₁]
       tauto
