@@ -306,4 +306,45 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
+theorem callLambda_intro {fn : Function} :
+  (hg : fn.generics = []) →
+  (hi : fn.inTps (hg ▸ h![]) = argTps) →
+  (ho : fn.outTp (hg ▸ h![]) = outTp) →
+  STHoare p Γ ⟦⟧ (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) (fun v => v = v') →
+  STHoare p Γ [lambdaRef ↣ fn] (.call h![] argTps outTp (.lambda lambdaRef) args)
+    (fun v => ⟦v = v'⟧ ⋆ [lambdaRef ↣ fn]) := by
+  intros
+  rename_i h
+  unfold STHoare THoare
+  intros
+  constructor <;> tauto
+  unfold SLP.star at *
+  rotate_right 1
+  . rename_i st h
+    exact st.closures
+  . rename_i st h
+    obtain ⟨st₁, ⟨st₂, ⟨_, h₂, h₃, _⟩⟩⟩ := h
+    simp only [State.union_parts, h₃] at h₂
+    simp only [h₂]
+    simp_all
+  . apply consequence
+    <;> tauto
+    apply consequence_frame_left
+    rotate_left 2
+    exact ⟦⟧
+    exact h
+    simp only [SLP.true_star, SLP.entails_self]
+
+
+theorem newLambda_intro  :
+  STHoare p Γ P (.lambda argTps outTp body) Q := by
+  unfold STHoare
+  intro H
+  sorry
+
+
+
+
+
+
 end Lampe.STHoare

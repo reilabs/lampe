@@ -442,10 +442,4 @@ theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem newLambda_intro {cl : Closures} :
-  STHoare p Γ P (.lambda argTps outTp body) Q := by
-  unfold STHoare
-  intro H
-  sorry
-
 end Lampe.STHoare

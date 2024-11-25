@@ -86,8 +86,7 @@ notation:max "[" l " ↦ " r "]" => State.valSingleton l r
 @[reducible]
 def State.clsSingleton (r : Ref) (v : Function) : SLP (State p) := fun st => st.closures = Finmap.singleton r v
 
-notation:max "[" l " ↣ " r "]" => State.cls l r
-
+notation:max "[" l " ↣ " r "]" => State.clsSingleton l r
 
 @[simp]
 lemma State.union_parts_left :
