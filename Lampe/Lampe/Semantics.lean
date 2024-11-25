@@ -45,12 +45,12 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
   Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callLambda {cls : Closures} :
-  cls.lookup lambdaRef = some fn →
-  (hg : fn.generics = []) →
-  (hi : fn.inTps (hg ▸ h![]) = argTps) →
-  (ho : fn.outTp (hg ▸ h![]) = outTp) →
-  Omni p Γ st (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) Q →
-  Omni p Γ st (Expr.call h![] argTps outTp (.lambda lambdaRef) args) Q
+  cls.lookup ref = some lambda →
+  Omni p Γ ⟨vh, cls⟩ (lambda (Tp.denote p) argTps outTp args) Q →
+  Omni p Γ ⟨vh, cls⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
+| newLambda {Q} :
+  (∀ ref, ref ∉ cls → Q (some (⟨vh, cls.insert ref lambda⟩, ref))) →
+  Omni p Γ ⟨vh, cls⟩ (@Expr.lambda (Tp.denote p) (lambda _)) Q
 | loopDone :
   lo ≥ hi →
   Omni p Γ st (.loop lo hi body) Q
@@ -156,7 +156,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       . simp only [State.union_parts, State.mk.injEq]
         tauto
       . rw [hin₄]
-  | callDecl _ _ _ _ _ ih =>
+  | callDecl =>
     intro
     constructor
     all_goals (try assumption)
@@ -175,8 +175,46 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     constructor
     apply ih
     tauto
-  | callLambda =>
-    intro
+  | callLambda h _ _ =>
+    intro hd
     constructor <;> try tauto
+    simp_all
+    simp only [LawfulHeap.disjoint] at hd
+    simp only [Finmap.lookup_union_left (Finmap.mem_of_lookup_eq_some h)]
+    tauto
+  | newLambda =>
+    intros h
+    simp only [LawfulHeap.disjoint, State.union_parts_left] at *
+    obtain ⟨_, hd⟩ := h
+    constructor
+    intros
+    simp only
+    rename Closures => cls
+    rename ValHeap _ => vh
+    rename Ref => r
+    rename Lambda => lambda
+    have hi : r ∉ cls ∧ r ∉ st₂.closures := by aesop
+    have hd₁ : Finmap.Disjoint cls (Finmap.singleton r lambda) := by
+      apply Finmap.Disjoint.symm
+      apply Finmap.singleton_disjoint_iff_not_mem.mpr
+      tauto
+    have hd₂ : Finmap.Disjoint (Finmap.singleton r lambda) st₂.closures := by
+      apply Finmap.singleton_disjoint_iff_not_mem.mpr
+      tauto
+    exists ⟨vh, cls ∪ Finmap.singleton r lambda⟩, st₂
+    refine ⟨?_, ?_, ?_, by tauto⟩
+    . simp only [LawfulHeap.disjoint]
+      refine ⟨by tauto, ?_⟩
+      simp only [Finmap.disjoint_union_left]
+      tauto
+    . simp only [State.union_parts_left, State.mk.injEq]
+      refine ⟨by tauto, ?_⟩
+      simp only [Finmap.insert_eq_singleton_union]
+      simp only [Finmap.union_comm_of_disjoint hd₁, Finmap.union_assoc]
+    . simp [Finmap.union_comm_of_disjoint, Finmap.insert_eq_singleton_union]
+      rename (∀ref ∉ cls, _) => hQ
+      simp only [Finmap.insert_eq_singleton_union] at hQ
+      rw [Finmap.union_comm_of_disjoint hd₁]
+      tauto
 
 end Lampe

@@ -4,7 +4,7 @@ import Lampe.Ast
 
 namespace Lampe
 
-abbrev Closures := Finmap fun _ : Ref => Lampe.Function
+abbrev Closures := Finmap fun _ : Ref => Lambda
 
 structure State (p : Prime) where
   vals : ValHeap p
@@ -22,7 +22,7 @@ instance : Coe (State p) (ValHeap p) where
 /-- Maps a post-condition on `State`s to a post-condition on `ValHeap`s by keeping the closures fixed -/
 @[reducible]
 def mapToValHeapCondition
-  (closures : Finmap fun _ : Ref => Function)
+  (closures : Closures)
   (Q : Option (State p × T) → Prop) : Option (ValHeap p × T) → Prop :=
   fun vv => Q (vv.map (fun (vals, t) => ⟨⟨vals, closures⟩, t⟩))
 
@@ -79,12 +79,14 @@ instance : LawfulHeap (State p) where
     all_goals tauto
 
 @[reducible]
-def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) := fun st => st.vals = Finmap.singleton r v
+def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) :=
+  fun st => st.vals = Finmap.singleton r v
 
 notation:max "[" l " ↦ " r "]" => State.valSingleton l r
 
 @[reducible]
-def State.clsSingleton (r : Ref) (v : Function) : SLP (State p) := fun st => st.closures = Finmap.singleton r v
+def State.clsSingleton (r : Ref) (v : Lambda) : SLP (State p) :=
+  fun st => st.closures = Finmap.singleton r v
 
 notation:max "[" l " ↣ " r "]" => State.clsSingleton l r
 

@@ -306,22 +306,16 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
-theorem callLambda_intro {fn : Function} :
-  (hg : fn.generics = []) →
-  (hi : fn.inTps (hg ▸ h![]) = argTps) →
-  (ho : fn.outTp (hg ▸ h![]) = outTp) →
-  STHoare p Γ ⟦⟧ (ho ▸ fn.body _ (hg ▸ h![]) (hi ▸ args)) (fun v => v = v') →
-  STHoare p Γ [lambdaRef ↣ fn] (.call h![] argTps outTp (.lambda lambdaRef) args)
-    (fun v => ⟦v = v'⟧ ⋆ [lambdaRef ↣ fn]) := by
+theorem callLambda_intro :
+  @STHoare outTp p Γ ⟦⟧ (lambdaBody (Tp.denote p) argTps outTp args) (fun v => v = v') →
+  STHoare p Γ [ref ↣ lambdaBody] (.call h![] argTps outTp (.lambda ref) args)
+    (fun v => ⟦v = v'⟧ ⋆ [ref ↣ lambdaBody]) := by
   intros
   rename_i h
   unfold STHoare THoare
   intros
   constructor <;> tauto
   unfold SLP.star at *
-  rotate_right 1
-  . rename_i st h
-    exact st.closures
   . rename_i st h
     obtain ⟨st₁, ⟨st₂, ⟨_, h₂, h₃, _⟩⟩⟩ := h
     simp only [State.union_parts, h₃] at h₂
@@ -336,11 +330,32 @@ theorem callLambda_intro {fn : Function} :
     simp only [SLP.true_star, SLP.entails_self]
 
 
-theorem newLambda_intro  :
-  STHoare p Γ P (.lambda argTps outTp body) Q := by
-  unfold STHoare
-  intro H
-  sorry
+theorem newLambda_intro {r : Ref} :
+  STHoare p Γ ⟦⟧ (.lambda (lambda _))
+    fun v => ⟦v = r⟧ ⋆ [r ↣ lambda] := by
+  unfold STHoare THoare
+  intros H st h
+  obtain ⟨s₁, ⟨s₂, ⟨h₁, h₂, h₃, h₄⟩⟩⟩ := h
+  simp only [LawfulHeap.disjoint] at h₁
+  simp only [State.union_parts, State.eq_constructor, State.mk.injEq] at h₂
+  simp only at h₂
+  injection h₂
+  rename_i hi₁ hi₂
+  obtain ⟨hd₁, hd₂⟩ := h₁
+  constructor <;> tauto
+  all_goals sorry
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

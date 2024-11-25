@@ -29,7 +29,7 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
-| lambda : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep .lambdaRef
+| lambda : ((argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp)) → Expr rep .lambdaRef
 
 structure Function : Type _ where
   generics : List Kind
@@ -47,16 +47,8 @@ example : Function := {
   body := fun _ h![_] h![x] => .var x
 }
 
-abbrev Lambda (argTps outTp) :=
-  (rep : Tp → Type) → HList Kind.denote [] → HList rep argTps → Expr rep outTp
-
-def newLambda (argTps : List Tp) (outTp : Tp)
-(body : Lambda argTps outTp) : Function :=  {
-  generics := []
-  inTps := fun _ => argTps
-  outTp := fun _ => outTp
-  body := body
-}
+def Lambda : Type _ :=
+  (rep : Tp → Type) → (argTps : List Tp) → (outTp : Tp) → HList rep argTps → Expr rep outTp
 
 structure FunctionDecl where
   name : Ident
