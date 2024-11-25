@@ -329,37 +329,29 @@ theorem callLambda_intro :
     exact h
     simp only [SLP.true_star, SLP.entails_self]
 
-
-theorem newLambda_intro {r : Ref} :
+theorem newLambda_intro :
   STHoare p Γ ⟦⟧ (.lambda (lambda _))
-    fun v => ⟦v = r⟧ ⋆ [r ↣ lambda] := by
+    fun v => [v ↣ lambda] := by
   unfold STHoare THoare
   intros H st h
-  obtain ⟨s₁, ⟨s₂, ⟨h₁, h₂, h₃, h₄⟩⟩⟩ := h
-  simp only [LawfulHeap.disjoint] at h₁
-  simp only [State.union_parts, State.eq_constructor, State.mk.injEq] at h₂
-  simp only at h₂
-  injection h₂
-  rename_i hi₁ hi₂
-  obtain ⟨hd₁, hd₂⟩ := h₁
-  constructor <;> tauto
-  all_goals sorry
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  constructor
+  intros
+  simp_all only [SLP.true_star, SLP.star_assoc]
+  rename Ref => r
+  exists ⟨∅, Finmap.singleton r lambda⟩, st
+  refine ⟨?_, ?_, ?_, ?_⟩
+  . simp only [LawfulHeap.disjoint]
+    refine ⟨?_, ?_⟩
+    . apply Finmap.disjoint_empty
+    . apply Finmap.singleton_disjoint_of_not_mem (by tauto)
+  . simp only [State.union_parts, State.mk.injEq]
+    refine ⟨by simp_all, ?_⟩
+    have hd : Finmap.Disjoint st.closures (Finmap.singleton r lambda) := by
+      rw [Finmap.Disjoint.symm_iff]
+      apply Finmap.singleton_disjoint_of_not_mem (by assumption)
+    simp only [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
+  . unfold State.clsSingleton
+    tauto
+  . apply SLP.ent_star_top
+    tauto
 end Lampe.STHoare
