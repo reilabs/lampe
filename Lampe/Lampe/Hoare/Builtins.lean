@@ -29,8 +29,8 @@ lemma pureBuiltin_intro_consequence
     {A : Type} {a : A} {sgn desc args} {Q : Tp.denote p outTp → Prop}
     (h1 : argTps = (sgn a).fst)
     (h2 : outTp = (sgn a).snd)
-    (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h))
-    : STHoare p Γ ⟦⟧
+    (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h)) :
+    STHoare p Γ ⟦⟧
       (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
       fun v => Q v := by
   subst_vars

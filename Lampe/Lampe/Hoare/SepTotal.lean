@@ -306,11 +306,11 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
-theorem callLambda_intro {lambdaBody} :
-  @STHoare outTp p Γ ⟦⟧ (lambdaBody args) (fun v => v = v') →
-  STHoare p Γ [ref ↣ ⟨_, argTps, outTp, lambdaBody⟩]
+theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp → SLP (State p)}:
+  @STHoare outTp p Γ P (lambdaBody args) Q →
+  STHoare p Γ (P ⋆ [ref ↣ ⟨_, argTps, outTp, lambdaBody⟩])
     (Expr.call h![] argTps outTp (.lambda ref) args)
-    (fun v => ⟦v = v'⟧ ⋆ [ref ↣ ⟨_, argTps, outTp, lambdaBody⟩]) := by
+    (fun v => (Q v) ⋆ [ref ↣ ⟨_, argTps, outTp, lambdaBody⟩]) := by
   intros
   rename_i h
   unfold STHoare THoare
@@ -319,14 +319,24 @@ theorem callLambda_intro {lambdaBody} :
   unfold SLP.star at *
   . rename_i st h
     obtain ⟨st₁, ⟨st₂, ⟨_, h₂, h₃, _⟩⟩⟩ := h
-    simp only [State.union_parts, h₃] at h₂
-    simp only [h₂]
-    simp_all
+    obtain ⟨st₁', ⟨st₂', _⟩⟩ := h₃
+    simp_all only [State.union_parts, Finmap.mem_union, Finmap.mem_singleton, or_true,
+      Finmap.lookup_union_left]
+    generalize hL : (⟨_, _, _, _⟩ : Lambda) = lmb at *
+    have _ : ref ∉ st₁'.lambdas := by
+      rename_i h₃
+      obtain ⟨hi₁, _, _, hi₂⟩ := h₃
+      simp only [State.lmbSingleton] at hi₂
+      simp only [LawfulHeap.disjoint] at hi₁
+      obtain ⟨_, hj₁⟩ := hi₁
+      rw [hi₂] at hj₁
+      tauto
+    simp [Finmap.lookup_union_right (by tauto)]
   . apply consequence
     <;> tauto
     apply consequence_frame_left
     rotate_left 2
-    exact ⟦⟧
+    exact P
     exact h
     simp only [SLP.true_star, SLP.entails_self]
 
