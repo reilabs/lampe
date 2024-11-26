@@ -41,6 +41,10 @@ def SLTerm.isTop : SLTerm → Bool
 | SLTerm.top => true
 | _ => false
 
+def SLTerm.isForAll : SLTerm → Bool
+| SLTerm.all _ => true
+| _ => false
+
 instance : ToString SLTerm := ⟨SLTerm.toString⟩
 
 instance : Inhabited SLTerm := ⟨SLTerm.top⟩
@@ -131,7 +135,10 @@ theorem SLP.pure_star_pure [LawfulHeap α] {P Q : Prop} : (P ⋆ Q) = (⟦P ∧ 
     all_goals simp_all [LawfulHeap.disjoint_empty]
 
 macro "h_norm" : tactic => `(tactic|(
-  try simp only [SLP.star_assoc, pluck_pure_l, pluck_pure_l_assoc, pluck_pure_all_l, SLP.star_true, SLP.true_star, star_exists, exists_star];
+  try simp only [SLP.star_assoc,
+    pluck_pure_l, pluck_pure_l_assoc, pluck_pure_all_l,
+    SLP.star_true, SLP.true_star,
+    star_exists, exists_star];
   -- repeat (apply STHoare.pure_left; intro_cases);
   -- repeat (apply SLP.pure_left; intro_cases);
   subst_vars;
@@ -473,6 +480,8 @@ partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
       let g' ← g[0]?
       let ng ← solveEntailment g'
       pure $ ng ++ g
+    else if r.isForAll then
+      throwError "cannot solve forall"
     else throwError "todo {l} {r}"
   | SLTerm.singleton _ _ =>
     -- [TODO] handle pure on the left
@@ -507,7 +516,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
-    | apply callLambda_intro
+    | apply STHoare.utkans_thm STHoare.callLambda_intro
     | apply lam_intro
     -- memory builtins
     | apply var_intro
@@ -561,7 +570,6 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left Lampe.STHoare.litU_intro
     | apply consequence_frame_left assert_intro
     -- | apply consequence_frame_left skip_intro
-    | apply consequence_frame_left callLambda_intro
     | apply consequence_frame_left lam_intro
     -- memory builtins
     | apply consequence_frame_left var_intro
@@ -616,7 +624,6 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top Lampe.STHoare.litU_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
-    | apply ramified_frame_top callLambda_intro
     | apply ramified_frame_top lam_intro
     -- memory builtins
     | apply ramified_frame_top var_intro

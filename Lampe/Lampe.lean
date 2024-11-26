@@ -101,20 +101,10 @@ example {p Γ x} : STHoare p Γ ⟦⟧ (simple_lambda.fn.body (Tp.denote p) h![]
   fun v => v = x := by
   simp only [simple_lambda]
   steps
-  rotate_left 2
-  exact (fun v => v = x)
-  rotate_left 1
-  . steps
-    intros
-    subst_vars
-    rfl
-  . apply STHoare.ramified_frame_top
-    apply STHoare.callLambda_intro
-    rotate_left 2
-    exact ⟦⟧
-    exact (fun v => v = x)
-    rotate_left 2
-    exact (fun h![a] => (Expr.var a))
-    rotate_left 1
-    apply STHoare.var_intro
-    sorry
+  steps
+  simp only [SLP.true_star, SLP.entails_self]
+  intro
+  sl
+  tauto
+  sl
+  aesop

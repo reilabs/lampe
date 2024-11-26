@@ -91,6 +91,19 @@ theorem consequence_frame_left {H H₁ H₂ : SLP (State p)}
   rw [SLP.star_comm]
   apply SLP.ent_star_top
 
+-- [TODO] find a better name for this
+theorem utkans_thm {Q : _ → SLP (State p)}
+  (h_hoare_imp : STHoare p Γ P₁ e₁ Q → STHoare p Γ (P₁ ⋆ H) e₂ (fun v => Q v ⋆ H))
+  (h_hoare : STHoare p Γ P₁ e₁ Q)
+  (h_ent_pre : H ⊢ P₁ ⋆ H)
+  (h_ent_post : ∀ v, ((Q v) ⋆ H) ⋆ ⊤ ⊢ (Q v) ⋆ ⊤) -- [TODO] get rid of this.
+  :
+  STHoare p Γ H e₂ Q := by
+  have h_hoare' := h_hoare_imp h_hoare
+  apply consequence h_ent_pre (fun v => SLP.entails_self)
+  apply consequence SLP.entails_self h_ent_post
+  tauto
+
 theorem var_intro {v : Tp.denote p tp}:
     STHoare p Γ ⟦⟧ (.var v) (fun v' => ⟦v' = v⟧) := by
   unfold STHoare
@@ -332,8 +345,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp
       rw [hi₂] at hj₁
       tauto
     simp [Finmap.lookup_union_right (by tauto)]
-  . apply consequence
-    <;> tauto
+  . apply consequence <;> tauto
     apply consequence_frame_left
     rotate_left 2
     exact P
