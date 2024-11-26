@@ -35,7 +35,7 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   (Q₁ none → Q none) →
   Omni p Γ st (.letIn e b) Q
 | callBuiltin {st : State p} {Q : Option (State p × Tp.denote p resType) → Prop} :
-  (b.omni p st.vals argTypes resType args (mapToValHeapCondition st.closures Q)) →
+  (b.omni p st.vals argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
   Omni p Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
 | callDecl :
   Γ fname = some fn →
@@ -44,13 +44,13 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   (htco : fn.outTp (hkc ▸ generics) = res) →
   Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
   Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
-| callLambda {cls : Closures} :
-  cls.lookup ref = some ⟨Tp.denote p, argTps, outTp, lambdaBody⟩ →
-  Omni p Γ ⟨vh, cls⟩ (lambdaBody args) Q →
-  Omni p Γ ⟨vh, cls⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
+| callLambda {lambdas : Lambdas} :
+  lambdas.lookup ref = some ⟨Tp.denote p, argTps, outTp, lambdaBody⟩ →
+  Omni p Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
+  Omni p Γ ⟨vh, lambdas⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
 | newLambda {Q} :
-  (∀ ref, ref ∉ cls → Q (some (⟨vh, cls.insert ref ⟨_, argTps, outTp, lambdaBody⟩⟩, ref))) →
-  Omni p Γ ⟨vh, cls⟩ (.lambda argTps outTp lambdaBody) Q
+  (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨_, argTps, outTp, lambdaBody⟩⟩, ref))) →
+  Omni p Γ ⟨vh, lambdas⟩ (Expr.lambda argTps outTp lambdaBody) Q
 | loopDone :
   lo ≥ hi →
   Omni p Γ st (.loop lo hi body) Q
@@ -137,7 +137,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       refine ⟨by tauto, ?_, ?_, by tauto⟩
       . simp only [State.union_parts] at hin₂
         injection hin₂
-      . have hc : s₁.closures = st₁.closures := by
+      . have hc : s₁.lambdas = st₁.lambdas := by
           obtain ⟨_, hd₂⟩ := hin₁
           rw [State.union_parts] at hin₂
           injection hin₂ with _ hu
@@ -150,7 +150,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
           tauto
         rw [←hc]
         tauto
-    . exists ⟨s₁, st₁.closures⟩, ⟨s₂, st₂.closures⟩
+    . exists ⟨s₁, st₁.lambdas⟩, ⟨s₂, st₂.lambdas⟩
       simp only [LawfulHeap.disjoint] at *
       refine ⟨by tauto, ?_, by tauto, ?_⟩
       . simp only [State.union_parts, State.mk.injEq]
@@ -189,19 +189,19 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     constructor
     intros
     simp only
-    rename Closures => cls
+    rename Lambdas => lmbs
     rename ValHeap _ => vh
     rename Ref => r
     generalize hL : (⟨_, _, _, _⟩ : Lambda) = lambda
-    have hi : r ∉ cls ∧ r ∉ st₂.closures := by aesop
-    have hd₁ : Finmap.Disjoint cls (Finmap.singleton r lambda) := by
+    have hi : r ∉ lmbs ∧ r ∉ st₂.lambdas := by aesop
+    have hd₁ : Finmap.Disjoint lmbs (Finmap.singleton r lambda) := by
       apply Finmap.Disjoint.symm
       apply Finmap.singleton_disjoint_iff_not_mem.mpr
       tauto
-    have hd₂ : Finmap.Disjoint (Finmap.singleton r lambda) st₂.closures := by
+    have hd₂ : Finmap.Disjoint (Finmap.singleton r lambda) st₂.lambdas := by
       apply Finmap.singleton_disjoint_iff_not_mem.mpr
       tauto
-    exists ⟨vh, cls ∪ Finmap.singleton r lambda⟩, st₂
+    exists ⟨vh, lmbs ∪ Finmap.singleton r lambda⟩, st₂
     refine ⟨?_, ?_, ?_, by tauto⟩
     . simp only [LawfulHeap.disjoint]
       refine ⟨by tauto, ?_⟩
@@ -212,7 +212,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       simp only [Finmap.insert_eq_singleton_union]
       simp only [Finmap.union_comm_of_disjoint hd₁, Finmap.union_assoc]
     . simp [Finmap.union_comm_of_disjoint, Finmap.insert_eq_singleton_union]
-      rename (∀ref ∉ cls, _) => hQ
+      rename (∀ref ∉ lmbs, _) => hQ
       rw [hL] at hQ
       simp only [Finmap.insert_eq_singleton_union] at hQ
       rw [Finmap.union_comm_of_disjoint hd₁]

@@ -97,7 +97,9 @@ nr_def simple_lambda<>(x : Field) -> Field {
   ^foo(x) : Field;
 }
 
-example {p Γ x} : STHoare p Γ ⟦⟧ (simple_lambda.fn.body (Tp.denote p) h![] h![x]) fun v => v = x := by
+example {p Γ x} : STHoare p Γ ⟦⟧ (simple_lambda.fn.body (Tp.denote p) h![] h![x])
+  fun v => v = x := by
   simp only [simple_lambda]
   steps <;> try tauto
-  all_goals sorry
+  . apply STHoare.var_intro
+  . sorry -- unsolvable

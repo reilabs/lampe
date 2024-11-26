@@ -43,7 +43,7 @@ theorem letIn_intro {P Q}
 
 theorem ref_intro {v P} :
     THoare p Γ
-      (fun st => ∀r, r ∉ st → P r ⟨(st.vals.insert r ⟨tp, v⟩), st.closures⟩)
+      (fun st => ∀r, r ∉ st → P r ⟨(st.vals.insert r ⟨tp, v⟩), st.lambdas⟩)
       (.call h![] [tp] (Tp.ref tp) (.builtin .ref) h![v])
       P := by
   unfold THoare
@@ -64,7 +64,7 @@ theorem readRef_intro {ref} :
 
 theorem writeRef_intro {ref v} :
     THoare p Γ
-      (fun st => ref ∈ st ∧ P () ⟨(st.vals.insert ref ⟨tp, v⟩), st.closures⟩)
+      (fun st => ref ∈ st ∧ P () ⟨(st.vals.insert ref ⟨tp, v⟩), st.lambdas⟩)
       (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![ref, v])
       P := by
   unfold THoare

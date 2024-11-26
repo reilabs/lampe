@@ -14,7 +14,7 @@ inductive SLTerm where
 | star : Expr → SLTerm → SLTerm → SLTerm
 | lift : Expr → SLTerm
 | singleton : Expr → Expr → SLTerm
-| clsSingleton : Expr → Expr → SLTerm
+| lmbSingleton : Expr → Expr → SLTerm
 | mvar : Expr → SLTerm
 | all : Expr → SLTerm
 | exi : Expr → SLTerm
@@ -29,7 +29,7 @@ def SLTerm.toString : SLTerm → String
 | star _ a b => s!"({a.toString} ⋆ {b.toString})"
 | lift e => s!"⟦{e.dbgToString}⟧"
 | singleton e₁ _ => s!"[{e₁.dbgToString} ↦ _]"
-| clsSingleton e₁ _ => s!"[{e₁.dbgToString} ↣ _]"
+| lmbSingleton e₁ _ => s!"[{e₁.dbgToString} ↣ _]"
 | mvar e => s!"MV{e.dbgToString}"
 | unrecognized e => s!"<unrecognized: {e.dbgToString}>"
 
@@ -189,11 +189,11 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
     let fst ← args[1]?
     let snd ← args[2]?
     return SLTerm.singleton fst snd
-  else if e.isAppOf ``State.clsSingleton then
+  else if e.isAppOf ``State.lmbSingleton then
     let args := e.getAppArgs
     let fst ← args[1]?
     let snd ← args[2]?
-    return SLTerm.clsSingleton fst snd
+    return SLTerm.lmbSingleton fst snd
   else if e.isAppOf ``SLP.top then
     return SLTerm.top
   else if e.isAppOf ``SLP.lift then
@@ -333,7 +333,7 @@ theorem singleton_congr_mv {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → 
   simp
   apply SLP.entails_self
 
-theorem clsSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda} : (l₁ = l₂) → (([r ↣ l₁] : SLP (State p)) ⊢ [r ↣ l₂] ⋆ ⟦⟧) := by
+theorem lmbSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda} : (l₁ = l₂) → (([r ↣ l₁] : SLP (State p)) ⊢ [r ↣ l₂] ⋆ ⟦⟧) := by
   rintro rfl
   simp
   apply SLP.entails_self
@@ -343,7 +343,7 @@ theorem singleton_star_congr {p} {r} {v₁ v₂ : AnyValue p} {R} : (v₁ = v₂
   rintro rfl
   apply SLP.entails_self
 
-theorem clsSingleton_star_congr {p} {r} {v₁ v₂ : Lambda} {R : SLP (State p)} :
+theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda} {R : SLP (State p)} :
   (v₁ = v₂) → ([r ↣ v₁] ⋆ R ⊢ [r ↣ v₂] ⋆ R) := by
   rintro rfl
   apply SLP.entails_self
@@ -365,9 +365,9 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
         catch _ => pure [newGoal]
       pure $ newGoal ++ newGoals
     else throwError "not equal"
-  | SLTerm.clsSingleton v _ =>
+  | SLTerm.lmbSingleton v _ =>
     if v == rhs then
-      let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``clsSingleton_congr_mv)
+      let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_congr_mv)
       let newGoal ← newGoals[0]?
       let newGoal ← try newGoal.refl; pure []
         catch _ => pure [newGoal]
@@ -388,10 +388,10 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
         let newGoal ← newGoals[0]?
         let new' ← solveSingletonStarMV newGoal r rhs
         return new' ++ newGoals
-    | SLTerm.clsSingleton v _ => do
+    | SLTerm.lmbSingleton v _ => do
       if v == rhs then
         -- [TODO] This should use EQ, not ent_self as well
-        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``clsSingleton_star_congr)
+        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_star_congr)
         let newGoal ← newGoals[0]?
         let newGoal ← try newGoal.refl; pure []
           catch _ => pure [newGoal]
@@ -432,14 +432,14 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM (List MVarId
       return ng ++ goals
   | .singleton _ _ =>
       goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
-  | .clsSingleton _ _ =>
+  | .lmbSingleton _ _ =>
       goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
   | _ => throwError "not a lift {lhs}"
 
 partial def solveStarMV (goal : MVarId) (lhs : SLTerm) (rhsNonMv : SLTerm): TacticM (List MVarId) := do
   match rhsNonMv with
   | .singleton v _ => solveSingletonStarMV goal lhs v
-  | .clsSingleton v _ => solveSingletonStarMV goal lhs v
+  | .lmbSingleton v _ => solveSingletonStarMV goal lhs v
   | .lift _ => solvePureStarMV goal lhs
   | _ => throwError "not a singleton srry {rhsNonMv}"
 

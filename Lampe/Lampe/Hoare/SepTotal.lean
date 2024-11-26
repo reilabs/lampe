@@ -348,11 +348,11 @@ theorem newLambda_intro :
     . apply Finmap.singleton_disjoint_of_not_mem (by tauto)
   . simp only [State.union_parts, State.mk.injEq]
     refine ⟨by simp_all, ?_⟩
-    have hd : Finmap.Disjoint st.closures (Finmap.singleton r lambda) := by
+    have hd : Finmap.Disjoint st.lambdas (Finmap.singleton r lambda) := by
       rw [Finmap.Disjoint.symm_iff]
       apply Finmap.singleton_disjoint_of_not_mem (by assumption)
     simp only [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
-  . unfold State.clsSingleton
+  . unfold State.lmbSingleton
     tauto
   . apply SLP.ent_star_top
     tauto

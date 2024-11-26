@@ -355,7 +355,7 @@ theorem ref_intro:
   apply THoare.consequence ?_ THoare.ref_intro (fun _ => SLP.entails_self)
   simp only [SLP.true_star]
   intro st hH r hr
-  exists (⟨Finmap.singleton r ⟨tp, v⟩, st.closures⟩ ∪ st), ∅
+  exists (⟨Finmap.singleton r ⟨tp, v⟩, st.lambdas⟩ ∪ st), ∅
   apply And.intro (by rw [LawfulHeap.disjoint_symm_iff]; apply LawfulHeap.disjoint_empty)
   constructor
   . simp only [State.insertVal, Finmap.insert_eq_singleton_union, LawfulHeap_union_empty]
@@ -395,7 +395,7 @@ theorem readRef_intro:
     apply Option.isSome_some
   simp only [SLP.true_star, SLP.star_assoc]
   rename_i st₁ st₂ _ _
-  exists (⟨Finmap.singleton r ⟨tp, v⟩, st₁.closures⟩), ?_
+  exists (⟨Finmap.singleton r ⟨tp, v⟩, st₁.lambdas⟩), ?_
   unfold State.valSingleton at hs
   rw [←hs]
   repeat apply And.intro (by tauto)
@@ -420,7 +420,7 @@ theorem writeRef_intro:
     simp_all [State.membership_in_val]
   simp only [Finmap.insert_eq_singleton_union, ←Finmap.union_assoc, Finmap.union_singleton, SLP.star_assoc]
   rename_i st₁ st₂ _ _
-  exists (⟨Finmap.singleton r ⟨tp, v'⟩, st₁.closures⟩), ?_
+  exists (⟨Finmap.singleton r ⟨tp, v'⟩, st₁.lambdas⟩), ?_
   refine ⟨?_, ?_, ?_, (by apply SLP.ent_star_top; assumption)⟩
   . simp only [LawfulHeap.disjoint] at *
     have _ : r ∉ st₂.vals := by
