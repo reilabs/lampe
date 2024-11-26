@@ -508,7 +508,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply assert_intro
     | apply skip_intro
     | apply callLambda_intro
-    | apply newLambda_intro
+    | apply lam_intro
     -- memory builtins
     | apply var_intro
     | apply ref_intro
@@ -562,7 +562,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left assert_intro
     -- | apply consequence_frame_left skip_intro
     | apply consequence_frame_left callLambda_intro
-    | apply consequence_frame_left newLambda_intro
+    | apply consequence_frame_left lam_intro
     -- memory builtins
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
@@ -617,7 +617,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top callLambda_intro
-    | apply ramified_frame_top newLambda_intro
+    | apply ramified_frame_top lam_intro
     -- memory builtins
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro

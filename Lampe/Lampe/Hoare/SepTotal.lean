@@ -330,7 +330,7 @@ theorem callLambda_intro {lambdaBody} :
     exact h
     simp only [SLP.true_star, SLP.entails_self]
 
-theorem newLambda_intro :
+theorem lam_intro :
   STHoare p Γ ⟦⟧ (.lambda argTps outTp lambdaBody)
     fun v => [v ↣ ⟨_, argTps, outTp, lambdaBody⟩] := by
   unfold STHoare THoare

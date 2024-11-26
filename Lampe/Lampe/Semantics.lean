@@ -48,7 +48,7 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   lambdas.lookup ref = some ⟨Tp.denote p, argTps, outTp, lambdaBody⟩ →
   Omni p Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
   Omni p Γ ⟨vh, lambdas⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
-| newLambda {Q} :
+| lam {Q} :
   (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨_, argTps, outTp, lambdaBody⟩⟩, ref))) →
   Omni p Γ ⟨vh, lambdas⟩ (Expr.lambda argTps outTp lambdaBody) Q
 | loopDone :
@@ -182,7 +182,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     simp only [LawfulHeap.disjoint] at hd
     simp only [Finmap.lookup_union_left (Finmap.mem_of_lookup_eq_some h)]
     tauto
-  | newLambda =>
+  | lam =>
     intros h
     simp only [LawfulHeap.disjoint, State.union_parts_left] at *
     obtain ⟨_, hd⟩ := h
