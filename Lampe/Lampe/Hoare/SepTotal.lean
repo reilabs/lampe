@@ -91,9 +91,7 @@ theorem consequence_frame_left {H H₁ H₂ : SLP (State p)}
   rw [SLP.star_comm]
   apply SLP.ent_star_top
 
-
--- [TODO] find a better name for this
-theorem utkans_thm {Q : _ → SLP (State p)}
+theorem nested_triple {Q : _ → SLP (State p)}
   (h_hoare_imp : STHoare p Γ P e₁ Q → STHoare p Γ (P ⋆ H) e₂ (fun v => Q v ⋆ H))
   (h_hoare : STHoare p Γ P e₁ Q)
   (h_ent_pre : H ⊢ P ⋆ H) :

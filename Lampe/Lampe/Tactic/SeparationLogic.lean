@@ -516,7 +516,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
-    | apply STHoare.utkans_thm STHoare.callLambda_intro
+    | apply STHoare.nested_triple STHoare.callLambda_intro
     | apply lam_intro
     -- memory builtins
     | apply var_intro
