@@ -12,10 +12,24 @@ abbrev Ident := String
 /-- A reference to a lambda is represented as a reference to a unit type -/
 abbrev Tp.lambdaRef := Tp.ref .unit
 
+structure TraitRef where
+name : Ident
+traitGenericKinds : List Kind
+traitGenerics : HList Kind.denote traitGenericKinds
+
+structure TraitImplRef where
+trait : TraitRef
+self : Tp
+
+structure TraitMethodImplRef where
+trait : TraitImplRef
+method : Ident
+
 inductive FunctionIdent {rep : Tp → Type} : Type where
 | builtin : Builtin → FunctionIdent
-| decl : Ident → FunctionIdent -- a function declared at the module level
+| decl : Ident → FunctionIdent
 | lambda : rep .lambdaRef → FunctionIdent
+| trait : TraitMethodImplRef → FunctionIdent
 
 inductive Member : Tp → List Tp → Type where
 | head : Member tp (tp :: tps)
@@ -64,6 +78,14 @@ structure Struct where
   name : String
   tyArgKinds : List Kind
   fieldTypes : HList Kind.denote tyArgKinds → List Tp
+
+structure TraitImpl where
+traitGenericKinds : List Kind
+implGenericKinds : List Kind
+traitGenerics : HList Kind.denote implGenericKinds → HList Kind.denote traitGenericKinds
+constraints : HList Kind.denote implGenericKinds → List TraitImplRef
+self : HList Kind.denote implGenericKinds → Tp
+impl : HList Kind.denote implGenericKinds → List (Ident × Function)
 
 -- @[reducible]
 -- def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=

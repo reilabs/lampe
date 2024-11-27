@@ -8,12 +8,31 @@ import Lampe.SeparationLogic.State
 
 namespace Lampe
 
-def Env := Ident → Option Function
+variable (P : Prime)
 
-def Env.ofModule (m : Module) : Env := fun i => (m.decls.find? fun d => d.name == i).map (·.fn)
+structure Env where
+  functions : List (Ident × Function)
+  traits : List (Ident × TraitImpl)
 
-@[reducible]
-def Env.extend (Γ₁ : Env) (Γ₂ : Env) : Env := fun i => Γ₁ i <|> Γ₂ i
+inductive TraitResolvable (Γ : Env): TraitImplRef → Prop where
+| ok {ref impl}:
+  (ref.trait.name, impl) ∈ Γ.traits →
+  (ktc : ref.trait.traitGenericKinds = impl.traitGenericKinds) →
+  (implGenerics : HList Kind.denote impl.implGenericKinds) →
+  (ktc ▸ ref.trait.traitGenerics = impl.traitGenerics implGenerics) →
+  ref.self = impl.self implGenerics →
+  (∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) →
+  TraitResolvable Γ ref
+
+inductive TraitResolution (Γ : Env): TraitImplRef → List (Ident × Function) → Prop where
+| ok {ref impl}:
+  (ref.trait.name, impl) ∈ Γ.traits →
+  (ktc : ref.trait.traitGenericKinds = impl.traitGenericKinds) →
+  (implGenerics : HList Kind.denote impl.implGenericKinds) →
+  (ktc ▸ ref.trait.traitGenerics = impl.traitGenerics implGenerics) →
+  ref.self = impl.self implGenerics →
+  (∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) →
+  TraitResolution Γ ref (impl.impl implGenerics)
 
 inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where
 | litField {Q} : Q (some (st, n)) → Omni p Γ st (.lit .field n) Q
@@ -34,16 +53,6 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
   (∀v st, Q₁ (some (st, v)) → Omni p Γ st (b v) Q) →
   (Q₁ none → Q none) →
   Omni p Γ st (.letIn e b) Q
-| callBuiltin {st : State p} {Q : Option (State p × Tp.denote p resType) → Prop} :
-  (b.omni p st.vals argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
-  Omni p Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
-| callDecl :
-  Γ fname = some fn →
-  (hkc : fn.generics = tyKinds) →
-  (htci : fn.inTps (hkc ▸ generics) = argTypes) →
-  (htco : fn.outTp (hkc ▸ generics) = res) →
-  Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
-  Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callLambda {lambdas : Lambdas} :
   lambdas.lookup ref = some ⟨Tp.denote p, argTps, outTp, lambdaBody⟩ →
   Omni p Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
@@ -51,6 +60,24 @@ inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (
 | lam {Q} :
   (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨_, argTps, outTp, lambdaBody⟩⟩, ref))) →
   Omni p Γ ⟨vh, lambdas⟩ (Expr.lambda argTps outTp lambdaBody) Q
+| callBuiltin {Q} :
+    (b.omni p st argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
+    Omni p Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
+| callDecl:
+    (fname, fn) ∈ Γ.functions →
+    (hkc : fn.generics = tyKinds) →
+    (htci : fn.inTps (hkc ▸ generics) = argTypes) →
+    (htco : fn.outTp (hkc ▸ generics) = res) →
+    Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+    Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
+| callTrait {impl}:
+    TraitResolution Γ traitRef impl →
+    (fname, fn) ∈ impl →
+    (hkc : fn.generics = tyKinds) →
+    (htci : fn.inTps (hkc ▸ generics) = argTypes) →
+    (htco : fn.outTp (hkc ▸ generics) = res) →
+    Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+    Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
 | loopDone :
   lo ≥ hi →
   Omni p Γ st (.loop lo hi body) Q
@@ -118,7 +145,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     intros
     constructor
     simp only [State.union_closures, State.union_vals]
-    rename_i _ _ _ _ _ st₁ _ hd
+    rename_i _ _ st₁ _ _ _ _ hd
     have hf := b.frame hq (st₂ := st₂)
     unfold mapToValHeapCondition at *
     simp_all only [LawfulHeap.disjoint, true_implies]
@@ -157,6 +184,11 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
         tauto
       . rw [hin₄]
   | callDecl =>
+    intro
+    constructor
+    all_goals (try assumption)
+    tauto
+  | callTrait _ _ _ _ _ _ ih =>
     intro
     constructor
     all_goals (try assumption)
