@@ -121,8 +121,7 @@ theorem true_star [LawfulHeap α] {H : SLP α} : (⟦⟧ ⋆ H) = H := by
   · simp_all
   · intro
     exists ∅, ?_
-    simp_all [LawfulHeap.disjoint_empty]
-    apply LawfulHeap.disjoint_empty
+    simp_all
 
 @[simp]
 theorem star_true [LawfulHeap α] {H : SLP α} : (H ⋆ ⟦⟧) = H := by rw [star_comm]; simp
@@ -169,8 +168,7 @@ theorem ent_star_top [LawfulHeap α] {H : SLP α} : H ⊢ H ⋆ ⊤ := by
   intro _ _
   exists ?_, ∅
   rw [LawfulHeap.disjoint_symm_iff]
-  simp_all [LawfulHeap.disjoint_empty]
-  apply LawfulHeap.disjoint_empty
+  simp_all
 
 theorem star_mono_r [LawfulHeap α] {P Q R : SLP α} : (P ⊢ Q) → (P ⋆ R ⊢ Q ⋆ R) := by
   unfold star entails
@@ -210,8 +208,14 @@ theorem top_star_top [LawfulHeap α] : (top ⋆ (⊤ : SLP α)) = (⊤ : SLP α)
   funext x
   simp
   exists ∅, x
-  simp [LawfulHeap.disjoint_empty]
-  apply LawfulHeap.disjoint_empty
+  simp
+
+theorem ent_drop_left [LawfulHeap α] {Q H : SLP α} : Q ⋆ H ⊢ Q ⋆ ⊤ := by
+  unfold star entails
+  intros st h
+  obtain ⟨s₁, ⟨s₂, _⟩⟩ := h
+  use s₁, s₂
+  repeat apply And.intro <;> tauto
 
 end star
 

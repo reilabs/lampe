@@ -92,19 +92,22 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h!
     contradiction
   . aesop
 
-nr_def simple_lambda<>(x : Field) -> Field {
-  let foo = |a|: Field -> Field { a };
-  ^foo(x) : Field;
+nr_def simple_lambda<>(x : Field, y : Field) -> Field {
+  let add = |a, b|: Field, Field -> Field { #add(a, b) : Field };
+  ^add(x, y) : Field;
 }
 
-example {p Γ x} : STHoare p Γ ⟦⟧ (simple_lambda.fn.body (Tp.denote p) h![] h![x])
-  fun v => v = x := by
+example {p Γ x y} : STHoare p Γ ⟦⟧ (simple_lambda.fn.body (Tp.denote p) h![] h![x, y])
+  fun v => v = x + y := by
   simp only [simple_lambda]
   steps
+  simp_all
   steps
-  simp only [SLP.true_star, SLP.entails_self]
-  intro
+  simp_all
+  rotate_left 2
+  simp_all [SLP.entails_self]
+  exact (fun v => v = x + y)
   sl
-  tauto
+  aesop
   sl
   aesop

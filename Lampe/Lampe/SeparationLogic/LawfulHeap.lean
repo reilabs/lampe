@@ -29,6 +29,17 @@ theorem LawfulHeap_union_comm_of_disjoint [LawfulHeap α] {s₁ s₂ : α}:
   exact LawfulHeap.union_comm_of_disjoint
 
 @[simp]
+theorem LawfulHeap_disjoint_empty [LawfulHeap α] {a : α} :
+  LawfulHeap.disjoint a ∅ := by
+   rw [LawfulHeap.disjoint_symm_iff]
+   apply LawfulHeap.disjoint_empty
+
+@[simp]
+theorem LawfulHeap_empty_disjoint [LawfulHeap α] {a : α} :
+  LawfulHeap.disjoint ∅ a := by
+   apply LawfulHeap.disjoint_empty
+
+@[simp]
 theorem LawfulHeap_union_empty [LawfulHeap α] {a : α} :
   a ∪ ∅ = a := by
   apply LawfulHeap.union_empty

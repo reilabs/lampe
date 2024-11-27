@@ -91,14 +91,15 @@ theorem consequence_frame_left {H H₁ H₂ : SLP (State p)}
   rw [SLP.star_comm]
   apply SLP.ent_star_top
 
+
 -- [TODO] find a better name for this
 theorem utkans_thm {Q : _ → SLP (State p)}
-  (h_hoare_imp : STHoare p Γ P₁ e₁ Q → STHoare p Γ (P₁ ⋆ H) e₂ (fun v => Q v ⋆ H))
-  (h_hoare : STHoare p Γ P₁ e₁ Q)
-  (h_ent_pre : H ⊢ P₁ ⋆ H)
-  (h_ent_post : ∀ v, ((Q v) ⋆ H) ⋆ ⊤ ⊢ (Q v) ⋆ ⊤) -- [TODO] get rid of this.
-  :
+  (h_hoare_imp : STHoare p Γ P e₁ Q → STHoare p Γ (P ⋆ H) e₂ (fun v => Q v ⋆ H))
+  (h_hoare : STHoare p Γ P e₁ Q)
+  (h_ent_pre : H ⊢ P ⋆ H) :
   STHoare p Γ H e₂ Q := by
+  have h_ent_post : ∀ v, ((Q v) ⋆ H) ⋆ ⊤ ⊢ (Q v) ⋆ ⊤ := by
+    simp [SLP.ent_drop_left]
   have h_hoare' := h_hoare_imp h_hoare
   apply consequence h_ent_pre (fun v => SLP.entails_self)
   apply consequence SLP.entails_self h_ent_post
