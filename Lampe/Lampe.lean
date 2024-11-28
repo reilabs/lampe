@@ -93,7 +93,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h!
   . aesop
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
-  let add = |a, b|: Field, Field -> Field { #add(a, b) : Field };
+  let add = |a : Field, b : Field| -> Field { #add(a, b) : Field };
   ^add(x, y) : Field;
 }
 
