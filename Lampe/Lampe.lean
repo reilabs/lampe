@@ -91,6 +91,10 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h!
     contradiction
   . simp_all
 
+nr_trait_impl <> bulbulize<> for Field {
+
+}
+
 def bulbulizeField : TraitImpl := {
   traitGenericKinds := [],
   implGenericKinds := [],

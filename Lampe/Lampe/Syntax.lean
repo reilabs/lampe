@@ -203,6 +203,7 @@ end
 declare_syntax_cat nr_param_decl
 syntax ident ":" nr_type : nr_param_decl
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
+syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" ident,* ">" "for" nr_type "{" sepBy(nr_fn_decl, ";", ";", allowTrailingSep) "}"
 
 def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m (String × TSyntax `term)
 | `(nr_fn_decl| $name < $generics,* > ( $params,* ) -> $outTp { $bExprs;* }) => do
@@ -225,6 +226,27 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
   pure (name, syn)
 | _ => throwUnsupportedSyntax
 
+def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m (String × TSyntax `term)
+| `(nr_trait_impl| < $generics,* > $traitName < $traitGenerics,* > for $targetType { $fns;* }) => do
+  let implGenericKinds ← mkListLit (← generics.getElems.toList.mapM fun _ => `(Kind.type))
+  let traitGenericKinds ← mkListLit (← traitGenerics.getElems.toList.mapM fun _ => `(Kind.type))
+  let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
+
+  let traitName ← mkNrIdent traitName
+  let fnDecls ← mkListLit (← fns.getElems.toList.mapM fun fn => do
+    let fnDecl ← mkFnDecl fn
+    `(Prod.mk $(Syntax.mkStrLit fnDecl.fst) $(fnDecl.snd)))
+  let targetType ← mkNrType targetType
+  let syn : TSyntax `term ← `(TraitImpl.mk
+    (traitGenericKinds := $traitGenericKinds)
+    (implGenericKinds := $implGenericKinds)
+    (traitGenerics := fun _ => [])
+    (constraints := fun _ => [])
+    (self := fun generics => match generics with | $(←mkHListLit generics) => $targetType)
+    (impl := $fnDecls))
+  pure (traitName, syn)
+| _ => throwUnsupportedSyntax
+
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
   Elab.Term.elabTerm term.raw none
@@ -234,5 +256,10 @@ elab "nr_def" decl:nr_fn_decl : command => do
   let (name, decl) ← mkFnDecl decl
   let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
+
+elab "nr_trait_impl" impl:nr_trait_impl : command => do
+  let (name, impl) ← mkTraitImpl impl
+  let leanDefn ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.TraitImpl := $impl)
+  Elab.Command.elabCommand leanDefn
 
 end Lampe
