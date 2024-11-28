@@ -76,8 +76,8 @@ theorem pure_right [LawfulHeap α] {H₁ H₂ : SLP α} : P → (H₁ ⊢ H₂) 
   apply And.intro rfl
   apply_assumption
   assumption
-  . simp only [LawfulHeap_empty_union]
-  . apply LawfulHeap.disjoint_empty
+  . simp only [LawfulHeap.empty_union]
+  . apply LawfulHeap.empty_disjoint
 
 theorem entails_self [LawfulHeap α] {H : SLP α} : H ⊢ H := by tauto
 
@@ -108,7 +108,7 @@ theorem star_comm [LawfulHeap α] {G H : SLP α} : (G ⋆ H) = (H ⋆ G) := by
     repeat apply Exists.intro
     rw [LawfulHeap.disjoint_symm_iff]
     apply And.intro (by assumption)
-    rw [LawfulHeap_union_comm_of_disjoint (by rw [LawfulHeap.disjoint_symm_iff]; assumption)]
+    rw [LawfulHeap.union_comm_of_disjoint_ (by rw [LawfulHeap.disjoint_symm_iff]; assumption)]
     tauto
   }
 
@@ -134,8 +134,8 @@ theorem star_assoc [LawfulHeap α] {F G H : SLP α} : ((F ⋆ G) ⋆ H) = (F ⋆
   apply Iff.intro
   · intro_cases
     subst_vars
-    rw [LawfulHeap_union_assoc]
-    simp only [LawfulHeap_disjoint_union_left] at *
+    rw [LawfulHeap.union_assoc]
+    simp only [LawfulHeap.disjoint_union_left] at *
     cases_type And
     repeat apply Exists.intro
     apply And.intro ?_
@@ -146,11 +146,11 @@ theorem star_assoc [LawfulHeap α] {F G H : SLP α} : ((F ⋆ G) ⋆ H) = (F ⋆
     apply And.intro rfl
     simp_all
     assumption
-    simp_all [LawfulHeap_disjoint_union_right]
+    simp_all [LawfulHeap.disjoint_union_right]
   · intro_cases
     subst_vars
-    rw [←LawfulHeap_union_assoc]
-    simp only [LawfulHeap_disjoint_union_right] at *
+    rw [←LawfulHeap.union_assoc]
+    simp only [LawfulHeap.disjoint_union_right] at *
     cases_type And
     repeat apply Exists.intro
     apply And.intro ?_
@@ -161,7 +161,7 @@ theorem star_assoc [LawfulHeap α] {F G H : SLP α} : ((F ⋆ G) ⋆ H) = (F ⋆
     apply And.intro rfl
     simp_all
     assumption
-    simp_all [LawfulHeap_disjoint_union_left]
+    simp_all [LawfulHeap.disjoint_union_left]
 
 @[simp]
 theorem ent_star_top [LawfulHeap α] {H : SLP α} : H ⊢ H ⋆ ⊤ := by
@@ -188,7 +188,7 @@ theorem star_mono_l' [LawfulHeap α] {P Q : SLP α} : (⟦⟧ ⊢ Q) → (P ⊢ 
   tauto
   simp
   rw [LawfulHeap.disjoint_symm_iff]
-  apply LawfulHeap.disjoint_empty
+  apply LawfulHeap.empty_disjoint
 
 theorem star_mono [LawfulHeap α] {H₁ H₂ Q₁ Q₂ : SLP α} : (H₁ ⊢ H₂) → (Q₁ ⊢ Q₂) → (H₁ ⋆ Q₁ ⊢ H₂ ⋆ Q₂) := by
   unfold star entails
@@ -239,7 +239,7 @@ theorem wand_self_star [LawfulHeap α] {H : SLP α}: (H -⋆ H ⋆ top) = top :=
     simp
     rotate_left
     rotate_left
-    rw [LawfulHeap_union_comm_of_disjoint (by assumption)]
+    rw [LawfulHeap.union_comm_of_disjoint_ (by assumption)]
     rw [LawfulHeap.disjoint_symm_iff]
     assumption
 
@@ -256,7 +256,7 @@ theorem wand_cancel [LawfulHeap α] {P Q : SLP α} : (P ⋆ (P -⋆ Q)) ⊢ Q :=
   intro_cases
   subst_vars
   rename_i h
-  rw [LawfulHeap_union_comm_of_disjoint (by assumption)]
+  rw [LawfulHeap.union_comm_of_disjoint_ (by assumption)]
   apply_assumption
   rw [LawfulHeap.disjoint_symm_iff]
   tauto

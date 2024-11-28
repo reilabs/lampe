@@ -33,11 +33,11 @@ instance : LawfulHeap (ValHeap p) where
   union := fun a b => a ∪ b
   disjoint := fun a b => a.Disjoint b
   empty := ∅
-  union_empty := Finmap.union_empty
-  union_assoc := Finmap.union_assoc
-  disjoint_symm_iff := by tauto
-  union_comm_of_disjoint := Finmap.union_comm_of_disjoint
-  disjoint_union_left := Finmap.disjoint_union_left
-  disjoint_empty := Finmap.disjoint_empty
+  thm_union_empty := Finmap.union_empty
+  thm_union_assoc := Finmap.union_assoc
+  thm_disjoint_symm_iff := by tauto
+  thm_union_comm_of_disjoint := Finmap.union_comm_of_disjoint
+  thm_disjoint_union_left := Finmap.disjoint_union_left
+  thm_disjoint_empty := Finmap.disjoint_empty
 
 end Lampe

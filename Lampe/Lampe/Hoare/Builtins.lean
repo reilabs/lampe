@@ -356,9 +356,9 @@ theorem ref_intro:
   simp only [SLP.true_star]
   intro st hH r hr
   exists (⟨Finmap.singleton r ⟨tp, v⟩, st.lambdas⟩ ∪ st), ∅
-  apply And.intro (by rw [LawfulHeap.disjoint_symm_iff]; apply LawfulHeap.disjoint_empty)
+  apply And.intro (by rw [LawfulHeap.disjoint_symm_iff]; apply LawfulHeap.empty_disjoint)
   constructor
-  . simp only [State.insertVal, Finmap.insert_eq_singleton_union, LawfulHeap_union_empty]
+  . simp only [State.insertVal, Finmap.insert_eq_singleton_union, LawfulHeap.union_empty]
     simp only [State.union_parts_left, Finmap.union_self]
   . apply And.intro ?_ (by simp)
     exists (⟨Finmap.singleton r ⟨tp, v⟩, ∅⟩), st

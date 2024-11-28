@@ -49,17 +49,17 @@ instance : LawfulHeap (State p) where
   union := fun a b => ⟨a.vals ∪ b.vals, a.lambdas ∪ b.lambdas⟩
   disjoint := fun a b => a.vals.Disjoint b.vals ∧ a.lambdas.Disjoint b.lambdas
   empty := ⟨∅, ∅⟩
-  union_empty := by
+  thm_union_empty := by
     intros
     simp only [Finmap.union_empty]
-  union_assoc := by
+  thm_union_assoc := by
     intros
     simp only [Union.union, State.mk.injEq]
     apply And.intro
     . apply Finmap.union_assoc
     . apply Finmap.union_assoc
-  disjoint_symm_iff := by tauto
-  union_comm_of_disjoint := by
+  thm_disjoint_symm_iff := by tauto
+  thm_union_comm_of_disjoint := by
     intros
     simp only [Union.union, State.mk.injEq]
     apply And.intro
@@ -67,8 +67,8 @@ instance : LawfulHeap (State p) where
       tauto
     . apply Finmap.union_comm_of_disjoint
       tauto
-  disjoint_empty := by tauto
-  disjoint_union_left := by
+  thm_disjoint_empty := by tauto
+  thm_disjoint_union_left := by
     intros x y z
     have h1 := (Finmap.disjoint_union_left x.vals y.vals z.vals)
     have h2 := (Finmap.disjoint_union_left x.lambdas y.lambdas z.lambdas)

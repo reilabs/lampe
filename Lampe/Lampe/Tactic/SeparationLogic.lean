@@ -317,7 +317,7 @@ theorem exi_prop_l [LawfulHeap α] {P : Prop} {H : P → SLP α} {Q : SLP α} :
   apply h
   use ∅, st
   refine ⟨?_, ?_, ?_, ?_⟩
-  apply LawfulHeap.disjoint_empty
+  apply LawfulHeap.empty_disjoint
   all_goals simp_all [LawfulHeap.disjoint_empty, SLP.lift]
 
 theorem use_right [LawfulHeap α] {R L G H : SLP α} : (R ⊢ G ⋆ H) → (L ⋆ R ⊢ G ⋆ L ⋆ H) := by
