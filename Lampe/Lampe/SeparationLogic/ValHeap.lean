@@ -40,8 +40,4 @@ instance : LawfulHeap (ValHeap p) where
   disjoint_union_left := Finmap.disjoint_union_left
   disjoint_empty := Finmap.disjoint_empty
 
--- def ValHeap.singleton (r : Ref) (v : AnyValue p) : SLP (ValHeap p) := fun st => st = Finmap.singleton r v
-
--- notation:max "[" l " ↦ " r "]" => ValHeap.singleton l r
-
 end Lampe

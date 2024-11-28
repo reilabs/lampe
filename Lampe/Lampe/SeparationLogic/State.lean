@@ -88,7 +88,7 @@ notation:max "[" l " ↦ " r "]" => State.valSingleton l r
 def State.lmbSingleton (r : Ref) (v : Lambda) : SLP (State p) :=
   fun st => st.lambdas = Finmap.singleton r v
 
-notation:max "[" l " ↣ " r "]" => State.lmbSingleton l r
+notation:max "[" "λ" l " ↦ " r "]" => State.lmbSingleton l r
 
 @[simp]
 lemma State.union_parts_left :

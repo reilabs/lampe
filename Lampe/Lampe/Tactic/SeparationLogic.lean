@@ -29,7 +29,7 @@ def SLTerm.toString : SLTerm → String
 | star _ a b => s!"({a.toString} ⋆ {b.toString})"
 | lift e => s!"⟦{e.dbgToString}⟧"
 | singleton e₁ _ => s!"[{e₁.dbgToString} ↦ _]"
-| lmbSingleton e₁ _ => s!"[{e₁.dbgToString} ↣ _]"
+| lmbSingleton e₁ _ => s!"[λ {e₁.dbgToString} ↦ _]"
 | mvar e => s!"MV{e.dbgToString}"
 | unrecognized e => s!"<unrecognized: {e.dbgToString}>"
 
@@ -340,7 +340,7 @@ theorem singleton_congr_mv {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → 
   simp
   apply SLP.entails_self
 
-theorem lmbSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda} : (l₁ = l₂) → (([r ↣ l₁] : SLP (State p)) ⊢ [r ↣ l₂] ⋆ ⟦⟧) := by
+theorem lmbSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda} : (l₁ = l₂) → (([λr ↦ l₁] : SLP (State p)) ⊢ [λr ↦ l₂] ⋆ ⟦⟧) := by
   rintro rfl
   simp
   apply SLP.entails_self
@@ -351,7 +351,7 @@ theorem singleton_star_congr {p} {r} {v₁ v₂ : AnyValue p} {R} : (v₁ = v₂
   apply SLP.entails_self
 
 theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda} {R : SLP (State p)} :
-  (v₁ = v₂) → ([r ↣ v₁] ⋆ R ⊢ [r ↣ v₂] ⋆ R) := by
+  (v₁ = v₂) → ([λr ↦ v₁] ⋆ R ⊢ [λr ↦ v₂] ⋆ R) := by
   rintro rfl
   apply SLP.entails_self
 
