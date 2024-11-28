@@ -8,7 +8,7 @@ import Lampe.SeparationLogic.State
 
 namespace Lampe
 
-variable (P : Prime)
+variable (p : Prime)
 
 structure Env where
   functions : List (Ident × Function)
@@ -34,57 +34,57 @@ inductive TraitResolution (Γ : Env): TraitImplRef → List (Ident × Function) 
   (∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) →
   TraitResolution Γ ref (impl.impl implGenerics)
 
-inductive Omni : (p : Prime) → Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where
-| litField {Q} : Q (some (st, n)) → Omni p Γ st (.lit .field n) Q
-| litFalse {Q} : Q (some (st, false)) → Omni p Γ st (.lit .bool 0) Q
-| litTrue {Q} : Q (some (st, true)) → Omni p Γ st (.lit .bool 1) Q
-| litRef {Q} : Q (some (st, ⟨r⟩)) → Omni p Γ st (.lit (.ref tp) r) Q
-| litU {Q} : Q (some (st, ↑n)) → Omni p Γ st (.lit (.u s) n) Q
-| var {Q} : Q (some (st, v)) → Omni p Γ st (.var v) Q
-| skip {Q} : Q (some (st, ())) → Omni p Γ st (.skip) Q
+inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where
+| litField {Q} : Q (some (st, n)) → Omni Γ st (.lit .field n) Q
+| litFalse {Q} : Q (some (st, false)) → Omni Γ st (.lit .bool 0) Q
+| litTrue {Q} : Q (some (st, true)) → Omni Γ st (.lit .bool 1) Q
+| litRef {Q} : Q (some (st, ⟨r⟩)) → Omni Γ st (.lit (.ref tp) r) Q
+| litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.lit (.u s) n) Q
+| var {Q} : Q (some (st, v)) → Omni Γ st (.var v) Q
+| skip {Q} : Q (some (st, ())) → Omni Γ st (.skip) Q
 | iteTrue {mainBranch elseBranch} :
-  Omni p Γ st mainBranch Q →
-  Omni p Γ st (Expr.ite true mainBranch elseBranch) Q
+  Omni Γ st mainBranch Q →
+  Omni Γ st (Expr.ite true mainBranch elseBranch) Q
 | iteFalse {mainBranch elseBranch} :
-  Omni p Γ st elseBranch Q →
-  Omni p Γ st (Expr.ite false mainBranch elseBranch) Q
+  Omni Γ st elseBranch Q →
+  Omni Γ st (Expr.ite false mainBranch elseBranch) Q
 | letIn :
-  Omni p Γ st e Q₁ →
-  (∀v st, Q₁ (some (st, v)) → Omni p Γ st (b v) Q) →
+  Omni Γ st e Q₁ →
+  (∀v st, Q₁ (some (st, v)) → Omni Γ st (b v) Q) →
   (Q₁ none → Q none) →
-  Omni p Γ st (.letIn e b) Q
+  Omni Γ st (.letIn e b) Q
 | callLambda {lambdas : Lambdas} :
   lambdas.lookup ref = some ⟨Tp.denote p, argTps, outTp, lambdaBody⟩ →
-  Omni p Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
-  Omni p Γ ⟨vh, lambdas⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
+  Omni Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
+  Omni Γ ⟨vh, lambdas⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
 | lam {Q} :
   (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨_, argTps, outTp, lambdaBody⟩⟩, ref))) →
-  Omni p Γ ⟨vh, lambdas⟩ (Expr.lambda argTps outTp lambdaBody) Q
+  Omni Γ ⟨vh, lambdas⟩ (Expr.lambda argTps outTp lambdaBody) Q
 | callBuiltin {Q} :
     (b.omni p st argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
-    Omni p Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
+    Omni Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
 | callDecl:
     (fname, fn) ∈ Γ.functions →
     (hkc : fn.generics = tyKinds) →
     (htci : fn.inTps (hkc ▸ generics) = argTypes) →
     (htco : fn.outTp (hkc ▸ generics) = res) →
-    Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
-    Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
+    Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+    Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callTrait {impl}:
     TraitResolution Γ traitRef impl →
     (fname, fn) ∈ impl →
     (hkc : fn.generics = tyKinds) →
     (htci : fn.inTps (hkc ▸ generics) = argTypes) →
     (htco : fn.outTp (hkc ▸ generics) = res) →
-    Omni p Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
-    Omni p Γ st (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
+    Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+    Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
 | loopDone :
   lo ≥ hi →
-  Omni p Γ st (.loop lo hi body) Q
+  Omni Γ st (.loop lo hi body) Q
 | loopNext {s} {lo hi : U s} {body} :
   lo < hi →
-  Omni p Γ st (.letIn (body lo) (fun _ => .loop (lo + 1) hi body)) Q →
-  Omni p Γ st (.loop lo hi body) Q
+  Omni Γ st (.letIn (body lo) (fun _ => .loop (lo + 1) hi body)) Q →
+  Omni Γ st (.loop lo hi body) Q
 
 theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'}:
     Omni p Γ st e Q →
@@ -145,7 +145,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     intros
     constructor
     simp only [State.union_closures, State.union_vals]
-    rename_i _ _ st₁ _ _ _ _ hd
+    rename_i _ st₁ _ _ _ _ hd
     have hf := b.frame hq (st₂ := st₂)
     unfold mapToValHeapCondition at *
     simp_all only [LawfulHeap.disjoint, true_implies]

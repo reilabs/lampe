@@ -25,11 +25,11 @@ structure TraitMethodImplRef where
 trait : TraitImplRef
 method : Ident
 
-inductive FunctionIdent {rep : Tp → Type} : Type where
-| builtin : Builtin → FunctionIdent
-| decl : Ident → FunctionIdent
-| lambda : rep .lambdaRef → FunctionIdent
-| trait : TraitMethodImplRef → FunctionIdent
+inductive FunctionIdent (rep : Tp → Type) : Type where
+| builtin : Builtin → FunctionIdent rep
+| decl : Ident → FunctionIdent rep
+| lambda : rep .lambdaRef → FunctionIdent rep
+| trait : TraitMethodImplRef → FunctionIdent rep
 
 inductive Member : Tp → List Tp → Type where
 | head : Member tp (tp :: tps)
@@ -39,7 +39,7 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | lit : (tp : Tp) → Nat → Expr rep tp
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
-| call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → @FunctionIdent rep → HList rep argTypes → Expr rep res
+| call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → FunctionIdent rep → HList rep argTypes → Expr rep res
 | ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
