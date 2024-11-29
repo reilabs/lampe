@@ -54,11 +54,11 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   (Q₁ none → Q none) →
   Omni Γ st (.letIn e b) Q
 | callLambda {lambdas : Lambdas} :
-  lambdas.lookup ref = some ⟨Tp.denote p, argTps, outTp, lambdaBody⟩ →
+  lambdas.lookup ref = some ⟨argTps, outTp, Tp.denote p, lambdaBody⟩ →
   Omni Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
   Omni Γ ⟨vh, lambdas⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
 | lam {Q} :
-  (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨_, argTps, outTp, lambdaBody⟩⟩, ref))) →
+  (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨argTps, outTp, Tp.denote p, lambdaBody⟩⟩, ref))) →
   Omni Γ ⟨vh, lambdas⟩ (Expr.lambda argTps outTp lambdaBody) Q
 | callBuiltin {Q} :
     (b.omni p st argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
@@ -66,17 +66,19 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
 | callDecl:
     (fname, fn) ∈ Γ.functions →
     (hkc : fn.generics = tyKinds) →
-    (htci : fn.inTps (hkc ▸ generics) = argTypes) →
-    (htco : fn.outTp (hkc ▸ generics) = res) →
-    Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+    (hrep : (fn.body (hkc ▸ generics) |>.rep) = Tp.denote p) →
+    (htci : (fn.body (hkc ▸ generics) |>.argTps) = argTypes) →
+    (htco : (fn.body (hkc ▸ generics) |>.outTp) = res) →
+    Omni Γ st (hrep ▸ htco ▸ (fn.body (hkc ▸ generics) |>.body (hrep ▸ htci ▸ args))) Q →
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callTrait {impl}:
     TraitResolution Γ traitRef impl →
     (fname, fn) ∈ impl →
     (hkc : fn.generics = tyKinds) →
-    (htci : fn.inTps (hkc ▸ generics) = argTypes) →
-    (htco : fn.outTp (hkc ▸ generics) = res) →
-    Omni Γ st (htco ▸ fn.body _ (hkc ▸ generics) (htci ▸ args)) Q →
+    (hrep : (fn.body (hkc ▸ generics) |>.rep) = Tp.denote p) →
+    (htci : (fn.body (hkc ▸ generics) |>.argTps) = argTypes) →
+    (htco : (fn.body (hkc ▸ generics) |>.outTp) = res) →
+    Omni Γ st (hrep ▸ htco ▸ (fn.body (hkc ▸ generics) |>.body (hrep ▸ htci ▸ args))) Q →
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
 | loopDone :
   lo ≥ hi →

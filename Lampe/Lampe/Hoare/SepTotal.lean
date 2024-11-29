@@ -320,9 +320,9 @@ theorem skip_intro :
 
 theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp → SLP (State p)}:
   @STHoare outTp p Γ P (lambdaBody args) Q →
-  STHoare p Γ (P ⋆ [λref ↦ ⟨_, argTps, outTp, lambdaBody⟩])
+  STHoare p Γ (P ⋆ [λref ↦ ⟨argTps, outTp, _, lambdaBody⟩])
     (Expr.call h![] argTps outTp (.lambda ref) args)
-    (fun v => (Q v) ⋆ [λref ↦  ⟨_, argTps, outTp, lambdaBody⟩]) := by
+    (fun v => (Q v) ⋆ [λref ↦  ⟨argTps, outTp, _, lambdaBody⟩]) := by
   intros
   rename_i h
   unfold STHoare THoare
@@ -353,7 +353,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp
 
 theorem lam_intro :
   STHoare p Γ ⟦⟧ (.lambda argTps outTp lambdaBody)
-    fun v => [λv ↦ ⟨_, argTps, outTp, lambdaBody⟩] := by
+    fun v => [λv ↦ ⟨argTps, outTp, _, lambdaBody⟩] := by
   unfold STHoare THoare
   intros H st h
   constructor
@@ -381,10 +381,11 @@ theorem lam_intro :
 theorem callTrait_intro {impl} {fname fn}
     (h_trait : TraitResolution Γ traitRef impl)
     (h_fn : (fname, fn) ∈ impl)
-    (h_kc : fn.generics = tyKinds)
-    (h_tci : fn.inTps (h_kc ▸ generics) = argTypes)
-    (h_tco : fn.outTp (h_kc ▸ generics) = res)
-    (h_hoare: STHoare p Γ H (h_tco ▸ fn.body _ (h_kc ▸ generics) (h_tci ▸ args)) Q):
+    (hkc : fn.generics = tyKinds)
+    (hrep : (fn.body (hkc ▸ generics) |>.rep) = Tp.denote p)
+    (htci : (fn.body (hkc ▸ generics) |>.argTps) = argTypes)
+    (htco : (fn.body (hkc ▸ generics) |>.outTp) = res)
+    (h_hoare: STHoare p Γ H (hrep ▸ htco ▸ (fn.body (hkc ▸ generics) |>.body (hrep ▸ htci ▸ args))) Q):
     STHoare p Γ H
       (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args)
       Q := by

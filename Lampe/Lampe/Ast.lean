@@ -45,27 +45,21 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
 | lambda : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep .lambdaRef
 
-structure Function : Type _ where
-  generics : List Kind
-  inTps : HList Kind.denote generics → List Tp
-  outTp : HList Kind.denote generics → Tp
-  body : (rep : Tp → Type) → (gs : HList Kind.denote generics) →
-    HList rep (inTps gs) →
-    Expr rep (outTp gs)
-
-/-- Polymorphic identity -/
-example : Function := {
-  generics := [.type]
-  inTps := fun h![x] => [x]
-  outTp := fun h![x] => x
-  body := fun _ h![_] h![x] => .var x
-}
-
 structure Lambda where
-  rep : Tp → Type
   argTps : List Tp
   outTp : Tp
+  rep : Tp → Type
   body : HList rep argTps → Expr rep outTp
+
+structure Function : Type _ where
+  generics : List Kind
+  body : (HList Kind.denote generics) → Lambda
+
+/-- Polymorphic identity -/
+example {rep : Tp → Type}: Function := {
+  generics := [.type]
+  body := fun h![tp] => ⟨[tp], tp, rep, fun h![x] => .var x⟩
+}
 
 structure FunctionDecl where
   name : Ident

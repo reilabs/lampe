@@ -221,7 +221,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 end
 
 
-def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m (String × TSyntax `term)
+def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (syn : Syntax) (rep : Lean.Ident) :  m (String × TSyntax `term) := match syn with
 | `(nr_fn_decl| $name < $generics,* > ( $params,* ) -> $outTp { $bExprs;* }) => do
   let name ← mkNrIdent name
   let generics := generics.getElems.toList.map fun i => (mkIdent $ Name.mkSimple i.getId.toString)
@@ -229,27 +229,24 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
   let params : List (TSyntax `term × TSyntax `term) ← params.getElems.toList.mapM fun p => match p with
     | `(nr_param_decl|$i:ident : $tp) => do pure (i, ←mkNrType tp)
     | _ => throwUnsupportedSyntax
-  let inputsDecl ← `(fun generics => match generics with | $(←mkHListLit generics) => $(←mkListLit $ params.map Prod.snd ))
-  let outType ← mkNrType outTp
-  let outDecl ← `(fun generics => match generics with | $(←mkHListLit generics) => $outType)
   let body ← MonadSyntax.run ((mkBlock bExprs.getElems.toList) (fun x => `(Expr.var $x)))
-  let bodyDecl ← `(
-    fun rep generics => match generics with
-      | $(←mkHListLit generics) => fun arguments => match arguments with
-        | $(←mkHListLit $ params.map Prod.fst) => $body
-  )
-  let syn : TSyntax `term ← `(FunctionDecl.mk $(Syntax.mkStrLit name) $ Function.mk $genericsDecl $inputsDecl $outDecl $bodyDecl)
+  let lambdaDecl ← `(fun generics => match generics with
+    | $(←mkHListLit generics) => ⟨$(←mkListLit $ params.map Prod.snd), $(←mkNrType outTp), $rep, fun args => match args with
+        | $(←mkHListLit $ params.map Prod.fst) => $body⟩)
+  let syn : TSyntax `term ← `(FunctionDecl.mk $(Syntax.mkStrLit name) $ Function.mk $genericsDecl $lambdaDecl)
   pure (name, syn)
 | _ => throwUnsupportedSyntax
 
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
   Elab.Term.elabTerm term.raw none
-elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do Elab.Term.elabTerm (←mkFnDecl fn).2 none
+elab "nrfn![" rep:ident ";" "fn" fn:nr_fn_decl "]" : term => do
+  Elab.Term.elabTerm (←mkFnDecl fn rep).2 none
 
 elab "nr_def" decl:nr_fn_decl : command => do
-  let (name, decl) ← mkFnDecl decl
-  let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
+  let rep := mkIdent $ Name.mkSimple "rep"
+  let (name, decl) ← mkFnDecl decl rep
+  let decl ← `(def $(mkIdent $ Name.mkSimple name) {$rep : Lampe.Tp → Type} : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
 end Lampe
