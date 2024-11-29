@@ -240,8 +240,10 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
   Elab.Term.elabTerm term.raw none
-elab "nrfn![" rep:ident ";" "fn" fn:nr_fn_decl "]" : term => do
-  Elab.Term.elabTerm (←mkFnDecl fn rep).2 none
+elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
+  let rep :=  mkIdent $ Name.mkSimple "rep"
+  let stx ← `(fun $rep => $((←mkFnDecl fn rep).2).fn)
+  Elab.Term.elabTerm stx none
 
 elab "nr_def" decl:nr_fn_decl : command => do
   let rep := mkIdent $ Name.mkSimple "rep"

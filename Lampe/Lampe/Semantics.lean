@@ -24,7 +24,7 @@ inductive TraitResolvable (Γ : Env): TraitImplRef → Prop where
   (∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) →
   TraitResolvable Γ ref
 
-inductive TraitResolution (Γ : Env): TraitImplRef → List (Ident × Function) → Prop where
+inductive TraitResolution (Γ : Env): TraitImplRef → List (Ident × ((Tp → Type) → Function)) → Prop where
 | ok {ref impl}:
   (ref.trait.name, impl) ∈ Γ.traits →
   (ktc : ref.trait.traitGenericKinds = impl.traitGenericKinds) →
@@ -73,13 +73,14 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callTrait {impl}:
     TraitResolution Γ traitRef impl →
-    (fname, fn) ∈ impl →
+    (fname, fn') ∈ impl →
+    fn = fn' _ →
     (hkc : fn.generics = tyKinds) →
     (hrep : (fn.body (hkc ▸ generics) |>.rep) = Tp.denote p) →
     (htci : (fn.body (hkc ▸ generics) |>.argTps) = argTypes) →
     (htco : (fn.body (hkc ▸ generics) |>.outTp) = res) →
     Omni Γ st (hrep ▸ htco ▸ (fn.body (hkc ▸ generics) |>.body (hrep ▸ htci ▸ args))) Q →
-    Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
+    Omni Γ st (@Expr.call (Tp.denote p) tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
 | loopDone :
   lo ≥ hi →
   Omni Γ st (.loop lo hi body) Q
@@ -190,7 +191,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     constructor
     all_goals (try assumption)
     tauto
-  | callTrait _ _ _ _ _ _ ih =>
+  | callTrait _ _ _ _ _ _ _ =>
     intro
     constructor
     all_goals (try assumption)

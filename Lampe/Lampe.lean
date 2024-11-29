@@ -113,29 +113,29 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
   sl
   aesop
 
-def bulbulizeField (rep : Tp → Type) : TraitImpl := {
+def bulbulizeField : TraitImpl := {
   traitGenericKinds := [],
   implGenericKinds := [],
   traitGenerics := fun _ => h![],
   constraints := fun _ => [],
   self := fun _ => .field,
-  impl := fun _ => [("bulbulize", nrfn![rep;
+  impl := fun _ => [("bulbulize", nrfn![
     fn bulbulize<>(x : Field) -> Field {
       #add(x, x) : Field
-    }].2
+    }]
   )]
 }
 
-def bulbulizeU32 (rep : Tp → Type) : TraitImpl := {
+def bulbulizeU32 : TraitImpl := {
   traitGenericKinds := [],
   implGenericKinds := [],
   traitGenerics := fun _ => h![],
   constraints := fun _ => [],
   self := fun _ => .u 32,
-  impl := fun _ => [("bulbulize", nrfn![rep;
+  impl := fun _ => [("bulbulize", nrfn![
     fn bulbulize<>(_x : u32) -> u32 {
       69 : u32
-    }].2
+    }]
   )]
 }
 
@@ -144,7 +144,7 @@ def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
 
 def simpleTraitEnv (p : Prime) : Env := {
   functions := [],
-  traits := [("Bulbulize", bulbulizeField (Tp.denote p)), ("Bulbulize", bulbulizeU32 (Tp.denote p))]
+  traits := [("Bulbulize", bulbulizeField), ("Bulbulize", bulbulizeU32)]
 }
 
 example : STHoare p (simpleTraitEnv p) ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by

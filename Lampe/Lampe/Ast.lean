@@ -79,7 +79,7 @@ implGenericKinds : List Kind
 traitGenerics : HList Kind.denote implGenericKinds → HList Kind.denote traitGenericKinds
 constraints : HList Kind.denote implGenericKinds → List TraitImplRef
 self : HList Kind.denote implGenericKinds → Tp
-impl : HList Kind.denote implGenericKinds → List (Ident × Function)
+impl : HList Kind.denote implGenericKinds → List (Ident × ((Tp → Type) → Function))
 
 -- @[reducible]
 -- def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=
