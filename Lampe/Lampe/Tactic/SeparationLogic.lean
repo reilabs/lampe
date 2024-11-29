@@ -355,6 +355,18 @@ theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda} {R : SLP (State p)}
   rintro rfl
   apply SLP.entails_self
 
+lemma nested_triple {Q : _ → SLP (State p)}
+  (h_hoare_imp : STHoare p Γ P e₁ Q → STHoare p Γ (P ⋆ H) e₂ (fun v => Q v ⋆ H))
+  (h_hoare : STHoare p Γ P e₁ Q)
+  (h_ent_pre : H ⊢ P ⋆ H) :
+  STHoare p Γ H e₂ Q := by
+  have h_ent_post : ∀ v, ((Q v) ⋆ H) ⋆ ⊤ ⊢ (Q v) ⋆ ⊤ := by
+    simp [SLP.ent_drop_left]
+  have h_hoare' := h_hoare_imp h_hoare
+  apply consequence h_ent_pre (fun v => SLP.entails_self)
+  apply consequence SLP.entails_self h_ent_post
+  tauto
+
 
 def canSolveSingleton (lhs : SLTerm) (rhsV : Expr): Bool :=
   match lhs with
@@ -516,7 +528,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
-    | apply STHoare.nested_triple STHoare.callLambda_intro
+    | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
     -- memory builtins
     | apply var_intro
