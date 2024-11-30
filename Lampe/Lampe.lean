@@ -142,12 +142,12 @@ def bulbulizeU32 : TraitImpl := {
 def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
   @Expr.call _ [] h![] [tp] tp (.trait ⟨⟨⟨"Bulbulize", [], h![]⟩, tp⟩, "bulbulize"⟩) h![arg]
 
-def simpleTraitEnv (p : Prime) : Env := {
+def simpleTraitEnv : Env := {
   functions := [],
   traits := [("Bulbulize", bulbulizeField), ("Bulbulize", bulbulizeU32)]
 }
 
-example : STHoare p (simpleTraitEnv p) ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
+example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCall]
   apply STHoare.callTrait_intro
   · constructor
@@ -164,7 +164,7 @@ example : STHoare p (simpleTraitEnv p) ⟦⟧ (simpleTraitCall .field arg) (fun 
   subst_vars
   ring
 
-example : STHoare p (simpleTraitEnv p) ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
+example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
   simp only [simpleTraitCall]
   apply STHoare.callTrait_intro
   · constructor

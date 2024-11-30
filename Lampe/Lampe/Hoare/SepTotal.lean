@@ -368,8 +368,8 @@ theorem lam_intro :
 
 theorem callTrait_intro {impl} {fname fn}
     (h_trait : TraitResolution Γ traitRef impl)
-    (h_fn : (fname, fn') ∈ impl)
-    (_ : fn = fn' (Tp.denote p))
+    (h_fn' : (fname, fn') ∈ impl)
+    (h_fn : fn = fn' (Tp.denote p))
     (hkc : fn.generics = tyKinds)
     (hrep : (fn.body (hkc ▸ generics) |>.rep) = Tp.denote p)
     (htci : (fn.body (hkc ▸ generics) |>.argTps) = argTypes)
