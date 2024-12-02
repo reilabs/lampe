@@ -24,7 +24,7 @@ inductive TraitResolvable (Γ : Env): TraitImplRef → Prop where
   (∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) →
   TraitResolvable Γ ref
 
-inductive TraitResolution (Γ : Env): TraitImplRef → List (Ident × ((Tp → Type) → Function)) → Prop where
+inductive TraitResolution (Γ : Env): TraitImplRef → List (Ident × Function) → Prop where
 | ok {ref impl}:
   (ref.trait.name, impl) ∈ Γ.traits →
   (ktc : ref.trait.traitGenericKinds = impl.traitGenericKinds) →
@@ -53,12 +53,12 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   (∀v st, Q₁ (some (st, v)) → Omni Γ st (b v) Q) →
   (Q₁ none → Q none) →
   Omni Γ st (.letIn e b) Q
-| callLambda {lambdas : Lambdas} :
-  lambdas.lookup ref = some ⟨argTps, outTp, Tp.denote p, lambdaBody⟩ →
+| callLambda {lambdas : Lambdas p} :
+  lambdas.lookup ref = some ⟨argTps, outTp, lambdaBody⟩ →
   Omni Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
   Omni Γ ⟨vh, lambdas⟩ (Expr.call h![] argTps outTp (.lambda ref) args) Q
 | lam {Q} :
-  (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨argTps, outTp, Tp.denote p, lambdaBody⟩⟩, ref))) →
+  (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨argTps, outTp, lambdaBody⟩⟩, ref))) →
   Omni Γ ⟨vh, lambdas⟩ (Expr.lambda argTps outTp lambdaBody) Q
 | callBuiltin {Q} :
     (b.omni p st argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
@@ -66,20 +66,17 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
 | callDecl:
     (fname, fn) ∈ Γ.functions →
     (hkc : fn.generics = tyKinds) →
-    (hrep : (fn.body (hkc ▸ generics) |>.rep) = Tp.denote p) →
-    (htci : (fn.body (hkc ▸ generics) |>.argTps) = argTypes) →
-    (htco : (fn.body (hkc ▸ generics) |>.outTp) = res) →
-    Omni Γ st (hrep ▸ htco ▸ (fn.body (hkc ▸ generics) |>.body (hrep ▸ htci ▸ args))) Q →
+    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTypes) →
+    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res) →
+    Omni Γ st (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q →
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
 | callTrait {impl}:
     TraitResolution Γ traitRef impl →
-    (fname, fn') ∈ impl →
-    fn = fn' _ →
+    (fname, fn) ∈ impl →
     (hkc : fn.generics = tyKinds) →
-    (hrep : (fn.body (hkc ▸ generics) |>.rep) = Tp.denote p) →
-    (htci : (fn.body (hkc ▸ generics) |>.argTps) = argTypes) →
-    (htco : (fn.body (hkc ▸ generics) |>.outTp) = res) →
-    Omni Γ st (hrep ▸ htco ▸ (fn.body (hkc ▸ generics) |>.body (hrep ▸ htci ▸ args))) Q →
+    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTypes) →
+    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res) →
+    Omni Γ st (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q →
     Omni Γ st (@Expr.call (Tp.denote p) tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
 | loopDone :
   lo ≥ hi →
@@ -224,10 +221,10 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     constructor
     intros
     simp only
-    rename Lambdas => lmbs
+    rename Lambdas _ => lmbs
     rename ValHeap _ => vh
     rename Ref => r
-    generalize hL : (⟨_, _, _, _⟩ : Lambda) = lambda
+    generalize hL : (⟨_, _, _⟩ : Lambda _) = lambda
     have hi : r ∉ lmbs ∧ r ∉ st₂.lambdas := by aesop
     have hd₁ : Finmap.Disjoint lmbs (Finmap.singleton r lambda) := by
       apply Finmap.Disjoint.symm

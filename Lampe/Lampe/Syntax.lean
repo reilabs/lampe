@@ -221,7 +221,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 end
 
 
-def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (syn : Syntax) (rep : Lean.Ident) :  m (String × TSyntax `term) := match syn with
+def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (syn : Syntax) :  m (String × TSyntax `term) := match syn with
 | `(nr_fn_decl| $name < $generics,* > ( $params,* ) -> $outTp { $bExprs;* }) => do
   let name ← mkNrIdent name
   let generics := generics.getElems.toList.map fun i => (mkIdent $ Name.mkSimple i.getId.toString)
@@ -230,8 +230,8 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
     | `(nr_param_decl|$i:ident : $tp) => do pure (i, ←mkNrType tp)
     | _ => throwUnsupportedSyntax
   let body ← MonadSyntax.run ((mkBlock bExprs.getElems.toList) (fun x => `(Expr.var $x)))
-  let lambdaDecl ← `(fun generics => match generics with
-    | $(←mkHListLit generics) => ⟨$(←mkListLit $ params.map Prod.snd), $(←mkNrType outTp), $rep, fun args => match args with
+  let lambdaDecl ← `(fun rep generics => match generics with
+    | $(←mkHListLit generics) => ⟨$(←mkListLit $ params.map Prod.snd), $(←mkNrType outTp), fun args => match args with
         | $(←mkHListLit $ params.map Prod.fst) => $body⟩)
   let syn : TSyntax `term ← `(FunctionDecl.mk $(Syntax.mkStrLit name) $ Function.mk $genericsDecl $lambdaDecl)
   pure (name, syn)
@@ -241,14 +241,12 @@ elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
   Elab.Term.elabTerm term.raw none
 elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
-  let rep :=  mkIdent $ Name.mkSimple "rep"
-  let stx ← `(fun $rep => $((←mkFnDecl fn rep).2).fn)
+  let stx ← `($((←mkFnDecl fn).2).fn)
   Elab.Term.elabTerm stx none
 
 elab "nr_def" decl:nr_fn_decl : command => do
-  let rep := mkIdent $ Name.mkSimple "rep"
-  let (name, decl) ← mkFnDecl decl rep
-  let decl ← `(def $(mkIdent $ Name.mkSimple name) {$rep : Lampe.Tp → Type} : Lampe.FunctionDecl := $decl)
+  let (name, decl) ← mkFnDecl decl
+  let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
 end Lampe

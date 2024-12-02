@@ -340,7 +340,7 @@ theorem singleton_congr_mv {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → 
   simp
   apply SLP.entails_self
 
-theorem lmbSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda} : (l₁ = l₂) → (([λr ↦ l₁] : SLP (State p)) ⊢ [λr ↦ l₂] ⋆ ⟦⟧) := by
+theorem lmbSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda _} : (l₁ = l₂) → (([λr ↦ l₁] : SLP (State p)) ⊢ [λr ↦ l₂] ⋆ ⟦⟧) := by
   rintro rfl
   simp
   apply SLP.entails_self
@@ -350,7 +350,7 @@ theorem singleton_star_congr {p} {r} {v₁ v₂ : AnyValue p} {R} : (v₁ = v₂
   rintro rfl
   apply SLP.entails_self
 
-theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda} {R : SLP (State p)} :
+theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda _} {R : SLP (State p)} :
   (v₁ = v₂) → ([λr ↦ v₁] ⋆ R ⊢ [λr ↦ v₂] ⋆ R) := by
   rintro rfl
   apply SLP.entails_self

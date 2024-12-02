@@ -45,20 +45,19 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
 | lambda : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep .lambdaRef
 
-structure Lambda where
+structure Lambda (rep : Tp → Type) where
   argTps : List Tp
   outTp : Tp
-  rep : Tp → Type
   body : HList rep argTps → Expr rep outTp
 
 structure Function : Type _ where
   generics : List Kind
-  body : (HList Kind.denote generics) → Lambda
+  body : ∀ (rep : Tp → Type), (HList Kind.denote generics) → Lambda rep
 
 /-- Polymorphic identity -/
-example {rep : Tp → Type}: Function := {
+example : Function := {
   generics := [.type]
-  body := fun h![tp] => ⟨[tp], tp, rep, fun h![x] => .var x⟩
+  body := fun _ h![tp] => ⟨[tp], tp, fun h![x] => .var x⟩
 }
 
 structure FunctionDecl where
@@ -79,7 +78,7 @@ implGenericKinds : List Kind
 traitGenerics : HList Kind.denote implGenericKinds → HList Kind.denote traitGenericKinds
 constraints : HList Kind.denote implGenericKinds → List TraitImplRef
 self : HList Kind.denote implGenericKinds → Tp
-impl : HList Kind.denote implGenericKinds → List (Ident × ((Tp → Type) → Function))
+impl : HList Kind.denote implGenericKinds → List (Ident × Function)
 
 -- @[reducible]
 -- def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=

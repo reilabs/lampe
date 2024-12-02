@@ -4,11 +4,11 @@ import Lampe.Ast
 
 namespace Lampe
 
-abbrev Lambdas := Finmap fun _ : Ref => Lambda
+abbrev Lambdas (p : Prime) := Finmap fun _ : Ref => Lambda (Tp.denote p)
 
 structure State (p : Prime) where
   vals : ValHeap p
-  lambdas : Lambdas
+  lambdas : Lambdas p
 
 instance : Membership Ref (State p) where
   mem := fun a e => e ∈ a.vals
@@ -22,7 +22,7 @@ instance : Coe (State p) (ValHeap p) where
 /-- Maps a post-condition on `State`s to a post-condition on `ValHeap`s by keeping the lambdas fixed -/
 @[reducible]
 def mapToValHeapCondition
-  (lambdas : Lambdas)
+  (lambdas : Lambdas p)
   (Q : Option (State p × T) → Prop) : Option (ValHeap p × T) → Prop :=
   fun vv => Q (vv.map (fun (vals, t) => ⟨⟨vals, lambdas⟩, t⟩))
 
@@ -85,7 +85,7 @@ def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) :=
 notation:max "[" l " ↦ " r "]" => State.valSingleton l r
 
 @[reducible]
-def State.lmbSingleton (r : Ref) (v : Lambda) : SLP (State p) :=
+def State.lmbSingleton (r : Ref) (v : Lambda (Tp.denote p)) : SLP (State p) :=
   fun st => st.lambdas = Finmap.singleton r v
 
 notation:max "[" "λ" l " ↦ " r "]" => State.lmbSingleton l r

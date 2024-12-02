@@ -308,9 +308,9 @@ theorem skip_intro :
 
 theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp → SLP (State p)}:
   @STHoare outTp p Γ P (lambdaBody args) Q →
-  STHoare p Γ (P ⋆ [λref ↦ ⟨argTps, outTp, _, lambdaBody⟩])
+  STHoare p Γ (P ⋆ [λref ↦ ⟨argTps, outTp, lambdaBody⟩])
     (Expr.call h![] argTps outTp (.lambda ref) args)
-    (fun v => (Q v) ⋆ [λref ↦  ⟨argTps, outTp, _, lambdaBody⟩]) := by
+    (fun v => (Q v) ⋆ [λref ↦  ⟨argTps, outTp, lambdaBody⟩]) := by
   intros
   rename_i h
   unfold STHoare THoare
@@ -322,7 +322,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp
     obtain ⟨st₁', ⟨st₂', _⟩⟩ := h₃
     simp_all only [State.union_parts, Finmap.mem_union, Finmap.mem_singleton, or_true,
       Finmap.lookup_union_left]
-    generalize hL : (⟨_, _, _, _⟩ : Lambda) = lmb at *
+    generalize hL : (⟨_, _, _⟩ : Lambda _) = lmb at *
     have _ : ref ∉ st₁'.lambdas := by
       rename_i h₃
       obtain ⟨hi₁, _, _, hi₂⟩ := h₃
@@ -341,14 +341,14 @@ theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp
 
 theorem lam_intro :
   STHoare p Γ ⟦⟧ (.lambda argTps outTp lambdaBody)
-    fun v => [λv ↦ ⟨argTps, outTp, _, lambdaBody⟩] := by
+    fun v => [λv ↦ ⟨argTps, outTp, lambdaBody⟩] := by
   unfold STHoare THoare
   intros H st h
   constructor
   intros
   simp_all only [SLP.true_star, SLP.star_assoc]
   rename Ref => r
-  generalize (⟨_, _, _, _⟩ : Lambda) = lambda
+  generalize (⟨_, _, _⟩ : Lambda _) = lambda
   exists ⟨∅, Finmap.singleton r lambda⟩, st
   refine ⟨?_, ?_, ?_, ?_⟩
   . simp only [LawfulHeap.disjoint]
@@ -368,13 +368,11 @@ theorem lam_intro :
 
 theorem callTrait_intro {impl} {fname fn}
     (h_trait : TraitResolution Γ traitRef impl)
-    (h_fn' : (fname, fn') ∈ impl)
-    (h_fn : fn = fn' (Tp.denote p))
+    (h_fn : (fname, fn) ∈ impl)
     (hkc : fn.generics = tyKinds)
-    (hrep : (fn.body (hkc ▸ generics) |>.rep) = Tp.denote p)
-    (htci : (fn.body (hkc ▸ generics) |>.argTps) = argTypes)
-    (htco : (fn.body (hkc ▸ generics) |>.outTp) = res)
-    (h_hoare: STHoare p Γ H (hrep ▸ htco ▸ (fn.body (hkc ▸ generics) |>.body (hrep ▸ htci ▸ args))) Q):
+    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTypes)
+    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res)
+    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q):
     STHoare p Γ H
       (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args)
       Q := by
