@@ -1,5 +1,4 @@
 import Lampe.Semantics
-import Lampe.SeparationLogic
 import Lampe.Syntax
 import Lampe.Ast
 import Lampe.Tp

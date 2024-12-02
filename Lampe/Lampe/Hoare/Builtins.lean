@@ -2,6 +2,50 @@ import Lampe.Hoare.SepTotal
 
 namespace Lampe.STHoare
 
+/--
+Introduction rule for pure builtins.
+-/
+theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
+  STHoare p Γ
+    ⟦⟧
+    (.call h![] (sgn a).fst (sgn a).snd (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
+    (fun v => ∃h, (v = (desc a args).snd h)) := by
+  unfold STHoare
+  intro H
+  unfold THoare
+  intros st p
+  constructor
+  cases em (desc a args).fst
+  . apply Builtin.genericPureOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.genericPureOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+lemma pureBuiltin_intro_consequence
+    {A : Type} {a : A} {sgn desc args} {Q : Tp.denote p outTp → Prop}
+    (h1 : argTps = (sgn a).fst)
+    (h2 : outTp = (sgn a).snd)
+    (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h)) :
+    STHoare p Γ ⟦⟧
+      (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
+      fun v => Q v := by
+  subst_vars
+  dsimp only at *
+  apply ramified_frame_top
+  apply pureBuiltin_intro
+  simp only [SLP.true_star]
+  apply SLP.forall_right
+  intro
+  apply SLP.wand_intro
+  simp only [SLP.true_star]
+  apply SLP.pure_left'
+  rintro ⟨_, _⟩
+  simp_all [SLP.entails_top]
+
 -- Arithmetics
 
  theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
@@ -311,12 +355,19 @@ theorem ref_intro:
   apply THoare.consequence ?_ THoare.ref_intro (fun _ => SLP.entails_self)
   simp only [SLP.true_star]
   intro st hH r hr
-  exists (Finmap.singleton r ⟨tp, v⟩ ∪ st), ∅
-  apply And.intro (by simp)
-  apply And.intro (by simp [Finmap.insert_eq_singleton_union])
-  apply And.intro ?_ (by simp)
-  exists (Finmap.singleton r ⟨tp, v⟩), st
-  simp_all [SLP.singleton]
+  exists (⟨Finmap.singleton r ⟨tp, v⟩, st.lambdas⟩ ∪ st), ∅
+  apply And.intro (by rw [LawfulHeap.disjoint_symm_iff]; apply LawfulHeap.empty_disjoint)
+  constructor
+  . simp only [State.insertVal, Finmap.insert_eq_singleton_union, LawfulHeap.union_empty]
+    simp only [State.union_parts_left, Finmap.union_self]
+  . apply And.intro ?_ (by simp)
+    exists (⟨Finmap.singleton r ⟨tp, v⟩, ∅⟩), st
+    constructor
+    . simp only [LawfulHeap.disjoint]
+      apply And.intro (by simp [Finmap.singleton_disjoint_of_not_mem hr]) (by tauto)
+    . simp_all only
+      apply And.intro _ (by trivial)
+      simp only [State.union_parts_left, Finmap.empty_union, Finmap.union_self]
 
 theorem readRef_intro:
     STHoare p Γ
@@ -330,12 +381,24 @@ theorem readRef_intro:
   intro st
   rintro ⟨_, _, _, _, hs, _⟩
   subst_vars
-  apply And.intro (by simp; rfl)
+  apply And.intro
+  . simp only [State.union_vals]
+    rename_i st₁ st₂ _ _
+    have hsome : Finmap.lookup r st₁.vals = some ⟨tp, v⟩ := by
+      unfold State.valSingleton at hs
+      rw [hs]
+      apply Finmap.lookup_singleton_eq
+    rw [Finmap.lookup_union_left]
+    tauto
+    apply Finmap.lookup_isSome.mp
+    rw [hsome]
+    apply Option.isSome_some
   simp only [SLP.true_star, SLP.star_assoc]
-  exists (Finmap.singleton r ⟨tp, v⟩), ?_
-  apply And.intro (by assumption)
-  apply And.intro rfl
-  apply And.intro (by simp [SLP.singleton])
+  rename_i st₁ st₂ _ _
+  exists (⟨Finmap.singleton r ⟨tp, v⟩, st₁.lambdas⟩), ?_
+  unfold State.valSingleton at hs
+  rw [←hs]
+  repeat apply And.intro (by tauto)
   apply SLP.ent_star_top
   assumption
 
@@ -349,24 +412,34 @@ theorem writeRef_intro:
   apply THoare.consequence ?_ THoare.writeRef_intro (fun _ => SLP.entails_self)
   intro st
   rintro ⟨_, _, _, _, hs, _⟩
-  simp only [SLP.singleton] at hs
+  simp only [State.valSingleton] at hs
   subst_vars
-  apply And.intro (by simp)
-  simp only
+  apply And.intro
+  . rename_i st₁ st₂ _ _
+    have _ : r ∈ st₁.vals := by rw [hs]; tauto
+    simp_all [State.membership_in_val]
   simp only [Finmap.insert_eq_singleton_union, ←Finmap.union_assoc, Finmap.union_singleton, SLP.star_assoc]
-  use Finmap.singleton r ⟨tp, v'⟩, ?_
-  apply And.intro (by assumption)
-  apply And.intro rfl
-  apply And.intro (by simp [SLP.singleton])
-  apply SLP.ent_star_top
-  assumption
+  rename_i st₁ st₂ _ _
+  exists (⟨Finmap.singleton r ⟨tp, v'⟩, st₁.lambdas⟩), ?_
+  refine ⟨?_, ?_, ?_, (by apply SLP.ent_star_top; assumption)⟩
+  . simp only [LawfulHeap.disjoint] at *
+    have _ : r ∉ st₂.vals := by
+      rename_i h _
+      rw [hs] at h
+      apply Finmap.singleton_disjoint_iff_not_mem.mp <;> tauto
+    refine ⟨?_, by tauto⟩
+    apply Finmap.singleton_disjoint_of_not_mem
+    assumption
+  . simp only [State.mk.injEq, State.union_vals, State.union_closures, State.union_parts_left]
+    rw [←Finmap.union_assoc, hs]
+    simp [Finmap.union_singleton]
+  . simp_all
+
 
 -- Misc
 
 theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (a := ()) := by
-  unfold STHoarePureBuiltin
-  intro H
-  apply THoare.assert_intro
-  simp [SLP.entails_self, SLP.star_mono_l]
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
 
 end Lampe.STHoare

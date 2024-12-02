@@ -9,7 +9,7 @@ nr_def simple_muts<>(x : Field) -> Field {
   y
 }
 
-example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] h![x]) fun v => v = x := by
+example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
   simp only [simple_muts]
   steps
   simp_all
@@ -21,7 +21,7 @@ nr_def weirdEq<I>(x : I, y : I) -> Unit {
   #assert(#eq(a, y) : bool) : Unit;
 }
 
-example {P} {x y : Tp.denote P .field} : STHoare P Γ ⟦⟧ (weirdEq.fn.body _ h![.field] h![x, y]) fun _ => x = y := by
+example {x y : Tp.denote p .field} : STHoare p Γ ⟦⟧ (weirdEq.fn.body _ h![.field] |>.body h![x, y]) fun _ => x = y := by
   simp only [weirdEq]
   steps
   simp_all
@@ -39,7 +39,7 @@ lemma BitVec.add_toNat_of_lt_max {a b : BitVec w} (h: a.toNat + b.toNat < 2^w) :
   rw [Nat.mod_eq_of_lt]
   assumption
 
-example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend.fn.body _ h![tp] h![self, that]) fun v => v = self ++ that := by
+example {self that : Tp.denote p (.slice tp)} : STHoare p Γ ⟦⟧ (sliceAppend.fn.body _ h![tp] |>.body h![self, that]) fun v => v = self ++ that := by
   simp only [sliceAppend]
   steps
   rename Tp.denote _ tp.slice.ref => selfRef
@@ -48,7 +48,7 @@ example {self that : Tp.denote P (.slice tp)} : STHoare P Γ ⟦⟧ (sliceAppend
     steps
     have : (i + 1).toNat = i.toNat + 1 := by
       apply BitVec.add_toNat_of_lt_max
-      casesm* (Tp.denote P (.u 32)), (U _), Fin _
+      casesm* (Tp.denote p (.u 32)), (U _), Fin _
       simp at *
       linarith
     simp only [this, List.take_succ]
@@ -66,7 +66,7 @@ nr_def simple_if<>(x : Field, y : Field) -> Field {
   z
 }
 
-example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if.fn.body (Tp.denote p) h![] h![x, y])
+example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, y])
   fun v => v = y := by
   simp only [simple_if]
   steps <;> tauto
@@ -82,14 +82,35 @@ nr_def simple_if_else<>(x : Field, y : Field) -> Field {
   z
 }
 
-example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body (Tp.denote p) h![] h![x, y])
+example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body h![x, y])
   fun v => v = x := by
   simp only [simple_if_else]
   steps
   . simp only [decide_True, exists_const]
     sl
     contradiction
-  . simp_all
+  . aesop
+
+nr_def simple_lambda<>(x : Field, y : Field) -> Field {
+  let add = |a : Field, b : Field| -> Field { #add(a, b) : Field };
+  ^add(x, y) : Field;
+}
+
+example {p Γ} {x y : Tp.denote p Tp.field} :
+  STHoare p Γ ⟦⟧ (simple_lambda.fn.body _ h![] |>.body h![x, y])
+  fun v => v = (x + y) := by
+  simp only [simple_lambda]
+  steps
+  simp_all
+  steps
+  simp_all
+  rotate_left 2
+  simp_all [SLP.entails_self]
+  exact (fun v => v = x + y)
+  sl
+  aesop
+  sl
+  aesop
 
 def bulbulizeField : TraitImpl := {
   traitGenericKinds := [],
@@ -100,7 +121,7 @@ def bulbulizeField : TraitImpl := {
   impl := fun _ => [("bulbulize", nrfn![
     fn bulbulize<>(x : Field) -> Field {
       #add(x, x) : Field
-    }].2
+    }]
   )]
 }
 
@@ -111,9 +132,9 @@ def bulbulizeU32 : TraitImpl := {
   constraints := fun _ => [],
   self := fun _ => .u 32,
   impl := fun _ => [("bulbulize", nrfn![
-    fn bulbulize<>(x : u32) -> u32 {
+    fn bulbulize<>(_x : u32) -> u32 {
       69 : u32
-    }].2
+    }]
   )]
 }
 

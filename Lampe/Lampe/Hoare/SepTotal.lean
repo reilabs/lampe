@@ -1,18 +1,17 @@
 import Lampe.Ast
 import Lampe.Tp
 import Lampe.Semantics
-import Lampe.SeparationLogic
 import Lampe.Hoare.Total
 
 namespace Lampe
 
 /--
-A Hoare triple `{P} e {λv. Q v}` has the following meaning:
+A Hoare triple `{P} e {λv ↦ Q v}` has the following meaning:
 if the state of the program satisfies the pre-condition `P`,
 then the expression `e` terminates and evaluates to `v` such that the post-condition `Q v` holds.
 
 Note that even if `e` terminates, it may evaluate to an error, e.g., division-by-zero.
-Accordingly, we interpret `{P} e {λv. Q v}` as follows:
+Accordingly, we interpret `{P} e {λv ↦ Q v}` as follows:
 if `P` holds, then `e` terminates and it either (1) fails or (2) *successfully* evaluates to `v` such that `Q v` holds.
 This is logically equivalent to saying that if `P` holds, then `e` terminates and (`Q v` holds if `e` succeeds and evaluates to `v`).
 
@@ -20,9 +19,9 @@ Hence, the triples are *partial* with respect to failure and *total* with respec
 
 An intuitive way of looking at this is thinking in terms of "knowledge discovery".
 For example, if the operation `a + b` succeeds, then we know that it evaluates to `v = a + b` **and** `a + b < 2^32`, i.e., no overflow has happened.
-Then, we would define the post-condition such that `Q v = (v = a + b) ∧ (a + b < 2^32)`.
+Then, we would define the post-condition such that `Q = λv ↦ (v = a + b) ∧ (a + b < 2^32)`.
  -/
-def STHoare p Γ P e (Q : Tp.denote p tp → SLP p)
+def STHoare p Γ P e (Q : Tp.denote p tp → SLP (State p))
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
 
 abbrev STHoarePureBuiltin p (Γ : Env)
@@ -44,7 +43,7 @@ theorem frame (h_hoare: STHoare p Γ P e Q): STHoare p Γ (P ⋆ H) e (fun v => 
     tauto
   }
 
-theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : Tp.denote p tp → SLP p}
+theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : Tp.denote p tp → SLP (State p)}
     (h_pre_conseq : H₂ ⊢ H₁)
     (h_post_conseq : ∀ v, Q₁ v ⋆ ⊤ ⊢ Q₂ v ⋆ ⊤)
     (h_hoare: STHoare p Γ H₁ e Q₁):
@@ -58,7 +57,7 @@ theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : 
     apply SLP.star_mono_l
     apply_assumption
 
-theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}
+theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP (State p)}
     (h_hoare: STHoare p Γ H₁ e Q₁)
     (h_ent: H₂ ⊢ H₁ ⋆ (∀∀v, Q₁ v -⋆ (Q₂ v ⋆ ⊤))):
     STHoare p Γ H₂ e Q₂ := by
@@ -78,7 +77,7 @@ theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP p}
     apply SLP.wand_cancel
   simp [SLP.entails_self]
 
-theorem consequence_frame_left {H H₁ H₂ : SLP p}
+theorem consequence_frame_left {H H₁ H₂ : SLP (State p)}
     (h_hoare: STHoare p Γ H₁ e Q)
     (h_ent : H ⊢ (H₁ ⋆ H₂)):
     STHoare p Γ H e (fun v => Q v ⋆ H₂) := by
@@ -99,7 +98,7 @@ theorem var_intro {v : Tp.denote p tp}:
   apply THoare.consequence ?_ THoare.var_intro (fun _ => SLP.entails_self)
   simp
 
-theorem letIn_intro {tp} {P} {Q : Tp.denote p tp → SLP p} {e₁ e₂}
+theorem letIn_intro {tp} {P} {Q : Tp.denote p tp → SLP (State p)} {e₁ e₂}
     (h_first: STHoare p Γ P e₁ Q)
     (h_rest: ∀v, STHoare p Γ (Q v) (e₂ v) R):
     STHoare p Γ P (Expr.letIn e₁ e₂) R := by
@@ -119,7 +118,8 @@ lemma Finmap.empty_disjoint: Finmap.Disjoint st ∅ := by
   rw [Finmap.Disjoint.symm_iff]
   simp [Finmap.disjoint_empty]
 
-lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v' : β r} : Finmap.singleton r v ∪ Finmap.singleton r v' = Finmap.singleton r v := by
+lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v' : β r} :
+  Finmap.singleton r v ∪ Finmap.singleton r v' = Finmap.singleton r v := by
   apply Finmap.ext_lookup
   intro x
   cases Decidable.em (r = x)
@@ -130,52 +130,8 @@ lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v
     · simp_all [Finmap.lookup_eq_none, eq_comm]
     simp_all [eq_comm]
 
-/--
-Introduction rule for pure builtins.
--/
-theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
+theorem fresh_intro :
   STHoare p Γ
-    ⟦⟧
-    (.call h![] (sgn a).fst (sgn a).snd (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
-    (fun v => ∃h, (v = (desc a args).snd h)) := by
-  unfold STHoare
-  intro H
-  unfold THoare
-  intros st p
-  constructor
-  cases em (desc a args).fst
-  . apply Builtin.genericPureOmni.ok
-    . simp_all only [SLP.true_star, exists_const]
-      apply SLP.ent_star_top
-      assumption
-    . tauto
-  . apply Builtin.genericPureOmni.err
-    . tauto
-    . simp
-
-lemma pureBuiltin_intro_consequence
-    {A : Type} {a : A} {sgn desc args} {Q : Tp.denote p outTp → Prop}
-    (h1 : argTps = (sgn a).fst)
-    (h2 : outTp = (sgn a).snd)
-    (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h))
-    : STHoare p Γ ⟦⟧
-      (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
-      fun v => Q v := by
-  subst_vars
-  dsimp only at *
-  apply ramified_frame_top
-  apply pureBuiltin_intro
-  simp only [SLP.true_star]
-  apply SLP.forall_right
-  intro
-  apply SLP.wand_intro
-  simp only [SLP.true_star]
-  apply SLP.pure_left'
-  rintro ⟨_, _⟩
-  simp_all [SLP.entails_top]
-
-theorem fresh_intro
-  : STHoare p Γ
       ⟦⟧
       (.call h![] [] tp (.builtin .fresh) h![])
       (fun _ => ⟦⟧) := by
@@ -236,7 +192,7 @@ theorem loopNext_intro {lo hi : U s} :
   apply letIn_intro
   all_goals tauto
 
-lemma inv_congr  (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p) {i j hlo hhi} (hEq : i = j):
+lemma inv_congr  (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (State p)) {i j hlo hhi} (hEq : i = j):
     Inv i hlo hhi = Inv j (hEq ▸ hlo) (hEq ▸ hhi) := by
   cases hEq
   rfl
@@ -258,7 +214,7 @@ lemma U.le_plus_one_of_lt {i j : U s} (h: i < j): i + 1 ≤ j := by
     linarith
   )
 
-theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP p) {body : U s → Expr (Tp.denote p) tp}:
+theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (State p)) {body : U s → Expr (Tp.denote p) tp}:
     (∀i, (hlo: lo ≤ i) → (hhi: i < hi) → STHoare p Γ (Inv i hlo (BitVec.le_of_lt hhi)) (body i) (fun _ => Inv (i + 1) (BitVec.le_trans hlo (U.le_add_one_of_exists_lt hhi)) (U.le_plus_one_of_lt hhi))) →
     STHoare p Γ (∃∃h, Inv lo BitVec.le_refl h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi h BitVec.le_refl) := by
   cases BitVec.le_or_lt lo hi with
@@ -350,13 +306,73 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
+theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp → SLP (State p)}:
+  @STHoare outTp p Γ P (lambdaBody args) Q →
+  STHoare p Γ (P ⋆ [λref ↦ ⟨argTps, outTp, lambdaBody⟩])
+    (Expr.call h![] argTps outTp (.lambda ref) args)
+    (fun v => (Q v) ⋆ [λref ↦  ⟨argTps, outTp, lambdaBody⟩]) := by
+  intros
+  rename_i h
+  unfold STHoare THoare
+  intros
+  constructor <;> tauto
+  unfold SLP.star at *
+  . rename_i st h
+    obtain ⟨st₁, ⟨st₂, ⟨_, h₂, h₃, _⟩⟩⟩ := h
+    obtain ⟨st₁', ⟨st₂', _⟩⟩ := h₃
+    simp_all only [State.union_parts, Finmap.mem_union, Finmap.mem_singleton, or_true,
+      Finmap.lookup_union_left]
+    generalize hL : (⟨_, _, _⟩ : Lambda _) = lmb at *
+    have _ : ref ∉ st₁'.lambdas := by
+      rename_i h₃
+      obtain ⟨hi₁, _, _, hi₂⟩ := h₃
+      simp only [State.lmbSingleton] at hi₂
+      simp only [LawfulHeap.disjoint] at hi₁
+      obtain ⟨_, hj₁⟩ := hi₁
+      rw [hi₂] at hj₁
+      tauto
+    simp [Finmap.lookup_union_right (by tauto)]
+  . apply consequence <;> tauto
+    apply consequence_frame_left
+    rotate_left 2
+    exact P
+    exact h
+    simp only [SLP.true_star, SLP.entails_self]
+
+theorem lam_intro :
+  STHoare p Γ ⟦⟧ (.lambda argTps outTp lambdaBody)
+    fun v => [λv ↦ ⟨argTps, outTp, lambdaBody⟩] := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  intros
+  simp_all only [SLP.true_star, SLP.star_assoc]
+  rename Ref => r
+  generalize (⟨_, _, _⟩ : Lambda _) = lambda
+  exists ⟨∅, Finmap.singleton r lambda⟩, st
+  refine ⟨?_, ?_, ?_, ?_⟩
+  . simp only [LawfulHeap.disjoint]
+    refine ⟨?_, ?_⟩
+    . apply Finmap.disjoint_empty
+    . apply Finmap.singleton_disjoint_of_not_mem (by tauto)
+  . simp only [State.union_parts, State.mk.injEq]
+    refine ⟨by simp_all, ?_⟩
+    have hd : Finmap.Disjoint st.lambdas (Finmap.singleton r lambda) := by
+      rw [Finmap.Disjoint.symm_iff]
+      apply Finmap.singleton_disjoint_of_not_mem (by assumption)
+    simp only [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
+  . unfold State.lmbSingleton
+    tauto
+  . apply SLP.ent_star_top
+    tauto
+
 theorem callTrait_intro {impl} {fname fn}
     (h_trait : TraitResolution Γ traitRef impl)
     (h_fn : (fname, fn) ∈ impl)
-    (h_kc : fn.generics = tyKinds)
-    (h_tci : fn.inTps (h_kc ▸ generics) = argTypes)
-    (h_tco : fn.outTp (h_kc ▸ generics) = res)
-    (h_hoare: STHoare p Γ H (h_tco ▸ fn.body _ (h_kc ▸ generics) (h_tci ▸ args)) Q):
+    (hkc : fn.generics = tyKinds)
+    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTypes)
+    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res)
+    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q):
     STHoare p Γ H
       (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args)
       Q := by
