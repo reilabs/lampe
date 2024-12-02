@@ -272,9 +272,9 @@ elab "nr_def" decl:nr_fn_decl : command => do
   let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
-elab "nr_trait_impl" impl:nr_trait_impl : command => do
+elab "nr_trait_impl[" def_name:ident "]" impl:nr_trait_impl : command => do
   let (name, impl) ← mkTraitImpl impl
-  let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.TraitImpl := $impl)
+  let decl ← `(def $def_name : String × Lampe.TraitImpl := ($(Syntax.mkStrLit name), $impl))
   Elab.Command.elabCommand decl
 
 end Lampe

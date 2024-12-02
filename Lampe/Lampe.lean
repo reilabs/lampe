@@ -112,36 +112,17 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
   sl
   aesop
 
-nr_trait_impl <> bulbulize<> for Field {
+nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field {
     fn bulbulize<>(x : Field) -> Field {
       #add(x, x) : Field
-    }
+    };
 }
 
-def bulbulizeField : TraitImpl := {
-  traitGenericKinds := [],
-  implGenericKinds := [],
-  traitGenerics := fun _ => h![],
-  constraints := fun _ => [],
-  self := fun _ => .field,
-  impl := fun _ => [("bulbulize", nrfn![
-    fn bulbulize<>(x : Field) -> Field {
-      #add(x, x) : Field
-    }]
-  )]
-}
 
-def bulbulizeU32 : TraitImpl := {
-  traitGenericKinds := [],
-  implGenericKinds := [],
-  traitGenerics := fun _ => h![],
-  constraints := fun _ => [],
-  self := fun _ => .u 32,
-  impl := fun _ => [("bulbulize", nrfn![
-    fn bulbulize<>(_x : u32) -> u32 {
+nr_trait_impl[bulbulizeU32] <> Bulbulize<> for u32 {
+  fn bulbulize<>(_x : u32) -> u32 {
       69 : u32
-    }]
-  )]
+    }
 }
 
 def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
@@ -149,7 +130,7 @@ def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
 
 def simpleTraitEnv : Env := {
   functions := [],
-  traits := [("Bulbulize", bulbulizeField), ("Bulbulize", bulbulizeU32)]
+  traits := [bulbulizeField, bulbulizeU32]
 }
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
@@ -158,9 +139,12 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v =>
   · constructor
     · apply List.Mem.head
     any_goals rfl
-    · simp [bulbulizeField]
-    · use h![]
-  · simp [bulbulizeField]; rfl
+    rotate_left 2
+    all_goals simp only
+    . exact h![]
+    · tauto
+    · tauto
+  · simp; rfl
   any_goals rfl
   simp
   steps
@@ -176,9 +160,12 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v =
     · apply List.Mem.tail
       apply List.Mem.head
     any_goals rfl
-    · simp [bulbulizeU32]
-    · use h![]
-  · simp [bulbulizeU32]; rfl
+    rotate_left 2
+    all_goals simp only
+    . exact h![]
+    · tauto
+    · tauto
+  · simp; rfl
   any_goals rfl
   simp
   steps
