@@ -1,7 +1,7 @@
 import Lampe.Ast
 import Lampe.Tp
 import Lampe.Semantics
-import Lampe.SeparationLogic
+import Lampe.SeparationLogic.LawfulHeap
 
 namespace Lampe
 
@@ -9,26 +9,19 @@ def THoare
     {tp : Tp}
     (p : Prime)
     (Γ : Env)
-    (P : SLP p)
+    (P : SLP (State p))
     (e : Expr (Tp.denote p) tp)
-    (Q : (tp.denote p) → SLP p): Prop :=
+    (Q : (tp.denote p) → SLP (State p)) : Prop :=
   ∀st, P st → Omni p Γ st e (fun r => match r with
     | none => True
     | some (st', v) => Q v st')
 
 namespace THoare
 
-variable
-  {p : Prime}
-  {H H₁ H₂ : SLP p}
-  {Γ : Env}
-  {tp : Tp}
-  {e : Expr (Tp.denote p) tp}
-
-theorem consequence {Q₁ Q₂}
+theorem consequence {Q₁ Q₂} {H₂ : SLP (State p)}
     (h_pre_conseq : H₂ ⊢ H₁)
     (h_hoare: THoare p Γ H₁ e Q₁)
-    (h_post_conseq : ∀ v, Q₁ v ⊢ Q₂ v):
+    (h_post_conseq : ∀ v, Q₁ v ⊢ Q₂ v) :
     THoare p Γ H₂ e Q₂ := by
   unfold THoare
   intros
@@ -36,38 +29,21 @@ theorem consequence {Q₁ Q₂}
   any_goals tauto
   rintro (_|_) <;> tauto
 
-theorem var_intro {v} {P : Tp.denote p tp → SLP p}:
+theorem var_intro {v} {P : Tp.denote p tp → SLP (State p)} :
     THoare p Γ (P v) (.var v) P := by
   tauto
 
-/-- [TODO] there's probably a generic lemma for pure builtins to abstract this proof structure? -/
-theorem assert_intro {v: Bool} (h : v ⋆ P ⊢ Q ()):
-    THoare p Γ P (.call h![] [.bool] .unit (.builtin Builtin.assert) h![v]) Q := by
-  unfold THoare
-  intros
-  constructor
-  simp only [Builtin.assert]
-  cases v
-  · apply Builtin.genericPureOmni.err
-    · simp
-    · simp
-    · exact ()
-  · apply Builtin.genericPureOmni.ok
-    · simp_all; tauto
-    · exact ()
-    · simp_all
-
 theorem letIn_intro {P Q}
     (h₁ : THoare p Γ H e₁ P)
-    (h₂ : ∀v, THoare p Γ (P v) (e₂ v) Q):
+    (h₂ : ∀v, THoare p Γ (P v) (e₂ v) Q) :
     THoare p Γ H (.letIn e₁ e₂) Q := by
   unfold THoare
   intros
   constructor <;> tauto
 
-theorem ref_intro {v}:
+theorem ref_intro {v P} :
     THoare p Γ
-      (fun st => ∀r, r ∉ st → P r (st.insert r ⟨tp, v⟩))
+      (fun st => ∀r, r ∉ st → P r ⟨(st.vals.insert r ⟨tp, v⟩), st.lambdas⟩)
       (.call h![] [tp] (Tp.ref tp) (.builtin .ref) h![v])
       P := by
   unfold THoare
@@ -76,31 +52,27 @@ theorem ref_intro {v}:
   constructor
   tauto
 
-theorem readRef_intro {ref}:
+theorem readRef_intro {ref} :
     THoare p Γ
-      (fun st => st.lookup ref = some ⟨tp, v⟩ ∧ P v st)
+      (fun st => st.vals.lookup ref = some ⟨tp, v⟩ ∧ P v st)
       (.call h![] [tp.ref] tp (.builtin .readRef) h![ref])
       P := by
   unfold THoare
   intros
   constructor
-  constructor
-  tauto
-  tauto
+  constructor <;> tauto
 
-theorem writeRef_intro {ref v}:
+theorem writeRef_intro {ref v} :
     THoare p Γ
-      (fun st => ref ∈ st ∧ P () (st.insert ref ⟨tp, v⟩))
+      (fun st => ref ∈ st ∧ P () ⟨(st.vals.insert ref ⟨tp, v⟩), st.lambdas⟩)
       (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![ref, v])
       P := by
   unfold THoare
   intros
   constructor
-  constructor
-  tauto
-  tauto
+  constructor <;> tauto
 
-theorem fresh_intro:
+theorem fresh_intro {P} :
     THoare p Γ
       (∀∀v, P v)
       (.call h![] [] tp (.builtin .fresh) h![])

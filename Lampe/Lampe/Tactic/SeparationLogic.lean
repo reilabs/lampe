@@ -1,4 +1,4 @@
-import Lampe.SeparationLogic
+import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
 import Lampe.Syntax
@@ -14,6 +14,7 @@ inductive SLTerm where
 | star : Expr → SLTerm → SLTerm → SLTerm
 | lift : Expr → SLTerm
 | singleton : Expr → Expr → SLTerm
+| lmbSingleton : Expr → Expr → SLTerm
 | mvar : Expr → SLTerm
 | all : Expr → SLTerm
 | exi : Expr → SLTerm
@@ -28,6 +29,7 @@ def SLTerm.toString : SLTerm → String
 | star _ a b => s!"({a.toString} ⋆ {b.toString})"
 | lift e => s!"⟦{e.dbgToString}⟧"
 | singleton e₁ _ => s!"[{e₁.dbgToString} ↦ _]"
+| lmbSingleton e₁ _ => s!"[λ {e₁.dbgToString} ↦ _]"
 | mvar e => s!"MV{e.dbgToString}"
 | unrecognized e => s!"<unrecognized: {e.dbgToString}>"
 
@@ -39,17 +41,21 @@ def SLTerm.isTop : SLTerm → Bool
 | SLTerm.top => true
 | _ => false
 
+def SLTerm.isForAll : SLTerm → Bool
+| SLTerm.all _ => true
+| _ => false
+
 instance : ToString SLTerm := ⟨SLTerm.toString⟩
 
 instance : Inhabited SLTerm := ⟨SLTerm.top⟩
 
-theorem star_exists {Q : α → SLP p} : ((∃∃x, Q x) ⋆ P) = (∃∃x, Q x ⋆ P) := by
+theorem star_exists [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, Q x ⋆ P) := by
   unfold SLP.exists' SLP.star
   funext st
   simp
   tauto
 
-theorem exists_star {Q : α → SLP p} : ((∃∃x, Q x) ⋆ P) = (∃∃x, P ⋆ Q x) := by
+theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, P ⋆ Q x) := by
   rw [star_exists]
   simp [SLP.star_comm]
 
@@ -95,23 +101,27 @@ theorem Lampe.SLP.skip_fst' : (⟦⟧ ⊢ Q ⋆ X) → ([a ↦ b] ⋆ X ⊢ R₂
   assumption
   assumption
 
-theorem Lampe.SLP.entails_star_true : H ⊢ H ⋆ ⟦⟧ := by
+theorem Lampe.SLP.entails_star_true [LawfulHeap α] {H : SLP α} : H ⊢ H ⋆ ⟦⟧ := by
   simp [SLP.entails_self]
 
-theorem SLP.eq_of_iff : (P ⊢ Q) → (Q ⊢ P) → P = Q := by
+theorem SLP.eq_of_iff [LawfulHeap α] {P Q : SLP α} : (P ⊢ Q) → (Q ⊢ P) → P = Q := by
   intros
   apply funext
   intro
   apply eq_iff_iff.mpr
   apply Iff.intro <;> apply_assumption
 
-theorem pluck_pure_l {P : Prop} : ([a ↦ b] ⋆ P) = (P ⋆ [a ↦ b]) := by simp [SLP.star_comm]
-theorem pluck_pure_all_l {P : Prop} : (SLP.forall' f ⋆ P) = (P ⋆ SLP.forall' f) := by simp [SLP.star_comm]
-theorem pluck_pure_l_assoc { P : Prop } {Q : SLP p} : ([a ↦ b] ⋆ P ⋆ Q) = (P ⋆ [a ↦ b] ⋆ Q) := by
+theorem pluck_pure_l {P : Prop} : ([a ↦ b] ⋆ P) = (P ⋆ [a ↦ b]) := by
+  simp [SLP.star_comm]
+
+theorem pluck_pure_all_l [LawfulHeap α] {P : Prop} {f : Prop → SLP α} : (SLP.forall' f ⋆ P) = (P ⋆ SLP.forall' f) := by
+  simp [SLP.star_comm]
+
+theorem pluck_pure_l_assoc {P : Prop} {Q : SLP (State p)} : ([a ↦ b] ⋆ P ⋆ Q) = (P ⋆ [a ↦ b] ⋆ Q) := by
   rw [SLP.star_comm, SLP.star_assoc]
   apply SLP.eq_of_iff <;> {apply SLP.star_mono_l; rw [SLP.star_comm]; apply SLP.entails_self}
 
-theorem SLP.pure_star_pure {p} { P Q : Prop }: (P ⋆ Q) = (⟦P ∧ Q⟧ : SLP p) := by
+theorem SLP.pure_star_pure [LawfulHeap α] {P Q : Prop} : (P ⋆ Q) = (⟦P ∧ Q⟧ : SLP α) := by
   unfold SLP.star SLP.lift
   funext st
   apply eq_iff_iff.mpr
@@ -120,16 +130,21 @@ theorem SLP.pure_star_pure {p} { P Q : Prop }: (P ⋆ Q) = (⟦P ∧ Q⟧ : SLP 
     simp_all
   · intro_cases
     use ∅, ∅
-    simp_all [Finmap.disjoint_empty]
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    apply LawfulHeap.disjoint_empty
+    all_goals simp_all [LawfulHeap.disjoint_empty]
 
 macro "h_norm" : tactic => `(tactic|(
-  try simp only [SLP.star_assoc, pluck_pure_l, pluck_pure_l_assoc, pluck_pure_all_l, SLP.star_true, SLP.true_star, star_exists, exists_star];
+  try simp only [SLP.star_assoc,
+    pluck_pure_l, pluck_pure_l_assoc, pluck_pure_all_l,
+    SLP.star_true, SLP.true_star,
+    star_exists, exists_star];
   -- repeat (apply STHoare.pure_left; intro_cases);
   -- repeat (apply SLP.pure_left; intro_cases);
   subst_vars;
 ))
 
-theorem SLP.pure_leftX : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
+theorem SLP.pure_leftX [LawfulHeap α] {H Q R : SLP α} : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
   intro
   apply SLP.pure_left
   intro
@@ -141,11 +156,13 @@ theorem SLP.pure_leftX : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R)
   tauto
 
 /-- only finisher, will waste mvars for top! -/
-theorem SLP.pure_ent_star_top : (P → Q) → ((P : SLP p) ⊢ Q ⋆ ⊤) := by
+theorem SLP.pure_ent_star_top [LawfulHeap α] : (P → Q) → ((P : SLP α) ⊢ Q ⋆ ⊤) := by
   intro h st hp
   rcases hp with ⟨_, rfl, hp⟩
   use ∅, ∅
-  simp_all [Finmap.disjoint_empty, SLP.lift]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  apply LawfulHeap.disjoint_empty
+  all_goals simp_all [LawfulHeap.disjoint_empty, SLP.lift]
 
 theorem star_mono_l_sing : (P ⊢ Q) → (v₁ = v₂) → ([r ↦ v₁] ⋆ P ⊢ [r ↦ v₂] ⋆ Q) := by
   intro h₁ h₂
@@ -171,31 +188,36 @@ def isLetIn (e: Expr): Bool :=
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   if e.isAppOf ``SLP.star then
     let args := e.getAppArgs
-    let fst ← parseSLExpr (←args[1]?)
-    let snd ← parseSLExpr (←args[2]?)
+    let fst ← parseSLExpr (←args[2]?)
+    let snd ← parseSLExpr (←args[3]?)
     return SLTerm.star e fst snd
-  if e.isAppOf ``SLP.singleton then
+  if e.isAppOf ``State.valSingleton then
     let args := e.getAppArgs
-    let fst ←args[1]?
+    let fst ← args[1]?
     let snd ← args[2]?
     return SLTerm.singleton fst snd
+  else if e.isAppOf ``State.lmbSingleton then
+    let args := e.getAppArgs
+    let fst ← args[1]?
+    let snd ← args[2]?
+    return SLTerm.lmbSingleton fst snd
   else if e.isAppOf ``SLP.top then
     return SLTerm.top
   else if e.isAppOf ``SLP.lift then
     let args := e.getAppArgs
-    return SLTerm.lift (←args[1]?)
+    return SLTerm.lift (←args[2]?)
   else if e.getAppFn.isMVar then
     return SLTerm.mvar e
   else if e.isAppOf ``SLP.forall' then
     let args := e.getAppArgs
-    return SLTerm.all (←args[2]?)
+    return SLTerm.all (←args[3]?)
   else if e.isAppOf ``SLP.exists' then
     let args := e.getAppArgs
-    return SLTerm.exi (←args[2]?)
+    return SLTerm.exi (←args[3]?)
   else if e.isAppOf ``SLP.wand then
     let args := e.getAppArgs
-    let lhs ← parseSLExpr (←args[1]?)
-    let rhs ← parseSLExpr (←args[2]?)
+    let lhs ← parseSLExpr (←args[2]?)
+    let rhs ← parseSLExpr (←args[3]?)
     return SLTerm.wand lhs rhs
   -- else if e.isAppOf ``SLTerm.lift then
   --   let args := e.getAppArgs
@@ -211,30 +233,30 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
 partial def parseEntailment (e: Expr): TacticM (SLTerm × SLTerm) := do
   if e.isAppOf ``SLP.entails then
     let args := e.getAppArgs
-    let pre ← parseSLExpr (←args[1]?)
-    let post ← parseSLExpr (←args[2]?)
+    let pre ← parseSLExpr (←args[2]?)
+    let post ← parseSLExpr (←args[3]?)
     return (pre, post)
-  else throwError "not an entailment"
+  else throwError "not an entailment {e}"
 
-theorem star_top_of_star_mvar : (H ⊢ Q ⋆ R) → (H ⊢ Q ⋆ ⊤) := by
+theorem star_top_of_star_mvar [LawfulHeap α] {H Q R : SLP α} : (H ⊢ Q ⋆ R) → (H ⊢ Q ⋆ ⊤) := by
   intro h
   apply SLP.entails_trans
   assumption
   apply SLP.star_mono_l
   apply SLP.entails_top
 
-theorem solve_left_with_leftovers : (H ⊢ Q ⋆ R) → (R ⊢ P) → (H ⊢ Q ⋆ P) := by
+theorem solve_left_with_leftovers [LawfulHeap α] {H Q R : SLP α} : (H ⊢ Q ⋆ R) → (R ⊢ P) → (H ⊢ Q ⋆ P) := by
   intros
   apply SLP.entails_trans
   assumption
   apply SLP.star_mono_l
   assumption
 
-theorem solve_with_true : (H ⊢ Q) → (H ⊢ Q ⋆ ⟦⟧) := by
+theorem solve_with_true [LawfulHeap α] {H Q : SLP α}: (H ⊢ Q) → (H ⊢ Q ⋆ ⟦⟧) := by
   aesop
 -- partial def solveNonMVarEntailment (goal : MVarId) (lhs : SLTerm) (rhs : SLTerm): TacticM (List MVarId × SLTerm) := do
 
-theorem pure_ent_pure_star_mv: (P → Q) → ((P : SLP p) ⊢ Q ⋆ ⟦⟧) := by
+theorem pure_ent_pure_star_mv [LawfulHeap α] : (P → Q) → ((P : SLP α) ⊢ Q ⋆ ⟦⟧) := by
   intro h
   apply SLP.pure_left'
   intro
@@ -242,7 +264,8 @@ theorem pure_ent_pure_star_mv: (P → Q) → ((P : SLP p) ⊢ Q ⋆ ⟦⟧) := b
   tauto
   tauto
 
-theorem pure_star_H_ent_pure_star_mv: (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
+theorem pure_star_H_ent_pure_star_mv [LawfulHeap α] {H Q R : SLP α} :
+  (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
   intro
   apply SLP.pure_left
   intro
@@ -252,7 +275,7 @@ theorem pure_star_H_ent_pure_star_mv: (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q
   rw [SLP.star_comm]
   tauto
 
-theorem skip_left_ent_star_mv : (R ⊢ P ⋆ H) → (L ⋆ R ⊢ P ⋆ L ⋆ H) := by
+theorem skip_left_ent_star_mv [LawfulHeap α] {R L P H : SLP α} : (R ⊢ P ⋆ H) → (L ⋆ R ⊢ P ⋆ L ⋆ H) := by
   intro h
   apply SLP.entails_trans
   apply SLP.star_mono_l
@@ -262,19 +285,20 @@ theorem skip_left_ent_star_mv : (R ⊢ P ⋆ H) → (L ⋆ R ⊢ P ⋆ L ⋆ H) 
   rw [SLP.star_comm]
   apply SLP.entails_self
 
-theorem skip_evidence_pure : Q → (H ⊢ Q ⋆ H) := by
+theorem skip_evidence_pure [LawfulHeap α] {H : SLP α} : Q → (H ⊢ Q ⋆ H) := by
   intro
   apply SLP.pure_right
   tauto
   tauto
 
-theorem SLP.exists_intro { Q : α → SLP p } {a} : (H ⊢ Q a) → (H ⊢ ∃∃a, Q a) := by
+theorem SLP.exists_intro [LawfulHeap α] {H : SLP α} {Q : β → SLP α} {a} : (H ⊢ Q a) → (H ⊢ ∃∃a, Q a) := by
   intro h st H
   unfold SLP.exists'
   exists a
   tauto
 
-theorem exi_prop {Q : P → SLP p} : (H ⊢ P ⋆ ⊤) → (∀(p:P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
+theorem exi_prop [LawfulHeap α] {P : Prop} {H : SLP α} {Q : P → SLP α} :
+  (H ⊢ P ⋆ ⊤) → (∀(p : P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
   intro h₁ h₂
   unfold SLP.entails at *
   intro st hH
@@ -285,16 +309,18 @@ theorem exi_prop {Q : P → SLP p} : (H ⊢ P ⋆ ⊤) → (∀(p:P), H ⊢ Q p)
   apply_assumption
   assumption
 
-theorem exi_prop_l {H : P → SLP p} : ((x:P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
+theorem exi_prop_l [LawfulHeap α] {P : Prop} {H : P → SLP α} {Q : SLP α} :
+  ((x : P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
   intro h st
   unfold SLP.entails SLP.exists' at *
   rintro ⟨v, hH⟩
   apply h
   use ∅, st
-  simp_all [Finmap.disjoint_empty, SLP.lift]
-  simp_all
+  refine ⟨?_, ?_, ?_, ?_⟩
+  apply LawfulHeap.empty_disjoint
+  all_goals simp_all [LawfulHeap.disjoint_empty, SLP.lift]
 
-theorem use_right : (R ⊢ G ⋆ H) → (L ⋆ R ⊢ G ⋆ L ⋆ H) := by
+theorem use_right [LawfulHeap α] {R L G H : SLP α} : (R ⊢ G ⋆ H) → (L ⋆ R ⊢ G ⋆ L ⋆ H) := by
   intro
   apply SLP.entails_trans
   apply SLP.star_mono_l
@@ -314,9 +340,33 @@ theorem singleton_congr_mv {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → 
   simp
   apply SLP.entails_self
 
+theorem lmbSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda _} : (l₁ = l₂) → (([λr ↦ l₁] : SLP (State p)) ⊢ [λr ↦ l₂] ⋆ ⟦⟧) := by
+  rintro rfl
+  simp
+  apply SLP.entails_self
+
+
 theorem singleton_star_congr {p} {r} {v₁ v₂ : AnyValue p} {R} : (v₁ = v₂) → ([r ↦ v₁] ⋆ R ⊢ [r ↦ v₂] ⋆ R) := by
   rintro rfl
   apply SLP.entails_self
+
+theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda _} {R : SLP (State p)} :
+  (v₁ = v₂) → ([λr ↦ v₁] ⋆ R ⊢ [λr ↦ v₂] ⋆ R) := by
+  rintro rfl
+  apply SLP.entails_self
+
+lemma nested_triple {Q : _ → SLP (State p)}
+  (h_hoare_imp : STHoare p Γ P e₁ Q → STHoare p Γ (P ⋆ H) e₂ (fun v => Q v ⋆ H))
+  (h_hoare : STHoare p Γ P e₁ Q)
+  (h_ent_pre : H ⊢ P ⋆ H) :
+  STHoare p Γ H e₂ Q := by
+  have h_ent_post : ∀ v, ((Q v) ⋆ H) ⋆ ⊤ ⊢ (Q v) ⋆ ⊤ := by
+    simp [SLP.ent_drop_left]
+  have h_hoare' := h_hoare_imp h_hoare
+  apply consequence h_ent_pre (fun v => SLP.entails_self)
+  apply consequence SLP.entails_self h_ent_post
+  tauto
+
 
 def canSolveSingleton (lhs : SLTerm) (rhsV : Expr): Bool :=
   match lhs with
@@ -334,12 +384,33 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
         catch _ => pure [newGoal]
       pure $ newGoal ++ newGoals
     else throwError "not equal"
+  | SLTerm.lmbSingleton v _ =>
+    if v == rhs then
+      let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_congr_mv)
+      let newGoal ← newGoals[0]?
+      let newGoal ← try newGoal.refl; pure []
+        catch _ => pure [newGoal]
+      pure $ newGoal ++ newGoals
+    else throwError "not equal"
   | SLTerm.star _ l r =>
     match l with
     | SLTerm.singleton v _ => do
       if v == rhs then
         -- [TODO] This should use EQ, not ent_self
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``singleton_star_congr)
+        let newGoal ← newGoals[0]?
+        let newGoal ← try newGoal.refl; pure []
+          catch _ => pure [newGoal]
+        pure $ newGoal ++ newGoals
+      else
+        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
+        let newGoal ← newGoals[0]?
+        let new' ← solveSingletonStarMV newGoal r rhs
+        return new' ++ newGoals
+    | SLTerm.lmbSingleton v _ => do
+      if v == rhs then
+        -- [TODO] This should use EQ, not ent_self as well
+        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_star_congr)
         let newGoal ← newGoals[0]?
         let newGoal ← try newGoal.refl; pure []
           catch _ => pure [newGoal]
@@ -380,11 +451,14 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM (List MVarId
       return ng ++ goals
   | .singleton _ _ =>
       goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
+  | .lmbSingleton _ _ =>
+      goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
   | _ => throwError "not a lift {lhs}"
 
 partial def solveStarMV (goal : MVarId) (lhs : SLTerm) (rhsNonMv : SLTerm): TacticM (List MVarId) := do
   match rhsNonMv with
   | .singleton v _ => solveSingletonStarMV goal lhs v
+  | .lmbSingleton v _ => solveSingletonStarMV goal lhs v
   | .lift _ => solvePureStarMV goal lhs
   | _ => throwError "not a singleton srry {rhsNonMv}"
 
@@ -418,6 +492,8 @@ partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
       let g' ← g[0]?
       let ng ← solveEntailment g'
       pure $ ng ++ g
+    else if r.isForAll then
+      throwError "cannot solve forall"
     else throwError "todo {l} {r}"
   | SLTerm.singleton _ _ =>
     -- [TODO] handle pure on the left
@@ -452,6 +528,8 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
+    | apply nested_triple STHoare.callLambda_intro
+    | apply lam_intro
     -- memory builtins
     | apply var_intro
     | apply ref_intro
@@ -504,6 +582,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left Lampe.STHoare.litU_intro
     | apply consequence_frame_left assert_intro
     -- | apply consequence_frame_left skip_intro
+    | apply consequence_frame_left lam_intro
     -- memory builtins
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
@@ -557,6 +636,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top Lampe.STHoare.litU_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
+    | apply ramified_frame_top lam_intro
     -- memory builtins
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro

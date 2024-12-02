@@ -12,6 +12,7 @@ declare_syntax_cat nr_ident
 declare_syntax_cat nr_type
 declare_syntax_cat nr_expr
 declare_syntax_cat nr_block_contents
+declare_syntax_cat nr_param_decl
 
 syntax ident:nr_ident
 syntax ident"::"nr_ident : nr_ident
@@ -82,6 +83,8 @@ partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | "write_ref"   => ``(Builtin.writeRef)
 | _ => throwError "Unknown builtin {i}"
 
+syntax ident ":" nr_type : nr_param_decl
+
 syntax num ":" nr_type : nr_expr
 syntax ident : nr_expr
 syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
@@ -98,6 +101,10 @@ syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 syntax "(" nr_expr ")" : nr_expr
 syntax "*(" nr_expr ")" : nr_expr
+syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr
+syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
+
+syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 
 def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'): Expr rep tp' :=
   let refDef := Expr.letIn definition fun v => Expr.call h![] _ (tp.ref) (.builtin .ref) h![v]
@@ -196,16 +203,27 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     mkExpr cond none fun cond => do
       let mainBody ← mkExpr mainBody none fun x => ``(Lampe.Expr.var $x)
       wrapSimple (←`(Lampe.Expr.ite $cond $mainBody (Lampe.Expr.skip))) vname k
+| `(nr_expr| | $params,* | -> $outTp $lambdaBody) => do
+  let outTp ← mkNrType outTp
+  let argTps ← mkListLit (← params.getElems.toList.mapM fun param => match param with
+    | `(nr_param_decl|$_:ident : $tp) => mkNrType tp
+    | _ => throwUnsupportedSyntax)
+  let args ← mkHListLit (← params.getElems.toList.mapM fun param => match param with
+    | `(nr_param_decl|$i:ident : $_) => `($i)
+    | _ => throwUnsupportedSyntax)
+  let body ← mkExpr lambdaBody none fun x => ``(Lampe.Expr.var $x)
+  wrapSimple (←`(Lampe.Expr.lambda $argTps $outTp (fun $args => $body))) vname k
+| `(nr_expr| ^ $i:ident ($args,*): $tp) => do
+  mkArgs args.getElems.toList fun argVals => do
+    wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.lambda $i) $(←mkHListLit argVals))) vname k
 | _ => throwUnsupportedSyntax
 
 end
 
-declare_syntax_cat nr_param_decl
 syntax ident ":" nr_type : nr_param_decl
-syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" ident,* ">" "for" nr_type "{" sepBy(nr_fn_decl, ";", ";", allowTrailingSep) "}"
 
-def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m (String × TSyntax `term)
+def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (syn : Syntax) :  m (String × TSyntax `term) := match syn with
 | `(nr_fn_decl| $name < $generics,* > ( $params,* ) -> $outTp { $bExprs;* }) => do
   let name ← mkNrIdent name
   let generics := generics.getElems.toList.map fun i => (mkIdent $ Name.mkSimple i.getId.toString)
@@ -213,16 +231,11 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
   let params : List (TSyntax `term × TSyntax `term) ← params.getElems.toList.mapM fun p => match p with
     | `(nr_param_decl|$i:ident : $tp) => do pure (i, ←mkNrType tp)
     | _ => throwUnsupportedSyntax
-  let inputsDecl ← `(fun generics => match generics with | $(←mkHListLit generics) => $(←mkListLit $ params.map Prod.snd ))
-  let outType ← mkNrType outTp
-  let outDecl ← `(fun generics => match generics with | $(←mkHListLit generics) => $outType)
   let body ← MonadSyntax.run ((mkBlock bExprs.getElems.toList) (fun x => `(Expr.var $x)))
-  let bodyDecl ← `(
-    fun rep generics => match generics with
-      | $(←mkHListLit generics) => fun arguments => match arguments with
-        | $(←mkHListLit $ params.map Prod.fst) => $body
-  )
-  let syn : TSyntax `term ← `(FunctionDecl.mk $(Syntax.mkStrLit name) $ Function.mk $genericsDecl $inputsDecl $outDecl $bodyDecl)
+  let lambdaDecl ← `(fun rep generics => match generics with
+    | $(←mkHListLit generics) => ⟨$(←mkListLit $ params.map Prod.snd), $(←mkNrType outTp), fun args => match args with
+        | $(←mkHListLit $ params.map Prod.fst) => $body⟩)
+  let syn : TSyntax `term ← `(FunctionDecl.mk $(Syntax.mkStrLit name) $ Function.mk $genericsDecl $lambdaDecl)
   pure (name, syn)
 | _ => throwUnsupportedSyntax
 
@@ -250,7 +263,9 @@ def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
   Elab.Term.elabTerm term.raw none
-elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do Elab.Term.elabTerm (←mkFnDecl fn).2 none
+elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
+  let stx ← `($((←mkFnDecl fn).2).fn)
+  Elab.Term.elabTerm stx none
 
 elab "nr_def" decl:nr_fn_decl : command => do
   let (name, decl) ← mkFnDecl decl
