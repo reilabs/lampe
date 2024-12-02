@@ -113,7 +113,9 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
   aesop
 
 nr_trait_impl <> bulbulize<> for Field {
-
+    fn bulbulize<>(x : Field) -> Field {
+      #add(x, x) : Field
+    }
 }
 
 def bulbulizeField : TraitImpl := {
