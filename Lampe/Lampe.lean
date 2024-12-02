@@ -12,7 +12,6 @@ nr_def simple_muts<>(x : Field) -> Field {
 example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
   simp only [simple_muts]
   steps
-  try (exact _)
   simp_all
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
