@@ -105,7 +105,7 @@ syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr
 syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
-syntax nr_trait_constraint := nr_ident "<" ident,* ">" ":" nr_ident "<" ident,* ">"
+syntax nr_trait_constraint := nr_type ":" nr_ident "<" ident,* ">"
 syntax nr_trait_fn_def := "fn" nr_fn_decl
 syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" ident,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
@@ -252,12 +252,19 @@ def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
       let fnDecl ← mkFnDecl fnDecl
       `(Prod.mk $(Syntax.mkStrLit fnDecl.1) $(fnDecl.2).fn)
     | _ => throwUnsupportedSyntax)
+  let constraints ← constraints.getElems.mapM fun constraint => match constraint with
+  | `(nr_trait_constraint| $ty : $tr < $tgs,* >) => do
+    let traitName ← mkNrIdent tr
+    let traitGenericKinds ← mkListLit (← tgs.getElems.toList.mapM fun _ => `(Kind.type))
+    let traitGenerics := tgs.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
+    `(⟨⟨$(mkIdent $ Name.mkSimple traitName), $traitGenericKinds, $(←mkHListLit traitGenerics)⟩, $(←mkNrType ty)⟩)
+  | _ => throwUnsupportedSyntax
   let targetType ← mkNrType targetType
   let syn : TSyntax `term ← `(TraitImpl.mk
     (traitGenericKinds := $traitGenericKinds)
     (implGenericKinds := $implGenericKinds)
     (traitGenerics := fun gs => match gs with | $(←mkHListLit implGenerics) => $(←mkHListLit traitGenerics))
-    (constraints := fun gs => match gs with | $(←mkHListLit implGenerics) => [])
+    (constraints := fun gs => match gs with | $(←mkHListLit implGenerics) => $(←mkListLit constraints.toList))
     (self := fun gs => match gs with | $(←mkHListLit implGenerics) => $targetType)
     (impl := fun gs => match gs with | $(←mkHListLit implGenerics) => $fnDecls))
   pure (traitName, syn)

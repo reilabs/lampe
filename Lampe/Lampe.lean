@@ -118,7 +118,6 @@ nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field where {
     };
 }
 
-
 nr_trait_impl[bulbulizeU32] <> Bulbulize<> for u32 where {
   fn bulbulize<>(_x : u32) -> u32 {
       69 : u32
