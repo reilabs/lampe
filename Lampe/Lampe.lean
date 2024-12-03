@@ -112,14 +112,14 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
   sl
   aesop
 
-nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field {
+nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field where {
     fn bulbulize<>(x : Field) -> Field {
       #add(x, x) : Field
     };
 }
 
 
-nr_trait_impl[bulbulizeU32] <> Bulbulize<> for u32 {
+nr_trait_impl[bulbulizeU32] <> Bulbulize<> for u32 where {
   fn bulbulize<>(_x : u32) -> u32 {
       69 : u32
     }
@@ -139,11 +139,10 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v =>
   · constructor
     · apply List.Mem.head
     any_goals rfl
-    rotate_left 2
-    all_goals simp only
-    . exact h![]
-    · tauto
-    · tauto
+    all_goals (simp only)
+    rotate_right 1
+    exact h![]
+    all_goals tauto
   · simp; rfl
   any_goals rfl
   simp
@@ -160,11 +159,10 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v =
     · apply List.Mem.tail
       apply List.Mem.head
     any_goals rfl
-    rotate_left 2
-    all_goals simp only
-    . exact h![]
-    · tauto
-    · tauto
+    all_goals (simp only)
+    rotate_right 1
+    exact h![]
+    all_goals tauto
   · simp; rfl
   any_goals rfl
   simp

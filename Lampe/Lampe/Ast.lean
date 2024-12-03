@@ -13,17 +13,17 @@ abbrev Ident := String
 abbrev Tp.lambdaRef := Tp.ref .unit
 
 structure TraitRef where
-name : Ident
-traitGenericKinds : List Kind
-traitGenerics : HList Kind.denote traitGenericKinds
+  name : Ident
+  traitGenericKinds : List Kind
+  traitGenerics : HList Kind.denote traitGenericKinds
 
 structure TraitImplRef where
-trait : TraitRef
-self : Tp
+  trait : TraitRef
+  self : Tp
 
 structure TraitMethodImplRef where
-trait : TraitImplRef
-method : Ident
+  trait : TraitImplRef
+  method : Ident
 
 inductive FunctionIdent (rep : Tp → Type) : Type where
 | builtin : Builtin → FunctionIdent rep
@@ -73,12 +73,12 @@ structure Struct where
   fieldTypes : HList Kind.denote tyArgKinds → List Tp
 
 structure TraitImpl where
-traitGenericKinds : List Kind
-implGenericKinds : List Kind
-traitGenerics : HList Kind.denote implGenericKinds → HList Kind.denote traitGenericKinds
-constraints : HList Kind.denote implGenericKinds → List TraitImplRef
-self : HList Kind.denote implGenericKinds → Tp
-impl : HList Kind.denote implGenericKinds → List (Ident × Function)
+  traitGenericKinds : List Kind
+  implGenericKinds : List Kind
+  traitGenerics : HList Kind.denote implGenericKinds → HList Kind.denote traitGenericKinds
+  constraints : HList Kind.denote implGenericKinds → List TraitImplRef
+  self : HList Kind.denote implGenericKinds → Tp
+  impl : HList Kind.denote implGenericKinds → List (Ident × Function)
 
 -- @[reducible]
 -- def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=
