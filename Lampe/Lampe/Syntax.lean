@@ -104,6 +104,9 @@ syntax "*(" nr_expr ")" : nr_expr
 syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr
 syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
 
+syntax nr_typed_expr := nr_expr ":" nr_type
+syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_typed_expr,* ")" ":" nr_type : nr_expr
+
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_constraint := nr_type ":" nr_ident "<" ident,* ">"
 syntax nr_trait_fn_def := "fn" nr_fn_decl
@@ -217,9 +220,21 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     | _ => throwUnsupportedSyntax)
   let body ← mkExpr lambdaBody none fun x => ``(Lampe.Expr.var $x)
   wrapSimple (←`(Lampe.Expr.lambda $argTps $outTp (fun $args => $body))) vname k
-| `(nr_expr| ^ $i:ident ($args,*): $tp) => do
+| `(nr_expr| ^ $i:ident ($args,*) : $tp) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.lambda $i) $(←mkHListLit argVals))) vname k
+| `(nr_expr| ( $selfTp as $traitName < $traitGenVals,* > ) :: $methodName < $callGenVals,* > ( $args,* ) : $tp) => do
+  let argTps ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $_ : $ty) => mkNrType ty | _ => throwUnsupportedSyntax
+  let argExprs ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $expr : $_) => pure expr | _ => throwUnsupportedSyntax
+  let callGenKinds ← mkListLit (←callGenVals.getElems.toList.mapM fun _ => `(Kind.type))
+  let callGenVals ← mkHListLit (←callGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+  let traitGenKinds ← mkListLit (←traitGenVals.getElems.toList.mapM fun _ => `(Kind.type))
+  let traitGenVals ← mkHListLit (←traitGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+  let methodName ← mkNrIdent methodName
+  let traitName ← mkNrIdent traitName
+  mkArgs argExprs fun argVals => do
+    wrapSimple (←`(@Lampe.Expr.call _ $callGenKinds $callGenVals $(←mkListLit argTps) $(←mkNrType tp)
+      (.trait ⟨⟨⟨$(Syntax.mkStrLit traitName), $traitGenKinds, $traitGenVals⟩, $(←mkNrType selfTp)⟩, $(Syntax.mkStrLit methodName)⟩) $(←mkHListLit argVals))) vname k
 | _ => throwUnsupportedSyntax
 
 end

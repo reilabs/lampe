@@ -124,13 +124,14 @@ nr_trait_impl[bulbulizeU32] <> Bulbulize<> for u32 where {
     }
 }
 
-def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
-  @Expr.call _ [] h![] [tp] tp (.trait ⟨⟨⟨"Bulbulize", [], h![]⟩, tp⟩, "bulbulize"⟩) h![arg]
-
 def simpleTraitEnv : Env := {
   functions := [],
   traits := [bulbulizeField, bulbulizeU32]
 }
+
+def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
+  @Expr.call _ [] h![] [tp] tp (.trait ⟨⟨⟨"Bulbulize", [], h![]⟩, tp⟩, "bulbulize"⟩) h![arg]
+
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCall]
@@ -167,3 +168,33 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v =
   simp
   steps
   simp_all
+
+nr_def simpleTraitCall2<I> (x : I) -> I {
+  (I as Bulbulize<>)::bulbulize<>(x : I) : I
+}
+
+example {p} {arg : Tp.denote p Tp.field} :
+  STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall2.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
+  simp only [simpleTraitCall2]
+  steps
+  apply STHoare.callTrait_intro
+  · constructor
+    · apply List.Mem.head
+    any_goals rfl
+    all_goals (simp only)
+    rotate_right 1
+    exact h![]
+    all_goals tauto
+  · simp; rfl
+  any_goals rfl
+  simp
+  steps
+  rotate_left 1
+  exact (fun v => v = 2 * arg)
+  steps
+  aesop
+  simp
+  sl
+  intro
+  subst_vars
+  ring
