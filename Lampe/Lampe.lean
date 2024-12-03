@@ -198,3 +198,41 @@ example {p} {arg : Tp.denote p Tp.field} :
   intro
   subst_vars
   ring
+
+nr_trait_impl[meU32] <> Me<u32> for u32 where {
+    fn me<>(x : u32) -> u32 {
+      x
+    }
+}
+
+nr_trait_impl[meU16] <> Me<u16> for u16 where {
+    fn me<>(x : u16) -> u16 {
+      x
+    }
+}
+
+nr_trait_impl[meField] <> Me<Field> for Field where {
+    fn me<>(x : Field) -> Field {
+      x
+    }
+}
+
+def genericTraitEnv : Env := {
+  functions := [],
+  traits := [meU32, meU16, meField]
+}
+
+
+nr_def genericTraitCall<I> (x : I) -> I {
+  (I as Me<I>)::me<>(x : I) : I
+}
+
+example {p} {arg : Tp.denote p tp} {_ : tp = Tp.u 32 ∨ tp = Tp.u 16 ∨ tp = Tp.field} :
+  STHoare p genericTraitEnv ⟦⟧ (genericTraitCall.fn.body _ h![tp] |>.body h![arg]) (fun v => v = arg) := by
+  simp only [genericTraitCall]
+  steps
+  apply STHoare.callTrait_intro
+  constructor
+  simp_all
+  -- casesm* _ ∨ _
+  all_goals sorry
