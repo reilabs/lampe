@@ -136,47 +136,38 @@ def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCall]
   apply STHoare.callTrait_intro
-  · constructor
-    · apply List.Mem.head
-    any_goals rfl
-    all_goals (simp only)
-    rotate_right 1
-    exact h![]
-    all_goals tauto
-  · simp; rfl
+  . apply TraitResolution.ok (impl := bulbulizeField.2) (implGenerics := h![]) (h_mem := by tauto) <;> try rfl
+    tauto
+  tauto
   any_goals rfl
-  simp
+  simp only
   steps
-  rintro rfl
-  casesm* ∃_,_
+  casesm ∃_, _
+  intro
   subst_vars
   ring
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
   simp only [simpleTraitCall]
   apply STHoare.callTrait_intro
-  · constructor
-    · apply List.Mem.tail
-      apply List.Mem.head
-    any_goals rfl
-    all_goals (simp only)
-    rotate_right 1
-    exact h![]
-    all_goals tauto
-  · simp; rfl
+  . apply TraitResolution.ok (impl := bulbulizeU32.2) (implGenerics := h![]) (h_mem := by tauto) <;> try rfl
+    tauto
+  tauto
   any_goals rfl
-  simp
+  simp only
   steps
-  simp_all
+  aesop
 
-nr_def simpleTraitCall2<I> (x : I) -> I {
+
+nr_def simpleTraitCallSyntax<I> (x : I) -> I {
   (I as Bulbulize<>)::bulbulize<>(x : I) : I
 }
 
 example {p} {arg : Tp.denote p Tp.field} :
-  STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall2.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
-  simp only [simpleTraitCall2]
-  steps
+  STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCallSyntax.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
+  simp only [simpleTraitCallSyntax]
+  apply STHoare.letIn_intro
+  on_goal 2 => intro
   apply STHoare.callTrait_intro
   · constructor
     · apply List.Mem.head

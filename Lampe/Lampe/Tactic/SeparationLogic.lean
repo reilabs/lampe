@@ -182,8 +182,14 @@ partial def extractTripleExpr (e: Expr): TacticM (Option Expr) := do
     return args[3]?
   else return none
 
-def isLetIn (e: Expr): Bool :=
-  e.isAppOf ``Lampe.Expr.letIn
+def isLetIn (e : Expr) : Bool := e.isAppOf ``Lampe.Expr.letIn
+
+def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
+
+def isCallTrait (e : Expr) : Bool := e.isAppOf `Lampe.Expr.call &&
+  match (e.getArg? 5) with
+  | some callTarget => callTarget.isAppOf `Lampe.FunctionIdent.trait
+  | _ => false
 
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   if e.isAppOf ``SLP.star then
@@ -700,7 +706,7 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
           catch _ => pure [snd]
         return fstGoals ++ sndGoals ++ [trd]
       else return [mvar]
-    else if body.isAppOf ``Lampe.Expr.ite then
+    else if isIte body then
       if let [fGoal, tGoal] ← mvar.apply (← mkConstWithFreshMVarLevels ``ite_intro) then
         let fGoal ← if let [fGoal] ← evalTacticAt (←`(tactic|intro)) fGoal then pure fGoal
           else throwError "couldn't intro into false branch"
@@ -714,8 +720,28 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
       try evalTacticAt (←`(tactic|stephelper1)) mvar
       catch _ => try evalTacticAt (←`(tactic|stephelper2)) mvar
       catch _ => try evalTacticAt (←`(tactic|stephelper3)) mvar
-      catch _ => throwTacticEx (`steps) mvar "Can't solve"
+      catch _ => throwTacticEx (`steps) mvar s!"Can't solve"
   | _ => return [mvar]
+
+partial def resolveTrait (mvar : MVarId) (impls : List $ TSyntax `term) : TacticM (List MVarId) := do
+  let target ← mvar.instantiateMVarsInType
+  match ←extractTripleExpr target with
+  | some body => do
+    if isCallTrait body then
+      if let (fst :: rest) ← mvar.apply (← mkConstWithFreshMVarLevels ``callTrait_intro) then
+        let _ ← impls.mapM fun impl => do
+          let newGoals ← evalTacticAt (←`(tactic|apply TraitResolution.ok (impl := $impl) (implGenerics := h![]) (h_mem := by tauto))) fst
+          return newGoals -- [TODO] complete
+        return fst :: rest
+      else throwError "failed to apply callTrait_intro"
+    else throwTacticEx (`resolve_trait) mvar s!"not a trait call"
+  | _ => return [mvar]
+
+
+syntax "resolve_trait" "[" term,* "]": tactic
+elab "resolve_trait" "[" impls:term,* "]" : tactic => do
+  let newGoals ← resolveTrait (←getMainGoal) impls.getElems.toList
+  replaceMainGoal newGoals
 
 syntax "steps" : tactic
 elab "steps" : tactic => do
