@@ -352,9 +352,8 @@ theorem lam_intro :
   exists ⟨∅, Finmap.singleton r lambda⟩, st
   refine ⟨?_, ?_, ?_, ?_⟩
   . simp only [LawfulHeap.disjoint]
-    refine ⟨?_, ?_⟩
-    . apply Finmap.disjoint_empty
-    . apply Finmap.singleton_disjoint_of_not_mem (by tauto)
+    refine ⟨?_, by simp_all⟩
+    apply Finmap.disjoint_empty
   . simp only [State.union_parts, State.mk.injEq]
     refine ⟨by simp_all, ?_⟩
     have hd : Finmap.Disjoint st.lambdas (Finmap.singleton r lambda) := by

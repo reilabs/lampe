@@ -162,26 +162,16 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     . exists s₁, s₂
       simp only [LawfulHeap.disjoint] at *
       refine ⟨by tauto, ?_, ?_, by tauto⟩
-      . simp only [State.union_parts] at hin₂
-        injection hin₂
+      . simp_all
       . have hc : s₁.lambdas = st₁.lambdas := by
           obtain ⟨_, hd₂⟩ := hin₁
-          rw [State.union_parts] at hin₂
-          injection hin₂ with _ hu
-          rw [State.mk.injEq] at hin₄
-          obtain ⟨_, hin₀⟩ := hin₄
-          rw [←hin₀] at hu
-          obtain ⟨_, hd₁⟩ := hd
-          rw [←hin₀] at hd₁
-          rw [Finmap.union_cancel hd₁ hd₂] at hu
-          tauto
+          apply Finmap.union_cancel hd₂ ?_ |>.mp <;> simp_all
         rw [←hc]
         tauto
     . exists ⟨s₁, st₁.lambdas⟩, ⟨s₂, st₂.lambdas⟩
       simp only [LawfulHeap.disjoint] at *
       refine ⟨by tauto, ?_, by tauto, ?_⟩
-      . simp only [State.union_parts, State.mk.injEq]
-        tauto
+      . simp_all
       . rw [hin₄]
   | callDecl =>
     intro
