@@ -724,21 +724,6 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
       catch _ => throwTacticEx (`steps) mvar s!"Can't solve"
   | _ => return [mvar]
 
-partial def tryImpls (traitResolutionGoal : MVarId) (allImpls : List $ TSyntax `term) : TacticM (List MVarId) := match allImpls with
-| [] => throwError "no impl works!"
-| impl :: impls =>
-  try evalTacticAt (←`(tactic|apply TraitResolution.ok (impl := $impl) (implGenerics := h![]) (h_mem := by tauto) <;> (first | rfl | tauto))) traitResolutionGoal
-  catch _ => tryImpls traitResolutionGoal impls
-
-partial def resolveTrait (mvar : MVarId) (impls : List $ TSyntax `term) : TacticM (List MVarId) := do
-  let fstGoals ← tryImpls mvar impls
-  return fstGoals
-
-syntax "resolve_trait" "[" term,* "]": tactic
-elab "resolve_trait" "[" impls:term,* "]" : tactic => do
-  let newGoals ← resolveTrait (←getMainGoal) impls.getElems.toList
-  replaceMainGoal newGoals
-
 syntax "steps" : tactic
 elab "steps" : tactic => do
   let newGoals ← steps (← getMainGoal)

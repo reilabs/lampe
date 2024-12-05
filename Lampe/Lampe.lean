@@ -136,7 +136,7 @@ def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCall]
   steps
-  resolve_trait [bulbulizeField.2]
+  apply_impl bulbulizeField.2
   tauto
   any_goals rfl
   simp only
@@ -149,7 +149,7 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v =>
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
   simp only [simpleTraitCall]
   steps
-  resolve_trait [bulbulizeU32.2]
+  apply_impl bulbulizeU32.2
   tauto
   any_goals rfl
   simp only
@@ -165,7 +165,7 @@ example {p} {arg : Tp.denote p Tp.field} :
   STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCallSyntax.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCallSyntax]
   steps
-  resolve_trait [bulbulizeField.2]
+  try_impls [bulbulizeU32.2, bulbulizeField.2]
   tauto
   any_goals rfl
   simp only
