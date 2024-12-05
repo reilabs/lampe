@@ -144,35 +144,29 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     rename Builtin => b
     intros
     constructor
-    simp only [State.union_closures, State.union_vals]
     rename_i _ st₁ _ _ _ _ hd
-    have hf := b.frame hq (st₂ := st₂)
     unfold mapToValHeapCondition at *
+    have hf := b.frame hq (st₂ := st₂)
     simp_all only [LawfulHeap.disjoint, true_implies]
     convert hf
     funext
     rename Option _ → Prop => Q'
     casesm Option (ValHeap _ × _) <;> try rfl
     simp_all only [SLP.star, eq_iff_iff]
-    apply Iff.intro
-    all_goals (
+    apply Iff.intro <;> (
       intros hin
-      obtain ⟨s₁, ⟨s₂, ⟨hin₁, hin₂, hin₃, hin₄⟩⟩⟩ := hin
+      obtain ⟨s₁, ⟨s₂, ⟨hin₁, _, _, _⟩⟩⟩ := hin
     )
     . exists s₁, s₂
       simp only [LawfulHeap.disjoint] at *
-      refine ⟨by tauto, ?_, ?_, by tauto⟩
-      . simp_all
+      refine ⟨by tauto, by simp_all, ?_, by tauto⟩
       . have hc : s₁.lambdas = st₁.lambdas := by
           obtain ⟨_, hd₂⟩ := hin₁
           apply Finmap.union_cancel hd₂ ?_ |>.mp <;> simp_all
         rw [←hc]
         tauto
     . exists ⟨s₁, st₁.lambdas⟩, ⟨s₂, st₂.lambdas⟩
-      simp only [LawfulHeap.disjoint] at *
-      refine ⟨by tauto, ?_, by tauto, ?_⟩
-      . simp_all
-      . rw [hin₄]
+      refine ⟨by tauto, by simp_all, by tauto, by simp_all⟩
   | callDecl =>
     intro
     constructor
@@ -201,12 +195,9 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     intro hd
     constructor <;> try tauto
     simp_all
-    simp only [LawfulHeap.disjoint] at hd
-    simp only [Finmap.lookup_union_left (Finmap.mem_of_lookup_eq_some h)]
-    tauto
+    simp_all [LawfulHeap.disjoint, Finmap.lookup_union_left (Finmap.mem_of_lookup_eq_some h)]
   | lam =>
     intros h
-    simp only [LawfulHeap.disjoint, State.union_parts_left] at *
     obtain ⟨_, hd⟩ := h
     constructor
     intros
@@ -215,29 +206,15 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     rename ValHeap _ => vh
     rename Ref => r
     generalize hL : (⟨_, _, _⟩ : Lambda _) = lambda
-    have hi : r ∉ lmbs ∧ r ∉ st₂.lambdas := by aesop
-    have hd₁ : Finmap.Disjoint lmbs (Finmap.singleton r lambda) := by
-      apply Finmap.Disjoint.symm
-      apply Finmap.singleton_disjoint_iff_not_mem.mpr
-      tauto
-    have hd₂ : Finmap.Disjoint (Finmap.singleton r lambda) st₂.lambdas := by
-      apply Finmap.singleton_disjoint_iff_not_mem.mpr
-      tauto
+    have hd : Finmap.Disjoint lmbs (Finmap.singleton r lambda) := by
+      simp_all [Finmap.Disjoint.symm, Finmap.singleton_disjoint_iff_not_mem]
     exists ⟨vh, lmbs ∪ Finmap.singleton r lambda⟩, st₂
     refine ⟨?_, ?_, ?_, by tauto⟩
-    . simp only [LawfulHeap.disjoint]
-      refine ⟨by tauto, ?_⟩
-      simp only [Finmap.disjoint_union_left]
-      tauto
-    . simp only [State.union_parts_left, State.mk.injEq]
-      refine ⟨by tauto, ?_⟩
-      simp only [Finmap.insert_eq_singleton_union]
-      simp only [Finmap.union_comm_of_disjoint hd₁, Finmap.union_assoc]
-    . simp [Finmap.union_comm_of_disjoint, Finmap.insert_eq_singleton_union]
+    . simp_all [LawfulHeap.disjoint, Finmap.disjoint_union_left]
+    . simp_all [State.union_parts_left, Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd, Finmap.union_assoc]
+    . simp only [Finmap.union_comm_of_disjoint, Finmap.insert_eq_singleton_union]
       rename (∀ref ∉ lmbs, _) => hQ
       rw [hL] at hQ
-      simp only [Finmap.insert_eq_singleton_union] at hQ
-      rw [Finmap.union_comm_of_disjoint hd₁]
-      tauto
+      simp_all [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
 
 end Lampe
