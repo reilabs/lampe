@@ -135,9 +135,8 @@ def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCall]
-  apply STHoare.callTrait_intro
-  . apply TraitResolution.ok (impl := bulbulizeField.2) (implGenerics := h![]) (h_mem := by tauto) <;> try rfl
-    tauto
+  steps
+  resolve_trait [bulbulizeField.2]
   tauto
   any_goals rfl
   simp only
@@ -149,9 +148,8 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v =>
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
   simp only [simpleTraitCall]
-  apply STHoare.callTrait_intro
-  . apply TraitResolution.ok (impl := bulbulizeU32.2) (implGenerics := h![]) (h_mem := by tauto) <;> try rfl
-    tauto
+  steps
+  resolve_trait [bulbulizeU32.2]
   tauto
   any_goals rfl
   simp only
@@ -166,29 +164,17 @@ nr_def simpleTraitCallSyntax<I> (x : I) -> I {
 example {p} {arg : Tp.denote p Tp.field} :
   STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCallSyntax.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCallSyntax]
-  apply STHoare.letIn_intro
-  on_goal 2 => intro
-  apply STHoare.callTrait_intro
-  · constructor
-    · apply List.Mem.head
-    any_goals rfl
-    all_goals (simp only)
-    rotate_right 1
-    exact h![]
-    all_goals tauto
-  · simp; rfl
+  steps
+  resolve_trait [bulbulizeField.2]
+  tauto
   any_goals rfl
-  simp
+  simp only
   steps
+  simp_all
   rotate_left 1
-  exact (fun v => v = 2 * arg)
-  steps
-  aesop
-  simp
-  sl
-  intro
-  subst_vars
-  ring
+  all_goals try exact (fun v => v = 2 * arg)
+  all_goals (sl; intro; subst_vars; ring)
+
 
 nr_trait_impl[meU32] <> Me<u32> for u32 where {
     fn me<>(x : u32) -> u32 {
@@ -222,7 +208,6 @@ example {p} {arg : Tp.denote p tp} {_ : tp = Tp.u 32 ∨ tp = Tp.u 16 ∨ tp = T
   STHoare p genericTraitEnv ⟦⟧ (genericTraitCall.fn.body _ h![tp] |>.body h![arg]) (fun v => v = arg) := by
   simp only [genericTraitCall]
   steps
-  apply STHoare.callTrait_intro
   constructor
   simp_all
   -- casesm* _ ∨ _

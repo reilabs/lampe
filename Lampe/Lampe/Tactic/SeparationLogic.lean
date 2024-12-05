@@ -536,6 +536,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply skip_intro
     | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
+    | apply callTrait_intro
     -- memory builtins
     | apply var_intro
     | apply ref_intro
@@ -723,20 +724,15 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
       catch _ => throwTacticEx (`steps) mvar s!"Can't solve"
   | _ => return [mvar]
 
-partial def resolveTrait (mvar : MVarId) (impls : List $ TSyntax `term) : TacticM (List MVarId) := do
-  let target ← mvar.instantiateMVarsInType
-  match ←extractTripleExpr target with
-  | some body => do
-    if isCallTrait body then
-      if let (fst :: rest) ← mvar.apply (← mkConstWithFreshMVarLevels ``callTrait_intro) then
-        let _ ← impls.mapM fun impl => do
-          let newGoals ← evalTacticAt (←`(tactic|apply TraitResolution.ok (impl := $impl) (implGenerics := h![]) (h_mem := by tauto))) fst
-          return newGoals -- [TODO] complete
-        return fst :: rest
-      else throwError "failed to apply callTrait_intro"
-    else throwTacticEx (`resolve_trait) mvar s!"not a trait call"
-  | _ => return [mvar]
+partial def tryImpls (traitResolutionGoal : MVarId) (allImpls : List $ TSyntax `term) : TacticM (List MVarId) := match allImpls with
+| [] => throwError "no impl works!"
+| impl :: impls =>
+  try evalTacticAt (←`(tactic|apply TraitResolution.ok (impl := $impl) (implGenerics := h![]) (h_mem := by tauto) <;> (first | rfl | tauto))) traitResolutionGoal
+  catch _ => tryImpls traitResolutionGoal impls
 
+partial def resolveTrait (mvar : MVarId) (impls : List $ TSyntax `term) : TacticM (List MVarId) := do
+  let fstGoals ← tryImpls mvar impls
+  return fstGoals
 
 syntax "resolve_trait" "[" term,* "]": tactic
 elab "resolve_trait" "[" impls:term,* "]" : tactic => do
