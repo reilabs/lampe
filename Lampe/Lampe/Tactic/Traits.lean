@@ -3,8 +3,6 @@ import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
 import Lampe.Syntax
 
-import Lean.Meta.Tactic.Simp.Main
-
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
 partial def applyImpl (goal : MVarId) (impl : TSyntax `term) : TacticM $ List MVarId := do
@@ -36,3 +34,23 @@ partial def tryImpls (allImpls : List $ TSyntax `term) : TacticM Unit := do
 syntax "try_impls" "[" term,* "]" : tactic
 elab "try_impls" "[" impls:term,* "]" : tactic => do
   tryImpls impls.getElems.toList
+
+partial def extractImpls (expr : Lean.Expr) : TacticM $ List (TSyntax `term) := match expr with
+  | (.app (.const `List.nil _) _) => pure []
+  | (.const ident r) => do
+    let mkExpr ← whnf (.const ident r)
+    extractImpls mkExpr
+  | .app (.app (.const `Lampe.Env.mk _) _) impls => do
+    let impls ← whnf impls
+    extractImpls impls
+  | .app (.app (.app (.const `List.cons _) _) (.const implName _)) rem => do
+    let implSyn ← `($(mkIdent implName).2)
+    let rem ← whnf rem
+    pure (implSyn :: (← extractImpls rem))
+  | _ => throwError s!"failed to match with {expr}"
+
+syntax "try_impls_all" term : tactic
+elab "try_impls_all" envSyn:term : tactic => do
+  let envExpr ← elabTerm envSyn none
+  let impls ← extractImpls envExpr
+  tryImpls impls
