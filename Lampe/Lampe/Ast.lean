@@ -80,9 +80,9 @@ structure TraitImpl where
   self : HList Kind.denote implGenericKinds → Tp
   impl : HList Kind.denote implGenericKinds → List (Ident × Function)
 
--- @[reducible]
--- def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=
---   fun tyArgs => .struct $ s.fieldTypes tyArgs
+@[reducible]
+def Struct.tp (s: Struct) : HList Kind.denote s.tyArgKinds → Tp :=
+  fun tyArgs => .tuple s.name $ s.fieldTypes tyArgs
 
 -- @[reducible]
 -- def Struct.constructor (s: Struct):
