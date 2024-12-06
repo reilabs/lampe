@@ -136,7 +136,7 @@ def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCall]
   steps
-  apply_impl bulbulizeField.2
+  apply_impl [] bulbulizeField.2
   tauto
   any_goals rfl
   simp only
@@ -149,7 +149,28 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v =>
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
   simp only [simpleTraitCall]
   steps
-  try_impls_all simpleTraitEnv
+  apply_impl [] bulbulizeU32.2
+  tauto
+  any_goals rfl
+  simp only
+  steps
+  aesop
+
+
+example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
+  simp only [simpleTraitCall]
+  steps
+  try_impls [] [bulbulizeField.2, bulbulizeU32.2]
+  tauto
+  any_goals rfl
+  simp only
+  steps
+  aesop
+
+example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
+  simp only [simpleTraitCall]
+  steps
+  try_impls_all [] simpleTraitEnv
   tauto
   any_goals rfl
   simp only
@@ -165,7 +186,7 @@ example {p} {arg : Tp.denote p Tp.field} :
   STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCallSyntax.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCallSyntax]
   steps
-  try_impls_all simpleTraitEnv
+  try_impls_all [] simpleTraitEnv
   tauto
   any_goals rfl
   simp only
@@ -176,39 +197,29 @@ example {p} {arg : Tp.denote p Tp.field} :
   all_goals (sl; intro; subst_vars; ring)
 
 
-nr_trait_impl[meU32] <> Me<u32> for u32 where {
-    fn me<>(x : u32) -> u32 {
-      x
-    }
-}
-
-nr_trait_impl[meU16] <> Me<u16> for u16 where {
-    fn me<>(x : u16) -> u16 {
-      x
-    }
-}
-
-nr_trait_impl[meField] <> Me<Field> for Field where {
-    fn me<>(x : Field) -> Field {
+nr_trait_impl[me] <I> Me<> for I where {
+    fn me<>(x : I) -> I {
       x
     }
 }
 
 def genericTraitEnv : Env := {
   functions := [],
-  traits := [meU32, meU16, meField]
+  traits := [me]
 }
 
-
-nr_def genericTraitCall<I> (x : I) -> I {
-  (I as Me<I>)::me<>(x : I) : I
+nr_def genericTraitCall<>(x : Field) -> Field {
+  (Field as Me<>)::me<>(x : Field) : Field
 }
 
-example {p} {arg : Tp.denote p tp} {_ : tp = Tp.u 32 ∨ tp = Tp.u 16 ∨ tp = Tp.field} :
-  STHoare p genericTraitEnv ⟦⟧ (genericTraitCall.fn.body _ h![tp] |>.body h![arg]) (fun v => v = arg) := by
+example {p} {x : Tp.denote p Tp.field} :
+  STHoare p genericTraitEnv ⟦⟧ (genericTraitCall.fn.body _ h![] |>.body h![x]) (fun v => v = x) := by
   simp only [genericTraitCall]
   steps
-  constructor
+  try_impls_all [Tp.field] genericTraitEnv
+  tauto
+  all_goals try rfl
   simp_all
-  -- casesm* _ ∨ _
-  all_goals sorry
+  steps
+  sl
+  aesop
