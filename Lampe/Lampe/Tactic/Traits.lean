@@ -49,6 +49,11 @@ syntax "try_impls_all" "[" term,* "]" term : tactic
 
 /--
 `apply_impl` applies a given trait implementation `TraitImpl` to the main goal, which must be a `TraitResolution`.
+
+Example:
+```
+apply_impl [Tp.field] t1 -- applies `t1` with impl generics instantiated to `h![Tp.field]`
+```
 -/
 elab "apply_impl" "[" generics:term,* "]" impl:term : tactic => do
   let mainGoal ← getMainGoal
@@ -61,12 +66,22 @@ and it tries them one by one by calling `apply_impl` until one of them succeeds.
 
 Example:
 ```
-try_impls <> [t1, t2] -- tries `t1` and `t2`
+try_impls [Tp.field] [t1, t2] -- tries `t1` and `t2` with impl generics instantiated to `h![Tp.field]`
 ```
 -/
 elab "try_impls" "[" generics:term,* "]" "[" impls:term,* "]" : tactic => do
   tryImpls impls.getElems.toList generics.getElems.toList
 
+/--
+`try_impls_all` takes an `Lampe.Env`, and tries all the trait impls one by one to solve the main `TraitResolution` goal.
+
+Example:
+```
+def env : Lampe.Env := ⟨[], [⟨"TraitName", t1⟩, ⟨"TraitName", t2⟩]⟩
+
+try_impls_all [Tp.field] env -- tries `t1` and `t2` with impl generics instantiated to `h![Tp.field]`
+```
+-/
 elab "try_impls_all" "[" generics:term,* "]" envSyn:term : tactic => do
   let envExpr ← elabTerm envSyn none
   let impls ← extractImpls envExpr
