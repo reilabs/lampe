@@ -44,6 +44,7 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
 | lambda : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep .lambdaRef
+| struct : (name : String) → (fieldTps : List Tp) → (fieldArgs : HList (Expr rep) fieldTps) → Expr rep (.tuple (some name) fieldTps)
 
 structure Lambda (rep : Tp → Type) where
   argTps : List Tp
@@ -69,8 +70,8 @@ structure Module where
 
 structure Struct where
   name : String
-  tyArgKinds : List Kind
-  fieldTypes : HList Kind.denote tyArgKinds → List Tp
+  genericKinds : List Kind
+  fieldTypes : HList Kind.denote genericKinds → List Tp
 
 structure TraitImpl where
   traitGenericKinds : List Kind
@@ -81,14 +82,14 @@ structure TraitImpl where
   impl : HList Kind.denote implGenericKinds → List (Ident × Function)
 
 @[reducible]
-def Struct.tp (s: Struct) : HList Kind.denote s.tyArgKinds → Tp :=
-  fun tyArgs => .tuple s.name $ s.fieldTypes tyArgs
+def Struct.tp (s: Struct) : HList Kind.denote s.genericKinds → Tp :=
+  fun generics => .tuple s.name $ s.fieldTypes generics
 
--- @[reducible]
--- def Struct.constructor (s: Struct):
---   (tyArgs: HList Kind.denote s.tyArgKinds) →
---   HList (Expr rep) (s.fieldTypes tyArgs) →
---   Expr rep (s.tp tyArgs) :=
---   fun _ fieldExprs => .struct fieldExprs
+@[reducible]
+def Struct.constructor (s: Struct) :
+  (generics : HList Kind.denote s.genericKinds) →
+  HList (Expr rep) (s.fieldTypes generics) →
+  Expr rep (s.tp generics) :=
+  fun generics fieldExprs => .struct s.name (s.fieldTypes generics) fieldExprs
 
 end Lampe
