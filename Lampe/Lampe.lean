@@ -112,68 +112,114 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
   sl
   aesop
 
-def bulbulizeField : TraitImpl := {
-  traitGenericKinds := [],
-  implGenericKinds := [],
-  traitGenerics := fun _ => h![],
-  constraints := fun _ => [],
-  self := fun _ => .field,
-  impl := fun _ => [("bulbulize", nrfn![
+nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field where {
     fn bulbulize<>(x : Field) -> Field {
       #add(x, x) : Field
-    }]
-  )]
+    };
 }
 
-def bulbulizeU32 : TraitImpl := {
-  traitGenericKinds := [],
-  implGenericKinds := [],
-  traitGenerics := fun _ => h![],
-  constraints := fun _ => [],
-  self := fun _ => .u 32,
-  impl := fun _ => [("bulbulize", nrfn![
-    fn bulbulize<>(_x : u32) -> u32 {
+nr_trait_impl[bulbulizeU32] <> Bulbulize<> for u32 where {
+  fn bulbulize<>(_x : u32) -> u32 {
       69 : u32
-    }]
-  )]
+    }
+}
+
+def simpleTraitEnv : Env := {
+  functions := [],
+  traits := [bulbulizeField, bulbulizeU32]
 }
 
 def simpleTraitCall (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
   @Expr.call _ [] h![] [tp] tp (.trait ⟨⟨⟨"Bulbulize", [], h![]⟩, tp⟩, "bulbulize"⟩) h![arg]
 
-def simpleTraitEnv : Env := {
-  functions := [],
-  traits := [("Bulbulize", bulbulizeField), ("Bulbulize", bulbulizeU32)]
-}
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCall]
-  apply STHoare.callTrait_intro
-  · constructor
-    · apply List.Mem.head
-    any_goals rfl
-    · simp [bulbulizeField]
-    · use h![]
-  · simp [bulbulizeField]; rfl
-  any_goals rfl
-  simp
   steps
-  rintro rfl
-  casesm* ∃_,_
+  apply_impl [] bulbulizeField.2
+  tauto
+  any_goals rfl
+  simp only
+  steps
+  casesm ∃_, _
+  intro
   subst_vars
   ring
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
   simp only [simpleTraitCall]
-  apply STHoare.callTrait_intro
-  · constructor
-    · apply List.Mem.tail
-      apply List.Mem.head
-    any_goals rfl
-    · simp [bulbulizeU32]
-    · use h![]
-  · simp [bulbulizeU32]; rfl
+  steps
+  apply_impl [] bulbulizeU32.2
+  tauto
   any_goals rfl
-  simp
+  simp only
+  steps
+  aesop
+
+
+example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
+  simp only [simpleTraitCall]
+  steps
+  try_impls [] [bulbulizeField.2, bulbulizeU32.2]
+  tauto
+  any_goals rfl
+  simp only
+  steps
+  aesop
+
+example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
+  simp only [simpleTraitCall]
+  steps
+  try_impls_all [] simpleTraitEnv
+  tauto
+  any_goals rfl
+  simp only
+  steps
+  aesop
+
+
+nr_def simpleTraitCallSyntax<I> (x : I) -> I {
+  (I as Bulbulize<>)::bulbulize<>(x : I) : I
+}
+
+example {p} {arg : Tp.denote p Tp.field} :
+  STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCallSyntax.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
+  simp only [simpleTraitCallSyntax]
+  steps
+  try_impls_all [] simpleTraitEnv
+  tauto
+  any_goals rfl
+  simp only
   steps
   simp_all
+  rotate_left 1
+  all_goals try exact (fun v => v = 2 * arg)
+  all_goals (sl; intro; subst_vars; ring)
+
+
+nr_trait_impl[me] <I> Me<> for I where {
+    fn me<>(x : I) -> I {
+      x
+    }
+}
+
+def genericTraitEnv : Env := {
+  functions := [],
+  traits := [me]
+}
+
+nr_def genericTraitCall<>(x : Field) -> Field {
+  (Field as Me<>)::me<>(x : Field) : Field
+}
+
+example {p} {x : Tp.denote p Tp.field} :
+  STHoare p genericTraitEnv ⟦⟧ (genericTraitCall.fn.body _ h![] |>.body h![x]) (fun v => v = x) := by
+  simp only [genericTraitCall]
+  steps
+  try_impls_all [Tp.field] genericTraitEnv
+  tauto
+  all_goals try rfl
+  simp_all
+  steps
+  sl
+  aesop

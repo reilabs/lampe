@@ -310,7 +310,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp
   @STHoare outTp p Γ P (lambdaBody args) Q →
   STHoare p Γ (P ⋆ [λref ↦ ⟨argTps, outTp, lambdaBody⟩])
     (Expr.call h![] argTps outTp (.lambda ref) args)
-    (fun v => (Q v) ⋆ [λref ↦  ⟨argTps, outTp, lambdaBody⟩]) := by
+    (fun v => (Q v) ⋆ [λref ↦ ⟨argTps, outTp, lambdaBody⟩]) := by
   intros
   rename_i h
   unfold STHoare THoare

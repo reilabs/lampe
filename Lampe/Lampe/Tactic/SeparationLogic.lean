@@ -182,8 +182,14 @@ partial def extractTripleExpr (e: Expr): TacticM (Option Expr) := do
     return args[3]?
   else return none
 
-def isLetIn (e: Expr): Bool :=
-  e.isAppOf ``Lampe.Expr.letIn
+def isLetIn (e : Expr) : Bool := e.isAppOf ``Lampe.Expr.letIn
+
+def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
+
+def isCallTrait (e : Expr) : Bool := e.isAppOf `Lampe.Expr.call &&
+  match (e.getArg? 5) with
+  | some callTarget => callTarget.isAppOf `Lampe.FunctionIdent.trait
+  | _ => false
 
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   if e.isAppOf ``SLP.star then
@@ -530,6 +536,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply skip_intro
     | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
+    | apply callTrait_intro
     -- memory builtins
     | apply var_intro
     | apply ref_intro
@@ -700,7 +707,7 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
           catch _ => pure [snd]
         return fstGoals ++ sndGoals ++ [trd]
       else return [mvar]
-    else if body.isAppOf ``Lampe.Expr.ite then
+    else if isIte body then
       if let [fGoal, tGoal] ← mvar.apply (← mkConstWithFreshMVarLevels ``ite_intro) then
         let fGoal ← if let [fGoal] ← evalTacticAt (←`(tactic|intro)) fGoal then pure fGoal
           else throwError "couldn't intro into false branch"
@@ -714,7 +721,7 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
       try evalTacticAt (←`(tactic|stephelper1)) mvar
       catch _ => try evalTacticAt (←`(tactic|stephelper2)) mvar
       catch _ => try evalTacticAt (←`(tactic|stephelper3)) mvar
-      catch _ => throwTacticEx (`steps) mvar "Can't solve"
+      catch _ => throwTacticEx (`steps) mvar s!"Can't solve"
   | _ => return [mvar]
 
 syntax "steps" : tactic
