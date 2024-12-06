@@ -14,36 +14,36 @@ instance : Membership Ref (State p) where
   mem := fun a e => e ∈ a.vals
 
 @[simp]
-lemma State.membership_in_val {a : State p} : e ∈ a ↔ e ∈ a.vals := by rfl
+theorem State.mem_iff_mem_val {a : State p} : e ∈ a ↔ e ∈ a.vals := by rfl
 
 instance : Coe (State p) (ValHeap p) where
   coe := fun s => s.vals
 
 /-- Maps a post-condition on `State`s to a post-condition on `ValHeap`s by keeping the lambdas fixed -/
 @[reducible]
-def mapToValHeapCondition
-  (lambdas : Lambdas p)
-  (Q : Option (State p × T) → Prop) : Option (ValHeap p × T) → Prop :=
-  fun vv => Q (vv.map (fun (vals, t) => ⟨⟨vals, lambdas⟩, t⟩))
+def mapToVHCond (lambdas : Lambdas p) (Q : Option (State p × T) → Prop) : Option (ValHeap p × T) → Prop :=
+  fun vhv => Q (vhv.map (fun (vals, t) => ⟨⟨vals, lambdas⟩, t⟩))
 
-/-- Maps a post-condition on `ValHeap`s to a post-condition on `State`s -/
-@[reducible]
-def mapToStateCondition
-  (Q : Option (ValHeap p × T) → Prop) : Option (State p × T) → Prop :=
-  fun stv => Q (stv.map (fun (st, t) => ⟨st.vals, t⟩))
+@[simp]
+theorem mapToVHCond_some_iff {Q : Option (State p × T) → Prop} :
+  ((mapToVHCond lmbds Q) (some ⟨vh, v⟩)) ↔ (Q (some ⟨⟨vh, lmbds⟩, v⟩)) := by tauto
+
+@[simp]
+theorem mapToVHCond_none_iff {Q : Option (State p × T) → Prop} :
+  ((mapToVHCond lmbds Q) none) ↔ (Q none) := by tauto
+
+theorem mapToVHCond_iff_fun_match {Q : Option (State p × T) → Prop} :
+(mapToVHCond lmbds Q) =
+  (fun vhv => match vhv with
+    | none => Q none
+    | some (vh, v) => Q (some ⟨⟨vh, lmbds⟩, v⟩)) := by
+    unfold mapToVHCond
+    simp only
+    funext vhv
+    casesm Option (ValHeap _ × _) <;> rfl
 
 def State.insertVal (self : State p) (r : Ref) (v : AnyValue p) : State p :=
   ⟨self.vals.insert r v, self.lambdas⟩
-
-lemma State.eq_constructor {st₁ : State p} :
-  (st₁ = st₂) ↔ (State.mk st₁.vals st₁.lambdas = State.mk st₂.vals st₂.lambdas) := by
-  rfl
-
-@[simp]
-lemma State.eq_closures :
-  (State.mk v c = State.mk v' c') → (c = c') := by
-  intro h
-  injection h
 
 instance : LawfulHeap (State p) where
   union := fun a b => ⟨a.vals ∪ b.vals, a.lambdas ∪ b.lambdas⟩
@@ -55,18 +55,12 @@ instance : LawfulHeap (State p) where
   thm_union_assoc := by
     intros
     simp only [Union.union, State.mk.injEq]
-    apply And.intro
-    . apply Finmap.union_assoc
-    . apply Finmap.union_assoc
+    apply And.intro <;> apply Finmap.union_assoc
   thm_disjoint_symm_iff := by tauto
   thm_union_comm_of_disjoint := by
     intros
     simp only [Union.union, State.mk.injEq]
-    apply And.intro
-    . apply Finmap.union_comm_of_disjoint
-      tauto
-    . apply Finmap.union_comm_of_disjoint
-      tauto
+    apply And.intro <;> { apply Finmap.union_comm_of_disjoint; tauto }
   thm_disjoint_empty := by tauto
   thm_disjoint_union_left := by
     intros x y z
@@ -91,26 +85,26 @@ def State.lmbSingleton (r : Ref) (v : Lambda (Tp.denote p)) : SLP (State p) :=
 notation:max "[" "λ" l " ↦ " r "]" => State.lmbSingleton l r
 
 @[simp]
-lemma State.union_parts_left :
+theorem State.union_parts_left :
   (State.mk v c ∪ st₂ = State.mk (v ∪ st₂.vals) (c ∪ st₂.lambdas)) := by
   rfl
 
 @[simp]
-lemma State.union_parts_right :
+theorem State.union_parts_right :
   (st₂ ∪ State.mk v c = State.mk (st₂.vals ∪ v) (st₂.lambdas ∪ c)) := by
   rfl
 
 @[simp]
-lemma State.union_parts :
+theorem State.union_parts :
   st₁ ∪ st₂ = State.mk (st₁.vals ∪ st₂.vals) (st₁.lambdas ∪ st₂.lambdas) := by
   rfl
 
 @[simp]
-lemma State.union_vals {st₁ st₂ : State p} :
+theorem State.union_vals {st₁ st₂ : State p} :
   (st₁ ∪ st₂).vals = (st₁.vals ∪ st₂.vals) := by rfl
 
 @[simp]
-lemma State.union_closures {st₁ st₂ : State p} :
+theorem State.union_closures {st₁ st₂ : State p} :
   (st₁ ∪ st₂).lambdas = (st₁.lambdas ∪ st₂.lambdas) := by rfl
 
 end Lampe

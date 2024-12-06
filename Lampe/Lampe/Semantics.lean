@@ -61,7 +61,7 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨argTps, outTp, lambdaBody⟩⟩, ref))) →
   Omni Γ ⟨vh, lambdas⟩ (Expr.lambda argTps outTp lambdaBody) Q
 | callBuiltin {Q} :
-    (b.omni p st argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
+    (b.omni p st argTypes resType args (mapToVHCond st.lambdas Q)) →
     Omni Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
 | callDecl:
     (fname, fn) ∈ Γ.functions →
@@ -145,11 +145,11 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     intros
     constructor
     rename_i _ st₁ _ _ _ _ hd
-    unfold mapToValHeapCondition at *
+    simp only [State.union_parts, LawfulHeap.disjoint] at *
+    rw [mapToVHCond_iff_fun_match]
     have hf := b.frame hq (st₂ := st₂)
-    simp_all only [LawfulHeap.disjoint, true_implies]
+    simp_all only [true_implies]
     convert hf
-    funext
     rename Option _ → Prop => Q'
     casesm Option (ValHeap _ × _) <;> try rfl
     simp_all only [SLP.star, eq_iff_iff]
@@ -194,7 +194,6 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
   | callLambda h _ _ =>
     intro hd
     constructor <;> try tauto
-    simp_all
     simp_all [LawfulHeap.disjoint, Finmap.lookup_union_left (Finmap.mem_of_lookup_eq_some h)]
   | lam =>
     intros h
@@ -212,9 +211,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     refine ⟨?_, ?_, ?_, by tauto⟩
     . simp_all [LawfulHeap.disjoint, Finmap.disjoint_union_left]
     . simp_all [State.union_parts_left, Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd, Finmap.union_assoc]
-    . simp only [Finmap.union_comm_of_disjoint, Finmap.insert_eq_singleton_union]
-      rename (∀ref ∉ lmbs, _) => hQ
-      rw [hL] at hQ
+    . simp only
       simp_all [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
 
 end Lampe
