@@ -7,10 +7,13 @@ import Lampe.Data.HList
 namespace Lampe
 
 structure Ref where
-val : Nat
+  val : Nat
 deriving DecidableEq
 
-variable (P : Prime)
+structure NamedTuple (name : String) (T : Type) where
+  tuple : T
+
+variable (p : Prime)
 
 inductive Kind where
 | nat
@@ -26,7 +29,7 @@ inductive Tp where
 | field
 | slice (element : Tp)
 | array (element: Tp) (size: U 32)
-| struct (fields : List Tp)
+| tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
 
 mutual
@@ -44,11 +47,12 @@ def Tp.denote : Tp → Type
 | .bool => Bool
 | .unit => Unit
 | .str n => Mathlib.Vector Char n.toNat
-| .field => Fp P
+| .field => Fp p
 | .slice tp => List (denote tp)
 | .array tp n => Mathlib.Vector (denote tp) n.toNat
 | .ref _ => Ref
-| .struct fields => Tp.denoteArgs fields
+| .tuple (some name) fields => NamedTuple name $ Tp.denoteArgs fields
+| .tuple none fields => Tp.denoteArgs fields
 
 end
 
