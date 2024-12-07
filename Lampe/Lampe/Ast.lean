@@ -3,7 +3,7 @@ import Mathlib
 import Lampe.Tp
 import Lampe.Data.HList
 import Lampe.SeparationLogic.ValHeap
-import Lampe.Builtin
+import Lampe.Builtin.Basic
 
 namespace Lampe
 

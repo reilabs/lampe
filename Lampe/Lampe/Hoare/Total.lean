@@ -2,6 +2,7 @@ import Lampe.Ast
 import Lampe.Tp
 import Lampe.Semantics
 import Lampe.SeparationLogic.LawfulHeap
+import Lampe.Builtin.Memory
 
 namespace Lampe
 
