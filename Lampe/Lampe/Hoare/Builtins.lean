@@ -9,7 +9,6 @@ import Lampe.Builtin.Field
 import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
-import Lampe.Builtin.Zeroed
 
 namespace Lampe.STHoare
 
@@ -345,12 +344,6 @@ theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by taut
 -- String
 
 theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto) h![s] := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
--- Zeroed
-
-theorem zeroed_intro : STHoarePureBuiltin p Γ Builtin.zeroed (by tauto) h![] (a := tp) := by
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
