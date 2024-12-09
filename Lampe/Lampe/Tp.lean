@@ -8,10 +8,7 @@ namespace Lampe
 
 structure Ref where
   val : Nat
-deriving DecidableEq
-
-structure NamedTuple (name : String) (T : Type) where
-  tuple : T
+  deriving DecidableEq
 
 variable (p : Prime)
 
@@ -51,8 +48,7 @@ def Tp.denote : Tp → Type
 | .slice tp => List (denote tp)
 | .array tp n => Mathlib.Vector (denote tp) n.toNat
 | .ref _ => Ref
-| .tuple (some name) fields => NamedTuple name $ Tp.denoteArgs fields
-| .tuple none fields => Tp.denoteArgs fields
+| .tuple _ fields => Tp.denoteArgs fields
 
 end
 
