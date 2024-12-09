@@ -7,3 +7,7 @@ macro_rules
 | `(h![]) => `(HList.nil)
 | `(h![$x]) => `(HList.cons $x HList.nil)
 | `(h![$x, $xs,*]) => `(HList.cons $x h![$xs,*])
+
+-- def HList.get (hList : HList rep tps)
+-- | HList.nil => ()
+-- | HList.cons (a := tp) (as := tps) v rem => v

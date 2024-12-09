@@ -74,7 +74,7 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `fn pop_front(self) -> (T, Self)` implemented for `[T]`.
 -/
 def slicePopFront := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp], .struct [tp, .slice tp]⟩)
+  (fun tp => ⟨[.slice tp], .tuple none [tp, .slice tp]⟩)
   (fun _ h![l] => ⟨l ≠ [],
     fun h => (l.head h, l.tail, ())⟩)
 
@@ -87,7 +87,7 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `fn pop_back(self) -> (Self, T)` implemented for `[T]`.
 -/
 def slicePopBack := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp], .struct [.slice tp, tp]⟩)
+  (fun tp => ⟨[.slice tp], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l] => ⟨l ≠ [],
     fun h => (l.dropLast, l.getLast h, ())⟩)
 
@@ -101,7 +101,7 @@ where `l'` is `l` except that the element at index `i` is removed, and all the e
 In Noir, this builtin corresponds to `fn remove(self, index: u32) -> (Self, T)` implemented for `[T]`.
 -/
 def sliceRemove := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp, .u 32], .struct [.slice tp, tp]⟩)
+  (fun tp => ⟨[.slice tp, .u 32], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
 
