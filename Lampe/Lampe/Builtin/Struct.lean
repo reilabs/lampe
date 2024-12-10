@@ -39,8 +39,9 @@ example : ((tupleNth p nameOpt (List.replicate 7 $ .u 16) (0, 1, 2, 3, 4, 5, 6, 
 
 inductive projectTupleOmni : Omni where
 | mk {p st} {n : Fin fieldTps.length} {tpl Q} :
-  Q (some (st, tupleNth p _ fieldTps tpl n)) →
-  projectTupleOmni p st [.tuple _ fieldTps] (fieldTps.get n) h![tpl] Q
+  (ho : outTp = fieldTps.get n) →
+  Q (some (st, ho ▸ tupleNth p nameOpt fieldTps tpl n)) →
+  projectTupleOmni p st [.tuple nameOpt fieldTps] outTp h![tpl] Q
 
 def projectTuple : Builtin := {
   omni := projectTupleOmni
@@ -56,6 +57,7 @@ def projectTuple : Builtin := {
     constructor
     simp only
     repeat apply Exists.intro <;> tauto
+    assumption
 }
 
 -- abbrev FieldProjector (fieldTps : List Tp) := Finmap fun _ : String => Fin fieldTps.length

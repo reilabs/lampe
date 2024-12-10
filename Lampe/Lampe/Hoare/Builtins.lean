@@ -446,9 +446,9 @@ theorem mkStruct_intro : STHoarePureBuiltin p Γ Builtin.mkStruct (by tauto) fie
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem projectTuple_intro :
-  STHoare p Γ ⟦⟧ (.call h![] [.tuple nameOpt fieldTps] (fieldTps.get n) (.builtin .projectTuple) h![tpl])
-  (fun v => v = Lampe.Builtin.tupleNth p nameOpt fieldTps tpl n) := by
+theorem projectTuple_intro {n : Fin fieldTps.length} {ho : outTp = (fieldTps.get n)} :
+  STHoare p Γ ⟦⟧ (.call h![] [.tuple nameOpt fieldTps] outTp (.builtin .projectTuple) h![tpl])
+    (fun v => v = ho ▸ Lampe.Builtin.tupleNth p nameOpt fieldTps tpl n) := by
   unfold STHoare THoare
   intros
   constructor
@@ -457,7 +457,10 @@ theorem projectTuple_intro :
   simp_all only [SLP.true_star, List.get_eq_getElem, Option.map_some']
   rename_i h
   apply SLP.ent_star_top at h
-  assumption
+  rotate_left 1
+  exact n
+  exact ho
+  simp_all
 
 -- Misc
 
