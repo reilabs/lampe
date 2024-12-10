@@ -61,27 +61,4 @@ def projectTuple (n : Fin l) : Builtin := {
     assumption
 }
 
--- abbrev FieldProjector (fieldTps : List Tp) := Finmap fun _ : String => Fin fieldTps.length
-
--- inductive projectStructOmni : Omni where
--- | mk {p st} {proj : FieldProjector fieldTps} {fieldName : String} {tpl Q} :
---   (proj.lookup fieldName) = some idx → Q (some (st, tupleNth p _ fieldTps tpl idx)) →
---   projectStructOmni p st [.tuple _ fieldTps] (fieldTps.get idx) h![tpl] Q
-
--- def projectStruct : Builtin := {
---   omni := projectStructOmni
---   conseq := by
---     unfold omni_conseq
---     intros
---     cases_type projectStructOmni
---     constructor <;> tauto
---   frame := by
---     unfold omni_frame
---     intros
---     cases_type projectStructOmni
---     constructor
---     simp only
---     repeat apply Exists.intro <;> tauto
--- }
-
 end Lampe.Builtin
