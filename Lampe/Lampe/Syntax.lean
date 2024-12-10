@@ -120,7 +120,7 @@ syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 
 syntax nr_typed_expr := nr_expr ":" nr_type
 syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_typed_expr,* ")" ":" nr_type : nr_expr
-syntax "@" ident "." ident nr_ident : nr_expr -- Struct access
+syntax "@" nr_ident ident "[" ident "]"  : nr_expr -- Struct access
 syntax "@" nr_ident "{" sepBy(nr_typed_expr, ",", ",", allowTrailingSep) "}" : nr_expr -- Struct constructor
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
@@ -172,8 +172,8 @@ def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (
   let rest ← k ident
   `(Lampe.Expr.letIn $e fun $ident => $rest)
 
-def mkFieldName (structName : TSyntax `ident) (paramName : TSyntax `ident)  : Lean.Ident :=
-  mkIdent $ Name.mkSimple (structName.getId.toString |>.append "_" |>.append paramName.getId.toString)
+def mkFieldName (structName : String) (paramName : String) : Lean.Ident :=
+  mkIdent $ Name.mkSimple (structName |>.append "_" |>.append paramName)
 
 mutual
 
@@ -255,16 +255,15 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs argExprs fun argVals => do
     wrapSimple (←`(@Lampe.Expr.call _ $callGenKinds $callGenVals $(←mkListLit argTps) $(←mkNrType tp)
       (.trait ⟨⟨⟨$(Syntax.mkStrLit traitName), $traitGenKinds, $traitGenVals⟩, $(←mkNrType selfTp)⟩, $(Syntax.mkStrLit methodName)⟩) $(←mkHListLit argVals))) vname k
-| `(nr_expr| @ $structName:ident . $structField:ident $ref:nr_ident) => do
-  let ref := mkFieldName structName structField
-  `(Expr.skip)
 | `(nr_expr| @ $structName:nr_ident { $args,* }) => do
   let argTps ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $_ : $ty) => mkNrType ty | _ => throwUnsupportedSyntax
   let argExprs ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $expr : $_) => pure expr | _ => throwUnsupportedSyntax
   let structName ← mkNrIdent structName
   mkArgs argExprs fun argVals => do
-    -- wrapSimple (←`(@Lampe.Expr.struct _ $(Syntax.mkStrLit structName) $(←mkListLit argTps) $(←mkHListLit argVals))) vname k
     wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $(←mkListLit argTps)) (.builtin Builtin.mkStruct) $(←mkHListLit argVals))) vname k
+| `(nr_expr| @ $structName:nr_ident $ref:ident [ $structField:ident ]) => do
+  let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
+  `(.call h![] [.tuple _ _] (List.get _ $accessor) (.builtin .projectTuple) h![$ref])
 | _ => throwUnsupportedSyntax
 
 end
@@ -336,7 +335,7 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
       let numFields := Syntax.mkNumLit (toString numFields)
       let fieldIdx := Syntax.mkNumLit (toString idx)
       let paramIdxSyn ← `(@Fin.mk $numFields $fieldIdx (by tauto))
-      pure (mkFieldName structName paramName, paramIdxSyn)
+      pure (mkFieldName structName.getId.toString paramName.getId.toString, paramIdxSyn)
     | _ => throwUnsupportedSyntax
 | _ => throwUnsupportedSyntax
 
@@ -359,13 +358,13 @@ elab "nr_trait_impl[" defName:ident "]" impl:nr_trait_impl : command => do
   Elab.Command.elabCommand decl
 
 elab "nr_struct_def" defName:ident defn:nr_struct_def : command => do
-  let projs ← mkStructProjector defName defn
+  -- define the struct itself
+  let structDefn ← `(def $defName := $(←mkStructDef defName defn))
+  Elab.Command.elabCommand structDefn
   -- define the field projections
+  let projs ← mkStructProjector defName defn
   _ ← projs.mapM fun (ident, syn) => do
     let projDefn ← `(def $ident := $syn)
     Elab.Command.elabCommand projDefn
-  -- define the struct itself
-  let structDefn ← `(def $defName := $(← mkStructDef defName defn))
-  Elab.Command.elabCommand structDefn
 
 end Lampe

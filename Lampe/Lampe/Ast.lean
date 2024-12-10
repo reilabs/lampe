@@ -84,4 +84,11 @@ structure TraitImpl where
 def Struct.tp (s: Struct) : HList Kind.denote s.genericKinds → Tp :=
   fun generics => .tuple (some s.name) $ s.fieldTypes generics
 
+-- @[reducible]
+-- def Struct.constructor (s: Struct) :
+--   (generics : HList Kind.denote s.genericKinds) →
+--   HList rep (s.fieldTypes generics) →
+--   Expr rep (s.tp generics) :=
+--   fun generics fieldExprs => .struct s.name (s.fieldTypes generics) fieldExprs
+
 end Lampe

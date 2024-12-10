@@ -241,3 +241,8 @@ example {p} {a b : Tp.denote p .field} :
   simp only [structConstruct]
   steps
   aesop
+
+nr_def structProjection<>(x : Field, y : Field) -> Field {
+  let s = @Pair { x : Field, y : Field };
+  @Pair s[a]
+}
