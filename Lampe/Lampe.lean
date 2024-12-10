@@ -250,7 +250,5 @@ nr_def structProjection<>(x : Field, y : Field) -> Field {
 example {p} {x y : Tp.denote p .field} :
   STHoare p Γ ⟦⟧ (structProjection.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [structProjection]
-  steps
-  on_goal 2 => exact Pair_a
-  on_goal 2 => rfl
+  steps <;> try rfl
   aesop

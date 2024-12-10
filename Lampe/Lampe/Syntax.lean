@@ -263,7 +263,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $(←mkListLit argTps)) (.builtin Builtin.mkStruct) $(←mkHListLit argVals))) vname k
 | `(nr_expr| @ $structName:nr_ident $ref:ident [ $structField:ident ]) => do
   let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
-  `(.call h![] [.tuple _ _] _ (.builtin .projectTuple) h![$ref])
+  `(.call h![] [.tuple _ _] _ (.builtin (.projectTuple $accessor)) h![$ref])
 | _ => throwUnsupportedSyntax
 
 end
@@ -328,14 +328,12 @@ def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
 | _ => throwUnsupportedSyntax
 
 def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (List (Lean.Ident × TSyntax `term))
-| `(nr_struct_def| < $generics,* > { $params,* }) => do
+| `(nr_struct_def| < $_,* > { $params,* }) => do
   let numFields := params.getElems.toList.length
   params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
     | `(nr_param_decl| $paramName:ident : $_:nr_type) => do
       let numFields := Syntax.mkNumLit (toString numFields)
       let fieldIdx := Syntax.mkNumLit (toString idx)
-      -- let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
-      -- let fieldTypes ← `(fun gs => match gs with | $(←mkHListLit generics) => $(←mkListLit fieldTypes))
       let paramIdxSyn ← `(@Fin.mk $numFields $fieldIdx (by tauto))
       pure (mkFieldName structName.getId.toString paramName.getId.toString, paramIdxSyn)
     | _ => throwUnsupportedSyntax

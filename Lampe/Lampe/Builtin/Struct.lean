@@ -37,14 +37,15 @@ def tupleNth (p : Prime) (nameOpt : Option String) (fieldTps : List Tp)  (tpl : 
 
 example : ((tupleNth p nameOpt (List.replicate 7 $ .u 16) (0, 1, 2, 3, 4, 5, 6, ())) $ Fin.mk 4 (by simp_all)) = BitVec.ofNat _ 4 := by rfl
 
-inductive projectTupleOmni : Omni where
-| mk {p st} {n : Fin fieldTps.length} {tpl Q} :
-  (ho : outTp = fieldTps.get n) →
-  Q (some (st, ho ▸ tupleNth p nameOpt fieldTps tpl n)) →
-  projectTupleOmni p st [.tuple nameOpt fieldTps] outTp h![tpl] Q
+inductive projectTupleOmni (n : Fin l) : Omni where
+| mk {p st} {tpl Q} :
+  (hl : l = fieldTps.length) →
+  (ho : outTp = fieldTps.get (hl ▸ n)) →
+  Q (some (st, ho ▸ tupleNth p nameOpt fieldTps tpl (hl ▸ n))) →
+  projectTupleOmni n p st [.tuple nameOpt fieldTps] outTp h![tpl] Q
 
-def projectTuple : Builtin := {
-  omni := projectTupleOmni
+def projectTuple (n : Fin l) : Builtin := {
+  omni := projectTupleOmni n
   conseq := by
     unfold omni_conseq
     intros
