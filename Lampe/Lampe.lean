@@ -224,7 +224,14 @@ example {p} {x : Tp.denote p Tp.field} :
   sl
   aesop
 
-nr_struct_def Pair <> {
-  a : Field,
-  b : Field
+nr_struct_def Pair <I> {
+  a : I,
+  b : I
+}
+
+example : Pair_a = Fin.mk 0 (by tauto) := by rfl
+example : Pair_b = Fin.mk 1 (by tauto) := by rfl
+
+nr_def structConstruct<>(a : Field, b : Field) -> struct Pair<Field> {
+  @Pair { a : Field, b : Field }
 }

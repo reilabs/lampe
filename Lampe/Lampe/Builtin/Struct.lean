@@ -28,15 +28,18 @@ def mkStruct := newGenericPureBuiltin
   (fun (_, _) fieldExprs => ⟨True,
     fun _ => listRep_tp_denote_is_tp_denote_tuple ▸ HList.toProd fieldExprs⟩)
 
-def tupleNth {fieldTps : List Tp} (tpl : Tp.denote p (.tuple nameOpt fieldTps)) (n : Fin fieldTps.length) :
+@[reducible]
+def tupleNth (p : Prime) (nameOpt : Option String) (fieldTps : List Tp)  (tpl : Tp.denote p (.tuple nameOpt fieldTps)) (n : Fin fieldTps.length) :
  Tp.denote p $ fieldTps.get n := match fieldTps with
-  | _ :: _ => match tpl, n with
+  | _ :: tps => match tpl, n with
     | Prod.mk a _, Fin.mk 0 _ => a
-    | _, Fin.mk (.succ n') _ => tupleNth tpl.snd (Fin.mk n' _) (nameOpt := nameOpt)
+    | _, Fin.mk (.succ n') _ => @tupleNth p nameOpt tps tpl.snd (Fin.mk n' (by aesop))
+
+example : ((tupleNth p nameOpt (List.replicate 7 $ .u 16) (0, 1, 2, 3, 4, 5, 6, ())) $ Fin.mk 4 (by simp_all)) = BitVec.ofNat _ 4 := by rfl
 
 inductive projectTupleOmni : Omni where
 | mk {p st} {n : Fin fieldTps.length} {tpl Q} :
-  Q (some (st, tupleNth tpl n)) →
+  Q (some (st, tupleNth p _ fieldTps tpl n)) →
   projectTupleOmni p st [.tuple _ fieldTps] (fieldTps.get n) h![tpl] Q
 
 def projectTuple : Builtin := {
@@ -55,27 +58,27 @@ def projectTuple : Builtin := {
     repeat apply Exists.intro <;> tauto
 }
 
-def structFieldProjector (fieldTps : List Tp) := (fieldName : String) → Fin fieldTps.length
+-- abbrev FieldProjector (fieldTps : List Tp) := Finmap fun _ : String => Fin fieldTps.length
 
-inductive projectStructOmni : Omni where
-| mk {p st} {proj : structFieldProjector fieldTps} {fieldName : String} {tpl Q} :
-  Q (some (st, tupleNth tpl (proj fieldName))) →
-  projectStructOmni p st [.tuple _ fieldTps] (fieldTps.get (proj fieldName)) h![tpl] Q
+-- inductive projectStructOmni : Omni where
+-- | mk {p st} {proj : FieldProjector fieldTps} {fieldName : String} {tpl Q} :
+--   (proj.lookup fieldName) = some idx → Q (some (st, tupleNth p _ fieldTps tpl idx)) →
+--   projectStructOmni p st [.tuple _ fieldTps] (fieldTps.get idx) h![tpl] Q
 
-def projectStruct : Builtin := {
-  omni := projectStructOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type projectStructOmni
-    tauto
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type projectStructOmni
-    constructor
-    simp only
-    repeat apply Exists.intro <;> tauto
-}
+-- def projectStruct : Builtin := {
+--   omni := projectStructOmni
+--   conseq := by
+--     unfold omni_conseq
+--     intros
+--     cases_type projectStructOmni
+--     constructor <;> tauto
+--   frame := by
+--     unfold omni_frame
+--     intros
+--     cases_type projectStructOmni
+--     constructor
+--     simp only
+--     repeat apply Exists.intro <;> tauto
+-- }
 
 end Lampe.Builtin
