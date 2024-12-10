@@ -223,3 +223,8 @@ example {p} {x : Tp.denote p Tp.field} :
   steps
   sl
   aesop
+
+nr_struct_def Pair <> {
+  a : Field,
+  b : Field
+}

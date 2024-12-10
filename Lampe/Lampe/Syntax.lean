@@ -121,6 +121,7 @@ syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
 syntax nr_trait_fn_def := "fn" nr_fn_decl
 syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
+syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
 
 def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'): Expr rep tp' :=
   let refDef := Expr.letIn definition fun v => Expr.call h![] _ (tp.ref) (.builtin .ref) h![v]
@@ -294,9 +295,22 @@ def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
   pure (traitName, syn)
 | _ => throwUnsupportedSyntax
 
+def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (name : String) : Syntax → m (TSyntax `term)
+| `(nr_struct_def| < $generics,* > { $params,* }) => do
+  let genericKinds ← mkListLit (← generics.getElems.toList.mapM fun _ => `(Kind.type))
+  let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
+  let fieldTypes ← params.getElems.toList.mapM fun paramSyn => match paramSyn with
+    | `(nr_param_decl| $_:ident : $ty:nr_type) => mkNrType ty
+    | _ => throwUnsupportedSyntax
+  let fieldTypes ← `(fun gs => match gs with | $(← mkHListLit generics) => $(← mkListLit fieldTypes))
+  let syn ← `(Struct.mk $(Syntax.mkStrLit name) $genericKinds $fieldTypes)
+  pure syn
+| _ => throwUnsupportedSyntax
+
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
   Elab.Term.elabTerm term.raw none
+
 elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
   let stx ← `($((←mkFnDecl fn).2).fn)
   Elab.Term.elabTerm stx none
@@ -306,9 +320,14 @@ elab "nr_def" decl:nr_fn_decl : command => do
   let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
-elab "nr_trait_impl[" def_name:ident "]" impl:nr_trait_impl : command => do
+elab "nr_trait_impl[" defName:ident "]" impl:nr_trait_impl : command => do
   let (name, impl) ← mkTraitImpl impl
-  let decl ← `(def $def_name : String × Lampe.TraitImpl := ($(Syntax.mkStrLit name), $impl))
+  let decl ← `(def $defName : String × Lampe.TraitImpl := ($(Syntax.mkStrLit name), $impl))
   Elab.Command.elabCommand decl
+
+elab "nr_struct_def" defName:ident defn:nr_struct_def : command => do
+  let name := defName.getId.toString
+  let defn ← `(def $defName := $(← mkStructDef name defn))
+  Elab.Command.elabCommand defn
 
 end Lampe
