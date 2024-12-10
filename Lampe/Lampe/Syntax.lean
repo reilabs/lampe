@@ -12,6 +12,7 @@ import Lampe.Builtin.Field
 import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
+import Lampe.Builtin.Struct
 
 namespace Lampe
 
@@ -262,7 +263,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let argExprs ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $expr : $_) => pure expr | _ => throwUnsupportedSyntax
   let structName ← mkNrIdent structName
   mkArgs argExprs fun argVals => do
-    wrapSimple (←`(@Lampe.Expr.struct _ $(Syntax.mkStrLit structName) $(←mkListLit argTps) $(←mkHListLit argVals))) vname k
+    -- wrapSimple (←`(@Lampe.Expr.struct _ $(Syntax.mkStrLit structName) $(←mkListLit argTps) $(←mkHListLit argVals))) vname k
+    wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $(←mkListLit argTps)) (.builtin Builtin.mkStruct) $(←mkHListLit argVals))) vname k
 | _ => throwUnsupportedSyntax
 
 end

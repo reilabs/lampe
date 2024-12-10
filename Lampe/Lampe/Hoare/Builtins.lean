@@ -9,6 +9,7 @@ import Lampe.Builtin.Field
 import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
+import Lampe.Builtin.Struct
 
 namespace Lampe.STHoare
 
@@ -439,6 +440,11 @@ theorem writeRef_intro:
     simp [Finmap.union_singleton]
   . simp_all
 
+-- Struct
+
+theorem mkStruct_intro : STHoarePureBuiltin p Γ Builtin.mkStruct (by tauto) fieldExprs (a := (name, fieldTps)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
 
 -- Misc
 

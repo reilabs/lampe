@@ -235,3 +235,9 @@ example : Pair_b = Fin.mk 1 (by tauto) := by rfl
 nr_def structConstruct<>(a : Field, b : Field) -> struct Pair<Field> {
   @Pair { a : Field, b : Field }
 }
+
+example {p} {a b : Tp.denote p .field} :
+  STHoare p Γ ⟦⟧ (structConstruct.fn.body _ h![] |>.body h![a, b]) (fun v => v.fst = a ∧ v.snd = (b, ())) := by
+  simp only [structConstruct]
+  steps
+  aesop

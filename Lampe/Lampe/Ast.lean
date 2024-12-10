@@ -44,7 +44,6 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
 | lambda : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep .lambdaRef
-| struct : (name : String) → (fieldTps : List Tp) → (fieldArgs : HList rep fieldTps) → Expr rep (.tuple (some name) fieldTps)
 
 structure Lambda (rep : Tp → Type) where
   argTps : List Tp
@@ -84,12 +83,5 @@ structure TraitImpl where
 @[reducible]
 def Struct.tp (s: Struct) : HList Kind.denote s.genericKinds → Tp :=
   fun generics => .tuple (some s.name) $ s.fieldTypes generics
-
-@[reducible]
-def Struct.constructor (s: Struct) :
-  (generics : HList Kind.denote s.genericKinds) →
-  HList rep (s.fieldTypes generics) →
-  Expr rep (s.tp generics) :=
-  fun generics fieldExprs => .struct s.name (s.fieldTypes generics) fieldExprs
 
 end Lampe
