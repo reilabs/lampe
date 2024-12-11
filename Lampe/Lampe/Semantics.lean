@@ -25,13 +25,13 @@ inductive TraitResolvable (Γ : Env): TraitImplRef → Prop where
   TraitResolvable Γ ref
 
 inductive TraitResolution (Γ : Env): TraitImplRef → List (Ident × Function) → Prop where
-| ok {ref impl}:
-  (ref.trait.name, impl) ∈ Γ.traits →
-  (ktc : ref.trait.traitGenericKinds = impl.traitGenericKinds) →
-  (implGenerics : HList Kind.denote impl.implGenericKinds) →
-  (ktc ▸ ref.trait.traitGenerics = impl.traitGenerics implGenerics) →
-  ref.self = impl.self implGenerics →
-  (∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) →
+| ok {ref impl}
+  (h_mem : (ref.trait.name, impl) ∈ Γ.traits)
+  (ktc : ref.trait.traitGenericKinds = impl.traitGenericKinds)
+  (implGenerics : HList Kind.denote impl.implGenericKinds)
+  (_ : ktc ▸ ref.trait.traitGenerics = impl.traitGenerics implGenerics)
+  (_ : ref.self = impl.self implGenerics)
+  (_ : ∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) :
   TraitResolution Γ ref (impl.impl implGenerics)
 
 inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where

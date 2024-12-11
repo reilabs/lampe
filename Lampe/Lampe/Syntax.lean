@@ -104,7 +104,14 @@ syntax "*(" nr_expr ")" : nr_expr
 syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr
 syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
 
+syntax nr_typed_expr := nr_expr ":" nr_type
+syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_typed_expr,* ")" ":" nr_type : nr_expr
+
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
+syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
+syntax nr_trait_fn_def := "fn" nr_fn_decl
+syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
+  "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
 
 def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'): Expr rep tp' :=
   let refDef := Expr.letIn definition fun v => Expr.call h![] _ (tp.ref) (.builtin .ref) h![v]
@@ -213,13 +220,24 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     | _ => throwUnsupportedSyntax)
   let body ← mkExpr lambdaBody none fun x => ``(Lampe.Expr.var $x)
   wrapSimple (←`(Lampe.Expr.lambda $argTps $outTp (fun $args => $body))) vname k
-| `(nr_expr| ^ $i:ident ($args,*): $tp) => do
+| `(nr_expr| ^ $i:ident ($args,*) : $tp) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.lambda $i) $(←mkHListLit argVals))) vname k
+| `(nr_expr| ( $selfTp as $traitName < $traitGenVals,* > ) :: $methodName < $callGenVals,* > ( $args,* ) : $tp) => do
+  let argTps ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $_ : $ty) => mkNrType ty | _ => throwUnsupportedSyntax
+  let argExprs ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $expr : $_) => pure expr | _ => throwUnsupportedSyntax
+  let callGenKinds ← mkListLit (←callGenVals.getElems.toList.mapM fun _ => `(Kind.type))
+  let callGenVals ← mkHListLit (←callGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+  let traitGenKinds ← mkListLit (←traitGenVals.getElems.toList.mapM fun _ => `(Kind.type))
+  let traitGenVals ← mkHListLit (←traitGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+  let methodName ← mkNrIdent methodName
+  let traitName ← mkNrIdent traitName
+  mkArgs argExprs fun argVals => do
+    wrapSimple (←`(@Lampe.Expr.call _ $callGenKinds $callGenVals $(←mkListLit argTps) $(←mkNrType tp)
+      (.trait ⟨⟨⟨$(Syntax.mkStrLit traitName), $traitGenKinds, $traitGenVals⟩, $(←mkNrType selfTp)⟩, $(Syntax.mkStrLit methodName)⟩) $(←mkHListLit argVals))) vname k
 | _ => throwUnsupportedSyntax
 
 end
-
 
 def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (syn : Syntax) :  m (String × TSyntax `term) := match syn with
 | `(nr_fn_decl| $name < $generics,* > ( $params,* ) -> $outTp { $bExprs;* }) => do
@@ -237,6 +255,36 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
   pure (name, syn)
 | _ => throwUnsupportedSyntax
 
+def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m (String × TSyntax `term)
+| `(nr_trait_impl| < $generics,* > $traitName < $traitGenVals,* > for $targetType where $constraints,* { $fns;* }) => do
+  let implGenericKinds ← mkListLit (← generics.getElems.toList.mapM fun _ => `(Kind.type))
+  let traitGenValKinds ← mkListLit (← traitGenVals.getElems.toList.mapM fun _ => `(Kind.type))
+  let implGenerics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
+  let traitGenVals ← traitGenVals.getElems.toList.mapM fun tyVar => mkNrType tyVar
+  let traitName ← mkNrIdent traitName
+  let fnDecls ← mkListLit (← fns.getElems.toList.mapM fun fnSyn => match fnSyn with
+    | `(nr_trait_fn_def| fn $fnDecl) => do
+      let fnDecl ← mkFnDecl fnDecl
+      `(Prod.mk $(Syntax.mkStrLit fnDecl.1) $(fnDecl.2).fn)
+    | _ => throwUnsupportedSyntax)
+  let constraints ← constraints.getElems.mapM fun constraint => match constraint with
+    | `(nr_trait_constraint| $ty : $tr < $tgVals,* >) => do
+      let traitName ← mkNrIdent tr
+      let tgValKinds ← mkListLit (← tgVals.getElems.toList.mapM fun _ => `(Kind.type))
+      let tgVals ← tgVals.getElems.toList.mapM fun tyVar => mkNrType tyVar
+      `(⟨⟨$(mkIdent $ Name.mkSimple traitName), $tgValKinds, $(←mkHListLit tgVals)⟩, $(←mkNrType ty)⟩)
+    | _ => throwUnsupportedSyntax
+  let targetType ← mkNrType targetType
+  let syn : TSyntax `term ← `(TraitImpl.mk
+    (traitGenericKinds := $traitGenValKinds)
+    (implGenericKinds := $implGenericKinds)
+    (traitGenerics := fun gs => match gs with | $(←mkHListLit implGenerics) => $(←mkHListLit traitGenVals))
+    (constraints := fun gs => match gs with | $(←mkHListLit implGenerics) => $(←mkListLit constraints.toList))
+    (self := fun gs => match gs with | $(←mkHListLit implGenerics) => $targetType)
+    (impl := fun gs => match gs with | $(←mkHListLit implGenerics) => $fnDecls))
+  pure (traitName, syn)
+| _ => throwUnsupportedSyntax
+
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
   Elab.Term.elabTerm term.raw none
@@ -247,6 +295,11 @@ elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
 elab "nr_def" decl:nr_fn_decl : command => do
   let (name, decl) ← mkFnDecl decl
   let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
+  Elab.Command.elabCommand decl
+
+elab "nr_trait_impl[" def_name:ident "]" impl:nr_trait_impl : command => do
+  let (name, impl) ← mkTraitImpl impl
+  let decl ← `(def $def_name : String × Lampe.TraitImpl := ($(Syntax.mkStrLit name), $impl))
   Elab.Command.elabCommand decl
 
 end Lampe
