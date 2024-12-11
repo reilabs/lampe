@@ -440,27 +440,15 @@ theorem writeRef_intro:
     simp [Finmap.union_singleton]
   . simp_all
 
--- Struct
+-- Struct/tuple
 
-theorem mkStruct_intro : STHoarePureBuiltin p Γ Builtin.mkStruct (by tauto) fieldExprs (a := (name, fieldTps)) := by
+theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) fieldExprs (a := (name, fieldTps)) := by
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem projectTuple_intro {n : Fin l} {fieldTps : List Tp} {tpl} {hl : l = fieldTps.length} {ho : outTp = (fieldTps.get (hl ▸ n))} :
-  STHoare p Γ ⟦⟧ (.call h![] [.tuple nameOpt fieldTps] outTp (.builtin $ .projectTuple n) h![tpl])
-    (fun v => v = ho ▸ Lampe.Builtin.tupleNth p nameOpt fieldTps tpl (hl ▸ n)) := by
-  unfold STHoare THoare
-  intros
-  constructor
-  constructor
-  unfold mapToValHeapCondition
-  simp_all only [SLP.true_star, List.get_eq_getElem, Option.map_some']
-  rename_i h
-  apply SLP.ent_star_top at h
-  rotate_left 1
-  exact hl
-  exact ho
-  simp_all
+theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
 
 -- Misc
 

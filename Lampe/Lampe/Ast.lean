@@ -31,10 +31,6 @@ inductive FunctionIdent (rep : Tp → Type) : Type where
 | lambda : rep .lambdaRef → FunctionIdent rep
 | trait : TraitMethodImplRef → FunctionIdent rep
 
-inductive Member : Tp → List Tp → Type where
-| head : Member tp (tp :: tps)
-| tail : Member tp tps → Member tp (tp' :: tps)
-
 inductive Expr (rep : Tp → Type) : Tp → Type where
 | lit : (tp : Tp) → Nat → Expr rep tp
 | var : rep tp → Expr rep tp
@@ -83,12 +79,5 @@ structure TraitImpl where
 @[reducible]
 def Struct.tp (s: Struct) : HList Kind.denote s.genericKinds → Tp :=
   fun generics => .tuple (some s.name) $ s.fieldTypes generics
-
--- @[reducible]
--- def Struct.constructor (s: Struct) :
---   (generics : HList Kind.denote s.genericKinds) →
---   HList rep (s.fieldTypes generics) →
---   Expr rep (s.tp generics) :=
---   fun generics fieldExprs => .struct s.name (s.fieldTypes generics) fieldExprs
 
 end Lampe

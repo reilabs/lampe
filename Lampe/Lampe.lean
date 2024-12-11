@@ -229,9 +229,6 @@ nr_struct_def Pair <I> {
   b : I
 }
 
-example : Pair_a = Fin.mk 0 (by tauto) := by rfl
-example : Pair_b = Fin.mk 1 (by tauto) := by rfl
-
 nr_def structConstruct<>(a : Field, b : Field) -> struct Pair<Field> {
   @Pair { a : Field, b : Field }
 }
@@ -244,11 +241,11 @@ example {p} {a b : Tp.denote p .field} :
 
 nr_def structProjection<>(x : Field, y : Field) -> Field {
   let s = @Pair { x : Field, y : Field };
-  @Pair s[a]
+  @Pair<Field> s[a]
 }
 
 example {p} {x y : Tp.denote p .field} :
   STHoare p Γ ⟦⟧ (structProjection.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [structProjection]
-  steps <;> try rfl
+  steps
   aesop

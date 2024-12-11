@@ -120,7 +120,7 @@ syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 
 syntax nr_typed_expr := nr_expr ":" nr_type
 syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_typed_expr,* ")" ":" nr_type : nr_expr
-syntax "@" nr_ident ident "[" ident "]"  : nr_expr -- Struct access
+syntax "@" nr_ident "<" nr_type,* ">" ident "[" ident "]"  : nr_expr -- Struct access
 syntax "@" nr_ident "{" sepBy(nr_typed_expr, ",", ",", allowTrailingSep) "}" : nr_expr -- Struct constructor
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
@@ -260,10 +260,13 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let argExprs ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $expr : $_) => pure expr | _ => throwUnsupportedSyntax
   let structName ← mkNrIdent structName
   mkArgs argExprs fun argVals => do
-    wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $(←mkListLit argTps)) (.builtin Builtin.mkStruct) $(←mkHListLit argVals))) vname k
-| `(nr_expr| @ $structName:nr_ident $ref:ident [ $structField:ident ]) => do
+    wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $(←mkListLit argTps)) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
+| `(nr_expr| @ $structName:nr_ident  < $structGenVals,* > $ref:ident [ $structField:ident ]) => do
+  let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
   let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
-  `(.call h![] [.tuple _ _] _ (.builtin (.projectTuple $accessor)) h![$ref])
+  let structName := mkIdent $ Name.mkSimple (←mkNrIdent structName)
+  let accessorSyn ← `($accessor (Struct.fieldTypes $structName $structGenValsSyn) (by tauto))
+  `(.call h![] [.tuple _ _] _ (.builtin (.projectTuple $accessorSyn)) h![$ref])
 | _ => throwUnsupportedSyntax
 
 end
@@ -329,12 +332,10 @@ def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
 
 def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (List (Lean.Ident × TSyntax `term))
 | `(nr_struct_def| < $_,* > { $params,* }) => do
-  let numFields := params.getElems.toList.length
   params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
     | `(nr_param_decl| $paramName:ident : $_:nr_type) => do
-      let numFields := Syntax.mkNumLit (toString numFields)
       let fieldIdx := Syntax.mkNumLit (toString idx)
-      let paramIdxSyn ← `(@Fin.mk $numFields $fieldIdx (by tauto))
+      let paramIdxSyn ← `(fun tps h => newMember tps (Fin.mk $fieldIdx h))
       pure (mkFieldName structName.getId.toString paramName.getId.toString, paramIdxSyn)
     | _ => throwUnsupportedSyntax
 | _ => throwUnsupportedSyntax
