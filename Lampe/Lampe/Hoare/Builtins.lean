@@ -17,13 +17,13 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   constructor
   cases em (desc a args).fst
   . apply Builtin.genericPureOmni.ok
-    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+    . simp_all only [mapToVHCond, SLP.true_star, exists_const]
       apply SLP.ent_star_top
       simp_all only [SLP.true_star, exists_const]
     . tauto
   . apply Builtin.genericPureOmni.err
     . tauto
-    . simp_all [mapToValHeapCondition]
+    . simp_all [mapToVHCond]
 
 lemma pureBuiltin_intro_consequence
     {A : Type} {a : A} {sgn desc args} {Q : Tp.denote p outTp → Prop}
@@ -417,7 +417,7 @@ theorem writeRef_intro:
   apply And.intro
   . rename_i st₁ st₂ _ _
     have _ : r ∈ st₁.vals := by rw [hs]; tauto
-    simp_all [State.membership_in_val]
+    simp_all [State.mem_iff_mem_val]
   simp only [Finmap.insert_eq_singleton_union, ←Finmap.union_assoc, Finmap.union_singleton, SLP.star_assoc]
   rename_i st₁ st₂ _ _
   exists (⟨Finmap.singleton r ⟨tp, v'⟩, st₁.lambdas⟩), ?_

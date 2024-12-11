@@ -328,16 +328,13 @@ theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp
       obtain ⟨hi₁, _, _, hi₂⟩ := h₃
       simp only [State.lmbSingleton] at hi₂
       simp only [LawfulHeap.disjoint] at hi₁
-      obtain ⟨_, hj₁⟩ := hi₁
-      rw [hi₂] at hj₁
-      tauto
+      aesop
     simp [Finmap.lookup_union_right (by tauto)]
   . apply consequence <;> tauto
     apply consequence_frame_left
-    rotate_left 2
-    exact P
+    simp_all only [SLP.star_assoc]
     exact h
-    simp only [SLP.true_star, SLP.entails_self]
+    apply SLP.entails_self
 
 theorem lam_intro :
   STHoare p Γ ⟦⟧ (.lambda argTps outTp lambdaBody)
@@ -352,9 +349,8 @@ theorem lam_intro :
   exists ⟨∅, Finmap.singleton r lambda⟩, st
   refine ⟨?_, ?_, ?_, ?_⟩
   . simp only [LawfulHeap.disjoint]
-    refine ⟨?_, ?_⟩
-    . apply Finmap.disjoint_empty
-    . apply Finmap.singleton_disjoint_of_not_mem (by tauto)
+    refine ⟨?_, by simp_all⟩
+    apply Finmap.disjoint_empty
   . simp only [State.union_parts, State.mk.injEq]
     refine ⟨by simp_all, ?_⟩
     have hd : Finmap.Disjoint st.lambdas (Finmap.singleton r lambda) := by
