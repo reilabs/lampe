@@ -149,7 +149,7 @@ impl LeanEmitter {
         // We then emit all definitions that correspond to the given module.
         for typedef in module.type_definitions().chain(module.value_definitions()) {
             let definition = match typedef {
-                ModuleDefId::FunctionId(id) => self.emit_function_def(ind, id, "nr_def")?,
+                ModuleDefId::FunctionId(id) => self.emit_function_def(ind, id, "nr_def", true)?,
                 ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id, "nr_struct_def")?,
                 ModuleDefId::GlobalId(id) => self.emit_global(ind, id)?,
                 ModuleDefId::TypeAliasId(id) => self.emit_alias(id)?,
@@ -214,7 +214,7 @@ impl LeanEmitter {
         ind.indent();
         let mut method_strings = Vec::<String>::default();
         for func_id in trait_impl.methods.iter() {
-            let method_string = self.emit_function_def(ind, func_id.clone(), "fn")?;
+            let method_string = self.emit_function_def(ind, func_id.clone(), "fn", false)?;
             method_strings.push(method_string);
         }
         ind.dedent()?;
@@ -381,6 +381,7 @@ impl LeanEmitter {
         ind: &mut Indenter,
         func: FuncId,
         prefix: &str,
+        qualify_self: bool,
     ) -> Result<String> {
         // Get the various parameters
         let func_data = self.context.function_meta(&func);
@@ -392,7 +393,7 @@ impl LeanEmitter {
         let parameters = self.function_param_string(&func_data.parameters)?;
         let ret_type = self.emit_fully_qualified_type(func_data.return_type());
         let assoc_trait_string = match func_data.trait_impl {
-            Some(trait_id) => {
+            Some(trait_id) if qualify_self => {
                 let impl_data = self.context.def_interner.get_trait_implementation(trait_id);
                 let impl_data = impl_data.borrow();
                 let trait_data = self.context.def_interner.get_trait(impl_data.trait_id);
@@ -416,7 +417,7 @@ impl LeanEmitter {
 
                 format!("({impl_type} as {fq_trait_name})::")
             }
-            None => String::new(),
+            _ => String::new(),
         };
 
         // Generate the function body ready for insertion
@@ -425,7 +426,7 @@ impl LeanEmitter {
         ind.dedent()?;
 
         let self_type_str = match &func_data.self_type {
-            Some(ty) => {
+            Some(ty) if qualify_self => {
                 let fq_type = self.emit_fully_qualified_type(ty);
                 format!("{fq_type}::")
             }
