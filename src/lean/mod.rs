@@ -31,7 +31,10 @@ use crate::{
 };
 
 /// The stringified Lean definitions corresponding to a Noir module.
-pub type ModuleEntries = Vec<String>;
+pub struct ModuleEntries {
+    pub impl_refs: Vec<String>,
+    pub defs: Vec<String>,
+}
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
 /// intermediate representation.
@@ -102,6 +105,7 @@ impl LeanEmitter {
     pub fn emit(&self) -> Result<String> {
         let mut indenter = Indenter::default();
         let mut output = Vec::new();
+        let mut all_impl_refs = HashSet::new();
 
         // Emit definitions for each of the modules in the context in an arbitrary
         // iteration order
@@ -111,8 +115,9 @@ impl LeanEmitter {
             .expect("Root crate was missing in compilation context")
             .modules()
         {
-            let new_defs = self.emit_module(&mut indenter, module)?;
-            output.extend(new_defs);
+            let ModuleEntries { impl_refs, defs } = self.emit_module(&mut indenter, module)?;
+            output.extend(defs);
+            all_impl_refs.extend(impl_refs);
         }
 
         // Remove all entries that are duplicated as we do not necessarily have the
@@ -120,9 +125,14 @@ impl LeanEmitter {
         let mut set: HashSet<String> = HashSet::new();
         set.extend(output);
         let no_dupes: Vec<String> = set.into_iter().collect();
+        let module_defs = no_dupes.join("\n");
+
+        let env_funcs = "";
+        let env_traits = all_impl_refs.into_iter().join(", ");
+        let env_def = format!("def env := Lampe.Env.mk [{env_funcs}] [{env_traits}]");
 
         // Smoosh the de-duplicated entries back together to yield a file.
-        Ok(no_dupes.join("\n"))
+        Ok(format!("{module_defs}\n\n{env_def}"))
     }
 
     /// Emits the Lean source code corresponding to a Noir module based on the
@@ -135,21 +145,31 @@ impl LeanEmitter {
         let mut accumulator = Vec::new();
 
         // We start by emitting the trait implementations.
-        for (_, trait_impl) in self
+        let mut impl_ids = Vec::new();
+        for (id, trait_impl) in self
             .context
             .def_interner
             .trait_implementations
             .iter()
             .filter(|(_, t)| self.knows_file(t.borrow().file))
         {
-            let trait_impl = self.emit_trait_impl(ind, &trait_impl.borrow(), "nr_trait_impl")?;
+            let impl_id = format!("impl_{}", id.0);
+            let trait_impl =
+                self.emit_trait_impl(ind, &trait_impl.borrow(), &impl_id, "nr_trait_impl")?;
             accumulator.push(trait_impl);
+            impl_ids.push(impl_id);
         }
 
         // We then emit all definitions that correspond to the given module.
         for typedef in module.type_definitions().chain(module.value_definitions()) {
             let definition = match typedef {
-                ModuleDefId::FunctionId(id) => self.emit_function_def(ind, id, "nr_def", true)?,
+                ModuleDefId::FunctionId(id) => {
+                    // Skip the trait methods, as these are already handled by `emit_trait_impl`.
+                    if self.context.function_meta(&id).trait_impl.is_some() {
+                        continue;
+                    }
+                    self.emit_function_def(ind, id, "nr_def", true, true)?
+                }
                 ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id, "nr_struct_def")?,
                 ModuleDefId::GlobalId(id) => self.emit_global(ind, id)?,
                 ModuleDefId::TypeAliasId(id) => self.emit_alias(id)?,
@@ -163,11 +183,16 @@ impl LeanEmitter {
             accumulator.push(definition.to_string());
         }
 
-        Ok(accumulator
+        let defns = accumulator
             .into_iter()
             .filter(|d| !d.is_empty())
             .map(|d| format!("{d}\n"))
-            .collect())
+            .collect();
+
+        Ok(ModuleEntries {
+            impl_refs: impl_ids,
+            defs: defns,
+        })
     }
 
     /// Emits the string indicating that a given type has explicitly implemented
@@ -185,6 +210,7 @@ impl LeanEmitter {
         &self,
         ind: &mut Indenter,
         trait_impl: &TraitImpl,
+        impl_id: &str,
         prefix: &str,
     ) -> Result<String> {
         let trait_def_id = trait_impl.trait_id;
@@ -214,20 +240,21 @@ impl LeanEmitter {
         ind.indent();
         let mut method_strings = Vec::<String>::default();
         for func_id in trait_impl.methods.iter() {
-            let method_string = self.emit_function_def(ind, func_id.clone(), "fn", false)?;
+            let method_string = self.emit_function_def(ind, func_id.clone(), "fn", false, false)?;
             method_strings.push(method_string);
         }
         ind.dedent()?;
 
         let methods = method_strings.join(";\n");
         let result = formatdoc! {
-            "{prefix}[_] <{all_generics_str}> {full_name}<{trait_gens}> for {target} where {{
+            "{prefix}[{impl_id}] <{all_generics_str}> {full_name}<{trait_gens}> for {target} where {{
                 {methods} 
             }}"
         };
         Ok(result)
     }
 
+    /// Collects the named generics from a type recursively.
     pub fn collect_generics(&self, typ: &Type) -> Vec<String> {
         match typ {
             Type::Array(inner_type, _)
@@ -239,13 +266,14 @@ impl LeanEmitter {
             Type::Struct(_, generics) | Type::TraitAsType(_, _, generics) => {
                 generics.iter().flat_map(|g| self.collect_generics(g)).collect_vec()
             }
-            Type::Function(_, _, _) => {
-                unimplemented!("cannot collect generics from a function type (yet)")
-            }
-            // In all the other cases we can use the default printing as internal type vars are
-            // non-existent, constrained to be types we don't care about customizing, or are
-            // non-existent in the phase the emitter runs after.
-            _ => Vec::from([format!("{typ}")]),
+            Type::Bool
+            | Type::Integer(..)
+            | Type::String(..)
+            | Type::FmtString(..)
+            | Type::Unit
+            | Type::FieldElement => Vec::new(),
+            Type::NamedGeneric(..) => Vec::from([format!("{typ}")]),
+            _ => unimplemented!("cannot collect generics from {typ} (yet)"),
         }
     }
 
@@ -373,6 +401,14 @@ impl LeanEmitter {
     /// Emits the Lean source code corresponding to a Noir function at the
     /// module level.
     ///
+    /// If `qualify_trait` is set to `true` and if the function
+    /// identified by `func` is from a trait impl, then the trait path is prepended
+    /// to the function name.
+    ///
+    /// If `qualify_self` is set to `true` and if the function
+    /// identified by `func` is from an impl, then the trait path is prepended
+    /// to the function name.
+    ///
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
@@ -381,7 +417,8 @@ impl LeanEmitter {
         ind: &mut Indenter,
         func: FuncId,
         prefix: &str,
-        qualify_self: bool,
+        qualify_trait: bool,
+        qualify_self_typ: bool,
     ) -> Result<String> {
         // Get the various parameters
         let func_data = self.context.function_meta(&func);
@@ -393,7 +430,7 @@ impl LeanEmitter {
         let parameters = self.function_param_string(&func_data.parameters)?;
         let ret_type = self.emit_fully_qualified_type(func_data.return_type());
         let assoc_trait_string = match func_data.trait_impl {
-            Some(trait_id) if qualify_self => {
+            Some(trait_id) if qualify_trait => {
                 let impl_data = self.context.def_interner.get_trait_implementation(trait_id);
                 let impl_data = impl_data.borrow();
                 let trait_data = self.context.def_interner.get_trait(impl_data.trait_id);
@@ -426,7 +463,7 @@ impl LeanEmitter {
         ind.dedent()?;
 
         let self_type_str = match &func_data.self_type {
-            Some(ty) if qualify_self => {
+            Some(ty) if qualify_self_typ => {
                 let fq_type = self.emit_fully_qualified_type(ty);
                 format!("{fq_type}::")
             }
@@ -440,7 +477,7 @@ impl LeanEmitter {
             }}"
         };
 
-        if result.contains("{prefix} _::") {
+        if result.contains(&format!("{prefix} _::")) {
             // This is a dummy trait method that we don't care about, so we discard it.
             Ok(String::new())
         } else {
@@ -491,8 +528,9 @@ impl LeanEmitter {
                     .map(|g| self.emit_fully_qualified_type(g))
                     .collect_vec();
                 let generics_str = generics_resolved.join(", ");
+                let struct_prefix = "struct ";
 
-                format!("{name}<{generics_str}>")
+                format!("{struct_prefix}{name}<{generics_str}>")
             }
             Type::TraitAsType(trait_id, name, generics) => {
                 let module_id = trait_id.0;
@@ -696,13 +734,13 @@ impl LeanEmitter {
                 let struct_def = struct_def.borrow();
                 let name = &struct_def.name;
                 let fields = constructor.fields;
-                let generics = constructor.struct_generics;
+                //let generics = constructor.struct_generics;
 
-                let generics_strings = generics
-                    .iter()
-                    .map(|generic| self.emit_fully_qualified_type(generic))
-                    .collect_vec();
-                let generics_string = generics_strings.join(", ");
+                //let generics_strings = generics
+                //    .iter()
+                //    .map(|generic| self.emit_fully_qualified_type(generic))
+                //    .collect_vec();
+                //let generics_string = generics_strings.join(", ");
 
                 let fields_strings: Vec<String> = fields
                     .iter()
@@ -714,7 +752,7 @@ impl LeanEmitter {
                 let fields_string = ind.run(fields_strings.join(",\n"));
 
                 let result = formatdoc! {
-                    r"{name}.mk <{generics_string}> {{
+                    r"@{name} {{
                     {fields_string}
                     }}"
                 };
