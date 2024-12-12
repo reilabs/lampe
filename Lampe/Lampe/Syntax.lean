@@ -172,8 +172,8 @@ def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (
   let rest ← k ident
   `(Lampe.Expr.letIn $e fun $ident => $rest)
 
-def mkFieldName (structName : String) (paramName : String) : Lean.Ident :=
-  mkIdent $ Name.mkSimple (structName |>.append "_" |>.append paramName)
+def mkFieldName (structName : String) (fieldName : String) : Lean.Ident :=
+  mkIdent $ Name.mkSimple (structName |>.append "#" |>.append fieldName)
 
 mutual
 
@@ -264,8 +264,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| @ $structName:nr_ident  < $structGenVals,* > $ref:ident [ $structField:ident ]) => do
   let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
   let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
-  let structName := mkIdent $ Name.mkSimple (←mkNrIdent structName)
-  let accessorSyn ← `($accessor (Struct.fieldTypes $structName $structGenValsSyn) (by tauto))
+  let accessorSyn ← `($accessor $structGenValsSyn)
   `(.call h![] [.tuple _ _] _ (.builtin (.projectTuple $accessorSyn)) h![$ref])
 | _ => throwUnsupportedSyntax
 
@@ -330,13 +329,22 @@ def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
   pure syn
 | _ => throwUnsupportedSyntax
 
-def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (List (Lean.Ident × TSyntax `term))
-| `(nr_struct_def| < $_,* > { $params,* }) => do
+def mkRecMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
+| .zero => `(Member.head)
+| .succ n' => do `(Member.tail $(←mkRecMember n'))
+
+def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (List $ TSyntax `command)
+| `(nr_struct_def| < $generics,* > { $params,* }) => do
+  let genericKinds ← mkListLit (←generics.getElems.toList.mapM fun _ => `(Kind.type))
+  let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
   params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
-    | `(nr_param_decl| $paramName:ident : $_:nr_type) => do
-      let fieldIdx := Syntax.mkNumLit (toString idx)
-      let paramIdxSyn ← `(fun tps h => newMember tps (Fin.mk $fieldIdx h))
-      pure (mkFieldName structName.getId.toString paramName.getId.toString, paramIdxSyn)
+    | `(nr_param_decl| $paramName:ident : $paramType:nr_type) => do
+      let paramDefTy ← `(match generics with
+        | $(←mkHListLit generics) => Member $(←mkNrType paramType) (Struct.fieldTypes $structName generics))
+      let paramDefSyn ← `(match generics with
+        | $(←mkHListLit generics) => $(←mkRecMember idx))
+      let defnNameSyn := mkFieldName structName.getId.toString paramName.getId.toString
+      `(def $defnNameSyn (generics : HList Kind.denote $genericKinds) : $paramDefTy := $paramDefSyn)
     | _ => throwUnsupportedSyntax
 | _ => throwUnsupportedSyntax
 
@@ -364,8 +372,7 @@ elab "nr_struct_def" defName:ident defn:nr_struct_def : command => do
   Elab.Command.elabCommand structDefn
   -- define the field projections
   let projs ← mkStructProjector defName defn
-  _ ← projs.mapM fun (ident, syn) => do
-    let projDefn ← `(def $ident := $syn)
-    Elab.Command.elabCommand projDefn
+  _ ← projs.mapM fun cmd => do
+    Elab.Command.elabCommand cmd
 
 end Lampe
