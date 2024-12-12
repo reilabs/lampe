@@ -134,8 +134,7 @@ impl LeanEmitter {
     pub fn emit_module(&self, ind: &mut Indenter, module: &ModuleData) -> Result<ModuleEntries> {
         let mut accumulator = Vec::new();
 
-        // We start by emitting lines that signal the explicit implementation of a trait
-        // by a type.
+        // We start by emitting the trait implementations.
         for (_, trait_impl) in self
             .context
             .def_interner
@@ -143,20 +142,22 @@ impl LeanEmitter {
             .iter()
             .filter(|(_, t)| self.knows_file(t.borrow().file))
         {
-            accumulator.push(self.emit_trait_impl(&trait_impl.borrow())?);
+            let trait_impl = self.emit_trait_impl(ind, &trait_impl.borrow(), "nr_trait_impl")?;
+            accumulator.push(trait_impl);
         }
 
         // We then emit all definitions that correspond to the given module.
         for typedef in module.type_definitions().chain(module.value_definitions()) {
             let definition = match typedef {
-                ModuleDefId::FunctionId(id) => self.emit_function_def(ind, id)?,
-                ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id)?,
+                ModuleDefId::FunctionId(id) => self.emit_function_def(ind, id, "nr_def")?,
+                ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id, "nr_struct_def")?,
                 ModuleDefId::GlobalId(id) => self.emit_global(ind, id)?,
                 ModuleDefId::TypeAliasId(id) => self.emit_alias(id)?,
-                ModuleDefId::TraitId(id) => self.emit_trait(ind, id)?,
                 ModuleDefId::ModuleId(_) => {
                     unimplemented!("It is unclear what actually generates these.")
                 }
+                // Skip the trait definitions.
+                ModuleDefId::TraitId(_) => { continue },
             };
 
             accumulator.push(definition.to_string());
@@ -180,7 +181,7 @@ impl LeanEmitter {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_trait_impl(&self, trait_impl: &TraitImpl) -> Result<String> {
+    pub fn emit_trait_impl(&self, ind: &mut Indenter, trait_impl: &TraitImpl, prefix: &str) -> Result<String> {
         let trait_def_id = trait_impl.trait_id;
         let trait_data = self.context.def_interner.get_trait(trait_def_id);
         let fq_crate_name = self.fq_trait_name_from_crate_id(trait_data.crate_id, trait_def_id);
@@ -199,7 +200,22 @@ impl LeanEmitter {
             .collect_vec();
         let trait_gens = generics.join(", ");
 
-        Ok(format!("impl {full_name}<{trait_gens}> for {target};"))
+        // Emit the implemented functions.
+        ind.indent();
+        let mut method_strings = Vec::<String>::default();
+        for func_id in trait_impl.methods.iter() {
+            let method_string = self.emit_function_def(ind, func_id.clone(), "fn")?;
+            method_strings.push(method_string);
+        }
+        ind.dedent()?;
+
+        let methods = method_strings.join(";\n");
+        let result = formatdoc! {
+            "{prefix}[_] {full_name}<{trait_gens}> for {target} where {{ 
+                {methods} 
+            }}"
+        };
+        Ok(result)
     }
 
     /// Emits Lean code corresponding to a trait definition in Noir.
@@ -289,7 +305,7 @@ impl LeanEmitter {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_struct_def(&self, ind: &mut Indenter, s: StructId) -> Result<String> {
+    pub fn emit_struct_def(&self, ind: &mut Indenter, s: StructId, prefix: &str) -> Result<String> {
         let struct_data = self.context.def_interner.get_struct(s);
         let struct_data = struct_data.borrow();
         let fq_path = self
@@ -315,7 +331,7 @@ impl LeanEmitter {
         let fields_string = field_strings.join(",\n");
 
         let result = formatdoc! {
-            r"nr_struct {fq_path}<{generics_string}> {{
+            r"{prefix} {fq_path}<{generics_string}> {{
             {fields_string}
             }}"
         };
@@ -329,7 +345,7 @@ impl LeanEmitter {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_function_def(&self, ind: &mut Indenter, func: FuncId) -> Result<String> {
+    pub fn emit_function_def(&self, ind: &mut Indenter, func: FuncId, prefix: &str) -> Result<String> {
         // Get the various parameters
         let func_data = self.context.function_meta(&func);
         let generics = &func_data.all_generics;
@@ -382,12 +398,12 @@ impl LeanEmitter {
 
         // Now we can actually build our function
         let result = formatdoc! {
-            r"nr_def {assoc_trait_string}{self_type_str}{fq_path}<{generics_string}>({parameters}) -> {ret_type} {{
+            r"{prefix} {assoc_trait_string}{self_type_str}{fq_path}<{generics_string}>({parameters}) -> {ret_type} {{
             {body}
             }}"
         };
 
-        if result.contains("nr_def _::") {
+        if result.contains("{prefix} _::") {
             // This is a dummy trait method that we don't care about, so we discard it.
             Ok(String::new())
         } else {
