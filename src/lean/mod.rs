@@ -157,7 +157,7 @@ impl LeanEmitter {
                     unimplemented!("It is unclear what actually generates these.")
                 }
                 // Skip the trait definitions.
-                ModuleDefId::TraitId(_) => { continue },
+                ModuleDefId::TraitId(_) => continue,
             };
 
             accumulator.push(definition.to_string());
@@ -181,7 +181,12 @@ impl LeanEmitter {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_trait_impl(&self, ind: &mut Indenter, trait_impl: &TraitImpl, prefix: &str) -> Result<String> {
+    pub fn emit_trait_impl(
+        &self,
+        ind: &mut Indenter,
+        trait_impl: &TraitImpl,
+        prefix: &str,
+    ) -> Result<String> {
         let trait_def_id = trait_impl.trait_id;
         let trait_data = self.context.def_interner.get_trait(trait_def_id);
         let fq_crate_name = self.fq_trait_name_from_crate_id(trait_data.crate_id, trait_def_id);
@@ -200,6 +205,11 @@ impl LeanEmitter {
             .collect_vec();
         let trait_gens = generics.join(", ");
 
+        let mut all_generics = Vec::new();
+        all_generics.extend(generics.iter().cloned());
+        all_generics.extend(self.collect_generics(&trait_impl.typ));
+        let all_generics_str = all_generics.join(", ");
+
         // Emit the implemented functions.
         ind.indent();
         let mut method_strings = Vec::<String>::default();
@@ -211,11 +221,32 @@ impl LeanEmitter {
 
         let methods = method_strings.join(";\n");
         let result = formatdoc! {
-            "{prefix}[_] {full_name}<{trait_gens}> for {target} where {{ 
+            "{prefix}[_] <{all_generics_str}> {full_name}<{trait_gens}> for {target} where {{
                 {methods} 
             }}"
         };
         Ok(result)
+    }
+
+    pub fn collect_generics(&self, typ: &Type) -> Vec<String> {
+        match typ {
+            Type::Array(inner_type, _)
+            | Type::Slice(inner_type)
+            | Type::MutableReference(inner_type) => self.collect_generics(&inner_type),
+            Type::Tuple(elems) => {
+                elems.iter().flat_map(|typ| self.collect_generics(typ)).collect_vec()
+            }
+            Type::Struct(_, generics) | Type::TraitAsType(_, _, generics) => {
+                generics.iter().flat_map(|g| self.collect_generics(g)).collect_vec()
+            }
+            Type::Function(_, _, _) => {
+                unimplemented!("cannot collect generics from a function type (yet)")
+            }
+            // In all the other cases we can use the default printing as internal type vars are
+            // non-existent, constrained to be types we don't care about customizing, or are
+            // non-existent in the phase the emitter runs after.
+            _ => Vec::from([format!("{typ}")]),
+        }
     }
 
     /// Emits Lean code corresponding to a trait definition in Noir.
@@ -345,7 +376,12 @@ impl LeanEmitter {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_function_def(&self, ind: &mut Indenter, func: FuncId, prefix: &str) -> Result<String> {
+    pub fn emit_function_def(
+        &self,
+        ind: &mut Indenter,
+        func: FuncId,
+        prefix: &str,
+    ) -> Result<String> {
         // Get the various parameters
         let func_data = self.context.function_meta(&func);
         let generics = &func_data.all_generics;
