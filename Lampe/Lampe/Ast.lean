@@ -3,7 +3,7 @@ import Mathlib
 import Lampe.Tp
 import Lampe.Data.HList
 import Lampe.SeparationLogic.ValHeap
-import Lampe.Builtin
+import Lampe.Builtin.Basic
 
 namespace Lampe
 
@@ -30,10 +30,6 @@ inductive FunctionIdent (rep : Tp → Type) : Type where
 | decl : Ident → FunctionIdent rep
 | lambda : rep .lambdaRef → FunctionIdent rep
 | trait : TraitMethodImplRef → FunctionIdent rep
-
-inductive Member : Tp → List Tp → Type where
-| head : Member tp (tp :: tps)
-| tail : Member tp tps → Member tp (tp' :: tps)
 
 inductive Expr (rep : Tp → Type) : Tp → Type where
 | lit : (tp : Tp) → Nat → Expr rep tp
@@ -69,8 +65,8 @@ structure Module where
 
 structure Struct where
   name : String
-  tyArgKinds : List Kind
-  fieldTypes : HList Kind.denote tyArgKinds → List Tp
+  genericKinds : List Kind
+  fieldTypes : HList Kind.denote genericKinds → List Tp
 
 structure TraitImpl where
   traitGenericKinds : List Kind
@@ -80,15 +76,8 @@ structure TraitImpl where
   self : HList Kind.denote implGenericKinds → Tp
   impl : HList Kind.denote implGenericKinds → List (Ident × Function)
 
--- @[reducible]
--- def Struct.tp (s: Struct): HList Kind.denote s.tyArgKinds → Tp :=
---   fun tyArgs => .struct $ s.fieldTypes tyArgs
-
--- @[reducible]
--- def Struct.constructor (s: Struct):
---   (tyArgs: HList Kind.denote s.tyArgKinds) →
---   HList (Expr rep) (s.fieldTypes tyArgs) →
---   Expr rep (s.tp tyArgs) :=
---   fun _ fieldExprs => .struct fieldExprs
+@[reducible]
+def Struct.tp (s: Struct) : HList Kind.denote s.genericKinds → Tp :=
+  fun generics => .tuple (some s.name) $ s.fieldTypes generics
 
 end Lampe

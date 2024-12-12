@@ -1,8 +1,18 @@
 import Mathlib
 import Lean
 import Lampe.Ast
-import Lampe.Builtin
 import Qq
+
+import Lampe.Builtin.Arith
+import Lampe.Builtin.Array
+import Lampe.Builtin.BigInt
+import Lampe.Builtin.Bit
+import Lampe.Builtin.Cmp
+import Lampe.Builtin.Field
+import Lampe.Builtin.Memory
+import Lampe.Builtin.Slice
+import Lampe.Builtin.Str
+import Lampe.Builtin.Struct
 
 namespace Lampe
 
@@ -22,7 +32,8 @@ partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | `(nr_ident|$i:ident :: $j:nr_ident) => do pure s!"{i.getId}::{←mkNrIdent j}"
 | i => throwError "Unexpected ident {i}"
 
-syntax ident:nr_type
+syntax ident : nr_type
+syntax "struct" ident "<" nr_type,* ">" : nr_type
 syntax "${" term "}" : nr_type
 syntax nr_ident "<" nr_type,* ">" : nr_type
 syntax "[" nr_type "]" : nr_type
@@ -49,6 +60,9 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| Field) => `(Tp.field)
 | `(nr_type| Unit) => `(Tp.unit)
 | `(nr_type| $i:ident) => `($i)
+| `(nr_type| struct $i:ident < $generics,*> ) => do
+  let generics ← generics.getElems.toList.mapM mkNrType
+  `(Lampe.Struct.tp $i $(←mkHListLit generics))
 | `(nr_type| $i:nr_ident < $generics,* >) => do
   let name := mkIdent $ Name.mkSimple $ ← mkNrIdent i
   let generics ← generics.getElems.toList.mapM mkNrType
@@ -102,16 +116,19 @@ syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 syntax "(" nr_expr ")" : nr_expr
 syntax "*(" nr_expr ")" : nr_expr
 syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr
-syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
+syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 
 syntax nr_typed_expr := nr_expr ":" nr_type
 syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_typed_expr,* ")" ":" nr_type : nr_expr
+syntax "@" nr_ident "<" nr_type,* ">" ident "[" ident "]"  : nr_expr -- Struct access
+syntax "@" nr_ident "{" sepBy(nr_typed_expr, ",", ",", allowTrailingSep) "}" : nr_expr -- Struct constructor
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
 syntax nr_trait_fn_def := "fn" nr_fn_decl
 syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
+syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
 
 def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'): Expr rep tp' :=
   let refDef := Expr.letIn definition fun v => Expr.call h![] _ (tp.ref) (.builtin .ref) h![v]
@@ -154,6 +171,9 @@ def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (
   let ident ← getName ident
   let rest ← k ident
   `(Lampe.Expr.letIn $e fun $ident => $rest)
+
+def mkFieldName (structName : String) (fieldName : String) : Lean.Ident :=
+  mkIdent $ Name.mkSimple (structName |>.append "#" |>.append fieldName)
 
 mutual
 
@@ -235,6 +255,17 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs argExprs fun argVals => do
     wrapSimple (←`(@Lampe.Expr.call _ $callGenKinds $callGenVals $(←mkListLit argTps) $(←mkNrType tp)
       (.trait ⟨⟨⟨$(Syntax.mkStrLit traitName), $traitGenKinds, $traitGenVals⟩, $(←mkNrType selfTp)⟩, $(Syntax.mkStrLit methodName)⟩) $(←mkHListLit argVals))) vname k
+| `(nr_expr| @ $structName:nr_ident { $args,* }) => do
+  let argTps ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $_ : $ty) => mkNrType ty | _ => throwUnsupportedSyntax
+  let argExprs ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $expr : $_) => pure expr | _ => throwUnsupportedSyntax
+  let structName ← mkNrIdent structName
+  mkArgs argExprs fun argVals => do
+    wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $(←mkListLit argTps)) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
+| `(nr_expr| @ $structName:nr_ident  < $structGenVals,* > $ref:ident [ $structField:ident ]) => do
+  let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+  let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
+  let accessorSyn ← `($accessor $structGenValsSyn)
+  `(.call h![] [.tuple _ _] _ (.builtin (.projectTuple $accessorSyn)) h![$ref])
 | _ => throwUnsupportedSyntax
 
 end
@@ -285,9 +316,42 @@ def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
   pure (traitName, syn)
 | _ => throwUnsupportedSyntax
 
+def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (TSyntax `term)
+| `(nr_struct_def| < $generics,* > { $params,* }) => do
+  let genericKinds ← mkListLit (←generics.getElems.toList.mapM fun _ => `(Kind.type))
+  let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
+  let fieldTypes ← params.getElems.toList.mapM fun paramSyn => match paramSyn with
+    | `(nr_param_decl| $_:ident : $ty:nr_type) => mkNrType ty
+    | _ => throwUnsupportedSyntax
+  let fieldTypes ← `(fun gs => match gs with | $(←mkHListLit generics) => $(←mkListLit fieldTypes))
+  let structNameStrLit := Syntax.mkStrLit structName.getId.toString
+  let syn ← `(Struct.mk $structNameStrLit $genericKinds $fieldTypes)
+  pure syn
+| _ => throwUnsupportedSyntax
+
+def mkRecMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
+| .zero => `(Member.head)
+| .succ n' => do `(Member.tail $(←mkRecMember n'))
+
+def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (List $ TSyntax `command)
+| `(nr_struct_def| < $generics,* > { $params,* }) => do
+  let genericKinds ← mkListLit (←generics.getElems.toList.mapM fun _ => `(Kind.type))
+  let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
+  params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
+    | `(nr_param_decl| $paramName:ident : $paramType:nr_type) => do
+      let paramDefTy ← `(match generics with
+        | $(←mkHListLit generics) => Member $(←mkNrType paramType) (Struct.fieldTypes $structName generics))
+      let paramDefSyn ← `(match generics with
+        | $(←mkHListLit generics) => $(←mkRecMember idx))
+      let defnNameSyn := mkFieldName structName.getId.toString paramName.getId.toString
+      `(def $defnNameSyn (generics : HList Kind.denote $genericKinds) : $paramDefTy := $paramDefSyn)
+    | _ => throwUnsupportedSyntax
+| _ => throwUnsupportedSyntax
+
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
   Elab.Term.elabTerm term.raw none
+
 elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
   let stx ← `($((←mkFnDecl fn).2).fn)
   Elab.Term.elabTerm stx none
@@ -297,9 +361,18 @@ elab "nr_def" decl:nr_fn_decl : command => do
   let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
-elab "nr_trait_impl[" def_name:ident "]" impl:nr_trait_impl : command => do
+elab "nr_trait_impl[" defName:ident "]" impl:nr_trait_impl : command => do
   let (name, impl) ← mkTraitImpl impl
-  let decl ← `(def $def_name : String × Lampe.TraitImpl := ($(Syntax.mkStrLit name), $impl))
+  let decl ← `(def $defName : String × Lampe.TraitImpl := ($(Syntax.mkStrLit name), $impl))
   Elab.Command.elabCommand decl
+
+elab "nr_struct_def" defName:ident defn:nr_struct_def : command => do
+  -- define the struct itself
+  let structDefn ← `(def $defName := $(←mkStructDef defName defn))
+  Elab.Command.elabCommand structDefn
+  -- define the field projections
+  let projs ← mkStructProjector defName defn
+  _ ← projs.mapM fun cmd => do
+    Elab.Command.elabCommand cmd
 
 end Lampe

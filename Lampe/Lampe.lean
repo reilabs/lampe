@@ -223,3 +223,29 @@ example {p} {x : Tp.denote p Tp.field} :
   steps
   sl
   aesop
+
+nr_struct_def Pair <I> {
+  a : I,
+  b : I
+}
+
+nr_def structConstruct<>(a : Field, b : Field) -> struct Pair<Field> {
+  @Pair { a : Field, b : Field }
+}
+
+example {p} {a b : Tp.denote p .field} :
+  STHoare p Γ ⟦⟧ (structConstruct.fn.body _ h![] |>.body h![a, b]) (fun v => v.fst = a ∧ v.snd = (b, ())) := by
+  simp only [structConstruct]
+  steps
+  aesop
+
+nr_def structProjection<>(x : Field, y : Field) -> Field {
+  let s = @Pair { x : Field, y : Field };
+  @Pair<Field> s[a]
+}
+
+example {p} {x y : Tp.denote p .field} :
+  STHoare p Γ ⟦⟧ (structProjection.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
+  simp only [structProjection]
+  steps
+  aesop

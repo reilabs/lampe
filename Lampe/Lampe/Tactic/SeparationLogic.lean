@@ -580,6 +580,9 @@ macro "stephelper1" : tactic => `(tactic|(
     -- remainder
     | apply uRem_intro
     | apply iRem_intro
+    -- struct
+    | apply mkTuple_intro
+    | apply projectTuple_intro
   )
 ))
 
@@ -633,6 +636,9 @@ macro "stephelper2" : tactic => `(tactic|(
     -- remainder
     | apply consequence_frame_left uRem_intro
     | apply consequence_frame_left iRem_intro
+    -- struct
+    | apply consequence_frame_left mkTuple_intro
+    | apply consequence_frame_left projectTuple_intro
   )
   repeat sl
 ))
@@ -687,6 +693,9 @@ macro "stephelper3" : tactic => `(tactic|(
     -- remainder
     | apply ramified_frame_top uRem_intro
     | apply ramified_frame_top iRem_intro
+    -- struct
+    | apply ramified_frame_top mkTuple_intro
+    | apply ramified_frame_top projectTuple_intro
   )
   repeat sl
 ))
