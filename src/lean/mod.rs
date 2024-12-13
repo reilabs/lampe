@@ -1,6 +1,7 @@
 //! Functionality for emitting Lean definitions from Noir source.
 mod builtin;
 pub mod indent;
+mod syntax;
 
 use std::collections::{HashMap, HashSet};
 
@@ -8,7 +9,7 @@ use fm::FileId;
 use indoc::formatdoc;
 use itertools::Itertools;
 use noirc_frontend::{
-    ast::{BinaryOpKind, UnaryOp, Visibility},
+    ast::Visibility,
     graph::CrateId,
     hir::{
         def_map::{ModuleData, ModuleId},
@@ -155,8 +156,7 @@ impl LeanEmitter {
             .filter(|(_, t)| self.knows_file(t.borrow().file))
         {
             let impl_id = format!("impl_{}", id.0);
-            let trait_impl =
-                self.emit_trait_impl(ind, &trait_impl.borrow(), &impl_id, "nr_trait_impl")?;
+            let trait_impl = self.emit_trait_impl(ind, &trait_impl.borrow(), &impl_id)?;
             accumulator.push(trait_impl);
             impl_ids.push(impl_id);
         }
@@ -212,7 +212,6 @@ impl LeanEmitter {
         ind: &mut Indenter,
         trait_impl: &TraitImpl,
         impl_id: &str,
-        prefix: &str,
     ) -> Result<String> {
         let trait_def_id = trait_impl.trait_id;
         let trait_data = self.context.def_interner.get_trait(trait_def_id);
@@ -247,12 +246,14 @@ impl LeanEmitter {
         ind.dedent()?;
 
         let methods = method_strings.join(";\n");
-        let result = formatdoc! {
-            "{prefix}[{impl_id}] <{all_generics_str}> {full_name}<{trait_gens}> for {target} where {{
-                {methods} 
-            }}"
-        };
-        Ok(result)
+        Ok(syntax::format_trait_impl(
+            impl_id,
+            &all_generics_str,
+            &full_name,
+            &trait_gens,
+            &target,
+            &methods,
+        ))
     }
 
     /// Collects the named generics from a type recursively.
@@ -529,9 +530,8 @@ impl LeanEmitter {
                     .map(|g| self.emit_fully_qualified_type(g))
                     .collect_vec();
                 let generics_str = generics_resolved.join(", ");
-                let struct_prefix = "@";
 
-                format!("{struct_prefix}{name}<{generics_str}>")
+                format!("{name}<{generics_str}>")
             }
             Type::TraitAsType(trait_id, name, generics) => {
                 let module_id = trait_id.0;
@@ -674,7 +674,7 @@ impl LeanEmitter {
                 let lhs = self.emit_expr(ind, infix.lhs)?;
                 let rhs = self.emit_expr(ind, infix.rhs)?;
 
-                format!("(#{builtin_func_name}({lhs}, {rhs}) : {out_ty_str})")
+                syntax::expr::format_infix_builtin_call(&builtin_func_name, &lhs, &rhs, &out_ty_str)
             }
             HirExpression::Prefix(prefix) => {
                 let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
@@ -685,7 +685,7 @@ impl LeanEmitter {
 
                 let rhs = self.emit_expr(ind, prefix.rhs)?;
 
-                format!("(#{builtin_func_name}({rhs}) : {out_ty_str})")
+                syntax::expr::format_prefix_builtin_call(&builtin_func_name, &rhs, &out_ty_str)
             }
             HirExpression::Ident(ident, _generics) => {
                 let name = self.context.def_interner.definition_name(ident.id);
@@ -693,20 +693,7 @@ impl LeanEmitter {
 
                 match ident_def.kind {
                     DefinitionKind::Function(func) => {
-                        let id_type = self.context.def_interner.id_type(expr);
                         let function_info = self.context.def_interner.function_meta(&func);
-                        let func_sig = self.emit_fully_qualified_type(&id_type);
-                        let generics = function_info
-                            .all_generics
-                            .iter()
-                            .map(|g| {
-                                let name = &g.name;
-                                let kind = &g.kind;
-
-                                format!("{name} <: {kind}")
-                            })
-                            .join(", ");
-                        let fn_type = format!("<{generics}> => {func_sig}");
                         let self_type = match &function_info.self_type.as_ref() {
                             Some(s) => self.emit_fully_qualified_type(s),
                             None => String::new(),
@@ -718,34 +705,24 @@ impl LeanEmitter {
                             format!("{self_type}::{name}")
                         };
 
-                        let builtin_fn_name = function_info
-                            .parameters
-                            .0
-                            .iter()
-                            .map(|(_, ty, _)| TryInto::<builtin::BuiltinType>::try_into(ty.clone()))
-                            .try_collect()
-                            .ok()
-                            .and_then(|param_types: Vec<builtin::BuiltinType>| {
-                                builtin::try_func_as_builtin(&fn_name, param_types.as_slice())
-                            });
-                        if let Some(builtin_fn_name) = builtin_fn_name {
-                            format!("#{builtin_fn_name}")
+                        if let Some(builtin_fn_name) =
+                            builtin::try_func_as_builtin(&fn_name, function_info)
+                        {
+                            syntax::expr::format_ident(&builtin_fn_name, true)
                         } else {
-                            format!("{fn_name}")
+                            syntax::expr::format_ident(&fn_name, true)
                         }
                     }
                     DefinitionKind::Global(..)
                     | DefinitionKind::Local(..)
-                    | DefinitionKind::GenericType(..) => {
-                        format!("{name}")
-                    }
+                    | DefinitionKind::GenericType(..) => syntax::expr::format_ident(name, false),
                 }
             }
             HirExpression::Index(index) => {
                 let collection = self.emit_expr(ind, index.collection)?;
                 let index = self.emit_expr(ind, index.index)?;
 
-                format!("{collection}[{index}]")
+                syntax::expr::format_index(&collection, &index)
             }
             HirExpression::Literal(lit) => self.emit_literal(ind, lit, expr)?,
             HirExpression::Constructor(constructor) => {
@@ -775,7 +752,8 @@ impl LeanEmitter {
                     .iter()
                     .map(|ty| self.emit_fully_qualified_type(ty))
                     .join(",");
-                format!("@{name}<{constructor_gen_vals_str}> {{ {fields_str} }}")
+
+                syntax::expr::format_constructor(name, &constructor_gen_vals_str, &fields_str)
             }
             HirExpression::MemberAccess(member) => {
                 let lhs_expr_ty = self.context.def_interner.id_type(member.lhs);
@@ -786,24 +764,26 @@ impl LeanEmitter {
                 let target_expr_str = self.emit_expr(ind, member.lhs)?;
                 let member_iden = member.rhs;
 
-                format!("{struct_ty_str} {target_expr_str} [{member_iden}]")
+                syntax::expr::format_member_access(&struct_ty_str, &target_expr_str, member_iden)
             }
             HirExpression::Call(call) => {
                 assert!(
                     !call.is_macro_call,
                     "Macros should be resolved before running this tool"
                 );
-
                 let function = self.emit_expr(ind, call.func)?;
-
-                let out_args: Vec<String> = call
+                let args: Vec<_> = call
                     .arguments
                     .iter()
                     .map(|arg| self.emit_expr(ind, *arg))
                     .try_collect()?;
-                let args_string = out_args.join(", ");
+                let args_str = args.join(", ");
+                let is_lambda = match self.context.def_interner.id_type(call.func) {
+                    Type::Function(_, _, env) if matches!(*env, Type::Tuple(..)) => true,
+                    _ => false,
+                };
 
-                format!("({function}({args_string}) : {out_ty_str})")
+                syntax::expr::format_call(&function, &args_str, &out_ty_str, is_lambda)
             }
             HirExpression::MethodCall(method_call) => {
                 let receiver = self.emit_expr(ind, method_call.object)?;
@@ -823,45 +803,34 @@ impl LeanEmitter {
                     .try_collect()?;
                 let args_string = arguments.join(", ");
 
-                format!("{receiver}<{generics}>({args_string})")
+                syntax::expr::format_method_call(&receiver, &generics, &args_string)
             }
             HirExpression::Cast(cast) => {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
 
-                format!("{source} as {target_type}")
+                syntax::expr::format_cast(&source, &target_type)
             }
             HirExpression::If(if_expr) => {
                 let if_cond = self.emit_expr(ind, if_expr.condition)?;
                 let then_exec = self.emit_expr(ind, if_expr.consequence)?;
-
-                match if_expr.alternative {
-                    Some(else_exec) => {
-                        let else_exec = self.emit_expr(ind, else_exec)?;
-
-                        formatdoc! {
-                            r"if {if_cond} {{
-                            {then_exec}
-                            }} else {{
-                            {else_exec}
-                            }}"
-                        }
-                    }
-                    None => {
-                        formatdoc! {
-                            r"if {if_cond} {{
-                            {then_exec}
-                            }}"
-                        }
-                    }
-                }
+                let else_exec = if let Some(expr) = if_expr.alternative {
+                    Some(self.emit_expr(ind, expr)?)
+                } else {
+                    None
+                };
+                syntax::expr::format_ite(
+                    &if_cond,
+                    &then_exec,
+                    else_exec.as_ref().map(|s| s.as_str()),
+                )
             }
             HirExpression::Tuple(tuple) => {
                 let item_exprs: Vec<String> =
                     tuple.iter().map(|expr| self.emit_expr(ind, *expr)).try_collect()?;
                 let items = item_exprs.join(", ");
 
-                format!("({items})")
+                syntax::expr::format_tuple(&items)
             }
             HirExpression::Lambda(lambda) => {
                 let ret_type = self.emit_fully_qualified_type(&lambda.return_type);
@@ -892,7 +861,7 @@ impl LeanEmitter {
 
                 let body = self.emit_expr(ind, lambda.body)?;
 
-                format!("(| {{{captures}}}, ({args}) | {body}): {ret_type}")
+                syntax::expr::format_lambda(&captures, &args, &body, &ret_type)
             }
             HirExpression::Comptime(_) => {
                 panic!("Comptime expressions should not exist after compilation is done")
@@ -929,23 +898,26 @@ impl LeanEmitter {
                 let bound_expr = self.emit_expr(ind, lets.expression)?;
                 let name = self.emit_pattern(&lets.pattern)?;
 
-                format!("let {name}: {binding_type} = {bound_expr}")
+                syntax::stmt::format_let_in(&name, &binding_type, &bound_expr)
             }
             HirStatement::Constrain(constraint) => {
                 let constraint_expr = self.emit_expr(ind, constraint.0)?;
-
-                if let Some(expr) = constraint.2 {
-                    let print_expr = self.emit_expr(ind, expr)?;
-                    format!("assert({constraint_expr}, {print_expr})")
+                let print_expr = if let Some(expr) = constraint.2 {
+                    Some(self.emit_expr(ind, expr)?)
                 } else {
-                    format!("assert({constraint_expr})")
-                }
+                    None
+                };
+
+                syntax::stmt::format_assert(
+                    &constraint_expr,
+                    print_expr.as_ref().map(|s| s.as_str()),
+                )
             }
             HirStatement::Assign(assign) => {
                 let l_val = self.emit_l_value(ind, &assign.lvalue)?;
                 let expr = self.emit_expr(ind, assign.expression)?;
 
-                format!("{l_val} = {expr}")
+                syntax::stmt::format_assign(&l_val, &expr)
             }
             HirStatement::For(fors) => {
                 let loop_var = self.context.def_interner.definition_name(fors.identifier.id);
@@ -953,12 +925,7 @@ impl LeanEmitter {
                 let loop_end = self.emit_expr(ind, fors.end_range)?;
                 let body = self.emit_expr(ind, fors.block)?;
 
-                formatdoc! {
-                    r"for {loop_var} in {loop_start} .. {loop_end} {{
-                    {body}
-                    }}
-                    "
-                }
+                syntax::stmt::format_for_loop(loop_var, &loop_start, &loop_end, &body)
             }
             HirStatement::Break => "break".into(),
             HirStatement::Continue => "continue".into(),
@@ -1166,46 +1133,6 @@ impl LeanEmitter {
             .try_collect()?;
 
         Ok(result_params.join(", "))
-    }
-
-    /// Emits the Lean source code corresponding to a Noir binary operator.
-    pub fn emit_binary_operator(&self, op: BinaryOpKind) -> String {
-        match op {
-            BinaryOpKind::Add => "nr_add",
-            BinaryOpKind::And => "nr_and",
-            BinaryOpKind::Divide => "nr_div",
-            BinaryOpKind::Equal => "nr_eq",
-            BinaryOpKind::Greater => "nr_gt",
-            BinaryOpKind::GreaterEqual => "nr_geq",
-            BinaryOpKind::Less => "nr_lt",
-            BinaryOpKind::LessEqual => "nr_leq",
-            BinaryOpKind::Modulo => "nr_mod",
-            BinaryOpKind::Multiply => "nr_mul",
-            BinaryOpKind::NotEqual => "nr_neq",
-            BinaryOpKind::Or => "nr_or",
-            BinaryOpKind::ShiftLeft => "nr_shl",
-            BinaryOpKind::ShiftRight => "nr_shr",
-            BinaryOpKind::Subtract => "nr_sub",
-            BinaryOpKind::Xor => "nr_xor",
-        }
-        .into()
-    }
-
-    /// Emits the Lean source code corresponding to a Noir unary operator.
-    pub fn emit_unary_operator(&self, op: UnaryOp) -> String {
-        match op {
-            UnaryOp::Not => "nr_not",
-            UnaryOp::Minus => "nr_uminus",
-            UnaryOp::MutableReference => "nr_ref_mut",
-            UnaryOp::Dereference { implicitly_added } => {
-                if implicitly_added {
-                    "nr_deref_implicit"
-                } else {
-                    "nr_deref_explicit"
-                }
-            }
-        }
-        .into()
     }
 }
 

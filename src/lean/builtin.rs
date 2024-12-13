@@ -1,9 +1,12 @@
 use noirc_frontend::{
     ast::BinaryOpKind,
     ast::{IntegerBitSize, UnaryOp},
+    hir_def::function::FuncMeta,
     macros_api::Signedness,
     Type,
 };
+
+use itertools::Itertools;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinType {
@@ -79,9 +82,16 @@ impl BuiltinType {
     }
 }
 
-pub fn try_func_as_builtin(func_name: &str, _param_types: &[BuiltinType]) -> Option<String> {
-    match func_name {
-        "zeroed" => Some(format!("zeroed")),
+pub fn try_func_as_builtin(func_name: &str, func_meta: &FuncMeta) -> Option<String> {
+    let param_types: Result<Vec<BuiltinType>, _> = func_meta
+        .parameters
+        .0
+        .iter()
+        .map(|(_, ty, _)| ty.clone().try_into())
+        .try_collect();
+    let param_types = param_types.ok()?;
+    match (func_name, param_types.as_slice()) {
+        ("zeroed", _) => Some(format!("zeroed")),
         _ => None,
     }
 }

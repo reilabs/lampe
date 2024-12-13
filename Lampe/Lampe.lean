@@ -28,7 +28,7 @@ example {x y : Tp.denote p .field} : STHoare p Γ ⟦⟧ (weirdEq.fn.body _ h![.
 
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;
-  for i in (0 : u32) .. #slice_len(y):u32 {
+  for i in (0 : u32) .. #slice_len(y) : u32 {
     self = #slice_push_back(self, #slice_index(y, i): I): [I]
   };
   self
@@ -62,7 +62,7 @@ nr_def simple_if<>(x : Field, y : Field) -> Field {
   let mut z = x;
   if #eq(x, x) : bool {
     z = y
-   }; -- else ()
+   };
   z
 }
 
@@ -179,7 +179,7 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v =
 
 
 nr_def simpleTraitCallSyntax<I> (x : I) -> I {
-  (I as Bulbulize<>)::bulbulize<>(x : I) : I
+  (I as Bulbulize<>)::bulbulize<>(x) : I
 }
 
 example {p} {arg : Tp.denote p Tp.field} :
@@ -209,7 +209,7 @@ def genericTraitEnv : Env := {
 }
 
 nr_def genericTraitCall<>(x : Field) -> Field {
-  (Field as Me<>)::me<>(x : Field) : Field
+  (Field as Me<>)::me<>(x) : Field
 }
 
 example {p} {x : Tp.denote p Tp.field} :
@@ -229,8 +229,8 @@ nr_struct_def Pair <I> {
   b : I
 }
 
-nr_def structConstruct<>(a : Field, b : Field) -> @Pair<Field> {
-  @Pair<Field> { a, b }
+nr_def structConstruct<>(a : Field, b : Field) -> Pair<Field> {
+  Pair<Field> { a, b }
 }
 
 example {p} {a b : Tp.denote p .field} :
@@ -240,8 +240,8 @@ example {p} {a b : Tp.denote p .field} :
   aesop
 
 nr_def structProjection<>(x : Field, y : Field) -> Field {
-  let s = @Pair<Field> { x, y };
-  @Pair<Field> s[a]
+  let s = Pair<Field> { x, y };
+  s. (Pair<Field>).a
 }
 
 example {p} {x y : Tp.denote p .field} :
