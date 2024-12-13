@@ -229,8 +229,8 @@ nr_struct_def Pair <I> {
   b : I
 }
 
-nr_def structConstruct<>(a : Field, b : Field) -> struct Pair<Field> {
-  @Pair { a : Field, b : Field }
+nr_def structConstruct<>(a : Field, b : Field) -> @Pair<Field> {
+  @Pair<Field> { a, b }
 }
 
 example {p} {a b : Tp.denote p .field} :
@@ -240,7 +240,7 @@ example {p} {a b : Tp.denote p .field} :
   aesop
 
 nr_def structProjection<>(x : Field, y : Field) -> Field {
-  let s = @Pair { x : Field, y : Field };
+  let s = @Pair<Field> { x, y };
   @Pair<Field> s[a]
 }
 

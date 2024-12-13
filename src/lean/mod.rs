@@ -1,7 +1,8 @@
 //! Functionality for emitting Lean definitions from Noir source.
+mod builtin;
 pub mod indent;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use fm::FileId;
 use indoc::formatdoc;
@@ -528,7 +529,7 @@ impl LeanEmitter {
                     .map(|g| self.emit_fully_qualified_type(g))
                     .collect_vec();
                 let generics_str = generics_resolved.join(", ");
-                let struct_prefix = "struct ";
+                let struct_prefix = "@";
 
                 format!("{struct_prefix}{name}<{generics_str}>")
             }
@@ -643,7 +644,9 @@ impl LeanEmitter {
     #[allow(clippy::too_many_lines)] // Not possible to reasonably split up
     pub fn emit_expr(&self, ind: &mut Indenter, expr: ExprId) -> Result<String> {
         let expr_data = self.context.def_interner.expression(&expr);
-
+        // Get the output type of this expression.
+        let out_ty = self.context.def_interner.id_type(&expr);
+        let out_ty_str = self.emit_fully_qualified_type(&out_ty);
         let expression = match expr_data {
             HirExpression::Block(block) => {
                 let statements: Vec<String> = block
@@ -657,11 +660,32 @@ impl LeanEmitter {
                 statements.join("\n")
             }
             HirExpression::Infix(infix) => {
+                let lhs_ty = self.context.def_interner.id_type(infix.lhs);
+                let rhs_ty = self.context.def_interner.id_type(infix.rhs);
+                let lhs_builtin_ty = lhs_ty.try_into().unwrap();
+                let rhs_builtin_ty = rhs_ty.try_into().unwrap();
+                let builtin_func_name = builtin::try_infix_as_builtin(
+                    infix.operator.kind,
+                    lhs_builtin_ty,
+                    rhs_builtin_ty,
+                )
+                .expect("not a builtin");
+
                 let lhs = self.emit_expr(ind, infix.lhs)?;
                 let rhs = self.emit_expr(ind, infix.rhs)?;
-                let op_name = self.emit_binary_operator(infix.operator.kind);
 
-                format!("{op_name}({lhs}, {rhs})")
+                format!("(#{builtin_func_name}({lhs}, {rhs}) : {out_ty_str})")
+            }
+            HirExpression::Prefix(prefix) => {
+                let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
+                let rhs_builtin_ty = rhs_ty.try_into().unwrap();
+                let builtin_func_name =
+                    builtin::try_prefix_as_builtin(prefix.operator, rhs_builtin_ty)
+                        .expect("not a builtin");
+
+                let rhs = self.emit_expr(ind, prefix.rhs)?;
+
+                format!("(#{builtin_func_name}({rhs}) : {out_ty_str})")
             }
             HirExpression::Ident(ident, _generics) => {
                 let name = self.context.def_interner.definition_name(ident.id);
@@ -694,25 +718,26 @@ impl LeanEmitter {
                             format!("{self_type}::{name}")
                         };
 
-                        format!("({fn_name} : {fn_type})")
+                        let builtin_fn_name = function_info
+                            .parameters
+                            .0
+                            .iter()
+                            .map(|(_, ty, _)| TryInto::<builtin::BuiltinType>::try_into(ty.clone()))
+                            .try_collect()
+                            .ok()
+                            .and_then(|param_types: Vec<builtin::BuiltinType>| {
+                                builtin::try_func_as_builtin(&fn_name, param_types.as_slice())
+                            });
+                        if let Some(builtin_fn_name) = builtin_fn_name {
+                            format!("#{builtin_fn_name}")
+                        } else {
+                            format!("{fn_name}")
+                        }
                     }
-                    DefinitionKind::Global(global) => {
-                        let global_info = self.context.def_interner.get_global(global);
-                        let ident_type = self.context.def_interner.definition_type(ident.id);
-                        let resolved_type = self.emit_fully_qualified_type(&ident_type);
-                        let value = global_info
-                            .value
-                            .as_ref()
-                            .map(|v| format!(" = {v}"))
-                            .unwrap_or_default();
-
-                        format!("({name} : {resolved_type}{value})")
-                    }
-                    _ => {
-                        let ident_type = self.context.def_interner.definition_type(ident.id);
-                        let resolved_type = self.emit_fully_qualified_type(&ident_type);
-
-                        format!("({name} : {resolved_type})")
+                    DefinitionKind::Global(..)
+                    | DefinitionKind::Local(..)
+                    | DefinitionKind::GenericType(..) => {
+                        format!("{name}")
                     }
                 }
             }
@@ -723,47 +748,45 @@ impl LeanEmitter {
                 format!("{collection}[{index}]")
             }
             HirExpression::Literal(lit) => self.emit_literal(ind, lit, expr)?,
-            HirExpression::Prefix(prefix) => {
-                let rhs = self.emit_expr(ind, prefix.rhs)?;
-                let op = self.emit_unary_operator(prefix.operator);
-
-                format!("{op}({rhs})")
-            }
             HirExpression::Constructor(constructor) => {
                 let struct_def = constructor.r#type;
                 let struct_def = struct_def.borrow();
                 let name = &struct_def.name;
                 let fields = constructor.fields;
-                //let generics = constructor.struct_generics;
-
-                //let generics_strings = generics
-                //    .iter()
-                //    .map(|generic| self.emit_fully_qualified_type(generic))
-                //    .collect_vec();
-                //let generics_string = generics_strings.join(", ");
-
+                // Map a field name to its order.
+                let field_orders: HashMap<_, usize> = (0..struct_def.num_fields())
+                    .map(|i| {
+                        let (k, _) = struct_def.field_at(i);
+                        (k.clone(), i)
+                    })
+                    .collect();
+                // Reorder the constructor fields before creating the string, so that they correspond to the order in the original definition.
                 let fields_strings: Vec<String> = fields
                     .iter()
-                    .map(|(name, expr)| {
+                    .sorted_by_key(|(i, _)| field_orders.get(i).cloned().unwrap_or_default())
+                    .map(|(_, expr)| {
                         let expr_str = self.emit_expr(ind, *expr)?;
-                        Ok(format!("{name}: {expr_str}"))
+                        Ok(format!("{expr_str}"))
                     })
                     .try_collect()?;
-                let fields_string = ind.run(fields_strings.join(",\n"));
-
-                let result = formatdoc! {
-                    r"@{name} {{
-                    {fields_string}
-                    }}"
-                };
-
-                result
+                let fields_str = fields_strings.join(", ");
+                let constructor_gen_vals_str = constructor
+                    .struct_generics
+                    .iter()
+                    .map(|ty| self.emit_fully_qualified_type(ty))
+                    .join(",");
+                format!("@{name}<{constructor_gen_vals_str}> {{ {fields_str} }}")
             }
             HirExpression::MemberAccess(member) => {
-                let target = self.emit_expr(ind, member.lhs)?;
-                let member = member.rhs;
+                let lhs_expr_ty = self.context.def_interner.id_type(member.lhs);
+                let struct_ty_str = match &lhs_expr_ty {
+                    Type::Struct(..) => self.emit_fully_qualified_type(&lhs_expr_ty),
+                    _ => panic!("member access lhs is not a struct"),
+                };
+                let target_expr_str = self.emit_expr(ind, member.lhs)?;
+                let member_iden = member.rhs;
 
-                format!("{target}.{member}")
+                format!("{struct_ty_str} {target_expr_str} [{member_iden}]")
             }
             HirExpression::Call(call) => {
                 assert!(
@@ -780,7 +803,7 @@ impl LeanEmitter {
                     .try_collect()?;
                 let args_string = out_args.join(", ");
 
-                format!("{function}({args_string})")
+                format!("({function}({args_string}) : {out_ty_str})")
             }
             HirExpression::MethodCall(method_call) => {
                 let receiver = self.emit_expr(ind, method_call.object)?;
