@@ -33,6 +33,7 @@ inductive FunctionIdent (rep : Tp → Type) : Type where
 
 inductive Expr (rep : Tp → Type) : Tp → Type where
 | lit : (tp : Tp) → Nat → Expr rep tp
+| list : List (Expr rep Tp.bool) → Expr rep (.slice tp)
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
 | call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → FunctionIdent rep → HList rep argTypes → Expr rep res

@@ -36,6 +36,7 @@ syntax ident : nr_type
 syntax "${" term "}" : nr_type
 syntax nr_ident "<" nr_type,* ">" : nr_type
 syntax "[" nr_type "]" : nr_type
+syntax "[" nr_type ";" term "]" : nr_type
 
 def mkListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
 | [] => `([])
@@ -65,32 +66,33 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   `(Struct.tp $name $(←mkHListLit generics))
 | `(nr_type| ${ $i }) => pure i
 | `(nr_type| [ $tp ]) => do `(Tp.slice $(←mkNrType tp))
+| `(nr_type| [ $tp ; $len:num ]) => do `(Tp.array $(←mkNrType tp) $len)
 | _ => throwUnsupportedSyntax
 
 partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) := match i with
-| "add"            => ``(Builtin.fAdd)
-| "sub"            => ``(Builtin.fSub)
-| "mul"            => ``(Builtin.fMul)
-| "div"            => ``(Builtin.fDiv)
-| "eq"             => ``(Builtin.fEq)
-| "assert"         => ``(Builtin.assert)
-| "not"            => ``(Builtin.bNot)
-| "lt"             => ``(Builtin.lt)
-| "index"          => ``(Builtin.index)
-| "cast"           => ``(Builtin.cast)
-| "modulus_num_bits" => ``(Builtin.fModNumBits)
-| "to_le_bytes"      => ``(Builtin.toLeBytes)
-| "fresh"          => ``(Builtin.fresh)
-| "slice_len"      => ``(Builtin.sliceLen)
-| "slice_push_back" => ``(Builtin.slicePushBack)
-| "slice_push_front" => ``(Builtin.slicePushFront)
-| "slice_pop_back" => ``(Builtin.slicePopBack)
-| "slice_index" => ``(Builtin.sliceIndex)
-| "slice_pop_front" => ``(Builtin.slicePopFront)
-| "slice_insert"   => ``(Builtin.sliceInsert)
-| "ref"   => ``(Builtin.ref)
-| "read_ref"   => ``(Builtin.readRef)
-| "write_ref"   => ``(Builtin.writeRef)
+| "add"            => `(Builtin.fAdd)
+| "sub"            => `(Builtin.fSub)
+| "mul"            => `(Builtin.fMul)
+| "div"            => `(Builtin.fDiv)
+| "eq"             => `(Builtin.fEq)
+| "assert"         => `(Builtin.assert)
+| "not"            => `(Builtin.bNot)
+| "lt"             => `(Builtin.lt)
+| "index"          => `(Builtin.index)
+| "cast"           => `(Builtin.cast)
+| "modulus_num_bits" => `(Builtin.fModNumBits)
+| "to_le_bytes"      => `(Builtin.toLeBytes)
+| "fresh"          => `(Builtin.fresh)
+| "slice_len"      => `(Builtin.sliceLen)
+| "slice_push_back" => `(Builtin.slicePushBack)
+| "slice_push_front" => `(Builtin.slicePushFront)
+| "slice_pop_back" => `(Builtin.slicePopBack)
+| "slice_index" => `(Builtin.sliceIndex)
+| "slice_pop_front" => `(Builtin.slicePopFront)
+| "slice_insert"   => `(Builtin.sliceInsert)
+| "ref"   => `(Builtin.ref)
+| "read_ref"   => `(Builtin.readRef)
+| "write_ref"   => `(Builtin.writeRef)
 | _ => throwError "Unknown builtin {i}"
 
 syntax ident ":" nr_type : nr_param_decl
@@ -108,12 +110,14 @@ syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 syntax "(" nr_expr ")" : nr_expr
 syntax "*(" nr_expr ")" : nr_expr
-syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda
+syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
+syntax "&" "[" nr_expr,* "]" : nr_expr -- Slice constructor
+syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda constructor
 syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
 syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 syntax "@" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Decl call
-
-syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Trait call
+syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")"
+  "::" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Trait call
 syntax nr_expr "[" nr_ident "<" nr_type,* ">" "." ident "]" : nr_expr -- Struct access
 syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
 
@@ -136,6 +140,12 @@ def Expr.readRef (ref : rep tp.ref): Expr rep tp :=
 
 def Expr.writeRef (ref : rep tp.ref) (val : rep tp): Expr rep .unit :=
   Expr.call h![] _ .unit (.builtin .writeRef) h![ref, val]
+
+def Expr.slice (vals : HList rep tps) : Expr rep (.slice tp) :=
+  Expr.call h![] _ (.slice tp) (.builtin $ .mkSlice (tps.length)) vals
+
+def Expr.array (vals : HList rep tps) : Expr rep (.array tp n) :=
+  Expr.call h![] _ (.array tp n) (.builtin $ .mkArray n.toNat) vals
 
 structure DesugarState where
   autoDeref : Name → Bool
@@ -198,21 +208,29 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
     mkArgs t fun t => k (h :: t)
 
 partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
-| `(nr_expr|$n:num : $tp) => do wrapSimple (←``(Lampe.Expr.lit $(←mkNrType tp) $n)) vname k
-| `(nr_expr| true) => do wrapSimple (←``(Lampe.Expr.lit Tp.bool 1)) vname k
-| `(nr_expr| false) => do wrapSimple (←``(Lampe.Expr.lit Tp.bool 0)) vname k
+| `(nr_expr|$n:num : $tp) => do wrapSimple (←`(Lampe.Expr.lit $(←mkNrType tp) $n)) vname k
+| `(nr_expr| true) => do wrapSimple (←`(Lampe.Expr.lit Tp.bool 1)) vname k
+| `(nr_expr| false) => do wrapSimple (←`(Lampe.Expr.lit Tp.bool 0)) vname k
+| `(nr_expr | & [ $args,* ]) => do
+  let args := args.getElems.toList
+  mkArgs args fun argVals => do
+    wrapSimple (←`(Lampe.Expr.slice $(←mkHListLit argVals))) vname k
+| `(nr_expr | [ $args,* ]) => do
+  let args := args.getElems.toList
+  mkArgs args fun argVals => do
+    wrapSimple (←`(Lampe.Expr.array $(←mkHListLit argVals))) vname k
 | `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
 | `(nr_expr| $i:ident) => do
-  if ←isAutoDeref i.getId then wrapSimple (← ``(Lampe.Expr.readRef $i)) vname k else match vname with
+  if ←isAutoDeref i.getId then wrapSimple (← `(Lampe.Expr.readRef $i)) vname k else match vname with
   | none => k i
-  | some _ => wrapSimple (←``(Lampe.Expr.var $i)) vname k
+  | some _ => wrapSimple (←`(Lampe.Expr.var $i)) vname k
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit argVals))) vname k
 | `(nr_expr| for $i in $lo .. $hi $body) => do
   mkExpr lo none fun lo =>
   mkExpr hi none fun hi => do
-    let body ← mkExpr body none (fun x => ``(Lampe.Expr.var $x))
+    let body ← mkExpr body none (fun x => `(Lampe.Expr.var $x))
     wrapSimple (←`(Lampe.Expr.loop $lo $hi fun $i => $body)) vname k
 | `(nr_expr| $v:ident = $e) => do
   mkExpr e none fun eVal => do
@@ -220,12 +238,12 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do
     mkExpr cond none fun cond => do
-      let mainBody ← mkExpr mainBody none fun x => ``(Lampe.Expr.var $x)
-      let elseBody ← mkExpr elseBody none fun x => ``(Lampe.Expr.var $x)
+      let mainBody ← mkExpr mainBody none fun x => `(Lampe.Expr.var $x)
+      let elseBody ← mkExpr elseBody none fun x => `(Lampe.Expr.var $x)
       wrapSimple (←`(Lampe.Expr.ite $cond $mainBody $elseBody)) vname k
 | `(nr_expr| if $cond $mainBody) => do
     mkExpr cond none fun cond => do
-      let mainBody ← mkExpr mainBody none fun x => ``(Lampe.Expr.var $x)
+      let mainBody ← mkExpr mainBody none fun x => `(Lampe.Expr.var $x)
       wrapSimple (←`(Lampe.Expr.ite $cond $mainBody (Lampe.Expr.skip))) vname k
 | `(nr_expr| | $params,* | -> $outTp $lambdaBody) => do
   let outTp ← mkNrType outTp
@@ -235,7 +253,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let args ← mkHListLit (← params.getElems.toList.mapM fun param => match param with
     | `(nr_param_decl|$i:ident : $_) => `($i)
     | _ => throwUnsupportedSyntax)
-  let body ← mkExpr lambdaBody none fun x => ``(Lampe.Expr.var $x)
+  let body ← mkExpr lambdaBody none fun x => `(Lampe.Expr.var $x)
   wrapSimple (←`(Lampe.Expr.lambda $argTps $outTp (fun $args => $body))) vname k
 | `(nr_expr| ^ $i:ident ($args,*) : $tp) => do
   mkArgs args.getElems.toList fun argVals => do
@@ -255,8 +273,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let callGenVals ← mkHListLit (←callGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(@Lampe.Expr.call _ $callGenKinds $callGenVals _ $(←mkNrType tp) (.decl $(Syntax.mkStrLit (←mkNrIdent declName))) $(←mkHListLit argVals))) vname k
-| `(nr_expr| $structName:nr_ident < $genericVals,* > { $args,* }) => do
-  let structGenValsSyn ← mkHListLit (←genericVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+| `(nr_expr| $structName:nr_ident < $structGenVals,* > { $args,* }) => do
+  let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
   let paramTpsSyn ← `(Struct.fieldTypes $(mkStructDefIdent $ ←mkNrIdent structName) $structGenValsSyn)
   let structName ← mkNrIdent structName
   mkArgs args.getElems.toList fun argVals => do
@@ -350,7 +368,7 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | _ => throwUnsupportedSyntax
 
 elab "expr![" expr:nr_expr "]" : term => do
-  let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
+  let term ← MonadSyntax.run $ mkExpr expr none fun x => `(Expr.var $x)
   Elab.Term.elabTerm term.raw none
 
 elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do

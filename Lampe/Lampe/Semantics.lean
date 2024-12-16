@@ -35,13 +35,14 @@ inductive TraitResolution (Γ : Env): TraitImplRef → List (Ident × Function) 
   TraitResolution Γ ref (impl.impl implGenerics)
 
 inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where
+| skip {Q} : Q (some (st, ())) → Omni Γ st (.skip) Q
 | litField {Q} : Q (some (st, n)) → Omni Γ st (.lit .field n) Q
+| litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.lit (.u s) n) Q
+| litI {Q} : Q (some (st, ↑n)) → Omni Γ st (.lit (.i s) n) Q
 | litFalse {Q} : Q (some (st, false)) → Omni Γ st (.lit .bool 0) Q
 | litTrue {Q} : Q (some (st, true)) → Omni Γ st (.lit .bool 1) Q
 | litRef {Q} : Q (some (st, ⟨r⟩)) → Omni Γ st (.lit (.ref tp) r) Q
-| litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.lit (.u s) n) Q
 | var {Q} : Q (some (st, v)) → Omni Γ st (.var v) Q
-| skip {Q} : Q (some (st, ())) → Omni Γ st (.skip) Q
 | iteTrue {mainBranch elseBranch} :
   Omni Γ st mainBranch Q →
   Omni Γ st (Expr.ite true mainBranch elseBranch) Q
@@ -115,11 +116,12 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     ) := by
   intro h
   induction h with
-  | litField hq
   | skip hq
+  | litField hq
+  | litU hq
+  | litI hq
   | litFalse hq
   | litTrue hq
-  | litU hq
   | litRef hq
   | var hq =>
     intro

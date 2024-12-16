@@ -2,6 +2,20 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 /--
+Defines the builtin array constructor.
+-/
+def mkArray (n : Nat) := newGenericPureBuiltin
+  (fun (argTps, tp) => ⟨argTps, (.array tp n)⟩)
+  (fun (argTps, tp) args => ⟨argTps = List.replicate n tp ∧ n < 2^32,
+    fun h => Mathlib.Vector.ofFn fun i => List.get (HList.toList args (by tauto)) (by
+      have hn : BitVec.toNat (n := 32) ↑n = n := by
+        simp_all
+      rw [hn] at i
+      convert i
+      apply HList.toList_len_is_n
+  )⟩)
+
+/--
 Defines the function that evaluates to an array's length `n`.
 This builtin evaluates to an `U 32`. Hence, we assume that `n < 2^32`.
 

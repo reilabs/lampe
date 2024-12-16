@@ -664,7 +664,7 @@ impl LeanEmitter {
                 let rhs_ty = self.context.def_interner.id_type(infix.rhs);
                 let lhs_builtin_ty = lhs_ty.try_into().unwrap();
                 let rhs_builtin_ty = rhs_ty.try_into().unwrap();
-                let builtin_func_name = builtin::try_infix_as_builtin(
+                let builtin_name = builtin::try_infix_into_builtin(
                     infix.operator.kind,
                     lhs_builtin_ty,
                     rhs_builtin_ty,
@@ -674,18 +674,18 @@ impl LeanEmitter {
                 let lhs = self.emit_expr(ind, infix.lhs)?;
                 let rhs = self.emit_expr(ind, infix.rhs)?;
 
-                syntax::expr::format_infix_builtin_call(&builtin_func_name, &lhs, &rhs, &out_ty_str)
+                syntax::expr::format_infix_builtin_call(&builtin_name, &lhs, &rhs, &out_ty_str)
             }
             HirExpression::Prefix(prefix) => {
                 let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
                 let rhs_builtin_ty = rhs_ty.try_into().unwrap();
-                let builtin_func_name =
-                    builtin::try_prefix_as_builtin(prefix.operator, rhs_builtin_ty)
+                let builtin_name =
+                    builtin::try_prefix_into_builtin(prefix.operator, rhs_builtin_ty)
                         .expect("not a builtin");
 
                 let rhs = self.emit_expr(ind, prefix.rhs)?;
 
-                syntax::expr::format_prefix_builtin_call(&builtin_func_name, &rhs, &out_ty_str)
+                syntax::expr::format_prefix_builtin_call(&builtin_name, &rhs, &out_ty_str)
             }
             HirExpression::Ident(ident, _) => {
                 let name = self.context.def_interner.definition_name(ident.id);
@@ -709,11 +709,11 @@ impl LeanEmitter {
                         };
 
                         if let Some(builtin_fn_name) =
-                            builtin::try_func_as_builtin(&fn_name, function_info)
+                            builtin::try_func_into_builtin(&fn_name, function_info)
                         {
-                            syntax::expr::format_func_ident(&builtin_fn_name, &generics_str, true)
+                            syntax::expr::format_builtin_ident(&builtin_fn_name)
                         } else {
-                            syntax::expr::format_func_ident(&fn_name, &generics_str, false)
+                            syntax::expr::format_func_ident(&fn_name, &generics_str)
                         }
                     }
                     DefinitionKind::Global(..)
@@ -722,10 +722,14 @@ impl LeanEmitter {
                 }
             }
             HirExpression::Index(index) => {
-                let collection = self.emit_expr(ind, index.collection)?;
-                let index = self.emit_expr(ind, index.index)?;
+                let index_builtin_ident =
+                    syntax::expr::format_builtin_ident(builtin::INDEX_BUILTIN_NAME);
 
-                syntax::expr::format_index(&collection, &index)
+                let collection_expr_str = self.emit_expr(ind, index.collection)?;
+                let index_expr_str = self.emit_expr(ind, index.index)?;
+                let args_str = format!("{collection_expr_str}, {index_expr_str}");
+
+                syntax::expr::format_call(&index_builtin_ident, &args_str, &out_ty_str)
             }
             HirExpression::Literal(lit) => self.emit_literal(ind, lit, expr)?,
             HirExpression::Constructor(constructor) => {
@@ -785,28 +789,11 @@ impl LeanEmitter {
                     Type::Function(_, _, env) if matches!(*env, Type::Tuple(..)) => true,
                     _ => false,
                 };
-
-                syntax::expr::format_call(&function, &args_str, &out_ty_str, is_lambda)
-            }
-            HirExpression::MethodCall(method_call) => {
-                let receiver = self.emit_expr(ind, method_call.object)?;
-                let generics = match method_call.generics {
-                    Some(gs) => {
-                        let generic_strings =
-                            gs.iter().map(|g| self.emit_fully_qualified_type(g)).collect_vec();
-                        generic_strings.join(", ")
-                    }
-                    _ => String::new(),
-                };
-
-                let arguments: Vec<String> = method_call
-                    .arguments
-                    .iter()
-                    .map(|arg| self.emit_expr(ind, *arg))
-                    .try_collect()?;
-                let args_string = arguments.join(", ");
-
-                syntax::expr::format_method_call(&receiver, &generics, &args_string)
+                if is_lambda {
+                    syntax::expr::format_lambda_call(&function, &args_str, &out_ty_str)
+                } else {
+                    syntax::expr::format_call(&function, &args_str, &out_ty_str)
+                }
             }
             HirExpression::Cast(cast) => {
                 let source = self.emit_expr(ind, cast.lhs)?;
@@ -866,6 +853,9 @@ impl LeanEmitter {
 
                 syntax::expr::format_lambda(&captures, &args, &body, &ret_type)
             }
+            HirExpression::MethodCall(_) => {
+                panic!("Method call expressions should not exist after type checking")
+            }
             HirExpression::Comptime(_) => {
                 panic!("Comptime expressions should not exist after compilation is done")
             }
@@ -875,7 +865,10 @@ impl LeanEmitter {
             HirExpression::Unquote(_) => {
                 panic!("Unquote expressions should not exist after macro resolution")
             }
-            HirExpression::Error => panic!("Encountered error expression where none should exist"),
+
+            HirExpression::Error => {
+                panic!("Encountered error expression where none should exist")
+            }
         };
 
         Ok(expression)

@@ -268,3 +268,13 @@ example {p} {x y : Tp.denote p .field} :
     simp_all
   . sl
     aesop
+
+nr_def createSlice<>() -> [Field] {
+  let a = &[1 : Field, 2 : Field];
+  a
+}
+
+nr_def createArray<>() -> [Field; 2] {
+  let a = [1 : Field, 2 : Field];
+  a
+}

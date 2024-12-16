@@ -24,7 +24,6 @@ pub use crate::noir::project::Project;
 /// The source type for use with the library, exported here for easy access.
 pub use crate::noir::source::Source;
 
-
 /// Takes the definition of a Noir project and converts it into equivalent
 /// definitions in the Lean theorem prover and programming language.
 ///
@@ -99,10 +98,10 @@ mod test {
             // fn assigns(x: u8) {
             //     let mut y = 3;
             //     y += x;
-            //
+           
             //     let mut foo = Option2::none();
             //     foo._is_some = false;
-            //
+           
             //     let mut arr = [1, 2];
             //     arr[0] = 10;
             // }
@@ -146,11 +145,11 @@ mod test {
                     Self { _is_some: false, _value: std::unsafe::zeroed() }
                 }
 
-            //     /// Constructs a Some wrapper around the given value
-            //     pub fn some(_value: T) -> Self {
-            //         Self { _is_some: true, _value }
-            //     }
-            //
+                /// Constructs a Some wrapper around the given value
+                pub fn some(_value: T) -> Self {
+                   Self { _is_some: true, _value }
+                }
+          
                 /// True if this Option is None
                 pub fn is_none(self) -> bool {
                     !self.is_some()
@@ -172,6 +171,13 @@ mod test {
                 fn foo(self) -> Self {
                     self
                 }
+            }
+
+            fn main() {
+                let opt = Option2::some(5);
+                opt.is_some();
+                let l = &[1, 2, 3];
+                l[0];
             }
         "#;
 

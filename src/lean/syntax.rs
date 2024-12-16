@@ -91,24 +91,16 @@ pub(super) mod expr {
         format!("{struct_ident}<{struct_generic_vals}> {{ {fields_ordered} }}")
     }
 
-    pub fn format_call(func_expr: &str, func_args: &str, out_ty: &str, is_lambda: bool) -> String {
-        if is_lambda {
-            format!("(^{func_expr}({func_args}) : {out_ty})")
-        } else if func_expr.starts_with(BUILTIN_PREFIX) {
+    pub fn format_lambda_call(lam_expr: &str, func_args: &str, out_ty: &str) -> String {
+        format!("(^{lam_expr}({func_args}) : {out_ty})")
+    }
+
+    pub fn format_call(func_expr: &str, func_args: &str, out_ty: &str) -> String {
+        if func_expr.starts_with(BUILTIN_PREFIX) {
             format!("({func_expr}({func_args}) : {out_ty})")
         } else {
             format!("(@{func_expr}({func_args}) : {out_ty})")
         }
-    }
-
-    #[inline]
-    pub fn format_method_call(receiver: &str, generic_vals: &str, args: &str) -> String {
-        format!("{receiver}<{generic_vals}>({args})")
-    }
-
-    #[inline]
-    pub fn format_index(lhs_expr: &str, index: &str) -> String {
-        format!("{lhs_expr}[{index}]")
     }
 
     #[inline]
@@ -150,13 +142,13 @@ pub(super) mod expr {
         normalize_ident(ident)
     }
 
-    pub fn format_func_ident(ident: &str, generics: &str, is_builtin: bool) -> String {
+    pub fn format_builtin_ident(builtin_name: &str) -> String {
+        format!("{BUILTIN_PREFIX}{builtin_name}")
+    }
+
+    pub fn format_func_ident(ident: &str, generics: &str) -> String {
         let ident = normalize_ident(ident);
-        if is_builtin {
-            format!("{BUILTIN_PREFIX}{ident}")
-        } else {
-            format!("{ident}<{generics}>")
-        }
+        format!("{ident}<{generics}>")
     }
 
     #[inline]
@@ -184,8 +176,8 @@ pub(super) mod stmt {
     use super::*;
 
     #[inline]
-    pub fn format_let_in(name: &str, binding_type: &str, bound_expr: &str) -> String {
-        format!("let {name}: {binding_type} = {bound_expr}")
+    pub fn format_let_in(name: &str, _binding_type: &str, bound_expr: &str) -> String {
+        format!("let {name} = {bound_expr}")
     }
 
     #[inline]

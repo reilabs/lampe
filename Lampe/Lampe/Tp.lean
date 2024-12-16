@@ -81,4 +81,29 @@ example : newMember [.bool, .field, .field] ⟨0, (by tauto)⟩ = Member.head :=
 example : newMember [.bool, .field, .field] ⟨1, (by tauto)⟩ = Member.head.tail := rfl
 example : newMember [.bool, .field, .field] ⟨2, (by tauto)⟩ = Member.head.tail.tail := rfl
 
+lemma replicate_cons (hl : x :: xs = List.replicate n a) :
+  x = a ∧ xs = List.replicate (n-1) a := by
+    unfold List.replicate at hl
+    constructor
+    . aesop
+    . cases xs <;> aesop
+
+@[reducible]
+def HList.toList (hList : HList rep tps) (h_same : tps = List.replicate n tp) : List (rep tp) := match hList with
+| .nil => []
+| .cons x xs => match tps with
+  | [] => []
+  | _ :: _ => (by
+    have hl := replicate_cons h_same
+    obtain ⟨hl₁, hl₂⟩ := hl
+    exact (hl₁ ▸ x) :: (HList.toList xs hl₂))
+
+theorem HList.toList_len_is_n (h_same : tps = List.replicate n tp) :
+  (HList.toList hl h_same).length = n := by
+  cases hl
+  aesop
+  sorry
+
+
+
 end Lampe
