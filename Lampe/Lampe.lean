@@ -234,7 +234,7 @@ nr_def structConstruct<>(a : Field, b : Field) -> Pair<Field> {
 }
 
 example {p} {a b : Tp.denote p .field} :
-  STHoare p Γ ⟦⟧ (structConstruct.fn.body _ h![] |>.body h![a, b]) (fun v => v.fst = a ∧ v.snd = (b, ())) := by
+  STHoare p Γ ⟦⟧ (structConstruct.fn.body _ h![] |>.body h![a, b]) (fun v => v = (a, b, ())) := by
   simp only [structConstruct]
   steps
   aesop
@@ -259,10 +259,12 @@ example {p} {x y : Tp.denote p .field} :
   STHoare p ⟨[(structConstruct.name, structConstruct.fn)], []⟩
     ⟦⟧ (callDecl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [callDecl]
-  steps <;> tauto
-  simp_all
-  simp only [structConstruct]
   steps
-  simp_all [SLP.entails, SLP.wand, SLP.forall']
-  intros
-  sorry
+  rotate_right 1
+  exact (fun v => v.fst = x)
+  all_goals tauto
+  . simp only [structConstruct]
+    steps
+    simp_all
+  . sl
+    aesop
