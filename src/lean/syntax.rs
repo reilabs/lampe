@@ -46,20 +46,22 @@ fn normalize_ident(ident: &str) -> String {
     ident.split("::").map(|p| without_generic_args(p)).join("::")
 }
 
-#[inline]
 pub(super) fn format_free_function_def(
     func_ident: &str,
     def_generics: &str,
     params: &str,
     ret_type: &str,
     body: &str,
-) -> String {
+) -> (String, String) {
     let func_ident = normalize_ident(func_ident);
-    formatdoc! {
-        r"nr_def {func_ident}<{def_generics}> ({params}) -> {ret_type} {{
+    (
+        func_ident.clone(),
+        formatdoc! {
+            r"nr_def {func_ident}<{def_generics}>({params}) -> {ret_type} {{
             {body}
             }}"
-    }
+        },
+    )
 }
 
 pub(super) fn format_trait_function_def(
@@ -89,7 +91,6 @@ pub(super) mod expr {
         format!("{struct_ident}<{struct_generic_vals}> {{ {fields_ordered} }}")
     }
 
-    #[inline]
     pub fn format_call(func_expr: &str, func_args: &str, out_ty: &str, is_lambda: bool) -> String {
         if is_lambda {
             format!("(^{func_expr}({func_args}) : {out_ty})")
@@ -149,7 +150,6 @@ pub(super) mod expr {
         normalize_ident(ident)
     }
 
-    #[inline]
     pub fn format_func_ident(ident: &str, generics: &str, is_builtin: bool) -> String {
         let ident = normalize_ident(ident);
         if is_builtin {
