@@ -169,9 +169,9 @@ impl LeanEmitter {
                     if self.context.function_meta(&id).trait_impl.is_some() {
                         continue;
                     }
-                    self.emit_function_def(ind, id, "nr_def", true, true)?
+                    self.emit_free_function_def(ind, id)?
                 }
-                ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id, "nr_struct_def")?,
+                ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id)?,
                 ModuleDefId::GlobalId(id) => self.emit_global(ind, id)?,
                 ModuleDefId::TypeAliasId(id) => self.emit_alias(id)?,
                 ModuleDefId::ModuleId(_) => {
@@ -240,7 +240,7 @@ impl LeanEmitter {
         ind.indent();
         let mut method_strings = Vec::<String>::default();
         for func_id in trait_impl.methods.iter() {
-            let method_string = self.emit_function_def(ind, func_id.clone(), "fn", false, false)?;
+            let method_string = self.emit_trait_function_def(ind, func_id.clone())?;
             method_strings.push(method_string);
         }
         ind.dedent()?;
@@ -366,7 +366,7 @@ impl LeanEmitter {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_struct_def(&self, ind: &mut Indenter, s: StructId, prefix: &str) -> Result<String> {
+    pub fn emit_struct_def(&self, ind: &mut Indenter, s: StructId) -> Result<String> {
         let struct_data = self.context.def_interner.get_struct(s);
         let struct_data = struct_data.borrow();
         let fq_path = self
@@ -391,73 +391,28 @@ impl LeanEmitter {
 
         let fields_string = field_strings.join(",\n");
 
-        let result = formatdoc! {
-            r"{prefix} {fq_path}<{generics_string}> {{
-            {fields_string}
-            }}"
-        };
-
-        Ok(result)
+        Ok(syntax::format_struct_def(
+            &fq_path,
+            &generics_string,
+            &fields_string,
+        ))
     }
 
     /// Emits the Lean source code corresponding to a Noir function at the
     /// module level.
     ///
-    /// If `qualify_trait` is set to `true` and if the function
-    /// identified by `func` is from a trait impl, then the trait path is prepended
-    /// to the function name.
-    ///
-    /// If `qualify_self` is set to `true` and if the function
-    /// identified by `func` is from an impl, then the trait path is prepended
-    /// to the function name.
-    ///
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_function_def(
-        &self,
-        ind: &mut Indenter,
-        func: FuncId,
-        prefix: &str,
-        qualify_trait: bool,
-        qualify_self_typ: bool,
-    ) -> Result<String> {
+    pub fn emit_free_function_def(&self, ind: &mut Indenter, func: FuncId) -> Result<String> {
         // Get the various parameters
         let func_data = self.context.function_meta(&func);
-        let generics = &func_data.all_generics;
         let fq_path = self
             .context
             .fully_qualified_function_name(&func_data.source_crate, &func);
-        let generics_string = generics.iter().map(|g| &g.name).join(", ");
+        let generics_string = func_data.all_generics.iter().map(|g| &g.name).join(", ");
         let parameters = self.function_param_string(&func_data.parameters)?;
         let ret_type = self.emit_fully_qualified_type(func_data.return_type());
-        let assoc_trait_string = match func_data.trait_impl {
-            Some(trait_id) if qualify_trait => {
-                let impl_data = self.context.def_interner.get_trait_implementation(trait_id);
-                let impl_data = impl_data.borrow();
-                let trait_data = self.context.def_interner.get_trait(impl_data.trait_id);
-                let fq_crate_name =
-                    self.fq_trait_name_from_crate_id(trait_data.crate_id, impl_data.trait_id);
-                let trait_name = &trait_data.name;
-                let impl_type = self.emit_fully_qualified_type(&impl_data.typ);
-
-                let impl_generics = &impl_data
-                    .trait_generics
-                    .iter()
-                    .map(|g| self.emit_fully_qualified_type(g))
-                    .collect_vec();
-                let generics_str = impl_generics.join(", ");
-
-                let fq_trait_name = if fq_crate_name.is_empty() {
-                    format!("{trait_name}<{generics_str}>")
-                } else {
-                    format!("{fq_crate_name}::{trait_name}<{generics_str}>")
-                };
-
-                format!("({impl_type} as {fq_trait_name})::")
-            }
-            _ => String::new(),
-        };
 
         // Generate the function body ready for insertion
         ind.indent();
@@ -465,26 +420,55 @@ impl LeanEmitter {
         ind.dedent()?;
 
         let self_type_str = match &func_data.self_type {
-            Some(ty) if qualify_self_typ => {
+            Some(ty) => {
                 let fq_type = self.emit_fully_qualified_type(ty);
                 format!("{fq_type}::")
             }
             _ => String::new(),
         };
 
-        // Now we can actually build our function
-        let result = formatdoc! {
-            r"{prefix} {assoc_trait_string}{self_type_str}{fq_path}<{generics_string}>({parameters}) -> {ret_type} {{
-            {body}
-            }}"
-        };
+        let fn_ident = format!("{self_type_str}{fq_path}");
 
-        if result.contains(&format!("{prefix} _::")) {
+        // [TODO] discard the dummy trait methods
+        /* if result.contains(&format!(" _::")) {
             // This is a dummy trait method that we don't care about, so we discard it.
             Ok(String::new())
         } else {
             Ok(result)
-        }
+        } */
+
+        // Now we can actually build our function
+        Ok(syntax::format_free_function_def(
+            &fn_ident,
+            &generics_string,
+            &parameters,
+            &ret_type,
+            &body,
+        ))
+    }
+
+    pub fn emit_trait_function_def(&self, ind: &mut Indenter, func: FuncId) -> Result<String> {
+        // Get the various parameters
+        let func_data = self.context.function_meta(&func);
+        let fq_path = self
+            .context
+            .fully_qualified_function_name(&func_data.source_crate, &func);
+        let generics_string = func_data.direct_generics.iter().map(|g| &g.name).join(", ");
+        let parameters = self.function_param_string(&func_data.parameters)?;
+        let ret_type = self.emit_fully_qualified_type(func_data.return_type());
+
+        // Generate the function body ready for insertion
+        ind.indent();
+        let body = self.emit_expr(ind, self.context.def_interner.function(&func).as_expr())?;
+        ind.dedent()?;
+
+        Ok(syntax::format_trait_function_def(
+            &fq_path,
+            &generics_string,
+            &parameters,
+            &ret_type,
+            &body,
+        ))
     }
 
     /// Emits a fully-qualified type name for types where this is relevant.
@@ -498,7 +482,7 @@ impl LeanEmitter {
     /// When encountering situations that would indicate a bug in the Noir
     /// compiler.
     pub fn emit_fully_qualified_type(&self, typ: &Type) -> String {
-        let str: String = match typ {
+        match typ {
             Type::Array(elem_type, size) => {
                 let elem_type = self.emit_fully_qualified_type(elem_type);
 
@@ -563,19 +547,19 @@ impl LeanEmitter {
                     .expect("Environment did not contain a tuple type")
                     .strip_suffix(")")
                     .expect("Environment did not contain a tuple type");
+
                 format!("{{{env_string}}} -> ({arg_types_str}) -> {ret_str}")
             }
             Type::MutableReference(typ) => {
                 let typ_str = self.emit_fully_qualified_type(typ);
+
                 format!("&mut {typ_str}")
             }
             // In all the other cases we can use the default printing as internal type vars are
             // non-existent, constrained to be types we don't care about customizing, or are
             // non-existent in the phase the emitter runs after.
             _ => format!("{typ}"),
-        };
-
-        str
+        }
     }
 
     /// Generates a fully-qualified module name from a module id.
@@ -687,35 +671,38 @@ impl LeanEmitter {
 
                 syntax::expr::format_prefix_builtin_call(&builtin_func_name, &rhs, &out_ty_str)
             }
-            HirExpression::Ident(ident, _generics) => {
+            HirExpression::Ident(ident, _) => {
                 let name = self.context.def_interner.definition_name(ident.id);
                 let ident_def = self.context.def_interner.definition(ident.id);
+                let generics = self.context.def_interner.get_instantiation_bindings(expr);
+                // [TODO] consider argument order using TypeVariable or TypeVariableId.
+                let generics_str = generics
+                    .iter()
+                    .map(|(_tv_id, (_tv, ty))| self.emit_fully_qualified_type(ty))
+                    .join(", ");
 
                 match ident_def.kind {
                     DefinitionKind::Function(func) => {
                         let function_info = self.context.def_interner.function_meta(&func);
-                        let self_type = match &function_info.self_type.as_ref() {
-                            Some(s) => self.emit_fully_qualified_type(s),
-                            None => String::new(),
-                        };
-
-                        let fn_name = if self_type.is_empty() {
-                            name.to_string()
-                        } else {
-                            format!("{self_type}::{name}")
+                        let fn_name = match &function_info.self_type.as_ref() {
+                            Some(self_type) => {
+                                let self_type_str = self.emit_fully_qualified_type(self_type);
+                                format!("{self_type_str}::{name}")
+                            }
+                            None => name.to_string(),
                         };
 
                         if let Some(builtin_fn_name) =
                             builtin::try_func_as_builtin(&fn_name, function_info)
                         {
-                            syntax::expr::format_ident(&builtin_fn_name, true)
+                            syntax::expr::format_func_ident(&builtin_fn_name, &generics_str, true)
                         } else {
-                            syntax::expr::format_ident(&fn_name, true)
+                            syntax::expr::format_func_ident(&fn_name, &generics_str, false)
                         }
                     }
                     DefinitionKind::Global(..)
                     | DefinitionKind::Local(..)
-                    | DefinitionKind::GenericType(..) => syntax::expr::format_ident(name, false),
+                    | DefinitionKind::GenericType(..) => syntax::expr::format_var_ident(name),
                 }
             }
             HirExpression::Index(index) => {

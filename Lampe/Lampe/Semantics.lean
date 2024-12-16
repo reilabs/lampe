@@ -77,7 +77,7 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
     (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTypes) →
     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res) →
     Omni Γ st (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q →
-    Omni Γ st (@Expr.call (Tp.denote p) tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
+    Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args) Q
 | loopDone :
   lo ≥ hi →
   Omni Γ st (.loop lo hi body) Q

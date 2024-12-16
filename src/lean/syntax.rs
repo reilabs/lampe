@@ -1,20 +1,78 @@
 use indoc::formatdoc;
+use itertools::Itertools;
 use noirc_frontend::macros_api::Ident;
 
 const BUILTIN_PREFIX: &str = "#";
 
 #[inline]
+pub(super) fn format_struct_def(name: &str, def_generics: &str, fields: &str) -> String {
+    formatdoc! {
+        r"nr_struct_def {name}<{def_generics}> {{
+            {fields}
+            }}"
+    }
+}
+
+#[inline]
 pub(super) fn format_trait_impl(
-    impl_id: impl std::fmt::Display,
-    impl_generics: impl std::fmt::Display,
-    trait_name: impl std::fmt::Display,
-    trait_generics: impl std::fmt::Display,
-    target: impl std::fmt::Display,
-    methods: impl std::fmt::Display,
+    impl_id: &str,
+    impl_generics: &str,
+    trait_name: &str,
+    trait_generics: &str,
+    target: &str,
+    methods: &str,
 ) -> String {
     formatdoc! {
         "nr_trait_impl [{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {{
                 {methods} 
+            }}"
+    }
+}
+
+// Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
+fn without_generic_args(ty_str: &str) -> String {
+    let mut ty_str = ty_str.to_string();
+    let Some(left_bracket_idx) = ty_str.find('<') else {
+        return ty_str;
+    };
+    let Some(right_bracket_idx) = ty_str.rfind('>') else {
+        return ty_str;
+    };
+    ty_str.replace_range(left_bracket_idx..(right_bracket_idx + 1), "");
+    ty_str
+}
+
+fn normalize_ident(ident: &str) -> String {
+    ident.split("::").map(|p| without_generic_args(p)).join("::")
+}
+
+#[inline]
+pub(super) fn format_free_function_def(
+    func_ident: &str,
+    def_generics: &str,
+    params: &str,
+    ret_type: &str,
+    body: &str,
+) -> String {
+    let func_ident = normalize_ident(func_ident);
+    formatdoc! {
+        r"nr_def {func_ident}<{def_generics}> ({params}) -> {ret_type} {{
+            {body}
+            }}"
+    }
+}
+
+pub(super) fn format_trait_function_def(
+    func_ident: &str,
+    def_generics: &str,
+    params: &str,
+    ret_type: &str,
+    body: &str,
+) -> String {
+    let func_ident = normalize_ident(func_ident);
+    formatdoc! {
+        r"fn {func_ident}<{def_generics}> ({params}) -> {ret_type} {{
+            {body}
             }}"
     }
 }
@@ -26,22 +84,19 @@ pub(super) mod expr {
     pub fn format_constructor(
         struct_ident: &Ident,
         struct_generic_vals: &str,
-        fields: &str,
+        fields_ordered: &str,
     ) -> String {
-        format!("{struct_ident}<{struct_generic_vals}> {{ {fields} }}")
-    }
-
-    #[inline]
-    pub fn format_index(lhs_expr: &str, index: &str) -> String {
-        format!("{lhs_expr}[{index}]")
+        format!("{struct_ident}<{struct_generic_vals}> {{ {fields_ordered} }}")
     }
 
     #[inline]
     pub fn format_call(func_expr: &str, func_args: &str, out_ty: &str, is_lambda: bool) -> String {
         if is_lambda {
             format!("(^{func_expr}({func_args}) : {out_ty})")
-        } else {
+        } else if func_expr.starts_with(BUILTIN_PREFIX) {
             format!("({func_expr}({func_args}) : {out_ty})")
+        } else {
+            format!("(@{func_expr}({func_args}) : {out_ty})")
         }
     }
 
@@ -51,8 +106,13 @@ pub(super) mod expr {
     }
 
     #[inline]
+    pub fn format_index(lhs_expr: &str, index: &str) -> String {
+        format!("{lhs_expr}[{index}]")
+    }
+
+    #[inline]
     pub fn format_member_access(struct_name: &str, target_expr: &str, member: Ident) -> String {
-        format!("{struct_name} {target_expr} [{member}]")
+        format!("{target_expr}[{struct_name}.{member}]")
     }
 
     #[inline]
@@ -85,11 +145,17 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_ident(ident: &str, is_builtin: bool) -> String {
+    pub fn format_var_ident(ident: &str) -> String {
+        normalize_ident(ident)
+    }
+
+    #[inline]
+    pub fn format_func_ident(ident: &str, generics: &str, is_builtin: bool) -> String {
+        let ident = normalize_ident(ident);
         if is_builtin {
             format!("{BUILTIN_PREFIX}{ident}")
         } else {
-            format!("{ident}")
+            format!("{ident}<{generics}>")
         }
     }
 
@@ -134,7 +200,7 @@ pub(super) mod stmt {
 
     pub fn format_assert(constraint_expr: &str, print_expr: Option<&str>) -> String {
         if let Some(print_expr) = print_expr {
-            format!("{BUILTIN_PREFIX}assert({constraint_expr}, {print_expr})")
+            format!("{BUILTIN_PREFIX}assertPrint({constraint_expr}, {print_expr})")
         } else {
             format!("{BUILTIN_PREFIX}assert({constraint_expr})")
         }

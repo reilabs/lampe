@@ -537,6 +537,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
     | apply callTrait_intro
+    | apply callDecl_intro
     -- memory builtins
     | apply var_intro
     | apply ref_intro

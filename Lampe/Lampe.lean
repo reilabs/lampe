@@ -178,7 +178,7 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v =
   aesop
 
 
-nr_def simpleTraitCallSyntax<I> (x : I) -> I {
+nr_def simpleTraitCallSyntax<I>(x : I) -> I {
   (I as Bulbulize<>)::bulbulize<>(x) : I
 }
 
@@ -241,7 +241,7 @@ example {p} {a b : Tp.denote p .field} :
 
 nr_def structProjection<>(x : Field, y : Field) -> Field {
   let s = Pair<Field> { x, y };
-  s. (Pair<Field>).a
+  s[Pair<Field>.a]
 }
 
 example {p} {x y : Tp.denote p .field} :
@@ -249,3 +249,20 @@ example {p} {x y : Tp.denote p .field} :
   simp only [structProjection]
   steps
   aesop
+
+nr_def callDecl<>(x: Field, y : Field) -> Field {
+  let s = @structConstruct<>(x, y) : Pair<Field>;
+  s[Pair<Field>.a]
+}
+
+example {p} {x y : Tp.denote p .field} :
+  STHoare p ⟨[(structConstruct.name, structConstruct.fn)], []⟩
+    ⟦⟧ (callDecl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
+  simp only [callDecl]
+  steps <;> tauto
+  simp_all
+  simp only [structConstruct]
+  steps
+  simp_all [SLP.entails, SLP.wand, SLP.forall']
+  intros
+  sorry
