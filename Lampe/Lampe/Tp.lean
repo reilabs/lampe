@@ -89,7 +89,7 @@ lemma replicate_cons (hl : x :: xs = List.replicate n a) :
     . cases xs <;> aesop
 
 @[reducible]
-def HList.toList (hList : HList rep tps) (h_same : tps = List.replicate n tp) : List (rep tp) := match hList with
+def HList.toList (l : HList rep tps) (h_same : tps = List.replicate n tp) : List (rep tp) := match l with
 | .nil => []
 | .cons x xs => match tps with
   | [] => []
@@ -98,12 +98,24 @@ def HList.toList (hList : HList rep tps) (h_same : tps = List.replicate n tp) : 
     obtain ⟨hl₁, hl₂⟩ := hl
     exact (hl₁ ▸ x) :: (HList.toList xs hl₂))
 
-theorem HList.toList_len_is_n (h_same : tps = List.replicate n tp) :
-  (HList.toList hl h_same).length = n := by
-  cases hl
-  aesop
-  sorry
+def HList.length (l : HList rep tps) : Nat := match l with
+| .nil => 0
+| .cons _ rem => 1 + (HList.length rem)
 
+theorem HList.length_is_tps_length (l : HList rep tps) : HList.length l = tps.length := by
+  induction tps
+  cases l
+  tauto
+  rename_i tp tps hi
+  cases l
+  rename_i head tail
+  have h' : length (HList.cons head tail) = 1 + length tail := by rfl
+  simp_all only [h', List.length_cons]
+  ring_nf
 
+theorem HList.toList_len_is_n {h_same : tps = List.replicate n tp} :
+  (HList.toList l h_same).length = n := by
+  induction tps <;> induction n <;> cases l
+  all_goals sorry
 
 end Lampe

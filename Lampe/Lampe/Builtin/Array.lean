@@ -16,6 +16,19 @@ def mkArray (n : Nat) := newGenericPureBuiltin
   )⟩)
 
 /--
+Defines the indexing of a array `l : Array tp n` with `i : U 32`
+We make the following assumptions:
+- If `i < n`, then the builtin returns `l[i] : Tp.denote tp`
+- Else (out of bounds access), an exception is thrown.
+
+In Noir, this builtin corresponds to `T[i]` for `T: [T; n]` and `i: uint32`.
+-/
+def arrayIndex := newGenericPureBuiltin
+  (fun (tp, n) => ⟨[.array tp n, .u 32], tp⟩)
+  (fun (_, n) h![l, i] => ⟨i.toNat < n.toNat,
+    fun h => l.get (Fin.mk i.toNat h)⟩)
+
+/--
 Defines the function that evaluates to an array's length `n`.
 This builtin evaluates to an `U 32`. Hence, we assume that `n < 2^32`.
 

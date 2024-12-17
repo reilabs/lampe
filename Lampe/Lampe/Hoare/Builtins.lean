@@ -123,16 +123,6 @@ lemma pureBuiltin_intro_consequence
    apply pureBuiltin_intro_consequence <;> tauto
    tauto
 
--- Arrays
-
-theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
 -- BigInt
 
 theorem bigIntEq_intro : STHoarePureBuiltin p Γ Builtin.bigIntEq (by tauto) h![a, b] (a := ()) := by
@@ -308,7 +298,31 @@ theorem iFromField_intro : STHoarePureBuiltin p Γ Builtin.iFromField (by tauto)
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
+-- Arrays
+
+theorem mkArray_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
+  STHoarePureBuiltin p Γ (Builtin.mkArray n) (by tauto) args (a := (argTps, tp)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto) h![arr, i] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
+
+theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
+
+theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
+
 -- Slice
+
+theorem mkSlice_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
+  STHoarePureBuiltin p Γ (Builtin.mkSlice n) (by tauto) args (a := (argTps, tp)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
 
 theorem sliceLen_intro : STHoarePureBuiltin p Γ Builtin.sliceLen (by tauto) h![s] := by
   apply pureBuiltin_intro_consequence <;> try rfl

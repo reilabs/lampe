@@ -269,12 +269,23 @@ example {p} {x y : Tp.denote p .field} :
   . sl
     aesop
 
-nr_def createSlice<>() -> [Field] {
-  let a = &[1 : Field, 2 : Field];
-  a
+nr_def createSlice<>() -> [bool] {
+  &[true, false]
 }
 
+example : STHoare p Γ ⟦⟧ (createSlice.fn.body _ h![] |>.body h![]) (fun v => v.get? 0 = some true) := by
+  simp only [createSlice, Expr.slice]
+  steps
+  on_goal 3 => exact fun v => v = true
+  sorry
+  steps
+  on_goal 3 => exact fun v => v = true
+  sorry
+  steps
+  tauto
+  intros
+  sorry
+
 nr_def createArray<>() -> [Field; 2] {
-  let a = [1 : Field, 2 : Field];
-  a
+  [1 : Field, 2 : Field]
 }

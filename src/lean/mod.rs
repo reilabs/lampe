@@ -664,7 +664,7 @@ impl LeanEmitter {
                 let rhs_ty = self.context.def_interner.id_type(infix.rhs);
                 let lhs_builtin_ty = lhs_ty.try_into().unwrap();
                 let rhs_builtin_ty = rhs_ty.try_into().unwrap();
-                let builtin_name = builtin::try_infix_into_builtin(
+                let builtin_name = builtin::try_infix_into_builtin_name(
                     infix.operator.kind,
                     lhs_builtin_ty,
                     rhs_builtin_ty,
@@ -680,7 +680,7 @@ impl LeanEmitter {
                 let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
                 let rhs_builtin_ty = rhs_ty.try_into().unwrap();
                 let builtin_name =
-                    builtin::try_prefix_into_builtin(prefix.operator, rhs_builtin_ty)
+                    builtin::try_prefix_into_builtin_name(prefix.operator, rhs_builtin_ty)
                         .expect("not a builtin");
 
                 let rhs = self.emit_expr(ind, prefix.rhs)?;
@@ -709,7 +709,7 @@ impl LeanEmitter {
                         };
 
                         if let Some(builtin_fn_name) =
-                            builtin::try_func_into_builtin(&fn_name, function_info)
+                            builtin::try_func_into_builtin_name(&fn_name, function_info)
                         {
                             syntax::expr::format_builtin_ident(&builtin_fn_name)
                         } else {
@@ -722,8 +722,11 @@ impl LeanEmitter {
                 }
             }
             HirExpression::Index(index) => {
-                let index_builtin_ident =
-                    syntax::expr::format_builtin_ident(builtin::INDEX_BUILTIN_NAME);
+                let coll_type = self.context.def_interner.id_type(index.collection);
+                let coll_builtin_type: builtin::BuiltinType = coll_type.try_into().unwrap();
+                let index_builtin_ident = builtin::try_index_into_builtin_name(coll_builtin_type)
+                    .map(|s| syntax::expr::format_builtin_ident(&s))
+                    .expect(&format!("cannot index {:?}", coll_builtin_type));
 
                 let collection_expr_str = self.emit_expr(ind, index.collection)?;
                 let index_expr_str = self.emit_expr(ind, index.index)?;

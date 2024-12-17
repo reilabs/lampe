@@ -4,6 +4,23 @@ use noirc_frontend::macros_api::Ident;
 
 const BUILTIN_PREFIX: &str = "#";
 
+// Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
+fn without_generic_args(ty_str: &str) -> String {
+    let mut ty_str = ty_str.to_string();
+    let Some(left_bracket_idx) = ty_str.find('<') else {
+        return ty_str;
+    };
+    let Some(right_bracket_idx) = ty_str.rfind('>') else {
+        return ty_str;
+    };
+    ty_str.replace_range(left_bracket_idx..(right_bracket_idx + 1), "");
+    ty_str
+}
+
+fn normalize_ident(ident: &str) -> String {
+    ident.split("::").map(|p| without_generic_args(p)).join("::")
+}
+
 #[inline]
 pub(super) fn format_struct_def(name: &str, def_generics: &str, fields: &str) -> String {
     formatdoc! {
@@ -29,23 +46,7 @@ pub(super) fn format_trait_impl(
     }
 }
 
-// Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
-fn without_generic_args(ty_str: &str) -> String {
-    let mut ty_str = ty_str.to_string();
-    let Some(left_bracket_idx) = ty_str.find('<') else {
-        return ty_str;
-    };
-    let Some(right_bracket_idx) = ty_str.rfind('>') else {
-        return ty_str;
-    };
-    ty_str.replace_range(left_bracket_idx..(right_bracket_idx + 1), "");
-    ty_str
-}
-
-fn normalize_ident(ident: &str) -> String {
-    ident.split("::").map(|p| without_generic_args(p)).join("::")
-}
-
+#[inline]
 pub(super) fn format_free_function_def(
     func_ident: &str,
     def_generics: &str,
@@ -64,6 +65,7 @@ pub(super) fn format_free_function_def(
     )
 }
 
+#[inline]
 pub(super) fn format_trait_function_def(
     func_ident: &str,
     def_generics: &str,
@@ -91,10 +93,12 @@ pub(super) mod expr {
         format!("{struct_ident}<{struct_generic_vals}> {{ {fields_ordered} }}")
     }
 
+    #[inline]
     pub fn format_lambda_call(lam_expr: &str, func_args: &str, out_ty: &str) -> String {
         format!("(^{lam_expr}({func_args}) : {out_ty})")
     }
 
+    #[inline]
     pub fn format_call(func_expr: &str, func_args: &str, out_ty: &str) -> String {
         if func_expr.starts_with(BUILTIN_PREFIX) {
             format!("({func_expr}({func_args}) : {out_ty})")
@@ -110,7 +114,7 @@ pub(super) mod expr {
 
     #[inline]
     pub fn format_cast(source: &str, target_ty: &str) -> String {
-        format!("{source} as {target_ty}")
+        format!("({source}) as {target_ty}")
     }
 
     #[inline]
@@ -142,10 +146,12 @@ pub(super) mod expr {
         normalize_ident(ident)
     }
 
+    #[inline]
     pub fn format_builtin_ident(builtin_name: &str) -> String {
         format!("{BUILTIN_PREFIX}{builtin_name}")
     }
 
+    #[inline]
     pub fn format_func_ident(ident: &str, generics: &str) -> String {
         let ident = normalize_ident(ident);
         format!("{ident}<{generics}>")
@@ -190,6 +196,7 @@ pub(super) mod stmt {
         }
     }
 
+    #[inline]
     pub fn format_assert(constraint_expr: &str, print_expr: Option<&str>) -> String {
         if let Some(print_expr) = print_expr {
             format!("{BUILTIN_PREFIX}assertPrint({constraint_expr}, {print_expr})")
@@ -198,6 +205,7 @@ pub(super) mod stmt {
         }
     }
 
+    #[inline]
     pub fn format_assign(lhs: &str, rhs: &str) -> String {
         format!("{lhs} = {rhs}")
     }

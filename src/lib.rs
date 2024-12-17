@@ -176,7 +176,7 @@ mod test {
             fn main() {
                 let opt = Option2::some(5);
                 opt.is_some();
-                let l = &[1, 2, 3];
+                let l = [1, 2, 3];
                 l[0];
             }
         "#;

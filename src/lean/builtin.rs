@@ -8,27 +8,6 @@ use noirc_frontend::{
 
 use itertools::Itertools;
 
-pub const INDEX_BUILTIN_NAME: &str = "index";
-pub const ZEROED_BUILTIN_NAME: &str = "zeroed";
-pub const NEG_BUILTIN_NAME: &str = "neg";
-pub const NOT_BUILTIN_NAME: &str = "not";
-pub const ADD_BUILTIN_NAME: &str = "add";
-pub const SUB_BUILTIN_NAME: &str = "sub";
-pub const MUL_BUILTIN_NAME: &str = "mul";
-pub const DIV_BUILTIN_NAME: &str = "div";
-pub const MOD_BUILTIN_NAME: &str = "rem";
-pub const EQ_BUILTIN_NAME: &str = "eq";
-pub const NEQ_BUILTIN_NAME: &str = "neq";
-pub const GT_BUILTIN_NAME: &str = "gt";
-pub const LT_BUILTIN_NAME: &str = "lt";
-pub const GEQ_BUILTIN_NAME: &str = "geq";
-pub const LEQ_BUILTIN_NAME: &str = "leq";
-pub const AND_BUILTIN_NAME: &str = "and";
-pub const OR_BUILTIN_NAME: &str = "or";
-pub const XOR_BUILTIN_NAME: &str = "xor";
-pub const SHL_BUILTIN_NAME: &str = "shl";
-pub const SHR_BUILTIN_NAME: &str = "shr";
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinType {
     Field,
@@ -39,6 +18,7 @@ pub enum BuiltinType {
     Unit,
     Array,
     Slice,
+    String,
 }
 
 const fn integer_bit_size_to_u8(s: IntegerBitSize) -> u8 {
@@ -63,9 +43,9 @@ impl TryInto<BuiltinType> for Type {
             Type::Integer(Signedness::Unsigned, s) => {
                 Ok(BuiltinType::Uint(integer_bit_size_to_u8(s)))
             }
-            Type::Array(_, _) => todo!(),
-            Type::Slice(_) => todo!(),
-            Type::String(_) => todo!(),
+            Type::Array(_, _) => Ok(BuiltinType::Array),
+            Type::Slice(_) => Ok(BuiltinType::Slice),
+            Type::String(_) => Ok(BuiltinType::String),
             _ => Err(format!("unknown builtin type `{:?}`", self)),
         }
     }
@@ -88,9 +68,30 @@ impl BuiltinType {
             _ => false,
         }
     }
+
+    fn is_collection(&self) -> bool {
+        match self {
+            BuiltinType::Array | BuiltinType::Slice => true,
+            _ => false,
+        }
+    }
+
+    fn name_prefix(&self) -> String {
+        match self {
+            BuiltinType::Field => format!("f"),
+            BuiltinType::Uint(_) => format!("u"),
+            BuiltinType::Int(_) => format!("i"),
+            BuiltinType::BigInt => format!("bigInt"),
+            BuiltinType::Bool => format!("b"),
+            BuiltinType::Unit => format!("unit"),
+            BuiltinType::Array => format!("array"),
+            BuiltinType::Slice => format!("slice"),
+            BuiltinType::String => format!("string"),
+        }
+    }
 }
 
-pub fn try_func_into_builtin(func_name: &str, func_meta: &FuncMeta) -> Option<String> {
+pub fn try_func_into_builtin_name(func_name: &str, func_meta: &FuncMeta) -> Option<String> {
     let param_types: Result<Vec<BuiltinType>, _> = func_meta
         .parameters
         .0
@@ -99,49 +100,57 @@ pub fn try_func_into_builtin(func_name: &str, func_meta: &FuncMeta) -> Option<St
         .try_collect();
     let param_types = param_types.ok()?;
     match (func_name, param_types.as_slice()) {
-        ("zeroed", _) => Some(ZEROED_BUILTIN_NAME.into()),
+        ("zeroed", _) => Some(format!("zeroed")),
         _ => None,
     }
 }
 
-pub fn try_prefix_into_builtin(op: UnaryOp, rhs_type: BuiltinType) -> Option<String> {
+pub fn try_index_into_builtin_name(coll_type: BuiltinType) -> Option<String> {
+    if coll_type.is_collection() {
+        let ty_name = coll_type.name_prefix();
+        Some(format!("{}_index", ty_name))
+    } else {
+        None
+    }
+}
+
+pub fn try_prefix_into_builtin_name(op: UnaryOp, rhs_type: BuiltinType) -> Option<String> {
+    let ty_name = rhs_type.name_prefix();
     match op {
-        UnaryOp::Minus if rhs_type.is_arithmetic() => Some(NEG_BUILTIN_NAME.into()),
-        UnaryOp::Not if rhs_type.is_bitwise() => Some(NOT_BUILTIN_NAME.into()),
+        UnaryOp::Minus if rhs_type.is_arithmetic() => Some(format!("{}_neg", ty_name)),
+        UnaryOp::Not if rhs_type.is_bitwise() => Some(format!("{}_not", ty_name)),
         UnaryOp::MutableReference => todo!(),
         UnaryOp::Dereference { .. } => todo!(),
         _ => None,
     }
 }
 
-pub fn try_infix_into_builtin(
+pub fn try_infix_into_builtin_name(
     op: BinaryOpKind,
     lhs_type: BuiltinType,
-    rhs_type: BuiltinType,
+    _rhs_type: BuiltinType,
 ) -> Option<String> {
-    if lhs_type != rhs_type {
-        return None;
-    }
+    let ty_name = lhs_type.name_prefix();
     match op {
         // Arithmetic
-        BinaryOpKind::Add if lhs_type.is_arithmetic() => Some(ADD_BUILTIN_NAME.into()),
-        BinaryOpKind::Subtract if lhs_type.is_arithmetic() => Some(SUB_BUILTIN_NAME.into()),
-        BinaryOpKind::Divide if lhs_type.is_arithmetic() => Some(DIV_BUILTIN_NAME.into()),
-        BinaryOpKind::Multiply if lhs_type.is_arithmetic() => Some(MUL_BUILTIN_NAME.into()),
-        BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(MOD_BUILTIN_NAME.into()),
+        BinaryOpKind::Add if lhs_type.is_arithmetic() => Some(format!("{}_add", ty_name)),
+        BinaryOpKind::Subtract if lhs_type.is_arithmetic() => Some(format!("{}_sub", ty_name)),
+        BinaryOpKind::Divide if lhs_type.is_arithmetic() => Some(format!("{}_div", ty_name)),
+        BinaryOpKind::Multiply if lhs_type.is_arithmetic() => Some(format!("{}_mul", ty_name)),
+        BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(format!("{}_rem", ty_name)),
         // Cmp
-        BinaryOpKind::Equal => Some(EQ_BUILTIN_NAME.into()),
-        BinaryOpKind::NotEqual => Some(NEQ_BUILTIN_NAME.into()),
-        BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(GT_BUILTIN_NAME.into()),
-        BinaryOpKind::GreaterEqual if lhs_type.is_arithmetic() => Some(GEQ_BUILTIN_NAME.into()),
-        BinaryOpKind::Less if lhs_type.is_arithmetic() => Some(LT_BUILTIN_NAME.into()),
-        BinaryOpKind::LessEqual if lhs_type.is_arithmetic() => Some(LEQ_BUILTIN_NAME.into()),
+        BinaryOpKind::Equal => Some(format!("{}_eq", ty_name)),
+        BinaryOpKind::NotEqual => Some(format!("{}_neq", ty_name)),
+        BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(format!("{}_gt", ty_name)),
+        BinaryOpKind::GreaterEqual if lhs_type.is_arithmetic() => Some(format!("{}_geq", ty_name)),
+        BinaryOpKind::Less if lhs_type.is_arithmetic() => Some(format!("{}_lt", ty_name)),
+        BinaryOpKind::LessEqual if lhs_type.is_arithmetic() => Some(format!("{}_leq", ty_name)),
         // Bit
-        BinaryOpKind::And if lhs_type.is_bitwise() => Some(AND_BUILTIN_NAME.into()),
-        BinaryOpKind::Or if lhs_type.is_bitwise() => Some(OR_BUILTIN_NAME.into()),
-        BinaryOpKind::Xor if lhs_type.is_bitwise() => Some(XOR_BUILTIN_NAME.into()),
-        BinaryOpKind::ShiftLeft if lhs_type.is_bitwise() => Some(SHL_BUILTIN_NAME.into()),
-        BinaryOpKind::ShiftRight if lhs_type.is_bitwise() => Some(SHR_BUILTIN_NAME.into()),
+        BinaryOpKind::And if lhs_type.is_bitwise() => Some(format!("{}_and", ty_name)),
+        BinaryOpKind::Or if lhs_type.is_bitwise() => Some(format!("{}_or", ty_name)),
+        BinaryOpKind::Xor if lhs_type.is_bitwise() => Some(format!("{}_xor", ty_name)),
+        BinaryOpKind::ShiftLeft if lhs_type.is_bitwise() => Some(format!("{}_shl", ty_name)),
+        BinaryOpKind::ShiftRight if lhs_type.is_bitwise() => Some(format!("{}_shr", ty_name)),
         _ => None,
     }
 }
