@@ -273,19 +273,18 @@ nr_def createSlice<>() -> [bool] {
   &[true, false]
 }
 
-example : STHoare p Γ ⟦⟧ (createSlice.fn.body _ h![] |>.body h![]) (fun v => v.get? 0 = some true) := by
+example : STHoare p Γ ⟦⟧ (createSlice.fn.body _ h![] |>.body h![]) (fun v => v.get? 1 = some false) := by
   simp only [createSlice, Expr.slice]
   steps
-  on_goal 3 => exact fun v => v = true
-  sorry
-  steps
-  on_goal 3 => exact fun v => v = true
-  sorry
-  steps
-  tauto
-  intros
-  sorry
+  aesop
+  aesop
 
 nr_def createArray<>() -> [Field; 2] {
   [1 : Field, 2 : Field]
 }
+
+example : STHoare p Γ ⟦⟧ (createArray.fn.body _ h![] |>.body h![]) (fun v => v.toList.get? 1 = some 2) := by
+  simp only [createArray, Expr.array]
+  steps
+  aesop
+  aesop

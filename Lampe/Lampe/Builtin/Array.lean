@@ -4,16 +4,10 @@ namespace Lampe.Builtin
 /--
 Defines the builtin array constructor.
 -/
-def mkArray (n : Nat) := newGenericPureBuiltin
+def mkArray (n : U 32) := newGenericPureBuiltin
   (fun (argTps, tp) => ⟨argTps, (.array tp n)⟩)
-  (fun (argTps, tp) args => ⟨argTps = List.replicate n tp ∧ n < 2^32,
-    fun h => Mathlib.Vector.ofFn fun i => List.get (HList.toList args (by tauto)) (by
-      have hn : BitVec.toNat (n := 32) ↑n = n := by
-        simp_all
-      rw [hn] at i
-      convert i
-      apply HList.toList_len_is_n
-  )⟩)
+  (fun (argTps, tp) args => ⟨argTps = List.replicate n.toNat tp,
+    fun h => HList.toVec args h⟩)
 
 /--
 Defines the indexing of a array `l : Array tp n` with `i : U 32`

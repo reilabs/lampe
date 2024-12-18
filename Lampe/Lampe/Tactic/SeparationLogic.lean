@@ -60,7 +60,30 @@ theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x
   simp [SLP.star_comm]
 
 theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.lit (.u s) n) fun v => v = n := by
-  -- apply litU_intro
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.lit .field n) fun v => v = n := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.lit .bool 0) fun v => v = false := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.lit .bool 1) fun v => v = true := by
   unfold STHoare THoare
   intro H st hp
   constructor
@@ -531,6 +554,9 @@ elab "sl" : tactic => do
 macro "stephelper1" : tactic => `(tactic|(
   (first
     | apply Lampe.STHoare.litU_intro
+    | apply Lampe.STHoare.litField_intro
+    | apply Lampe.STHoare.litTrue_intro
+    | apply Lampe.STHoare.litFalse_intro
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
@@ -595,8 +621,11 @@ macro "stephelper1" : tactic => `(tactic|(
 
 macro "stephelper2" : tactic => `(tactic|(
   (first
-    | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left Lampe.STHoare.litU_intro
+    | apply consequence_frame_left Lampe.STHoare.litField_intro
+    | apply consequence_frame_left Lampe.STHoare.litTrue_intro
+    | apply consequence_frame_left Lampe.STHoare.litFalse_intro
+    | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left assert_intro
     -- | apply consequence_frame_left skip_intro
     | apply consequence_frame_left lam_intro
@@ -658,8 +687,11 @@ macro "stephelper2" : tactic => `(tactic|(
 
 macro "stephelper3" : tactic => `(tactic|(
   (first
-    | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top Lampe.STHoare.litU_intro
+    | apply ramified_frame_top Lampe.STHoare.litField_intro
+    | apply ramified_frame_top Lampe.STHoare.litTrue_intro
+    | apply ramified_frame_top Lampe.STHoare.litFalse_intro
+    | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top lam_intro
