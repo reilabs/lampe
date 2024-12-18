@@ -70,6 +70,13 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | _ => throwUnsupportedSyntax
 
 partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) := match i with
+-- arith (generic)
+| "add"            => `(@Builtin.add)
+| "sub"            => `(Builtin.sub)
+| "mul"            => `(Builtin.mul)
+| "div"            => `(Builtin.div)
+| "rem"            => `(Builtin.rem)
+| "neg"            => `(Builtin.neg)
 -- arith
 | "f_add"            => `(Builtin.fAdd)
 | "u_add"            => `(Builtin.uAdd)

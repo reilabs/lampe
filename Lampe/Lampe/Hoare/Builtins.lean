@@ -57,6 +57,104 @@ lemma pureBuiltin_intro_consequence
   rintro ⟨_, _⟩
   simp_all [SLP.entails_top]
 
+-- Arithmetics (generic)
+
+ theorem add_intro {a b : Tp.denote p tp} [Builtin.AddTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .add) h![a, b]) (fun v => ∃ h, v = Builtin.AddTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.AddTp.validate tp inst p a b)
+  . apply Builtin.addOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.addOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem sub_intro {a b : Tp.denote p tp} [Builtin.SubTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .sub) h![a, b]) (fun v => ∃ h, v = Builtin.SubTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.SubTp.validate tp inst p a b)
+  . apply Builtin.subOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.subOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem mul_intro {a b : Tp.denote p tp} [Builtin.MulTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .mul) h![a, b]) (fun v => ∃ h, v = Builtin.MulTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.MulTp.validate tp inst p a b)
+  . apply Builtin.mulOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.mulOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem div_intro {a b : Tp.denote p tp} [Builtin.DivTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .div) h![a, b]) (fun v => ∃ h, v = Builtin.DivTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.DivTp.validate tp inst p a b)
+  . apply Builtin.divOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.divOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem rem_intro {a b : Tp.denote p tp} [Builtin.RemTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .rem) h![a, b]) (fun v => ∃ h, v = Builtin.RemTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.RemTp.validate tp inst p a b)
+  . apply Builtin.remOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.remOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem neg_intro {a : Tp.denote p tp} [Builtin.NegTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp] tp (.builtin .neg) h![a]) (fun v => ∃ h, v = Builtin.NegTp.compute a h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.NegTp.validate tp inst p a)
+  . apply Builtin.negOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.negOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
 -- Arithmetics
 
  theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by

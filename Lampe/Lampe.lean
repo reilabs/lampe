@@ -16,7 +16,7 @@ example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v =
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
-  #f_add(x, y) : I;
+  #add(x, y) : I;
   #assert(#f_eq(a, x) : bool) : Unit;
   #assert(#f_eq(a, y) : bool) : Unit;
 }
@@ -92,7 +92,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body h
   . aesop
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
-  let add = |a : Field, b : Field| -> Field { #f_add(a, b) : Field };
+  let add = |a : Field, b : Field| -> Field { #add(a, b) : Field };
   ^add(x, y) : Field;
 }
 
@@ -114,7 +114,7 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
 
 nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field where {
     fn bulbulize<>(x : Field) -> Field {
-      #f_add(x, x) : Field
+      #add(x, x) : Field
     };
 }
 
@@ -144,6 +144,7 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v =>
   casesm ∃_, _
   intro
   subst_vars
+  simp_all only [Builtin.instAddTpField]
   ring
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by
