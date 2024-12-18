@@ -227,7 +227,7 @@ theorem iShr_intro : STHoarePureBuiltin p Γ Builtin.iShr (by tauto) h![a, b] :=
 theorem unitEq_intro : STHoarePureBuiltin p Γ Builtin.unitEq (by tauto) h![a, b] (a := ()) := by
    apply pureBuiltin_intro_consequence <;> tauto
 
-theorem boolEq_intro : STHoarePureBuiltin p Γ Builtin.boolEq (by tauto) h![a, b] (a := ()) := by
+theorem bEq_intro : STHoarePureBuiltin p Γ Builtin.bEq (by tauto) h![a, b] (a := ()) := by
    apply pureBuiltin_intro_consequence <;> tauto
    tauto
 

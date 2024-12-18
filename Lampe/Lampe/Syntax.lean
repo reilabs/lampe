@@ -70,20 +70,41 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | _ => throwUnsupportedSyntax
 
 partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) := match i with
-| "add"              => `(Builtin.fAdd)
-| "sub"              => `(Builtin.fSub)
-| "mul"              => `(Builtin.fMul)
-| "div"              => `(Builtin.fDiv)
-| "eq"               => `(Builtin.fEq)
-| "assert"           => `(Builtin.assert)
-| "not"              => `(Builtin.bNot)
-| "lt"               => `(Builtin.lt)
-| "cast"             => `(Builtin.cast)
-| "modulus_num_bits" => `(Builtin.fModNumBits)
-| "to_le_bytes"      => `(Builtin.toLeBytes)
+-- arith
+| "f_add"            => `(Builtin.fAdd)
+| "u_add"            => `(Builtin.uAdd)
+| "i_add"            => `(Builtin.iAdd)
+| "f_sub"            => `(Builtin.fSub)
+| "u_sub"            => `(Builtin.uSub)
+| "i_sub"            => `(Builtin.iSub)
+| "f_mul"            => `(Builtin.fMul)
+| "u_mul"            => `(Builtin.uMul)
+| "i_mul"            => `(Builtin.iMul)
+| "f_div"            => `(Builtin.fDiv)
+| "u_div"            => `(Builtin.uDiv)
+| "i_div"            => `(Builtin.iDiv)
+| "u_rem"            => `(Builtin.uRem)
+| "i_rem"            => `(Builtin.iRem)
+| "f_neg"            => `(Builtin.fNeg)
+| "i_neg"            => `(Builtin.iNeg)
+-- cmp
+| "b_eq"             => `(Builtin.bEq)
+| "f_eq"             => `(Builtin.fEq)
+| "u_eq"             => `(Builtin.uEq)
+| "i_eq"             => `(Builtin.iEq)
+| "unit_eq"          => `(Builtin.unitEq)
+| "str_eq"           => `(Builtin.strEq)
+| "u_lt"              => `(Builtin.uLt)
+| "i_lt"              => `(Builtin.iLt)
+| "u_gt"              => `(Builtin.uGt)
+| "i_gt"              => `(Builtin.iGt)
+-- bit
+| "b_not"            => `(Builtin.bNot)
+-- array
 | "array_len"        => `(Builtin.arrayLen)
 | "array_index"      => `(Builtin.arrayIndex)
 | "array_as_slice"   => `(Builtin.arrayAsSlice)
+-- slice
 | "slice_len"        => `(Builtin.sliceLen)
 | "slice_index"      => `(Builtin.sliceIndex)
 | "slice_push_back"  => `(Builtin.slicePushBack)
@@ -91,10 +112,16 @@ partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | "slice_pop_back"   => `(Builtin.slicePopBack)
 | "slice_pop_front"  => `(Builtin.slicePopFront)
 | "slice_insert"     => `(Builtin.sliceInsert)
+-- memory
 | "ref"              => `(Builtin.ref)
 | "read_ref"         => `(Builtin.readRef)
 | "write_ref"        => `(Builtin.writeRef)
 | "fresh"            => `(Builtin.fresh)
+-- other
+| "assert"           => `(Builtin.assert)
+| "cast"             => `(Builtin.cast)
+| "modulus_num_bits" => `(Builtin.fModNumBits)
+| "to_le_bytes"      => `(Builtin.toLeBytes)
 | _ => throwError "Unknown builtin {i}"
 
 syntax ident ":" nr_type : nr_param_decl

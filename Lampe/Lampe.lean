@@ -16,9 +16,9 @@ example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v =
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
-  #add(x, y) : I;
-  #assert(#eq(a, x) : bool) : Unit;
-  #assert(#eq(a, y) : bool) : Unit;
+  #f_add(x, y) : I;
+  #assert(#f_eq(a, x) : bool) : Unit;
+  #assert(#f_eq(a, y) : bool) : Unit;
 }
 
 example {x y : Tp.denote p .field} : STHoare p Γ ⟦⟧ (weirdEq.fn.body _ h![.field] |>.body h![x, y]) fun _ => x = y := by
@@ -60,7 +60,7 @@ example {self that : Tp.denote p (.slice tp)} : STHoare p Γ ⟦⟧ (sliceAppend
 
 nr_def simple_if<>(x : Field, y : Field) -> Field {
   let mut z = x;
-  if #eq(x, x) : bool {
+  if #f_eq(x, x) : bool {
     z = y
    };
   z
@@ -78,7 +78,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, 
 
 
 nr_def simple_if_else<>(x : Field, y : Field) -> Field {
-  let z = if #eq(x, x) : bool { x } else { y };
+  let z = if #f_eq(x, x) : bool { x } else { y };
   z
 }
 
@@ -92,7 +92,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body h
   . aesop
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
-  let add = |a : Field, b : Field| -> Field { #add(a, b) : Field };
+  let add = |a : Field, b : Field| -> Field { #f_add(a, b) : Field };
   ^add(x, y) : Field;
 }
 
@@ -114,7 +114,7 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
 
 nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field where {
     fn bulbulize<>(x : Field) -> Field {
-      #add(x, x) : Field
+      #f_add(x, x) : Field
     };
 }
 
@@ -182,7 +182,7 @@ nr_def simpleTraitCallSyntax<I>(x : I) -> I {
   (I as Bulbulize<>)::bulbulize<>(x) : I
 }
 
-example {p} {arg : Tp.denote p Tp.field} :
+example {arg : Tp.denote p Tp.field} :
   STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCallSyntax.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
   simp only [simpleTraitCallSyntax]
   steps
@@ -212,7 +212,7 @@ nr_def genericTraitCall<>(x : Field) -> Field {
   (Field as Me<>)::me<>(x) : Field
 }
 
-example {p} {x : Tp.denote p Tp.field} :
+example {x : Tp.denote p Tp.field} :
   STHoare p genericTraitEnv ⟦⟧ (genericTraitCall.fn.body _ h![] |>.body h![x]) (fun v => v = x) := by
   simp only [genericTraitCall]
   steps
@@ -233,7 +233,7 @@ nr_def structConstruct<>(a : Field, b : Field) -> Pair<Field> {
   Pair<Field> { a, b }
 }
 
-example {p} {a b : Tp.denote p .field} :
+example {a b : Tp.denote p .field} :
   STHoare p Γ ⟦⟧ (structConstruct.fn.body _ h![] |>.body h![a, b]) (fun v => v = (a, b, ())) := by
   simp only [structConstruct]
   steps
@@ -244,7 +244,7 @@ nr_def structProjection<>(x : Field, y : Field) -> Field {
   s[Pair<Field>.a]
 }
 
-example {p} {x y : Tp.denote p .field} :
+example {x y : Tp.denote p .field} :
   STHoare p Γ ⟦⟧ (structProjection.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [structProjection]
   steps
@@ -255,7 +255,7 @@ nr_def callDecl<>(x: Field, y : Field) -> Field {
   s[Pair<Field>.a]
 }
 
-example {p} {x y : Tp.denote p .field} :
+example {x y : Tp.denote p .field} :
   STHoare p ⟨[(structConstruct.name, structConstruct.fn)], []⟩
     ⟦⟧ (callDecl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [callDecl]
@@ -275,9 +275,7 @@ nr_def createSlice<>() -> [bool] {
 
 example : STHoare p Γ ⟦⟧ (createSlice.fn.body _ h![] |>.body h![]) (fun v => v.get? 1 = some false) := by
   simp only [createSlice, Expr.slice]
-  steps
-  aesop
-  aesop
+  steps <;> aesop
 
 nr_def createArray<>() -> [Field; 2] {
   [1 : Field, 2 : Field]
@@ -285,6 +283,4 @@ nr_def createArray<>() -> [Field; 2] {
 
 example : STHoare p Γ ⟦⟧ (createArray.fn.body _ h![] |>.body h![]) (fun v => v.toList.get? 1 = some 2) := by
   simp only [createArray, Expr.array]
-  steps
-  aesop
-  aesop
+  steps <;> aesop
