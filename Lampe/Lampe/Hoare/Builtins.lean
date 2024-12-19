@@ -155,6 +155,30 @@ lemma pureBuiltin_intro_consequence
     . tauto
     . simp_all [mapToValHeapCondition]
 
+-- Comparison (generic)
+
+ theorem eq_intro {a b : Tp.denote p tp} [Builtin.EqTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b]) (fun v => v = Builtin.EqTp.eq a b) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  apply Builtin.eqOmni.eq
+  . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+    apply SLP.ent_star_top
+    simp_all only [SLP.true_star, exists_const]
+
+ theorem neq_intro {a b : Tp.denote p tp} [Builtin.NeqTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] .bool (.builtin .neq) h![a, b]) (fun v => v = Builtin.NeqTp.neq a b) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  apply Builtin.neqOmni.neq
+  . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+    apply SLP.ent_star_top
+    simp_all only [SLP.true_star, exists_const]
+
 -- Arithmetics
 
  theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by

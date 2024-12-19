@@ -3,10 +3,12 @@ use noirc_frontend::{
     ast::{IntegerBitSize, UnaryOp},
     hir_def::function::FuncMeta,
     macros_api::Signedness,
-    Type,
+    Type, TypeVariableKind,
 };
 
 use itertools::Itertools;
+
+pub type BuiltinName = String;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinType {
@@ -46,6 +48,9 @@ impl TryInto<BuiltinType> for Type {
             Type::Array(_, _) => Ok(BuiltinType::Array),
             Type::Slice(_) => Ok(BuiltinType::Slice),
             Type::String(_) => Ok(BuiltinType::String),
+            // [TODO] these need to be handled better
+            // Type::TypeVariable(_, TypeVariableKind::IntegerOrField) => Ok(BuiltinType::Field),
+            // Type::TypeVariable(_, TypeVariableKind::Integer) => Ok(BuiltinType::Int(64)),
             _ => Err(format!("unknown builtin type `{:?}`", self)),
         }
     }
@@ -86,12 +91,12 @@ impl BuiltinType {
             BuiltinType::Unit => format!("unit"),
             BuiltinType::Array => format!("array"),
             BuiltinType::Slice => format!("slice"),
-            BuiltinType::String => format!("string"),
+            BuiltinType::String => format!("str"),
         }
     }
 }
 
-pub fn try_func_into_builtin_name(func_name: &str, func_meta: &FuncMeta) -> Option<String> {
+pub fn try_func_into_builtin_name(func_ident: &str, func_meta: &FuncMeta) -> Option<BuiltinName> {
     let param_types: Result<Vec<BuiltinType>, _> = func_meta
         .parameters
         .0
@@ -99,13 +104,13 @@ pub fn try_func_into_builtin_name(func_name: &str, func_meta: &FuncMeta) -> Opti
         .map(|(_, ty, _)| ty.clone().try_into())
         .try_collect();
     let param_types = param_types.ok()?;
-    match (func_name, param_types.as_slice()) {
+    match (func_ident, param_types.as_slice()) {
         ("zeroed", _) => Some(format!("zeroed")),
         _ => None,
     }
 }
 
-pub fn try_index_into_builtin_name(coll_type: BuiltinType) -> Option<String> {
+pub fn try_index_into_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     if coll_type.is_collection() {
         let ty_name = coll_type.name_prefix();
         Some(format!("{}_index", ty_name))
@@ -114,7 +119,7 @@ pub fn try_index_into_builtin_name(coll_type: BuiltinType) -> Option<String> {
     }
 }
 
-pub fn try_prefix_into_builtin_name(op: UnaryOp, rhs_type: BuiltinType) -> Option<String> {
+pub fn try_prefix_into_builtin_name(op: UnaryOp, rhs_type: BuiltinType) -> Option<BuiltinName> {
     let ty_name = rhs_type.name_prefix();
     match op {
         UnaryOp::Minus if rhs_type.is_arithmetic() => Some(format!("{}_neg", ty_name)),
@@ -129,7 +134,7 @@ pub fn try_infix_into_builtin_name(
     op: BinaryOpKind,
     lhs_type: BuiltinType,
     _rhs_type: BuiltinType,
-) -> Option<String> {
+) -> Option<BuiltinName> {
     let ty_name = lhs_type.name_prefix();
     match op {
         // Arithmetic

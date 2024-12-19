@@ -16,13 +16,15 @@ use noirc_frontend::{
         Context,
     },
     hir_def::{
-        expr::{HirArrayLiteral, HirIdent},
+        expr::{HirArrayLiteral, HirIdent, ImplKind},
         function::Parameters,
         stmt::{HirLValue, HirPattern},
         traits::TraitImpl,
     },
     macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, StructId},
-    node_interner::{DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId},
+    node_interner::{
+        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TraitMethodId, TypeAliasId,
+    },
     Type,
 };
 
@@ -295,53 +297,6 @@ impl LeanEmitter {
             Type::NamedGeneric(..) => Vec::from([format!("{typ}")]),
             _ => unimplemented!("cannot collect generics from {typ} (yet)"),
         }
-    }
-
-    /// Emits Lean code corresponding to a trait definition in Noir.
-    ///
-    /// Note that this doesn't currently contend with associated types or consts
-    /// in traits due to a strange indexing issue that may or may not be a Noir
-    /// compiler bug.
-    ///
-    /// # Errors
-    ///
-    /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_trait(&self, ind: &mut Indenter, trait_id: TraitId) -> Result<String> {
-        let trait_data = self.context.def_interner.get_trait(trait_id);
-        let trait_name = &trait_data.name;
-        let fq_crate_name = self.fq_trait_name_from_crate_id(trait_data.crate_id, trait_id);
-        let full_name = if fq_crate_name.is_empty() {
-            trait_name.to_string()
-        } else {
-            format!("{fq_crate_name}::{trait_name}")
-        };
-        let generics = trait_data.generics.iter().map(|g| g.name.clone()).join(", ");
-
-        let method_strings = &trait_data
-            .methods
-            .iter()
-            .map(|method| {
-                let name = &method.name;
-                let generics = method.direct_generics.iter().map(|g| &g.name).join(", ");
-                let typ = self.emit_fully_qualified_type(&method.typ);
-
-                // We ignore defaults as they appear to be instantiated by this point for
-                // implementing types.
-                format!("fn {name}<{generics}> : {typ};")
-            })
-            .collect_vec();
-
-        ind.indent();
-        let methods = ind.run(method_strings.join("\n"));
-        ind.dedent()?;
-
-        let trait_def = formatdoc! {
-            r"trait {full_name}<{generics}> {{
-            {methods}
-            }}"
-        };
-
-        Ok(trait_def)
     }
 
     /// Emits the Lean code corresponding to a type alias in Noir.
@@ -660,8 +615,11 @@ impl LeanEmitter {
                 statements.join("\n")
             }
             HirExpression::Infix(infix) => {
+                let lhs = self.emit_expr(ind, infix.lhs)?;
+                let rhs = self.emit_expr(ind, infix.rhs)?;
                 let lhs_ty = self.context.def_interner.id_type(infix.lhs);
                 let rhs_ty = self.context.def_interner.id_type(infix.rhs);
+
                 let lhs_builtin_ty = lhs_ty.try_into().unwrap();
                 let rhs_builtin_ty = rhs_ty.try_into().unwrap();
                 let builtin_name = builtin::try_infix_into_builtin_name(
@@ -670,9 +628,6 @@ impl LeanEmitter {
                     rhs_builtin_ty,
                 )
                 .expect("not a builtin");
-
-                let lhs = self.emit_expr(ind, infix.lhs)?;
-                let rhs = self.emit_expr(ind, infix.rhs)?;
 
                 syntax::expr::format_infix_builtin_call(&builtin_name, &lhs, &rhs, &out_ty_str)
             }
@@ -698,23 +653,16 @@ impl LeanEmitter {
                     .join(", ");
 
                 match ident_def.kind {
-                    DefinitionKind::Function(func) => {
-                        let function_info = self.context.def_interner.function_meta(&func);
-                        let fn_name = match &function_info.self_type.as_ref() {
-                            Some(self_type) => {
-                                let self_type_str = self.emit_fully_qualified_type(self_type);
+                    DefinitionKind::Function(func_id) => {
+                        let func_meta = self.context.def_interner.function_meta(&func_id);
+                        let fn_name = match &func_meta.self_type {
+                            Some(self_type) if func_meta.trait_impl.is_none() => {
+                                let self_type_str = self.emit_fully_qualified_type(&self_type);
                                 format!("{self_type_str}::{name}")
                             }
-                            None => name.to_string(),
+                            _ => name.to_string(),
                         };
-
-                        if let Some(builtin_fn_name) =
-                            builtin::try_func_into_builtin_name(&fn_name, function_info)
-                        {
-                            syntax::expr::format_builtin_ident(&builtin_fn_name)
-                        } else {
-                            syntax::expr::format_func_ident(&fn_name, &generics_str)
-                        }
+                        syntax::expr::format_func_ident(&fn_name, &generics_str)
                     }
                     DefinitionKind::Global(..)
                     | DefinitionKind::Local(..)
@@ -725,14 +673,13 @@ impl LeanEmitter {
                 let coll_type = self.context.def_interner.id_type(index.collection);
                 let coll_builtin_type: builtin::BuiltinType = coll_type.try_into().unwrap();
                 let index_builtin_ident = builtin::try_index_into_builtin_name(coll_builtin_type)
-                    .map(|s| syntax::expr::format_builtin_ident(&s))
                     .expect(&format!("cannot index {:?}", coll_builtin_type));
 
                 let collection_expr_str = self.emit_expr(ind, index.collection)?;
                 let index_expr_str = self.emit_expr(ind, index.index)?;
                 let args_str = format!("{collection_expr_str}, {index_expr_str}");
 
-                syntax::expr::format_call(&index_builtin_ident, &args_str, &out_ty_str)
+                syntax::expr::format_builtin_call(&index_builtin_ident, &args_str, &out_ty_str)
             }
             HirExpression::Literal(lit) => self.emit_literal(ind, lit, expr)?,
             HirExpression::Constructor(constructor) => {
@@ -788,14 +735,63 @@ impl LeanEmitter {
                     .map(|arg| self.emit_expr(ind, *arg))
                     .try_collect()?;
                 let args_str = args.join(", ");
+                let func_expr = self.context.def_interner.expression(&call.func);
+                // If the function expression is an identifier, then get the function metadata associated with it.
+                let func_meta = match func_expr {
+                    HirExpression::Ident(ident, ..) => {
+                        let ident_def = self.context.def_interner.definition(ident.id);
+                        match ident_def.kind {
+                            DefinitionKind::Function(func_id) => {
+                                Some(self.context.def_interner.function_meta(&func_id))
+                            }
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
+                // If the function expression is a trait function identifier, then acquire the associated trait.
+                let trait_info = func_meta
+                    .and_then(|m| m.trait_impl)
+                    .map(|impl_id| self.context.def_interner.get_trait_implementation(impl_id))
+                    .map(|trait_impl| {
+                        self.context.def_interner.get_trait(trait_impl.borrow().trait_id)
+                    });
+                // If the function expression is of type function and has an environment, then this is a lambda call.
                 let is_lambda = match self.context.def_interner.id_type(call.func) {
                     Type::Function(_, _, env) if matches!(*env, Type::Tuple(..)) => true,
                     _ => false,
                 };
-                if is_lambda {
-                    syntax::expr::format_lambda_call(&function, &args_str, &out_ty_str)
-                } else {
-                    syntax::expr::format_call(&function, &args_str, &out_ty_str)
+                let self_type = func_meta.and_then(|func_meta| func_meta.self_type.as_ref());
+                match (is_lambda, self_type, trait_info, func_meta) {
+                    (true, _, _, _) => {
+                        syntax::expr::format_lambda_call(&function, &args_str, &out_ty_str)
+                    }
+                    (_, Some(self_type), Some(trait_info), _) => {
+                        let self_type_str = self.emit_fully_qualified_type(&self_type);
+                        syntax::expr::format_trait_call(
+                            &self_type_str,
+                            &trait_info.name.to_string(),
+                            &function,
+                            &args_str,
+                            &out_ty_str,
+                        )
+                    }
+                    (_, _, _, Some(func_meta)) => {
+                        let func_ident =
+                            self.context.def_interner.definition_name(func_meta.name.id);
+                        if let Some(builtin_fn_name) =
+                            builtin::try_func_into_builtin_name(func_ident, func_meta)
+                        {
+                            syntax::expr::format_builtin_call(
+                                &builtin_fn_name,
+                                &args_str,
+                                &out_ty_str,
+                            )
+                        } else {
+                            syntax::expr::format_decl_call(&function, &args_str, &out_ty_str)
+                        }
+                    }
+                    _ => syntax::expr::format_decl_call(&function, &args_str, &out_ty_str),
                 }
             }
             HirExpression::Cast(cast) => {
@@ -846,6 +842,7 @@ impl LeanEmitter {
                     .map(|capture| {
                         let capture_type =
                             self.context.def_interner.definition_type(capture.ident.id);
+                        let capture_type = self.emit_fully_qualified_type(&capture_type);
                         let name = self.context.def_interner.definition_name(capture.ident.id);
 
                         format!("{name} : {capture_type}")

@@ -94,17 +94,29 @@ pub(super) mod expr {
     }
 
     #[inline]
+    pub fn format_trait_call(
+        sub_type: &str,
+        trait_name: &str,
+        func_ident: &str,
+        func_args: &str,
+        out_ty: &str,
+    ) -> String {
+        format!("({sub_type} as {trait_name})::{func_ident}({func_args}) : {out_ty}")
+    }
+
+    #[inline]
     pub fn format_lambda_call(lam_expr: &str, func_args: &str, out_ty: &str) -> String {
         format!("(^{lam_expr}({func_args}) : {out_ty})")
     }
 
     #[inline]
-    pub fn format_call(func_expr: &str, func_args: &str, out_ty: &str) -> String {
-        if func_expr.starts_with(BUILTIN_PREFIX) {
-            format!("({func_expr}({func_args}) : {out_ty})")
-        } else {
-            format!("(@{func_expr}({func_args}) : {out_ty})")
-        }
+    pub fn format_decl_call(func_expr: &str, func_args: &str, out_ty: &str) -> String {
+        format!("(@{func_expr}({func_args}) : {out_ty})")
+    }
+
+    #[inline]
+    pub fn format_builtin_call(func_ident: &str, func_args: &str, out_ty: &str) -> String {
+        format!("(#{func_ident}({func_args}) : {out_ty})")
     }
 
     #[inline]
@@ -144,11 +156,6 @@ pub(super) mod expr {
     #[inline]
     pub fn format_var_ident(ident: &str) -> String {
         normalize_ident(ident)
-    }
-
-    #[inline]
-    pub fn format_builtin_ident(builtin_name: &str) -> String {
-        format!("{BUILTIN_PREFIX}{builtin_name}")
     }
 
     #[inline]

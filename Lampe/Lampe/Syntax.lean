@@ -71,29 +71,15 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 
 partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) := match i with
 -- arith (generic)
-| "add"            => `(@Builtin.add)
+| "add"            => `(Builtin.add)
 | "sub"            => `(Builtin.sub)
 | "mul"            => `(Builtin.mul)
 | "div"            => `(Builtin.div)
 | "rem"            => `(Builtin.rem)
 | "neg"            => `(Builtin.neg)
--- arith
-| "f_add"            => `(Builtin.fAdd)
-| "u_add"            => `(Builtin.uAdd)
-| "i_add"            => `(Builtin.iAdd)
-| "f_sub"            => `(Builtin.fSub)
-| "u_sub"            => `(Builtin.uSub)
-| "i_sub"            => `(Builtin.iSub)
-| "f_mul"            => `(Builtin.fMul)
-| "u_mul"            => `(Builtin.uMul)
-| "i_mul"            => `(Builtin.iMul)
-| "f_div"            => `(Builtin.fDiv)
-| "u_div"            => `(Builtin.uDiv)
-| "i_div"            => `(Builtin.iDiv)
-| "u_rem"            => `(Builtin.uRem)
-| "i_rem"            => `(Builtin.iRem)
-| "f_neg"            => `(Builtin.fNeg)
-| "i_neg"            => `(Builtin.iNeg)
+-- cmp (generic)
+| "eq"             => `(Builtin.eq)
+| "neq"            => `(Builtin.neq)
 -- cmp
 | "b_eq"             => `(Builtin.bEq)
 | "f_eq"             => `(Builtin.fEq)
@@ -245,12 +231,12 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr|$n:num : $tp) => do wrapSimple (←`(Lampe.Expr.lit $(←mkNrType tp) $n)) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Lampe.Expr.lit Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Lampe.Expr.lit Tp.bool 0)) vname k
-| `(nr_expr | & [ $args,* ]) => do
+| `(nr_expr| & [ $args,* ]) => do
   let args := args.getElems.toList
   let len := args.length
   mkArgs args fun argVals => do
     wrapSimple (←`(Lampe.Expr.slice $(Syntax.mkNumLit $ toString len) $(←mkHListLit argVals))) vname k
-| `(nr_expr | [ $args,* ]) => do
+| `(nr_expr| [ $args,* ]) => do
   let args := args.getElems.toList
   let len := args.length
   mkArgs args fun argVals => do

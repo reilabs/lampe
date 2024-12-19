@@ -63,13 +63,17 @@ mod test {
             //     a + 1
             // }
 
-            // fn my_func2(arr: [u8; 8], b: u8) -> u8 {
-            //     arr[b]
-            // }
+            fn my_func2(arr: [u8; 8], b: u8) -> u8 {
+                arr[b]
+            }
 
-            // fn get_unchecked<T>(a: Option2<T>) -> T {
-            //     a._value
-            // }
+            fn get_unchecked<T>(a: Option2<T>) -> T {
+                a._value
+            }
+
+            fn my_fn() -> u8 {
+              1 + 1
+            }
 
             // fn cast_test(a: u8) -> u64 {
             //     if a == 0 {
@@ -174,6 +178,7 @@ mod test {
             }
 
             fn main() {
+                let op2 = Option2::default();
                 let opt = Option2::some(5);
                 opt.is_some();
                 let l = [1, 2, 3];

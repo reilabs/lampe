@@ -579,7 +579,10 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
-    -- equality
+    -- cmp (generic)
+    | apply eq_intro
+    | apply neq_intro
+    -- cmp
     | apply unitEq_intro
     | apply boolEq_intro
     | apply fEq_intro
@@ -651,7 +654,10 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
-    -- equality
+    -- cmp (generic)
+    | apply consequence_frame_left eq_intro
+    | apply consequence_frame_left neq_intro
+    -- cmp
     | apply consequence_frame_left unitEq_intro
     | apply consequence_frame_left boolEq_intro
     | apply consequence_frame_left fEq_intro
@@ -724,7 +730,10 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
-    -- equality
+    -- cmp (generic)
+    | apply ramified_frame_top eq_intro
+    | apply ramified_frame_top neq_intro
+    -- cmp
     | apply ramified_frame_top unitEq_intro
     | apply ramified_frame_top boolEq_intro
     | apply ramified_frame_top fEq_intro
