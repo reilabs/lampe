@@ -57,6 +57,128 @@ lemma pureBuiltin_intro_consequence
   rintro ⟨_, _⟩
   simp_all [SLP.entails_top]
 
+-- Arithmetics (generic)
+
+ theorem add_intro {a b : Tp.denote p tp} [Builtin.AddTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .add) h![a, b]) (fun v => ∃ h, v = Builtin.AddTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.AddTp.validate tp inst p a b)
+  . apply Builtin.addOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.addOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem sub_intro {a b : Tp.denote p tp} [Builtin.SubTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .sub) h![a, b]) (fun v => ∃ h, v = Builtin.SubTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.SubTp.validate tp inst p a b)
+  . apply Builtin.subOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.subOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem mul_intro {a b : Tp.denote p tp} [Builtin.MulTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .mul) h![a, b]) (fun v => ∃ h, v = Builtin.MulTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.MulTp.validate tp inst p a b)
+  . apply Builtin.mulOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.mulOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem div_intro {a b : Tp.denote p tp} [Builtin.DivTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .div) h![a, b]) (fun v => ∃ h, v = Builtin.DivTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.DivTp.validate tp inst p a b)
+  . apply Builtin.divOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.divOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem rem_intro {a b : Tp.denote p tp} [Builtin.RemTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] tp (.builtin .rem) h![a, b]) (fun v => ∃ h, v = Builtin.RemTp.compute a b h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.RemTp.validate tp inst p a b)
+  . apply Builtin.remOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.remOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+ theorem neg_intro {a : Tp.denote p tp} [Builtin.NegTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp] tp (.builtin .neg) h![a]) (fun v => ∃ h, v = Builtin.NegTp.compute a h) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  cases em (@Builtin.NegTp.validate tp inst p a)
+  . apply Builtin.negOmni.ok
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp_all only [SLP.true_star, exists_const]
+    . tauto
+  . apply Builtin.negOmni.err
+    . tauto
+    . simp_all [mapToValHeapCondition]
+
+-- Comparison (generic)
+
+ theorem eq_intro {a b : Tp.denote p tp} [Builtin.EqTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] .bool (.builtin .eq) h![a, b]) (fun v => v = Builtin.EqTp.eq a b) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  apply Builtin.eqOmni.eq
+  . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+    apply SLP.ent_star_top
+    simp_all only [SLP.true_star, exists_const]
+
+ theorem neq_intro {a b : Tp.denote p tp} [Builtin.NeqTp tp] :
+  STHoare p Γ ⟦⟧ (.call h![] [tp, tp] .bool (.builtin .neq) h![a, b]) (fun v => v = Builtin.NeqTp.neq a b) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i inst _ _ _
+  apply Builtin.neqOmni.neq
+  . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+    apply SLP.ent_star_top
+    simp_all only [SLP.true_star, exists_const]
+
 -- Arithmetics
 
  theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
@@ -122,16 +244,6 @@ lemma pureBuiltin_intro_consequence
  theorem fNeg_intro : STHoarePureBuiltin p Γ Builtin.fNeg (by tauto) h![a] (a := ()) := by
    apply pureBuiltin_intro_consequence <;> tauto
    tauto
-
--- Arrays
-
-theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
 
 -- BigInt
 
@@ -237,7 +349,7 @@ theorem iShr_intro : STHoarePureBuiltin p Γ Builtin.iShr (by tauto) h![a, b] :=
 theorem unitEq_intro : STHoarePureBuiltin p Γ Builtin.unitEq (by tauto) h![a, b] (a := ()) := by
    apply pureBuiltin_intro_consequence <;> tauto
 
-theorem boolEq_intro : STHoarePureBuiltin p Γ Builtin.boolEq (by tauto) h![a, b] (a := ()) := by
+theorem bEq_intro : STHoarePureBuiltin p Γ Builtin.bEq (by tauto) h![a, b] (a := ()) := by
    apply pureBuiltin_intro_consequence <;> tauto
    tauto
 
@@ -308,7 +420,31 @@ theorem iFromField_intro : STHoarePureBuiltin p Γ Builtin.iFromField (by tauto)
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
+-- Arrays
+
+theorem mkArray_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
+  STHoarePureBuiltin p Γ (Builtin.mkArray n) (by tauto) args (a := (argTps, tp)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto) h![arr, i] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
+
+theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
+
+theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
+
 -- Slice
+
+theorem mkSlice_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
+  STHoarePureBuiltin p Γ (Builtin.mkSlice n) (by tauto) args (a := (argTps, tp)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
 
 theorem sliceLen_intro : STHoarePureBuiltin p Γ Builtin.sliceLen (by tauto) h![s] := by
   apply pureBuiltin_intro_consequence <;> try rfl

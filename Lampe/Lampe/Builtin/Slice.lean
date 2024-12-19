@@ -2,6 +2,14 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 /--
+Defines the builtin slice constructor.
+-/
+def mkSlice (n : Nat) := newGenericPureBuiltin
+  (fun (argTps, tp) => ⟨argTps, (.slice tp)⟩)
+  (fun (argTps, tp) args => ⟨argTps = List.replicate n tp,
+    fun h => HList.toList args h⟩)
+
+/--
 Defines the indexing of a slice `l : List tp` with `i : U 32`
 We make the following assumptions:
 - If `i < l.length`, then the builtin returns `l[i] : Tp.denote tp`
