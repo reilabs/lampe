@@ -16,9 +16,9 @@ example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v =
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
-  #add(x, y) : I;
-  #assert(#f_eq(a, x) : bool) : Unit;
-  #assert(#f_eq(a, y) : bool) : Unit;
+  #fAdd(x, y) : I;
+  #assert(#fEq(a, x) : bool) : Unit;
+  #assert(#fEq(a, y) : bool) : Unit;
 }
 
 example {x y : Tp.denote p .field} : STHoare p Γ ⟦⟧ (weirdEq.fn.body _ h![.field] |>.body h![x, y]) fun _ => x = y := by
@@ -28,8 +28,8 @@ example {x y : Tp.denote p .field} : STHoare p Γ ⟦⟧ (weirdEq.fn.body _ h![.
 
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;
-  for i in (0 : u32) .. #slice_len(y) : u32 {
-    self = #slice_push_back(self, #slice_index(y, i): I): [I]
+  for i in (0 : u32) .. #sliceLen(y) : u32 {
+    self = #slicePushBack(self, #sliceIndex(y, i): I): [I]
   };
   self
 }
@@ -60,7 +60,7 @@ example {self that : Tp.denote p (.slice tp)} : STHoare p Γ ⟦⟧ (sliceAppend
 
 nr_def simple_if<>(x : Field, y : Field) -> Field {
   let mut z = x;
-  if #f_eq(x, x) : bool {
+  if #fEq(x, x) : bool {
     z = y
    };
   z
@@ -78,7 +78,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, 
 
 
 nr_def simple_if_else<>(x : Field, y : Field) -> Field {
-  let z = if #f_eq(x, x) : bool { x } else { y };
+  let z = if #fEq(x, x) : bool { x } else { y };
   z
 }
 
@@ -92,7 +92,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body h
   . aesop
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
-  let add = |a : Field, b : Field| -> Field { #add(a, b) : Field };
+  let add = |a : Field, b : Field| -> Field { #fAdd(a, b) : Field };
   ^add(x, y) : Field;
 }
 
@@ -114,7 +114,7 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
 
 nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field where {
     fn bulbulize<>(x : Field) -> Field {
-      #add(x, x) : Field
+      #fAdd(x, x) : Field
     };
 }
 
@@ -144,7 +144,6 @@ example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall .field arg) (fun v =>
   casesm ∃_, _
   intro
   subst_vars
-  simp_all only [Builtin.instAddTpField]
   ring
 
 example : STHoare p simpleTraitEnv ⟦⟧ (simpleTraitCall (.u 32) arg) (fun v => v = 69) := by

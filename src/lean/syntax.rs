@@ -116,17 +116,12 @@ pub(super) mod expr {
 
     #[inline]
     pub fn format_builtin_call(func_ident: &str, func_args: &str, out_ty: &str) -> String {
-        format!("(#{func_ident}({func_args}) : {out_ty})")
+        format!("({BUILTIN_PREFIX}{func_ident}({func_args}) : {out_ty})")
     }
 
     #[inline]
     pub fn format_member_access(struct_name: &str, target_expr: &str, member: Ident) -> String {
         format!("{target_expr}[{struct_name}.{member}]")
-    }
-
-    #[inline]
-    pub fn format_cast(source: &str, target_ty: &str) -> String {
-        format!("({source}) as {target_ty}")
     }
 
     #[inline]

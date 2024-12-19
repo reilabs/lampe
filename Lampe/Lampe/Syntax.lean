@@ -50,6 +50,9 @@ def mkHListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadEr
   let tail ← mkHListLit xs
   `(HList.cons $x $tail)
 
+def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
+  `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
+
 partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_type → m (TSyntax `term)
 | `(nr_type| u1) => `(Tp.u 1)
 | `(nr_type| u8) => `(Tp.u 8)
@@ -69,65 +72,16 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| [ $tp ; $len:num ]) => do `(Tp.array $(←mkNrType tp) $len)
 | _ => throwUnsupportedSyntax
 
-partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) := match i with
--- arith (generic)
-| "add"            => `(Builtin.add)
-| "sub"            => `(Builtin.sub)
-| "mul"            => `(Builtin.mul)
-| "div"            => `(Builtin.div)
-| "rem"            => `(Builtin.rem)
-| "neg"            => `(Builtin.neg)
--- cmp (generic)
-| "eq"             => `(Builtin.eq)
-| "neq"            => `(Builtin.neq)
--- cmp
-| "b_eq"             => `(Builtin.bEq)
-| "f_eq"             => `(Builtin.fEq)
-| "u_eq"             => `(Builtin.uEq)
-| "i_eq"             => `(Builtin.iEq)
-| "unit_eq"          => `(Builtin.unitEq)
-| "str_eq"           => `(Builtin.strEq)
-| "u_lt"              => `(Builtin.uLt)
-| "i_lt"              => `(Builtin.iLt)
-| "u_gt"              => `(Builtin.uGt)
-| "i_gt"              => `(Builtin.iGt)
--- bit
-| "b_not"            => `(Builtin.bNot)
--- array
-| "array_len"        => `(Builtin.arrayLen)
-| "array_index"      => `(Builtin.arrayIndex)
-| "array_as_slice"   => `(Builtin.arrayAsSlice)
--- slice
-| "slice_len"        => `(Builtin.sliceLen)
-| "slice_index"      => `(Builtin.sliceIndex)
-| "slice_push_back"  => `(Builtin.slicePushBack)
-| "slice_push_front" => `(Builtin.slicePushFront)
-| "slice_pop_back"   => `(Builtin.slicePopBack)
-| "slice_pop_front"  => `(Builtin.slicePopFront)
-| "slice_insert"     => `(Builtin.sliceInsert)
--- memory
-| "ref"              => `(Builtin.ref)
-| "read_ref"         => `(Builtin.readRef)
-| "write_ref"        => `(Builtin.writeRef)
-| "fresh"            => `(Builtin.fresh)
--- other
-| "assert"           => `(Builtin.assert)
-| "cast"             => `(Builtin.cast)
-| "modulus_num_bits" => `(Builtin.fModNumBits)
-| "to_le_bytes"      => `(Builtin.toLeBytes)
-| _ => throwError "Unknown builtin {i}"
-
 syntax ident ":" nr_type : nr_param_decl
-
-syntax num ":" nr_type : nr_expr
-syntax ident : nr_expr
+syntax num ":" nr_type : nr_expr -- Literal
+syntax ident : nr_expr -- Reference
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr -- Block
-syntax "let" ident "=" nr_expr : nr_expr
-syntax "let" "mut" ident "=" nr_expr : nr_expr
-syntax ident "=" nr_expr : nr_expr
-syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
-syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
-syntax "(" nr_expr ")" : nr_expr
+syntax "let" ident "=" nr_expr : nr_expr -- Let binding
+syntax "let" "mut" ident "=" nr_expr : nr_expr -- Let mut binding
+syntax ident "=" nr_expr : nr_expr -- Assignment
+syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If-then-else
+syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
+syntax "(" nr_expr ")" : nr_expr -- Parentheses
 syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
 syntax "&" "[" nr_expr,* "]" : nr_expr -- Slice constructor
 syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda constructor

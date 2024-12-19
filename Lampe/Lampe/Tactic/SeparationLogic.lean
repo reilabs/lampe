@@ -557,6 +557,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litField_intro
     | apply Lampe.STHoare.litTrue_intro
     | apply Lampe.STHoare.litFalse_intro
+    | apply cast_intro
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
@@ -579,9 +580,6 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
-    -- cmp (generic)
-    | apply eq_intro
-    | apply neq_intro
     -- cmp
     | apply unitEq_intro
     | apply boolEq_intro
@@ -590,13 +588,6 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply iEq_intro
     | apply bigIntEq_intro
     | apply strEq_intro
-    -- arith (generic)
-    | apply add_intro
-    | apply sub_intro
-    | apply mul_intro
-    | apply div_intro
-    | apply rem_intro
-    | apply rem_intro
     -- negation
     | apply fNeg_intro
     | apply iNeg_intro
@@ -635,6 +626,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left Lampe.STHoare.litField_intro
     | apply consequence_frame_left Lampe.STHoare.litTrue_intro
     | apply consequence_frame_left Lampe.STHoare.litFalse_intro
+    | apply consequence_frame_left cast_intro
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left assert_intro
     -- | apply consequence_frame_left skip_intro
@@ -654,9 +646,6 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
-    -- cmp (generic)
-    | apply consequence_frame_left eq_intro
-    | apply consequence_frame_left neq_intro
     -- cmp
     | apply consequence_frame_left unitEq_intro
     | apply consequence_frame_left boolEq_intro
@@ -665,13 +654,6 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left iEq_intro
     | apply consequence_frame_left bigIntEq_intro
     | apply consequence_frame_left strEq_intro
-    -- arith (generic)
-    | apply consequence_frame_left add_intro
-    | apply consequence_frame_left sub_intro
-    | apply consequence_frame_left mul_intro
-    | apply consequence_frame_left div_intro
-    | apply consequence_frame_left rem_intro
-    | apply consequence_frame_left rem_intro
     -- negation
     | apply consequence_frame_left fNeg_intro
     | apply consequence_frame_left iNeg_intro
@@ -711,6 +693,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top Lampe.STHoare.litField_intro
     | apply ramified_frame_top Lampe.STHoare.litTrue_intro
     | apply ramified_frame_top Lampe.STHoare.litFalse_intro
+    | apply ramified_frame_top cast_intro
     | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
@@ -730,9 +713,6 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
-    -- cmp (generic)
-    | apply ramified_frame_top eq_intro
-    | apply ramified_frame_top neq_intro
     -- cmp
     | apply ramified_frame_top unitEq_intro
     | apply ramified_frame_top boolEq_intro
@@ -741,13 +721,6 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top iEq_intro
     | apply ramified_frame_top bigIntEq_intro
     | apply ramified_frame_top strEq_intro
-    -- arith (generic)
-    | apply ramified_frame_top add_intro
-    | apply ramified_frame_top sub_intro
-    | apply ramified_frame_top mul_intro
-    | apply ramified_frame_top div_intro
-    | apply ramified_frame_top rem_intro
-    | apply ramified_frame_top rem_intro
     -- negation
     | apply ramified_frame_top fNeg_intro
     | apply ramified_frame_top iNeg_intro

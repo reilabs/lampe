@@ -178,9 +178,10 @@ mod test {
             }
 
             fn main() {
+                let op1 = Option2::some(5);
                 let op2 = Option2::default();
-                let opt = Option2::some(5);
-                opt.is_some();
+                let op3 = if true { op1 } else { op2 }.foo();
+                op1.is_some();
                 let l = [1, 2, 3];
                 l[0];
             }

@@ -1,9 +1,11 @@
+use std::ops::Deref;
+
 use noirc_frontend::{
     ast::BinaryOpKind,
     ast::{IntegerBitSize, UnaryOp},
     hir_def::function::FuncMeta,
     macros_api::Signedness,
-    Type, TypeVariableKind,
+    Type, TypeBinding,
 };
 
 use itertools::Itertools;
@@ -48,10 +50,11 @@ impl TryInto<BuiltinType> for Type {
             Type::Array(_, _) => Ok(BuiltinType::Array),
             Type::Slice(_) => Ok(BuiltinType::Slice),
             Type::String(_) => Ok(BuiltinType::String),
-            // [TODO] these need to be handled better
-            // Type::TypeVariable(_, TypeVariableKind::IntegerOrField) => Ok(BuiltinType::Field),
-            // Type::TypeVariable(_, TypeVariableKind::Integer) => Ok(BuiltinType::Int(64)),
-            _ => Err(format!("unknown builtin type `{:?}`", self)),
+            Type::TypeVariable(tv, _) => match tv.borrow().deref() {
+                TypeBinding::Bound(ty) => TryInto::<BuiltinType>::try_into(ty.clone()),
+                _ => Err(format!("unbound type variable `{tv:?}`")),
+            },
+            _ => Err(format!("unknown builtin type `{self:?}`")),
         }
     }
 }

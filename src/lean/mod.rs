@@ -6,7 +6,7 @@ mod syntax;
 use std::collections::{HashMap, HashSet};
 
 use fm::FileId;
-use indoc::formatdoc;
+
 use itertools::Itertools;
 use noirc_frontend::{
     ast::Visibility,
@@ -16,15 +16,13 @@ use noirc_frontend::{
         Context,
     },
     hir_def::{
-        expr::{HirArrayLiteral, HirIdent, ImplKind},
+        expr::{HirArrayLiteral, HirIdent},
         function::Parameters,
         stmt::{HirLValue, HirPattern},
         traits::TraitImpl,
     },
     macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, StructId},
-    node_interner::{
-        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TraitMethodId, TypeAliasId,
-    },
+    node_interner::{DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId},
     Type,
 };
 
@@ -614,33 +612,158 @@ impl LeanEmitter {
                     .try_collect()?;
                 statements.join("\n")
             }
+            HirExpression::Prefix(prefix) => {
+                let rhs = self.emit_expr(ind, prefix.rhs)?;
+                let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
+                if let Some(builtin_name) = rhs_ty
+                    .clone()
+                    .try_into()
+                    .ok()
+                    .and_then(|ty| builtin::try_prefix_into_builtin_name(prefix.operator, ty))
+                {
+                    syntax::expr::format_prefix_builtin_call(&builtin_name, &rhs, &out_ty_str)
+                } else {
+                    // Convert to a trait call if this prefix call doesn't correspond to a builtin call.
+                    let rhs_ty_str = self.emit_fully_qualified_type(&rhs_ty);
+                    let trait_method_id = self
+                        .context
+                        .def_interner
+                        .get_prefix_operator_trait_method(&prefix.operator)
+                        .expect("no trait corresponds to {prefix.operator:?}");
+                    let func_name = self.context.def_interner.definition_name(
+                        self.context.def_interner.trait_method_id(trait_method_id.clone()),
+                    );
+                    let trait_name = self
+                        .context
+                        .def_interner
+                        .get_trait(trait_method_id.trait_id)
+                        .name
+                        .to_string();
+                    syntax::expr::format_trait_call(
+                        &rhs_ty_str,
+                        &trait_name,
+                        &func_name,
+                        &rhs,
+                        &out_ty_str,
+                    )
+                }
+            }
             HirExpression::Infix(infix) => {
                 let lhs = self.emit_expr(ind, infix.lhs)?;
                 let rhs = self.emit_expr(ind, infix.rhs)?;
                 let lhs_ty = self.context.def_interner.id_type(infix.lhs);
                 let rhs_ty = self.context.def_interner.id_type(infix.rhs);
-
-                let lhs_builtin_ty = lhs_ty.try_into().unwrap();
-                let rhs_builtin_ty = rhs_ty.try_into().unwrap();
-                let builtin_name = builtin::try_infix_into_builtin_name(
-                    infix.operator.kind,
-                    lhs_builtin_ty,
-                    rhs_builtin_ty,
-                )
-                .expect("not a builtin");
-
-                syntax::expr::format_infix_builtin_call(&builtin_name, &lhs, &rhs, &out_ty_str)
+                if let Some(builtin_name) =
+                    match (lhs_ty.clone().try_into(), rhs_ty.clone().try_into()) {
+                        (Ok(lhs_ty), Ok(rhs_ty)) => builtin::try_infix_into_builtin_name(
+                            infix.operator.kind,
+                            lhs_ty,
+                            rhs_ty,
+                        ),
+                        _ => None,
+                    }
+                {
+                    syntax::expr::format_infix_builtin_call(&builtin_name, &lhs, &rhs, &out_ty_str)
+                } else {
+                    // Convert to a trait call if this infix call doesn't correspond to a builtin call.
+                    let lhs_ty_str = self.emit_fully_qualified_type(&lhs_ty);
+                    let rhs_ty_str = self.emit_fully_qualified_type(&rhs_ty);
+                    let args_str = [lhs_ty_str.as_str(), rhs_ty_str.as_str()].join(", ");
+                    let trait_method_id = self
+                        .context
+                        .def_interner
+                        .get_operator_trait_method(infix.operator.kind);
+                    let func_name = self.context.def_interner.definition_name(
+                        self.context.def_interner.trait_method_id(trait_method_id.clone()),
+                    );
+                    let trait_name = self
+                        .context
+                        .def_interner
+                        .get_trait(trait_method_id.trait_id)
+                        .name
+                        .to_string();
+                    syntax::expr::format_trait_call(
+                        &lhs_ty_str,
+                        &trait_name,
+                        &func_name,
+                        &args_str,
+                        &out_ty_str,
+                    )
+                }
             }
-            HirExpression::Prefix(prefix) => {
-                let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
-                let rhs_builtin_ty = rhs_ty.try_into().unwrap();
-                let builtin_name =
-                    builtin::try_prefix_into_builtin_name(prefix.operator, rhs_builtin_ty)
-                        .expect("not a builtin");
-
-                let rhs = self.emit_expr(ind, prefix.rhs)?;
-
-                syntax::expr::format_prefix_builtin_call(&builtin_name, &rhs, &out_ty_str)
+            HirExpression::Call(call) => {
+                assert!(
+                    !call.is_macro_call,
+                    "Macros should be resolved before running this tool"
+                );
+                let function = self.emit_expr(ind, call.func)?;
+                let args: Vec<_> = call
+                    .arguments
+                    .iter()
+                    .map(|arg| self.emit_expr(ind, *arg))
+                    .try_collect()?;
+                let args_str = args.join(", ");
+                let func_expr = self.context.def_interner.expression(&call.func);
+                // If the function expression is an identifier, then get the function metadata associated with it.
+                let func_meta = match func_expr {
+                    HirExpression::Ident(ident, ..) => {
+                        let ident_def = self.context.def_interner.definition(ident.id);
+                        match ident_def.kind {
+                            DefinitionKind::Function(func_id) => {
+                                Some(self.context.def_interner.function_meta(&func_id))
+                            }
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
+                // If the function expression is a function identifier, then acquire its self type.
+                let self_type = func_meta.and_then(|func_meta| func_meta.self_type.as_ref());
+                // If the function expression is a trait function identifier, then acquire the associated trait.
+                let trait_info = func_meta
+                    .and_then(|m| m.trait_impl)
+                    .map(|impl_id| self.context.def_interner.get_trait_implementation(impl_id))
+                    .map(|trait_impl| {
+                        self.context.def_interner.get_trait(trait_impl.borrow().trait_id)
+                    });
+                // If the function expression is of type function and has an environment, then this is a lambda call.
+                let is_lambda = match self.context.def_interner.id_type(call.func) {
+                    Type::Function(_, _, env) if matches!(*env, Type::Tuple(..)) => true,
+                    _ => false,
+                };
+                // Either emit a lambda call, a trait call, a builtin call, or a decl call.
+                match (is_lambda, self_type, trait_info, func_meta) {
+                    (true, _, _, _) => {
+                        syntax::expr::format_lambda_call(&function, &args_str, &out_ty_str)
+                    }
+                    (_, Some(self_type), Some(trait_info), _) => {
+                        let self_type_str = self.emit_fully_qualified_type(&self_type);
+                        syntax::expr::format_trait_call(
+                            &self_type_str,
+                            &trait_info.name.to_string(),
+                            &function,
+                            &args_str,
+                            &out_ty_str,
+                        )
+                    }
+                    (_, _, _, Some(func_meta)) => {
+                        let func_ident =
+                            self.context.def_interner.definition_name(func_meta.name.id);
+                        if let Some(builtin_fn_name) =
+                            builtin::try_func_into_builtin_name(func_ident, func_meta)
+                        {
+                            syntax::expr::format_builtin_call(
+                                &builtin_fn_name,
+                                &args_str,
+                                &out_ty_str,
+                            )
+                        } else {
+                            syntax::expr::format_decl_call(&function, &args_str, &out_ty_str)
+                        }
+                    }
+                    // Lhs of the call is not an identifier (this shouldn't happen)
+                    _ => syntax::expr::format_decl_call(&function, &args_str, &out_ty_str),
+                }
             }
             HirExpression::Ident(ident, _) => {
                 let name = self.context.def_interner.definition_name(ident.id);
@@ -678,6 +801,7 @@ impl LeanEmitter {
                 let collection_expr_str = self.emit_expr(ind, index.collection)?;
                 let index_expr_str = self.emit_expr(ind, index.index)?;
                 let args_str = format!("{collection_expr_str}, {index_expr_str}");
+                // [TODO] does indexing correspond to a trait? If so, add trait call as a fallback.
 
                 syntax::expr::format_builtin_call(&index_builtin_ident, &args_str, &out_ty_str)
             }
@@ -723,82 +847,12 @@ impl LeanEmitter {
 
                 syntax::expr::format_member_access(&struct_ty_str, &target_expr_str, member_iden)
             }
-            HirExpression::Call(call) => {
-                assert!(
-                    !call.is_macro_call,
-                    "Macros should be resolved before running this tool"
-                );
-                let function = self.emit_expr(ind, call.func)?;
-                let args: Vec<_> = call
-                    .arguments
-                    .iter()
-                    .map(|arg| self.emit_expr(ind, *arg))
-                    .try_collect()?;
-                let args_str = args.join(", ");
-                let func_expr = self.context.def_interner.expression(&call.func);
-                // If the function expression is an identifier, then get the function metadata associated with it.
-                let func_meta = match func_expr {
-                    HirExpression::Ident(ident, ..) => {
-                        let ident_def = self.context.def_interner.definition(ident.id);
-                        match ident_def.kind {
-                            DefinitionKind::Function(func_id) => {
-                                Some(self.context.def_interner.function_meta(&func_id))
-                            }
-                            _ => None,
-                        }
-                    }
-                    _ => None,
-                };
-                // If the function expression is a trait function identifier, then acquire the associated trait.
-                let trait_info = func_meta
-                    .and_then(|m| m.trait_impl)
-                    .map(|impl_id| self.context.def_interner.get_trait_implementation(impl_id))
-                    .map(|trait_impl| {
-                        self.context.def_interner.get_trait(trait_impl.borrow().trait_id)
-                    });
-                // If the function expression is of type function and has an environment, then this is a lambda call.
-                let is_lambda = match self.context.def_interner.id_type(call.func) {
-                    Type::Function(_, _, env) if matches!(*env, Type::Tuple(..)) => true,
-                    _ => false,
-                };
-                let self_type = func_meta.and_then(|func_meta| func_meta.self_type.as_ref());
-                match (is_lambda, self_type, trait_info, func_meta) {
-                    (true, _, _, _) => {
-                        syntax::expr::format_lambda_call(&function, &args_str, &out_ty_str)
-                    }
-                    (_, Some(self_type), Some(trait_info), _) => {
-                        let self_type_str = self.emit_fully_qualified_type(&self_type);
-                        syntax::expr::format_trait_call(
-                            &self_type_str,
-                            &trait_info.name.to_string(),
-                            &function,
-                            &args_str,
-                            &out_ty_str,
-                        )
-                    }
-                    (_, _, _, Some(func_meta)) => {
-                        let func_ident =
-                            self.context.def_interner.definition_name(func_meta.name.id);
-                        if let Some(builtin_fn_name) =
-                            builtin::try_func_into_builtin_name(func_ident, func_meta)
-                        {
-                            syntax::expr::format_builtin_call(
-                                &builtin_fn_name,
-                                &args_str,
-                                &out_ty_str,
-                            )
-                        } else {
-                            syntax::expr::format_decl_call(&function, &args_str, &out_ty_str)
-                        }
-                    }
-                    _ => syntax::expr::format_decl_call(&function, &args_str, &out_ty_str),
-                }
-            }
+
             HirExpression::Cast(cast) => {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
 
-                syntax::expr::format_cast(&source, &target_type)
+                syntax::expr::format_builtin_call("cast", &source, &target_type)
             }
             HirExpression::If(if_expr) => {
                 let if_cond = self.emit_expr(ind, if_expr.condition)?;
@@ -808,6 +862,7 @@ impl LeanEmitter {
                 } else {
                     None
                 };
+
                 syntax::expr::format_ite(
                     &if_cond,
                     &then_exec,
@@ -835,7 +890,6 @@ impl LeanEmitter {
                     })
                     .try_collect()?;
                 let args = arg_strs.join(", ");
-
                 let captures = lambda
                     .captures
                     .iter()
