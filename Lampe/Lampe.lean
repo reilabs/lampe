@@ -250,6 +250,16 @@ example {x y : Tp.denote p .field} :
   steps
   aesop
 
+nr_def simpleTuple<>() -> Field {
+  let t = `(1 : Field, true, 3 : Field);
+  t.2 : Field
+}
+
+example : STHoare p Γ ⟦⟧ (simpleTuple.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote _ .field) => v = 3) := by
+  simp only [simpleTuple]
+  steps
+  aesop
+
 nr_def callDecl<>(x: Field, y : Field) -> Field {
   let s = @structConstruct<>(x, y) : Pair<Field>;
   s[Pair<Field>.a]

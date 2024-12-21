@@ -184,6 +184,8 @@ mod test {
                 op1.is_some();
                 let l = [1, 2, 3];
                 l[0];
+                let t = (1, true, 3);
+                t.2;
             }
         "#;
 

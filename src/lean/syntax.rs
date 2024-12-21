@@ -81,6 +81,28 @@ pub(super) fn format_trait_function_def(
     }
 }
 
+pub(super) mod r#type {
+    #[inline]
+    pub fn format_tuple(param_types: &str) -> String {
+        format!("`({param_types})")
+    }
+
+    #[inline]
+    pub fn format_slice(elem_type: &str) -> String {
+        format!("[{elem_type}]")
+    }
+
+    #[inline]
+    pub fn format_array(elem_type: &str, size: &str) -> String {
+        format!("[{elem_type}; {size}]")
+    }
+
+    #[inline]
+    pub fn format_struct(struct_name: &str, generics: &str) -> String {
+        format!("{struct_name}<{generics}>")
+    }
+}
+
 pub(super) mod expr {
     use super::*;
 
@@ -125,6 +147,11 @@ pub(super) mod expr {
     }
 
     #[inline]
+    pub fn format_tuple_access(target_expr: &str, member: Ident, out_ty: &str) -> String {
+        format!("({target_expr}.{member} : {out_ty})")
+    }
+
+    #[inline]
     pub fn format_ite(cond: &str, then_branch: &str, else_branch: Option<&str>) -> String {
         if let Some(else_branch) = else_branch {
             formatdoc! {
@@ -144,8 +171,8 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_tuple(items: &str) -> String {
-        format!("({items})")
+    pub fn format_tuple(args: &str) -> String {
+        format!("`({args})")
     }
 
     #[inline]

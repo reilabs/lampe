@@ -37,6 +37,7 @@ syntax "${" term "}" : nr_type
 syntax nr_ident "<" nr_type,* ">" : nr_type
 syntax "[" nr_type "]" : nr_type
 syntax "[" nr_type ";" term "]" : nr_type
+syntax "`(" nr_type,* ")" : nr_type
 
 def mkListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
 | [] => `([])
@@ -53,6 +54,19 @@ def mkHListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadEr
 def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
   `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
 
+@[reducible]
+def typeof {rep : Tp → Type _} (_ : rep tp) := tp
+
+@[reducible]
+def tupleFields (tp : Tp) := match tp with
+| Tp.tuple _ fields => fields
+| _ => []
+
+@[reducible]
+def tupleName (tp : Tp) := match tp with
+| Tp.tuple name _ => name
+| _ => none
+
 partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_type → m (TSyntax `term)
 | `(nr_type| u1) => `(Tp.u 1)
 | `(nr_type| u8) => `(Tp.u 8)
@@ -67,6 +81,9 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   let name := mkIdent $ Name.mkSimple $ ← mkNrIdent i
   let generics ← generics.getElems.toList.mapM mkNrType
   `(Struct.tp $name $(←mkHListLit generics))
+| `(nr_type| `($tps,* )) => do
+  let tps ← tps.getElems.toList.mapM mkNrType
+  `(Tp.tuple none $(←mkListLit tps))
 | `(nr_type| ${ $i }) => pure i
 | `(nr_type| [ $tp ]) => do `(Tp.slice $(←mkNrType tp))
 | `(nr_type| [ $tp ; $len:num ]) => do `(Tp.array $(←mkNrType tp) $len)
@@ -85,13 +102,15 @@ syntax "(" nr_expr ")" : nr_expr -- Parentheses
 syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
 syntax "&" "[" nr_expr,* "]" : nr_expr -- Slice constructor
 syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda constructor
+syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
+syntax "`(" nr_expr,* ")" : nr_expr -- Tuple constructor
 syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
 syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 syntax "@" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Decl call
 syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")"
   "::" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Trait call
 syntax nr_expr "[" nr_ident "<" nr_type,* ">" "." ident "]" : nr_expr -- Struct access
-syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
+syntax nr_expr "." num ":" nr_type : nr_expr -- Tuple access
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
@@ -155,6 +174,10 @@ def mkFieldName (structName : String) (fieldName : String) : Lean.Ident :=
 
 def mkStructDefIdent (structName : String) : Lean.Ident :=
   mkIdent $ Name.mkSimple structName
+
+def mkRecMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
+| .zero => `(Member.head)
+| .succ n' => do `(Member.tail $(←mkRecMember n'))
 
 mutual
 
@@ -255,12 +278,21 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let structName ← mkNrIdent structName
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $paramTpsSyn) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
+| `(nr_expr| `( $args,* )) => do
+  mkArgs args.getElems.toList fun argVals => do
+    let argTps ← argVals.mapM fun arg => `(typeof $arg)
+    wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple none $(←mkListLit argTps)) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
 | `(nr_expr| $structExpr:nr_expr [ $structName:nr_ident  < $structGenVals,* > . $structField:ident ] ) => do
   let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
   let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
   let accessorSyn ← `($accessor $structGenValsSyn)
   mkExpr structExpr none fun s => do
-    `(.call h![] [.tuple _ _] _ (.builtin (.projectTuple $accessorSyn)) h![$s])
+    `(Lampe.Expr.call h![] [typeof $s] _ (.builtin (.projectTuple $accessorSyn)) h![$s])
+| `(nr_expr| $tupleExpr:nr_expr . $idx:num : $outTy:nr_type) => do
+  let outTp ← mkNrType outTy
+  mkExpr tupleExpr none fun t => do
+    let accessorSyn ← mkRecMember idx.getNat
+    `(Lampe.Expr.call h![] [typeof $t] $outTp (.builtin (@Builtin.projectTuple $outTp (tupleFields $ typeof $t) $accessorSyn)) h![$t])
 | _ => throwUnsupportedSyntax
 
 end
@@ -323,10 +355,6 @@ def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
   let syn ← `(Struct.mk $structNameStrLit $genericKinds $fieldTypes)
   pure syn
 | _ => throwUnsupportedSyntax
-
-def mkRecMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
-| .zero => `(Member.head)
-| .succ n' => do `(Member.tail $(←mkRecMember n'))
 
 def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (List $ TSyntax `command)
 | `(nr_struct_def| < $generics,* > { $params,* }) => do

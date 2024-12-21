@@ -455,12 +455,12 @@ impl LeanEmitter {
             Type::Array(elem_type, size) => {
                 let elem_type = self.emit_fully_qualified_type(elem_type);
 
-                format!("[{elem_type}; {size}]")
+                syntax::r#type::format_array(&elem_type, &size.to_string())
             }
             Type::Slice(elem_type) => {
                 let elem_type = self.emit_fully_qualified_type(elem_type);
 
-                format!("[{elem_type}]")
+                syntax::r#type::format_slice(&elem_type)
             }
             Type::Tuple(elems) => {
                 let elem_types = elems
@@ -469,7 +469,7 @@ impl LeanEmitter {
                     .collect_vec();
                 let elems_str = elem_types.join(", ");
 
-                format!("({elems_str})")
+                syntax::r#type::format_tuple(&elems_str)
             }
             Type::Struct(struct_type, generics) => {
                 let struct_type = struct_type.borrow();
@@ -484,7 +484,7 @@ impl LeanEmitter {
                     .collect_vec();
                 let generics_str = generics_resolved.join(", ");
 
-                format!("{name}<{generics_str}>")
+                syntax::r#type::format_struct(&name, &generics_str)
             }
             Type::TraitAsType(trait_id, name, generics) => {
                 let module_id = trait_id.0;
@@ -838,14 +838,24 @@ impl LeanEmitter {
             }
             HirExpression::MemberAccess(member) => {
                 let lhs_expr_ty = self.context.def_interner.id_type(member.lhs);
-                let struct_ty_str = match &lhs_expr_ty {
-                    Type::Struct(..) => self.emit_fully_qualified_type(&lhs_expr_ty),
-                    _ => panic!("member access lhs is not a struct"),
-                };
                 let target_expr_str = self.emit_expr(ind, member.lhs)?;
                 let member_iden = member.rhs;
-
-                syntax::expr::format_member_access(&struct_ty_str, &target_expr_str, member_iden)
+                match &lhs_expr_ty {
+                    Type::Struct(..) => {
+                        let struct_ty_str = self.emit_fully_qualified_type(&lhs_expr_ty);
+                        syntax::expr::format_member_access(
+                            &struct_ty_str,
+                            &target_expr_str,
+                            member_iden,
+                        )
+                    }
+                    Type::Tuple(..) => syntax::expr::format_tuple_access(
+                        &target_expr_str,
+                        member_iden,
+                        &out_ty_str,
+                    ),
+                    _ => panic!("member access lhs is not a struct"),
+                }
             }
 
             HirExpression::Cast(cast) => {
