@@ -575,11 +575,13 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply arrayLen_intro
     | apply arrayIndex_intro
     | apply arrayAsSlice_intro
+    | apply arrayWriteIndex_intro
     -- slice builtins
     | apply mkSlice_intro
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
+    | apply sliceWriteIndex_intro
     -- cmp
     | apply unitEq_intro
     | apply boolEq_intro
@@ -641,11 +643,13 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left arrayLen_intro
     | apply consequence_frame_left arrayIndex_intro
     | apply consequence_frame_left arrayAsSlice_intro
+    | apply consequence_frame_left arrayWriteIndex_intro
     -- slice builtins
     | apply consequence_frame_left mkSlice_intro
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
+    | apply consequence_frame_left sliceWriteIndex_intro
     -- cmp
     | apply consequence_frame_left unitEq_intro
     | apply consequence_frame_left boolEq_intro
@@ -708,11 +712,13 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top arrayLen_intro
     | apply ramified_frame_top arrayIndex_intro
     | apply ramified_frame_top arrayAsSlice_intro
+    | apply ramified_frame_top arrayWriteIndex_intro
     -- slice builtins
     | apply ramified_frame_top mkSlice_intro
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
+    | apply ramified_frame_top sliceWriteIndex_intro
     -- cmp
     | apply ramified_frame_top unitEq_intro
     | apply ramified_frame_top boolEq_intro

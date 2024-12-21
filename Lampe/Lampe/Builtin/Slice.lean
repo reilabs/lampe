@@ -113,4 +113,66 @@ def sliceRemove := newGenericPureBuiltin
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
 
+lemma Finmap.disjoint_insert [DecidableEq α] {v : β} {ref : α} {m₁ m₂ : Finmap fun _: α => β}
+  (h₁ : m₁.Disjoint m₂) (h₂ : m₁.lookup ref = some v) :
+   (m₁.insert ref v').Disjoint m₂ := by
+  intro ref' h
+  have _ : ref ∈ m₁ := by apply Finmap.mem_of_lookup_eq_some; tauto
+  aesop
+
+def replaceSlice (s : Tp.denote p $ .slice tp) (i : Nat) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
+  s.eraseIdx i |>.insertNth i v
+
+inductive sliceWriteIndexOmni : Omni where
+| ok {p st tp} {s : Tp.denote p $ .slice tp} {v : Tp.denote p tp} {Q} :
+  (_ : st.lookup ref = some ⟨.slice tp, s⟩ ∧ idx.toNat < s.length) →
+  Q (some (st.insert ref ⟨.slice tp, replaceSlice s idx.toNat v⟩, ())) →
+  sliceWriteIndexOmni p st [.ref $ .slice tp, .u 32, tp] .unit h![ref, idx, v] Q
+| err {p st tp} {s : Tp.denote p $ .slice tp} {v : Tp.denote p tp} {Q} :
+  (st.lookup ref = some ⟨.slice tp, s⟩ ∧ idx.toNat ≥ s.length) →
+  Q none →
+  sliceWriteIndexOmni p st [.ref $ .slice tp, .u 32, tp] .unit h![ref, idx, v] Q
+
+def sliceWriteIndex : Builtin := {
+  omni := sliceWriteIndexOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type sliceWriteIndexOmni
+    . apply sliceWriteIndexOmni.ok <;> tauto
+    . apply sliceWriteIndexOmni.err <;> tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type sliceWriteIndexOmni
+    . apply sliceWriteIndexOmni.ok <;> tauto
+      rw [Finmap.lookup_union_left]
+      assumption
+      apply Finmap.mem_of_lookup_eq_some
+      tauto
+      simp only
+      repeat apply Exists.intro
+      apply And.intro ?_
+      . simp_all only [Finmap.insert_union]
+        apply And.intro rfl ?_
+        tauto
+      . apply Finmap.disjoint_insert <;> tauto
+    . apply sliceWriteIndexOmni.err
+      rw [Finmap.lookup_union_left]
+      tauto
+      rename_i h
+      apply Finmap.mem_of_lookup_eq_some h.left
+      tauto
+
+
+
+
+
+
+
+
+
+
+}
+
 end Lampe.Builtin

@@ -182,10 +182,11 @@ mod test {
                 let op2 = Option2::default();
                 let op3 = if true { op1 } else { op2 }.foo();
                 op1.is_some();
-                let l = [1, 2, 3];
+                let mut l = [1, 2, 3];
                 l[0];
                 let t = (1, true, 3);
                 t.2;
+                l[0] = 4;
             }
         "#;
 

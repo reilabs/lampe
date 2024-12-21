@@ -12,6 +12,8 @@ use itertools::Itertools;
 
 pub type BuiltinName = String;
 
+pub const CAST_BUILTIN_NAME: &str = "cast";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinType {
     Field,
@@ -119,7 +121,16 @@ pub fn try_func_into_builtin_name(
 pub fn try_index_into_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     if coll_type.is_collection() {
         let ty_name = coll_type.name_prefix();
-        Some(format!("{}_index", ty_name))
+        Some(format!("{}Index", ty_name))
+    } else {
+        None
+    }
+}
+
+pub fn try_index_write_into_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
+    if coll_type.is_collection() {
+        let ty_name = coll_type.name_prefix();
+        Some(format!("{}WriteIndex", ty_name))
     } else {
         None
     }
@@ -128,8 +139,8 @@ pub fn try_index_into_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName
 pub fn try_prefix_into_builtin_name(op: UnaryOp, rhs_type: BuiltinType) -> Option<BuiltinName> {
     let ty_name = rhs_type.name_prefix();
     match op {
-        UnaryOp::Minus if rhs_type.is_arithmetic() => Some(format!("{}_neg", ty_name)),
-        UnaryOp::Not if rhs_type.is_bitwise() => Some(format!("{}_not", ty_name)),
+        UnaryOp::Minus if rhs_type.is_arithmetic() => Some(format!("{}Neg", ty_name)),
+        UnaryOp::Not if rhs_type.is_bitwise() => Some(format!("{}Not", ty_name)),
         UnaryOp::MutableReference => todo!(),
         UnaryOp::Dereference { .. } => todo!(),
         _ => None,
@@ -144,24 +155,24 @@ pub fn try_infix_into_builtin_name(
     let ty_name = lhs_type.name_prefix();
     match op {
         // Arithmetic
-        BinaryOpKind::Add if lhs_type.is_arithmetic() => Some(format!("{}_add", ty_name)),
-        BinaryOpKind::Subtract if lhs_type.is_arithmetic() => Some(format!("{}_sub", ty_name)),
-        BinaryOpKind::Divide if lhs_type.is_arithmetic() => Some(format!("{}_div", ty_name)),
-        BinaryOpKind::Multiply if lhs_type.is_arithmetic() => Some(format!("{}_mul", ty_name)),
-        BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(format!("{}_rem", ty_name)),
+        BinaryOpKind::Add if lhs_type.is_arithmetic() => Some(format!("{}Add", ty_name)),
+        BinaryOpKind::Subtract if lhs_type.is_arithmetic() => Some(format!("{}Sub", ty_name)),
+        BinaryOpKind::Divide if lhs_type.is_arithmetic() => Some(format!("{}Div", ty_name)),
+        BinaryOpKind::Multiply if lhs_type.is_arithmetic() => Some(format!("{}Mul", ty_name)),
+        BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(format!("{}Rem", ty_name)),
         // Cmp
-        BinaryOpKind::Equal => Some(format!("{}_eq", ty_name)),
-        BinaryOpKind::NotEqual => Some(format!("{}_neq", ty_name)),
-        BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(format!("{}_gt", ty_name)),
-        BinaryOpKind::GreaterEqual if lhs_type.is_arithmetic() => Some(format!("{}_geq", ty_name)),
-        BinaryOpKind::Less if lhs_type.is_arithmetic() => Some(format!("{}_lt", ty_name)),
-        BinaryOpKind::LessEqual if lhs_type.is_arithmetic() => Some(format!("{}_leq", ty_name)),
+        BinaryOpKind::Equal => Some(format!("{}Eq", ty_name)),
+        BinaryOpKind::NotEqual => Some(format!("{}Neq", ty_name)),
+        BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(format!("{}Gt", ty_name)),
+        BinaryOpKind::GreaterEqual if lhs_type.is_arithmetic() => Some(format!("{}Geq", ty_name)),
+        BinaryOpKind::Less if lhs_type.is_arithmetic() => Some(format!("{}Lt", ty_name)),
+        BinaryOpKind::LessEqual if lhs_type.is_arithmetic() => Some(format!("{}Leq", ty_name)),
         // Bit
-        BinaryOpKind::And if lhs_type.is_bitwise() => Some(format!("{}_and", ty_name)),
-        BinaryOpKind::Or if lhs_type.is_bitwise() => Some(format!("{}_or", ty_name)),
-        BinaryOpKind::Xor if lhs_type.is_bitwise() => Some(format!("{}_xor", ty_name)),
-        BinaryOpKind::ShiftLeft if lhs_type.is_bitwise() => Some(format!("{}_shl", ty_name)),
-        BinaryOpKind::ShiftRight if lhs_type.is_bitwise() => Some(format!("{}_shr", ty_name)),
+        BinaryOpKind::And if lhs_type.is_bitwise() => Some(format!("{}And", ty_name)),
+        BinaryOpKind::Or if lhs_type.is_bitwise() => Some(format!("{}Or", ty_name)),
+        BinaryOpKind::Xor if lhs_type.is_bitwise() => Some(format!("{}Xor", ty_name)),
+        BinaryOpKind::ShiftLeft if lhs_type.is_bitwise() => Some(format!("{}Shl", ty_name)),
+        BinaryOpKind::ShiftRight if lhs_type.is_bitwise() => Some(format!("{}Shr", ty_name)),
         _ => None,
     }
 }

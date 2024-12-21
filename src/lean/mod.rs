@@ -452,6 +452,7 @@ impl LeanEmitter {
     /// compiler.
     pub fn emit_fully_qualified_type(&self, typ: &Type) -> String {
         match typ {
+            Type::Unit => syntax::r#type::format_unit(),
             Type::Array(elem_type, size) => {
                 let elem_type = self.emit_fully_qualified_type(elem_type);
 
@@ -532,7 +533,7 @@ impl LeanEmitter {
             // In all the other cases we can use the default printing as internal type vars are
             // non-existent, constrained to be types we don't care about customizing, or are
             // non-existent in the phase the emitter runs after.
-            _ => syntax::r#type::format_pure(&format!("{typ}")),
+            _ => format!("{typ}"),
         }
     }
 
@@ -873,7 +874,7 @@ impl LeanEmitter {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
 
-                syntax::expr::format_builtin_call("cast", &source, &target_type)
+                syntax::expr::format_builtin_call(builtin::CAST_BUILTIN_NAME, &source, &target_type)
             }
             HirExpression::If(if_expr) => {
                 let if_cond = self.emit_expr(ind, if_expr.condition)?;
@@ -986,9 +987,34 @@ impl LeanEmitter {
             }
             HirStatement::Assign(assign) => {
                 let expr = self.emit_expr(ind, assign.expression)?;
-                let l_val = self.emit_l_value(ind, &assign.lvalue)?;
-
-                syntax::stmt::format_assign(&l_val, &expr)
+                match assign.lvalue {
+                    HirLValue::Ident(lhs, _) => {
+                        let ident_str = self.context.def_interner.definition_name(lhs.id);
+                        syntax::stmt::format_direct_assign(&ident_str, &expr)
+                    }
+                    HirLValue::Index { array, index, .. } => {
+                        let (array_ref, builtin_name) = match array.as_ref() {
+                            HirLValue::Ident(ident, ty) => {
+                                let ident_name =
+                                    self.context.def_interner.definition_name(ident.id);
+                                let builtin_name = ty
+                                    .clone()
+                                    .try_into()
+                                    .ok()
+                                    .and_then(|t| builtin::try_index_write_into_builtin_name(t))
+                                    .expect("cannot write index {typ}");
+                                (ident_name, builtin_name)
+                            }
+                            _ => panic!("invalid collection reference {array:?}"),
+                        };
+                        let index_expr = self.emit_expr(ind, index)?;
+                        let out_ty_str = self.emit_fully_qualified_type(&Type::Unit);
+                        let args = [array_ref, index_expr.as_str(), expr.as_str()].join(", ");
+                        syntax::expr::format_builtin_call(&builtin_name, &args, &out_ty_str)
+                    }
+                    HirLValue::Dereference { .. } => todo!(),
+                    HirLValue::MemberAccess { .. } => todo!(),
+                }
             }
             HirStatement::For(fors) => {
                 let loop_var = self.context.def_interner.definition_name(fors.identifier.id);

@@ -120,17 +120,17 @@ syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
 syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
 
-def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp'): Expr rep tp' :=
+def Expr.letMutIn (definition : Expr rep tp) (body : rep tp.ref → Expr rep tp') : Expr rep tp' :=
   let refDef := Expr.letIn definition fun v => Expr.call h![] _ (tp.ref) (.builtin .ref) h![v]
   Expr.letIn refDef body
 
-def Expr.ref (val : rep tp): Expr rep tp.ref :=
+def Expr.ref (val : rep tp) : Expr rep tp.ref :=
   Expr.call h![] _ tp.ref (.builtin .ref) h![val]
 
-def Expr.readRef (ref : rep tp.ref): Expr rep tp :=
+def Expr.readRef (ref : rep tp.ref) : Expr rep tp :=
   Expr.call h![] _ tp (.builtin .readRef) h![ref]
 
-def Expr.writeRef (ref : rep tp.ref) (val : rep tp): Expr rep .unit :=
+def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Expr rep .unit :=
   Expr.call h![] _ .unit (.builtin .writeRef) h![ref, val]
 
 @[reducible]

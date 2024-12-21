@@ -317,6 +317,38 @@ theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by ta
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
+theorem arrayWriteIndex_intro {hn : n.toNat > 0} :
+  STHoare p Γ [r ↦ ⟨.array tp n, arr⟩] (.call h![] [.ref $ (.array tp n), .u 32, tp] .unit (.builtin .arrayWriteIndex) h![r, idx, v])
+    (fun _ => ∃∃ h, [r ↦ ⟨.array tp n, Builtin.replaceArr hn arr ⟨idx.toNat, h⟩ v⟩]) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i H st P
+  simp only [SLP.star, LawfulHeap.disjoint] at P
+  cases em (idx.toNat < n.toNat)
+  . apply Builtin.arrayWriteIndexOmni.ok <;> tauto
+    . simp_all only [SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp only [SLP.star, SLP.exists', LawfulHeap.disjoint]
+      generalize hv : (Builtin.replaceArr hn arr ⟨idx.toNat, (by tauto)⟩ v) = v' at *
+      obtain ⟨st₁, ⟨st₂, ⟨h₁, h₂, h₃, h₄⟩⟩⟩ := P
+      exists ⟨st₁.vals.insert r ⟨_, v'⟩, st₁.lambdas⟩, st₂
+      apply And.intro <;> tauto
+      apply And.intro
+      simp only [Finmap.disjoint_union_left]
+      apply Finmap.insert_mem_disjoint <;> tauto
+      simp only [State.valSingleton] at h₃
+      simp_all only [Finmap.mem_singleton]
+      tauto
+      simp_all
+      rw [Finmap.insert_union]
+      simp only [Finmap.insert_singleton_eq]
+    aesop
+  . apply Builtin.arrayWriteIndexOmni.err <;> tauto
+    . apply And.intro
+      aesop
+      simp_all
+
 -- Slice
 
 theorem mkSlice_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
@@ -355,6 +387,38 @@ theorem slicePopBack_intro : STHoarePureBuiltin p Γ Builtin.slicePopBack (by ta
 theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by tauto) h![sl, i]  := by
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
+
+theorem sliceWriteIndexIntro :
+  STHoare p Γ [r ↦ ⟨.slice tp, s⟩] (.call h![] [.ref $ (.slice tp), .u 32, tp] .unit (.builtin .sliceWriteIndex) h![r, idx, v])
+    (fun _ => [r ↦ ⟨.slice tp, Builtin.replaceSlice s idx.toNat v⟩]) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i H st P
+  simp only [SLP.star, LawfulHeap.disjoint] at P
+  cases em (idx.toNat < s.length)
+  . apply Builtin.sliceWriteIndexOmni.ok <;> tauto
+    . aesop
+    . simp_all only [SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp only [SLP.star, SLP.exists', LawfulHeap.disjoint]
+      generalize hv : (Builtin.replaceSlice s idx.toNat v) = v' at *
+      obtain ⟨st₁, ⟨st₂, ⟨h₁, h₂, h₃, h₄⟩⟩⟩ := P
+      exists ⟨st₁.vals.insert r ⟨_, v'⟩, st₁.lambdas⟩, st₂
+      apply And.intro <;> tauto
+      apply And.intro
+      simp only [Finmap.disjoint_union_left]
+      apply Finmap.insert_mem_disjoint <;> tauto
+      simp only [State.valSingleton] at h₃
+      simp_all only [Finmap.mem_singleton]
+      tauto
+      simp_all
+      rw [Finmap.insert_union]
+      simp only [Finmap.insert_singleton_eq]
+  . apply Builtin.sliceWriteIndexOmni.err <;> tauto
+    . apply And.intro
+      aesop
+      simp_all
 
 -- String
 

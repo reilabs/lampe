@@ -83,6 +83,11 @@ pub(super) fn format_trait_function_def(
 
 pub(super) mod r#type {
     #[inline]
+    pub fn format_unit() -> String {
+        format!("Unit")
+    }
+
+    #[inline]
     pub fn format_tuple(param_types: &str) -> String {
         format!("`({param_types})")
     }
@@ -122,11 +127,6 @@ pub(super) mod r#type {
     pub fn format_function(param_types: &str, ret_type: &str) -> String {
         format!("({param_types}) -> {ret_type}")
     }
-
-    #[inline]
-    pub fn format_pure(inner_type: &str) -> String {
-        format!("${{{inner_type}}}")
-    }
 }
 
 pub(super) mod expr {
@@ -163,8 +163,8 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_builtin_call(func_ident: &str, func_args: &str, out_ty: &str) -> String {
-        format!("({BUILTIN_PREFIX}{func_ident}({func_args}) : {out_ty})")
+    pub fn format_builtin_call(builtin_name: &str, func_args: &str, out_ty: &str) -> String {
+        format!("({BUILTIN_PREFIX}{builtin_name}({func_args}) : {out_ty})")
     }
 
     #[inline]
@@ -262,7 +262,7 @@ pub(super) mod stmt {
     }
 
     #[inline]
-    pub fn format_assign(lhs: &str, rhs: &str) -> String {
+    pub fn format_direct_assign(lhs: &str, rhs: &str) -> String {
         format!("{lhs} = {rhs}")
     }
 }
