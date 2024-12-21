@@ -55,13 +55,13 @@ mod test {
             use std::cmp::{Ordering, Ord, Eq};
             use std::default::Default;
 
-            // fn my_func3(a: u8) -> u8 {
-            //     my_func(a)
-            // }
+            fn my_func3(a: u8) -> u8 {
+                my_func(a)
+            }
 
-            // fn my_func(a: u8) -> u8 {
-            //     a + 1
-            // }
+            fn my_func(a: u8) -> u8 {
+                a + 1
+            }
 
             fn my_func2(arr: [u8; 8], b: u8) -> u8 {
                 arr[b]
@@ -75,18 +75,18 @@ mod test {
               1 + 1
             }
 
-            // fn cast_test(a: u8) -> u64 {
-            //     if a == 0 {
-            //         0
-            //     } else {
-            //         a as u64
-            //     }
-            // }
+            fn cast_test(a: u8) -> u64 {
+                if a == 0 {
+                    0
+                } else {
+                    a as u64
+                }
+            }
 
-            // fn tuple_test(a: u8) -> (u8, u8) {
-            //     let b = | c | c + a + 10;
-            //     (a, a)
-            // }
+            fn tuple_test(a: u8) -> (u8, u8) {
+                let b = | c | c + a + 10;
+                (a, a)
+            }
 
             // fn literal_test() -> () {
             //     let a = 1;

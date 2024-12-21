@@ -241,7 +241,7 @@ example {a b : Tp.denote p .field} :
 
 nr_def structProjection<>(x : Field, y : Field) -> Field {
   let s = Pair<Field> { x, y };
-  s[Pair<Field>.a]
+  (s as Pair<Field>).a : Field
 }
 
 example {x y : Tp.denote p .field} :
@@ -262,7 +262,7 @@ example : STHoare p Γ ⟦⟧ (simpleTuple.fn.body _ h![] |>.body h![]) (fun (v 
 
 nr_def callDecl<>(x: Field, y : Field) -> Field {
   let s = @structConstruct<>(x, y) : Pair<Field>;
-  s[Pair<Field>.a]
+  (s as Pair<Field>).a : Field
 }
 
 example {x y : Tp.denote p .field} :

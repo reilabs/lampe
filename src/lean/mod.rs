@@ -496,11 +496,13 @@ impl LeanEmitter {
                     .collect_vec();
                 let generics_str = generics_resolved.join(", ");
 
-                if module_path.is_empty() {
-                    format!("{name}<{generics_str}>")
+                let fq_name = if module_path.is_empty() {
+                    format!("{name}")
                 } else {
-                    format!("{module_path}::{name}<{generics_str}>")
-                }
+                    format!("{module_path}::{name}")
+                };
+
+                syntax::r#type::format_trait_as_type(&fq_name, &generics_str)
             }
             Type::Function(args, ret, environment) => {
                 let arg_types = args
@@ -510,24 +512,27 @@ impl LeanEmitter {
                 let arg_types_str = arg_types.join(", ");
                 let ret_str = self.emit_fully_qualified_type(ret);
 
-                let env_string = environment.to_string();
-                let env_string = env_string
-                    .strip_prefix("(")
-                    .expect("Environment did not contain a tuple type")
-                    .strip_suffix(")")
-                    .expect("Environment did not contain a tuple type");
-
-                format!("{{{env_string}}} -> ({arg_types_str}) -> {ret_str}")
+                match environment.as_ref() {
+                    Type::Unit => syntax::r#type::format_function(&arg_types_str, &ret_str),
+                    Type::Tuple(capture_types) => {
+                        let capture_types_str = capture_types
+                            .iter()
+                            .map(|arg| self.emit_fully_qualified_type(arg))
+                            .join(", ");
+                        syntax::r#type::format_lambda(&capture_types_str, &arg_types_str, &ret_str)
+                    }
+                    _ => panic!("invalid environment {environment}"),
+                }
             }
             Type::MutableReference(typ) => {
                 let typ_str = self.emit_fully_qualified_type(typ);
 
-                format!("&mut {typ_str}")
+                syntax::r#type::format_mut_ref(&typ_str)
             }
             // In all the other cases we can use the default printing as internal type vars are
             // non-existent, constrained to be types we don't care about customizing, or are
             // non-existent in the phase the emitter runs after.
-            _ => format!("{typ}"),
+            _ => syntax::r#type::format_pure(&format!("{typ}")),
         }
     }
 
@@ -710,7 +715,7 @@ impl LeanEmitter {
                         let ident_def = self.context.def_interner.definition(ident.id);
                         match ident_def.kind {
                             DefinitionKind::Function(func_id) => {
-                                Some(self.context.def_interner.function_meta(&func_id))
+                                Some((func_id, self.context.def_interner.function_meta(&func_id)))
                             }
                             _ => None,
                         }
@@ -718,10 +723,10 @@ impl LeanEmitter {
                     _ => None,
                 };
                 // If the function expression is a function identifier, then acquire its self type.
-                let self_type = func_meta.and_then(|func_meta| func_meta.self_type.as_ref());
+                let self_type = func_meta.and_then(|(_, func_meta)| func_meta.self_type.as_ref());
                 // If the function expression is a trait function identifier, then acquire the associated trait.
                 let trait_info = func_meta
-                    .and_then(|m| m.trait_impl)
+                    .and_then(|(_, m)| m.trait_impl)
                     .map(|impl_id| self.context.def_interner.get_trait_implementation(impl_id))
                     .map(|trait_impl| {
                         self.context.def_interner.get_trait(trait_impl.borrow().trait_id)
@@ -746,11 +751,16 @@ impl LeanEmitter {
                             &out_ty_str,
                         )
                     }
-                    (_, _, _, Some(func_meta)) => {
-                        let func_ident =
-                            self.context.def_interner.definition_name(func_meta.name.id);
+                    (_, _, _, Some((func_id, func_meta))) => {
+                        let func_module_id = ModuleId {
+                            krate: func_meta.source_crate,
+                            local_id: func_meta.source_module,
+                        };
+                        let fq_mod_name = self.fq_module_name_from_mod_id(func_module_id);
+                        let func_name = self.context.def_interner.function_name(&func_id);
+                        let fq_func_name = format!("{fq_mod_name}::{func_name}");
                         if let Some(builtin_fn_name) =
-                            builtin::try_func_into_builtin_name(func_ident, func_meta)
+                            builtin::try_func_into_builtin_name(&fq_func_name, func_meta)
                         {
                             syntax::expr::format_builtin_call(
                                 &builtin_fn_name,
@@ -847,6 +857,7 @@ impl LeanEmitter {
                             &struct_ty_str,
                             &target_expr_str,
                             member_iden,
+                            &out_ty_str,
                         )
                     }
                     Type::Tuple(..) => syntax::expr::format_tuple_access(
@@ -974,8 +985,8 @@ impl LeanEmitter {
                 )
             }
             HirStatement::Assign(assign) => {
-                let l_val = self.emit_l_value(ind, &assign.lvalue)?;
                 let expr = self.emit_expr(ind, assign.expression)?;
+                let l_val = self.emit_l_value(ind, &assign.lvalue)?;
 
                 syntax::stmt::format_assign(&l_val, &expr)
             }

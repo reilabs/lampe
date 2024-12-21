@@ -99,7 +99,10 @@ impl BuiltinType {
     }
 }
 
-pub fn try_func_into_builtin_name(func_ident: &str, func_meta: &FuncMeta) -> Option<BuiltinName> {
+pub fn try_func_into_builtin_name(
+    fq_func_ident: &str,
+    func_meta: &FuncMeta,
+) -> Option<BuiltinName> {
     let param_types: Result<Vec<BuiltinType>, _> = func_meta
         .parameters
         .0
@@ -107,8 +110,8 @@ pub fn try_func_into_builtin_name(func_ident: &str, func_meta: &FuncMeta) -> Opt
         .map(|(_, ty, _)| ty.clone().try_into())
         .try_collect();
     let param_types = param_types.ok()?;
-    match (func_ident, param_types.as_slice()) {
-        ("zeroed", _) => Some(format!("zeroed")),
+    match (fq_func_ident, param_types.as_slice()) {
+        ("std::unsafe::zeroed", _) => Some(format!("zeroed")),
         _ => None,
     }
 }

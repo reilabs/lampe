@@ -48,7 +48,7 @@ def Tp.denote : Tp → Type
 | .slice tp => List (denote tp)
 | .array tp n => Mathlib.Vector (denote tp) n.toNat
 | .ref _ => Ref
-| .tuple _ fields => Tp.denoteArgs fields
+| .tuple _ fields => denoteArgs fields
 
 end
 

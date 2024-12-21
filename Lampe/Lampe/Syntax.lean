@@ -32,12 +32,15 @@ partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | `(nr_ident|$i:ident :: $j:nr_ident) => do pure s!"{i.getId}::{←mkNrIdent j}"
 | i => throwError "Unexpected ident {i}"
 
-syntax ident : nr_type
+syntax ident : nr_type -- Builtin type
+syntax nr_ident "<" nr_type,* ">" : nr_type -- Struct
+syntax "&" nr_type : nr_type -- Reference
+syntax "λ" : nr_type -- Lambda
+syntax "(" nr_type,* ")" "->" nr_type : nr_type -- Function
+syntax "[" nr_type "]" : nr_type -- Slice
+syntax "[" nr_type ";" term "]" : nr_type -- Array
+syntax "`(" nr_type,* ")" : nr_type -- Tuple
 syntax "${" term "}" : nr_type
-syntax nr_ident "<" nr_type,* ">" : nr_type
-syntax "[" nr_type "]" : nr_type
-syntax "[" nr_type ";" term "]" : nr_type
-syntax "`(" nr_type,* ")" : nr_type
 
 def mkListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
 | [] => `([])
@@ -62,11 +65,6 @@ def tupleFields (tp : Tp) := match tp with
 | Tp.tuple _ fields => fields
 | _ => []
 
-@[reducible]
-def tupleName (tp : Tp) := match tp with
-| Tp.tuple name _ => name
-| _ => none
-
 partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_type → m (TSyntax `term)
 | `(nr_type| u1) => `(Tp.u 1)
 | `(nr_type| u8) => `(Tp.u 8)
@@ -76,6 +74,9 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| bool) => `(Tp.bool)
 | `(nr_type| Field) => `(Tp.field)
 | `(nr_type| Unit) => `(Tp.unit)
+| `(nr_type| & $tp:nr_type) => do `(Tp.ref $(←mkNrType tp))
+| `(nr_type| λ) => `(Tp.lambdaRef)
+| `(nr_type| ( $_ins,* ) -> $_out) => `(Tp.lambdaRef)
 | `(nr_type| $i:ident) => `($i)
 | `(nr_type| $i:nr_ident < $generics,* >) => do
   let name := mkIdent $ Name.mkSimple $ ← mkNrIdent i
@@ -84,9 +85,9 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| `($tps,* )) => do
   let tps ← tps.getElems.toList.mapM mkNrType
   `(Tp.tuple none $(←mkListLit tps))
-| `(nr_type| ${ $i }) => pure i
 | `(nr_type| [ $tp ]) => do `(Tp.slice $(←mkNrType tp))
 | `(nr_type| [ $tp ; $len:num ]) => do `(Tp.array $(←mkNrType tp) $len)
+| `(nr_type| ${ $i }) => pure i
 | _ => throwUnsupportedSyntax
 
 syntax ident ":" nr_type : nr_param_decl
@@ -109,7 +110,7 @@ syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 syntax "@" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Decl call
 syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")"
   "::" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Trait call
-syntax nr_expr "[" nr_ident "<" nr_type,* ">" "." ident "]" : nr_expr -- Struct access
+syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident ":" nr_type : nr_expr -- Struct access
 syntax nr_expr "." num ":" nr_type : nr_expr -- Tuple access
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
@@ -282,12 +283,13 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs args.getElems.toList fun argVals => do
     let argTps ← argVals.mapM fun arg => `(typeof $arg)
     wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple none $(←mkListLit argTps)) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
-| `(nr_expr| $structExpr:nr_expr [ $structName:nr_ident  < $structGenVals,* > . $structField:ident ] ) => do
+| `(nr_expr| ( $structExpr:nr_expr as $structName:nr_ident  < $structGenVals,* > ) . $structField:ident : $outTy:nr_type ) => do
+  let outTp ← mkNrType outTy
   let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
   let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
   let accessorSyn ← `($accessor $structGenValsSyn)
   mkExpr structExpr none fun s => do
-    `(Lampe.Expr.call h![] [typeof $s] _ (.builtin (.projectTuple $accessorSyn)) h![$s])
+    `(Lampe.Expr.call h![] [typeof $s] $outTp (.builtin (@Builtin.projectTuple $outTp _ $accessorSyn)) h![$s])
 | `(nr_expr| $tupleExpr:nr_expr . $idx:num : $outTy:nr_type) => do
   let outTp ← mkNrType outTy
   mkExpr tupleExpr none fun t => do

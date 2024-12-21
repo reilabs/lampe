@@ -101,6 +101,32 @@ pub(super) mod r#type {
     pub fn format_struct(struct_name: &str, generics: &str) -> String {
         format!("{struct_name}<{generics}>")
     }
+
+    #[inline]
+    pub fn format_lambda(_capture_types: &str, _param_types: &str, _ret_type: &str) -> String {
+        format!("λ")
+    }
+
+    #[inline]
+    pub fn format_mut_ref(inner_type: &str) -> String {
+        format!("&{inner_type}")
+    }
+
+    #[inline]
+    pub fn format_trait_as_type(_trait_name: &str, _generics: &str) -> String {
+        todo!()
+        // format!("?{trait_name}<{generics}>")
+    }
+
+    #[inline]
+    pub fn format_function(param_types: &str, ret_type: &str) -> String {
+        format!("({param_types}) -> {ret_type}")
+    }
+
+    #[inline]
+    pub fn format_pure(inner_type: &str) -> String {
+        format!("${{{inner_type}}}")
+    }
 }
 
 pub(super) mod expr {
@@ -123,7 +149,7 @@ pub(super) mod expr {
         func_args: &str,
         out_ty: &str,
     ) -> String {
-        format!("({sub_type} as {trait_name})::{func_ident}({func_args}) : {out_ty}")
+        format!("(({sub_type} as {trait_name})::{func_ident}({func_args}) : {out_ty})")
     }
 
     #[inline]
@@ -142,8 +168,13 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_member_access(struct_name: &str, target_expr: &str, member: Ident) -> String {
-        format!("{target_expr}[{struct_name}.{member}]")
+    pub fn format_member_access(
+        struct_name: &str,
+        target_expr: &str,
+        member: Ident,
+        out_ty: &str,
+    ) -> String {
+        format!("(({target_expr} as {struct_name}).{member} : {out_ty})")
     }
 
     #[inline]
@@ -226,12 +257,8 @@ pub(super) mod stmt {
     }
 
     #[inline]
-    pub fn format_assert(constraint_expr: &str, print_expr: Option<&str>) -> String {
-        if let Some(print_expr) = print_expr {
-            format!("{BUILTIN_PREFIX}assertPrint({constraint_expr}, {print_expr})")
-        } else {
-            format!("{BUILTIN_PREFIX}assert({constraint_expr})")
-        }
+    pub fn format_assert(constraint_expr: &str, _print_expr: Option<&str>) -> String {
+        format!("{BUILTIN_PREFIX}assert({constraint_expr})")
     }
 
     #[inline]
