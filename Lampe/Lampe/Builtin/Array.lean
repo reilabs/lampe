@@ -69,11 +69,11 @@ inductive arrayWriteIndexOmni : Omni where
 | ok {p st tp n} {arr : Tp.denote p $ .array tp n} {v : Tp.denote p tp} {Q} :
   (_ : st.lookup ref = some ⟨.array tp n, arr⟩ ∧ n.toNat > 0 ∧ idx.toNat < n.toNat) →
   Q (some (st.insert ref ⟨.array tp n, replaceArr (by tauto) arr ⟨idx.toNat, (by tauto)⟩ v⟩, ())) →
-  arrayWriteIndexOmni p st [.ref $ (.array tp n), .u 32, tp] .unit h![ref, idx, v] Q
+  arrayWriteIndexOmni p st [.ref $ .array tp n, .u 32, tp] .unit h![ref, idx, v] Q
 | err {p st tp n} {arr : Tp.denote p $ .array tp n} {v : Tp.denote p tp} {Q} :
   (st.lookup ref = some ⟨.array tp n, arr⟩ ∧ idx.toNat ≥ n.toNat) →
   Q none →
-  arrayWriteIndexOmni p st [.ref $ (.array tp n), .u 32, tp] .unit h![ref, idx, v] Q
+  arrayWriteIndexOmni p st [.ref $ .array tp n, .u 32, tp] .unit h![ref, idx, v] Q
 
 def arrayWriteIndex : Builtin := {
   omni := arrayWriteIndexOmni
@@ -98,14 +98,11 @@ def arrayWriteIndex : Builtin := {
             apply Finmap.insert_mem_disjoint <;> tauto
             apply Finmap.mem_of_lookup_eq_some <;> tauto
           apply And.intro <;> try simp_all
-          . rw [Finmap.insert_union]
-            rw [h₃]
+          . rw [Finmap.insert_union, h₃]
             apply And.intro
-            rw [Finmap.lookup_union_left]
-            tauto
+            rw [Finmap.lookup_union_left] <;> tauto
             apply Finmap.mem_of_lookup_eq_some
-            tauto
-            tauto
+            all_goals tauto
       . apply arrayWriteIndexOmni.err
         rw [Finmap.lookup_union_left]
         tauto

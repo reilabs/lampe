@@ -331,23 +331,18 @@ theorem arrayWriteIndex_intro {hn : n.toNat > 0} :
       apply SLP.ent_star_top
       simp only [SLP.star, SLP.exists', LawfulHeap.disjoint]
       generalize hv : (Builtin.replaceArr hn arr ⟨idx.toNat, (by tauto)⟩ v) = v' at *
-      obtain ⟨st₁, ⟨st₂, ⟨h₁, h₂, h₃, h₄⟩⟩⟩ := P
+      obtain ⟨st₁, st₂, _, _, _, _⟩ := P
       exists ⟨st₁.vals.insert r ⟨_, v'⟩, st₁.lambdas⟩, st₂
       apply And.intro <;> tauto
       apply And.intro
       simp only [Finmap.disjoint_union_left]
       apply Finmap.insert_mem_disjoint <;> tauto
-      simp only [State.valSingleton] at h₃
-      simp_all only [Finmap.mem_singleton]
+      simp_all [State.valSingleton, Finmap.mem_singleton]
       tauto
-      simp_all
-      rw [Finmap.insert_union]
-      simp only [Finmap.insert_singleton_eq]
-    aesop
+      simp_all [Finmap.insert_union]
+    . aesop
   . apply Builtin.arrayWriteIndexOmni.err <;> tauto
-    . apply And.intro
-      aesop
-      simp_all
+    . apply And.intro (by aesop) (by simp_all)
 
 -- Slice
 
@@ -403,18 +398,15 @@ theorem sliceWriteIndexIntro :
       apply SLP.ent_star_top
       simp only [SLP.star, SLP.exists', LawfulHeap.disjoint]
       generalize hv : (Builtin.replaceSlice s idx.toNat v) = v' at *
-      obtain ⟨st₁, ⟨st₂, ⟨h₁, h₂, h₃, h₄⟩⟩⟩ := P
+      obtain ⟨st₁, st₂, _, _, _, _⟩ := P
       exists ⟨st₁.vals.insert r ⟨_, v'⟩, st₁.lambdas⟩, st₂
       apply And.intro <;> tauto
       apply And.intro
       simp only [Finmap.disjoint_union_left]
       apply Finmap.insert_mem_disjoint <;> tauto
-      simp only [State.valSingleton] at h₃
-      simp_all only [Finmap.mem_singleton]
+      simp_all [State.valSingleton, Finmap.mem_singleton]
       tauto
-      simp_all
-      rw [Finmap.insert_union]
-      simp only [Finmap.insert_singleton_eq]
+      simp_all [Finmap.insert_union]
   . apply Builtin.sliceWriteIndexOmni.err <;> tauto
     . apply And.intro
       aesop

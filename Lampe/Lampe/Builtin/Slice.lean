@@ -148,14 +148,11 @@ def sliceWriteIndex : Builtin := {
     . apply sliceWriteIndexOmni.ok <;> tauto
       rw [Finmap.lookup_union_left]
       assumption
-      apply Finmap.mem_of_lookup_eq_some
-      tauto
-      simp only
+      apply Finmap.mem_of_lookup_eq_some <;> tauto
       repeat apply Exists.intro
       apply And.intro ?_
       . simp_all only [Finmap.insert_union]
-        apply And.intro rfl ?_
-        tauto
+        apply And.intro rfl (by tauto)
       . apply Finmap.disjoint_insert <;> tauto
     . apply sliceWriteIndexOmni.err
       rw [Finmap.lookup_union_left]

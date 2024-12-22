@@ -130,6 +130,8 @@ pub(super) mod r#type {
 }
 
 pub(super) mod expr {
+    use crate::lean::builtin::BuiltinName;
+
     use super::*;
 
     #[inline]
@@ -163,7 +165,7 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_builtin_call(builtin_name: &str, func_args: &str, out_ty: &str) -> String {
+    pub fn format_builtin_call(builtin_name: BuiltinName, func_args: &str, out_ty: &str) -> String {
         format!("({BUILTIN_PREFIX}{builtin_name}({func_args}) : {out_ty})")
     }
 
@@ -219,7 +221,7 @@ pub(super) mod expr {
 
     #[inline]
     pub fn format_infix_builtin_call(
-        builtin_name: &str,
+        builtin_name: BuiltinName,
         lhs: &str,
         rhs: &str,
         ret_type: &str,
@@ -228,7 +230,11 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_prefix_builtin_call(builtin_name: &str, rhs: &str, ret_type: &str) -> String {
+    pub fn format_prefix_builtin_call(
+        builtin_name: BuiltinName,
+        rhs: &str,
+        ret_type: &str,
+    ) -> String {
         format!("({BUILTIN_PREFIX}{builtin_name}({rhs}) : {ret_type})")
     }
 
@@ -239,6 +245,8 @@ pub(super) mod expr {
 }
 
 pub(super) mod stmt {
+    use crate::lean::builtin::BuiltinName;
+
     use super::*;
 
     #[inline]
@@ -264,5 +272,16 @@ pub(super) mod stmt {
     #[inline]
     pub fn format_direct_assign(lhs: &str, rhs: &str) -> String {
         format!("{lhs} = {rhs}")
+    }
+
+    #[inline]
+    pub fn format_index_assign(
+        lhs: &str,
+        rhs: &str,
+        index_expr: &str,
+        builtin_name: BuiltinName,
+    ) -> String {
+        let args = [lhs, index_expr, rhs].join(", ");
+        super::expr::format_builtin_call(builtin_name, &args, &super::r#type::format_unit())
     }
 }

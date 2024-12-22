@@ -9,7 +9,7 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
-    ast::Visibility,
+    ast::{IntegerBitSize, Visibility},
     graph::CrateId,
     hir::{
         def_map::{ModuleData, ModuleId},
@@ -21,7 +21,7 @@ use noirc_frontend::{
         stmt::{HirLValue, HirPattern},
         traits::TraitImpl,
     },
-    macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, StructId},
+    macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, Signedness, StructId},
     node_interner::{DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId},
     Type,
 };
@@ -627,7 +627,7 @@ impl LeanEmitter {
                     .ok()
                     .and_then(|ty| builtin::try_prefix_into_builtin_name(prefix.operator, ty))
                 {
-                    syntax::expr::format_prefix_builtin_call(&builtin_name, &rhs, &out_ty_str)
+                    syntax::expr::format_prefix_builtin_call(builtin_name, &rhs, &out_ty_str)
                 } else {
                     // Convert to a trait call if this prefix call doesn't correspond to a builtin call.
                     let rhs_ty_str = self.emit_fully_qualified_type(&rhs_ty);
@@ -669,7 +669,7 @@ impl LeanEmitter {
                         _ => None,
                     }
                 {
-                    syntax::expr::format_infix_builtin_call(&builtin_name, &lhs, &rhs, &out_ty_str)
+                    syntax::expr::format_infix_builtin_call(builtin_name, &lhs, &rhs, &out_ty_str)
                 } else {
                     // Convert to a trait call if this infix call doesn't correspond to a builtin call.
                     let lhs_ty_str = self.emit_fully_qualified_type(&lhs_ty);
@@ -764,7 +764,7 @@ impl LeanEmitter {
                             builtin::try_func_into_builtin_name(&fq_func_name, func_meta)
                         {
                             syntax::expr::format_builtin_call(
-                                &builtin_fn_name,
+                                builtin_fn_name,
                                 &args_str,
                                 &out_ty_str,
                             )
@@ -811,10 +811,12 @@ impl LeanEmitter {
 
                 let collection_expr_str = self.emit_expr(ind, index.collection)?;
                 let index_expr_str = self.emit_expr(ind, index.index)?;
+                // Wrap the index expression with a cast to u32.
+                // [TODO] is this the best way?
+                let index_expr_str = cast_to_u32(&index_expr_str);
                 let args_str = format!("{collection_expr_str}, {index_expr_str}");
-                // [TODO] does indexing correspond to a trait? If so, add trait call as a fallback.
 
-                syntax::expr::format_builtin_call(&index_builtin_ident, &args_str, &out_ty_str)
+                syntax::expr::format_builtin_call(index_builtin_ident, &args_str, &out_ty_str)
             }
             HirExpression::Literal(lit) => self.emit_literal(ind, lit, expr)?,
             HirExpression::Constructor(constructor) => {
@@ -874,7 +876,11 @@ impl LeanEmitter {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
 
-                syntax::expr::format_builtin_call(builtin::CAST_BUILTIN_NAME, &source, &target_type)
+                syntax::expr::format_builtin_call(
+                    builtin::CAST_BUILTIN_NAME.into(),
+                    &source,
+                    &target_type,
+                )
             }
             HirExpression::If(if_expr) => {
                 let if_cond = self.emit_expr(ind, if_expr.condition)?;
@@ -992,26 +998,26 @@ impl LeanEmitter {
                         let ident_str = self.context.def_interner.definition_name(lhs.id);
                         syntax::stmt::format_direct_assign(&ident_str, &expr)
                     }
-                    HirLValue::Index { array, index, .. } => {
-                        let (array_ref, builtin_name) = match array.as_ref() {
-                            HirLValue::Ident(ident, ty) => {
-                                let ident_name =
-                                    self.context.def_interner.definition_name(ident.id);
-                                let builtin_name = ty
-                                    .clone()
-                                    .try_into()
-                                    .ok()
-                                    .and_then(|t| builtin::try_index_write_into_builtin_name(t))
-                                    .expect("cannot write index {typ}");
-                                (ident_name, builtin_name)
-                            }
-                            _ => panic!("invalid collection reference {array:?}"),
-                        };
-                        let index_expr = self.emit_expr(ind, index)?;
-                        let out_ty_str = self.emit_fully_qualified_type(&Type::Unit);
-                        let args = [array_ref, index_expr.as_str(), expr.as_str()].join(", ");
-                        syntax::expr::format_builtin_call(&builtin_name, &args, &out_ty_str)
-                    }
+                    HirLValue::Index { array, index, .. } => match array.as_ref() {
+                        HirLValue::Ident(ident, ty) => {
+                            let ident_name = self.context.def_interner.definition_name(ident.id);
+                            let builtin_name = ty
+                                .clone()
+                                .try_into()
+                                .ok()
+                                .and_then(|t| builtin::try_index_write_into_builtin_name(t))
+                                .expect("cannot write index {typ}");
+                            let index_expr = self.emit_expr(ind, index)?;
+                            let index_expr = cast_to_u32(&index_expr);
+                            syntax::stmt::format_index_assign(
+                                ident_name,
+                                &expr,
+                                &index_expr,
+                                builtin_name,
+                            )
+                        }
+                        _ => panic!("invalid lhs on index assign `{array:?}`"),
+                    },
                     HirLValue::Dereference { .. } => todo!(),
                     HirLValue::MemberAccess { .. } => todo!(),
                 }
@@ -1034,54 +1040,6 @@ impl LeanEmitter {
         };
 
         Ok(format!("{result};"))
-    }
-
-    /// Generates a Lean representation of a Noir l-value (something that can be
-    /// assigned to).
-    ///
-    /// # Errors
-    ///
-    /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_l_value(&self, ind: &mut Indenter, l_val: &HirLValue) -> Result<String> {
-        let result = match l_val {
-            HirLValue::Ident(ident, ty) => {
-                let ident_str = self.context.def_interner.definition_name(ident.id);
-                let ty_str = self.emit_fully_qualified_type(ty);
-                format!("({ident_str} : {ty_str})")
-            }
-            HirLValue::MemberAccess {
-                object,
-                field_name,
-                typ,
-                ..
-            } => {
-                let obj_str = self.emit_l_value(ind, object.as_ref())?;
-                let typ_str = self.emit_fully_qualified_type(typ);
-
-                format!("({obj_str}.{field_name} : {typ_str})")
-            }
-            HirLValue::Index {
-                array, index, typ, ..
-            } => {
-                let array_expr = self.emit_l_value(ind, array.as_ref())?;
-                let ix_expr = self.emit_expr(ind, *index)?;
-                let typ_str = self.emit_fully_qualified_type(typ);
-
-                format!("({array_expr}[{ix_expr}] : {typ_str})")
-            }
-            HirLValue::Dereference {
-                lvalue,
-                element_type,
-                ..
-            } => {
-                let l_val_expr = self.emit_l_value(ind, lvalue.as_ref())?;
-                let elem_ty = self.emit_fully_qualified_type(element_type);
-
-                format!("(*{l_val_expr} : {elem_ty})")
-            }
-        };
-
-        Ok(result)
     }
 
     /// Emits the Lean code corresponding to a Noir pattern.
@@ -1252,4 +1210,14 @@ impl From<LeanEmitter> for Context<'static, 'static> {
     }
 }
 
+fn cast_to_u32(expr: &str) -> String {
+    syntax::expr::format_builtin_call(
+        builtin::CAST_BUILTIN_NAME.into(),
+        expr,
+        &format!(
+            "{}",
+            Type::Integer(Signedness::Unsigned, IntegerBitSize::ThirtyTwo)
+        ),
+    )
+}
 // TODO Proper emit tests

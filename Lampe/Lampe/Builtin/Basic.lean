@@ -138,28 +138,36 @@ def fresh : Builtin := {
     tauto
 }
 
+/--
+  Represents the types that can be casted to each other.
+-/
 class CastTp (tp tp' : Tp) where
   validate : Tp.denote p tp → Prop
   cast : (a : Tp.denote p tp) → (validate a) → Tp.denote p tp'
 
 @[simp]
+instance : CastTp tp tp where
+  validate := fun _ => True
+  cast := fun a _ => a
+
+@[simp]
 instance : CastTp (.u s) (.i s) where
-  validate := fun a => sorry
+  validate := fun a => a.toNat < 2^(s-1)
   cast := fun a _ => a
 
 @[simp]
 instance : CastTp (.u s) (.field) where
-  validate := fun a => sorry
+  validate := fun _ => True
   cast := fun a _ => a.toNat
 
 @[simp]
 instance : CastTp (.i s) (.u s) where
-  validate := fun a => sorry
+  validate := fun a => a.toNat ≥ 0
   cast := fun a _ => a
 
 @[simp]
 instance : CastTp (.i s) (.field) where
-  validate := fun a => sorry
+  validate := fun _ => True
   cast := fun a _ => a.toNat
 
 @[simp]
@@ -169,8 +177,14 @@ instance : CastTp (.field) (.u s) where
 
 @[simp]
 instance : CastTp (.field) (.i s) where
-  validate := fun a => a.val < 2^(s-1) ∧ a.val > 0
-  cast := fun a h => ⟨a.val, (by sorry)⟩
+  validate := fun a => a.val < 2^(s-1) ∧ a.val ≥ 0
+  cast := fun a h => ⟨a.val, by
+    cases s
+    . simp_all
+    . simp_all only [add_tsub_cancel_right, Nat.pow_succ]
+      linarith
+  ⟩
+
 inductive castOmni : Omni where
 | ok {P st tp tp' v Q} [CastTp tp tp'] :
   (h : CastTp.validate tp' v) → Q (some (st, CastTp.cast v h)) → castOmni P st [tp] tp' h![v] Q
