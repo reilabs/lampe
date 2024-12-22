@@ -60,6 +60,7 @@ lemma vector_eq_tp_denote_array (h : n.toNat > 0) : Mathlib.Vector (Tp.denote p 
     aesop
   tauto
 
+@[reducible]
 def replaceArr (h : n.toNat > 0) (arr : Tp.denote p (.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (.array tp n) :=
   (vector_eq_tp_denote_array h) ▸ ((arr.eraseIdx idx).insertNth v idx)
 

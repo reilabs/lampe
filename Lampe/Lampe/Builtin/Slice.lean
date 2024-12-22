@@ -113,13 +113,7 @@ def sliceRemove := newGenericPureBuiltin
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
 
-lemma Finmap.disjoint_insert [DecidableEq α] {v : β} {ref : α} {m₁ m₂ : Finmap fun _: α => β}
-  (h₁ : m₁.Disjoint m₂) (h₂ : m₁.lookup ref = some v) :
-   (m₁.insert ref v').Disjoint m₂ := by
-  intro ref' h
-  have _ : ref ∈ m₁ := by apply Finmap.mem_of_lookup_eq_some; tauto
-  aesop
-
+@[reducible]
 def replaceSlice (s : Tp.denote p $ .slice tp) (i : Nat) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
   s.eraseIdx i |>.insertNth i v
 
@@ -160,16 +154,6 @@ def sliceWriteIndex : Builtin := {
       rename_i h
       apply Finmap.mem_of_lookup_eq_some h.left
       tauto
-
-
-
-
-
-
-
-
-
-
 }
 
 end Lampe.Builtin

@@ -250,6 +250,20 @@ example {x y : Tp.denote p .field} :
   steps
   aesop
 
+nr_def structWrite<>(x : Field, y : Field) -> Field {
+  let mut s = Pair<Field> { x, y };
+  (s as Pair<Field>).a = (5 : Field);
+  (s as Pair<Field>).a : Field
+}
+
+example {_: 5 < p.natVal} {x y : Tp.denote p .field} :
+  STHoare p Γ ⟦⟧ (structWrite.fn.body _ h![] |>.body h![x, y]) (fun (v : Tp.denote p .field) => v.val = 5) := by
+  simp only [structWrite]
+  steps
+  simp_all
+  apply ZMod.val_cast_of_lt
+  tauto
+
 nr_def simpleTuple<>() -> Field {
   let t = `(1 : Field, true, 3 : Field);
   t.2 : Field
@@ -259,6 +273,20 @@ example : STHoare p Γ ⟦⟧ (simpleTuple.fn.body _ h![] |>.body h![]) (fun (v 
   simp only [simpleTuple]
   steps
   aesop
+
+nr_def tupleWrite<>() -> Field {
+  let mut t = `(1 : Field, true, 3 : Field);
+  (t.2) = 5 : Field;
+  t.2 : Field
+}
+
+example {_: 5 < p.natVal} :
+  STHoare p Γ ⟦⟧ (tupleWrite.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v.val = 5) := by
+  simp only [tupleWrite]
+  steps
+  simp_all
+  apply ZMod.val_cast_of_lt
+  tauto
 
 nr_def callDecl<>(x: Field, y : Field) -> Field {
   let s = @structConstruct<>(x, y) : Pair<Field>;

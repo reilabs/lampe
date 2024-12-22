@@ -4,6 +4,13 @@ import Lampe.Data.HList
 import Lampe.Builtin.Helpers
 import Mathlib
 
+lemma Finmap.disjoint_insert [DecidableEq α] {v : β} {ref : α} {m₁ m₂ : Finmap fun _: α => β}
+  (h₁ : m₁.Disjoint m₂) (h₂ : m₁.lookup ref = some v) :
+   (m₁.insert ref v').Disjoint m₂ := by
+  intro ref' h
+  have _ : ref ∈ m₁ := by apply Finmap.mem_of_lookup_eq_some; tauto
+  aesop
+
 namespace Lampe
 
 abbrev Builtin.Omni := ∀(P:Prime),

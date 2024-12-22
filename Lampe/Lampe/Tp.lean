@@ -65,21 +65,6 @@ def Kind.denote : Kind → Type
 | .nat => Nat
 | .type => Tp
 
-inductive Member : Tp → List Tp → Type where
-| head : Member tp (tp :: tps)
-| tail : Member tp tps → Member tp (tp' :: tps)
-
-def indexTpl (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) : Tp.denote p tp := match tps with
-| tp :: _ => match tpl, mem with
-  | (h, _), .head => h
-  | (_, rem), .tail m => indexTpl rem m
-
-def exampleTuple {p} : Tp.denoteArgs p [.bool, .field, .field] := (true, 4, 5)
-
-example : indexTpl p exampleTuple Member.head = true := rfl
-example : indexTpl p exampleTuple Member.head.tail = 4 := rfl
-example : indexTpl p exampleTuple Member.head.tail.tail = 5 := rfl
-
 lemma List.replicate_head (hl : x :: xs = List.replicate n a) : x = a := by
   unfold List.replicate at hl
   aesop

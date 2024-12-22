@@ -284,4 +284,19 @@ pub(super) mod stmt {
         let args = [lhs, index_expr, rhs].join(", ");
         super::expr::format_builtin_call(builtin_name, &args, &super::r#type::format_unit())
     }
+
+    #[inline]
+    pub fn format_struct_access_assign(
+        lhs: &str,
+        rhs: &str,
+        struct_name: &str,
+        field_name: &str,
+    ) -> String {
+        format!("({lhs} as {struct_name}).{field_name} = {rhs}")
+    }
+
+    #[inline]
+    pub fn format_tuple_access_assign(lhs: &str, rhs: &str, field_idx: &str) -> String {
+        format!("({lhs}.{field_idx}) = {rhs}")
+    }
 }

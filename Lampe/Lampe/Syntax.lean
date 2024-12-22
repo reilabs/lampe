@@ -97,6 +97,8 @@ syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr -- Block
 syntax "let" ident "=" nr_expr : nr_expr -- Let binding
 syntax "let" "mut" ident "=" nr_expr : nr_expr -- Let mut binding
 syntax ident "=" nr_expr : nr_expr -- Assignment
+syntax "(" ident "as" nr_ident "<" nr_type,* ">" ")" "." ident "=" nr_expr : nr_expr -- Struct assignment
+syntax "(" ident "." num ")"  "=" nr_expr : nr_expr -- Tuple assignment
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If-then-else
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
 syntax "(" nr_expr ")" : nr_expr -- Parentheses
@@ -132,6 +134,9 @@ def Expr.readRef (ref : rep tp.ref) : Expr rep tp :=
 
 def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Expr rep .unit :=
   Expr.call h![] _ .unit (.builtin .writeRef) h![ref, val]
+
+def Expr.tupleWriteMember (ref : rep $ .ref (.tuple name tps)) (mem : Builtin.Member tp tps) (val : rep tp) : Expr rep .unit :=
+  Expr.call h![] _ .unit (.builtin $ .tupleWriteMember mem) h![ref, val]
 
 @[reducible]
 def Expr.slice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.slice tp) :=
@@ -177,19 +182,19 @@ def mkStructDefIdent (structName : String) : Lean.Ident :=
   mkIdent $ Name.mkSimple structName
 
 def mkRecMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
-| .zero => `(Member.head)
-| .succ n' => do `(Member.tail $(←mkRecMember n'))
+| .zero => `(Builtin.Member.head)
+| .succ n' => do `(Builtin.Member.tail $(←mkRecMember n'))
 
 mutual
 
 partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
 | h :: n :: rest => match h with
   | `(nr_expr | let $v = $e ) => do
-    mkExpr e (some v) fun _ => mkBlock (n::rest) k
+    mkExpr e (some v) fun _ => mkBlock (n :: rest) k
   | `(nr_expr | let mut $v = $e) => do
     mkExpr e none fun eVal => do
       registerAutoDeref v.getId
-      let body ← mkBlock (n::rest) k
+      let body ← mkBlock (n :: rest) k
       `(Lampe.Expr.letIn (Expr.ref $eVal) fun $v => $body)
   | e => do
   mkExpr e none fun _ => mkBlock (n::rest) k
@@ -229,9 +234,9 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit argVals))) vname k
 | `(nr_expr| for $i in $lo .. $hi $body) => do
   mkExpr lo none fun lo =>
-  mkExpr hi none fun hi => do
-    let body ← mkExpr body none (fun x => `(Lampe.Expr.var $x))
-    wrapSimple (←`(Lampe.Expr.loop $lo $hi fun $i => $body)) vname k
+    mkExpr hi none fun hi => do
+      let body ← mkExpr body none (fun x => `(Lampe.Expr.var $x))
+      wrapSimple (←`(Lampe.Expr.loop $lo $hi fun $i => $body)) vname k
 | `(nr_expr| $v:ident = $e) => do
   mkExpr e none fun eVal => do
     wrapSimple (←`(Lampe.Expr.writeRef $v $eVal)) vname k
@@ -290,6 +295,16 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let accessorSyn ← `($accessor $structGenValsSyn)
   mkExpr structExpr none fun s => do
     `(Lampe.Expr.call h![] [typeof $s] $outTp (.builtin (@Builtin.projectTuple $outTp _ $accessorSyn)) h![$s])
+| `(nr_expr| ( $r:ident as $structName:nr_ident  < $structGenVals,* > ) . $structField:ident = $rhs:nr_expr) => do
+  let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+  let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
+  let accessorSyn ← `($accessor $structGenValsSyn)
+  mkExpr rhs none fun rhs => do
+    wrapSimple (←`(Lampe.Expr.tupleWriteMember $r $accessorSyn $rhs)) vname k
+| `(nr_expr| ( $r:ident . $idx:num ) = $rhs:nr_expr) => do
+  mkExpr rhs none fun rhs => do
+    let accessorSyn ← mkRecMember idx.getNat
+    wrapSimple (←`(Lampe.Expr.tupleWriteMember $r $accessorSyn $rhs)) vname k
 | `(nr_expr| $tupleExpr:nr_expr . $idx:num : $outTy:nr_type) => do
   let outTp ← mkNrType outTy
   mkExpr tupleExpr none fun t => do
@@ -365,7 +380,7 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
   params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
     | `(nr_param_decl| $paramName:ident : $paramType:nr_type) => do
       let paramDefTy ← `(match generics with
-        | $(←mkHListLit generics) => Member $(←mkNrType paramType) (Struct.fieldTypes $structName generics))
+        | $(←mkHListLit generics) => Builtin.Member $(←mkNrType paramType) (Struct.fieldTypes $structName generics))
       let paramDefSyn ← `(match generics with
         | $(←mkHListLit generics) => $(←mkRecMember idx))
       let defnNameSyn := mkFieldName structName.getId.toString paramName.getId.toString

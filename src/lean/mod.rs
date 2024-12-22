@@ -1018,8 +1018,33 @@ impl LeanEmitter {
                         }
                         _ => panic!("invalid lhs on index assign `{array:?}`"),
                     },
-                    HirLValue::Dereference { .. } => todo!(),
-                    HirLValue::MemberAccess { .. } => todo!(),
+                    HirLValue::MemberAccess {
+                        object, field_name, ..
+                    } => match object.as_ref() {
+                        HirLValue::Ident(ident, ty) => {
+                            let ident_name = self.context.def_interner.definition_name(ident.id);
+                            let field_name = field_name.to_string();
+                            let ty_str = self.emit_fully_qualified_type(&ty);
+                            match ty {
+                                Type::Tuple(_) => syntax::stmt::format_tuple_access_assign(
+                                    ident_name,
+                                    &expr,
+                                    &field_name,
+                                ),
+                                Type::Struct(..) => syntax::stmt::format_struct_access_assign(
+                                    ident_name,
+                                    &expr,
+                                    &ty_str,
+                                    &field_name,
+                                ),
+                                _ => panic!("invalid ident type on member access assign `{ty:?}`"),
+                            }
+                        }
+                        _ => {
+                            todo!("recursive lvalues are not supported yet")
+                        }
+                    },
+                    HirLValue::Dereference { .. } => todo!("deref lvalues are not supported yet"),
                 }
             }
             HirStatement::For(fors) => {

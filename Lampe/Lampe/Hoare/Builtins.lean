@@ -420,7 +420,7 @@ theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto)
 
 -- Memory
 
-theorem ref_intro:
+theorem ref_intro :
     STHoare p Γ
       ⟦⟧
       (.call h![] [tp] (Tp.ref tp) (.builtin .ref) h![v])
@@ -444,7 +444,7 @@ theorem ref_intro:
       apply And.intro _ (by trivial)
       simp only [State.union_parts_left, Finmap.empty_union, Finmap.union_self]
 
-theorem readRef_intro:
+theorem readRef_intro :
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
     (.call h![] [tp.ref] tp (.builtin .readRef) h![r])
@@ -477,7 +477,7 @@ theorem readRef_intro:
   apply SLP.ent_star_top
   assumption
 
-theorem writeRef_intro:
+theorem writeRef_intro :
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
     (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![r, v'])
@@ -519,6 +519,30 @@ theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) field
 theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
+
+theorem tupleWriteMember_intro {mem : Builtin.Member tp tps} :
+  STHoare p Γ [r ↦ ⟨.tuple name tps, tpl⟩] (.call h![] [.ref $ (.tuple name tps), tp] .unit (.builtin $ .tupleWriteMember mem) h![r, v])
+    (fun _ => [r ↦ ⟨.tuple name tps, Builtin.replaceTpl tpl mem v⟩]) := by
+  unfold STHoare THoare
+  intros
+  constructor
+  rename_i H st P
+  simp only [SLP.star, LawfulHeap.disjoint] at P
+  . constructor <;> tauto
+    . aesop
+    . simp_all only [SLP.true_star, exists_const]
+      apply SLP.ent_star_top
+      simp only [SLP.star, SLP.exists', LawfulHeap.disjoint]
+      generalize hv : (Builtin.replaceTpl tpl mem v) = v' at *
+      obtain ⟨st₁, st₂, _, _, _, _⟩ := P
+      exists ⟨st₁.vals.insert r ⟨.tuple name tps, v'⟩, st₁.lambdas⟩, st₂
+      apply And.intro <;> tauto
+      apply And.intro
+      simp only [Finmap.disjoint_union_left]
+      apply Finmap.insert_mem_disjoint <;> tauto
+      simp_all [State.valSingleton, Finmap.mem_singleton]
+      tauto
+      simp_all [Finmap.insert_union]
 
 -- Misc
 

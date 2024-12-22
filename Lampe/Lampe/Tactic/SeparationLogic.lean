@@ -619,6 +619,7 @@ macro "stephelper1" : tactic => `(tactic|(
     -- struct
     | apply mkTuple_intro
     | apply projectTuple_intro
+    | apply tupleWriteMember_intro
   )
 ))
 
@@ -687,6 +688,7 @@ macro "stephelper2" : tactic => `(tactic|(
     -- struct
     | apply consequence_frame_left mkTuple_intro
     | apply consequence_frame_left projectTuple_intro
+    | apply consequence_frame_left tupleWriteMember_intro
   )
   repeat sl
 ))
@@ -756,6 +758,7 @@ macro "stephelper3" : tactic => `(tactic|(
     -- struct
     | apply ramified_frame_top mkTuple_intro
     | apply ramified_frame_top projectTuple_intro
+    | apply ramified_frame_top tupleWriteMember_intro
   )
   repeat sl
 ))
