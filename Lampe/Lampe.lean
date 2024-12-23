@@ -241,7 +241,7 @@ example {a b : Tp.denote p .field} :
 
 nr_def structProjection<>(x : Field, y : Field) -> Field {
   let s = Pair<Field> { x, y };
-  (s as Pair<Field>).a : Field
+  (s as Pair<Field>).a
 }
 
 example {x y : Tp.denote p .field} :
@@ -253,7 +253,7 @@ example {x y : Tp.denote p .field} :
 nr_def structWrite<>(x : Field, y : Field) -> Field {
   let mut s = Pair<Field> { x, y };
   (s as Pair<Field>).a = (5 : Field);
-  (s as Pair<Field>).a : Field
+  (s as Pair<Field>).a
 }
 
 example {_: 5 < p.natVal} {x y : Tp.denote p .field} :
@@ -290,22 +290,22 @@ example {_: 5 < p.natVal} :
 
 nr_def callDecl<>(x: Field, y : Field) -> Field {
   let s = @structConstruct<>(x, y) : Pair<Field>;
-  (s as Pair<Field>).a : Field
+  (s as Pair<Field>).a
 }
 
 example {x y : Tp.denote p .field} :
   STHoare p ⟨[(structConstruct.name, structConstruct.fn)], []⟩
     ⟦⟧ (callDecl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [callDecl]
-  steps
-  rotate_right 1
-  exact (fun v => v.fst = x)
-  all_goals tauto
+  steps <;> tauto
   . simp only [structConstruct]
     steps
-    simp_all
-  . sl
-    aesop
+    simp_all [SLP.wand, SLP.entails, SLP.forall']
+  . intros
+    generalize («Pair#a» _) = mem at *
+    simp only at mem
+    subst_vars
+    sorry
 
 nr_def createSlice<>() -> [bool] {
   &[true, false]
@@ -322,3 +322,22 @@ nr_def createArray<>() -> [Field; 2] {
 example : STHoare p Γ ⟦⟧ (createArray.fn.body _ h![] |>.body h![]) (fun v => v.toList.get? 1 = some 2) := by
   simp only [createArray, Expr.array]
   steps <;> aesop
+
+nr_struct_def Lens <> {
+  a : `(Field, Field),
+}
+
+nr_def simpleLens<>() -> Field {
+  let s = Lens<> { `(1 : Field, 2 : Field) };
+  ((s as Lens<>).a).1 : Field
+}
+
+example {_ : 2 < p.natVal} :
+  STHoare p Γ ⟦⟧ (simpleLens.fn.body _ h![] |>.body h![]) fun v => v.val = 2 := by
+  simp only [simpleLens]
+  steps
+  intros
+  simp_all
+  subst_vars
+  apply ZMod.val_cast_of_lt
+  tauto
