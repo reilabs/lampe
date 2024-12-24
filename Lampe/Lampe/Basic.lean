@@ -2,6 +2,7 @@ import Lampe.Semantics
 import Lampe.Syntax
 import Lampe.Ast
 import Lampe.Tp
+import Lampe.Lens
 import Lampe.Hoare.Total
 import Lampe.Hoare.SepTotal
 import Lampe.Tactic.SeparationLogic

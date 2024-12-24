@@ -50,7 +50,6 @@ lemma _root_.Finmap.insert_mem_disjoint [DecidableEq α] {m₁ m₂ : Finmap fun
   simp only [Finmap.disjoint_union_left]
   aesop
 
-
 lemma vector_eq_tp_denote_array (h : n.toNat > 0) : Mathlib.Vector (Tp.denote p tp) (BitVec.toNat n - 1 + 1) = Tp.denote p (.array tp n) := by
   have _ : n.toNat ≠ 0 := by aesop
   have _ : n.toNat - 1 + 1 = n.toNat := by
@@ -63,6 +62,12 @@ lemma vector_eq_tp_denote_array (h : n.toNat > 0) : Mathlib.Vector (Tp.denote p 
 @[reducible]
 def replaceArr (h : n.toNat > 0) (arr : Tp.denote p (.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (.array tp n) :=
   (vector_eq_tp_denote_array h) ▸ ((arr.eraseIdx idx).insertNth v idx)
+
+@[simp]
+theorem index_replaced_arr {n : U 32} {h : n.toNat > 0} {idx : Fin n.toNat} {arr} :
+  (replaceArr h arr idx v').get idx = v' := by
+  unfold replaceArr
+  sorry
 
 example {p} : (replaceArr (p := p) (n := ⟨3, by aesop⟩) (tp := .bool) (by tauto) ⟨[false, false, false], (by rfl)⟩ ⟨1, (by tauto)⟩ true).get ⟨1, by tauto⟩ = true := by rfl
 

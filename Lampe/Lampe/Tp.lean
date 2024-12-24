@@ -61,6 +61,18 @@ def Tp.denote : Tp → Type
 end
 
 @[reducible]
+def listRep (rep : Tp → Type _) : List Tp → Type := fun l => match l with
+| tp :: tps => (rep tp) × (listRep rep tps)
+| [] => Unit
+
+theorem listRep_tp_denote_is_tp_denote_tuple {p} :
+  listRep (Tp.denote p) tps = Tp.denote p (.tuple name tps) := by
+  induction tps <;> {
+    unfold listRep Tp.denoteArgs
+    tauto
+  }
+
+@[reducible]
 def Kind.denote : Kind → Type
 | .nat => Nat
 | .type => Tp

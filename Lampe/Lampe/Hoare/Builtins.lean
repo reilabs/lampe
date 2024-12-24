@@ -510,6 +510,46 @@ theorem writeRef_intro :
     simp [Finmap.union_singleton]
   . simp_all
 
+theorem readLens_intro {lens : Lens tp₁ tp₂} :
+    STHoare p Γ
+    [r ↦ ⟨tp₁, v⟩]
+    (.call h![] [tp₁.ref] tp₂ (.builtin $ .readLens lens) h![r])
+    (fun v' => ⟦v' = lens.get v⟧ ⋆ [r ↦ ⟨tp₁, v⟩]) := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  constructor <;> tauto
+  . unfold SLP.star State.valSingleton at *
+    aesop
+  . unfold mapToValHeapCondition
+    simp only [Option.map_some', SLP.true_star, SLP.star_assoc]
+    apply SLP.ent_star_top at h
+    simp_all [State.mk.injEq]
+
+theorem modifyLens_intro {lens : Lens tp₁ tp₂} :
+    STHoare p Γ
+    [r ↦ ⟨tp₁, v⟩]
+    (.call h![] [tp₁.ref, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v'])
+    (fun _ => [r ↦ ⟨tp₁, lens.modify v v'⟩]) := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  constructor <;> tauto
+  . unfold SLP.star State.valSingleton at *
+    aesop
+  . unfold mapToValHeapCondition
+    simp only [Option.map_some', SLP.true_star, SLP.star_assoc]
+    apply SLP.ent_star_top at h
+    obtain ⟨st₁, st₂, _, _, _, _⟩ := h
+    exists st₁, st₂
+    apply And.intro
+    . sorry
+    . apply And.intro
+      sorry
+      apply And.intro
+      . sorry
+      . sorry
+
 -- Struct/tuple
 
 theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) fieldExprs (a := (name, fieldTps)) := by

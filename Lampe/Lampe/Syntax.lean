@@ -14,6 +14,8 @@ import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 
+import Lampe.Lens
+
 namespace Lampe
 
 open Lean Elab Meta Qq
@@ -24,6 +26,7 @@ declare_syntax_cat nr_expr
 declare_syntax_cat nr_block_contents
 declare_syntax_cat nr_param_decl
 declare_syntax_cat nr_lval
+declare_syntax_cat nr_lval'
 
 syntax ident : nr_ident
 syntax ident "::" nr_ident : nr_ident
@@ -100,17 +103,21 @@ syntax ident ":" nr_type : nr_param_decl
 -- nr_lval
 syntax ident : nr_lval
 syntax nr_lval "[" nr_expr "]" : nr_lval
+syntax nr_lval "[[" nr_expr "]]" : nr_lval
 syntax nr_lval "." num : nr_lval
+syntax "(" nr_lval "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_lval
+
+-- nr_expr (rval)
+syntax ident : nr_expr
+syntax nr_expr "." num ":" nr_type : nr_expr
+syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr
 
 -- nr_expr
-syntax num ":" nr_type : nr_expr -- Literal
-syntax ident : nr_expr -- Reference
+syntax num ":" nr_type : nr_expr -- Number literal
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr -- Block
 syntax "let" ident "=" nr_expr : nr_expr -- Let binding
 syntax "let" "mut" ident "=" nr_expr : nr_expr -- Let mut binding
-syntax ident "=" nr_expr : nr_expr -- Assignment
-syntax "(" ident "as" nr_ident "<" nr_type,* ">" ")" "." ident "=" nr_expr : nr_expr -- Struct assignment
-syntax "(" ident "." num ")"  "=" nr_expr : nr_expr -- Tuple assignment
+syntax "↓" nr_lval "=" nr_expr : nr_expr -- Assignment
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If-then-else
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
 syntax "(" nr_expr ")" : nr_expr -- Parentheses
@@ -124,8 +131,6 @@ syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 syntax "@" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Decl call
 syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")"
   "::" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Trait call
-syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
-syntax nr_expr "." num ":" nr_type : nr_expr -- Tuple access
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
@@ -145,6 +150,9 @@ def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Expr rep .unit :=
 
 def Expr.tupleWriteMember (ref : rep $ .ref (.tuple name tps)) (mem : Builtin.Member tp tps) (val : rep tp) : Expr rep .unit :=
   Expr.call h![] _ .unit (.builtin $ .tupleWriteMember mem) h![ref, val]
+
+def Expr.modifyLens (r : rep $ .ref tp₁) (lens : Lens tp₁ tp₂) (val : rep tp₂) : Expr rep .unit :=
+  Expr.call h![] _ .unit (.builtin $ .modifyLens lens) h![r, val]
 
 @[reducible]
 def Expr.slice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.slice tp) :=
@@ -193,9 +201,47 @@ def mkRecMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
 | .zero => `(Builtin.Member.head)
 | .succ n' => do `(Builtin.Member.tail $(←mkRecMember n'))
 
+partial def mkLValRef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (lval : TSyntax `nr_lval) :
+    m (TSyntax `ident) := match lval with
+| `(nr_lval| $v:ident) => pure v
+| `(nr_lval| $lhs:nr_lval . $_:num) => do mkLValRef lhs
+| `(nr_lval| ( $lhs:nr_lval as $_ < $_,* > ) . $_) => do mkLValRef lhs
+| `(nr_lval| $lhs:nr_lval [ $_ ]) => do mkLValRef lhs
+| _ => throwUnsupportedSyntax
+
+partial def mkLensFromLVal' [MonadSyntax m] (lval : TSyntax `nr_lval) (i : Nat) :
+    m $ (List (Lean.Ident × TSyntax `nr_expr)) × (TSyntax `term) := match lval with
+| `(nr_lval| $_:ident) => do pure ([], ←`(Lens.nil))
+| `(nr_lval| $lhs:nr_lval . $fieldIdx:num) => do
+  let (args, lhs) ← mkLensFromLVal' lhs i
+  let mem ← mkRecMember fieldIdx.getNat
+  pure (args, ←`(Lens.cons $lhs (Access.tpl $mem)))
+| `(nr_lval| ( $lhs:nr_lval as $structName < $gs,* > ) . $fieldName:ident) => do
+  let gs ← mkHListLit (←gs.getElems.toList.mapM fun g => mkNrType g)
+  let accessor := mkFieldName (←mkNrIdent structName) (fieldName.getId.toString)
+  let mem ← `($accessor $gs)
+  let (args, lhs) ← mkLensFromLVal' lhs i
+  pure (args, ←`(Lens.cons $lhs (Access.tpl $mem)))
+| `(nr_lval| $lhs:nr_lval [ $idxExpr:nr_expr ]) => do
+  let v := mkIdent $ Name.mkSimple ("#i_" ++ (toString i))
+  let (args, lhs) ← mkLensFromLVal' lhs (i + 1)
+  pure (args ++ [(v, idxExpr)], ←`(Lens.cons $lhs (Access.arr $v (by tauto))))
+| _ => throwUnsupportedSyntax
+
+partial def mkLensFromLVal [MonadSyntax m] (lval : TSyntax `nr_lval) :
+    m $ (List (TSyntax `nr_expr)) × (TSyntax `term) := do
+  let (lensArgs, lens) ← mkLensFromLVal' lval 0
+  let lensArgsHList ← mkHListLit (lensArgs.map fun (i, _) => i)
+  let lensFn ← if lensArgs.length > 0 then
+      `(fun args => match args with | $lensArgsHList => $lens)
+    else
+      `($lens)
+  pure (lensArgs.map (·.2), lensFn)
+
 mutual
 
-partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
+partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)) :
+  m (TSyntax `term) := match items with
 | h :: n :: rest => match h with
   | `(nr_expr | let $v = $e ) => do
     mkExpr e (some v) fun _ => mkBlock (n :: rest) k
@@ -245,9 +291,13 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     mkExpr hi none fun hi => do
       let body ← mkExpr body none (fun x => `(Lampe.Expr.var $x))
       wrapSimple (←`(Lampe.Expr.loop $lo $hi fun $i => $body)) vname k
-| `(nr_expr| $v:ident = $e) => do
-  mkExpr e none fun eVal => do
-    wrapSimple (←`(Lampe.Expr.writeRef $v $eVal)) vname k
+| `(nr_expr| ↓ $lhs:nr_lval = $rhs) => do
+  let r ← mkLValRef lhs
+  let (lensArgs, lens) ← mkLensFromLVal lhs
+  mkArgs lensArgs fun args => do
+    mkExpr rhs none fun rhs => do
+      let lensInvocation ← if lensArgs.length > 0 then `($lens $(←mkHListLit args)) else `($lens)
+      wrapSimple (←`(Lampe.Expr.modifyLens $r $lensInvocation $rhs)) vname k
 | `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do
   mkExpr cond none fun cond => do
@@ -305,20 +355,9 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
   let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
   let accessorSyn ← `($accessor $structGenValsSyn)
-  -- let outTp ← mkNrType outTp
   let outTp ← `(typeofMem $accessorSyn)
   mkExpr structExpr none fun s => do
     wrapSimple (←`(Lampe.Expr.call h![] [typeof $s] $outTp (.builtin (@Builtin.projectTuple $outTp _ $accessorSyn)) h![$s])) vname k
-| `(nr_expr| ( $r:ident as $structName:nr_ident  < $structGenVals,* > ) . $structField:ident = $rhs:nr_expr) => do
-  let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
-  let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
-  let accessorSyn ← `($accessor $structGenValsSyn)
-  mkExpr rhs none fun rhs => do
-    wrapSimple (←`(Lampe.Expr.tupleWriteMember $r $accessorSyn $rhs)) vname k
-| `(nr_expr| ( $r:ident . $idx:num ) = $rhs:nr_expr) => do
-  mkExpr rhs none fun rhs => do
-    let accessorSyn ← mkRecMember idx.getNat
-    wrapSimple (←`(Lampe.Expr.tupleWriteMember $r $accessorSyn $rhs)) vname k
 | _ => throwUnsupportedSyntax
 
 end

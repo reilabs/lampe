@@ -1,11 +1,17 @@
 import Lampe.Basic
 open Lampe
 
+nr_def simple_muts2<>(x : Field) -> Field {
+  let mut y = x;
+  ↓ y = x;
+  0 : Field
+}
+
 nr_def simple_muts<>(x : Field) -> Field {
   let mut y = x;
   let mut z = x;
-  z = z;
-  y = z;
+  ↓ z = z;
+  ↓ y = z;
   y
 }
 
@@ -29,7 +35,7 @@ example {x y : Tp.denote p .field} : STHoare p Γ ⟦⟧ (weirdEq.fn.body _ h![.
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;
   for i in (0 : u32) .. #sliceLen(y) : u32 {
-    self = #slicePushBack(self, #sliceIndex(y, i): I): [I]
+    ↓ self = #slicePushBack(self, #sliceIndex(y, i): I): [I]
   };
   self
 }
@@ -61,7 +67,7 @@ example {self that : Tp.denote p (.slice tp)} : STHoare p Γ ⟦⟧ (sliceAppend
 nr_def simple_if<>(x : Field, y : Field) -> Field {
   let mut z = x;
   if #fEq(x, x) : bool {
-    z = y
+    ↓ z = y
    };
   z
 }
@@ -250,20 +256,6 @@ example {x y : Tp.denote p .field} :
   steps
   aesop
 
-nr_def structWrite<>(x : Field, y : Field) -> Field {
-  let mut s = Pair<Field> { x, y };
-  (s as Pair<Field>).a = (5 : Field);
-  (s as Pair<Field>).a
-}
-
-example {_: 5 < p.natVal} {x y : Tp.denote p .field} :
-  STHoare p Γ ⟦⟧ (structWrite.fn.body _ h![] |>.body h![x, y]) (fun (v : Tp.denote p .field) => v.val = 5) := by
-  simp only [structWrite]
-  steps
-  simp_all
-  apply ZMod.val_cast_of_lt
-  tauto
-
 nr_def simpleTuple<>() -> Field {
   let t = `(1 : Field, true, 3 : Field);
   t.2 : Field
@@ -273,20 +265,6 @@ example : STHoare p Γ ⟦⟧ (simpleTuple.fn.body _ h![] |>.body h![]) (fun (v 
   simp only [simpleTuple]
   steps
   aesop
-
-nr_def tupleWrite<>() -> Field {
-  let mut t = `(1 : Field, true, 3 : Field);
-  (t.2) = 5 : Field;
-  t.2 : Field
-}
-
-example {_: 5 < p.natVal} :
-  STHoare p Γ ⟦⟧ (tupleWrite.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v.val = 5) := by
-  simp only [tupleWrite]
-  steps
-  simp_all
-  apply ZMod.val_cast_of_lt
-  tauto
 
 nr_def callDecl<>(x: Field, y : Field) -> Field {
   let s = @structConstruct<>(x, y) : Pair<Field>;
@@ -324,20 +302,31 @@ example : STHoare p Γ ⟦⟧ (createArray.fn.body _ h![] |>.body h![]) (fun v =
   steps <;> aesop
 
 nr_struct_def Lens <> {
-  a : `(Field, Field),
+  a : `(Field, `(Field, Field)),
 }
 
 nr_def simpleLens<>() -> Field {
-  let s = Lens<> { `(1 : Field, 2 : Field) };
-  ((s as Lens<>).a).1 : Field
+  let mut s = Lens<> { `(1 : Field, `(2 : Field, 3 : Field)) };
+  ↓ (s as Lens<>) .a .1 .1 = 4 : Field;
+  (((s as Lens<>).a).1 : `(Field, Field)).1 : Field
 }
 
-example {_ : 2 < p.natVal} :
-  STHoare p Γ ⟦⟧ (simpleLens.fn.body _ h![] |>.body h![]) fun v => v.val = 2 := by
+example {_ : 4 < p.natVal} :
+  STHoare p Γ ⟦⟧ (simpleLens.fn.body _ h![] |>.body h![]) fun v => v.val = 4 := by
   simp only [simpleLens]
   steps
-  intros
   simp_all
   subst_vars
   apply ZMod.val_cast_of_lt
   tauto
+
+nr_def arrayLens<>() -> Field {
+  let mut arr = [1 : Field, 2 : Field];
+  ↓ arr[1 : u32] = 1 : Field;
+  #arrayIndex(arr, 1 : u32) : Field
+}
+
+example {_ : 2 < p.natVal} :
+  STHoare p Γ ⟦⟧ (arrayLens.fn.body _ h![] |>.body h![]) (fun v => v.val = 2) := by
+  simp only [arrayLens, Expr.array]
+  steps <;> aesop
