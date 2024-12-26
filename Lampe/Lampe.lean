@@ -278,7 +278,7 @@ example {x y : Tp.denote p .field} :
 
 nr_def simple_tuple<>() -> Field {
   let t = `(1 : Field, true, 3 : Field);
-  t.2 : Field
+  t.2
 }
 
 example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v = 3) := by
@@ -309,3 +309,36 @@ example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![]) (fun (v
   simp_all
   simp only [Expr.readArray]
   sorry
+
+nr_def tuple_lens<>() -> Field {
+  let mut p = `(`(1 : Field, 2 : Field), 3 : Field);
+  p .0 .1 = 3 : Field;
+  p .0 .1
+}
+
+example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [tuple_lens]
+  steps <;> tauto
+  all_goals sorry
+
+nr_def slice_lens<>() -> Field {
+  let mut p = `(&[1 : Field, 2 : Field], 3 : Field);
+  p .0 [[1 : u32]] = 3 : Field;
+  p .0 [[1 : u32]]
+}
+
+example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [slice_lens]
+  steps <;> tauto
+  all_goals sorry
+
+nr_def struct_lens<>() -> Field {
+  let mut p = `(Pair<Field>{ 1 : Field, 2 : Field}, 3 : Field);
+  (p .0 as Pair<Field>).b = 3 : Field;
+  (p .0 as Pair<Field>).b
+}
+
+example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [struct_lens]
+  steps <;> tauto
+  all_goals sorry

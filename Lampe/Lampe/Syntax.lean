@@ -107,7 +107,7 @@ syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
 syntax "let" ident "=" nr_expr : nr_expr
 syntax "let" "mut" ident "=" nr_expr : nr_expr
-syntax ident "=" nr_expr : nr_expr
+syntax nr_expr "=" nr_expr : nr_expr
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 syntax "(" nr_expr ")" : nr_expr
@@ -122,7 +122,7 @@ syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
 syntax "&" "[" nr_expr,* "]" : nr_expr -- Slice constructor
 
 syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
-syntax nr_expr "." num ":" nr_type : nr_expr -- Tuple access
+syntax nr_expr "." num : nr_expr -- Tuple access
 syntax nr_expr "[" nr_expr "]" : nr_expr -- Array access
 syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
 
@@ -211,7 +211,40 @@ def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (
   let rest ← k ident
   `(Lampe.Expr.letIn $e fun $ident => $rest)
 
+partial def getLeftmostRef [MonadSyntax m] (expr : TSyntax `nr_expr) : m (TSyntax `ident) := match expr with
+| `(nr_expr| $v:ident) => pure v
+| `(nr_expr| ( $structExpr:nr_expr as $_  < $_,* > ) . $_) => getLeftmostRef structExpr
+| `(nr_expr| $tupleExpr:nr_expr . $_) => getLeftmostRef tupleExpr
+| `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLeftmostRef arrayExpr
+| `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostRef sliceExpr
+| _ => throwUnsupportedSyntax
+
+partial def getRecExprs (expr : TSyntax `nr_expr) : (List $ TSyntax `nr_expr) := match expr with
+| `(nr_expr| ( $expr:nr_expr as $_  < $_,* > ) . $_) => (expr :: (getRecExprs expr))
+| `(nr_expr| $expr:nr_expr . $_) => (expr :: (getRecExprs expr))
+| `(nr_expr| $expr:nr_expr [ $_ ]) => (expr :: (getRecExprs expr))
+| `(nr_expr| $expr:nr_expr [[ $_ ]]) => (expr :: (getRecExprs expr))
+| _ => ([expr])
+
 mutual
+
+partial def mkAssignmentExpr [MonadSyntax m] (lhs : TSyntax `nr_expr) (rhsExpr : TSyntax `term) (vals : List $ TSyntax `term) : m (TSyntax `term) :=
+match vals with
+| val :: vals => match lhs with
+  | `(nr_expr| ( $structExpr:nr_expr as $structName:nr_ident  < $structGenVals,* > ) . $structField:ident) => do
+    let mem ← mkStructMember structName structGenVals.getElems.toList structField
+    mkAssignmentExpr structExpr (←`(Expr.letIn $rhsExpr (fun rhs => Expr.replaceTuple $val $mem rhs))) vals
+  | `(nr_expr| $tupleExpr:nr_expr . $idx:num) => do
+    let mem ← mkTupleMember idx.getNat
+    mkAssignmentExpr tupleExpr (←`(Expr.letIn $rhsExpr (fun rhs => Expr.replaceTuple $val $mem rhs))) vals
+  | `(nr_expr| $arrayExpr:nr_expr [ $idxExpr:nr_expr ]) => do
+    mkExpr idxExpr none fun idx => do
+      mkAssignmentExpr arrayExpr (←`(Expr.letIn $idx (fun idx => Expr.letIn $rhsExpr (fun rhs => Expr.replaceArray $val idx rhs)))) vals
+  | `(nr_expr| $sliceExpr:nr_expr [[ $idxExpr:nr_expr ]]) => do
+    mkExpr idxExpr none fun idx => do
+      mkAssignmentExpr sliceExpr (←`(Expr.letIn $idx (fun idx => Expr.letIn $rhsExpr (fun rhs => Expr.replaceSlice $val idx rhs)))) vals
+  | _ => `(Expr.var $val)
+| [] => throwUnsupportedSyntax
 
 partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
 | h :: n :: rest => match h with
@@ -253,9 +286,15 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkExpr hi none fun hi => do
     let body ← mkExpr body none (fun x => `(Expr.var $x))
     wrapSimple (←`(Expr.loop $lo $hi fun $i => $body)) vname k
-| `(nr_expr| $v:ident = $e) => do
-  mkExpr e none fun eVal => do
-    wrapSimple (←`(Expr.writeRef $v $eVal)) vname k
+| `(nr_expr| $lhs:ident = $rhs:nr_expr) => do
+  mkExpr rhs none fun rhs => do
+    wrapSimple (←`(Expr.writeRef $lhs $rhs)) vname k
+| `(nr_expr| $lhs:nr_expr = $rhs:nr_expr) => do
+  mkExpr rhs none fun rhs => do
+    mkArgs (getRecExprs lhs) fun vals => do
+      let r ← getLeftmostRef lhs
+      let expr ← mkAssignmentExpr lhs (←`(Expr.var $rhs)) vals
+      wrapSimple (←`(Expr.letIn $expr (fun val => Expr.writeRef $r val))) vname k
 | `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do
     mkExpr cond none fun cond => do
@@ -320,7 +359,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let mem ← mkStructMember structName structGenVals.getElems.toList structField
   mkExpr lhsExpr none fun tpl => do
     wrapSimple (←`(Expr.readTuple $tpl $mem)) vname k
-| `(nr_expr| $tupleExpr:nr_expr . $idx:num : $_:nr_type) => do
+| `(nr_expr| $tupleExpr:nr_expr . $idx:num) => do
   let mem ← mkTupleMember idx.getNat
   mkExpr tupleExpr none fun tpl => do
     wrapSimple (←`(Expr.readTuple $tpl $mem)) vname k
