@@ -537,6 +537,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
     | apply callTrait_intro
+    | apply cast_intro
     -- memory builtins
     | apply var_intro
     | apply ref_intro
@@ -548,7 +549,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply slicePushBack_intro
     -- equality
     | apply unitEq_intro
-    | apply boolEq_intro
+    | apply bEq_intro
     | apply fEq_intro
     | apply uEq_intro
     | apply iEq_intro
@@ -591,8 +592,8 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left Lampe.STHoare.litU_intro
     | apply consequence_frame_left assert_intro
-    -- | apply consequence_frame_left skip_intro
     | apply consequence_frame_left lam_intro
+    | apply consequence_frame_left cast_intro
     -- memory builtins
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
@@ -604,7 +605,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left slicePushBack_intro
     -- equality
     | apply consequence_frame_left unitEq_intro
-    | apply consequence_frame_left boolEq_intro
+    | apply consequence_frame_left bEq_intro
     | apply consequence_frame_left fEq_intro
     | apply consequence_frame_left uEq_intro
     | apply consequence_frame_left iEq_intro
@@ -650,6 +651,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top lam_intro
+    | apply ramified_frame_top cast_intro
     -- memory builtins
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
@@ -661,7 +663,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top slicePushBack_intro
     -- equality
     | apply ramified_frame_top unitEq_intro
-    | apply ramified_frame_top boolEq_intro
+    | apply ramified_frame_top bEq_intro
     | apply ramified_frame_top fEq_intro
     | apply ramified_frame_top uEq_intro
     | apply ramified_frame_top iEq_intro

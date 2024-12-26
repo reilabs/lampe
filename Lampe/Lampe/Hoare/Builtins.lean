@@ -10,6 +10,7 @@ import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
+import Lampe.Builtin.Cast
 
 namespace Lampe.STHoare
 
@@ -237,7 +238,7 @@ theorem iShr_intro : STHoarePureBuiltin p Γ Builtin.iShr (by tauto) h![a, b] :=
 theorem unitEq_intro : STHoarePureBuiltin p Γ Builtin.unitEq (by tauto) h![a, b] (a := ()) := by
    apply pureBuiltin_intro_consequence <;> tauto
 
-theorem boolEq_intro : STHoarePureBuiltin p Γ Builtin.boolEq (by tauto) h![a, b] (a := ()) := by
+theorem bEq_intro : STHoarePureBuiltin p Γ Builtin.bEq (by tauto) h![a, b] (a := ()) := by
    apply pureBuiltin_intro_consequence <;> tauto
    tauto
 
@@ -455,5 +456,20 @@ theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) 
 theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (a := ()) := by
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
+
+theorem cast_intro [Builtin.CastTp tp tp'] : STHoare p Γ ⟦⟧ (.call h![] [tp] tp' (.builtin .cast) h![v])
+   (fun v' => ∃∃ h, ⟦@Builtin.CastTp.cast tp tp' _ p v h = v'⟧) := by
+   unfold STHoare THoare
+   intros
+   constructor
+   cases em (Builtin.CastTp.validate tp' v)
+   . apply Builtin.castOmni.ok
+     . simp_all only [SLP.true_star, SLP.star, SLP.exists']
+       apply SLP.ent_star_top
+       aesop
+   . apply Builtin.castOmni.err
+     . tauto
+     . unfold mapToValHeapCondition
+       simp_all
 
 end Lampe.STHoare

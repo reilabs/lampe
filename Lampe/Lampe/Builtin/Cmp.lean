@@ -16,7 +16,7 @@ Defines the equality comparison between two booleans.
 
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `bool`.
 -/
-def boolEq := newPureBuiltin
+def bEq := newPureBuiltin
   ⟨[.bool, .bool], .bool⟩
   (fun h![a, b] => ⟨True,
     fun _ => a = b⟩)
