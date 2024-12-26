@@ -259,3 +259,25 @@ example {p} {x : Tp.denote p $ .u 8} :
   simp only [basic_cast]
   steps
   aesop
+
+nr_def call_decl<>(x: Field, y : Field) -> Field {
+   let s = @struct_construct<>(x, y) : Pair<Field>;
+   (s as Pair<Field>).a
+ }
+
+ example {x y : Tp.denote p .field} :
+   STHoare p ⟨[(struct_construct.name, struct_construct.fn)], []⟩
+     ⟦⟧ (call_decl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
+  simp only [call_decl, struct_construct]
+  steps <;> tauto
+  . simp_all [exists_const, SLP.true_star]
+    steps
+    simp_all [exists_const, SLP.true_star]
+    simp_all [SLP.entails, SLP.wand, SLP.star, SLP.lift, SLP.forall']
+    intros
+    exists ∅, ∅
+    simp_all
+    apply And.intro rfl ?_
+    exists ∅, ∅
+    simp_all
+    apply And.intro rfl rfl
