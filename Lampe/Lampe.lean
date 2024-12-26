@@ -281,7 +281,7 @@ nr_def simple_tuple<>() -> Field {
   t.2 : Field
 }
 
-example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote _ .field) => v = 3) := by
+example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v = 3) := by
   simp only [simple_tuple]
   steps
   aesop
