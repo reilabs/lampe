@@ -22,10 +22,10 @@ inductive Tp where
 | bi -- BigInt
 | bool
 | unit
-| str (size: U 32)
+| str (size : U 32)
 | field
 | slice (element : Tp)
-| array (element: Tp) (size: U 32)
+| array (element : Tp) (size : U 32)
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
 
@@ -48,37 +48,59 @@ def Tp.denote : Tp → Type
 | .slice tp => List (denote tp)
 | .array tp n => Mathlib.Vector (denote tp) n.toNat
 | .ref _ => Ref
-| .tuple _ fields => Tp.denoteArgs fields
+| .tuple _ fields => denoteArgs fields
 
 end
+
+@[reducible]
+def listRep (rep : Tp → Type _) : List Tp → Type := fun l => match l with
+| tp :: tps => (rep tp) × (listRep rep tps)
+| [] => Unit
+
+theorem listRep_tp_denote_is_tp_denote_tuple {p} :
+  listRep (Tp.denote p) tps = Tp.denote p (.tuple name tps) := by
+  induction tps <;> {
+    unfold listRep Tp.denoteArgs
+    tauto
+  }
 
 @[reducible]
 def Kind.denote : Kind → Type
 | .nat => Nat
 | .type => Tp
 
-inductive Member : Tp → List Tp → Type where
-| head : Member tp (tp :: tps)
-| tail : Member tp tps → Member tp (tp' :: tps)
+lemma List.replicate_head (hl : x :: xs = List.replicate n a) : x = a := by
+  unfold List.replicate at hl
+  aesop
 
-def indexTpl (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) : Tp.denote p tp := match tps with
-| tp :: _ => match tpl, mem with
-  | (h, _), .head => h
-  | (_, rem), .tail m => indexTpl rem m
-
-def exampleTuple {p} : Tp.denoteArgs p [.bool, .field, .field] := (true, 4, 5)
-
-example : indexTpl p exampleTuple Member.head = true := rfl
-example : indexTpl p exampleTuple Member.head.tail = 4 := rfl
-example : indexTpl p exampleTuple Member.head.tail.tail = 5 := rfl
+lemma List.replicate_cons (hl : x :: xs = List.replicate n a) : xs = List.replicate (n-1) a := by
+  unfold List.replicate at hl
+  cases xs <;> aesop
 
 @[reducible]
-def newMember (tps : List Tp) (n : Fin tps.length) : Member (tps.get n) tps := match n with
-| Fin.mk .zero _ => match tps with | _ :: _ => Member.head
-| Fin.mk (.succ n') _ => match tps with | _ :: tps' => Member.tail $ newMember tps' (Fin.mk n' _)
+def HList.toList (l : HList rep tps) (_ : tps = List.replicate n tp) : List (rep tp) := match l with
+| .nil => []
+| .cons x xs => match tps with
+  | [] => []
+  | _ :: _ => ((List.replicate_head (by tauto)) ▸ x) :: (HList.toList xs (List.replicate_cons (by tauto)))
 
-example : newMember [.bool, .field, .field] ⟨0, (by tauto)⟩ = Member.head := rfl
-example : newMember [.bool, .field, .field] ⟨1, (by tauto)⟩ = Member.head.tail := rfl
-example : newMember [.bool, .field, .field] ⟨2, (by tauto)⟩ = Member.head.tail.tail := rfl
+lemma HList.toList_cons :
+  HList.toList (n := n + 1) (HList.cons head rem) h₁ = head :: (HList.toList (n := n) rem h₂) := by
+  rfl
+
+lemma HList.toList_length_is_n (h_same : tps = List.replicate n tp) :
+  (HList.toList l h_same).length = n := by
+  subst h_same
+  induction n
+  cases l
+  tauto
+  cases l
+  rw [HList.toList_cons]
+  simp_all
+  rfl
+
+@[reducible]
+def HList.toVec (l : HList rep tps) (h_same : tps = List.replicate n tp) : Mathlib.Vector (rep tp) n :=
+  ⟨HList.toList l h_same, by apply HList.toList_length_is_n⟩
 
 end Lampe

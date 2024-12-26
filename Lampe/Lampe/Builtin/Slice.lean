@@ -2,6 +2,14 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 /--
+Defines the builtin slice constructor.
+-/
+def mkSlice (n : Nat) := newGenericPureBuiltin
+  (fun (argTps, tp) => ⟨argTps, (.slice tp)⟩)
+  (fun (argTps, tp) args => ⟨argTps = List.replicate n tp,
+    fun h => HList.toList args h⟩)
+
+/--
 Defines the indexing of a slice `l : List tp` with `i : U 32`
 We make the following assumptions:
 - If `i < l.length`, then the builtin returns `l[i] : Tp.denote tp`
@@ -104,5 +112,53 @@ def sliceRemove := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp, .u 32], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
+
+@[reducible]
+def replaceSl (s : Tp.denote p $ .slice tp) (i : Nat) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
+  s.eraseIdx i |>.insertNth i v
+
+def replaceSlice := newGenericPureBuiltin
+  (fun tp => ⟨[.slice tp, .u 32, tp], (.slice tp)⟩)
+  (fun _ h![sl, idx, v] => ⟨True,
+    fun _ => replaceSl sl idx.toNat v⟩)
+
+inductive sliceWriteIndexOmni : Omni where
+| ok {p st tp} {s : Tp.denote p $ .slice tp} {v : Tp.denote p tp} {Q} :
+  (_ : st.lookup ref = some ⟨.slice tp, s⟩ ∧ idx.toNat < s.length) →
+  Q (some (st.insert ref ⟨.slice tp, replaceSl s idx.toNat v⟩, ())) →
+  sliceWriteIndexOmni p st [.ref $ .slice tp, .u 32, tp] .unit h![ref, idx, v] Q
+| err {p st tp} {s : Tp.denote p $ .slice tp} {v : Tp.denote p tp} {Q} :
+  (st.lookup ref = some ⟨.slice tp, s⟩ ∧ idx.toNat ≥ s.length) →
+  Q none →
+  sliceWriteIndexOmni p st [.ref $ .slice tp, .u 32, tp] .unit h![ref, idx, v] Q
+
+def sliceWriteIndex : Builtin := {
+  omni := sliceWriteIndexOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type sliceWriteIndexOmni
+    . apply sliceWriteIndexOmni.ok <;> tauto
+    . apply sliceWriteIndexOmni.err <;> tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type sliceWriteIndexOmni
+    . apply sliceWriteIndexOmni.ok <;> tauto
+      rw [Finmap.lookup_union_left]
+      assumption
+      apply Finmap.mem_of_lookup_eq_some <;> tauto
+      repeat apply Exists.intro
+      apply And.intro ?_
+      . simp_all only [Finmap.insert_union]
+        apply And.intro rfl (by tauto)
+      . apply Finmap.disjoint_insert <;> tauto
+    . apply sliceWriteIndexOmni.err
+      rw [Finmap.lookup_union_left]
+      tauto
+      rename_i h
+      apply Finmap.mem_of_lookup_eq_some h.left
+      tauto
+}
 
 end Lampe.Builtin
