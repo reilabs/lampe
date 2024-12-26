@@ -60,13 +60,37 @@ theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x
   simp [SLP.star_comm]
 
 theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.lit (.u s) n) fun v => v = n := by
-  -- apply litU_intro
   unfold STHoare THoare
   intro H st hp
   constructor
   simp only
   apply SLP.ent_star_top
   assumption
+
+theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.lit .field n) fun v => v = n := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.lit .bool 0) fun v => v = false := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.lit .bool 1) fun v => v = true := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
 
 theorem ref_intro' {p} {x : Tp.denote p tp} {Γ P}:
     STHoare p Γ P (.ref x) fun v => [v ↦ ⟨tp, x⟩] ⋆ P := by
@@ -531,6 +555,9 @@ elab "sl" : tactic => do
 macro "stephelper1" : tactic => `(tactic|(
   (first
     | apply Lampe.STHoare.litU_intro
+    | apply Lampe.STHoare.litField_intro
+    | apply Lampe.STHoare.litTrue_intro
+    | apply Lampe.STHoare.litFalse_intro
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
@@ -539,15 +566,23 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply cast_intro
     | apply callTrait_intro
     | apply callDecl_intro
-    -- memory builtins
+    -- memory
     | apply var_intro
     | apply ref_intro
     | apply readRef_intro
     | apply writeRef_intro
-    -- slice builtins
+    -- array
+    | apply mkArray_intro
+    | apply arrayLen_intro
+    | apply arrayIndex_intro
+    | apply arrayAsSlice_intro
+    | apply replaceArray_intro
+    -- slice
+    | apply mkSlice_intro
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
+    | apply replaceSlice_intro
     -- equality
     | apply unitEq_intro
     | apply bEq_intro
@@ -585,25 +620,37 @@ macro "stephelper1" : tactic => `(tactic|(
     -- struct
     | apply mkTuple_intro
     | apply projectTuple_intro
+    | apply replaceTuple_intro
   )
 ))
 
 macro "stephelper2" : tactic => `(tactic|(
   (first
-    | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left Lampe.STHoare.litU_intro
+    | apply consequence_frame_left Lampe.STHoare.litField_intro
+    | apply consequence_frame_left Lampe.STHoare.litTrue_intro
+    | apply consequence_frame_left Lampe.STHoare.litFalse_intro
+    | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left assert_intro
     | apply consequence_frame_left lam_intro
     | apply consequence_frame_left cast_intro
-    -- memory builtins
+    -- memory
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
     | apply consequence_frame_left readRef_intro
     | apply consequence_frame_left writeRef_intro
-    -- slice builtins
+    -- array
+    | apply consequence_frame_left mkArray_intro
+    | apply consequence_frame_left arrayLen_intro
+    | apply consequence_frame_left arrayIndex_intro
+    | apply consequence_frame_left arrayAsSlice_intro
+    | apply consequence_frame_left replaceArray_intro
+    -- slice
+    | apply consequence_frame_left mkSlice_intro
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
+    | apply consequence_frame_left replaceSlice_intro
     -- equality
     | apply consequence_frame_left unitEq_intro
     | apply consequence_frame_left bEq_intro
@@ -641,28 +688,40 @@ macro "stephelper2" : tactic => `(tactic|(
     -- struct
     | apply consequence_frame_left mkTuple_intro
     | apply consequence_frame_left projectTuple_intro
+    | apply consequence_frame_left replaceTuple_intro
   )
   repeat sl
 ))
 
 macro "stephelper3" : tactic => `(tactic|(
   (first
-    | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top Lampe.STHoare.litU_intro
+    | apply ramified_frame_top Lampe.STHoare.litField_intro
+    | apply ramified_frame_top Lampe.STHoare.litTrue_intro
+    | apply ramified_frame_top Lampe.STHoare.litFalse_intro
+    | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top lam_intro
     | apply ramified_frame_top cast_intro
     | apply ramified_frame_top callDecl_intro
-    -- memory builtins
+    -- memory
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
     | apply ramified_frame_top readRef_intro
     | apply ramified_frame_top writeRef_intro
-    -- slice builtins
+    -- array
+    | apply ramified_frame_top mkArray_intro
+    | apply ramified_frame_top arrayLen_intro
+    | apply ramified_frame_top arrayIndex_intro
+    | apply ramified_frame_top arrayAsSlice_intro
+    | apply ramified_frame_top replaceArray_intro
+    -- slice
+    | apply ramified_frame_top mkSlice_intro
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
+    | apply ramified_frame_top replaceSlice_intro
     -- equality
     | apply ramified_frame_top unitEq_intro
     | apply ramified_frame_top bEq_intro
@@ -700,6 +759,7 @@ macro "stephelper3" : tactic => `(tactic|(
     -- struct
     | apply ramified_frame_top mkTuple_intro
     | apply ramified_frame_top projectTuple_intro
+    | apply ramified_frame_top replaceTuple_intro
   )
   repeat sl
 ))

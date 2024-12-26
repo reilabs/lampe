@@ -1,6 +1,18 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
+@[reducible]
+def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Nat) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
+  s.eraseIdx i |>.insertNth i v
+
+/--
+Defines the builtin slice constructor.
+-/
+def mkSlice (n : Nat) := newGenericPureBuiltin
+  (fun (argTps, tp) => ⟨argTps, (.slice tp)⟩)
+  (fun (argTps, tp) args => ⟨argTps = List.replicate n tp,
+    fun h => HList.toList args h⟩)
+
 /--
 Defines the indexing of a slice `l : List tp` with `i : U 32`
 We make the following assumptions:
@@ -104,5 +116,10 @@ def sliceRemove := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp, .u 32], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
+
+def replaceSlice := newGenericPureBuiltin
+  (fun tp => ⟨[.slice tp, .u 32, tp], (.slice tp)⟩)
+  (fun _ h![sl, idx, v] => ⟨True,
+    fun _ => replaceSlice' sl idx.toNat v⟩)
 
 end Lampe.Builtin

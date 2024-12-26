@@ -272,12 +272,40 @@ nr_def call_decl<>(x: Field, y : Field) -> Field {
   steps <;> tauto
   . simp_all [exists_const, SLP.true_star]
     steps
-    simp_all [exists_const, SLP.true_star]
+    simp only [exists_const, SLP.true_star]
     simp_all [SLP.entails, SLP.wand, SLP.star, SLP.lift, SLP.forall']
-    intros
-    exists ∅, ∅
-    simp_all
-    apply And.intro rfl ?_
-    exists ∅, ∅
-    simp_all
-    apply And.intro rfl rfl
+  . sorry
+
+nr_def simple_tuple<>() -> Field {
+  let t = `(1 : Field, true, 3 : Field);
+  t.2 : Field
+}
+
+example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote _ .field) => v = 3) := by
+  simp only [simple_tuple]
+  steps
+  aesop
+
+nr_def simple_slice<>() -> bool {
+  let s = &[true, false];
+  s[[1 : u32]]
+}
+
+example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .bool) => v = false) := by
+  simp only [simple_slice, Expr.mkSlice]
+  steps <;> aesop
+
+nr_def simple_array<>() -> Field {
+  let arr = [1 : Field, 2 : Field];
+  arr[1 : u32]
+}
+
+example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v = 2) := by
+  simp only [simple_array, Expr.mkArray]
+  steps <;> tauto
+  on_goal 3 => exact fun v => v = 2
+  rotate_left
+  steps; aesop
+  simp_all
+  simp only [Expr.readArray]
+  sorry
