@@ -50,31 +50,86 @@ lemma _root_.Finmap.insert_mem_disjoint [DecidableEq α] {m₁ m₂ : Finmap fun
   simp only [Finmap.disjoint_union_left]
   aesop
 
-lemma vector_eq_tp_denote_array (h : n.toNat > 0) : Mathlib.Vector (Tp.denote p tp) (BitVec.toNat n - 1 + 1) = Tp.denote p (.array tp n) := by
-  have _ : n.toNat ≠ 0 := by aesop
-  have _ : n.toNat - 1 + 1 = n.toNat := by
-    generalize (n.toNat) = n' at *
-    cases n'
+lemma Nat.dec_add_eq_self {n : Nat} {h : n ≠ 0} : n - 1 + 1 = n := by
+  cases n
+  contradiction
+  simp
+
+lemma Fin.n_is_non_zero {h : Fin n} : n > 0 := by
+  cases_type Fin
+  cases n
+  contradiction
+  simp
+
+lemma Mathlib.Vector.get_after_erase {idx : Nat} {vec : Mathlib.Vector α n} {h₁ h₂ h₃} :
+  (Mathlib.Vector.eraseIdx ⟨idx, h₁⟩ vec).get ⟨idx, h₂⟩ = Mathlib.Vector.get vec ⟨idx + 1, h₃⟩ := by
+  unfold Mathlib.Vector.get Mathlib.Vector.eraseIdx
+  cases vec
+  simp_all only [Fin.cast_mk, List.get_eq_getElem]
+  rename List _ => l
+  rename_i P
+  subst_vars
+  revert idx
+  induction l
+  . intros
+    rename Nat => idx
+    unfold List.length at *
     contradiction
-    aesop
-  tauto
+  . rename_i head₁ tail₁ ih
+    intros idx h₁ h₂ h₃
+    cases idx
+    . simp_all
+    . simp only [List.eraseIdx_cons_succ, List.getElem_cons_succ]
+      apply ih
+      . aesop
+      . simp_all only [List.length_cons, add_lt_add_iff_right, add_tsub_cancel_right]
+        rw [←add_lt_add_iff_right (a := 1)]
+        have _ : tail₁.length ≠ 0 := by aesop
+        have ht : tail₁.length - 1 + 1 = tail₁.length := by simp_all [Nat.dec_add_eq_self]
+        simp_all
+      . aesop
+
+lemma Mathlib.Vector.get_after_insert {idx : Nat} {vec : Mathlib.Vector α n} {h} :
+  (Mathlib.Vector.insertNth v ⟨idx, h⟩ vec).get ⟨idx, h⟩ = v := by
+  unfold Mathlib.Vector.insertNth Mathlib.Vector.get
+  cases vec
+  simp_all only [List.get_eq_getElem, Fin.coe_cast]
+  apply List.get_insertNth_self
+  subst_vars
+  linarith
 
 @[reducible]
-def replaceArr (h : n.toNat > 0) (arr : Tp.denote p (.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (.array tp n) :=
-  (vector_eq_tp_denote_array h) ▸ ((arr.eraseIdx idx).insertNth v idx)
+def replaceArr (arr : Tp.denote p (.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (.array tp n) :=
+  let arr' := (arr.insertNth v ⟨idx.val + 1, by aesop⟩)
+  arr'.eraseIdx ⟨idx.val, by cases idx; tauto⟩
+
+example {p} : (replaceArr (p := p) (n := ⟨3, by aesop⟩) (tp := .bool) ⟨[false, false, false], (by rfl)⟩ ⟨1, by tauto⟩ true).get ⟨1, by tauto⟩ = true := by rfl
+
+def replaceArray := newGenericPureBuiltin
+  (fun (tp, n) => ⟨[.array tp n, .u 32, tp], (.array tp n)⟩)
+  (fun (_, n) h![arr, idx, v] => ⟨idx.toNat < n.toNat,
+    fun h => replaceArr arr ⟨idx.toNat, h⟩ v⟩)
 
 @[simp]
-theorem index_replaced_arr {n : U 32} {h : n.toNat > 0} {idx : Fin n.toNat} {arr} :
-  (replaceArr h arr idx v').get idx = v' := by
+theorem index_replaced_arr {n : U 32} {idx : Fin n.toNat} {arr} :
+  (replaceArr arr idx v').get idx = v' := by
   unfold replaceArr
-  sorry
-
-example {p} : (replaceArr (p := p) (n := ⟨3, by aesop⟩) (tp := .bool) (by tauto) ⟨[false, false, false], (by rfl)⟩ ⟨1, (by tauto)⟩ true).get ⟨1, by tauto⟩ = true := by rfl
+  cases em (n.toNat > 0)
+  . simp_all only [gt_iff_lt, eq_mp_eq_cast]
+    generalize h₁ : (Mathlib.Vector.insertNth _ _ _) = arr₁
+    cases idx
+    rw [Mathlib.Vector.get_after_erase, ←h₁]
+    apply Mathlib.Vector.get_after_insert
+  . simp_all only [gt_iff_lt, not_lt, nonpos_iff_eq_zero, lt_self_iff_false, dite_false]
+    rename_i h
+    rw [h] at idx
+    apply Fin.n_is_non_zero at idx
+    contradiction
 
 inductive arrayWriteIndexOmni : Omni where
 | ok {p st tp n} {arr : Tp.denote p $ .array tp n} {v : Tp.denote p tp} {Q} :
   (_ : st.lookup ref = some ⟨.array tp n, arr⟩ ∧ n.toNat > 0 ∧ idx.toNat < n.toNat) →
-  Q (some (st.insert ref ⟨.array tp n, replaceArr (by tauto) arr ⟨idx.toNat, (by tauto)⟩ v⟩, ())) →
+  Q (some (st.insert ref ⟨.array tp n, replaceArr arr ⟨idx.toNat, (by tauto)⟩ v⟩, ())) →
   arrayWriteIndexOmni p st [.ref $ .array tp n, .u 32, tp] .unit h![ref, idx, v] Q
 | err {p st tp n} {arr : Tp.denote p $ .array tp n} {v : Tp.denote p tp} {Q} :
   (st.lookup ref = some ⟨.array tp n, arr⟩ ∧ idx.toNat ≥ n.toNat) →

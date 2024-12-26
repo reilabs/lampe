@@ -32,6 +32,11 @@ theorem index_replaced_tpl :
   indexTpl (replaceTpl tpl mem v') mem = v' := by
   induction mem <;> aesop
 
+def replaceTuple (mem : Member tp tps) := newGenericPureBuiltin
+  (fun name => ⟨[.tuple name tps, tp], (.tuple name tps)⟩)
+  (fun _ h![tpl, v] => ⟨True,
+    fun _ => replaceTpl tpl mem v⟩)
+
 @[reducible]
 def HList.toProd (hList : HList rep tps) : (listRep rep) tps := match hList with
 | .nil => ()

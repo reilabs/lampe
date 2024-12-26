@@ -1,7 +1,7 @@
 import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
-import Lampe.Syntax
+import Lampe.Syntax.Basic
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 

@@ -1,11 +1,34 @@
 import Lampe.Basic
 open Lampe
 
-nr_def simple_muts2<>(x : Field) -> Field {
-  let mut y = x;
-  ↓ y = x;
-  0 : Field
+nr_struct_def LensTest <> {
+  a : `(Field, `(Field, Field)),
 }
+
+nr_def simpleLens<>() -> Field {
+  let mut s = LensTest<> { `(1 : Field, `(2 : Field, 3 : Field)) };
+  ↓ (s as LensTest<>).a.1 : `(Field, Field) .1 : Field = 4 : Field;
+  (((s as LensTest<>).a).1 : `(Field, Field)).1 : Field
+}
+
+example {_ : 4 < p.natVal} :
+  STHoare p Γ ⟦⟧ (simpleLens.fn.body _ h![] |>.body h![]) fun v => v.val = 4 := by
+  simp only [simpleLens]
+  steps
+
+
+nr_def arrayLens<>() -> Field {
+  let mut arr = [1 : Field, 2 : Field];
+  ↓ arr[1 : u32] = 1 : Field;
+  #arrayIndex(arr, 1 : u32) : Field
+}
+
+example {_ : 2 < p.natVal} :
+  STHoare p Γ ⟦⟧ (arrayLens.fn.body _ h![] |>.body h![]) (fun v => v.val = 2) := by
+  simp only [arrayLens, Expr.mkArray]
+  steps <;> tauto
+  simp only [Expr.replaceArray]
+
 
 nr_def simple_muts<>(x : Field) -> Field {
   let mut y = x;
@@ -299,34 +322,4 @@ nr_def createArray<>() -> [Field; 2] {
 
 example : STHoare p Γ ⟦⟧ (createArray.fn.body _ h![] |>.body h![]) (fun v => v.toList.get? 1 = some 2) := by
   simp only [createArray, Expr.array]
-  steps <;> aesop
-
-nr_struct_def Lens <> {
-  a : `(Field, `(Field, Field)),
-}
-
-nr_def simpleLens<>() -> Field {
-  let mut s = Lens<> { `(1 : Field, `(2 : Field, 3 : Field)) };
-  ↓ (s as Lens<>) .a .1 .1 = 4 : Field;
-  (((s as Lens<>).a).1 : `(Field, Field)).1 : Field
-}
-
-example {_ : 4 < p.natVal} :
-  STHoare p Γ ⟦⟧ (simpleLens.fn.body _ h![] |>.body h![]) fun v => v.val = 4 := by
-  simp only [simpleLens]
-  steps
-  simp_all
-  subst_vars
-  apply ZMod.val_cast_of_lt
-  tauto
-
-nr_def arrayLens<>() -> Field {
-  let mut arr = [1 : Field, 2 : Field];
-  ↓ arr[1 : u32] = 1 : Field;
-  #arrayIndex(arr, 1 : u32) : Field
-}
-
-example {_ : 2 < p.natVal} :
-  STHoare p Γ ⟦⟧ (arrayLens.fn.body _ h![] |>.body h![]) (fun v => v.val = 2) := by
-  simp only [arrayLens, Expr.array]
   steps <;> aesop

@@ -114,13 +114,18 @@ def sliceRemove := newGenericPureBuiltin
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
 
 @[reducible]
-def replaceSlice (s : Tp.denote p $ .slice tp) (i : Nat) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
+def replaceSl (s : Tp.denote p $ .slice tp) (i : Nat) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
   s.eraseIdx i |>.insertNth i v
+
+def replaceSlice := newGenericPureBuiltin
+  (fun tp => ⟨[.slice tp, .u 32, tp], (.slice tp)⟩)
+  (fun _ h![sl, idx, v] => ⟨True,
+    fun _ => replaceSl sl idx.toNat v⟩)
 
 inductive sliceWriteIndexOmni : Omni where
 | ok {p st tp} {s : Tp.denote p $ .slice tp} {v : Tp.denote p tp} {Q} :
   (_ : st.lookup ref = some ⟨.slice tp, s⟩ ∧ idx.toNat < s.length) →
-  Q (some (st.insert ref ⟨.slice tp, replaceSlice s idx.toNat v⟩, ())) →
+  Q (some (st.insert ref ⟨.slice tp, replaceSl s idx.toNat v⟩, ())) →
   sliceWriteIndexOmni p st [.ref $ .slice tp, .u 32, tp] .unit h![ref, idx, v] Q
 | err {p st tp} {s : Tp.denote p $ .slice tp} {v : Tp.denote p tp} {Q} :
   (st.lookup ref = some ⟨.slice tp, s⟩ ∧ idx.toNat ≥ s.length) →

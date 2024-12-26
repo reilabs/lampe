@@ -317,32 +317,9 @@ theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by ta
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem arrayWriteIndex_intro {hn : n.toNat > 0} :
-  STHoare p Γ [r ↦ ⟨.array tp n, arr⟩] (.call h![] [.ref $ (.array tp n), .u 32, tp] .unit (.builtin .arrayWriteIndex) h![r, idx, v])
-    (fun _ => ∃∃ h, [r ↦ ⟨.array tp n, Builtin.replaceArr hn arr ⟨idx.toNat, h⟩ v⟩]) := by
-  unfold STHoare THoare
-  intros
-  constructor
-  rename_i H st P
-  simp only [SLP.star, LawfulHeap.disjoint] at P
-  cases em (idx.toNat < n.toNat)
-  . apply Builtin.arrayWriteIndexOmni.ok <;> tauto
-    . simp_all only [SLP.true_star, exists_const]
-      apply SLP.ent_star_top
-      simp only [SLP.star, SLP.exists', LawfulHeap.disjoint]
-      generalize hv : (Builtin.replaceArr hn arr ⟨idx.toNat, (by tauto)⟩ v) = v' at *
-      obtain ⟨st₁, st₂, _, _, _, _⟩ := P
-      exists ⟨st₁.vals.insert r ⟨_, v'⟩, st₁.lambdas⟩, st₂
-      apply And.intro <;> tauto
-      apply And.intro
-      simp only [Finmap.disjoint_union_left]
-      apply Finmap.insert_mem_disjoint <;> tauto
-      simp_all [State.valSingleton, Finmap.mem_singleton]
-      tauto
-      simp_all [Finmap.insert_union]
-    . aesop
-  . apply Builtin.arrayWriteIndexOmni.err <;> tauto
-    . apply And.intro (by aesop) (by simp_all)
+theorem replaceArray_intro : STHoarePureBuiltin p Γ Builtin.replaceArray (by tauto) h![arr, idx, v] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
 
 -- Slice
 
@@ -383,34 +360,9 @@ theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by taut
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem sliceWriteIndexIntro :
-  STHoare p Γ [r ↦ ⟨.slice tp, s⟩] (.call h![] [.ref $ (.slice tp), .u 32, tp] .unit (.builtin .sliceWriteIndex) h![r, idx, v])
-    (fun _ => [r ↦ ⟨.slice tp, Builtin.replaceSlice s idx.toNat v⟩]) := by
-  unfold STHoare THoare
-  intros
-  constructor
-  rename_i H st P
-  simp only [SLP.star, LawfulHeap.disjoint] at P
-  cases em (idx.toNat < s.length)
-  . apply Builtin.sliceWriteIndexOmni.ok <;> tauto
-    . aesop
-    . simp_all only [SLP.true_star, exists_const]
-      apply SLP.ent_star_top
-      simp only [SLP.star, SLP.exists', LawfulHeap.disjoint]
-      generalize hv : (Builtin.replaceSlice s idx.toNat v) = v' at *
-      obtain ⟨st₁, st₂, _, _, _, _⟩ := P
-      exists ⟨st₁.vals.insert r ⟨_, v'⟩, st₁.lambdas⟩, st₂
-      apply And.intro <;> tauto
-      apply And.intro
-      simp only [Finmap.disjoint_union_left]
-      apply Finmap.insert_mem_disjoint <;> tauto
-      simp_all [State.valSingleton, Finmap.mem_singleton]
-      tauto
-      simp_all [Finmap.insert_union]
-  . apply Builtin.sliceWriteIndexOmni.err <;> tauto
-    . apply And.intro
-      aesop
-      simp_all
+theorem replaceSlice_intro : STHoarePureBuiltin p Γ Builtin.replaceSlice (by tauto) h![sl, idx, v] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
 
 -- String
 
@@ -510,46 +462,6 @@ theorem writeRef_intro :
     simp [Finmap.union_singleton]
   . simp_all
 
-theorem readLens_intro {lens : Lens tp₁ tp₂} :
-    STHoare p Γ
-    [r ↦ ⟨tp₁, v⟩]
-    (.call h![] [tp₁.ref] tp₂ (.builtin $ .readLens lens) h![r])
-    (fun v' => ⟦v' = lens.get v⟧ ⋆ [r ↦ ⟨tp₁, v⟩]) := by
-  unfold STHoare THoare
-  intros H st h
-  constructor
-  constructor <;> tauto
-  . unfold SLP.star State.valSingleton at *
-    aesop
-  . unfold mapToValHeapCondition
-    simp only [Option.map_some', SLP.true_star, SLP.star_assoc]
-    apply SLP.ent_star_top at h
-    simp_all [State.mk.injEq]
-
-theorem modifyLens_intro {lens : Lens tp₁ tp₂} :
-    STHoare p Γ
-    [r ↦ ⟨tp₁, v⟩]
-    (.call h![] [tp₁.ref, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v'])
-    (fun _ => [r ↦ ⟨tp₁, lens.modify v v'⟩]) := by
-  unfold STHoare THoare
-  intros H st h
-  constructor
-  constructor <;> tauto
-  . unfold SLP.star State.valSingleton at *
-    aesop
-  . unfold mapToValHeapCondition
-    simp only [Option.map_some', SLP.true_star, SLP.star_assoc]
-    apply SLP.ent_star_top at h
-    obtain ⟨st₁, st₂, _, _, _, _⟩ := h
-    exists st₁, st₂
-    apply And.intro
-    . sorry
-    . apply And.intro
-      sorry
-      apply And.intro
-      . sorry
-      . sorry
-
 -- Struct/tuple
 
 theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) fieldExprs (a := (name, fieldTps)) := by
@@ -560,29 +472,9 @@ theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) 
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem tupleWriteMember_intro {mem : Builtin.Member tp tps} :
-  STHoare p Γ [r ↦ ⟨.tuple name tps, tpl⟩] (.call h![] [.ref $ (.tuple name tps), tp] .unit (.builtin $ .tupleWriteMember mem) h![r, v])
-    (fun _ => [r ↦ ⟨.tuple name tps, Builtin.replaceTpl tpl mem v⟩]) := by
-  unfold STHoare THoare
-  intros
-  constructor
-  rename_i H st P
-  simp only [SLP.star, LawfulHeap.disjoint] at P
-  . constructor <;> tauto
-    . aesop
-    . simp_all only [SLP.true_star, exists_const]
-      apply SLP.ent_star_top
-      simp only [SLP.star, SLP.exists', LawfulHeap.disjoint]
-      generalize hv : (Builtin.replaceTpl tpl mem v) = v' at *
-      obtain ⟨st₁, st₂, _, _, _, _⟩ := P
-      exists ⟨st₁.vals.insert r ⟨.tuple name tps, v'⟩, st₁.lambdas⟩, st₂
-      apply And.intro <;> tauto
-      apply And.intro
-      simp only [Finmap.disjoint_union_left]
-      apply Finmap.insert_mem_disjoint <;> tauto
-      simp_all [State.valSingleton, Finmap.mem_singleton]
-      tauto
-      simp_all [Finmap.insert_union]
+theorem replaceTuple_intro {mem : Builtin.Member tp tps} : STHoarePureBuiltin p Γ (Builtin.replaceTuple mem) (by tauto) h![tpl, v] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
 
 -- Misc
 

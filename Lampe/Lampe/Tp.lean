@@ -28,13 +28,6 @@ inductive Tp where
 | array (element : Tp) (size : U 32)
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
-| func
-
-inductive FnRef
-| builtin (name : String)
-| decl (name : String) (gs : List Tp)
-| lambda (r : Nat)
-| trait (traitName : String) (fnName : String) (gs : List Tp)
 
 mutual
 
@@ -56,7 +49,6 @@ def Tp.denote : Tp → Type
 | .array tp n => Mathlib.Vector (denote tp) n.toNat
 | .ref _ => Ref
 | .tuple _ fields => denoteArgs fields
-| .func => FnRef
 
 end
 

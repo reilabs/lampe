@@ -1,7 +1,7 @@
 import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
-import Lampe.Syntax
+import Lampe.Syntax.Basic
 
 import Lean.Meta.Tactic.Simp.Main
 
@@ -570,20 +570,18 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply ref_intro
     | apply readRef_intro
     | apply writeRef_intro
-    | apply modifyLens_intro
-    | apply readLens_intro
     -- array builtins
     | apply mkArray_intro
     | apply arrayLen_intro
     | apply arrayIndex_intro
     | apply arrayAsSlice_intro
-    | apply arrayWriteIndex_intro
+    | apply replaceArray_intro
     -- slice builtins
     | apply mkSlice_intro
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
-    | apply sliceWriteIndex_intro
+    | apply replaceSlice_intro
     -- cmp
     | apply unitEq_intro
     | apply boolEq_intro
@@ -618,10 +616,10 @@ macro "stephelper1" : tactic => `(tactic|(
     -- remainder
     | apply uRem_intro
     | apply iRem_intro
-    -- struct
+    -- struct/tuple
     | apply mkTuple_intro
     | apply projectTuple_intro
-    | apply tupleWriteMember_intro
+    | apply replaceTuple_intro
   )
 ))
 
@@ -641,20 +639,18 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left ref_intro
     | apply consequence_frame_left readRef_intro
     | apply consequence_frame_left writeRef_intro
-    | apply consequence_frame_left modifyLens_intro
-    | apply consequence_frame_left readLens_intro
     -- array builtins
     | apply consequence_frame_left mkArray_intro
     | apply consequence_frame_left arrayLen_intro
     | apply consequence_frame_left arrayIndex_intro
     | apply consequence_frame_left arrayAsSlice_intro
-    | apply consequence_frame_left arrayWriteIndex_intro
+    | apply consequence_frame_left replaceArray_intro
     -- slice builtins
     | apply consequence_frame_left mkSlice_intro
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
-    | apply consequence_frame_left sliceWriteIndex_intro
+    | apply consequence_frame_left replaceSlice_intro
     -- cmp
     | apply consequence_frame_left unitEq_intro
     | apply consequence_frame_left boolEq_intro
@@ -689,10 +685,10 @@ macro "stephelper2" : tactic => `(tactic|(
     -- remainder
     | apply consequence_frame_left uRem_intro
     | apply consequence_frame_left iRem_intro
-    -- struct
+    -- struct/tuple
     | apply consequence_frame_left mkTuple_intro
     | apply consequence_frame_left projectTuple_intro
-    | apply consequence_frame_left tupleWriteMember_intro
+    | apply consequence_frame_left replaceTuple_intro
   )
   repeat sl
 ))
@@ -713,20 +709,18 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top ref_intro
     | apply ramified_frame_top readRef_intro
     | apply ramified_frame_top writeRef_intro
-    | apply ramified_frame_top modifyLens_intro
-    | apply ramified_frame_top readLens_intro
     -- array builtins
     | apply ramified_frame_top mkArray_intro
     | apply ramified_frame_top arrayLen_intro
     | apply ramified_frame_top arrayIndex_intro
     | apply ramified_frame_top arrayAsSlice_intro
-    | apply ramified_frame_top arrayWriteIndex_intro
+    | apply ramified_frame_top replaceArray_intro
     -- slice builtins
     | apply ramified_frame_top mkSlice_intro
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
-    | apply ramified_frame_top sliceWriteIndex_intro
+    | apply ramified_frame_top replaceSlice_intro
     -- cmp
     | apply ramified_frame_top unitEq_intro
     | apply ramified_frame_top boolEq_intro
@@ -761,10 +755,10 @@ macro "stephelper3" : tactic => `(tactic|(
     -- remainder
     | apply ramified_frame_top uRem_intro
     | apply ramified_frame_top iRem_intro
-    -- struct
+    -- struct/tuple
     | apply ramified_frame_top mkTuple_intro
     | apply ramified_frame_top projectTuple_intro
-    | apply ramified_frame_top tupleWriteMember_intro
+    | apply ramified_frame_top replaceTuple_intro
   )
   repeat sl
 ))
