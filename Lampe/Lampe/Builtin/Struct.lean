@@ -1,6 +1,22 @@
 import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
+inductive Member : Tp → List Tp → Type where
+| head : Member tp (tp :: tps)
+| tail : Member tp tps → Member tp (tp' :: tps)
+
+@[reducible]
+def indexTpl (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) : Tp.denote p tp := match tps with
+| tp :: _ => match tpl, mem with
+  | (h, _), .head => h
+  | (_, rem), .tail m => indexTpl rem m
+
+def exampleTuple {p} : Tp.denoteArgs p [.bool, .field, .field] := (true, 4, 5)
+
+example : indexTpl (p := p) exampleTuple Member.head = true := rfl
+example : indexTpl (p := p) exampleTuple Member.head.tail = 4 := rfl
+example : indexTpl (p := p) exampleTuple Member.head.tail.tail = 5 := rfl
+
 @[reducible]
 def listRep (rep : Tp → Type _) : List Tp → Type := fun l => match l with
 | tp :: tps => (rep tp) × (listRep rep tps)
@@ -30,7 +46,7 @@ example : replaceTuple' (p := p) exampleTuple Member.head.tail.tail 2 = (true, 4
 
 @[simp]
 theorem index_replaced_tpl :
-  indexTpl p (replaceTuple' tpl mem v') mem = v' := by
+  indexTpl (replaceTuple' tpl mem v') mem = v' := by
   induction mem <;> aesop
 
 /--
@@ -46,7 +62,7 @@ Defines the indexing/projection of a tuple with a `Member`.
 -/
 def projectTuple (mem : Member outTp fieldTps) := newGenericPureBuiltin
   (fun name => ⟨[.tuple name fieldTps], outTp⟩)
-  (fun _ h![tpl] => ⟨True, fun _ => indexTpl _ tpl mem⟩)
+  (fun _ h![tpl] => ⟨True, fun _ => indexTpl tpl mem⟩)
 
 
 def replaceTuple (mem : Member tp tps) := newGenericPureBuiltin

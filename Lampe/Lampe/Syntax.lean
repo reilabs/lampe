@@ -90,8 +90,8 @@ def tupleFields (tp : Tp) := match tp with
 | _ => []
 
 def mkTupleMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
-| .zero => `(Member.head)
-| .succ n' => do `(Member.tail $(←mkTupleMember n'))
+| .zero => `(Builtin.Member.head)
+| .succ n' => do `(Builtin.Member.tail $(←mkTupleMember n'))
 
 def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `nr_ident) (gs : List $ TSyntax `nr_type) (field : TSyntax `ident) : m (TSyntax `term) := do
   let gs ← mkHListLit (←gs.mapM fun gVal => mkNrType gVal)
@@ -159,7 +159,7 @@ def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
   Expr.call h![] _ (.array tp n) (.builtin $ .mkArray n) vals
 
 @[reducible]
-def Expr.readTuple (tpl : rep $ .tuple name tps) (mem : Member tp tps) : Expr rep tp :=
+def Expr.readTuple (tpl : rep $ .tuple name tps) (mem : Builtin.Member tp tps) : Expr rep tp :=
   Expr.call h![] [typeof tpl] tp (.builtin (@Builtin.projectTuple tp tps mem)) h![tpl]
 
 @[reducible]
@@ -171,7 +171,7 @@ def Expr.readSlice (sl : rep $ .slice tp) (idx : rep $ .u s) : Expr rep tp :=
   Expr.call h![] _ tp (.builtin .sliceIndex) h![sl, idx]
 
 @[reducible]
-def Expr.replaceTuple (tpl : rep $ .tuple name tps) (mem : Member tp tps) (v : rep tp) : Expr rep (.tuple name tps) :=
+def Expr.replaceTuple (tpl : rep $ .tuple name tps) (mem : Builtin.Member tp tps) (v : rep tp) : Expr rep (.tuple name tps) :=
   Expr.call h![] _ (.tuple name tps) (.builtin $ .replaceTuple mem) h![tpl, v]
 
 @[reducible]
@@ -402,7 +402,7 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
   params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
     | `(nr_param_decl| $paramName:ident : $paramType:nr_type) => do
       let paramDefTy ← `(match generics with
-        | $(←mkHListLit generics) => Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))
+        | $(←mkHListLit generics) => Builtin.Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))
       let paramDefSyn ← `(match generics with
         | $(←mkHListLit generics) => $(←mkTupleMember idx))
       let defnNameSyn := mkFieldName (←mkNrIdent structName) paramName.getId.toString

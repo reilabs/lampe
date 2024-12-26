@@ -473,7 +473,7 @@ theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) 
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem replaceTuple_intro {mem : Member tp tps} : STHoarePureBuiltin p Γ (Builtin.replaceTuple mem) (by tauto) h![tpl, v] := by
+theorem replaceTuple_intro {mem : Builtin.Member tp tps} : STHoarePureBuiltin p Γ (Builtin.replaceTuple mem) (by tauto) h![tpl, v] := by
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 

@@ -57,31 +57,6 @@ def Kind.denote : Kind → Type
 | .nat => Nat
 | .type => Tp
 
-inductive Member : Tp → List Tp → Type where
-| head : Member tp (tp :: tps)
-| tail : Member tp tps → Member tp (tp' :: tps)
-
-@[reducible]
-def indexTpl (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) : Tp.denote p tp := match tps with
-| tp :: _ => match tpl, mem with
-  | (h, _), .head => h
-  | (_, rem), .tail m => indexTpl rem m
-
-def exampleTuple {p} : Tp.denoteArgs p [.bool, .field, .field] := (true, 4, 5)
-
-example : indexTpl p exampleTuple Member.head = true := rfl
-example : indexTpl p exampleTuple Member.head.tail = 4 := rfl
-example : indexTpl p exampleTuple Member.head.tail.tail = 5 := rfl
-
-@[reducible]
-def newMember (tps : List Tp) (n : Fin tps.length) : Member (tps.get n) tps := match n with
-| Fin.mk .zero _ => match tps with | _ :: _ => Member.head
-| Fin.mk (.succ n') _ => match tps with | _ :: tps' => Member.tail $ newMember tps' (Fin.mk n' _)
-
-example : newMember [.bool, .field, .field] ⟨0, (by tauto)⟩ = Member.head := rfl
-example : newMember [.bool, .field, .field] ⟨1, (by tauto)⟩ = Member.head.tail := rfl
-example : newMember [.bool, .field, .field] ⟨2, (by tauto)⟩ = Member.head.tail.tail := rfl
-
 lemma List.replicate_head (hl : x :: xs = List.replicate n a) : x = a := by
   unfold List.replicate at hl
   aesop

@@ -265,9 +265,9 @@ nr_def call_decl<>(x: Field, y : Field) -> Field {
    (s as Pair<Field>).a
  }
 
- example {x y : Tp.denote p .field} :
-   STHoare p ⟨[(struct_construct.name, struct_construct.fn)], []⟩
-     ⟦⟧ (call_decl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
+example {x y : Tp.denote p .field} :
+  STHoare p ⟨[(struct_construct.name, struct_construct.fn)], []⟩
+    ⟦⟧ (call_decl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [call_decl, struct_construct]
   steps <;> tauto
   . simp_all [exists_const, SLP.true_star]
