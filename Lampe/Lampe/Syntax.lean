@@ -45,6 +45,12 @@ def mkFieldName (structName : String) (fieldName : String) : Lean.Ident :=
 def mkStructDefIdent (structName : String) : Lean.Ident :=
    mkIdent $ Name.mkSimple $ "struct" ++ "#" ++ structName
 
+def mkFieldName (structName : String) (fieldName : String) : Lean.Ident :=
+  mkIdent $ Name.mkSimple $ "field" ++ "#" ++ structName ++ "#" ++ fieldName
+
+def mkStructDefIdent (structName : String) : Lean.Ident :=
+   mkIdent $ Name.mkSimple $ "struct" ++ "#" ++ structName
+
 def mkListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
 | [] => `([])
 | x :: xs => do
