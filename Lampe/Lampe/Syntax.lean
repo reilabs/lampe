@@ -33,10 +33,15 @@ partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | i => throwError "Unexpected ident {i}"
 
 syntax ident : nr_type
-syntax "struct" ident "<" nr_type,* ">" : nr_type
 syntax "${" term "}" : nr_type
 syntax nr_ident "<" nr_type,* ">" : nr_type
 syntax "[" nr_type "]" : nr_type
+
+def mkFieldName (structName : String) (fieldName : String) : Lean.Ident :=
+  mkIdent $ Name.mkSimple $ "field" ++ "#" ++ structName ++ "#" ++ fieldName
+
+def mkStructDefIdent (structName : String) : Lean.Ident :=
+   mkIdent $ Name.mkSimple $ "struct" ++ "#" ++ structName
 
 def mkListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
 | [] => `([])
@@ -60,42 +65,15 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| Field) => `(Tp.field)
 | `(nr_type| Unit) => `(Tp.unit)
 | `(nr_type| $i:ident) => `($i)
-| `(nr_type| struct $i:ident < $generics,*> ) => do
+| `(nr_type| $structName:nr_ident < $generics,* >) => do
   let generics ← generics.getElems.toList.mapM mkNrType
-  `(Lampe.Struct.tp $i $(←mkHListLit generics))
-| `(nr_type| $i:nr_ident < $generics,* >) => do
-  let name := mkIdent $ Name.mkSimple $ ← mkNrIdent i
-  let generics ← generics.getElems.toList.mapM mkNrType
-  `(Struct.tp $name $(←mkHListLit generics))
+  `(Struct.tp $(mkStructDefIdent (←mkNrIdent structName)) $(←mkHListLit generics))
 | `(nr_type| ${ $i }) => pure i
 | `(nr_type| [ $tp ]) => do `(Tp.slice $(←mkNrType tp))
 | _ => throwUnsupportedSyntax
 
-partial def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) := match i with
-| "add"            => ``(Builtin.fAdd)
-| "sub"            => ``(Builtin.sub)
-| "mul"            => ``(Builtin.mul)
-| "div"            => ``(Builtin.div)
-| "eq"             => ``(Builtin.fEq)
-| "assert"         => ``(Builtin.assert)
-| "not"            => ``(Builtin.not)
-| "lt"             => ``(Builtin.lt)
-| "index"          => ``(Builtin.index)
-| "cast"           => ``(Builtin.cast)
-| "modulus_num_bits" => ``(Builtin.fModNumBits)
-| "to_le_bytes"      => ``(Builtin.toLeBytes)
-| "fresh"          => ``(Builtin.fresh)
-| "slice_len"      => ``(Builtin.sliceLen)
-| "slice_push_back" => ``(Builtin.slicePushBack)
-| "slice_push_front" => ``(Builtin.slicePushFront)
-| "slice_pop_back" => ``(Builtin.slicePopBack)
-| "slice_index" => ``(Builtin.sliceIndex)
-| "slice_pop_front" => ``(Builtin.slicePopFront)
-| "slice_insert"   => ``(Builtin.sliceInsert)
-| "ref"   => ``(Builtin.ref)
-| "read_ref"   => ``(Builtin.readRef)
-| "write_ref"   => ``(Builtin.writeRef)
-| _ => throwError "Unknown builtin {i}"
+def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
+   `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
 
 syntax ident ":" nr_type : nr_param_decl
 
@@ -120,8 +98,8 @@ syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 
 syntax nr_typed_expr := nr_expr ":" nr_type
 syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_typed_expr,* ")" ":" nr_type : nr_expr
-syntax "@" nr_ident "<" nr_type,* ">" ident "[" ident "]"  : nr_expr -- Struct access
-syntax "@" nr_ident "{" sepBy(nr_typed_expr, ",", ",", allowTrailingSep) "}" : nr_expr -- Struct constructor
+syntax "(" ident "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
+syntax nr_ident "<" nr_type,* ">" "{" sepBy(nr_expr, ",", ",", allowTrailingSep) "}" : nr_expr -- Struct constructor
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
@@ -172,9 +150,6 @@ def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (
   let rest ← k ident
   `(Lampe.Expr.letIn $e fun $ident => $rest)
 
-def mkFieldName (structName : String) (fieldName : String) : Lean.Ident :=
-  mkIdent $ Name.mkSimple (structName |>.append "#" |>.append fieldName)
-
 mutual
 
 partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
@@ -201,21 +176,21 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
     mkArgs t fun t => k (h :: t)
 
 partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
-| `(nr_expr|$n:num : $tp) => do wrapSimple (←``(Lampe.Expr.lit $(←mkNrType tp) $n)) vname k
-| `(nr_expr| true) => do wrapSimple (←``(Lampe.Expr.lit Tp.bool 1)) vname k
-| `(nr_expr| false) => do wrapSimple (←``(Lampe.Expr.lit Tp.bool 0)) vname k
+| `(nr_expr|$n:num : $tp) => do wrapSimple (←`(Lampe.Expr.lit $(←mkNrType tp) $n)) vname k
+| `(nr_expr| true) => do wrapSimple (←`(Lampe.Expr.lit Tp.bool 1)) vname k
+| `(nr_expr| false) => do wrapSimple (←`(Lampe.Expr.lit Tp.bool 0)) vname k
 | `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
 | `(nr_expr| $i:ident) => do
-  if ←isAutoDeref i.getId then wrapSimple (← ``(Lampe.Expr.readRef $i)) vname k else match vname with
+  if ←isAutoDeref i.getId then wrapSimple (← `(Lampe.Expr.readRef $i)) vname k else match vname with
   | none => k i
-  | some _ => wrapSimple (←``(Lampe.Expr.var $i)) vname k
+  | some _ => wrapSimple (←`(Lampe.Expr.var $i)) vname k
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit argVals))) vname k
 | `(nr_expr| for $i in $lo .. $hi $body) => do
   mkExpr lo none fun lo =>
   mkExpr hi none fun hi => do
-    let body ← mkExpr body none (fun x => ``(Lampe.Expr.var $x))
+    let body ← mkExpr body none (fun x => `(Lampe.Expr.var $x))
     wrapSimple (←`(Lampe.Expr.loop $lo $hi fun $i => $body)) vname k
 | `(nr_expr| $v:ident = $e) => do
   mkExpr e none fun eVal => do
@@ -223,12 +198,12 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do
     mkExpr cond none fun cond => do
-      let mainBody ← mkExpr mainBody none fun x => ``(Lampe.Expr.var $x)
-      let elseBody ← mkExpr elseBody none fun x => ``(Lampe.Expr.var $x)
+      let mainBody ← mkExpr mainBody none fun x => `(Lampe.Expr.var $x)
+      let elseBody ← mkExpr elseBody none fun x => `(Lampe.Expr.var $x)
       wrapSimple (←`(Lampe.Expr.ite $cond $mainBody $elseBody)) vname k
 | `(nr_expr| if $cond $mainBody) => do
     mkExpr cond none fun cond => do
-      let mainBody ← mkExpr mainBody none fun x => ``(Lampe.Expr.var $x)
+      let mainBody ← mkExpr mainBody none fun x => `(Lampe.Expr.var $x)
       wrapSimple (←`(Lampe.Expr.ite $cond $mainBody (Lampe.Expr.skip))) vname k
 | `(nr_expr| | $params,* | -> $outTp $lambdaBody) => do
   let outTp ← mkNrType outTp
@@ -238,7 +213,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let args ← mkHListLit (← params.getElems.toList.mapM fun param => match param with
     | `(nr_param_decl|$i:ident : $_) => `($i)
     | _ => throwUnsupportedSyntax)
-  let body ← mkExpr lambdaBody none fun x => ``(Lampe.Expr.var $x)
+  let body ← mkExpr lambdaBody none fun x => `(Lampe.Expr.var $x)
   wrapSimple (←`(Lampe.Expr.lambda $argTps $outTp (fun $args => $body))) vname k
 | `(nr_expr| ^ $i:ident ($args,*) : $tp) => do
   mkArgs args.getElems.toList fun argVals => do
@@ -255,13 +230,13 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs argExprs fun argVals => do
     wrapSimple (←`(@Lampe.Expr.call _ $callGenKinds $callGenVals $(←mkListLit argTps) $(←mkNrType tp)
       (.trait ⟨⟨⟨$(Syntax.mkStrLit traitName), $traitGenKinds, $traitGenVals⟩, $(←mkNrType selfTp)⟩, $(Syntax.mkStrLit methodName)⟩) $(←mkHListLit argVals))) vname k
-| `(nr_expr| @ $structName:nr_ident { $args,* }) => do
-  let argTps ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $_ : $ty) => mkNrType ty | _ => throwUnsupportedSyntax
-  let argExprs ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $expr : $_) => pure expr | _ => throwUnsupportedSyntax
-  let structName ← mkNrIdent structName
-  mkArgs argExprs fun argVals => do
-    wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $(←mkListLit argTps)) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
-| `(nr_expr| @ $structName:nr_ident  < $structGenVals,* > $ref:ident [ $structField:ident ]) => do
+| `(nr_expr| $structName:nr_ident < $structGenVals,* > { $args,* }) => do
+   let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+   let paramTpsSyn ← `(Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) $structGenValsSyn)
+   let structName ← mkNrIdent structName
+   mkArgs args.getElems.toList fun argVals => do
+     wrapSimple (←`(Lampe.Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $paramTpsSyn) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
+| `(nr_expr| ( $ref:ident as $structName:nr_ident  < $structGenVals,* > ) . $structField:ident) => do
   let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
   let accessor := mkFieldName (←mkNrIdent structName) (structField.getId.toString)
   let accessorSyn ← `($accessor $structGenValsSyn)
@@ -316,7 +291,7 @@ def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
   pure (traitName, syn)
 | _ => throwUnsupportedSyntax
 
-def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (TSyntax `term)
+def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `nr_ident) : Syntax → m (TSyntax `term)
 | `(nr_struct_def| < $generics,* > { $params,* }) => do
   let genericKinds ← mkListLit (←generics.getElems.toList.mapM fun _ => `(Kind.type))
   let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
@@ -324,32 +299,32 @@ def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
     | `(nr_param_decl| $_:ident : $ty:nr_type) => mkNrType ty
     | _ => throwUnsupportedSyntax
   let fieldTypes ← `(fun gs => match gs with | $(←mkHListLit generics) => $(←mkListLit fieldTypes))
-  let structNameStrLit := Syntax.mkStrLit structName.getId.toString
+  let structNameStrLit := Syntax.mkStrLit (←mkNrIdent structName)
   let syn ← `(Struct.mk $structNameStrLit $genericKinds $fieldTypes)
   pure syn
 | _ => throwUnsupportedSyntax
 
-def mkRecMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
+def mkTplMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
 | .zero => `(Member.head)
-| .succ n' => do `(Member.tail $(←mkRecMember n'))
+| .succ n' => do `(Member.tail $(←mkTplMember n'))
 
-def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `ident) : Syntax → m (List $ TSyntax `command)
+def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `nr_ident) : Syntax → m (List $ TSyntax `command)
 | `(nr_struct_def| < $generics,* > { $params,* }) => do
   let genericKinds ← mkListLit (←generics.getElems.toList.mapM fun _ => `(Kind.type))
   let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
   params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
     | `(nr_param_decl| $paramName:ident : $paramType:nr_type) => do
       let paramDefTy ← `(match generics with
-        | $(←mkHListLit generics) => Member $(←mkNrType paramType) (Struct.fieldTypes $structName generics))
+        | $(←mkHListLit generics) => Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))
       let paramDefSyn ← `(match generics with
-        | $(←mkHListLit generics) => $(←mkRecMember idx))
-      let defnNameSyn := mkFieldName structName.getId.toString paramName.getId.toString
+        | $(←mkHListLit generics) => $(←mkTplMember idx))
+      let defnNameSyn := mkFieldName (←mkNrIdent structName) paramName.getId.toString
       `(def $defnNameSyn (generics : HList Kind.denote $genericKinds) : $paramDefTy := $paramDefSyn)
     | _ => throwUnsupportedSyntax
 | _ => throwUnsupportedSyntax
 
 elab "expr![" expr:nr_expr "]" : term => do
-  let term ← MonadSyntax.run $ mkExpr expr none fun x => ``(Expr.var $x)
+  let term ← MonadSyntax.run $ mkExpr expr none fun x => `(Expr.var $x)
   Elab.Term.elabTerm term.raw none
 
 elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
@@ -366,10 +341,10 @@ elab "nr_trait_impl[" defName:ident "]" impl:nr_trait_impl : command => do
   let decl ← `(def $defName : String × Lampe.TraitImpl := ($(Syntax.mkStrLit name), $impl))
   Elab.Command.elabCommand decl
 
-elab "nr_struct_def" defName:ident defn:nr_struct_def : command => do
+elab "nr_struct_def" defName:nr_ident defn:nr_struct_def : command => do
   -- define the struct itself
-  let structDefn ← `(def $defName := $(←mkStructDef defName defn))
-  Elab.Command.elabCommand structDefn
+  let cmd ← `(def $(mkStructDefIdent (←mkNrIdent defName)) := $(←mkStructDef defName defn))
+  Elab.Command.elabCommand cmd
   -- define the field projections
   let projs ← mkStructProjector defName defn
   _ ← projs.mapM fun cmd => do
