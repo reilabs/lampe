@@ -79,9 +79,6 @@ syntax ident ":" nr_type : nr_param_decl
 
 syntax num ":" nr_type : nr_expr
 syntax ident : nr_expr
-syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr
-syntax nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr
-syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
 syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
@@ -94,12 +91,17 @@ syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 syntax "(" nr_expr ")" : nr_expr
 syntax "*(" nr_expr ")" : nr_expr
 syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr
-syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
 
 syntax nr_typed_expr := nr_expr ":" nr_type
-syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_typed_expr,* ")" ":" nr_type : nr_expr
+
 syntax "(" ident "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
-syntax nr_ident "<" nr_type,* ">" "{" sepBy(nr_expr, ",", ",", allowTrailingSep) "}" : nr_expr -- Struct constructor
+syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
+
+syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
+syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "(" nr_typed_expr,* ")" ":" nr_type : nr_expr -- Trait call
+syntax "^" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Lambda call
+syntax "@" nr_ident "<" nr_type,* ">" "(" nr_expr,* ")" ":" nr_type : nr_expr -- Decl call
+
 
 syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
@@ -218,6 +220,11 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| ^ $i:ident ($args,*) : $tp) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Lampe.Expr.call h![] _ $(←mkNrType tp) (.lambda $i) $(←mkHListLit argVals))) vname k
+| `(nr_expr| @ $declName:nr_ident < $callGenVals:nr_type,* > ( $args,* ) : $tp) => do
+   let callGenKinds ← mkListLit (←callGenVals.getElems.toList.mapM fun _ => `(Kind.type))
+   let callGenVals ← mkHListLit (←callGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
+   mkArgs args.getElems.toList fun argVals => do
+     wrapSimple (←`(@Lampe.Expr.call _ $callGenKinds $callGenVals _ $(←mkNrType tp) (.decl $(Syntax.mkStrLit (←mkNrIdent declName))) $(←mkHListLit argVals))) vname k
 | `(nr_expr| ( $selfTp as $traitName < $traitGenVals,* > ) :: $methodName < $callGenVals,* > ( $args,* ) : $tp) => do
   let argTps ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $_ : $ty) => mkNrType ty | _ => throwUnsupportedSyntax
   let argExprs ← args.getElems.toList.mapM fun arg => match arg with | `(nr_typed_expr| $expr : $_) => pure expr | _ => throwUnsupportedSyntax
