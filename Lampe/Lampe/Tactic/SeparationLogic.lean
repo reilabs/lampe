@@ -564,6 +564,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
     | apply cast_intro
+    | apply cast_intro
     | apply callTrait_intro
     | apply callDecl_intro
     -- memory
@@ -585,6 +586,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply replaceSlice_intro
     -- equality
     | apply unitEq_intro
+    | apply bEq_intro
     | apply bEq_intro
     | apply fEq_intro
     | apply uEq_intro
@@ -724,6 +726,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top replaceSlice_intro
     -- equality
     | apply ramified_frame_top unitEq_intro
+    | apply ramified_frame_top bEq_intro
     | apply ramified_frame_top bEq_intro
     | apply ramified_frame_top fEq_intro
     | apply ramified_frame_top uEq_intro
