@@ -131,20 +131,20 @@ theorem mkArray_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps}
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto) h![arr, i] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
+theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto) h![arr, i] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
+theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
+theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem replaceArray_intro : STHoarePureBuiltin p Γ Builtin.replaceArray (by tauto) h![arr, idx, v] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
+theorem replaceArray_intro : STHoarePureBuiltin p Γ Builtin.replaceArray (by tauto) h![arr, idx, v] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
 -- BigInt
