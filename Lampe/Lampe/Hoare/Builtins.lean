@@ -373,7 +373,7 @@ theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto)
 
 -- Memory
 
-theorem ref_intro:
+theorem ref_intro :
     STHoare p Γ
       ⟦⟧
       (.call h![] [tp] (Tp.ref tp) (.builtin .ref) h![v])
@@ -397,7 +397,7 @@ theorem ref_intro:
       apply And.intro _ (by trivial)
       simp only [State.union_parts_left, Finmap.empty_union, Finmap.union_self]
 
-theorem readRef_intro:
+theorem readRef_intro :
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
     (.call h![] [tp.ref] tp (.builtin .readRef) h![r])
@@ -430,7 +430,7 @@ theorem readRef_intro:
   apply SLP.ent_star_top
   assumption
 
-theorem writeRef_intro:
+theorem writeRef_intro :
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
     (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![r, v'])
@@ -483,7 +483,7 @@ theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
       apply SLP.ent_star_top at h
       simp_all
 
- theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
+ theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s s' : Tp.denote p tp₁} :
     STHoare p Γ
     [r ↦ ⟨tp₁, s⟩]
     (.call h![] [tp₁.ref, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v'])

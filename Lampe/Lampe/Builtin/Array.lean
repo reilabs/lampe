@@ -126,5 +126,4 @@ def replaceArray := newGenericPureBuiltin
   (fun (_, n) h![arr, idx, v] => ⟨idx.toNat < n.toNat,
     fun h => replaceArray' arr ⟨idx.toNat, h⟩ v⟩)
 
-
 end Lampe.Builtin

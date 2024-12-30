@@ -644,7 +644,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left readRef_intro
     | apply consequence_frame_left writeRef_intro
     | apply consequence_frame_left readLens_intro
-    | apply consequence_frame_left modifyLens_intro
+    -- | apply consequence_frame_left modifyLens_intro
     -- array
     | apply consequence_frame_left mkArray_intro
     | apply consequence_frame_left arrayLen_intro

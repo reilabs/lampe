@@ -85,6 +85,12 @@ def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErr
 def typeof {rep : Tp → Type _} (_ : rep tp) := tp
 
 @[reducible]
+def typeofRef {rep : Tp → Type _} (_ : rep $ Tp.ref tp) := tp
+
+@[reducible]
+def repof {rep : Tp → Type _} (_ : rep tp) := rep
+
+@[reducible]
 def tupleFields (tp : Tp) := match tp with
 | Tp.tuple _ fields => fields
 | _ => []
@@ -182,6 +188,14 @@ def Expr.replaceArray (arr : rep $ .array tp n) (idx : rep $ .u s) (v : rep tp) 
 def Expr.replaceSlice (sl : rep $ .slice tp) (idx : rep $ .u s) (v : rep tp) : Expr rep (.slice tp) :=
   Expr.call h![] _ (.slice tp) (.builtin .replaceSlice) h![sl, idx, v]
 
+@[reducible]
+def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
+  Expr.call h![] _ .unit (.builtin $ .modifyLens (rep := rep) (tp₁ := tp₁) (tp₂ := tp₂) lens) h![r, v]
+
+@[reducible]
+def Expr.readLens (r : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
+  Expr.call h![] _ tp₂ (.builtin $ .readLens lens) h![r]
+
 structure DesugarState where
   autoDeref : Name → Bool
   nextFresh : Nat
@@ -211,6 +225,53 @@ def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (
   let rest ← k ident
   `(Lampe.Expr.letIn $e fun $ident => $rest)
 
+abbrev ArgSet := (Nat × List (Lean.Ident × TSyntax `nr_expr))
+
+@[reducible]
+def ArgSet.empty : ArgSet := ⟨0, []⟩
+
+def ArgSet.next (a : ArgSet) (expr : TSyntax `nr_expr) : (Lean.Ident × ArgSet) :=
+  let ident := mkIdent $ Name.mkSimple $ "#arg_" ++ (toString a.1)
+  (ident, ⟨a.1 + 1, (ident, expr) :: a.2⟩)
+
+def ArgSet.args (a : ArgSet) : List $ TSyntax `nr_expr := a.2.map (·.2)
+
+def ArgSet.ids (a : ArgSet) : List $ Lean.Ident := a.2.map (·.1)
+
+@[reducible]
+def ArgSet.wrap [MonadSyntax m] (a : ArgSet) (argVals : List $ TSyntax `term) (expr : TSyntax `term) :
+    m $ TSyntax `term := do
+  if argVals.isEmpty then
+    `($expr)
+  else
+    `((fun args => match args with | $(←mkHListLit a.ids) => $expr) $(←mkHListLit argVals))
+
+partial def mkLens [MonadSyntax m] (expr : TSyntax `nr_expr) (a : ArgSet) : m $ (TSyntax `term) × ArgSet := match expr with
+| `(nr_expr| $_:ident) => do
+  let nil ← `(Lens.nil)
+  pure (nil, a)
+| `(nr_expr| ( $structExpr:nr_expr as $structName  < $structGens,* > ) . $fieldName) => do
+  let mem ← mkStructMember structName structGens.getElems.toList fieldName
+  let (lhsLens, a') ← mkLens structExpr a
+  let lens' ← `(Lens.cons $lhsLens (Access.tpl $mem))
+  pure (lens', a')
+| `(nr_expr| $tupleExpr:nr_expr . $idx) => do
+  let mem ← mkTupleMember idx.getNat
+  let (lhsLens, a') ← mkLens tupleExpr a
+  let lens' ← `(Lens.cons $lhsLens (Access.tpl $mem))
+  pure (lens', a')
+| `(nr_expr| $arrayExpr:nr_expr [ $idxExpr:nr_expr ]) => do
+  let (idx, a') := a.next idxExpr
+  let (lhsLens, a'') ← mkLens arrayExpr a'
+  let lens' ← `(Lens.cons $lhsLens (Access.arr $idx))
+  pure (lens', a'')
+| `(nr_expr| $sliceExpr:nr_expr [[ $idxExpr:nr_expr ]]) => do
+  let (idx, a') := a.next idxExpr
+  let (lhsLens, a'') ← mkLens sliceExpr a'
+  let lens' ← `(Lens.cons $lhsLens (Access.slice $idx))
+  pure (lens', a'')
+| _ => throwUnsupportedSyntax
+
 partial def getLeftmostRef [MonadSyntax m] (expr : TSyntax `nr_expr) : m (TSyntax `ident) := match expr with
 | `(nr_expr| $v:ident) => pure v
 | `(nr_expr| ( $structExpr:nr_expr as $_  < $_,* > ) . $_) => getLeftmostRef structExpr
@@ -219,32 +280,7 @@ partial def getLeftmostRef [MonadSyntax m] (expr : TSyntax `nr_expr) : m (TSynta
 | `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostRef sliceExpr
 | _ => throwUnsupportedSyntax
 
-partial def collectLhsExprs (expr : TSyntax `nr_expr) : (List $ TSyntax `nr_expr) := match expr with
-| `(nr_expr| ( $expr:nr_expr as $_  < $_,* > ) . $_) => (expr :: (collectLhsExprs expr))
-| `(nr_expr| $expr:nr_expr . $_) => (expr :: (collectLhsExprs expr))
-| `(nr_expr| $expr:nr_expr [ $_ ]) => (expr :: (collectLhsExprs expr))
-| `(nr_expr| $expr:nr_expr [[ $_ ]]) => (expr :: (collectLhsExprs expr))
-| _ => ([])
-
 mutual
-
-partial def mkAssignmentExpr [MonadSyntax m] (lhs : TSyntax `nr_expr) (rhsExpr : TSyntax `term) (vals : List $ TSyntax `term) : m (TSyntax `term) :=
-match vals with
-| val :: vals => match lhs with
-  | `(nr_expr| ( $structExpr:nr_expr as $structName:nr_ident  < $structGenVals,* > ) . $structField:ident) => do
-    let mem ← mkStructMember structName structGenVals.getElems.toList structField
-    mkAssignmentExpr structExpr (←`(Expr.letIn $rhsExpr (fun rhs => Expr.replaceTuple $val $mem rhs))) vals
-  | `(nr_expr| $tupleExpr:nr_expr . $idx:num) => do
-    let mem ← mkTupleMember idx.getNat
-    mkAssignmentExpr tupleExpr (←`(Expr.letIn $rhsExpr (fun rhs => Expr.replaceTuple $val $mem rhs))) vals
-  | `(nr_expr| $arrayExpr:nr_expr [ $idxExpr:nr_expr ]) => do
-    mkExpr idxExpr none fun idx => do
-      mkAssignmentExpr arrayExpr (←`(Expr.letIn $idx (fun idx => Expr.letIn $rhsExpr (fun rhs => Expr.replaceArray $val idx rhs)))) vals
-  | `(nr_expr| $sliceExpr:nr_expr [[ $idxExpr:nr_expr ]]) => do
-    mkExpr idxExpr none fun idx => do
-      mkAssignmentExpr sliceExpr (←`(Expr.letIn $idx (fun idx => Expr.letIn $rhsExpr (fun rhs => Expr.replaceSlice $val idx rhs)))) vals
-  | _ => throwUnsupportedSyntax
-| [] => pure rhsExpr
 
 partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
 | h :: n :: rest => match h with
@@ -291,10 +327,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     wrapSimple (←`(Expr.writeRef $lhs $rhs)) vname k
 | `(nr_expr| $lhs:nr_expr = $rhs:nr_expr) => do
   let r ← getLeftmostRef lhs
+  let (lens, args) ← mkLens lhs ArgSet.empty
   mkExpr rhs none fun rhs => do
-    mkArgs (collectLhsExprs lhs) fun lhsVals => do
-      let expr ← mkAssignmentExpr lhs (←`(Expr.var $rhs)) lhsVals
-      wrapSimple (←`(Expr.letIn $expr (fun val => Expr.writeRef $r val))) vname k
+    mkArgs args.args fun vals => do
+      wrapSimple (←`(Expr.modifyLens $r $rhs $(←args.wrap vals lens))) vname k
 | `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do
     mkExpr cond none fun cond => do
