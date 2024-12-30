@@ -219,12 +219,12 @@ partial def getLeftmostRef [MonadSyntax m] (expr : TSyntax `nr_expr) : m (TSynta
 | `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostRef sliceExpr
 | _ => throwUnsupportedSyntax
 
-partial def getRecExprs (expr : TSyntax `nr_expr) : (List $ TSyntax `nr_expr) := match expr with
-| `(nr_expr| ( $expr:nr_expr as $_  < $_,* > ) . $_) => (expr :: (getRecExprs expr))
-| `(nr_expr| $expr:nr_expr . $_) => (expr :: (getRecExprs expr))
-| `(nr_expr| $expr:nr_expr [ $_ ]) => (expr :: (getRecExprs expr))
-| `(nr_expr| $expr:nr_expr [[ $_ ]]) => (expr :: (getRecExprs expr))
-| _ => ([expr])
+partial def collectLhsExprs (expr : TSyntax `nr_expr) : (List $ TSyntax `nr_expr) := match expr with
+| `(nr_expr| ( $expr:nr_expr as $_  < $_,* > ) . $_) => (expr :: (collectLhsExprs expr))
+| `(nr_expr| $expr:nr_expr . $_) => (expr :: (collectLhsExprs expr))
+| `(nr_expr| $expr:nr_expr [ $_ ]) => (expr :: (collectLhsExprs expr))
+| `(nr_expr| $expr:nr_expr [[ $_ ]]) => (expr :: (collectLhsExprs expr))
+| _ => ([])
 
 mutual
 
@@ -243,8 +243,8 @@ match vals with
   | `(nr_expr| $sliceExpr:nr_expr [[ $idxExpr:nr_expr ]]) => do
     mkExpr idxExpr none fun idx => do
       mkAssignmentExpr sliceExpr (←`(Expr.letIn $idx (fun idx => Expr.letIn $rhsExpr (fun rhs => Expr.replaceSlice $val idx rhs)))) vals
-  | _ => `(Expr.var $val)
-| [] => throwUnsupportedSyntax
+  | _ => throwUnsupportedSyntax
+| [] => pure rhsExpr
 
 partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
 | h :: n :: rest => match h with
@@ -290,10 +290,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkExpr rhs none fun rhs => do
     wrapSimple (←`(Expr.writeRef $lhs $rhs)) vname k
 | `(nr_expr| $lhs:nr_expr = $rhs:nr_expr) => do
+  let r ← getLeftmostRef lhs
   mkExpr rhs none fun rhs => do
-    mkArgs (getRecExprs lhs) fun vals => do
-      let r ← getLeftmostRef lhs
-      let expr ← mkAssignmentExpr lhs (←`(Expr.var $rhs)) vals
+    mkArgs (collectLhsExprs lhs) fun lhsVals => do
+      let expr ← mkAssignmentExpr lhs (←`(Expr.var $rhs)) lhsVals
       wrapSimple (←`(Expr.letIn $expr (fun val => Expr.writeRef $r val))) vname k
 | `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do

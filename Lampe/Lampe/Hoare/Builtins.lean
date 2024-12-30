@@ -463,6 +463,65 @@ theorem writeRef_intro:
     simp [Finmap.union_singleton]
   . simp_all
 
+theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
+    STHoare p Γ
+    [r ↦ ⟨tp₁, s⟩]
+    (.call h![] [tp₁.ref] tp₂ (.builtin $ .readLens lens) h![r])
+    (fun v' => ⟦lens.get s = some v'⟧ ⋆ [r ↦ ⟨tp₁, s⟩]) := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  cases hl : (lens.get s)
+  . apply Builtin.readLensOmni.err <;> tauto
+    unfold SLP.star State.valSingleton at *
+    aesop
+  . apply Builtin.readLensOmni.ok <;> tauto
+    . unfold SLP.star State.valSingleton at *
+      aesop
+    . unfold mapToValHeapCondition
+      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
+      apply SLP.ent_star_top at h
+      simp_all
+
+ theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
+    STHoare p Γ
+    [r ↦ ⟨tp₁, s⟩]
+    (.call h![] [tp₁.ref, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v'])
+    (fun _ => ∃∃s', ⟦lens.modify s v' = some s'⟧ ⋆ [r ↦ ⟨tp₁, s'⟩]) := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  cases hl : (lens.modify s v')
+  . apply Builtin.modifyLensOmni.err <;> tauto
+    unfold SLP.star State.valSingleton at *
+    aesop
+  . apply Builtin.modifyLensOmni.ok <;> tauto
+    . unfold SLP.star State.valSingleton at *
+      aesop
+    . unfold mapToValHeapCondition
+      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
+      obtain ⟨st₁, st₂, ⟨h₁, _⟩, h₂, h₃, h₄⟩ := h
+      simp only [State.valSingleton] at h₃
+      rename (Tp.denote p tp₁) => s'
+      exists ⟨Finmap.singleton r ⟨tp₁, s'⟩, st₁.lambdas⟩, st₂
+      apply And.intro
+      . simp only [LawfulHeap.disjoint]
+        apply And.intro ?_ (by tauto)
+        aesop
+      apply And.intro
+      . simp only [State.union_parts, State.mk.injEq, and_true]
+        apply And.intro ?_ (by simp_all)
+        rw [Finmap.insert_eq_singleton_union]
+        simp_all only [State.union_parts]
+        rw [←Finmap.union_assoc, ←Finmap.insert_eq_singleton_union]
+        simp_all
+      apply And.intro
+      . simp only [SLP.exists']
+        exists s'
+        simp only [SLP.true_star]
+      apply SLP.ent_star_top
+      tauto
+
 -- Struct/tuple
 
 theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) fieldExprs (a := (name, fieldTps)) := by

@@ -4,43 +4,51 @@ import Lampe.Builtin.Array
 
 namespace Lampe
 
-inductive Access : Tp → Tp → Type _
-| tpl : (mem : Builtin.Member tp tps) → Access (.tuple name tps) tp
-| arr : (idx : Fin n.toNat) → Access (.array tp n) tp
+inductive Access (rep : Tp → Type _) : Tp → Tp → Type _
+| tpl : (mem : Builtin.Member tp tps) → Access rep (.tuple name tps) tp
+| arr : (idx : rep $ .u 32) → Access rep (.array tp n) tp
 
-def Access.get (acc : Access tp₁ tp₂) (s : Tp.denote p tp₁) : Tp.denote p tp₂ := match acc with
+def Access.get (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) : Option $ Tp.denote p tp₂ := match acc with
 | .tpl mem => Builtin.indexTpl s mem
-| .arr idx => s.get idx
+| .arr (n := n) idx => if h : idx.toNat < n.toNat then s.get ⟨idx.toNat, h⟩ else none
 
-def Access.modify (acc : Access tp₁ tp₂) (s : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ := match acc with
+def Access.modify (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Option $ Tp.denote p tp₁ := match acc with
 | .tpl mem => Builtin.replaceTuple' s mem v'
-| .arr idx => Builtin.replaceArray' s idx v'
+| .arr (n := n) idx => if h : idx.toNat < n.toNat then Builtin.replaceArray' s ⟨idx.toNat, h⟩ v' else none
 
 @[simp]
-theorem Access.modify_get {acc : Access tp₁ tp₂} : acc.get (acc.modify s v') = v' := by
-  unfold Access.modify Access.get
-  cases acc <;> simp_all
+theorem Access.modify_get {acc : Access (Tp.denote p) tp₁ tp₂} {h : acc.modify s v' = some s'} :
+  acc.get s' = v' := by
+  cases acc
+  . simp_all only [Access.get, Access.modify]
+    aesop
+  . simp_all only [Access.get, Access.modify]
+    rename_i n idx
+    cases em (idx.toNat < n.toNat) <;> aesop
 
-inductive Lens : Tp → Tp → Type _
-| nil : Lens tp tp
-| cons : Lens tp₁ tp₂ → Access tp₂ tp₃ → Lens tp₁ tp₃
+inductive Lens (rep : Tp → Type _) : Tp → Tp → Type _
+| nil : Lens rep tp tp
+| cons : Lens rep tp₁ tp₂ → Access rep tp₂ tp₃ → Lens rep tp₁ tp₃
 
 @[simp]
-def Lens.get (lens : Lens tp₁ tp₂) (s : Tp.denote p tp₁) : Tp.denote p tp₂ := match lens with
+def Lens.get (lens : Lens (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) : Option $ Tp.denote p tp₂ := match lens with
 | .nil => s
-| .cons l₁ a₁ => a₁.get (l₁.get s)
+| .cons l₁ a₁ => (l₁.get s) >>= a₁.get
 
 @[simp]
-def Lens.modify (lens : Lens tp₁ tp₂) (s : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ := match lens with
+def Lens.modify (lens : Lens (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Option $ Tp.denote p tp₁ := match lens with
 | .nil => v'
-| .cons l₁ a₂ => l₁.modify s (a₂.modify (l₁.get s) v')
+| .cons l₁ a₂ => (l₁.get s) >>= (a₂.modify · v') >>= l₁.modify s
 
 @[simp]
-theorem Lens.modify_get {l : Lens tp₁ tp₂} : l.get (l.modify s v') = v' := by
+theorem Lens.modify_get {l : Lens (Tp.denote p) tp₁ tp₂} {h : l.modify s v' = some s'} :
+ l.get s' = v' := by
   induction l
-  . unfold Lens.modify Lens.get
-    simp_all
-  . unfold Lens.get Lens.modify Access.get Access.modify
-    casesm* Access _ _ <;> simp_all
+  . simp_all only [Lens.modify, Lens.get]
+  . rename_i tp₁' tp₂' l a ih
+    casesm* Access _ _ _
+    . sorry
+    . sorry
+
 
 end Lampe
