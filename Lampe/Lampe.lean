@@ -269,15 +269,44 @@ nr_def call_decl<>(x: Field, y : Field) -> Field {
    STHoare p ⟨[(struct_construct.name, struct_construct.fn)], []⟩
      ⟦⟧ (call_decl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [call_decl, struct_construct]
-  steps <;> tauto
-  . simp_all [exists_const, SLP.true_star]
+  apply STHoare.letIn_intro
+  on_goal 3 => exact (fun (v : Tp.denote p $ .tuple _ [.field, .field]) => v = (x, y, ()))
+  apply STHoare.callDecl_intro <;> tauto
+  . apply STHoare.letIn_intro
+    . steps
+    . intros
+      steps
+      aesop
+  . intros
     steps
-    simp_all [exists_const, SLP.true_star]
-    simp_all [SLP.entails, SLP.wand, SLP.star, SLP.lift, SLP.forall']
-    intros
-    exists ∅, ∅
-    simp_all
-    apply And.intro rfl ?_
-    exists ∅, ∅
-    simp_all
-    apply And.intro rfl rfl
+    aesop
+
+
+nr_def simple_tuple<>() -> Field {
+  let t = `(1 : Field, true, 3 : Field);
+  t.2 : Field
+}
+
+example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v = 3) := by
+  simp only [simple_tuple]
+  steps
+  aesop
+
+nr_def simple_slice<>() -> bool {
+  let s = &[true, false];
+  s[[1 : u32]]
+}
+
+example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .bool) => v = false) := by
+  simp only [simple_slice, Expr.mkSlice]
+  steps <;> aesop
+
+nr_def simple_array<>() -> Field {
+  let arr = [1 : Field, 2 : Field];
+  arr[1 : u32]
+}
+
+example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v = 2) := by
+  simp only [simple_array, Expr.mkArray]
+  steps <;> tauto
+  aesop

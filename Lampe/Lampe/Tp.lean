@@ -82,4 +82,38 @@ example : newMember [.bool, .field, .field] ⟨0, (by tauto)⟩ = Member.head :=
 example : newMember [.bool, .field, .field] ⟨1, (by tauto)⟩ = Member.head.tail := rfl
 example : newMember [.bool, .field, .field] ⟨2, (by tauto)⟩ = Member.head.tail.tail := rfl
 
+lemma List.replicate_head (hl : x :: xs = List.replicate n a) : x = a := by
+  unfold List.replicate at hl
+  aesop
+
+lemma List.replicate_cons (hl : x :: xs = List.replicate n a) : xs = List.replicate (n-1) a := by
+  unfold List.replicate at hl
+  cases xs <;> aesop
+
+@[reducible]
+def HList.toList (l : HList rep tps) (_ : tps = List.replicate n tp) : List (rep tp) := match l with
+| .nil => []
+| .cons x xs => match tps with
+  | [] => []
+  | _ :: _ => ((List.replicate_head (by tauto)) ▸ x) :: (HList.toList xs (List.replicate_cons (by tauto)))
+
+lemma HList.toList_cons :
+  HList.toList (n := n + 1) (HList.cons head rem) h₁ = head :: (HList.toList (n := n) rem h₂) := by
+  rfl
+
+lemma HList.toList_length_is_n (h_same : tps = List.replicate n tp) :
+  (HList.toList l h_same).length = n := by
+  subst h_same
+  induction n
+  cases l
+  tauto
+  cases l
+  rw [HList.toList_cons]
+  simp_all
+  rfl
+
+@[reducible]
+def HList.toVec (l : HList rep tps) (h_same : tps = List.replicate n tp) : Mathlib.Vector (rep tp) n :=
+  ⟨HList.toList l h_same, by apply HList.toList_length_is_n⟩
+
 end Lampe

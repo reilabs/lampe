@@ -126,12 +126,25 @@ lemma pureBuiltin_intro_consequence
 
 -- Arrays
 
-theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
+theorem mkArray_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
+  STHoarePureBuiltin p Γ (Builtin.mkArray n) (by tauto) args (a := (argTps, tp)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
+theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto) h![arr, i] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem replaceArray_intro : STHoarePureBuiltin p Γ Builtin.replaceArray (by tauto) h![arr, idx, v] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
 -- BigInt
@@ -311,6 +324,11 @@ theorem iFromField_intro : STHoarePureBuiltin p Γ Builtin.iFromField (by tauto)
 
 -- Slice
 
+theorem mkSlice_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
+  STHoarePureBuiltin p Γ (Builtin.mkSlice n) (by tauto) args (a := (argTps, tp)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
 theorem sliceLen_intro : STHoarePureBuiltin p Γ Builtin.sliceLen (by tauto) h![s] := by
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
@@ -340,6 +358,10 @@ theorem slicePopBack_intro : STHoarePureBuiltin p Γ Builtin.slicePopBack (by ta
   tauto
 
 theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by tauto) h![sl, i]  := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
+
+theorem replaceSlice_intro : STHoarePureBuiltin p Γ Builtin.replaceSlice (by tauto) h![sl, idx, v] := by
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
@@ -449,6 +471,10 @@ theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) field
 
 theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
   apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem replaceTuple_intro {mem : Member tp tps} : STHoarePureBuiltin p Γ (Builtin.replaceTuple mem) (by tauto) h![tpl, v] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 -- Misc
