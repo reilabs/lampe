@@ -166,24 +166,16 @@ def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
   Expr.call h![] _ (.array tp n) (.builtin $ .mkArray n) vals
 
 @[reducible]
-def Expr.readTuple (tpl : rep $ .tuple name tps) (mem : Builtin.Member tp tps) : Expr rep tp :=
-  Expr.call h![] [typeof tpl] tp (.builtin (@Builtin.projectTuple tp tps mem)) h![tpl]
-
-@[reducible]
-def Expr.readArray (arr : rep $ .array tp n) (idx : rep $ .u s) : Expr rep tp :=
-  Expr.call h![] _ tp (.builtin .arrayIndex) h![arr, idx]
-
-@[reducible]
-def Expr.readSlice (sl : rep $ .slice tp) (idx : rep $ .u s) : Expr rep tp :=
-  Expr.call h![] _ tp (.builtin .sliceIndex) h![sl, idx]
-
-@[reducible]
 def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
-  Expr.call h![] _ .unit (.builtin $ .modifyLens (rep := rep) (tp₁ := tp₁) (tp₂ := tp₂) lens) h![r, v]
+  Expr.call h![] [.ref tp₁, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v]
 
 @[reducible]
 def Expr.readLens (r : rep $ .ref tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
   Expr.call h![] _ tp₂ (.builtin $ .readLens lens) h![r]
+
+@[reducible]
+def Expr.getLens (v : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
+  Expr.call h![] _ tp₂ (.builtin $ .getLens lens) h![v]
 
 structure DesugarState where
   autoDeref : Name → Bool
@@ -268,6 +260,13 @@ partial def getLeftmostRef [MonadSyntax m] (expr : TSyntax `nr_expr) : m (TSynta
 | `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLeftmostRef arrayExpr
 | `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostRef sliceExpr
 | _ => throwUnsupportedSyntax
+
+partial def getLeftmostExpr (expr : TSyntax `nr_expr) : (TSyntax `nr_expr) := match expr with
+| `(nr_expr| ( $structExpr:nr_expr as $_  < $_,* > ) . $_) => getLeftmostExpr structExpr
+| `(nr_expr| $tupleExpr:nr_expr . $_) => getLeftmostExpr tupleExpr
+| `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLeftmostExpr arrayExpr
+| `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostExpr sliceExpr
+| `(nr_expr| $e:nr_expr) => e
 
 mutual
 
@@ -377,22 +376,15 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs args.getElems.toList fun argVals => do
     let argTps ← argVals.mapM fun arg => `(typeof $arg)
     wrapSimple (←`(Expr.call h![] _ (.tuple none $(←mkListLit argTps)) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
-| `(nr_expr| ( $lhsExpr:nr_expr as $structName:nr_ident  < $structGenVals,* > ) . $structField:ident) => do
-  let mem ← mkStructMember structName structGenVals.getElems.toList structField
-  mkExpr lhsExpr none fun tpl => do
-    wrapSimple (←`(Expr.readTuple $tpl $mem)) vname k
-| `(nr_expr| $tupleExpr:nr_expr . $idx:num) => do
-  let mem ← mkTupleMember idx.getNat
-  mkExpr tupleExpr none fun tpl => do
-    wrapSimple (←`(Expr.readTuple $tpl $mem)) vname k
-| `(nr_expr| $lhsExpr:nr_expr [ $idxExpr:nr_expr ]) => do
-  mkExpr idxExpr none fun idx => do
-    mkExpr lhsExpr none fun arr => do
-      wrapSimple (←`(Expr.readArray $arr $idx)) vname k
-| `(nr_expr| $lhsExpr:nr_expr [[ $idxExpr:nr_expr ]]) => do
-  mkExpr idxExpr none fun idx => do
-    mkExpr lhsExpr none fun arr => do
-      wrapSimple (←`(Expr.readSlice $arr $idx)) vname k
+| `(nr_expr| ( $_:nr_expr as $_:nr_ident  < $_,* > ) . $_:ident)
+| `(nr_expr| $_:nr_expr . $_:num)
+| `(nr_expr| $_:nr_expr [ $_:nr_expr ])
+| `(nr_expr| $_:nr_expr [[ $_:nr_expr ]]) => do
+  let expr := getLeftmostExpr e
+  let (lens, args) ← mkLens e ArgSet.empty
+  mkExpr expr none fun exprVal => do
+    mkArgs args.args fun vals => do
+      wrapSimple (←`(Expr.getLens $exprVal $(←args.wrap vals lens))) vname k
 | _ => throwUnsupportedSyntax
 
 end

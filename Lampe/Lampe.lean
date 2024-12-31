@@ -320,7 +320,7 @@ nr_def tuple_lens<>() -> Field {
 example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [tuple_lens]
   steps
-  simp_all
+  aesop
 
 nr_def struct_lens<>() -> Field {
   let mut p = `(Pair<Field>{ 1 : Field, 2 : Field}, 3 : Field);
@@ -331,8 +331,7 @@ nr_def struct_lens<>() -> Field {
 example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [struct_lens]
   steps
-  simp_all
-  rfl
+  aesop
 
 nr_def array_lens<>() -> Field {
   let mut p = `([1 : Field, 2 : Field], 3 : Field);
@@ -354,5 +353,6 @@ nr_def slice_lens<>() -> Field {
 
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [slice_lens]
-  steps
+  steps <;> tauto
+  simp_all
   stop _

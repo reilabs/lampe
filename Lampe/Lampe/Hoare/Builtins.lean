@@ -525,11 +525,11 @@ theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
       apply SLP.ent_star_top
       tauto
 
-theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s : Tp.denote p tp₁} :
+theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
     STHoare p Γ
     ⟦⟧
     (.call h![] [tp₁] tp₂ (.builtin $ .getLens lens) h![s])
-    (fun v => ⟦some v = lens.get s⟧) := by
+    (fun v => ⟦lens.get s = some v⟧) := by
   unfold STHoare THoare
   intros H st h
   constructor
