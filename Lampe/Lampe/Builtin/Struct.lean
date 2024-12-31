@@ -18,21 +18,9 @@ example : indexTpl (p := p) exampleTuple Member.head.tail = 4 := rfl
 example : indexTpl (p := p) exampleTuple Member.head.tail.tail = 5 := rfl
 
 @[reducible]
-def listRep (rep : Tp → Type _) : List Tp → Type := fun l => match l with
-| tp :: tps => (rep tp) × (listRep rep tps)
-| [] => Unit
-
-@[reducible]
-def HList.toProd (hList : HList rep tps) : (listRep rep) tps := match hList with
+def HList.toTuple (hList : HList (Tp.denote p) tps) (name : Option String) : Tp.denote p $ .tuple name tps  := match hList with
 | .nil => ()
-| .cons arg args => ⟨arg, HList.toProd args⟩
-
-lemma listRep_tp_denote_is_tp_denote_tuple :
-  listRep (Tp.denote p) tps = Tp.denote p (.tuple name tps) := by
-  induction tps <;> {
-    unfold listRep Tp.denoteArgs
-    tauto
-  }
+| .cons arg args => ⟨arg, HList.toTuple args name⟩
 
 @[reducible]
 def replaceTuple' (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) (v : Tp.denote p tp) : Tp.denoteArgs p tps := match tps with
@@ -54,8 +42,8 @@ Defines the builtin tuple constructor.
 -/
 def mkTuple := newGenericPureBuiltin
   (fun (name, fieldTps) => ⟨fieldTps, (.tuple name fieldTps)⟩)
-  (fun _ fieldExprs => ⟨True,
-    fun _ => listRep_tp_denote_is_tp_denote_tuple ▸ HList.toProd fieldExprs⟩)
+  (fun (name, _) fieldExprs => ⟨True,
+    fun _ => HList.toTuple fieldExprs name⟩)
 
 /--
 Defines the indexing/projection of a tuple with a `Member`.

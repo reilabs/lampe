@@ -571,8 +571,6 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply ref_intro
     | apply readRef_intro
     | apply writeRef_intro
-    | apply readLens_intro
-    | apply modifyLens_intro
     -- array
     | apply mkArray_intro
     | apply arrayLen_intro
@@ -620,6 +618,10 @@ macro "stephelper1" : tactic => `(tactic|(
     -- struct
     | apply mkTuple_intro
     | apply projectTuple_intro
+    -- lens
+    | apply readLens_intro
+    | apply modifyLens_intro
+    | apply getLens_intro
   )
 ))
 
@@ -638,8 +640,6 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left ref_intro
     | apply consequence_frame_left readRef_intro
     | apply consequence_frame_left writeRef_intro
-    | apply consequence_frame_left readLens_intro
-    | apply consequence_frame_left modifyLens_intro
     -- array
     | apply consequence_frame_left mkArray_intro
     | apply consequence_frame_left arrayLen_intro
@@ -687,6 +687,10 @@ macro "stephelper2" : tactic => `(tactic|(
     -- struct
     | apply consequence_frame_left mkTuple_intro
     | apply consequence_frame_left projectTuple_intro
+    -- lens
+    | apply consequence_frame_left readLens_intro
+    | apply consequence_frame_left modifyLens_intro
+    | apply consequence_frame_left getLens_intro
   )
   repeat sl
 ))
@@ -708,8 +712,6 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top ref_intro
     | apply ramified_frame_top readRef_intro
     | apply ramified_frame_top writeRef_intro
-    | apply ramified_frame_top readLens_intro
-    | apply ramified_frame_top modifyLens_intro
     -- array
     | apply ramified_frame_top mkArray_intro
     | apply ramified_frame_top arrayLen_intro
@@ -758,6 +760,10 @@ macro "stephelper3" : tactic => `(tactic|(
     -- struct
     | apply ramified_frame_top mkTuple_intro
     | apply ramified_frame_top projectTuple_intro
+    -- lens
+    | apply ramified_frame_top readLens_intro
+    | apply ramified_frame_top modifyLens_intro
+    | apply ramified_frame_top getLens_intro
   )
   repeat sl
 ))

@@ -11,6 +11,7 @@ import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 import Lampe.Builtin.Cast
+import Lampe.Builtin.Lens
 
 namespace Lampe.STHoare
 
@@ -455,6 +456,18 @@ theorem writeRef_intro :
     simp [Finmap.union_singleton]
   . simp_all
 
+-- Struct/tuple
+
+theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) fieldExprs (a := (name, fieldTps)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+-- Lens
+
 theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
     STHoare p Γ
     [r ↦ ⟨tp₁, s⟩]
@@ -512,15 +525,21 @@ theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
       apply SLP.ent_star_top
       tauto
 
--- Struct/tuple
-
-theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) fieldExprs (a := (name, fieldTps)) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
+theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s : Tp.denote p tp₁} :
+    STHoare p Γ
+    ⟦⟧
+    (.call h![] [tp₁] tp₂ (.builtin $ .getLens lens) h![s])
+    (fun v => ⟦some v = lens.get s⟧) := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  cases hl : (lens.get s)
+  . apply Builtin.getLensOmni.err <;> tauto
+  . apply Builtin.getLensOmni.ok <;> tauto
+    . unfold mapToValHeapCondition
+      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
+      apply SLP.ent_star_top at h
+      simp_all
 
 -- Misc
 

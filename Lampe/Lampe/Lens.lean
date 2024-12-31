@@ -6,27 +6,27 @@ import Lampe.Builtin.Slice
 namespace Lampe
 
 inductive Access (rep : Tp → Type _) : Tp → Tp → Type _
-| tpl : (mem : Builtin.Member tp tps) → Access rep (.tuple name tps) tp
-| arr : (idx : rep $ .u 32) → Access rep (.array tp n) tp
+| tuple : (mem : Builtin.Member tp tps) → Access rep (.tuple name tps) tp
+| array : (idx : rep $ .u 32) → Access rep (.array tp n) tp
 | slice : (idx : rep $ .u 32) → Access rep (.slice tp) tp
 
 def Access.get (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) : Option $ Tp.denote p tp₂ := match acc with
-| .tpl mem => Builtin.indexTpl s mem
-| .arr (n := n) idx => if h : idx.toNat < n.toNat then s.get ⟨idx.toNat, h⟩ else none
+| .tuple mem => Builtin.indexTpl s mem
+| .array (n := n) idx => if h : idx.toNat < n.toNat then s.get ⟨idx.toNat, h⟩ else none
 | .slice idx => if h : idx.toNat < s.length then s.get ⟨idx.toNat, h⟩ else none
 
 def Access.modify (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Option $ Tp.denote p tp₁ := match acc with
-| .tpl mem => Builtin.replaceTuple' s mem v'
-| .arr (n := n) idx => if h : idx.toNat < n.toNat then Builtin.replaceArray' s ⟨idx.toNat, h⟩ v' else none
+| .tuple mem => Builtin.replaceTuple' s mem v'
+| .array (n := n) idx => if h : idx.toNat < n.toNat then Builtin.replaceArray' s ⟨idx.toNat, h⟩ v' else none
 | .slice idx => if h : idx.toNat < s.length then Builtin.replaceSlice' s ⟨idx.toNat, h⟩ v' else none
 
 @[simp]
 theorem Access.modify_get {acc : Access (Tp.denote p) tp₁ tp₂} {h : acc.modify s v' = some s'} :
   acc.get s' = v' := by
   cases acc <;> simp_all only [Access.get, Access.modify]
-  case tpl =>
+  case tuple =>
     aesop
-  case arr =>
+  case array =>
     rename_i n idx
     cases em (idx.toNat < n.toNat) <;> aesop
   case slice =>

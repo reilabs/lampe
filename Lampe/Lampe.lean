@@ -342,8 +342,9 @@ nr_def array_lens<>() -> Field {
 
 example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [array_lens]
+  apply STHoare.letIn_intro
   steps
-  all_goals sorry
+  stop _
 
 nr_def slice_lens<>() -> Field {
   let mut p = `(&[1 : Field, 2 : Field], 3 : Field);
@@ -354,4 +355,4 @@ nr_def slice_lens<>() -> Field {
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [slice_lens]
   steps
-  all_goals sorry
+  stop _

@@ -13,6 +13,7 @@ import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
+import Lampe.Builtin.Lens
 
 namespace Lampe
 
@@ -241,17 +242,17 @@ partial def mkLens [MonadSyntax m] (expr : TSyntax `nr_expr) (a : ArgSet) : m $ 
 | `(nr_expr| ( $structExpr:nr_expr as $structName  < $structGens,* > ) . $fieldName) => do
   let mem ← mkStructMember structName structGens.getElems.toList fieldName
   let (lhsLens, a') ← mkLens structExpr a
-  let lens' ← `(Lens.cons $lhsLens (Access.tpl $mem))
+  let lens' ← `(Lens.cons $lhsLens (Access.tuple $mem))
   pure (lens', a')
 | `(nr_expr| $tupleExpr:nr_expr . $idx) => do
   let mem ← mkTupleMember idx.getNat
   let (lhsLens, a') ← mkLens tupleExpr a
-  let lens' ← `(Lens.cons $lhsLens (Access.tpl $mem))
+  let lens' ← `(Lens.cons $lhsLens (Access.tuple $mem))
   pure (lens', a')
 | `(nr_expr| $arrayExpr:nr_expr [ $idxExpr:nr_expr ]) => do
   let (idx, a') := a.next idxExpr
   let (lhsLens, a'') ← mkLens arrayExpr a'
-  let lens' ← `(Lens.cons $lhsLens (Access.arr $idx))
+  let lens' ← `(Lens.cons $lhsLens (Access.array $idx))
   pure (lens', a'')
 | `(nr_expr| $sliceExpr:nr_expr [[ $idxExpr:nr_expr ]]) => do
   let (idx, a') := a.next idxExpr
