@@ -91,6 +91,29 @@ theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.lit .bool 1) fun v =>
   apply SLP.ent_star_top
   assumption
 
+theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.lit .field n) fun v => v = n := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.lit .bool 0) fun v => v = false := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.lit .bool 1) fun v => v = true := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
 
 theorem ref_intro' {p} {x : Tp.denote p tp} {Γ P}:
     STHoare p Γ P (.ref x) fun v => [v ↦ ⟨tp, x⟩] ⋆ P := by
@@ -568,6 +591,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply callTrait_intro
     | apply callDecl_intro
     -- memory
+    -- memory
     | apply var_intro
     | apply ref_intro
     | apply readRef_intro
@@ -586,7 +610,6 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply slicePushBack_intro
     -- equality
     | apply unitEq_intro
-    | apply bEq_intro
     | apply bEq_intro
     | apply fEq_intro
     | apply uEq_intro

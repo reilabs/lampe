@@ -60,14 +60,12 @@ def mkTuple := newGenericPureBuiltin
 /--
 Defines the indexing/projection of a tuple with a `Member`.
 -/
+/--
+Defines the indexing/projection of a tuple with a `Member`.
+-/
 def projectTuple (mem : Member outTp fieldTps) := newGenericPureBuiltin
   (fun name => ⟨[.tuple name fieldTps], outTp⟩)
   (fun _ h![tpl] => ⟨True, fun _ => indexTpl tpl mem⟩)
 
-
-def replaceTuple (mem : Member tp tps) := newGenericPureBuiltin
-  (fun name => ⟨[.tuple name tps, tp], (.tuple name tps)⟩)
-  (fun _ h![tpl, v] => ⟨True,
-    fun _ => replaceTuple' tpl mem v⟩)
 
 end Lampe.Builtin

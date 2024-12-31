@@ -117,4 +117,10 @@ def arrayAsSlice := newGenericPureBuiltin
   (fun (_, _) h![a] => ⟨True,
     fun _ => a.toList⟩)
 
+def replaceArray := newGenericPureBuiltin
+  (fun (tp, n) => ⟨[.array tp n, .u 32, tp], (.array tp n)⟩)
+  (fun (_, n) h![arr, idx, v] => ⟨idx.toNat < n.toNat,
+    fun h => replaceArray' arr ⟨idx.toNat, h⟩ v⟩)
+
+
 end Lampe.Builtin

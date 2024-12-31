@@ -357,6 +357,10 @@ theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by taut
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
+theorem replaceSlice_intro : STHoarePureBuiltin p Γ Builtin.replaceSlice (by tauto) h![sl, idx, v] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
+  tauto
+
 -- String
 
 theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto) h![s] := by
@@ -520,6 +524,10 @@ theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) field
 
 theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
   apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem replaceTuple_intro {mem : Member tp tps} : STHoarePureBuiltin p Γ (Builtin.replaceTuple mem) (by tauto) h![tpl, v] := by
+  apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 -- Misc
