@@ -13,25 +13,29 @@ inductive Access (rep : Tp → Type _) : Tp → Tp → Type _
 def Access.get (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) : Option $ Tp.denote p tp₂ := match acc with
 | .tpl mem => Builtin.indexTpl s mem
 | .arr (n := n) idx => if h : idx.toNat < n.toNat then s.get ⟨idx.toNat, h⟩ else none
-| .slice idx => s.get? idx.toNat
+| .slice idx => if h : idx.toNat < s.length then s.get ⟨idx.toNat, h⟩ else none
 
 def Access.modify (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Option $ Tp.denote p tp₁ := match acc with
 | .tpl mem => Builtin.replaceTuple' s mem v'
 | .arr (n := n) idx => if h : idx.toNat < n.toNat then Builtin.replaceArray' s ⟨idx.toNat, h⟩ v' else none
-| .slice idx => if idx.toNat < s.length then Builtin.replaceSlice' s idx.toNat v' else none
+| .slice idx => if h : idx.toNat < s.length then Builtin.replaceSlice' s ⟨idx.toNat, h⟩ v' else none
 
 @[simp]
 theorem Access.modify_get {acc : Access (Tp.denote p) tp₁ tp₂} {h : acc.modify s v' = some s'} :
   acc.get s' = v' := by
   cases acc <;> simp_all only [Access.get, Access.modify]
-  . aesop
-  . rename_i n idx
+  case tpl =>
+    aesop
+  case arr =>
+    rename_i n idx
     cases em (idx.toNat < n.toNat) <;> aesop
-  . rename_i idx
+  case slice =>
+    rename_i idx
     cases em (idx.toNat < s.length)
-    . simp_all only [ite_true, Option.some.injEq]
-      rw [←h]
-      apply Builtin.index_replaced_slice (by tauto)
+    . simp_all only [reduceDIte, Option.some.injEq, List.get_eq_getElem, dite_some_none_eq_some]
+      subst h
+      simp_all only [List.length_modifyNth, exists_true_left]
+      apply Builtin.index_replaced_slice
     . aesop
 
 inductive Lens (rep : Tp → Type _) : Tp → Tp → Type _

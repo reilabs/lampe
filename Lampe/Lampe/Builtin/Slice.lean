@@ -3,14 +3,18 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 @[reducible]
-def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Nat) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
+def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Fin s.length) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
   List.modifyNth (fun _ => v) i s
 
 @[simp]
-theorem index_replaced_slice (hl : idx < s.length) :
-    (replaceSlice' s idx v).get? idx = some v := by
-  simp only [List.get?_eq_getElem?, List.getElem?_modifyNth_eq, Option.map_eq_some]
-  simp_all
+lemma replaceSlice_length_eq_length :
+    (replaceSlice' s i v).length = s.length := by
+  simp_all [List.length_modifyNth]
+
+@[simp]
+theorem index_replaced_slice :
+    (replaceSlice' s idx v).get ⟨idx.val, h⟩ = v := by
+  simp_all [List.modifyNth_eq_set_get?, List.getElem_eq_iff]
 
 /--
 Defines the builtin slice constructor.
@@ -123,10 +127,5 @@ def sliceRemove := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp, .u 32], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
-
-def replaceSlice := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp, .u 32, tp], (.slice tp)⟩)
-  (fun _ h![sl, idx, v] => ⟨True,
-    fun _ => replaceSlice' sl idx.toNat v⟩)
 
 end Lampe.Builtin

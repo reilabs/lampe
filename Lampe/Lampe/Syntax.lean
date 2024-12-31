@@ -181,7 +181,7 @@ def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp�
   Expr.call h![] _ .unit (.builtin $ .modifyLens (rep := rep) (tp₁ := tp₁) (tp₂ := tp₂) lens) h![r, v]
 
 @[reducible]
-def Expr.readLens (r : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
+def Expr.readLens (r : rep $ .ref tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
   Expr.call h![] _ tp₂ (.builtin $ .readLens lens) h![r]
 
 structure DesugarState where

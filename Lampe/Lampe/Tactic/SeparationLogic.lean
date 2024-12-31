@@ -567,7 +567,6 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply callTrait_intro
     | apply callDecl_intro
     -- memory
-    -- memory
     | apply var_intro
     | apply ref_intro
     | apply readRef_intro
