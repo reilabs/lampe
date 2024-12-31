@@ -91,30 +91,6 @@ theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.lit .bool 1) fun v =>
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.lit .field n) fun v => v = n := by
-  unfold STHoare THoare
-  intro H st hp
-  constructor
-  simp only
-  apply SLP.ent_star_top
-  assumption
-
-theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.lit .bool 0) fun v => v = false := by
-  unfold STHoare THoare
-  intro H st hp
-  constructor
-  simp only
-  apply SLP.ent_star_top
-  assumption
-
-theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.lit .bool 1) fun v => v = true := by
-  unfold STHoare THoare
-  intro H st hp
-  constructor
-  simp only
-  apply SLP.ent_star_top
-  assumption
-
 theorem ref_intro' {p} {x : Tp.denote p tp} {Γ P}:
     STHoare p Γ P (.ref x) fun v => [v ↦ ⟨tp, x⟩] ⋆ P := by
   apply ramified_frame_top
