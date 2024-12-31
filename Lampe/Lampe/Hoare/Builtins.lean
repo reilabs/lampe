@@ -143,10 +143,6 @@ theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by ta
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem replaceArray_intro : STHoarePureBuiltin p Γ Builtin.replaceArray (by tauto) h![arr, idx, v] (a := (tp, n)) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
 -- BigInt
 
 theorem bigIntEq_intro : STHoarePureBuiltin p Γ Builtin.bigIntEq (by tauto) h![a, b] (a := ()) := by
@@ -361,10 +357,6 @@ theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by taut
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem replaceSlice_intro : STHoarePureBuiltin p Γ Builtin.replaceSlice (by tauto) h![sl, idx, v] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
 -- String
 
 theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto) h![s] := by
@@ -483,15 +475,15 @@ theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
       apply SLP.ent_star_top at h
       simp_all
 
- theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s s' : Tp.denote p tp₁} :
+ theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s : Tp.denote p tp₁} {v : Tp.denote p tp₂} :
     STHoare p Γ
     [r ↦ ⟨tp₁, s⟩]
-    (.call h![] [tp₁.ref, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v'])
-    (fun _ => ∃∃s', ⟦lens.modify s v' = some s'⟧ ⋆ [r ↦ ⟨tp₁, s'⟩]) := by
+    (.call h![] [tp₁.ref, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v])
+    (fun _ => ∃∃h, [r ↦ ⟨tp₁, lens.modify s v |>.get h⟩]) := by
   unfold STHoare THoare
   intros H st h
   constructor
-  cases hl : (lens.modify s v')
+  cases hl : (lens.modify s v)
   . apply Builtin.modifyLensOmni.err <;> tauto
     unfold SLP.star State.valSingleton at *
     aesop
@@ -516,9 +508,7 @@ theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
         rw [←Finmap.union_assoc, ←Finmap.insert_eq_singleton_union]
         simp_all
       apply And.intro
-      . simp only [SLP.exists']
-        exists s'
-        simp only [SLP.true_star]
+      . simp_all [SLP.exists']
       apply SLP.ent_star_top
       tauto
 
@@ -530,10 +520,6 @@ theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) field
 
 theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
   apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem replaceTuple_intro {mem : Builtin.Member tp tps} : STHoarePureBuiltin p Γ (Builtin.replaceTuple mem) (by tauto) h![tpl, v] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 -- Misc

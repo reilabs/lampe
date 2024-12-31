@@ -177,18 +177,6 @@ def Expr.readSlice (sl : rep $ .slice tp) (idx : rep $ .u s) : Expr rep tp :=
   Expr.call h![] _ tp (.builtin .sliceIndex) h![sl, idx]
 
 @[reducible]
-def Expr.replaceTuple (tpl : rep $ .tuple name tps) (mem : Builtin.Member tp tps) (v : rep tp) : Expr rep (.tuple name tps) :=
-  Expr.call h![] _ (.tuple name tps) (.builtin $ .replaceTuple mem) h![tpl, v]
-
-@[reducible]
-def Expr.replaceArray (arr : rep $ .array tp n) (idx : rep $ .u s) (v : rep tp) : Expr rep (.array tp n) :=
-  Expr.call h![] _ (.array tp n) (.builtin .replaceArray) h![arr, idx, v]
-
-@[reducible]
-def Expr.replaceSlice (sl : rep $ .slice tp) (idx : rep $ .u s) (v : rep tp) : Expr rep (.slice tp) :=
-  Expr.call h![] _ (.slice tp) (.builtin .replaceSlice) h![sl, idx, v]
-
-@[reducible]
 def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
   Expr.call h![] _ .unit (.builtin $ .modifyLens (rep := rep) (tp₁ := tp₁) (tp₂ := tp₂) lens) h![r, v]
 
@@ -322,9 +310,6 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkExpr hi none fun hi => do
     let body ← mkExpr body none (fun x => `(Expr.var $x))
     wrapSimple (←`(Expr.loop $lo $hi fun $i => $body)) vname k
-| `(nr_expr| $lhs:ident = $rhs:nr_expr) => do
-  mkExpr rhs none fun rhs => do
-    wrapSimple (←`(Expr.writeRef $lhs $rhs)) vname k
 | `(nr_expr| $lhs:nr_expr = $rhs:nr_expr) => do
   let r ← getLeftmostRef lhs
   let (lens, args) ← mkLens lhs ArgSet.empty

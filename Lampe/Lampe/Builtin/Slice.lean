@@ -1,9 +1,16 @@
 import Lampe.Builtin.Basic
+
 namespace Lampe.Builtin
 
 @[reducible]
 def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Nat) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
-  s.eraseIdx i |>.insertNth i v
+  List.modifyNth (fun _ => v) i s
+
+@[simp]
+theorem index_replaced_slice (hl : idx < s.length) :
+    (replaceSlice' s idx v).get? idx = some v := by
+  simp only [List.get?_eq_getElem?, List.getElem?_modifyNth_eq, Option.map_eq_some]
+  simp_all
 
 /--
 Defines the builtin slice constructor.

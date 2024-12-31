@@ -579,13 +579,11 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply arrayLen_intro
     | apply arrayIndex_intro
     | apply arrayAsSlice_intro
-    | apply replaceArray_intro
     -- slice
     | apply mkSlice_intro
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
-    | apply replaceSlice_intro
     -- equality
     | apply unitEq_intro
     | apply bEq_intro
@@ -624,7 +622,6 @@ macro "stephelper1" : tactic => `(tactic|(
     -- struct
     | apply mkTuple_intro
     | apply projectTuple_intro
-    | apply replaceTuple_intro
   )
 ))
 
@@ -644,19 +641,17 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left readRef_intro
     | apply consequence_frame_left writeRef_intro
     | apply consequence_frame_left readLens_intro
-    -- | apply consequence_frame_left modifyLens_intro
+    | apply consequence_frame_left modifyLens_intro
     -- array
     | apply consequence_frame_left mkArray_intro
     | apply consequence_frame_left arrayLen_intro
     | apply consequence_frame_left arrayIndex_intro
     | apply consequence_frame_left arrayAsSlice_intro
-    | apply consequence_frame_left replaceArray_intro
     -- slice
     | apply consequence_frame_left mkSlice_intro
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
-    | apply consequence_frame_left replaceSlice_intro
     -- equality
     | apply consequence_frame_left unitEq_intro
     | apply consequence_frame_left bEq_intro
@@ -694,7 +689,6 @@ macro "stephelper2" : tactic => `(tactic|(
     -- struct
     | apply consequence_frame_left mkTuple_intro
     | apply consequence_frame_left projectTuple_intro
-    | apply consequence_frame_left replaceTuple_intro
   )
   repeat sl
 ))
@@ -723,13 +717,11 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top arrayLen_intro
     | apply ramified_frame_top arrayIndex_intro
     | apply ramified_frame_top arrayAsSlice_intro
-    | apply ramified_frame_top replaceArray_intro
     -- slice
     | apply ramified_frame_top mkSlice_intro
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
-    | apply ramified_frame_top replaceSlice_intro
     -- equality
     | apply ramified_frame_top unitEq_intro
     | apply ramified_frame_top bEq_intro
@@ -768,7 +760,6 @@ macro "stephelper3" : tactic => `(tactic|(
     -- struct
     | apply ramified_frame_top mkTuple_intro
     | apply ramified_frame_top projectTuple_intro
-    | apply ramified_frame_top replaceTuple_intro
   )
   repeat sl
 ))

@@ -317,19 +317,22 @@ nr_def tuple_lens<>() -> Field {
   p .0 .1
 }
 
-theorem SLP.lift_and [LawfulHeap α] : (⟦P₁⟧ ⋆ ⟦P₂⟧ : SLP α) = (⟦P₁ ∧ P₂⟧ : SLP α) := by
-  unfold SLP.lift SLP.star
-  funext st
-  aesop
-
 example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [tuple_lens]
-  steps <;> tauto
-  unfold typeof at *
-  unfold SLP.wand SLP.entails
+  steps
   simp_all
-  intros
-  all_goals sorry
+
+nr_def struct_lens<>() -> Field {
+  let mut p = `(Pair<Field>{ 1 : Field, 2 : Field}, 3 : Field);
+  (p .0 as Pair<Field>).b = 3 : Field;
+  (p .0 as Pair<Field>).b
+}
+
+example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [struct_lens]
+  steps
+  simp_all
+  rfl
 
 nr_def array_lens<>() -> Field {
   let mut p = `([1 : Field, 2 : Field], 3 : Field);
@@ -339,6 +342,7 @@ nr_def array_lens<>() -> Field {
 
 example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [array_lens]
+  steps
   all_goals sorry
 
 nr_def slice_lens<>() -> Field {
@@ -349,20 +353,5 @@ nr_def slice_lens<>() -> Field {
 
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [slice_lens]
-  all_goals sorry
-
-nr_def struct_lens<>() -> Field {
-  let mut p = `(Pair<Field>{ 1 : Field, 2 : Field}, 3 : Field);
-  (p .0 as Pair<Field>).b = 3 : Field;
-  (p .0 as Pair<Field>).b
-}
-
-example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
-  simp only [struct_lens]
-  steps <;> tauto
-  all_goals sorry
-
-example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
-  simp only [slice_lens]
-  steps <;> tauto
+  steps
   all_goals sorry

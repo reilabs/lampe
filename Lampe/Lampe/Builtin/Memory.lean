@@ -1,6 +1,13 @@
 import Lampe.Builtin.Basic
 import Lampe.Lens
 
+lemma Finmap.insert_mem_disjoint [DecidableEq α] {m₁ m₂ : Finmap fun _ : α => β} {hd : m₁.Disjoint m₂} {he : ref ∈ m₁} :
+  (m₁.insert ref v).Disjoint m₂ := by
+  rw [Finmap.insert_eq_singleton_union]
+  have _ : ref ∉ m₂ := by aesop
+  simp only [Finmap.disjoint_union_left]
+  aesop
+
 namespace Lampe.Builtin
 
 inductive refOmni : Omni where
