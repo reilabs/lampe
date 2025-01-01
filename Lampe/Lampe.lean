@@ -1,6 +1,15 @@
 import Lampe.Basic
 open Lampe
 
+nr_def simple_fn<>() -> λ(Field, Field) → Field {
+  let x = %(Field as Pair<Field>)::hey<Unit>;
+  → x(1 : Field, 2 : Field)
+}
+
+example : STHoare p Γ ⟦⟧ (simple_fn.fn.body _ h![] |>.body h![]) fun v => v = x := by
+  simp only [simple_fn]
+  steps
+
 nr_def simple_muts<>(x : Field) -> Field {
   let mut y = x;
   let mut z = x;

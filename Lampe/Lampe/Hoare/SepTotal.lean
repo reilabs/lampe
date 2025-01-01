@@ -442,19 +442,27 @@ theorem callDecl'_intro
    apply Omni.callDecl' <;> tauto
 
 theorem callTrait'_intro {impl}
-    (h_trait : TraitResolution Γ ⟨⟨traitName, kinds, generics⟩, selfTp⟩ impl)
+    (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impl)
     (h_fn : (fnName, fn) ∈ impl)
     (hkc : fn.generics = kinds)
     (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp)
     (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
     STHoare p Γ H
-      (Expr.callUni argTps outTp (.trait selfTp traitName fnName kinds generics) args)
+      (Expr.callUni argTps outTp (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics) args)
       Q := by
   unfold STHoare THoare
   intros
   apply Omni.callTrait' <;> try assumption
   apply_assumption
+  assumption
+
+theorem fn_intro : STHoare p Γ ⟦⟧ (.fn argTps outTp r) fun v => v = r := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
   assumption
 
 end Lampe.STHoare

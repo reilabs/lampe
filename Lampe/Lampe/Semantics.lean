@@ -40,6 +40,7 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
 | litTrue {Q} : Q (some (st, true)) → Omni Γ st (.lit .bool 1) Q
 | litRef {Q} : Q (some (st, ⟨r⟩)) → Omni Γ st (.lit (.ref tp) r) Q
 | litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.lit (.u s) n) Q
+| fn {Q} : Q (some (st, r)) → Omni Γ st (.fn _ _ r) Q
 | var {Q} : Q (some (st, v)) → Omni Γ st (.var v) Q
 | skip {Q} : Q (some (st, ())) → Omni Γ st (.skip) Q
 | iteTrue {mainBranch elseBranch} :
@@ -65,13 +66,13 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
     Omni Γ st (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q →
     Omni Γ st (Expr.callUni argTps outTp (.decl fnName kinds generics) args) Q
 | callTrait' {impl} :
-    TraitResolution Γ ⟨⟨traitName, kinds, generics⟩, selfTp⟩ impl →
+    TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impl →
     (fnName, fn) ∈ impl →
     (hkc : fn.generics = kinds) →
     (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps) →
     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp) →
     Omni Γ st (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q →
-    Omni Γ st (Expr.callUni argTps outTp (.trait selfTp traitName fnName kinds generics) args) Q
+    Omni Γ st (Expr.callUni argTps outTp (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics) args) Q
 | callLambda {lambdas : Lambdas p} :
   lambdas.lookup ref = some ⟨argTps, outTp, lambdaBody⟩ →
   Omni Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
@@ -135,11 +136,12 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
   intro h
   induction h with
   | litField hq
-  | skip hq
   | litFalse hq
   | litTrue hq
   | litU hq
   | litRef hq
+  | skip hq
+  | fn
   | var hq =>
     intro
     constructor
@@ -161,17 +163,17 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     · simp_all
   | callDecl' =>
     intro
-    constructor
+    apply Omni.callDecl'
     all_goals (try assumption)
     tauto
   | callTrait' =>
     intro
-    constructor
+    apply Omni.callTrait'
     all_goals (try assumption)
     tauto
   | callLambda' h _ _ =>
     intro hd
-    constructor <;> try tauto
+    apply Omni.callLambda' <;> try tauto
     simp_all
     simp only [LawfulHeap.disjoint] at hd
     simp only [Finmap.lookup_union_left (Finmap.mem_of_lookup_eq_some h)]

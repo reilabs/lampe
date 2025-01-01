@@ -552,6 +552,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litField_intro
     | apply Lampe.STHoare.litTrue_intro
     | apply Lampe.STHoare.litFalse_intro
+    | apply fn_intro
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
@@ -629,6 +630,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left Lampe.STHoare.litField_intro
     | apply consequence_frame_left Lampe.STHoare.litTrue_intro
     | apply consequence_frame_left Lampe.STHoare.litFalse_intro
+    | apply consequence_frame_left fn_intro
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left assert_intro
     | apply consequence_frame_left lam_intro
@@ -699,6 +701,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top Lampe.STHoare.litField_intro
     | apply ramified_frame_top Lampe.STHoare.litTrue_intro
     | apply ramified_frame_top Lampe.STHoare.litFalse_intro
+    | apply ramified_frame_top fn_intro
     | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
