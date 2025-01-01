@@ -83,15 +83,6 @@ def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErr
    `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
 
 @[reducible]
-def typeof {rep : Tp → Type _} (_ : rep tp) := tp
-
-@[reducible]
-def typeofRef {rep : Tp → Type _} (_ : rep $ Tp.ref tp) := tp
-
-@[reducible]
-def repof {rep : Tp → Type _} (_ : rep tp) := rep
-
-@[reducible]
 def tupleFields (tp : Tp) := match tp with
 | Tp.tuple _ fields => fields
 | _ => []
@@ -164,6 +155,10 @@ def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
 @[reducible]
 def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.array tp n) :=
   Expr.call h![] _ (.array tp n) (.builtin $ .mkArray n) vals
+
+@[reducible]
+def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=
+  Expr.call h![] tps (.tuple name tps) (.builtin .mkTuple) args
 
 @[reducible]
 def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
@@ -367,15 +362,13 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     wrapSimple (←`(@Expr.call _ $callGenKinds $callGenVals $(←mkListLit argTps) $(←mkNrType tp)
       (.trait ⟨⟨⟨$(Syntax.mkStrLit traitName), $traitGenKinds, $traitGenVals⟩, $(←mkNrType selfTp)⟩, $(Syntax.mkStrLit methodName)⟩) $(←mkHListLit argVals))) vname k
 | `(nr_expr| $structName:nr_ident < $structGenVals,* > { $args,* }) => do
-   let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
-   let paramTpsSyn ← `(Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) $structGenValsSyn)
    let structName ← mkNrIdent structName
+   let fieldTps ← `(Struct.fieldTypes $(mkStructDefIdent structName) $(←mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)))
    mkArgs args.getElems.toList fun argVals => do
-     wrapSimple (←`(Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $paramTpsSyn) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
+     wrapSimple (←`(Expr.mkTuple (tps := $fieldTps) (some $(Syntax.mkStrLit $ structName)) $(←mkHListLit argVals))) vname k
 | `(nr_expr| `( $args,* )) => do
   mkArgs args.getElems.toList fun argVals => do
-    let argTps ← argVals.mapM fun arg => `(typeof $arg)
-    wrapSimple (←`(Expr.call h![] _ (.tuple none $(←mkListLit argTps)) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
+    wrapSimple (←`(Expr.mkTuple none $(←mkHListLit argVals))) vname k
 | `(nr_expr| ( $_:nr_expr as $_:nr_ident  < $_,* > ) . $_:ident)
 | `(nr_expr| $_:nr_expr . $_:num)
 | `(nr_expr| $_:nr_expr [ $_:nr_expr ])

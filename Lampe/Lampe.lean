@@ -341,9 +341,13 @@ nr_def array_lens<>() -> Field {
 
 example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [array_lens]
-  apply STHoare.letIn_intro
   steps
-  stop _
+  rfl
+  on_goal 3 => exact (⟨[1, 3], (by rfl)⟩, 3)
+  . simp_all
+    rfl
+  . simp_all
+    aesop
 
 nr_def slice_lens<>() -> Field {
   let mut p = `(&[1 : Field, 2 : Field], 3 : Field);
@@ -353,6 +357,9 @@ nr_def slice_lens<>() -> Field {
 
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [slice_lens]
-  steps <;> tauto
-  simp_all
-  stop _
+  steps
+  all_goals try exact ([1, 3], 3)
+  all_goals try tauto
+  . simp_all
+    rfl
+  . simp_all [Builtin.indexTpl]

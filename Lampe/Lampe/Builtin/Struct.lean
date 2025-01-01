@@ -1,4 +1,5 @@
 import Lampe.Builtin.Basic
+
 namespace Lampe.Builtin
 
 inductive Member : Tp → List Tp → Type where
@@ -16,11 +17,6 @@ def exampleTuple {p} : Tp.denoteArgs p [.bool, .field, .field] := (true, 4, 5)
 example : indexTpl (p := p) exampleTuple Member.head = true := rfl
 example : indexTpl (p := p) exampleTuple Member.head.tail = 4 := rfl
 example : indexTpl (p := p) exampleTuple Member.head.tail.tail = 5 := rfl
-
-@[reducible]
-def HList.toTuple (hList : HList (Tp.denote p) tps) (name : Option String) : Tp.denote p $ .tuple name tps  := match hList with
-| .nil => ()
-| .cons arg args => ⟨arg, HList.toTuple args name⟩
 
 @[reducible]
 def replaceTuple' (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) (v : Tp.denote p tp) : Tp.denoteArgs p tps := match tps with
