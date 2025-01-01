@@ -53,6 +53,25 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   (∀v st, Q₁ (some (st, v)) → Omni Γ st (b v) Q) →
   (Q₁ none → Q none) →
   Omni Γ st (.letIn e b) Q
+| callLambda' {lambdas : Lambdas p} :
+  lambdas.lookup ref = some ⟨argTps, outTp, lambdaBody⟩ →
+  Omni Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
+  Omni Γ ⟨vh, lambdas⟩ (Expr.callUni argTps outTp (.lambda ref) args) Q
+| callDecl':
+    (fnName, fn) ∈ Γ.functions →
+    (hkc : fn.generics = kinds) →
+    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps) →
+    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp) →
+    Omni Γ st (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q →
+    Omni Γ st (Expr.callUni argTps outTp (.decl fnName kinds generics) args) Q
+| callTrait' {impl} :
+    TraitResolution Γ ⟨⟨traitName, kinds, generics⟩, selfTp⟩ impl →
+    (fnName, fn) ∈ impl →
+    (hkc : fn.generics = kinds) →
+    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps) →
+    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp) →
+    Omni Γ st (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q →
+    Omni Γ st (Expr.callUni argTps outTp (.trait selfTp traitName fnName kinds generics) args) Q
 | callLambda {lambdas : Lambdas p} :
   lambdas.lookup ref = some ⟨argTps, outTp, lambdaBody⟩ →
   Omni Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
@@ -63,14 +82,14 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
 | callBuiltin {Q} :
     (b.omni p st argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
     Omni Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
-| callDecl:
+| callDecl :
     (fname, fn) ∈ Γ.functions →
     (hkc : fn.generics = tyKinds) →
     (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTypes) →
     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res) →
     Omni Γ st (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q →
     Omni Γ st (@Expr.call _ tyKinds generics argTypes res (.decl fname) args) Q
-| callTrait {impl}:
+| callTrait {impl} :
     TraitResolution Γ traitRef impl →
     (fname, fn) ∈ impl →
     (hkc : fn.generics = tyKinds) →
@@ -140,6 +159,23 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       assumption
       assumption
     · simp_all
+  | callDecl' =>
+    intro
+    constructor
+    all_goals (try assumption)
+    tauto
+  | callTrait' =>
+    intro
+    constructor
+    all_goals (try assumption)
+    tauto
+  | callLambda' h _ _ =>
+    intro hd
+    constructor <;> try tauto
+    simp_all
+    simp only [LawfulHeap.disjoint] at hd
+    simp only [Finmap.lookup_union_left (Finmap.mem_of_lookup_eq_some h)]
+    tauto
   | callBuiltin hq =>
     rename Builtin => b
     intros

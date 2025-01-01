@@ -28,6 +28,17 @@ inductive Tp where
 | array (element: Tp) (size: U 32)
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
+| fn (argTps : List Tp) (outTp : Tp)
+
+@[reducible]
+def Kind.denote : Kind → Type
+| .nat => Nat
+| .type => Tp
+
+inductive FuncRef (argTps : List Tp) (outTp : Tp) where
+| lambda (r : Ref)
+| decl (fnName : String) (kinds : List Kind) (generics : HList Kind.denote kinds)
+| trait (selfTp : Tp) (traitName : String) (fnName : String) (kinds : List Kind) (generics : HList Kind.denote kinds)
 
 mutual
 
@@ -49,13 +60,8 @@ def Tp.denote : Tp → Type
 | .array tp n => Mathlib.Vector (denote tp) n.toNat
 | .ref _ => Ref
 | .tuple _ fields => Tp.denoteArgs fields
+| .fn argTps outTp => FuncRef argTps outTp
 
 end
-
-@[reducible]
-def Kind.denote : Kind → Type
-| .nat => Nat
-| .type => Tp
-
 
 end Lampe

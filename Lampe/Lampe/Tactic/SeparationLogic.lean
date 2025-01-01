@@ -209,11 +209,6 @@ def isLetIn (e : Expr) : Bool := e.isAppOf ``Lampe.Expr.letIn
 
 def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
 
-def isCallTrait (e : Expr) : Bool := e.isAppOf `Lampe.Expr.call &&
-  match (e.getArg? 5) with
-  | some callTarget => callTarget.isAppOf `Lampe.FunctionIdent.trait
-  | _ => false
-
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   if e.isAppOf ``SLP.star then
     let args := e.getAppArgs
@@ -561,11 +556,14 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply assert_intro
     | apply skip_intro
     | apply nested_triple STHoare.callLambda_intro
+    | apply nested_triple STHoare.callLambda'_intro
     | apply lam_intro
     | apply cast_intro
     | apply cast_intro
     | apply callTrait_intro
     | apply callDecl_intro
+    | apply callTrait'_intro
+    | apply callDecl'_intro
     -- memory
     | apply var_intro
     | apply ref_intro
@@ -707,6 +705,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top lam_intro
     | apply ramified_frame_top cast_intro
     | apply ramified_frame_top callDecl_intro
+    | apply ramified_frame_top callDecl'_intro
     -- memory
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro

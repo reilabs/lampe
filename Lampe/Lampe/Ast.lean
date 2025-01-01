@@ -36,6 +36,7 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
 | call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → FunctionIdent rep → HList rep argTypes → Expr rep res
+| callUni : (argTps : List Tp) → (outTp : Tp) → FuncRef argTps outTp → (args : HList rep argTps) → Expr rep outTp
 | ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
