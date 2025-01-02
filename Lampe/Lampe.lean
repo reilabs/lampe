@@ -1,8 +1,12 @@
 import Lampe.Basic
 open Lampe
 
+example {a b : Nat} [LawfulHeap α] : (⟦a = 5⟧ ⋆ ⟦b = 4⟧ : SLP α) ⊢ ⟦a = 5⟧ ⋆ ⊤ := by
+  sl
+  simp_all
+
 nr_def simple_fn<>() -> λ(Field, Field) → Field {
-  let x = %(Field as Pair<Field>)::hey<Unit>;
+  let x = %@hey<Unit>;
   → x(1 : Field, 2 : Field)
 }
 
