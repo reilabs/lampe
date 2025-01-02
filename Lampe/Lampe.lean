@@ -1,6 +1,19 @@
 import Lampe.Basic
 open Lampe
 
+example {a b : Nat} [LawfulHeap α] : (⟦a = 5⟧ ⋆ ⟦b = 4⟧ : SLP α) ⊢ ⟦a = 5⟧ ⋆ ⊤ := by
+  sl
+  simp_all
+
+nr_def simple_fn<>() -> λ(Field, Field) → Field {
+  let x = %@hey<Unit>;
+  → x(1 : Field, 2 : Field)
+}
+
+example : STHoare p Γ ⟦⟧ (simple_fn.fn.body _ h![] |>.body h![]) fun v => v = x := by
+  simp only [simple_fn]
+  steps
+
 nr_def simple_muts<>(x : Field) -> Field {
   let mut y = x;
   let mut z = x;
