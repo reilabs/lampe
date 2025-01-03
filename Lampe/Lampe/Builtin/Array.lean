@@ -1,19 +1,12 @@
 import Lampe.Builtin.Basic
-namespace Lampe.Builtin
 
-lemma _root_.Finmap.insert_mem_disjoint [DecidableEq α] {m₁ m₂ : Finmap fun _ : α => β} {hd : m₁.Disjoint m₂} {he : ref ∈ m₁} :
-  (m₁.insert ref v).Disjoint m₂ := by
-  rw [Finmap.insert_eq_singleton_union]
-  have _ : ref ∉ m₂ := by aesop
-  simp only [Finmap.disjoint_union_left]
-  aesop
-
+@[simp]
 lemma Nat.dec_add_eq_self {n : Nat} {h : n ≠ 0} : n - 1 + 1 = n := by
   cases n
   contradiction
   simp
 
-lemma Fin.n_is_non_zero {h : Fin n} : n > 0 := by
+lemma Fin.n_is_non_zero {h : Fin n} : n ≠ 0 := by
   cases_type Fin
   cases n
   contradiction
@@ -43,10 +36,11 @@ lemma Mathlib.Vector.get_after_erase {idx : Nat} {vec : Mathlib.Vector α n} {h�
       . simp_all only [List.length_cons, add_lt_add_iff_right, add_tsub_cancel_right]
         rw [←add_lt_add_iff_right (a := 1)]
         have _ : tail₁.length ≠ 0 := by aesop
-        have ht : tail₁.length - 1 + 1 = tail₁.length := by simp_all [Nat.dec_add_eq_self]
+        have _ : tail₁.length - 1 + 1 = tail₁.length := by simp_all [Nat.dec_add_eq_self]
         simp_all
       . aesop
 
+@[simp]
 lemma Mathlib.Vector.get_after_insert {idx : Nat} {vec : Mathlib.Vector α n} {h} :
   (Mathlib.Vector.insertNth v ⟨idx, h⟩ vec).get ⟨idx, h⟩ = v := by
   unfold Mathlib.Vector.insertNth Mathlib.Vector.get
@@ -55,6 +49,8 @@ lemma Mathlib.Vector.get_after_insert {idx : Nat} {vec : Mathlib.Vector α n} {h
   apply List.get_insertNth_self
   subst_vars
   linarith
+
+namespace Lampe.Builtin
 
 @[reducible]
 def replaceArray' (arr : Tp.denote p (.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (.array tp n) :=
@@ -120,11 +116,5 @@ def arrayAsSlice := newGenericPureBuiltin
   (fun (tp, n) => ⟨[.array tp n], .slice tp⟩)
   (fun (_, _) h![a] => ⟨True,
     fun _ => a.toList⟩)
-
-def replaceArray := newGenericPureBuiltin
-  (fun (tp, n) => ⟨[.array tp n, .u 32, tp], (.array tp n)⟩)
-  (fun (_, n) h![arr, idx, v] => ⟨idx.toNat < n.toNat,
-    fun h => replaceArray' arr ⟨idx.toNat, h⟩ v⟩)
-
 
 end Lampe.Builtin

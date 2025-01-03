@@ -265,9 +265,9 @@ nr_def call_decl<>(x: Field, y : Field) -> Field {
    (s as Pair<Field>).a
  }
 
- example {x y : Tp.denote p .field} :
-   STHoare p ⟨[(struct_construct.name, struct_construct.fn)], []⟩
-     ⟦⟧ (call_decl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
+example {x y : Tp.denote p .field} :
+  STHoare p ⟨[(struct_construct.name, struct_construct.fn)], []⟩
+    ⟦⟧ (call_decl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
   simp only [call_decl, struct_construct]
   apply STHoare.letIn_intro
   on_goal 3 => exact (fun (v : Tp.denote p $ .tuple _ [.field, .field]) => v = (x, y, ()))
@@ -284,7 +284,7 @@ nr_def call_decl<>(x: Field, y : Field) -> Field {
 
 nr_def simple_tuple<>() -> Field {
   let t = `(1 : Field, true, 3 : Field);
-  t.2 : Field
+  t.2
 }
 
 example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v = 3) := by
@@ -310,3 +310,56 @@ example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![]) (fun (v
   simp only [simple_array, Expr.mkArray]
   steps <;> tauto
   aesop
+
+nr_def tuple_lens<>() -> Field {
+  let mut p = `(`(1 : Field, 2 : Field), 3 : Field);
+  p .0 .1 = 3 : Field;
+  p .0 .1
+}
+
+example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [tuple_lens]
+  steps
+  aesop
+
+nr_def struct_lens<>() -> Field {
+  let mut p = `(Pair<Field>{ 1 : Field, 2 : Field}, 3 : Field);
+  (p .0 as Pair<Field>).b = 3 : Field;
+  (p .0 as Pair<Field>).b
+}
+
+example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [struct_lens]
+  steps
+  aesop
+
+nr_def array_lens<>() -> Field {
+  let mut p = `([1 : Field, 2 : Field], 3 : Field);
+  p.0[1 : u32] = 3 : Field;
+  p.0[1 : u32]
+}
+
+example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [array_lens]
+  steps
+  rfl
+  on_goal 3 => exact (⟨[1, 3], (by rfl)⟩, 3)
+  . simp_all
+    rfl
+  . simp_all
+    aesop
+
+nr_def slice_lens<>() -> Field {
+  let mut p = `(&[1 : Field, 2 : Field], 3 : Field);
+  p .0 [[1 : u32]] = 3 : Field;
+  p .0 [[1 : u32]]
+}
+
+example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [slice_lens]
+  steps
+  all_goals try exact ([1, 3], 3)
+  all_goals try tauto
+  . simp_all
+    rfl
+  . simp_all [Builtin.indexTpl]

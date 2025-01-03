@@ -13,6 +13,7 @@ import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
+import Lampe.Builtin.Lens
 
 namespace Lampe
 
@@ -82,16 +83,13 @@ def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErr
    `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
 
 @[reducible]
-def typeof {rep : Tp → Type _} (_ : rep tp) := tp
-
-@[reducible]
 def tupleFields (tp : Tp) := match tp with
 | Tp.tuple _ fields => fields
 | _ => []
 
 def mkTupleMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
-| .zero => `(Member.head)
-| .succ n' => do `(Member.tail $(←mkTupleMember n'))
+| .zero => `(Builtin.Member.head)
+| .succ n' => do `(Builtin.Member.tail $(←mkTupleMember n'))
 
 def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `nr_ident) (gs : List $ TSyntax `nr_type) (field : TSyntax `ident) : m (TSyntax `term) := do
   let gs ← mkHListLit (←gs.mapM fun gVal => mkNrType gVal)
@@ -107,7 +105,7 @@ syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
 syntax "let" ident "=" nr_expr : nr_expr
 syntax "let" "mut" ident "=" nr_expr : nr_expr
-syntax ident "=" nr_expr : nr_expr
+syntax nr_expr "=" nr_expr : nr_expr
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
 syntax "(" nr_expr ")" : nr_expr
@@ -122,7 +120,7 @@ syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
 syntax "&" "[" nr_expr,* "]" : nr_expr -- Slice constructor
 
 syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
-syntax nr_expr "." num ":" nr_type : nr_expr -- Tuple access
+syntax nr_expr "." num : nr_expr -- Tuple access
 syntax nr_expr "[" nr_expr "]" : nr_expr -- Array access
 syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
 
@@ -159,28 +157,20 @@ def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
   Expr.call h![] _ (.array tp n) (.builtin $ .mkArray n) vals
 
 @[reducible]
-def Expr.readTuple (tpl : rep $ .tuple name tps) (mem : Member tp tps) : Expr rep tp :=
-  Expr.call h![] [typeof tpl] tp (.builtin (@Builtin.projectTuple tp tps mem)) h![tpl]
+def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=
+  Expr.call h![] tps (.tuple name tps) (.builtin .mkTuple) args
 
 @[reducible]
-def Expr.readArray (arr : rep $ .array tp n) (idx : rep $ .u s) : Expr rep tp :=
-  Expr.call h![] _ tp (.builtin .arrayIndex) h![arr, idx]
+def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
+  Expr.call h![] [.ref tp₁, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v]
 
 @[reducible]
-def Expr.readSlice (sl : rep $ .slice tp) (idx : rep $ .u s) : Expr rep tp :=
-  Expr.call h![] _ tp (.builtin .sliceIndex) h![sl, idx]
+def Expr.readLens (r : rep $ .ref tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
+  Expr.call h![] _ tp₂ (.builtin $ .readLens lens) h![r]
 
 @[reducible]
-def Expr.replaceTuple (tpl : rep $ .tuple name tps) (mem : Member tp tps) (v : rep tp) : Expr rep (.tuple name tps) :=
-  Expr.call h![] _ (.tuple name tps) (.builtin $ .replaceTuple mem) h![tpl, v]
-
-@[reducible]
-def Expr.replaceArray (arr : rep $ .array tp n) (idx : rep $ .u s) (v : rep tp) : Expr rep (.array tp n) :=
-  Expr.call h![] _ (.array tp n) (.builtin .replaceArray) h![arr, idx, v]
-
-@[reducible]
-def Expr.replaceSlice (sl : rep $ .slice tp) (idx : rep $ .u s) (v : rep tp) : Expr rep (.slice tp) :=
-  Expr.call h![] _ (.slice tp) (.builtin .replaceSlice) h![sl, idx, v]
+def Expr.getLens (v : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
+  Expr.call h![] _ tp₂ (.builtin $ .getLens lens) h![v]
 
 structure DesugarState where
   autoDeref : Name → Bool
@@ -210,6 +200,68 @@ def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (
   let ident ← getName ident
   let rest ← k ident
   `(Lampe.Expr.letIn $e fun $ident => $rest)
+
+abbrev ArgSet := (Nat × List (Lean.Ident × TSyntax `nr_expr))
+
+@[reducible]
+def ArgSet.empty : ArgSet := ⟨0, []⟩
+
+def ArgSet.next (a : ArgSet) (expr : TSyntax `nr_expr) : (Lean.Ident × ArgSet) :=
+  let ident := mkIdent $ Name.mkSimple $ "#arg_" ++ (toString a.1)
+  (ident, ⟨a.1 + 1, (ident, expr) :: a.2⟩)
+
+def ArgSet.args (a : ArgSet) : List $ TSyntax `nr_expr := a.2.map (·.2)
+
+def ArgSet.ids (a : ArgSet) : List $ Lean.Ident := a.2.map (·.1)
+
+@[reducible]
+def ArgSet.wrap [MonadSyntax m] (a : ArgSet) (argVals : List $ TSyntax `term) (expr : TSyntax `term) :
+    m $ TSyntax `term := do
+  if argVals.isEmpty then
+    `($expr)
+  else
+    `((fun args => match args with | $(←mkHListLit a.ids) => $expr) $(←mkHListLit argVals))
+
+partial def mkLens [MonadSyntax m] (expr : TSyntax `nr_expr) (a : ArgSet) : m $ (TSyntax `term) × ArgSet := match expr with
+| `(nr_expr| $_:ident) => do
+  let nil ← `(Lens.nil)
+  pure (nil, a)
+| `(nr_expr| ( $structExpr:nr_expr as $structName  < $structGens,* > ) . $fieldName) => do
+  let mem ← mkStructMember structName structGens.getElems.toList fieldName
+  let (lhsLens, a') ← mkLens structExpr a
+  let lens' ← `(Lens.cons $lhsLens (Access.tuple $mem))
+  pure (lens', a')
+| `(nr_expr| $tupleExpr:nr_expr . $idx) => do
+  let mem ← mkTupleMember idx.getNat
+  let (lhsLens, a') ← mkLens tupleExpr a
+  let lens' ← `(Lens.cons $lhsLens (Access.tuple $mem))
+  pure (lens', a')
+| `(nr_expr| $arrayExpr:nr_expr [ $idxExpr:nr_expr ]) => do
+  let (idx, a') := a.next idxExpr
+  let (lhsLens, a'') ← mkLens arrayExpr a'
+  let lens' ← `(Lens.cons $lhsLens (Access.array $idx))
+  pure (lens', a'')
+| `(nr_expr| $sliceExpr:nr_expr [[ $idxExpr:nr_expr ]]) => do
+  let (idx, a') := a.next idxExpr
+  let (lhsLens, a'') ← mkLens sliceExpr a'
+  let lens' ← `(Lens.cons $lhsLens (Access.slice $idx))
+  pure (lens', a'')
+| _ => throwUnsupportedSyntax
+
+partial def getLeftmostRef [MonadSyntax m] (expr : TSyntax `nr_expr) : m (TSyntax `ident) := match expr with
+| `(nr_expr| $v:ident) => pure v
+| `(nr_expr| ( $structExpr:nr_expr as $_  < $_,* > ) . $_) => getLeftmostRef structExpr
+| `(nr_expr| $tupleExpr:nr_expr . $_) => getLeftmostRef tupleExpr
+| `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLeftmostRef arrayExpr
+| `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostRef sliceExpr
+| _ => throwUnsupportedSyntax
+
+partial def getLeftmostExpr (expr : TSyntax `nr_expr) : (TSyntax `nr_expr) := match expr with
+| `(nr_expr| ( $structExpr:nr_expr as $_  < $_,* > ) . $_) => getLeftmostExpr structExpr
+| `(nr_expr| $tupleExpr:nr_expr . $_) => getLeftmostExpr tupleExpr
+| `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLeftmostExpr arrayExpr
+| `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostExpr sliceExpr
+| `(nr_expr| $e:nr_expr) => e
 
 mutual
 
@@ -253,9 +305,12 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkExpr hi none fun hi => do
     let body ← mkExpr body none (fun x => `(Expr.var $x))
     wrapSimple (←`(Expr.loop $lo $hi fun $i => $body)) vname k
-| `(nr_expr| $v:ident = $e) => do
-  mkExpr e none fun eVal => do
-    wrapSimple (←`(Expr.writeRef $v $eVal)) vname k
+| `(nr_expr| $lhs:nr_expr = $rhs:nr_expr) => do
+  let r ← getLeftmostRef lhs
+  let (lens, args) ← mkLens lhs ArgSet.empty
+  mkExpr rhs none fun rhs => do
+    mkArgs args.args fun vals => do
+      wrapSimple (←`(Expr.modifyLens $r $rhs $(←args.wrap vals lens))) vname k
 | `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do
     mkExpr cond none fun cond => do
@@ -307,31 +362,22 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     wrapSimple (←`(@Expr.call _ $callGenKinds $callGenVals $(←mkListLit argTps) $(←mkNrType tp)
       (.trait ⟨⟨⟨$(Syntax.mkStrLit traitName), $traitGenKinds, $traitGenVals⟩, $(←mkNrType selfTp)⟩, $(Syntax.mkStrLit methodName)⟩) $(←mkHListLit argVals))) vname k
 | `(nr_expr| $structName:nr_ident < $structGenVals,* > { $args,* }) => do
-   let structGenValsSyn ← mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
-   let paramTpsSyn ← `(Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) $structGenValsSyn)
    let structName ← mkNrIdent structName
+   let fieldTps ← `(Struct.fieldTypes $(mkStructDefIdent structName) $(←mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)))
    mkArgs args.getElems.toList fun argVals => do
-     wrapSimple (←`(Expr.call h![] _ (.tuple (some $(Syntax.mkStrLit structName)) $paramTpsSyn) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
+     wrapSimple (←`(Expr.mkTuple (tps := $fieldTps) (some $(Syntax.mkStrLit $ structName)) $(←mkHListLit argVals))) vname k
 | `(nr_expr| `( $args,* )) => do
   mkArgs args.getElems.toList fun argVals => do
-    let argTps ← argVals.mapM fun arg => `(typeof $arg)
-    wrapSimple (←`(Expr.call h![] _ (.tuple none $(←mkListLit argTps)) (.builtin Builtin.mkTuple) $(←mkHListLit argVals))) vname k
-| `(nr_expr| ( $lhsExpr:nr_expr as $structName:nr_ident  < $structGenVals,* > ) . $structField:ident) => do
-  let mem ← mkStructMember structName structGenVals.getElems.toList structField
-  mkExpr lhsExpr none fun tpl => do
-    wrapSimple (←`(Expr.readTuple $tpl $mem)) vname k
-| `(nr_expr| $tupleExpr:nr_expr . $idx:num : $_:nr_type) => do
-  let mem ← mkTupleMember idx.getNat
-  mkExpr tupleExpr none fun tpl => do
-    wrapSimple (←`(Expr.readTuple $tpl $mem)) vname k
-| `(nr_expr| $lhsExpr:nr_expr [ $idxExpr:nr_expr ]) => do
-  mkExpr idxExpr none fun idx => do
-    mkExpr lhsExpr none fun arr => do
-      wrapSimple (←`(Expr.readArray $arr $idx)) vname k
-| `(nr_expr| $lhsExpr:nr_expr [[ $idxExpr:nr_expr ]]) => do
-  mkExpr idxExpr none fun idx => do
-    mkExpr lhsExpr none fun arr => do
-      wrapSimple (←`(Expr.readSlice $arr $idx)) vname k
+    wrapSimple (←`(Expr.mkTuple none $(←mkHListLit argVals))) vname k
+| `(nr_expr| ( $_:nr_expr as $_:nr_ident  < $_,* > ) . $_:ident)
+| `(nr_expr| $_:nr_expr . $_:num)
+| `(nr_expr| $_:nr_expr [ $_:nr_expr ])
+| `(nr_expr| $_:nr_expr [[ $_:nr_expr ]]) => do
+  let expr := getLeftmostExpr e
+  let (lens, args) ← mkLens e ArgSet.empty
+  mkExpr expr none fun exprVal => do
+    mkArgs args.args fun vals => do
+      wrapSimple (←`(Expr.getLens $exprVal $(←args.wrap vals lens))) vname k
 | _ => throwUnsupportedSyntax
 
 end
@@ -402,7 +448,7 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
   params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
     | `(nr_param_decl| $paramName:ident : $paramType:nr_type) => do
       let paramDefTy ← `(match generics with
-        | $(←mkHListLit generics) => Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))
+        | $(←mkHListLit generics) => Builtin.Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))
       let paramDefSyn ← `(match generics with
         | $(←mkHListLit generics) => $(←mkTupleMember idx))
       let defnNameSyn := mkFieldName (←mkNrIdent structName) paramName.getId.toString

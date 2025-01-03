@@ -91,7 +91,6 @@ theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.lit .bool 1) fun v =>
   apply SLP.ent_star_top
   assumption
 
-
 theorem ref_intro' {p} {x : Tp.denote p tp} {Γ P}:
     STHoare p Γ P (.ref x) fun v => [v ↦ ⟨tp, x⟩] ⋆ P := by
   apply ramified_frame_top
@@ -564,6 +563,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
     | apply cast_intro
+    | apply cast_intro
     | apply callTrait_intro
     | apply callDecl_intro
     -- memory
@@ -576,13 +576,11 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply arrayLen_intro
     | apply arrayIndex_intro
     | apply arrayAsSlice_intro
-    | apply replaceArray_intro
     -- slice
     | apply mkSlice_intro
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
-    | apply replaceSlice_intro
     -- equality
     | apply unitEq_intro
     | apply bEq_intro
@@ -620,7 +618,10 @@ macro "stephelper1" : tactic => `(tactic|(
     -- struct
     | apply mkTuple_intro
     | apply projectTuple_intro
-    | apply replaceTuple_intro
+    -- lens
+    | apply readLens_intro
+    | apply modifyLens_intro
+    | apply getLens_intro
   )
 ))
 
@@ -644,13 +645,11 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left arrayLen_intro
     | apply consequence_frame_left arrayIndex_intro
     | apply consequence_frame_left arrayAsSlice_intro
-    | apply consequence_frame_left replaceArray_intro
     -- slice
     | apply consequence_frame_left mkSlice_intro
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
-    | apply consequence_frame_left replaceSlice_intro
     -- equality
     | apply consequence_frame_left unitEq_intro
     | apply consequence_frame_left bEq_intro
@@ -688,7 +687,10 @@ macro "stephelper2" : tactic => `(tactic|(
     -- struct
     | apply consequence_frame_left mkTuple_intro
     | apply consequence_frame_left projectTuple_intro
-    | apply consequence_frame_left replaceTuple_intro
+    -- lens
+    | apply consequence_frame_left readLens_intro
+    | apply consequence_frame_left modifyLens_intro
+    | apply consequence_frame_left getLens_intro
   )
   repeat sl
 ))
@@ -715,15 +717,14 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top arrayLen_intro
     | apply ramified_frame_top arrayIndex_intro
     | apply ramified_frame_top arrayAsSlice_intro
-    | apply ramified_frame_top replaceArray_intro
     -- slice
     | apply ramified_frame_top mkSlice_intro
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
-    | apply ramified_frame_top replaceSlice_intro
     -- equality
     | apply ramified_frame_top unitEq_intro
+    | apply ramified_frame_top bEq_intro
     | apply ramified_frame_top bEq_intro
     | apply ramified_frame_top fEq_intro
     | apply ramified_frame_top uEq_intro
@@ -759,7 +760,10 @@ macro "stephelper3" : tactic => `(tactic|(
     -- struct
     | apply ramified_frame_top mkTuple_intro
     | apply ramified_frame_top projectTuple_intro
-    | apply ramified_frame_top replaceTuple_intro
+    -- lens
+    | apply ramified_frame_top readLens_intro
+    | apply ramified_frame_top modifyLens_intro
+    | apply ramified_frame_top getLens_intro
   )
   repeat sl
 ))
