@@ -372,34 +372,33 @@ theorem callTrait_intro {impl} {fname fn}
     (hkc : fn.generics = tyKinds)
     (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTypes)
     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res)
-    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q):
+    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
     STHoare p Γ H
       (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args)
       Q := by
   unfold STHoare THoare
   intros
-  apply Omni.callTrait <;> try assumption
-  apply_assumption
-  assumption
+  apply Omni.callTrait <;> tauto
 
 theorem callDecl_intro {fname fn}
-     (h_fn : (fname, fn) ∈ Γ.functions)
-     (hkc : fn.generics = tyKinds)
-     (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
-     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res)
-     (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q):
-     STHoare p Γ H
-       (@Expr.call _ tyKinds generics argTps res (.decl fname) args)
-       Q := by
-   unfold STHoare THoare
-   intros
-   apply Omni.callDecl <;> tauto
+  (h_fn : (fname, fn) ∈ Γ.functions)
+  (hkc : fn.generics = tyKinds)
+  (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
+  (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res)
+  (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
+    STHoare p Γ H
+      (@Expr.call _ tyKinds generics argTps res (.decl fname) args)
+      Q := by
+  unfold STHoare THoare
+  intros
+  apply Omni.callDecl <;> tauto
 
 theorem callLambda'_intro {lambdaBody}
-  {P : SLP (State p)}
+  {P : SLP $ State p}
   {Q : Tp.denote p outTp → SLP (State p)}
   {fnRef : Tp.denote p (.fn argTps outTp)}
-  {href : fnRef = (.lambda ref)} :
+  (href : P ⋆ (⊤ : SLP $ State p) ⊢
+    ⟦fnRef = (.lambda ref)⟧ ⋆ (⊤ : SLP $ State p)) :
   @STHoare outTp p Γ P (lambdaBody args) Q →
   STHoare p Γ (P ⋆ [λref ↦ ⟨argTps, outTp, lambdaBody⟩])
     (Expr.callUni argTps outTp fnRef args)
@@ -408,6 +407,15 @@ theorem callLambda'_intro {lambdaBody}
   rename_i h
   unfold STHoare THoare
   intros
+  have href' : fnRef = (.lambda ref) := by
+    rename_i h'
+    apply SLP.extract_prop h'
+    simp only [SLP.entails]
+    intros st' h''
+    rw [SLP.star_assoc] at h''
+    apply SLP.ent_drop_left at h''
+    apply href at h''
+    tauto
   apply Omni.callLambda' <;> tauto
   unfold SLP.star at *
   . rename_i st h
@@ -425,27 +433,27 @@ theorem callLambda'_intro {lambdaBody}
       rw [hi₂] at hj₁
       tauto
     simp [Finmap.lookup_union_right (by tauto)]
-  . apply consequence <;> tauto
-    apply consequence_frame_left
-    rotate_left 2
-    exact P
-    exact h
-    simp only [SLP.true_star, SLP.entails_self]
+  . apply STHoare.consequence_frame_left <;> tauto
 
 theorem callDecl'_intro {fnRef : Tp.denote p (.fn argTps outTp)}
-    {href : fnRef = (.decl fnName kinds generics)}
+    (href : H ⋆ (⊤ : SLP $ State p) ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_fn : (fnName, fn) ∈ Γ.functions)
     (hkc : fn.generics = kinds)
     (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp)
     (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
     STHoare p Γ H (Expr.callUni argTps outTp fnRef args) Q := by
-   unfold STHoare THoare
-   intros
-   apply Omni.callDecl' <;> tauto
+  unfold STHoare THoare
+  intros
+  have _ : fnRef = (.decl fnName kinds generics) := by
+    rename_i h'
+    apply SLP.extract_prop at h' <;> tauto
+  apply Omni.callDecl' <;> tauto
+
 
 theorem callTrait'_intro {impl} {fnRef : Tp.denote p (.fn argTps outTp)}
-    {href : fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)}
+    (href : H ⋆ (⊤ : SLP $ State p) ⊢
+      ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impl)
     (h_fn : (fnName, fn) ∈ impl)
     (hkc : fn.generics = kinds)
@@ -457,9 +465,10 @@ theorem callTrait'_intro {impl} {fnRef : Tp.denote p (.fn argTps outTp)}
       Q := by
   unfold STHoare THoare
   intros
-  apply Omni.callTrait' <;> try assumption
-  apply_assumption
-  assumption
+  have _ : fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics) := by
+    rename_i h'
+    apply SLP.extract_prop at h' <;> tauto
+  apply Omni.callTrait' <;> tauto
 
 theorem fn_intro : STHoare p Γ ⟦⟧ (.fn argTps outTp r) fun v => v = r := by
   unfold STHoare THoare

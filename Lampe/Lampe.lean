@@ -1,18 +1,38 @@
 import Lampe.Basic
 open Lampe
 
-example {a b : Nat} [LawfulHeap α] : (⟦a = 5⟧ ⋆ ⟦b = 4⟧ : SLP α) ⊢ ⟦a = 5⟧ ⋆ ⊤ := by
-  sl
-  simp_all
+nr_def add_two_fields<>(a : Field, b : Field) -> Field {
+  #fAdd(a, b) : Field
+}
 
-nr_def simple_fn<>() -> λ(Field, Field) → Field {
-  let x = %@hey<Unit>;
+nr_def simple_fn<>() -> Field {
+  let x = %@add_two_fields<>;
   → x(1 : Field, 2 : Field)
 }
 
-example : STHoare p Γ ⟦⟧ (simple_fn.fn.body _ h![] |>.body h![]) fun v => v = x := by
+example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧ (simple_fn.fn.body _ h![] |>.body h![])
+  fun (v : Tp.denote p .field) => v = 3 := by
   simp only [simple_fn]
   steps
+  apply STHoare.callDecl'_intro
+  . simp only [SLP.entails]
+    intros _ h
+    rename_i v₁ v₂ v₃ st
+    rw [SLP.star_comm (H := ⟦v₁ = _⟧), SLP.star_comm (H := ⟦v₁ = _⟧ ⋆ _)] at h
+    rw [SLP.star_assoc, SLP.star_assoc] at h
+    apply SLP.ent_drop_left at h
+    exact h
+  on_goal 3 => exact add_two_fields.fn
+  all_goals tauto
+  on_goal 3 => exact fun v => v = 3
+  . simp only [add_two_fields]
+    steps
+    simp_all
+    intros
+    ring
+  . steps
+    aesop
+
 
 nr_def simple_muts<>(x : Field) -> Field {
   let mut y = x;
@@ -333,6 +353,7 @@ nr_def tuple_lens<>() -> Field {
 example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [tuple_lens]
   steps
+  simp_all
   aesop
 
 nr_def struct_lens<>() -> Field {

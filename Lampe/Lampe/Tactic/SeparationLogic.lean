@@ -557,14 +557,11 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply assert_intro
     | apply skip_intro
     | apply nested_triple STHoare.callLambda_intro
-    | apply nested_triple STHoare.callLambda'_intro
     | apply lam_intro
     | apply cast_intro
     | apply cast_intro
     | apply callTrait_intro
     | apply callDecl_intro
-    | apply callTrait'_intro
-    | apply callDecl'_intro
     -- memory
     | apply var_intro
     | apply ref_intro
@@ -708,7 +705,6 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top lam_intro
     | apply ramified_frame_top cast_intro
     | apply ramified_frame_top callDecl_intro
-    | apply ramified_frame_top callDecl'_intro
     -- memory
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
