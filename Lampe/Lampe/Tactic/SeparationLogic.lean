@@ -545,7 +545,6 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply skip_intro
     | apply lam_intro
     | apply cast_intro
-    | apply cast_intro
     -- memory
     | apply var_intro
     | apply ref_intro

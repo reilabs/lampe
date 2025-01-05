@@ -146,7 +146,8 @@ example {p} {arg : Tp.denote p Tp.field} :
   simp only [simple_trait_call]
   steps
   . apply STHoare.callTrait_intro
-    apply SLP.ent_star_top
+    sl
+    tauto
     try_impls_all [] simpleTraitEnv
     all_goals tauto
     simp only
@@ -182,7 +183,8 @@ example {p} {x : Tp.denote p Tp.field} :
   simp only [generic_trait_call]
   steps
   . apply STHoare.callTrait_intro
-    apply SLP.ent_star_top
+    sl
+    tauto
     try_impls_all [Tp.field] genericTraitEnv
     tauto
     all_goals try rfl
@@ -239,12 +241,8 @@ example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧ 
   simp only [call_decl]
   steps
   apply STHoare.callDecl_intro
-  . rename_i v₁ v₂ v₃
-    rw [SLP.star_comm (H := ⟦v₁ = _⟧), ←SLP.star_assoc]
-    rw [SLP.star_comm (H := ⟦v₁ = _⟧), SLP.star_assoc]
-    apply SLP.star_mono
-    apply SLP.entails_self
-    apply SLP.entails_top
+  . sl
+    tauto
   on_goal 3 => exact add_two_fields.fn
   all_goals tauto
   on_goal 3 => exact fun v => v = 3
