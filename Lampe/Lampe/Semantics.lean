@@ -54,7 +54,7 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   (∀v st, Q₁ (some (st, v)) → Omni Γ st (b v) Q) →
   (Q₁ none → Q none) →
   Omni Γ st (.letIn e b) Q
-| callTrait' {fnRef} :
+| callTrait {fnRef} :
   fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics) →
   TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls →
   (fnName, fn) ∈ impls →
@@ -62,26 +62,26 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   (htci : (fn.body (Tp.denote p) (hkc ▸ generics) |>.argTps) = argTps) →
   (htco : (fn.body (Tp.denote p) (hkc ▸ generics) |>.outTp) = outTp) →
   Omni Γ ⟨vh, lambdas⟩ (htco ▸ (fn.body (Tp.denote p) (hkc ▸ generics) |>.body (htci ▸ args))) Q →
-  Omni Γ ⟨vh, lambdas⟩ (Expr.callUni argTps outTp fnRef args) Q
-| callLambda' {fnRef} {lambdaBody : HList (Tp.denote p) argTps → Expr (Tp.denote p) outTp} :
+  Omni Γ ⟨vh, lambdas⟩ (Expr.call argTps outTp fnRef args) Q
+| callLambda {fnRef} {lambdaBody : HList (Tp.denote p) argTps → Expr (Tp.denote p) outTp} :
   fnRef = (.lambda ref) →
   lambdas.lookup ref = some ⟨argTps, outTp, lambdaBody⟩ →
   Omni Γ ⟨vh, lambdas⟩ (lambdaBody args) Q →
-  Omni Γ ⟨vh, lambdas⟩ (Expr.callUni argTps outTp fnRef args) Q
-| callDecl' {fnRef} :
+  Omni Γ ⟨vh, lambdas⟩ (Expr.call argTps outTp fnRef args) Q
+| callDecl {fnRef} :
   fnRef = (.decl fnName kinds generics) →
   (fnName, fn) ∈ Γ.functions →
   (hkc : fn.generics = kinds) →
   (htci : (fn.body (Tp.denote p) (hkc ▸ generics) |>.argTps) = argTps) →
   (htco : (fn.body (Tp.denote p) (hkc ▸ generics) |>.outTp) = outTp) →
   Omni Γ ⟨vh, lambdas⟩ (htco ▸ (fn.body (Tp.denote p) (hkc ▸ generics) |>.body (htci ▸ args))) Q →
-  Omni Γ ⟨vh, lambdas⟩ (Expr.callUni argTps outTp fnRef args) Q
+  Omni Γ ⟨vh, lambdas⟩ (Expr.call argTps outTp fnRef args) Q
 | lam {Q} :
   (∀ ref, ref ∉ lambdas → Q (some (⟨vh, lambdas.insert ref ⟨argTps, outTp, lambdaBody⟩⟩, FuncRef.lambda ref))) →
   Omni Γ ⟨vh, lambdas⟩ (Expr.lam argTps outTp lambdaBody) Q
 | callBuiltin {Q} :
-  (b.omni p st argTypes resType args (mapToValHeapCondition st.lambdas Q)) →
-  Omni Γ st (Expr.call h![] argTypes resType (.builtin b) args) Q
+  (b.omni p st argTps outTp args (mapToValHeapCondition st.lambdas Q)) →
+  Omni Γ st (Expr.callBuiltin argTps outTp b args) Q
 | loopDone :
   lo ≥ hi →
   Omni Γ st (.loop lo hi body) Q
@@ -96,12 +96,12 @@ theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'} :
     Omni p Γ st e Q' := by
   intro h
   induction h with
-  | callDecl' =>
+  | callDecl =>
     intro
-    apply Omni.callDecl' <;> tauto
-  | callLambda' =>
+    apply Omni.callDecl <;> tauto
+  | callLambda =>
     intro
-    apply Omni.callLambda' <;> tauto
+    apply Omni.callLambda <;> tauto
   | callBuiltin =>
     cases_type Builtin
     intros
@@ -152,15 +152,15 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       assumption
       assumption
     · simp_all
-  | callDecl' =>
+  | callDecl =>
     intro
-    apply Omni.callDecl' <;> tauto
-  | callTrait' =>
+    apply Omni.callDecl <;> tauto
+  | callTrait =>
     intro
-    apply Omni.callTrait' <;> tauto
-  | callLambda' h =>
+    apply Omni.callTrait <;> tauto
+  | callLambda h =>
     intro hd
-    apply Omni.callLambda' <;> try tauto
+    apply Omni.callLambda <;> try tauto
     simp_all
     simp only [LawfulHeap.disjoint] at hd
     rw [Finmap.lookup_union_left]

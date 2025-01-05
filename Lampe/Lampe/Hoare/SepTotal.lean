@@ -30,7 +30,7 @@ abbrev STHoarePureBuiltin p (Γ : Env)
   (_ : b = @Builtin.newGenericPureBuiltin A sgn desc)
   (args : HList (Tp.denote p) (sgn a).fst) : Prop :=
     STHoare p Γ ⟦⟧
-      (.call h![] (sgn a).fst (sgn a).snd (.builtin b) args)
+      (.callBuiltin (sgn a).fst (sgn a).snd b args)
       (fun v => ∃h, v = (desc a (args)).snd h)
 
 namespace STHoare
@@ -133,7 +133,7 @@ lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v
 theorem fresh_intro :
   STHoare p Γ
       ⟦⟧
-      (.call h![] [] tp (.builtin .fresh) h![])
+      (.callBuiltin [] tp .fresh h![])
       (fun _ => ⟦⟧) := by
   unfold STHoare
   intro H
@@ -334,12 +334,12 @@ theorem lam_intro :
   . apply SLP.ent_star_top
     tauto
 
-theorem callLambda'_intro {lambdaBody} {P : SLP $ State p}
+theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
   {Q : Tp.denote p outTp → SLP (State p)}
   {fnRef : Tp.denote p (.fn argTps outTp)}
   {hlam : STHoare p Γ P (lambdaBody args) Q} :
   STHoare p Γ (P ⋆ ∃∃ r, ⟦fnRef = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩])
-    (Expr.callUni argTps outTp fnRef args)
+    (Expr.call argTps outTp fnRef args)
     (fun v => (Q v) ⋆ ∃∃ r, ⟦fnRef = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩]) := by
   unfold STHoare THoare
   intros H st h
@@ -347,8 +347,7 @@ theorem callLambda'_intro {lambdaBody} {P : SLP $ State p}
     simp only [SLP.star, SLP.exists', SLP.lift] at h
     tauto
   obtain ⟨r, _⟩ := h₁
-  apply Omni.callLambda'
-  all_goals tauto
+  apply Omni.callLambda <;> tauto
   . obtain ⟨st₁, st₂, _, _, ⟨_, _, _, _, _, _, _, _, _, _, ⟨_, _⟩, _⟩, _⟩ := h
     subst_vars
     simp_all only [FuncRef.lambda.injEq]
@@ -356,28 +355,31 @@ theorem callLambda'_intro {lambdaBody} {P : SLP $ State p}
     simp_all only [LawfulHeap.empty_union, LawfulHeap.empty_disjoint]
     simp only [State.union_parts]
     rw [Finmap.lookup_union_left, Finmap.lookup_union_right]
-    simp_all
-    sorry
-    sorry
+    <;> simp only [State.lmbSingleton, LawfulHeap.disjoint, State.union_parts] at *
+    . simp_all
+    . apply Finmap.singleton_disjoint_iff_not_mem.mp
+      simp_all only
+      tauto
+    . simp_all
   apply STHoare.consequence_frame_left <;> tauto
 
-theorem callDecl'_intro {fnRef : Tp.denote p (.fn argTps outTp)}
+theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}
     {h_fn : (fnName, fn) ∈ Γ.functions}
     {hkc : fn.generics = kinds}
     {htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps}
     {htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp}
     {h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q} :
-    STHoare p Γ H (Expr.callUni argTps outTp fnRef args) Q := by
+    STHoare p Γ H (Expr.call argTps outTp fnRef args) Q := by
   unfold STHoare THoare
   intros
   have _ : fnRef = (.decl fnName kinds generics) := by
     rename_i h'
     apply SLP.extract_prop at h' <;> tauto
-  apply Omni.callDecl' <;> tauto
+  apply Omni.callDecl <;> tauto
 
 
-theorem callTrait'_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
+theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
     (href : H ⊢  ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
     (h_fn : (fnName, fn) ∈ impls)
@@ -386,14 +388,14 @@ theorem callTrait'_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p
     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp)
     (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
     STHoare p Γ H
-      (Expr.callUni argTps outTp fnRef args)
+      (Expr.call argTps outTp fnRef args)
       Q := by
   unfold STHoare THoare
   intros
   have _ : fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics) := by
     rename_i h'
     apply SLP.extract_prop at h' <;> tauto
-  apply Omni.callTrait' <;> tauto
+  apply Omni.callTrait <;> tauto
 
 theorem fn_intro : STHoare p Γ ⟦⟧ (.fn argTps outTp r) fun v => v = r := by
   unfold STHoare THoare

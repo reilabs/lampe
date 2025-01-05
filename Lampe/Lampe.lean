@@ -89,7 +89,7 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body h
   . simp only [decide_True, exists_const]
     sl
     contradiction
-  . aesop
+  . simp_all [decide_True, exists_const]
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
   let add = |a : Field, b : Field| -> Field { #fAdd(a, b) : Field };
@@ -101,7 +101,7 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
   fun v => v = x + y := by
   simp only [simple_lambda]
   steps
-  . apply STHoare.consequence_frame_left STHoare.callLambda'_intro
+  . apply STHoare.consequence_frame_left STHoare.callLambda_intro
     . rw [SLP.star_assoc, SLP.star_comm, SLP.star_assoc]
       rw [SLP.top_star_top]
       apply SLP.ent_star_top
@@ -145,7 +145,7 @@ example {p} {arg : Tp.denote p Tp.field} :
   STHoare p simpleTraitEnv ⟦⟧ (simple_trait_call.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
   simp only [simple_trait_call]
   steps
-  . apply STHoare.callTrait'_intro
+  . apply STHoare.callTrait_intro
     apply SLP.ent_star_top
     try_impls_all [] simpleTraitEnv
     all_goals tauto
@@ -181,7 +181,7 @@ example {p} {x : Tp.denote p Tp.field} :
   STHoare p genericTraitEnv ⟦⟧ (generic_trait_call.fn.body _ h![] |>.body h![x]) (fun v => v = x) := by
   simp only [generic_trait_call]
   steps
-  . apply STHoare.callTrait'_intro
+  . apply STHoare.callTrait_intro
     apply SLP.ent_star_top
     try_impls_all [Tp.field] genericTraitEnv
     tauto
@@ -238,7 +238,7 @@ example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧ 
   fun (v : Tp.denote p .field) => v = 3 := by
   simp only [call_decl]
   steps
-  apply STHoare.callDecl'_intro
+  apply STHoare.callDecl_intro
   . rename_i v₁ v₂ v₃
     rw [SLP.star_comm (H := ⟦v₁ = _⟧), ←SLP.star_assoc]
     rw [SLP.star_comm (H := ⟦v₁ = _⟧), SLP.star_assoc]
@@ -254,7 +254,7 @@ example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧ 
     intros
     ring
   . steps
-    aesop
+    simp_all
 
 nr_def simple_tuple<>() -> Field {
   let t = `(1 : Field, true, 3 : Field);
@@ -273,7 +273,9 @@ nr_def simple_slice<>() -> bool {
 
 example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .bool) => v = false) := by
   simp only [simple_slice, Expr.mkSlice]
-  steps <;> aesop
+  steps
+  rfl
+  aesop
 
 nr_def simple_array<>() -> Field {
   let arr = [1 : Field, 2 : Field];

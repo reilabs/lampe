@@ -9,9 +9,6 @@ namespace Lampe
 
 abbrev Ident := String
 
-/-- A reference to a lambda is represented as a reference to a unit type -/
-abbrev Tp.lambdaRef := Tp.ref .unit
-
 structure TraitRef where
   name : Ident
   traitGenericKinds : List Kind
@@ -25,19 +22,13 @@ structure TraitMethodImplRef where
   trait : TraitImplRef
   method : Ident
 
-inductive FunctionIdent (rep : Tp → Type) : Type where
-| builtin : Builtin → FunctionIdent rep
-| decl : Ident → FunctionIdent rep
-| lambda : rep .lambdaRef → FunctionIdent rep
-| trait : TraitMethodImplRef → FunctionIdent rep
-
 inductive Expr (rep : Tp → Type) : Tp → Type where
 | lit : (tp : Tp) → Nat → Expr rep tp
 | fn : (argTps : List Tp) → (outTp : Tp) → (r : FuncRef argTps outTp) → Expr rep (.fn argTps outTp)
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
-| call : HList Kind.denote tyKinds → (argTypes : List Tp) → (res : Tp) → FunctionIdent rep → HList rep argTypes → Expr rep res
-| callUni : (argTps : List Tp) → (outTp : Tp) → (rep $ .fn argTps outTp) → (args : HList rep argTps) → Expr rep outTp
+| call : (argTps : List Tp) → (outTp : Tp) → (rep $ .fn argTps outTp) → (args : HList rep argTps) → Expr rep outTp
+| callBuiltin : (argTps : List Tp) → (outTp : Tp) → (b : Builtin) → (args : HList rep argTps) → Expr rep outTp
 | ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit

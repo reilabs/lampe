@@ -145,39 +145,39 @@ syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allow
 
 @[reducible]
 def Expr.ref (val : rep tp) : Expr rep tp.ref :=
-  Expr.call h![] _ tp.ref (.builtin .ref) h![val]
+  Expr.callBuiltin _ tp.ref .ref h![val]
 
 @[reducible]
 def Expr.readRef (ref : rep tp.ref) : Expr rep tp :=
-  Expr.call h![] _ tp (.builtin .readRef) h![ref]
+  Expr.callBuiltin _ tp .readRef h![ref]
 
 @[reducible]
 def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Expr rep .unit :=
-  Expr.call h![] _ .unit (.builtin .writeRef) h![ref, val]
+  Expr.callBuiltin _ .unit .writeRef h![ref, val]
 
 @[reducible]
 def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.slice tp) :=
-  Expr.call h![] _ (.slice tp) (.builtin $ .mkSlice n) vals
+  Expr.callBuiltin _ (.slice tp) (.mkSlice n) vals
 
 @[reducible]
 def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.array tp n) :=
-  Expr.call h![] _ (.array tp n) (.builtin $ .mkArray n) vals
+  Expr.callBuiltin _ (.array tp n) (.mkArray n) vals
 
 @[reducible]
 def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=
-  Expr.call h![] tps (.tuple name tps) (.builtin .mkTuple) args
+  Expr.callBuiltin tps (.tuple name tps) ( .mkTuple) args
 
 @[reducible]
 def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
-  Expr.call h![] [.ref tp₁, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v]
+  Expr.callBuiltin [.ref tp₁, tp₂] .unit (.modifyLens lens) h![r, v]
 
 @[reducible]
 def Expr.readLens (r : rep $ .ref tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
-  Expr.call h![] _ tp₂ (.builtin $ .readLens lens) h![r]
+  Expr.callBuiltin _ tp₂ (.readLens lens) h![r]
 
 @[reducible]
 def Expr.getLens (v : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
-  Expr.call h![] _ tp₂ (.builtin $ .getLens lens) h![v]
+  Expr.callBuiltin _ tp₂ (.getLens lens) h![v]
 
 structure DesugarState where
   autoDeref : Name → Bool
@@ -306,7 +306,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   | some _ => wrapSimple (←`(Expr.var $i)) vname k
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
   mkArgs args.getElems.toList fun argVals => do
-    wrapSimple (←`(Expr.call h![] _ $(←mkNrType tp) (.builtin $(←mkBuiltin i.getId.toString)) $(←mkHListLit argVals))) vname k
+    wrapSimple (←`(Expr.callBuiltin _ $(←mkNrType tp) $(←mkBuiltin i.getId.toString) $(←mkHListLit argVals))) vname k
 | `(nr_expr| for $i in $lo .. $hi $body) => do
   mkExpr lo none fun lo =>
   mkExpr hi none fun hi => do
@@ -373,7 +373,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkExpr fnExpr none fun fnRef => do
     mkArgs args.getElems.toList fun argVals => do
       let args ← mkHListLit argVals
-      wrapSimple (←`(Expr.callUni _ _ $fnRef $args)) vname k
+      wrapSimple (←`(Expr.call _ _ $fnRef $args)) vname k
 | `(nr_expr| ( $_:nr_expr as $_:nr_ident  < $_,* > ) . $_:ident)
 | `(nr_expr| $_:nr_expr . $_:num)
 | `(nr_expr| $_:nr_expr [ $_:nr_expr ])
