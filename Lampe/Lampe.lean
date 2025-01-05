@@ -1,39 +1,6 @@
 import Lampe.Basic
 open Lampe
 
-nr_def add_two_fields<>(a : Field, b : Field) -> Field {
-  #fAdd(a, b) : Field
-}
-
-nr_def simple_fn<>() -> Field {
-  let x = %@add_two_fields<>;
-  → x(1 : Field, 2 : Field)
-}
-
-example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧ (simple_fn.fn.body _ h![] |>.body h![])
-  fun (v : Tp.denote p .field) => v = 3 := by
-  simp only [simple_fn]
-  steps
-  apply STHoare.callDecl'_intro
-  . simp only [SLP.entails]
-    intros _ h
-    rename_i v₁ v₂ v₃ st
-    rw [SLP.star_comm (H := ⟦v₁ = _⟧), SLP.star_comm (H := ⟦v₁ = _⟧ ⋆ _)] at h
-    rw [SLP.star_assoc, SLP.star_assoc] at h
-    apply SLP.ent_drop_left at h
-    exact h
-  on_goal 3 => exact add_two_fields.fn
-  all_goals tauto
-  on_goal 3 => exact fun v => v = 3
-  . simp only [add_two_fields]
-    steps
-    simp_all
-    intros
-    ring
-  . steps
-    aesop
-
-
 nr_def simple_muts<>(x : Field) -> Field {
   let mut y = x;
   let mut z = x;
@@ -126,24 +93,32 @@ example {p Γ x y}: STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body h
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
   let add = |a : Field, b : Field| -> Field { #fAdd(a, b) : Field };
-  ^add(x, y) : Field;
+  add(x, y);
 }
 
 example {p Γ} {x y : Tp.denote p Tp.field} :
   STHoare p Γ ⟦⟧ (simple_lambda.fn.body _ h![] |>.body h![x, y])
-  fun v => v = (x + y) := by
+  fun v => v = x + y := by
   simp only [simple_lambda]
   steps
+  . apply STHoare.consequence_frame_left STHoare.callLambda'_intro
+    . rw [SLP.star_assoc, SLP.star_comm, SLP.star_assoc]
+      rw [SLP.top_star_top]
+      apply SLP.ent_star_top
+    . exact fun v => v = x + y
+    . simp only
+      steps
+      simp_all only [exists_const, SLP.true_star]
+      unfold SLP.wand SLP.entails SLP.forall'
+      intros _ _ _ _ _ _
+      simp_all [SLP.star, SLP.lift]
   simp_all
   steps
   simp_all
-  rotate_left 2
-  simp_all [SLP.entails_self]
-  exact (fun v => v = x + y)
-  sl
-  aesop
-  sl
-  aesop
+  intros st₁ h₁ v st₂ _ _
+  apply SLP.ent_drop_left at h₁
+  unfold SLP.lift SLP.star at *
+  simp_all
 
 nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field where {
     fn bulbulize<>(x : Field) -> Field {
@@ -162,73 +137,30 @@ def simpleTraitEnv : Env := {
   traits := [bulbulizeField, bulbulizeU32]
 }
 
-def simple_trait_call (tp : Tp) (arg : tp.denote P): Expr (Tp.denote P) tp :=
-  @Expr.call _ [] h![] [tp] tp (.trait ⟨⟨⟨"Bulbulize", [], h![]⟩, tp⟩, "bulbulize"⟩) h![arg]
-
-
-example : STHoare p simpleTraitEnv ⟦⟧ (simple_trait_call .field arg) (fun v => v = 2 * arg) := by
-  simp only [simple_trait_call]
-  steps
-  apply_impl [] bulbulizeField.2
-  tauto
-  any_goals rfl
-  simp only
-  steps
-  casesm ∃_, _
-  intro
-  subst_vars
-  ring
-
-example : STHoare p simpleTraitEnv ⟦⟧ (simple_trait_call (.u 32) arg) (fun v => v = 69) := by
-  simp only [simple_trait_call]
-  steps
-  apply_impl [] bulbulizeU32.2
-  tauto
-  any_goals rfl
-  simp only
-  steps
-  aesop
-
-
-example : STHoare p simpleTraitEnv ⟦⟧ (simple_trait_call (.u 32) arg) (fun v => v = 69) := by
-  simp only [simple_trait_call]
-  steps
-  try_impls [] [bulbulizeField.2, bulbulizeU32.2]
-  tauto
-  any_goals rfl
-  simp only
-  steps
-  aesop
-
-example : STHoare p simpleTraitEnv ⟦⟧ (simple_trait_call (.u 32) arg) (fun v => v = 69) := by
-  simp only [simple_trait_call]
-  steps
-  try_impls_all [] simpleTraitEnv
-  tauto
-  any_goals rfl
-  simp only
-  steps
-  aesop
-
-
-nr_def simple_trait_call_syntax<I> (x : I) -> I {
-  (I as Bulbulize<>)::bulbulize<>(x : I) : I
+nr_def simple_trait_call<I> (x : I) -> I {
+  (I as Bulbulize<>)::bulbulize<>(x)
 }
 
 example {p} {arg : Tp.denote p Tp.field} :
-  STHoare p simpleTraitEnv ⟦⟧ (simple_trait_call_syntax.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
-  simp only [simple_trait_call_syntax]
+  STHoare p simpleTraitEnv ⟦⟧ (simple_trait_call.fn.body _ h![.field] |>.body h![arg]) (fun v => v = 2 * arg) := by
+  simp only [simple_trait_call]
   steps
-  try_impls_all [] simpleTraitEnv
-  tauto
-  any_goals rfl
-  simp only
+  . apply STHoare.callTrait'_intro
+    apply SLP.ent_star_top
+    try_impls_all [] simpleTraitEnv
+    all_goals tauto
+    simp only
+    steps
+    simp_all only [exists_const, SLP.true_star]
+    on_goal 2 => exact (fun v => v = 2 * arg)
+    sl
+    intros
+    subst_vars
+    ring
   steps
-  simp_all
-  rotate_left 1
-  all_goals try exact (fun v => v = 2 * arg)
-  all_goals (sl; intro; subst_vars; ring)
-
+  intros
+  subst_vars
+  rfl
 
 nr_trait_impl[me] <I> Me<> for I where {
     fn me<>(x : I) -> I {
@@ -242,20 +174,21 @@ def genericTraitEnv : Env := {
 }
 
 nr_def generic_trait_call<>(x : Field) -> Field {
-  (Field as Me<>)::me<>(x : Field) : Field
+  (Field as Me<>)::me<>(x)
 }
 
 example {p} {x : Tp.denote p Tp.field} :
   STHoare p genericTraitEnv ⟦⟧ (generic_trait_call.fn.body _ h![] |>.body h![x]) (fun v => v = x) := by
   simp only [generic_trait_call]
   steps
-  try_impls_all [Tp.field] genericTraitEnv
-  tauto
-  all_goals try rfl
-  simp_all
-  steps
-  sl
-  aesop
+  . apply STHoare.callTrait'_intro
+    apply SLP.ent_star_top
+    try_impls_all [Tp.field] genericTraitEnv
+    tauto
+    all_goals try rfl
+    steps
+  . steps
+    simp_all
 
 nr_struct_def Pair <I> {
   a : I,
@@ -293,27 +226,35 @@ example {p} {x : Tp.denote p $ .u 8} :
   steps
   aesop
 
-nr_def call_decl<>(x: Field, y : Field) -> Field {
-   let s = @struct_construct<>(x, y) : Pair<Field>;
-   (s as Pair<Field>).a
- }
+nr_def add_two_fields<>(a : Field, b : Field) -> Field {
+  #fAdd(a, b) : Field
+}
 
-example {x y : Tp.denote p .field} :
-  STHoare p ⟨[(struct_construct.name, struct_construct.fn)], []⟩
-    ⟦⟧ (call_decl.fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
-  simp only [call_decl, struct_construct]
-  apply STHoare.letIn_intro
-  on_goal 3 => exact (fun (v : Tp.denote p $ .tuple _ [.field, .field]) => v = (x, y, ()))
-  apply STHoare.callDecl_intro <;> tauto
-  . apply STHoare.letIn_intro
-    . steps
-    . intros
-      steps
-      aesop
-  . intros
+nr_def call_decl<>() -> Field {
+  @add_two_fields<>(1 : Field, 2 : Field)
+}
+
+example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧ (call_decl.fn.body _ h![] |>.body h![])
+  fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [call_decl]
+  steps
+  apply STHoare.callDecl'_intro
+  . rename_i v₁ v₂ v₃
+    rw [SLP.star_comm (H := ⟦v₁ = _⟧), ←SLP.star_assoc]
+    rw [SLP.star_comm (H := ⟦v₁ = _⟧), SLP.star_assoc]
+    apply SLP.star_mono
+    apply SLP.entails_self
+    apply SLP.entails_top
+  on_goal 3 => exact add_two_fields.fn
+  all_goals tauto
+  on_goal 3 => exact fun v => v = 3
+  . simp only [add_two_fields]
     steps
+    simp_all
+    intros
+    ring
+  . steps
     aesop
-
 
 nr_def simple_tuple<>() -> Field {
   let t = `(1 : Field, true, 3 : Field);
@@ -353,8 +294,11 @@ nr_def tuple_lens<>() -> Field {
 example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
   simp only [tuple_lens]
   steps
-  simp_all
-  aesop
+  subst_vars
+  simp_all only [Access.get, exists_const, Lens.modify, Lens.get, Option.bind_eq_bind,
+    Option.some_bind, Option.bind_some, Option.some.injEq]
+  subst_vars
+  rfl
 
 nr_def struct_lens<>() -> Field {
   let mut p = `(Pair<Field>{ 1 : Field, 2 : Field}, 3 : Field);

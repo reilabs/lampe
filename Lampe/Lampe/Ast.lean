@@ -41,7 +41,7 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
-| lambda : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep .lambdaRef
+| lam : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep (.fn argTps outTp)
 
 structure Lambda (rep : Tp → Type) where
   argTps : List Tp
