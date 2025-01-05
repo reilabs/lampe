@@ -41,11 +41,14 @@ syntax "[" nr_type ";" num "]" : nr_type -- Array
 syntax "`(" nr_type,* ")" : nr_type -- Tuple
 syntax "λ(" nr_type,* ")" "→" nr_type : nr_type -- Function
 
-def mkFieldName (structName : String) (fieldName : String) : Lean.Ident :=
+def mkFieldAccessorIdent (structName : String) (fieldName : String) : Lean.Ident :=
   mkIdent $ Name.mkSimple $ "field" ++ "#" ++ structName ++ "#" ++ fieldName
 
 def mkStructDefIdent (structName : String) : Lean.Ident :=
    mkIdent $ Name.mkSimple $ "struct" ++ "#" ++ structName
+
+def mkFunctionDefIdent (fnName : String) : Lean.Ident :=
+  mkIdent $ Name.mkSimple $ "fn" ++ "#" ++ fnName
 
 def mkListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
 | [] => `([])
@@ -98,7 +101,7 @@ def mkTupleMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mona
 
 def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `nr_ident) (gs : List $ TSyntax `nr_type) (field : TSyntax `ident) : m (TSyntax `term) := do
   let gs ← mkHListLit (←gs.mapM fun gVal => mkNrType gVal)
-  let accessor := mkFieldName (←mkNrIdent structName) (field.getId.toString)
+  let accessor := mkFieldAccessorIdent (←mkNrIdent structName) (field.getId.toString)
   `($accessor $gs)
 
 syntax ident ":" nr_type : nr_param_decl
@@ -456,7 +459,7 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
         | $(←mkHListLit generics) => Builtin.Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))
       let paramDefSyn ← `(match generics with
         | $(←mkHListLit generics) => $(←mkTupleMember idx))
-      let defnNameSyn := mkFieldName (←mkNrIdent structName) paramName.getId.toString
+      let defnNameSyn := mkFieldAccessorIdent (←mkNrIdent structName) paramName.getId.toString
       `(def $defnNameSyn (generics : HList Kind.denote $genericKinds) : $paramDefTy := $paramDefSyn)
     | _ => throwUnsupportedSyntax
 | _ => throwUnsupportedSyntax
@@ -471,7 +474,7 @@ elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
 
 elab "nr_def" decl:nr_fn_decl : command => do
   let (name, decl) ← mkFnDecl decl
-  let decl ← `(def $(mkIdent $ Name.mkSimple name) : Lampe.FunctionDecl := $decl)
+  let decl ← `(def $(mkFunctionDefIdent name) : Lampe.FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
 elab "nr_trait_impl[" defName:ident "]" impl:nr_trait_impl : command => do
