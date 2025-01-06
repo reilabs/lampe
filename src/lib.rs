@@ -205,4 +205,42 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn associated_types() -> anyhow::Result<()> {
+        // Set up our source code
+        let file_name = Path::new("main.nr");
+        let source = r#"
+            trait Test {
+                type AssocType;
+                fn foo(self) -> bool;
+            }
+
+            impl Test for bool {
+                type AssocType = bool;
+                
+                fn foo(self) -> bool {
+                    true
+                }
+            }w
+            
+            fn main() {
+                let x = true;
+                print(x.foo());
+            }
+        "#;
+
+        let source = Source::new(file_name, source);
+
+        // Create our project
+        let project = Project::new(Path::new(""), source);
+
+        // Execute the compilation step on our project.
+        let source = noir_to_lean(project)?.take();
+
+        println!("{source}");
+
+        Ok(())
+    }
+
 }

@@ -174,14 +174,14 @@ pub(super) mod expr {
         struct_name: &str,
         target_expr: &str,
         member: Ident,
-        out_ty: &str,
+        _out_ty: &str,
     ) -> String {
-        format!("(({target_expr} as {struct_name}).{member} : {out_ty})")
+        format!("(({target_expr} as {struct_name}).{member})")
     }
 
     #[inline]
-    pub fn format_tuple_access(target_expr: &str, member: Ident, out_ty: &str) -> String {
-        format!("({target_expr}.{member} : {out_ty})")
+    pub fn format_tuple_access(target_expr: &str, member: Ident, _out_ty: &str) -> String {
+        format!("({target_expr}.{member})")
     }
 
     #[inline]
@@ -252,6 +252,11 @@ pub(super) mod stmt {
     #[inline]
     pub fn format_let_in(name: &str, _binding_type: &str, bound_expr: &str) -> String {
         format!("let {name} = {bound_expr}")
+    }
+
+    #[inline]
+    pub fn format_let_mut_in(name: &str, _binding_type: &str, bound_expr: &str) -> String {
+        format!("let mut {name} = {bound_expr}")
     }
 
     #[inline]

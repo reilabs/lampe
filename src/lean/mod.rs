@@ -185,7 +185,7 @@ impl LeanEmitter {
                     if def_name.starts_with("_") {
                         continue;
                     }
-                    func_refs.insert(format!("«{def_name}»"));
+                    func_refs.insert(format!("«fn#{def_name}»"));
                     def
                 }
                 ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id)?,
@@ -242,6 +242,9 @@ impl LeanEmitter {
         };
         let target = self.emit_fully_qualified_type(&trait_impl.typ);
 
+        if !trait_impl.where_clause.is_empty() {
+            todo!("trait constraints are not supported yet")
+        }
         let generics = &trait_impl
             .trait_generics
             .iter()
@@ -382,6 +385,9 @@ impl LeanEmitter {
     ) -> Result<(String, String)> {
         // Get the various parameters
         let func_data = self.context.function_meta(&func);
+        if !func_data.trait_constraints.is_empty() {
+            todo!("trait constraints are not supported yet")
+        }
         let fq_path = self
             .context
             .fully_qualified_function_name(&func_data.source_crate, &func);
@@ -913,7 +919,6 @@ impl LeanEmitter {
                     .map(|(pattern, ty)| {
                         let pattern_str = self.emit_pattern(pattern)?;
                         let typ = self.emit_fully_qualified_type(ty);
-
                         Ok(format!("{pattern_str} : {typ}"))
                     })
                     .try_collect()?;
@@ -975,8 +980,16 @@ impl LeanEmitter {
                 let binding_type = self.emit_fully_qualified_type(&lets.r#type);
                 let bound_expr = self.emit_expr(ind, lets.expression)?;
                 let name = self.emit_pattern(&lets.pattern)?;
-
-                syntax::stmt::format_let_in(&name, &binding_type, &bound_expr)
+                // [TODO] proper pattern support
+                let is_mut = match lets.pattern {
+                    HirPattern::Mutable(..) => true,
+                    _ => false
+                };
+                if is_mut {
+                    syntax::stmt::format_let_mut_in(&name, &binding_type, &bound_expr)
+                } else {
+                    syntax::stmt::format_let_in(&name, &binding_type, &bound_expr)
+                }
             }
             HirStatement::Constrain(constraint) => {
                 let constraint_expr = self.emit_expr(ind, constraint.0)?;
@@ -1138,16 +1151,8 @@ impl LeanEmitter {
                 let typ = self.context.def_interner.id_type(expr).to_string();
                 format!("{minus}{felt} : {typ}", minus = if neg { "-" } else { "" })
             }
-            HirLiteral::Str(str) => {
-                format!(r#""{str}""#)
-            }
-            HirLiteral::FmtStr(template, exprs) => {
-                let expr_strings: Vec<String> =
-                    exprs.iter().map(|expr| self.emit_expr(ind, *expr)).try_collect()?;
-                let exprs = expr_strings.join(", ");
-
-                format!(r#""{template}".fmt({exprs})"#)
-            }
+            HirLiteral::Str(_str) => todo!("string literals not supported"),
+            HirLiteral::FmtStr(..) => todo!("fmtstr not supported"),
             HirLiteral::Unit => "()".into(),
         };
 
@@ -1172,14 +1177,7 @@ impl LeanEmitter {
 
                 format!("[{elems_string}]")
             }
-            HirArrayLiteral::Repeated {
-                repeated_element,
-                length,
-            } => {
-                let elem = self.emit_expr(ind, repeated_element)?;
-                let len_ty = self.emit_fully_qualified_type(&length);
-                format!("[{elem}; {len_ty}]")
-            }
+            HirArrayLiteral::Repeated { .. } => todo!("repeated array literals are not supported"),
         };
 
         Ok(result)
@@ -1198,7 +1196,7 @@ impl LeanEmitter {
                     .context
                     .def_interner
                     .definition_name(expect_identifier(pattern)?.id);
-                let vis_string: String = match vis {
+                let _vis_string: String = match vis {
                     Visibility::Public => "pub ",
                     Visibility::Private => "",
                     Visibility::CallData(_) => "call_data ",
@@ -1208,7 +1206,7 @@ impl LeanEmitter {
 
                 let qualified_type = self.emit_fully_qualified_type(typ);
 
-                Ok(format!("{name} : {vis_string}{qualified_type}"))
+                Ok(format!("{name} : {qualified_type}"))
             })
             .try_collect()?;
 
