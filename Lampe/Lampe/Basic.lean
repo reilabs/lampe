@@ -1,5 +1,5 @@
 import Lampe.Semantics
-import Lampe.Syntax.Basic
+import Lampe.Syntax
 import Lampe.Ast
 import Lampe.Tp
 import Lampe.Lens

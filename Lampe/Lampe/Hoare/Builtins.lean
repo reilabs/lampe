@@ -10,6 +10,8 @@ import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
+import Lampe.Builtin.Cast
+import Lampe.Builtin.Lens
 
 namespace Lampe.STHoare
 
@@ -122,6 +124,25 @@ lemma pureBuiltin_intro_consequence
  theorem fNeg_intro : STHoarePureBuiltin p Γ Builtin.fNeg (by tauto) h![a] (a := ()) := by
    apply pureBuiltin_intro_consequence <;> tauto
    tauto
+
+-- Arrays
+
+theorem mkArray_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
+  STHoarePureBuiltin p Γ (Builtin.mkArray n) (by tauto) args (a := (argTps, tp)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto) h![arr, i] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
+
+theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] (a := (tp, n)) := by
+  apply pureBuiltin_intro_consequence <;> tauto
+  tauto
 
 -- BigInt
 
@@ -298,29 +319,6 @@ theorem iFromField_intro : STHoarePureBuiltin p Γ Builtin.iFromField (by tauto)
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
--- Arrays
-
-theorem mkArray_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
-  STHoarePureBuiltin p Γ (Builtin.mkArray n) (by tauto) args (a := (argTps, tp)) := by
-  apply pureBuiltin_intro_consequence <;> tauto
-  tauto
-
-theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto) h![arr, i] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem replaceArray_intro : STHoarePureBuiltin p Γ Builtin.replaceArray (by tauto) h![arr, idx, v] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
 -- Slice
 
 theorem mkSlice_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
@@ -357,10 +355,6 @@ theorem slicePopBack_intro : STHoarePureBuiltin p Γ Builtin.slicePopBack (by ta
   tauto
 
 theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by tauto) h![sl, i]  := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
-
-theorem replaceSlice_intro : STHoarePureBuiltin p Γ Builtin.replaceSlice (by tauto) h![sl, idx, v] := by
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
@@ -472,9 +466,80 @@ theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) 
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem replaceTuple_intro {mem : Builtin.Member tp tps} : STHoarePureBuiltin p Γ (Builtin.replaceTuple mem) (by tauto) h![tpl, v] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
+-- Lens
+
+theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
+    STHoare p Γ
+    [r ↦ ⟨tp₁, s⟩]
+    (.call h![] [tp₁.ref] tp₂ (.builtin $ .readLens lens) h![r])
+    (fun v' => ⟦lens.get s = some v'⟧ ⋆ [r ↦ ⟨tp₁, s⟩]) := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  cases hl : (lens.get s)
+  . apply Builtin.readLensOmni.err <;> tauto
+    unfold SLP.star State.valSingleton at *
+    aesop
+  . apply Builtin.readLensOmni.ok <;> tauto
+    . unfold SLP.star State.valSingleton at *
+      aesop
+    . unfold mapToValHeapCondition
+      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
+      apply SLP.ent_star_top at h
+      simp_all
+
+ theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s : Tp.denote p tp₁} {v : Tp.denote p tp₂} :
+    STHoare p Γ
+    [r ↦ ⟨tp₁, s⟩]
+    (.call h![] [tp₁.ref, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v])
+    (fun _ => ∃∃h, [r ↦ ⟨tp₁, lens.modify s v |>.get h⟩]) := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  cases hl : (lens.modify s v)
+  . apply Builtin.modifyLensOmni.err <;> tauto
+    unfold SLP.star State.valSingleton at *
+    aesop
+  . apply Builtin.modifyLensOmni.ok <;> tauto
+    . unfold SLP.star State.valSingleton at *
+      aesop
+    . unfold mapToValHeapCondition
+      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
+      obtain ⟨st₁, st₂, ⟨h₁, _⟩, h₂, h₃, h₄⟩ := h
+      simp only [State.valSingleton] at h₃
+      rename (Tp.denote p tp₁) => s'
+      exists ⟨Finmap.singleton r ⟨tp₁, s'⟩, st₁.lambdas⟩, st₂
+      apply And.intro
+      . simp only [LawfulHeap.disjoint]
+        apply And.intro ?_ (by tauto)
+        aesop
+      apply And.intro
+      . simp only [State.union_parts, State.mk.injEq, and_true]
+        apply And.intro ?_ (by simp_all)
+        rw [Finmap.insert_eq_singleton_union]
+        simp_all only [State.union_parts]
+        rw [←Finmap.union_assoc, ←Finmap.insert_eq_singleton_union]
+        simp_all
+      apply And.intro
+      . simp_all [SLP.exists']
+      apply SLP.ent_star_top
+      tauto
+
+theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
+    STHoare p Γ
+    ⟦⟧
+    (.call h![] [tp₁] tp₂ (.builtin $ .getLens lens) h![s])
+    (fun v => ⟦lens.get s = some v⟧) := by
+  unfold STHoare THoare
+  intros H st h
+  constructor
+  cases hl : (lens.get s)
+  . apply Builtin.getLensOmni.err <;> tauto
+  . apply Builtin.getLensOmni.ok <;> tauto
+    . unfold mapToValHeapCondition
+      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
+      apply SLP.ent_star_top at h
+      simp_all
 
 -- Misc
 
@@ -483,19 +548,18 @@ theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (
   tauto
 
 theorem cast_intro [Builtin.CastTp tp tp'] : STHoare p Γ ⟦⟧ (.call h![] [tp] tp' (.builtin .cast) h![v])
-  (fun v' => ∃∃ h, ⟦@Builtin.CastTp.cast tp tp' _ p v h = v'⟧) := by
-  unfold STHoare THoare
-  intros
-  constructor
-  cases em (Builtin.CastTp.validate tp' v)
-  . apply Builtin.castOmni.ok
-    . simp_all only [SLP.true_star, SLP.star, SLP.exists']
-      apply SLP.ent_star_top
-      aesop
-  . apply Builtin.castOmni.err
-    . tauto
-    . unfold mapToValHeapCondition
-      simp_all
-
+   (fun v' => ∃∃ h, ⟦@Builtin.CastTp.cast tp tp' _ p v h = v'⟧) := by
+   unfold STHoare THoare
+   intros
+   constructor
+   cases em (Builtin.CastTp.validate tp' v)
+   . apply Builtin.castOmni.ok
+     . simp_all only [SLP.true_star, SLP.star, SLP.exists']
+       apply SLP.ent_star_top
+       aesop
+   . apply Builtin.castOmni.err
+     . tauto
+     . unfold mapToValHeapCondition
+       simp_all
 
 end Lampe.STHoare

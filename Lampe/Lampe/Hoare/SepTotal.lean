@@ -383,17 +383,16 @@ theorem callTrait_intro {impl} {fname fn}
   assumption
 
 theorem callDecl_intro {fname fn}
-    (h_fn : (fname, fn) ∈ Γ.functions)
-    (hkc : fn.generics = tyKinds)
-    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
-    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res)
-    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q):
-    STHoare p Γ H
-      (@Expr.call _ tyKinds generics argTps res (.decl fname) args)
-      Q := by
-  unfold STHoare THoare
-  intros
-  apply Omni.callDecl <;> tauto
-
+     (h_fn : (fname, fn) ∈ Γ.functions)
+     (hkc : fn.generics = tyKinds)
+     (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
+     (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res)
+     (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q):
+     STHoare p Γ H
+       (@Expr.call _ tyKinds generics argTps res (.decl fname) args)
+       Q := by
+   unfold STHoare THoare
+   intros
+   apply Omni.callDecl <;> tauto
 
 end Lampe.STHoare

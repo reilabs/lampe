@@ -40,8 +40,6 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
 | lambda : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep .lambdaRef
--- | func : FunctionIdent rep → (gs : HList Kind.denote tyKinds) → Expr rep .func
--- | call' : (rep .func) → Expr rep .unit
 
 structure Lambda (rep : Tp → Type) where
   argTps : List Tp

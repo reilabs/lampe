@@ -4,14 +4,46 @@ import Lampe.Data.HList
 import Lampe.Builtin.Helpers
 import Mathlib
 
-lemma Finmap.disjoint_insert [DecidableEq α] {v : β} {ref : α} {m₁ m₂ : Finmap fun _: α => β}
-  (h₁ : m₁.Disjoint m₂) (h₂ : m₁.lookup ref = some v) :
-   (m₁.insert ref v').Disjoint m₂ := by
-  intro ref' h
-  have _ : ref ∈ m₁ := by apply Finmap.mem_of_lookup_eq_some; tauto
+lemma List.replicate_head (hl : x :: xs = List.replicate n a) : x = a := by
+  unfold List.replicate at hl
   aesop
 
+lemma List.replicate_cons (hl : x :: xs = List.replicate n a) : xs = List.replicate (n-1) a := by
+  unfold List.replicate at hl
+  cases xs <;> aesop
+
 namespace Lampe
+
+@[reducible]
+def HList.toList (l : HList rep tps) (_ : tps = List.replicate n tp) : List (rep tp) := match l with
+| .nil => []
+| .cons x xs => match tps with
+  | [] => []
+  | _ :: _ => ((List.replicate_head (by tauto)) ▸ x) :: (HList.toList xs (List.replicate_cons (by tauto)))
+
+lemma HList.toList_cons :
+    HList.toList (n := n + 1) (HList.cons head rem) h₁ = head :: (HList.toList (n := n) rem h₂) := by
+  rfl
+
+lemma HList.toList_length_is_n (h_same : tps = List.replicate n tp) :
+  (HList.toList l h_same).length = n := by
+  subst h_same
+  induction n
+  cases l
+  tauto
+  cases l
+  rw [HList.toList_cons]
+  simp_all
+  rfl
+
+@[reducible]
+def HList.toVec (l : HList rep tps) (h_same : tps = List.replicate n tp) : Mathlib.Vector (rep tp) n :=
+  ⟨HList.toList l h_same, by apply HList.toList_length_is_n⟩
+
+@[reducible]
+def HList.toTuple (hList : HList (Tp.denote p) tps) (name : Option String) : Tp.denote p $ .tuple name tps  := match hList with
+| .nil => ()
+| .cons arg args => ⟨arg, HList.toTuple args name⟩
 
 abbrev Builtin.Omni := ∀(P:Prime),
     ValHeap P →
@@ -143,76 +175,6 @@ def fresh : Builtin := {
     intro
     repeat apply Exists.intro
     tauto
-}
-
-/--
-  Represents the types that can be casted to each other.
--/
-class CastTp (tp tp' : Tp) where
-  validate : Tp.denote p tp → Prop
-  cast : (a : Tp.denote p tp) → (validate a) → Tp.denote p tp'
-
-@[simp]
-instance : CastTp tp tp where
-  validate := fun _ => True
-  cast := fun a _ => a
-
-@[simp]
-instance : CastTp (.u s) (.i s) where
-  validate := fun a => a.toNat < 2^(s-1)
-  cast := fun a _ => a
-
-@[simp]
-instance : CastTp (.u s) (.field) where
-  validate := fun _ => True
-  cast := fun a _ => a.toNat
-
-@[simp]
-instance : CastTp (.i s) (.u s) where
-  validate := fun a => a.toNat ≥ 0
-  cast := fun a _ => a
-
-@[simp]
-instance : CastTp (.i s) (.field) where
-  validate := fun _ => True
-  cast := fun a _ => a.toNat
-
-@[simp]
-instance : CastTp (.field) (.u s) where
-  validate := fun a => a.val < 2^s
-  cast := fun a h => ⟨a.val, h⟩
-
-@[simp]
-instance : CastTp (.field) (.i s) where
-  validate := fun a => a.val < 2^(s-1) ∧ a.val ≥ 0
-  cast := fun a h => ⟨a.val, by
-    cases s
-    . simp_all
-    . simp_all only [add_tsub_cancel_right, Nat.pow_succ]
-      linarith
-  ⟩
-
-inductive castOmni : Omni where
-| ok {P st tp tp' v Q} [CastTp tp tp'] :
-  (h : CastTp.validate tp' v) → Q (some (st, CastTp.cast v h)) → castOmni P st [tp] tp' h![v] Q
-| err {P st tp tp' v Q} [CastTp tp tp'] :
-  ¬(CastTp.validate tp' v) → Q none → castOmni P st [tp] tp' h![v] Q
-
-def cast : Builtin := {
-  omni := castOmni
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type castOmni
-    . apply castOmni.ok <;> simp_all
-    . apply castOmni.err <;> simp_all
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type castOmni
-    . apply castOmni.ok
-      . constructor <;> tauto
-    . apply castOmni.err <;> assumption
 }
 
 end Lampe.Builtin

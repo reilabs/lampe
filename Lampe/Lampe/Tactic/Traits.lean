@@ -1,7 +1,7 @@
 import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
-import Lampe.Syntax.Basic
+import Lampe.Syntax
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
@@ -34,14 +34,14 @@ partial def extractImpl (expr : Lean.Expr) : TacticM $ TSyntax `term := match ex
 | _ => throwError s!"failed to match with {expr} in impl extraction"
 
 partial def extractImpls (expr : Lean.Expr) : TacticM $ List (TSyntax `term) := match expr with
-| .const name us => do extractImpls (← whnf (.const name us))
-| .app (.const `Lampe.Env.traits _) envExpr => extractImpls envExpr
-| .app (.app (.const `Lampe.Env.mk _) _) implsExpr => extractImpls implsExpr
-| .app (.app (.app (.const `List.cons _) _) implExpr) rem => do
-  let implSyn ← extractImpl implExpr
-  pure (implSyn :: (← extractImpls rem))
-| .app (.const `List.nil _) _ => pure []
-| _ => throwError s!"failed to match with {expr}"
+  | .const name us => do extractImpls (← whnf (.const name us))
+  | .app (.const `Lampe.Env.traits _) envExpr => extractImpls envExpr
+  | .app (.app (.const `Lampe.Env.mk _) _) implsExpr => extractImpls implsExpr
+  | .app (.app (.app (.const `List.cons _) _) implExpr) rem => do
+    let implSyn ← extractImpl implExpr
+    pure (implSyn :: (← extractImpls rem))
+  | .app (.const `List.nil _) _ => pure []
+  | _ => throwError s!"failed to match with {expr}"
 
 syntax "apply_impl" "[" term,* "]" term : tactic
 syntax "try_impls" "[" term,* "]" "[" term,* "]" : tactic

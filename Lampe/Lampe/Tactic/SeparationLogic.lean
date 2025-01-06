@@ -1,7 +1,7 @@
 import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
-import Lampe.Syntax.Basic
+import Lampe.Syntax
 
 import Lean.Meta.Tactic.Simp.Main
 
@@ -557,34 +557,33 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litField_intro
     | apply Lampe.STHoare.litTrue_intro
     | apply Lampe.STHoare.litFalse_intro
-    | apply cast_intro
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
     | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
+    | apply cast_intro
+    | apply cast_intro
     | apply callTrait_intro
     | apply callDecl_intro
-    -- memory builtins
+    -- memory
     | apply var_intro
     | apply ref_intro
     | apply readRef_intro
     | apply writeRef_intro
-    -- array builtins
+    -- array
     | apply mkArray_intro
     | apply arrayLen_intro
     | apply arrayIndex_intro
     | apply arrayAsSlice_intro
-    | apply replaceArray_intro
-    -- slice builtins
+    -- slice
     | apply mkSlice_intro
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
-    | apply replaceSlice_intro
-    -- cmp
+    -- equality
     | apply unitEq_intro
-    | apply boolEq_intro
+    | apply bEq_intro
     | apply fEq_intro
     | apply uEq_intro
     | apply iEq_intro
@@ -616,10 +615,13 @@ macro "stephelper1" : tactic => `(tactic|(
     -- remainder
     | apply uRem_intro
     | apply iRem_intro
-    -- struct/tuple
+    -- struct
     | apply mkTuple_intro
     | apply projectTuple_intro
-    | apply replaceTuple_intro
+    -- lens
+    | apply readLens_intro
+    | apply modifyLens_intro
+    | apply getLens_intro
   )
 ))
 
@@ -629,31 +631,28 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left Lampe.STHoare.litField_intro
     | apply consequence_frame_left Lampe.STHoare.litTrue_intro
     | apply consequence_frame_left Lampe.STHoare.litFalse_intro
-    | apply consequence_frame_left cast_intro
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left assert_intro
-    -- | apply consequence_frame_left skip_intro
     | apply consequence_frame_left lam_intro
-    -- memory builtins
+    | apply consequence_frame_left cast_intro
+    -- memory
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
     | apply consequence_frame_left readRef_intro
     | apply consequence_frame_left writeRef_intro
-    -- array builtins
+    -- array
     | apply consequence_frame_left mkArray_intro
     | apply consequence_frame_left arrayLen_intro
     | apply consequence_frame_left arrayIndex_intro
     | apply consequence_frame_left arrayAsSlice_intro
-    | apply consequence_frame_left replaceArray_intro
-    -- slice builtins
+    -- slice
     | apply consequence_frame_left mkSlice_intro
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
-    | apply consequence_frame_left replaceSlice_intro
-    -- cmp
+    -- equality
     | apply consequence_frame_left unitEq_intro
-    | apply consequence_frame_left boolEq_intro
+    | apply consequence_frame_left bEq_intro
     | apply consequence_frame_left fEq_intro
     | apply consequence_frame_left uEq_intro
     | apply consequence_frame_left iEq_intro
@@ -685,10 +684,13 @@ macro "stephelper2" : tactic => `(tactic|(
     -- remainder
     | apply consequence_frame_left uRem_intro
     | apply consequence_frame_left iRem_intro
-    -- struct/tuple
+    -- struct
     | apply consequence_frame_left mkTuple_intro
     | apply consequence_frame_left projectTuple_intro
-    | apply consequence_frame_left replaceTuple_intro
+    -- lens
+    | apply consequence_frame_left readLens_intro
+    | apply consequence_frame_left modifyLens_intro
+    | apply consequence_frame_left getLens_intro
   )
   repeat sl
 ))
@@ -699,31 +701,31 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top Lampe.STHoare.litField_intro
     | apply ramified_frame_top Lampe.STHoare.litTrue_intro
     | apply ramified_frame_top Lampe.STHoare.litFalse_intro
-    | apply ramified_frame_top cast_intro
     | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top lam_intro
-    -- memory builtins
+    | apply ramified_frame_top cast_intro
+    | apply ramified_frame_top callDecl_intro
+    -- memory
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
     | apply ramified_frame_top readRef_intro
     | apply ramified_frame_top writeRef_intro
-    -- array builtins
+    -- array
     | apply ramified_frame_top mkArray_intro
     | apply ramified_frame_top arrayLen_intro
     | apply ramified_frame_top arrayIndex_intro
     | apply ramified_frame_top arrayAsSlice_intro
-    | apply ramified_frame_top replaceArray_intro
-    -- slice builtins
+    -- slice
     | apply ramified_frame_top mkSlice_intro
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
-    | apply ramified_frame_top replaceSlice_intro
-    -- cmp
+    -- equality
     | apply ramified_frame_top unitEq_intro
-    | apply ramified_frame_top boolEq_intro
+    | apply ramified_frame_top bEq_intro
+    | apply ramified_frame_top bEq_intro
     | apply ramified_frame_top fEq_intro
     | apply ramified_frame_top uEq_intro
     | apply ramified_frame_top iEq_intro
@@ -755,10 +757,13 @@ macro "stephelper3" : tactic => `(tactic|(
     -- remainder
     | apply ramified_frame_top uRem_intro
     | apply ramified_frame_top iRem_intro
-    -- struct/tuple
+    -- struct
     | apply ramified_frame_top mkTuple_intro
     | apply ramified_frame_top projectTuple_intro
-    | apply ramified_frame_top replaceTuple_intro
+    -- lens
+    | apply ramified_frame_top readLens_intro
+    | apply ramified_frame_top modifyLens_intro
+    | apply ramified_frame_top getLens_intro
   )
   repeat sl
 ))
