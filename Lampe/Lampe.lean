@@ -21,7 +21,8 @@ nr_def weirdEq<I>(x : I, y : I) -> Unit {
   #assert(#fEq(a, y) : bool) : Unit;
 }
 
-example {x y : Tp.denote p .field} : STHoare p Γ ⟦⟧ («fn#weirdEq».fn.body _ h![.field] |>.body h![x, y]) fun _ => x = y := by
+example {x y : Tp.denote p .field} :
+  STHoare p Γ ⟦⟧ («fn#weirdEq».fn.body _ h![.field] |>.body h![x, y]) fun _ => x = y := by
   simp only [«fn#weirdEq»]
   steps
   simp_all
@@ -34,13 +35,15 @@ nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   self
 }
 
-lemma BitVec.add_toNat_of_lt_max {a b : BitVec w} (h: a.toNat + b.toNat < 2^w) : (a + b).toNat = a.toNat + b.toNat := by
+lemma BitVec.add_toNat_of_lt_max {a b : BitVec w} (h: a.toNat + b.toNat < 2^w) :
+    (a + b).toNat = a.toNat + b.toNat := by
   simp only [BitVec.add_def, BitVec.toNat_ofNat]
   rw [Nat.mod_eq_of_lt]
   assumption
 
 example {self that : Tp.denote p (.slice tp)} :
-    STHoare p Γ ⟦⟧ («fn#sliceAppend».fn.body _ h![tp] |>.body h![self, that]) fun v => v = self ++ that := by
+    STHoare p Γ ⟦⟧ («fn#sliceAppend».fn.body _ h![tp] |>.body h![self, that])
+    fun v => v = self ++ that := by
   simp only [«fn#sliceAppend»]
   steps
   rename Tp.denote _ tp.slice.ref => selfRef
@@ -139,7 +142,7 @@ def simpleTraitEnv : Env := {
 }
 
 nr_def simple_trait_call<I> (x : I) -> I {
-  (I as Bulbulize<>)::bulbulize<>(x)
+  ((I as Bulbulize<>)::bulbulize<> as λ(I) → I)(x)
 }
 
 example {p} {arg : Tp.denote p Tp.field} :
@@ -177,11 +180,12 @@ def genericTraitEnv : Env := {
 }
 
 nr_def generic_trait_call<>(x : Field) -> Field {
-  (Field as Me<>)::me<>(x)
+  ((Field as Me<>)::me<> as λ(Field) → Field)(x)
 }
 
 example {p} {x : Tp.denote p Tp.field} :
-    STHoare p genericTraitEnv ⟦⟧ («fn#generic_trait_call».fn.body _ h![] |>.body h![x]) (fun v => v = x) := by
+    STHoare p genericTraitEnv ⟦⟧ («fn#generic_trait_call».fn.body _ h![] |>.body h![x])
+    fun v => v = x := by
   simp only [«fn#generic_trait_call»]
   steps
   . apply STHoare.callTrait_intro
@@ -204,7 +208,8 @@ nr_def struct_construct<>(a : Field, b : Field) -> Pair<Field> {
 }
 
 example {p} {a b : Tp.denote p .field} :
-    STHoare p Γ ⟦⟧ («fn#struct_construct».fn.body _ h![] |>.body h![a, b]) (fun v => v.fst = a ∧ v.snd = (b, ())) := by
+    STHoare p Γ ⟦⟧ («fn#struct_construct».fn.body _ h![] |>.body h![a, b])
+    fun v => v.fst = a ∧ v.snd = (b, ()) := by
   simp only [«fn#struct_construct»]
   steps
   aesop
@@ -215,7 +220,8 @@ nr_def struct_project<>(x : Field, y : Field) -> Field {
 }
 
 example {p} {x y : Tp.denote p .field} :
-    STHoare p Γ ⟦⟧ («fn#struct_project».fn.body _ h![] |>.body h![x, y]) (fun v => v = x) := by
+    STHoare p Γ ⟦⟧ («fn#struct_project».fn.body _ h![] |>.body h![x, y])
+    fun v => v = x := by
   simp only [«fn#struct_project»]
   steps
   aesop
@@ -225,7 +231,8 @@ nr_def basic_cast<>(x : u8) -> Field {
 }
 
 example {p} {x : Tp.denote p $ .u 8} :
-    STHoare p Γ ⟦⟧ («fn#basic_cast».fn.body _ h![] |>.body h![x]) (fun (v : Tp.denote _ .field) => v = x.toNat) := by
+    STHoare p Γ ⟦⟧ («fn#basic_cast».fn.body _ h![] |>.body h![x])
+    fun (v : Tp.denote p .field) => v = x.toNat := by
   simp only [«fn#basic_cast»]
   steps
   aesop
@@ -235,7 +242,7 @@ nr_def add_two_fields<>(a : Field, b : Field) -> Field {
 }
 
 nr_def call_decl<>() -> Field {
-  @add_two_fields<>(1 : Field, 2 : Field)
+  (@add_two_fields<> as λ(Field, Field) → Field)(1 : Field, 2 : Field)
 }
 
 example : STHoare p ⟨[(«fn#add_two_fields».name, «fn#add_two_fields».fn)], []⟩ ⟦⟧
@@ -262,7 +269,8 @@ nr_def simple_tuple<>() -> Field {
   t.2
 }
 
-example : STHoare p Γ ⟦⟧ («fn#simple_tuple».fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v = 3) := by
+example : STHoare p Γ ⟦⟧ («fn#simple_tuple».fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 3 := by
   simp only [«fn#simple_tuple»]
   steps
   aesop
@@ -272,7 +280,8 @@ nr_def simple_slice<>() -> bool {
   s[[1 : u32]]
 }
 
-example : STHoare p Γ ⟦⟧ («fn#simple_slice».fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .bool) => v = false) := by
+example : STHoare p Γ ⟦⟧ («fn#simple_slice».fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .bool) => v = false := by
   simp only [«fn#simple_slice», Expr.mkSlice]
   steps
   rfl
@@ -283,7 +292,8 @@ nr_def simple_array<>() -> Field {
   arr[1 : u32]
 }
 
-example : STHoare p Γ ⟦⟧ («fn#simple_array».fn.body _ h![] |>.body h![]) (fun (v : Tp.denote p .field) => v = 2) := by
+example : STHoare p Γ ⟦⟧ («fn#simple_array».fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 2 := by
   simp only [«fn#simple_array», Expr.mkArray]
   steps <;> tauto
   aesop
@@ -294,7 +304,8 @@ nr_def tuple_lens<>() -> Field {
   p .0 .1
 }
 
-example : STHoare p Γ ⟦⟧ («fn#tuple_lens».fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+example : STHoare p Γ ⟦⟧ («fn#tuple_lens».fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 3 := by
   simp only [«fn#tuple_lens»]
   steps
   subst_vars
@@ -309,7 +320,8 @@ nr_def struct_lens<>() -> Field {
   (p .0 as Pair<Field>).b
 }
 
-example : STHoare p Γ ⟦⟧ («fn#struct_lens».fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+example : STHoare p Γ ⟦⟧ («fn#struct_lens».fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 3 := by
   simp only [«fn#struct_lens»]
   steps
   aesop
@@ -320,7 +332,8 @@ nr_def array_lens<>() -> Field {
   p.0[1 : u32]
 }
 
-example : STHoare p Γ ⟦⟧ («fn#array_lens».fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+example : STHoare p Γ ⟦⟧ («fn#array_lens».fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 3 := by
   simp only [«fn#array_lens»]
   steps
   rfl
@@ -336,7 +349,8 @@ nr_def slice_lens<>() -> Field {
   p .0 [[1 : u32]]
 }
 
-example : STHoare p Γ ⟦⟧ («fn#slice_lens».fn.body _ h![] |>.body h![]) fun (v : Tp.denote p .field) => v = 3 := by
+example : STHoare p Γ ⟦⟧ («fn#slice_lens».fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 3 := by
   simp only [«fn#slice_lens»]
   steps
   all_goals try exact ([1, 3], 3)
@@ -344,3 +358,41 @@ example : STHoare p Γ ⟦⟧ («fn#slice_lens».fn.body _ h![] |>.body h![]) fu
   . simp_all
     rfl
   . simp_all [Builtin.indexTpl]
+
+nr_def simple_func<>() -> Field {
+  10 : Field
+}
+
+nr_def call<>(f : λ() → Field) -> Field {
+  f()
+}
+
+nr_def simple_hof<>() -> Field {
+  let func = @simple_func<> as λ() → Field;
+  (@call<> as λ(λ() → Field) → Field)(func)
+}
+
+example : STHoare p ⟨[(«fn#simple_func».name, «fn#simple_func».fn), («fn#call».name, «fn#call».fn)], []⟩ ⟦⟧
+    («fn#simple_hof».fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 10 := by
+  simp only [«fn#simple_hof»]
+  steps
+  . apply STHoare.callDecl_intro
+    sl
+    all_goals tauto
+    simp only [«fn#call»]
+    steps
+    . apply STHoare.callDecl_intro
+      sl
+      all_goals tauto
+      simp only [«fn#simple_func»]
+      steps
+      on_goal 2 => exact fun v => v = 10
+      sl
+      simp_all
+    . steps
+      on_goal 2 => exact fun v => v = 10
+      sl
+      simp_all
+  steps
+  simp_all
