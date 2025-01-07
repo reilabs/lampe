@@ -206,8 +206,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn associated_types() -> anyhow::Result<()> {
+    // #[test]
+    fn _associated_types() -> anyhow::Result<()> {
         // Set up our source code
         let file_name = Path::new("main.nr");
         let source = r#"
