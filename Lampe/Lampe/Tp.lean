@@ -8,7 +8,7 @@ namespace Lampe
 
 structure Ref where
   val : Nat
-  deriving DecidableEq
+deriving DecidableEq
 
 variable (p : Prime)
 

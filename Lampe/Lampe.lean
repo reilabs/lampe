@@ -197,7 +197,7 @@ example {p} {arg : Tp.denote p Tp.field} :
   all_goals (sl; intro; subst_vars; ring)
 
 
-nr_trait_impl[me] <I> Me<> for I where {
+nr_trait_impl[me] <I> Me<> for I where I : Bulbulize<> {
     fn me<>(x : I) -> I {
       x
     }
