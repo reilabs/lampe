@@ -108,11 +108,6 @@ pub(super) mod r#type {
     }
 
     #[inline]
-    pub fn format_lambda(_capture_types: &str, _param_types: &str, _ret_type: &str) -> String {
-        format!("λ")
-    }
-
-    #[inline]
     pub fn format_mut_ref(inner_type: &str) -> String {
         format!("&{inner_type}")
     }
@@ -125,8 +120,44 @@ pub(super) mod r#type {
 
     #[inline]
     pub fn format_function(param_types: &str, ret_type: &str) -> String {
-        format!("({param_types}) -> {ret_type}")
+        format!("λ({param_types}) -> {ret_type}")
     }
+}
+
+pub(super) mod lval {
+    use super::*;
+
+    #[inline]
+    pub fn format_member_access(
+        struct_name: &str,
+        lhs_lval: &str,
+        member: Ident,
+        out_ty: &str,
+    ) -> String {
+        expr::format_member_access(struct_name, lhs_lval, member, out_ty)
+    }
+
+    #[inline]
+    pub fn format_tuple_access(lhs_lval: &str, member: Ident, out_ty: &str) -> String {
+        expr::format_tuple_access(lhs_lval, member, out_ty)
+    }
+
+    #[inline]
+    pub fn format_array_access(lhs_lval: &str, idx_expr: &str, out_ty: &str) -> String {
+        expr::format_array_access(lhs_lval, idx_expr, out_ty)
+    }
+
+    #[inline]
+    pub fn format_slice_access(lhs_lval: &str, idx_expr: &str, out_ty: &str) -> String {
+        expr::format_slice_access(lhs_lval, idx_expr, out_ty)
+    }
+
+    #[inline]
+    pub fn format_deref_access(lhs_lval: &str) -> String {
+        expr::format_deref(lhs_lval)
+    }
+
+
 }
 
 pub(super) mod expr {
@@ -176,12 +207,27 @@ pub(super) mod expr {
         member: Ident,
         _out_ty: &str,
     ) -> String {
-        format!("(({target_expr} as {struct_name}).{member})")
+        format!("({target_expr} as {struct_name}).{member}")
     }
 
     #[inline]
     pub fn format_tuple_access(target_expr: &str, member: Ident, _out_ty: &str) -> String {
-        format!("({target_expr}.{member})")
+        format!("{target_expr}.{member}")
+    }
+
+    #[inline]
+    pub fn format_array_access(array_expr: &str, idx_expr: &str, _out_ty: &str) -> String {
+        format!("{array_expr}[{idx_expr}]")
+    }
+
+    #[inline]
+    pub fn format_slice_access(slice_expr: &str, idx_expr: &str, _out_ty: &str) -> String {
+        format!("{slice_expr}[[{idx_expr}]]")
+    }
+
+    #[inline]
+    pub fn format_deref(expr: &str) -> String {
+        format!("*{expr}")
     }
 
     #[inline]
@@ -245,18 +291,12 @@ pub(super) mod expr {
 }
 
 pub(super) mod stmt {
-    use crate::lean::builtin::BuiltinName;
 
     use super::*;
 
     #[inline]
-    pub fn format_let_in(name: &str, _binding_type: &str, bound_expr: &str) -> String {
-        format!("let {name} = {bound_expr}")
-    }
-
-    #[inline]
-    pub fn format_let_mut_in(name: &str, _binding_type: &str, bound_expr: &str) -> String {
-        format!("let mut {name} = {bound_expr}")
+    pub fn format_let_in(pat: &str, _binding_type: &str, bound_expr: &str) -> String {
+        format!("let {pat} = {bound_expr}")
     }
 
     #[inline]
@@ -275,33 +315,7 @@ pub(super) mod stmt {
     }
 
     #[inline]
-    pub fn format_direct_assign(lhs: &str, rhs: &str) -> String {
+    pub fn format_assign(lhs: &str, rhs: &str) -> String {
         format!("{lhs} = {rhs}")
-    }
-
-    #[inline]
-    pub fn format_index_assign(
-        lhs: &str,
-        rhs: &str,
-        index_expr: &str,
-        builtin_name: BuiltinName,
-    ) -> String {
-        let args = [lhs, index_expr, rhs].join(", ");
-        super::expr::format_builtin_call(builtin_name, &args, &super::r#type::format_unit())
-    }
-
-    #[inline]
-    pub fn format_struct_access_assign(
-        lhs: &str,
-        rhs: &str,
-        struct_name: &str,
-        field_name: &str,
-    ) -> String {
-        format!("({lhs} as {struct_name}).{field_name} = {rhs}")
-    }
-
-    #[inline]
-    pub fn format_tuple_access_assign(lhs: &str, rhs: &str, field_idx: &str) -> String {
-        format!("({lhs}.{field_idx}) = {rhs}")
     }
 }

@@ -127,15 +127,6 @@ pub fn try_index_into_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName
     }
 }
 
-pub fn try_index_write_into_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
-    if coll_type.is_collection() {
-        let ty_name = coll_type.name_prefix();
-        Some(format!("{}WriteIndex", ty_name))
-    } else {
-        None
-    }
-}
-
 pub fn try_prefix_into_builtin_name(op: UnaryOp, rhs_type: BuiltinType) -> Option<BuiltinName> {
     let ty_name = rhs_type.name_prefix();
     match op {

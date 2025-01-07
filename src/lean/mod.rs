@@ -511,29 +511,19 @@ impl LeanEmitter {
 
                 syntax::r#type::format_trait_as_type(&fq_name, &generics_str)
             }
-            Type::Function(args, ret, environment) => {
+            Type::Function(args, ret, _env) => {
                 let arg_types = args
                     .iter()
                     .map(|arg| self.emit_fully_qualified_type(arg))
                     .collect_vec();
                 let arg_types_str = arg_types.join(", ");
                 let ret_str = self.emit_fully_qualified_type(ret);
-
-                match environment.as_ref() {
-                    Type::Unit => syntax::r#type::format_function(&arg_types_str, &ret_str),
-                    Type::Tuple(capture_types) => {
-                        let capture_types_str = capture_types
-                            .iter()
-                            .map(|arg| self.emit_fully_qualified_type(arg))
-                            .join(", ");
-                        syntax::r#type::format_lambda(&capture_types_str, &arg_types_str, &ret_str)
-                    }
-                    _ => panic!("invalid environment {environment}"),
-                }
+                
+                syntax::r#type::format_function(&arg_types_str, &ret_str)
             }
             Type::MutableReference(typ) => {
                 let typ_str = self.emit_fully_qualified_type(typ);
-
+                
                 syntax::r#type::format_mut_ref(&typ_str)
             }
             // In all the other cases we can use the default printing as internal type vars are
@@ -981,15 +971,7 @@ impl LeanEmitter {
                 let bound_expr = self.emit_expr(ind, lets.expression)?;
                 let name = self.emit_pattern(&lets.pattern)?;
                 // [TODO] proper pattern support
-                let is_mut = match lets.pattern {
-                    HirPattern::Mutable(..) => true,
-                    _ => false
-                };
-                if is_mut {
-                    syntax::stmt::format_let_mut_in(&name, &binding_type, &bound_expr)
-                } else {
-                    syntax::stmt::format_let_in(&name, &binding_type, &bound_expr)
-                }
+                syntax::stmt::format_let_in(&name, &binding_type, &bound_expr)
             }
             HirStatement::Constrain(constraint) => {
                 let constraint_expr = self.emit_expr(ind, constraint.0)?;
@@ -1005,60 +987,9 @@ impl LeanEmitter {
                 )
             }
             HirStatement::Assign(assign) => {
-                let expr = self.emit_expr(ind, assign.expression)?;
-                match assign.lvalue {
-                    HirLValue::Ident(lhs, _) => {
-                        let ident_str = self.context.def_interner.definition_name(lhs.id);
-                        syntax::stmt::format_direct_assign(&ident_str, &expr)
-                    }
-                    HirLValue::Index { array, index, .. } => match array.as_ref() {
-                        HirLValue::Ident(ident, ty) => {
-                            let ident_name = self.context.def_interner.definition_name(ident.id);
-                            let builtin_name = ty
-                                .clone()
-                                .try_into()
-                                .ok()
-                                .and_then(|t| builtin::try_index_write_into_builtin_name(t))
-                                .expect("cannot write index {typ}");
-                            let index_expr = self.emit_expr(ind, index)?;
-                            let index_expr = cast_to_u32(&index_expr);
-                            syntax::stmt::format_index_assign(
-                                ident_name,
-                                &expr,
-                                &index_expr,
-                                builtin_name,
-                            )
-                        }
-                        _ => panic!("invalid lhs on index assign `{array:?}`"),
-                    },
-                    HirLValue::MemberAccess {
-                        object, field_name, ..
-                    } => match object.as_ref() {
-                        HirLValue::Ident(ident, ty) => {
-                            let ident_name = self.context.def_interner.definition_name(ident.id);
-                            let field_name = field_name.to_string();
-                            let ty_str = self.emit_fully_qualified_type(&ty);
-                            match ty {
-                                Type::Tuple(_) => syntax::stmt::format_tuple_access_assign(
-                                    ident_name,
-                                    &expr,
-                                    &field_name,
-                                ),
-                                Type::Struct(..) => syntax::stmt::format_struct_access_assign(
-                                    ident_name,
-                                    &expr,
-                                    &ty_str,
-                                    &field_name,
-                                ),
-                                _ => panic!("invalid ident type on member access assign `{ty:?}`"),
-                            }
-                        }
-                        _ => {
-                            todo!("recursive lvalues are not supported yet")
-                        }
-                    },
-                    HirLValue::Dereference { .. } => todo!("deref lvalues are not supported yet"),
-                }
+                let rhs_expr = self.emit_expr(ind, assign.expression)?;
+                let lval = self.emit_l_value(ind, &assign.lvalue)?;
+                syntax::stmt::format_assign(&lval, &rhs_expr)
             }
             HirStatement::For(fors) => {
                 let loop_var = self.context.def_interner.definition_name(fors.identifier.id);
@@ -1079,6 +1010,82 @@ impl LeanEmitter {
 
         Ok(format!("{result};"))
     }
+
+    /// Generates a Lean representation of a Noir l-value (something that can be
+    /// assigned to).
+    ///
+    /// # Errors
+    ///
+    /// - [`Error`] if the extraction process fails for any reason.
+    pub fn emit_l_value(&self, ind: &mut Indenter, l_val: &HirLValue) -> Result<String> {
+        let result = match l_val {
+            HirLValue::Ident(ident, _) => {
+                let ident_str = self.context.def_interner.definition_name(ident.id);
+                format!("{ident_str}")
+            }
+            HirLValue::MemberAccess {
+                object,
+                field_name,
+                typ,
+                ..
+            } => {
+                let lhs_lval_str = self.emit_l_value(ind, object.as_ref())?;
+                let out_ty_str = self.emit_fully_qualified_type(typ);
+                
+                let lhs_ty = match object.as_ref() {
+                    HirLValue::Ident(_, typ) 
+                    | HirLValue::MemberAccess { typ, .. } 
+                    | HirLValue::Index { typ, .. } 
+                    | HirLValue::Dereference { element_type: typ, .. } => typ,
+                };
+                match lhs_ty {
+                    Type::Tuple(..) => {
+                        syntax::lval::format_tuple_access(&lhs_lval_str, field_name.clone(), &out_ty_str)
+                    },
+                    Type::Struct(..) => {
+                        let struct_ty_str = self.emit_fully_qualified_type(lhs_ty);
+                        syntax::lval::format_member_access(&struct_ty_str, &lhs_lval_str, field_name.clone(), &out_ty_str)
+                    },
+                    _ => panic!("invalid member access lvalue")
+                }
+            }
+            HirLValue::Index {
+                array, index, typ, ..
+            } => {
+                let lhs_lval_str = self.emit_l_value(ind, array.as_ref())?;
+                let idx_expr = self.emit_expr(ind, *index)?;
+                let idx_expr = cast_to_u32(&idx_expr);
+                let out_ty_str = self.emit_fully_qualified_type(typ);
+
+                let lhs_ty = match array.as_ref() {
+                    HirLValue::Ident(_, typ) 
+                    | HirLValue::MemberAccess { typ, .. } 
+                    | HirLValue::Index { typ, .. } 
+                    | HirLValue::Dereference { element_type: typ, .. } => typ,
+                };
+                match lhs_ty {
+                    Type::Array(..) => {
+                        syntax::lval::format_array_access(&lhs_lval_str, &idx_expr, &out_ty_str)
+                    },
+                    Type::Slice(..) => {
+                        syntax::lval::format_slice_access(&lhs_lval_str, &idx_expr, &out_ty_str)
+                    },
+                    _ => panic!("invalid index access lvalue")
+                }
+            }
+            HirLValue::Dereference {
+                lvalue,
+                ..
+            } => {
+                let lhs_lval = self.emit_l_value(ind, lvalue.as_ref())?;
+
+                syntax::lval::format_deref_access(&lhs_lval)
+            }
+        };
+
+        Ok(result)
+    }
+
 
     /// Emits the Lean code corresponding to a Noir pattern.
     ///
