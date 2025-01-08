@@ -1,4 +1,4 @@
-import Mathlib
+import Mathlib.Algebra.Algebra.ZMod
 import Lampe.Data.Integers
 
 namespace Lampe
