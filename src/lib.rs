@@ -177,6 +177,12 @@ mod test {
                 }
             }
 
+            impl<T> MyTrait for (T, bool) where T : MyTrait {
+                fn foo(self) -> Self {
+                    self
+                }
+            }
+
             fn main() {
                 let mut op1 = Option2::some(5);
                 let op2 = Option2::default();
@@ -242,5 +248,4 @@ mod test {
 
         Ok(())
     }
-
 }

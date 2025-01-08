@@ -35,9 +35,10 @@ pub(super) fn format_trait_impl(
     trait_generics: &str,
     target: &str,
     methods: &str,
+    trait_constraints: &str,
 ) -> String {
     formatdoc! {
-        "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {{
+        "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {trait_constraints} {{
                 {methods} 
             }}"
     }

@@ -299,9 +299,21 @@ impl LeanEmitter {
         };
         let target = self.emit_fully_qualified_type(&trait_impl.typ);
 
-        if !trait_impl.where_clause.is_empty() {
-            todo!("trait constraints are not supported yet")
-        }
+        let where_clause_str = trait_impl
+            .where_clause
+            .iter()
+            .map(|cons| {
+                let typ_str = self.emit_fully_qualified_type(&cons.typ);
+                let trait_name = &self.context.def_interner.get_trait(cons.trait_id).name;
+                let trait_generics_str = cons
+                    .trait_generics
+                    .iter()
+                    .map(|g| self.emit_fully_qualified_type(g))
+                    .join(", ");
+                let trait_str = format!("{trait_name}<{trait_generics_str}>");
+                format!("{typ_str} : {trait_str}")
+            })
+            .join(", ");
         let generics = &trait_impl
             .trait_generics
             .iter()
@@ -331,6 +343,7 @@ impl LeanEmitter {
             &trait_gens,
             &target,
             &methods,
+            &where_clause_str,
         ))
     }
 
@@ -444,9 +457,6 @@ impl LeanEmitter {
     ) -> Result<(String, String)> {
         // Get the various parameters
         let func_data = self.context.function_meta(&func);
-        if !func_data.trait_constraints.is_empty() {
-            todo!("trait constraints are not supported yet")
-        }
         let fq_path = self
             .context
             .fully_qualified_function_name(&func_data.source_crate, &func);
