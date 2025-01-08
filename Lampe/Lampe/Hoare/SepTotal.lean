@@ -30,7 +30,7 @@ abbrev STHoarePureBuiltin p (Γ : Env)
   (_ : b = @Builtin.newGenericPureBuiltin A sgn desc)
   (args : HList (Tp.denote p) (sgn a).fst) : Prop :=
     STHoare p Γ ⟦⟧
-      (.call h![] (sgn a).fst (sgn a).snd (.builtin b) args)
+      (.callBuiltin (sgn a).fst (sgn a).snd b args)
       (fun v => ∃h, v = (desc a (args)).snd h)
 
 namespace STHoare
@@ -133,7 +133,7 @@ lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v
 theorem fresh_intro :
   STHoare p Γ
       ⟦⟧
-      (.call h![] [] tp (.builtin .fresh) h![])
+      (.callBuiltin [] tp .fresh h![])
       (fun _ => ⟦⟧) := by
   unfold STHoare
   intro H
@@ -306,42 +306,9 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
-theorem callLambda_intro {lambdaBody} {P : SLP (State p)} {Q : Tp.denote p outTp → SLP (State p)}:
-  @STHoare outTp p Γ P (lambdaBody args) Q →
-  STHoare p Γ (P ⋆ [λref ↦ ⟨argTps, outTp, lambdaBody⟩])
-    (Expr.call h![] argTps outTp (.lambda ref) args)
-    (fun v => (Q v) ⋆ [λref ↦ ⟨argTps, outTp, lambdaBody⟩]) := by
-  intros
-  rename_i h
-  unfold STHoare THoare
-  intros
-  constructor <;> tauto
-  unfold SLP.star at *
-  . rename_i st h
-    obtain ⟨st₁, ⟨st₂, ⟨_, h₂, h₃, _⟩⟩⟩ := h
-    obtain ⟨st₁', ⟨st₂', _⟩⟩ := h₃
-    simp_all only [State.union_parts, Finmap.mem_union, Finmap.mem_singleton, or_true,
-      Finmap.lookup_union_left]
-    generalize hL : (⟨_, _, _⟩ : Lambda _) = lmb at *
-    have _ : ref ∉ st₁'.lambdas := by
-      rename_i h₃
-      obtain ⟨hi₁, _, _, hi₂⟩ := h₃
-      simp only [State.lmbSingleton] at hi₂
-      simp only [LawfulHeap.disjoint] at hi₁
-      obtain ⟨_, hj₁⟩ := hi₁
-      rw [hi₂] at hj₁
-      tauto
-    simp [Finmap.lookup_union_right (by tauto)]
-  . apply consequence <;> tauto
-    apply consequence_frame_left
-    rotate_left 2
-    exact P
-    exact h
-    simp only [SLP.true_star, SLP.entails_self]
-
 theorem lam_intro :
-  STHoare p Γ ⟦⟧ (.lambda argTps outTp lambdaBody)
-    fun v => [λv ↦ ⟨argTps, outTp, lambdaBody⟩] := by
+  STHoare p Γ ⟦⟧ (.lam argTps outTp lambdaBody)
+    fun v => ∃∃ r, ⟦v = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩] := by
   unfold STHoare THoare
   intros H st h
   constructor
@@ -361,25 +328,81 @@ theorem lam_intro :
       rw [Finmap.Disjoint.symm_iff]
       apply Finmap.singleton_disjoint_of_not_mem (by assumption)
     simp only [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
-  . unfold State.lmbSingleton
-    tauto
+  . unfold State.lmbSingleton SLP.exists'
+    exists r
+    simp_all only [SLP.true_star]
   . apply SLP.ent_star_top
     tauto
 
-theorem callTrait_intro {impl} {fname fn}
-    (h_trait : TraitResolution Γ traitRef impl)
-    (h_fn : (fname, fn) ∈ impl)
-    (hkc : fn.generics = tyKinds)
-    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTypes)
-    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = res)
-    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q):
+theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
+  {Q : Tp.denote p outTp → SLP (State p)}
+  {fnRef : Tp.denote p (.fn argTps outTp)}
+  {hlam : STHoare p Γ P (lambdaBody args) Q} :
+  STHoare p Γ (P ⋆ ∃∃ r, ⟦fnRef = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩])
+    (Expr.call argTps outTp fnRef args)
+    (fun v => (Q v) ⋆ ∃∃ r, ⟦fnRef = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩]) := by
+  unfold STHoare THoare
+  intros H st h
+  have h₁ : ∃ r, fnRef = .lambda r := by
+    simp only [SLP.star, SLP.exists', SLP.lift] at h
+    tauto
+  obtain ⟨r, _⟩ := h₁
+  apply Omni.callLambda <;> tauto
+  . obtain ⟨st₁, st₂, _, _, ⟨_, _, _, _, _, _, _, _, _, _, ⟨_, _⟩, _⟩, _⟩ := h
+    subst_vars
+    simp_all only [FuncRef.lambda.injEq]
+    subst_vars
+    simp_all only [LawfulHeap.empty_union, LawfulHeap.empty_disjoint]
+    simp only [State.union_parts]
+    rw [Finmap.lookup_union_left, Finmap.lookup_union_right]
+    <;> simp only [State.lmbSingleton, LawfulHeap.disjoint, State.union_parts] at *
+    . simp_all
+    . apply Finmap.singleton_disjoint_iff_not_mem.mp
+      simp_all only
+      tauto
+    . simp_all
+  apply STHoare.consequence_frame_left <;> tauto
+
+theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
+    {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}
+    {h_fn : (fnName, fn) ∈ Γ.functions}
+    {hkc : fn.generics = kinds}
+    {htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps}
+    {htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp}
+    {h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q} :
+    STHoare p Γ H (Expr.call argTps outTp fnRef args) Q := by
+  unfold STHoare THoare
+  intros
+  have _ : fnRef = (.decl fnName kinds generics) := by
+    rename_i h'
+    apply SLP.extract_prop at h' <;> tauto
+  apply Omni.callDecl <;> tauto
+
+
+theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
+    (href : H ⊢  ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
+    (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
+    (h_fn : (fnName, fn) ∈ impls)
+    (hkc : fn.generics = kinds)
+    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
+    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp)
+    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
     STHoare p Γ H
-      (@Expr.call _ tyKinds generics argTypes res (.trait ⟨traitRef, fname⟩) args)
+      (Expr.call argTps outTp fnRef args)
       Q := by
   unfold STHoare THoare
   intros
-  apply Omni.callTrait <;> try assumption
-  apply_assumption
+  have _ : fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics) := by
+    rename_i h'
+    apply SLP.extract_prop at h' <;> tauto
+  apply Omni.callTrait <;> tauto
+
+theorem fn_intro : STHoare p Γ ⟦⟧ (.fn argTps outTp r) fun v => v = r := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
   assumption
 
 theorem callDecl_intro {fname fn}

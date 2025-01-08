@@ -209,11 +209,6 @@ def isLetIn (e : Expr) : Bool := e.isAppOf ``Lampe.Expr.letIn
 
 def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
 
-def isCallTrait (e : Expr) : Bool := e.isAppOf `Lampe.Expr.call &&
-  match (e.getArg? 5) with
-  | some callTarget => callTarget.isAppOf `Lampe.FunctionIdent.trait
-  | _ => false
-
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   if e.isAppOf ``SLP.star then
     let args := e.getAppArgs
@@ -384,19 +379,6 @@ theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda _} {R : SLP (State p
   rintro rfl
   apply SLP.entails_self
 
-lemma nested_triple {Q : _ → SLP (State p)}
-  (h_hoare_imp : STHoare p Γ P e₁ Q → STHoare p Γ (P ⋆ H) e₂ (fun v => Q v ⋆ H))
-  (h_hoare : STHoare p Γ P e₁ Q)
-  (h_ent_pre : H ⊢ P ⋆ H) :
-  STHoare p Γ H e₂ Q := by
-  have h_ent_post : ∀ v, ((Q v) ⋆ H) ⋆ ⊤ ⊢ (Q v) ⋆ ⊤ := by
-    simp [SLP.ent_drop_left]
-  have h_hoare' := h_hoare_imp h_hoare
-  apply consequence h_ent_pre (fun v => SLP.entails_self)
-  apply consequence SLP.entails_self h_ent_post
-  tauto
-
-
 def canSolveSingleton (lhs : SLTerm) (rhsV : Expr): Bool :=
   match lhs with
   | SLTerm.singleton v _ => v == rhsV
@@ -557,15 +539,12 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litField_intro
     | apply Lampe.STHoare.litTrue_intro
     | apply Lampe.STHoare.litFalse_intro
+    | apply fn_intro
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
-    | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
     | apply cast_intro
-    | apply cast_intro
-    | apply callTrait_intro
-    | apply callDecl_intro
     -- memory
     | apply var_intro
     | apply ref_intro
@@ -631,6 +610,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left Lampe.STHoare.litField_intro
     | apply consequence_frame_left Lampe.STHoare.litTrue_intro
     | apply consequence_frame_left Lampe.STHoare.litFalse_intro
+    | apply consequence_frame_left fn_intro
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left assert_intro
     | apply consequence_frame_left lam_intro
@@ -701,12 +681,12 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top Lampe.STHoare.litField_intro
     | apply ramified_frame_top Lampe.STHoare.litTrue_intro
     | apply ramified_frame_top Lampe.STHoare.litFalse_intro
+    | apply ramified_frame_top fn_intro
     | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top lam_intro
     | apply ramified_frame_top cast_intro
-    | apply ramified_frame_top callDecl_intro
     -- memory
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
