@@ -21,7 +21,7 @@ Introduction rule for pure builtins.
 theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   STHoare p Γ
     ⟦⟧
-    (.call h![] (sgn a).fst (sgn a).snd (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
+    (.callBuiltin (sgn a).fst (sgn a).snd (Builtin.newGenericPureBuiltin sgn desc) args)
     (fun v => ∃h, (v = (desc a args).snd h)) := by
   unfold STHoare
   intro H
@@ -44,7 +44,7 @@ lemma pureBuiltin_intro_consequence
     (h2 : outTp = (sgn a).snd)
     (hp : (h: (desc a (h1 ▸ args)).fst) → Q (h2 ▸ (desc a (h1 ▸ args)).snd h)) :
     STHoare p Γ ⟦⟧
-      (.call h![] argTps outTp (.builtin (Builtin.newGenericPureBuiltin sgn desc)) args)
+      (.callBuiltin argTps outTp (Builtin.newGenericPureBuiltin sgn desc) args)
       fun v => Q v := by
   subst_vars
   dsimp only at *
@@ -369,7 +369,7 @@ theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto)
 theorem ref_intro :
     STHoare p Γ
       ⟦⟧
-      (.call h![] [tp] (Tp.ref tp) (.builtin .ref) h![v])
+      (.callBuiltin [tp] (.ref tp) .ref h![v])
       (fun r => [r ↦ ⟨tp, v⟩]) := by
   unfold STHoare
   intro H
@@ -393,7 +393,7 @@ theorem ref_intro :
 theorem readRef_intro :
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
-    (.call h![] [tp.ref] tp (.builtin .readRef) h![r])
+    (.callBuiltin [.ref tp] tp .readRef h![r])
     (fun v' => ⟦v' = v⟧ ⋆ [r ↦ ⟨tp, v⟩]) := by
   unfold STHoare
   intro H
@@ -426,7 +426,7 @@ theorem readRef_intro :
 theorem writeRef_intro :
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
-    (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![r, v'])
+    (.callBuiltin [.ref tp, tp] .unit .writeRef h![r, v'])
     (fun _ => [r ↦ ⟨tp, v'⟩]) := by
   unfold STHoare
   intro H
@@ -471,7 +471,7 @@ theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) 
 theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
     STHoare p Γ
     [r ↦ ⟨tp₁, s⟩]
-    (.call h![] [tp₁.ref] tp₂ (.builtin $ .readLens lens) h![r])
+    (.callBuiltin [tp₁.ref] tp₂ (.readLens lens) h![r])
     (fun v' => ⟦lens.get s = some v'⟧ ⋆ [r ↦ ⟨tp₁, s⟩]) := by
   unfold STHoare THoare
   intros H st h
@@ -491,7 +491,7 @@ theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
  theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s : Tp.denote p tp₁} {v : Tp.denote p tp₂} :
     STHoare p Γ
     [r ↦ ⟨tp₁, s⟩]
-    (.call h![] [tp₁.ref, tp₂] .unit (.builtin $ .modifyLens lens) h![r, v])
+    (.callBuiltin [tp₁.ref, tp₂] .unit (.modifyLens lens) h![r, v])
     (fun _ => ∃∃h, [r ↦ ⟨tp₁, lens.modify s v |>.get h⟩]) := by
   unfold STHoare THoare
   intros H st h
@@ -528,7 +528,7 @@ theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
 theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
     STHoare p Γ
     ⟦⟧
-    (.call h![] [tp₁] tp₂ (.builtin $ .getLens lens) h![s])
+    (.callBuiltin [tp₁] tp₂ (.getLens lens) h![s])
     (fun v => ⟦lens.get s = some v⟧) := by
   unfold STHoare THoare
   intros H st h
@@ -547,7 +547,7 @@ theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (
   apply pureBuiltin_intro_consequence <;> tauto
   tauto
 
-theorem cast_intro [Builtin.CastTp tp tp'] : STHoare p Γ ⟦⟧ (.call h![] [tp] tp' (.builtin .cast) h![v])
+theorem cast_intro [Builtin.CastTp tp tp'] : STHoare p Γ ⟦⟧ (.callBuiltin [tp] tp' .cast h![v])
    (fun v' => ∃∃ h, ⟦@Builtin.CastTp.cast tp tp' _ p v h = v'⟧) := by
    unfold STHoare THoare
    intros
