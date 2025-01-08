@@ -2,7 +2,7 @@ import Lampe.SeparationLogic.ValHeap
 import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.Builtin.Helpers
-import Mathlib
+import Mathlib.Tactic.Lemma
 
 lemma List.replicate_head (hl : x :: xs = List.replicate n a) : x = a := by
   unfold List.replicate at hl

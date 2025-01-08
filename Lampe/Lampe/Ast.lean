@@ -1,5 +1,3 @@
-import Mathlib
-
 import Lampe.Tp
 import Lampe.Data.HList
 import Lampe.SeparationLogic.ValHeap

@@ -1,5 +1,3 @@
-import Mathlib
-
 import Lampe.Data.Integers
 import Lampe.Data.Field
 import Lampe.Data.HList

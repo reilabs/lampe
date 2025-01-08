@@ -1,5 +1,3 @@
-import Lampe.Tp
-
 namespace Lampe
 
 class LawfulHeap (α : Type _) where
