@@ -32,11 +32,54 @@ use crate::{
     noir::project::KnownFiles,
 };
 
+#[derive(PartialEq, Eq, Clone, Hash)]
+pub enum EmitOutput {
+    Struct(String),
+    Function(String),
+    TraitImpl(String),
+    Alias(String),
+    Global(String),
+}
+
+impl EmitOutput {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            EmitOutput::Struct(s)
+            | EmitOutput::Function(s)
+            | EmitOutput::Global(s)
+            | EmitOutput::TraitImpl(s)
+            | EmitOutput::Alias(s) => s.is_empty(),
+        }
+    }
+
+    pub fn push_str(&mut self, string: &str) {
+        match self {
+            EmitOutput::Struct(s)
+            | EmitOutput::Function(s)
+            | EmitOutput::Global(s)
+            | EmitOutput::TraitImpl(s)
+            | EmitOutput::Alias(s) => s.push_str(string),
+        }
+    }
+}
+
+impl ToString for EmitOutput {
+    fn to_string(&self) -> String {
+        match self {
+            EmitOutput::Struct(s)
+            | EmitOutput::Function(s)
+            | EmitOutput::Global(s)
+            | EmitOutput::TraitImpl(s)
+            | EmitOutput::Alias(s) => s.to_string(),
+        }
+    }
+}
+
 /// The stringified Lean definitions corresponding to a Noir module.
 pub struct ModuleEntries {
     pub impl_refs: HashSet<String>,
     pub func_refs: HashSet<String>,
-    pub defs: Vec<String>,
+    pub defs: Vec<EmitOutput>,
 }
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
@@ -131,10 +174,21 @@ impl LeanEmitter {
 
         // Remove all entries that are duplicated as we do not necessarily have the
         // means to prevent emission of duplicates in all cases
-        let mut set: HashSet<String> = HashSet::new();
+        let mut set: HashSet<EmitOutput> = HashSet::new();
         set.extend(output);
-        let no_dupes: Vec<String> = set.into_iter().collect();
-        let module_defs = no_dupes.join("\n");
+        let module_defs = set
+            .into_iter()
+            // Enforce an order on the emitted definitions.
+            // This is needed because we need to have structs first.
+            .sorted_by_key(|d| match d {
+                EmitOutput::Struct(_) => 0,
+                EmitOutput::Global(_) => 1,
+                EmitOutput::Alias(_) => 2,
+                EmitOutput::TraitImpl(_) => 3,
+                EmitOutput::Function(_) => 4,
+            })
+            .map(|d| d.to_string())
+            .join("\n");
 
         let env_funcs = all_func_refs
             .into_iter()
@@ -167,27 +221,14 @@ impl LeanEmitter {
         {
             let impl_id = format!("impl_{}", id.0);
             let trait_impl = self.emit_trait_impl(ind, &trait_impl.borrow(), &impl_id)?;
-            accumulator.push(trait_impl);
+            accumulator.push(EmitOutput::TraitImpl(trait_impl));
             impl_refs.insert(impl_id);
         }
 
         let mut func_refs = HashSet::new();
         // We then emit all definitions that correspond to the given module.
-        for typedef in module
-            .type_definitions()
-            .chain(module.value_definitions())
-            // Enforce an order on the emitted definitions.
-            // This is needed, because we want to emit structs before functions.
-            .sorted_by_key(|typedef| match typedef {
-                ModuleDefId::TypeId(_) => 0,
-                ModuleDefId::TypeAliasId(_) => 1,
-                ModuleDefId::TraitId(_) => 2,
-                ModuleDefId::GlobalId(_) => 3,
-                ModuleDefId::FunctionId(_) => 4,
-                ModuleDefId::ModuleId(_) => 5,
-            })
-        {
-            let definition = match typedef {
+        for typedef in module.type_definitions().chain(module.value_definitions()) {
+            let emit_output = match typedef {
                 ModuleDefId::FunctionId(id) => {
                     // Skip the trait methods, as these are already handled by `emit_trait_impl`.
                     if self.context.function_meta(&id).trait_impl.is_some() {
@@ -199,11 +240,11 @@ impl LeanEmitter {
                         continue;
                     }
                     func_refs.insert(format!("«{def_name}»"));
-                    def
+                    EmitOutput::Function(def)
                 }
-                ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id)?,
-                ModuleDefId::GlobalId(id) => self.emit_global(ind, id)?,
-                ModuleDefId::TypeAliasId(id) => self.emit_alias(id)?,
+                ModuleDefId::TypeId(id) => EmitOutput::Struct(self.emit_struct_def(ind, id)?),
+                ModuleDefId::GlobalId(id) => EmitOutput::Global(self.emit_global(ind, id)?),
+                ModuleDefId::TypeAliasId(id) => EmitOutput::Alias(self.emit_alias(id)?),
                 ModuleDefId::ModuleId(_) => {
                     unimplemented!("It is unclear what actually generates these.")
                 }
@@ -211,13 +252,16 @@ impl LeanEmitter {
                 ModuleDefId::TraitId(_) => continue,
             };
 
-            accumulator.push(definition.to_string());
+            accumulator.push(emit_output);
         }
 
         let defs = accumulator
             .into_iter()
             .filter(|d| !d.is_empty())
-            .map(|d| format!("{d}\n"))
+            .map(|mut d| {
+                d.push_str("\n");
+                d
+            })
             .collect();
 
         Ok(ModuleEntries {
