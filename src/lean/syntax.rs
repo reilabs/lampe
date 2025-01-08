@@ -2,8 +2,6 @@ use indoc::formatdoc;
 use itertools::Itertools;
 use noirc_frontend::macros_api::Ident;
 
-const BUILTIN_PREFIX: &str = "#";
-
 // Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
 fn without_generic_args(ty_str: &str) -> String {
     let mut ty_str = ty_str.to_string();
@@ -120,7 +118,7 @@ pub(super) mod r#type {
 
     #[inline]
     pub fn format_function(param_types: &str, ret_type: &str) -> String {
-        format!("λ({param_types}) -> {ret_type}")
+        format!("λ({param_types}) → {ret_type}")
     }
 }
 
@@ -173,8 +171,13 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_call(func_expr: &str, func_args: &str, out_ty: &str) -> String {
-        format!("({func_expr}({func_args}) : {out_ty})")
+    pub fn format_call(func_expr: &str, func_args: &str, fn_type: &str) -> String {
+        format!("({func_expr} as {fn_type})({func_args})")
+    }
+
+    #[inline]
+    pub fn format_builtin_call(builtin_name: BuiltinName, func_args: &str, out_ty: &str) -> String {
+        format!("#{builtin_name}({func_args}) : {out_ty}")
     }
 
     #[inline]
@@ -237,12 +240,6 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_builtin_func_ident(builtin_name: BuiltinName) -> String {
-        let ident = normalize_ident(&builtin_name);
-        format!("{BUILTIN_PREFIX}{ident}")
-    }
-
-    #[inline]
     pub fn format_decl_func_ident(ident: &str, generics: &str) -> String {
         let ident = normalize_ident(ident);
         format!("@{ident}<{generics}>")
@@ -258,25 +255,6 @@ pub(super) mod expr {
     ) -> String {
         let func_ident = normalize_ident(func_ident);
         format!("({sub_type} as {trait_name}<{trait_generics}>)::{func_ident}<{generics}>")
-    }
-
-    #[inline]
-    pub fn format_infix_builtin_call(
-        builtin_name: BuiltinName,
-        lhs: &str,
-        rhs: &str,
-        ret_type: &str,
-    ) -> String {
-        format!("({BUILTIN_PREFIX}{builtin_name}({lhs}, {rhs}) : {ret_type})")
-    }
-
-    #[inline]
-    pub fn format_prefix_builtin_call(
-        builtin_name: BuiltinName,
-        rhs: &str,
-        ret_type: &str,
-    ) -> String {
-        format!("({BUILTIN_PREFIX}{builtin_name}({rhs}) : {ret_type})")
     }
 
     #[inline]
@@ -302,11 +280,6 @@ pub(super) mod stmt {
             }}
             "
         }
-    }
-
-    #[inline]
-    pub fn format_assert(constraint_expr: &str, _print_expr: Option<&str>) -> String {
-        format!("{BUILTIN_PREFIX}assert({constraint_expr})")
     }
 
     #[inline]

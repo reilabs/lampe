@@ -3,16 +3,14 @@ use std::ops::Deref;
 use noirc_frontend::{
     ast::BinaryOpKind,
     ast::{IntegerBitSize, UnaryOp},
-    hir_def::function::FuncMeta,
     macros_api::Signedness,
     Type, TypeBinding,
 };
 
-use itertools::Itertools;
-
 pub type BuiltinName = String;
 
 pub const CAST_BUILTIN_NAME: &str = "cast";
+pub const ASSERT_BUILTIN_NAME: &str = "assert";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinType {
@@ -101,24 +99,14 @@ impl BuiltinType {
     }
 }
 
-pub fn try_func_into_builtin_name(
-    fq_func_ident: &str,
-    func_meta: &FuncMeta,
-) -> Option<BuiltinName> {
-    let param_types: Result<Vec<BuiltinType>, _> = func_meta
-        .parameters
-        .0
-        .iter()
-        .map(|(_, ty, _)| ty.clone().try_into())
-        .try_collect();
-    let param_types = param_types.ok()?;
-    match (fq_func_ident, param_types.as_slice()) {
-        ("std::unsafe::zeroed", _) => Some(format!("zeroed")),
+pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
+    match func_expr {
+        "@std::unsafe::zeroed<T>" => Some(format!("zeroed")),
         _ => None,
     }
 }
 
-pub fn try_index_into_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
+pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     if coll_type.is_collection() {
         let ty_name = coll_type.name_prefix();
         Some(format!("{}Index", ty_name))

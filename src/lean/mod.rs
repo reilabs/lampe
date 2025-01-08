@@ -9,7 +9,7 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
-    ast::Visibility,
+    ast::{IntegerBitSize, Visibility},
     graph::CrateId,
     hir::{
         def_map::{ModuleData, ModuleId},
@@ -21,7 +21,7 @@ use noirc_frontend::{
         stmt::{HirLValue, HirPattern},
         traits::TraitImpl,
     },
-    macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, StructId},
+    macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, Signedness, StructId},
     node_interner::{DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId},
     Type,
 };
@@ -623,7 +623,7 @@ impl LeanEmitter {
                     .ok()
                     .and_then(|ty| builtin::try_prefix_into_builtin_name(prefix.operator, ty))
                 {
-                    syntax::expr::format_prefix_builtin_call(builtin_name, &rhs, &out_ty_str)
+                    syntax::expr::format_builtin_call(builtin_name, &rhs, &out_ty_str)
                 } else {
                     // Convert to a trait call if this prefix call doesn't correspond to a builtin call.
                     let rhs_ty_str = self.emit_fully_qualified_type(&rhs_ty);
@@ -650,7 +650,11 @@ impl LeanEmitter {
                             "",
                         ),
                         &rhs,
-                        &out_ty_str,
+                        &self.emit_fully_qualified_type(&Type::Function(
+                            vec![rhs_ty],
+                            Box::new(out_ty),
+                            Box::new(Type::Unit),
+                        )),
                     )
                 }
             }
@@ -669,7 +673,11 @@ impl LeanEmitter {
                         _ => None,
                     }
                 {
-                    syntax::expr::format_infix_builtin_call(builtin_name, &lhs, &rhs, &out_ty_str)
+                    syntax::expr::format_builtin_call(
+                        builtin_name,
+                        &[lhs, rhs].join(", "),
+                        &out_ty_str,
+                    )
                 } else {
                     // Convert to a trait call if this infix call doesn't correspond to a builtin call.
                     let lhs_ty_str = self.emit_fully_qualified_type(&lhs_ty);
@@ -697,7 +705,11 @@ impl LeanEmitter {
                             "",
                         ),
                         &args_str,
-                        &out_ty_str,
+                        &self.emit_fully_qualified_type(&Type::Function(
+                            vec![lhs_ty, rhs_ty],
+                            Box::new(out_ty),
+                            Box::new(Type::Unit),
+                        )),
                     )
                 }
             }
@@ -713,7 +725,15 @@ impl LeanEmitter {
                     .try_collect()?;
                 let args_str = args.join(", ");
                 let func_expr_str = self.emit_expr(ind, call.func)?;
-                syntax::expr::format_call(&func_expr_str, &args_str, &out_ty_str)
+
+                if let Some(builtin_name) = builtin::try_func_expr_into_builtin_name(&func_expr_str)
+                {
+                    syntax::expr::format_builtin_call(builtin_name, &args_str, &out_ty_str)
+                } else {
+                    let fn_type = self
+                        .emit_fully_qualified_type(&self.context.def_interner.id_type(call.func));
+                    syntax::expr::format_call(&func_expr_str, &args_str, &fn_type)
+                }
             }
             HirExpression::Ident(ident, _) => {
                 let name = self.context.def_interner.definition_name(ident.id);
@@ -769,16 +789,7 @@ impl LeanEmitter {
                                 } else {
                                     format!("{fq_mod_name}::{fn_name}")
                                 };
-                                if let Some(builtin_fn_name) =
-                                    builtin::try_func_into_builtin_name(&fq_func_name, func_meta)
-                                {
-                                    syntax::expr::format_builtin_func_ident(builtin_fn_name)
-                                } else {
-                                    syntax::expr::format_decl_func_ident(
-                                        &fq_func_name,
-                                        &generics_str,
-                                    )
-                                }
+                                syntax::expr::format_decl_func_ident(&fq_func_name, &generics_str)
                             }
                         }
                     }
@@ -790,21 +801,17 @@ impl LeanEmitter {
             HirExpression::Index(index) => {
                 let coll_type = self.context.def_interner.id_type(index.collection);
                 let coll_builtin_type: builtin::BuiltinType = coll_type.try_into().unwrap();
-                let index_builtin_ident = builtin::try_index_into_builtin_name(coll_builtin_type)
+                let index_builtin_name = builtin::get_index_builtin_name(coll_builtin_type)
                     .expect(&format!("cannot index {:?}", coll_builtin_type));
 
                 let collection_expr_str = self.emit_expr(ind, index.collection)?;
                 let index_expr_str = self.emit_expr(ind, index.index)?;
                 // Wrap the index expression with a cast to u32.
                 // [TODO] is this the best way?
-                let index_expr_str = cast_to_u32(&index_expr_str);
+                let index_expr_str = self.emit_cast_to_u32(&index_expr_str);
                 let args_str = format!("{collection_expr_str}, {index_expr_str}");
 
-                syntax::expr::format_call(
-                    &syntax::expr::format_builtin_func_ident(index_builtin_ident),
-                    &args_str,
-                    &out_ty_str,
-                )
+                syntax::expr::format_builtin_call(index_builtin_name, &args_str, &out_ty_str)
             }
             HirExpression::Literal(lit) => self.emit_literal(ind, lit, expr)?,
             HirExpression::Constructor(constructor) => {
@@ -856,7 +863,7 @@ impl LeanEmitter {
                         member_iden,
                         &out_ty_str,
                     ),
-                    _ => panic!("member access lhs is not a struct"),
+                    _ => panic!("member access lhs is not a struct or tuple"),
                 }
             }
 
@@ -864,8 +871,8 @@ impl LeanEmitter {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
 
-                syntax::expr::format_call(
-                    &syntax::expr::format_builtin_func_ident(builtin::CAST_BUILTIN_NAME.into()),
+                syntax::expr::format_builtin_call(
+                    builtin::CAST_BUILTIN_NAME.into(),
                     &source,
                     &target_type,
                 )
@@ -967,15 +974,17 @@ impl LeanEmitter {
             }
             HirStatement::Constrain(constraint) => {
                 let constraint_expr = self.emit_expr(ind, constraint.0)?;
-                let print_expr = if let Some(expr) = constraint.2 {
+                // [TODO] what to do with asserts with prints?
+                let _print_expr = if let Some(expr) = constraint.2 {
                     Some(self.emit_expr(ind, expr)?)
                 } else {
                     None
                 };
 
-                syntax::stmt::format_assert(
+                syntax::expr::format_builtin_call(
+                    builtin::ASSERT_BUILTIN_NAME.into(),
                     &constraint_expr,
-                    print_expr.as_ref().map(|s| s.as_str()),
+                    &self.emit_fully_qualified_type(&Type::Unit),
                 )
             }
             HirStatement::Assign(assign) => {
@@ -1047,7 +1056,7 @@ impl LeanEmitter {
                             &out_ty_str,
                         )
                     }
-                    _ => panic!("invalid member access lvalue"),
+                    _ => panic!("invalid member access lvalue: lhs is not a struct or a tuple"),
                 }
             }
             HirLValue::Index {
@@ -1055,7 +1064,7 @@ impl LeanEmitter {
             } => {
                 let lhs_lval_str = self.emit_l_value(ind, array.as_ref())?;
                 let idx_expr = self.emit_expr(ind, *index)?;
-                let idx_expr = cast_to_u32(&idx_expr);
+                let idx_expr = self.emit_cast_to_u32(&idx_expr);
                 let out_ty_str = self.emit_fully_qualified_type(typ);
 
                 let lhs_ty = match array.as_ref() {
@@ -1073,7 +1082,7 @@ impl LeanEmitter {
                     Type::Slice(..) => {
                         syntax::lval::format_slice_access(&lhs_lval_str, &idx_expr, &out_ty_str)
                     }
-                    _ => panic!("invalid index access lvalue"),
+                    _ => panic!("invalid index access lvalue: lhs is not an array or a slice"),
                 }
             }
             HirLValue::Dereference { lvalue, .. } => {
@@ -1218,6 +1227,17 @@ impl LeanEmitter {
 
         Ok(result_params.join(", "))
     }
+
+    fn emit_cast_to_u32(&self, expr: &str) -> String {
+        syntax::expr::format_builtin_call(
+            builtin::CAST_BUILTIN_NAME.into(),
+            expr,
+            &self.emit_fully_qualified_type(&Type::Integer(
+                Signedness::Unsigned,
+                IntegerBitSize::ThirtyTwo,
+            )),
+        )
+    }
 }
 
 /// Expects that the provided pattern is an HIR identifier.
@@ -1239,12 +1259,4 @@ impl From<LeanEmitter> for Context<'static, 'static> {
     }
 }
 
-fn cast_to_u32(expr: &str) -> String {
-    syntax::expr::format_call(
-        &syntax::expr::format_builtin_func_ident(builtin::CAST_BUILTIN_NAME.into()),
-        expr,
-        // [TODO] convert to a call to emit type
-        "u32",
-    )
-}
 // TODO Proper emit tests
