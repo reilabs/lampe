@@ -173,7 +173,20 @@ impl LeanEmitter {
 
         let mut func_refs = HashSet::new();
         // We then emit all definitions that correspond to the given module.
-        for typedef in module.type_definitions().chain(module.value_definitions()) {
+        for typedef in module
+            .type_definitions()
+            .chain(module.value_definitions())
+            // Enforce an order on the emitted definitions.
+            // This is needed, because we want to emit structs before functions.
+            .sorted_by_key(|typedef| match typedef {
+                ModuleDefId::TypeId(_) => 0,
+                ModuleDefId::TypeAliasId(_) => 1,
+                ModuleDefId::TraitId(_) => 2,
+                ModuleDefId::GlobalId(_) => 3,
+                ModuleDefId::FunctionId(_) => 4,
+                ModuleDefId::ModuleId(_) => 5,
+            })
+        {
             let definition = match typedef {
                 ModuleDefId::FunctionId(id) => {
                     // Skip the trait methods, as these are already handled by `emit_trait_impl`.
