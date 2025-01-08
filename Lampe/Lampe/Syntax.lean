@@ -105,25 +105,26 @@ def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
 
 syntax ident ":" nr_type : nr_param_decl
 
-syntax num ":" nr_type : nr_expr
+syntax num ":" nr_type : nr_expr -- Numeric literal
+syntax "#unit" : nr_expr -- Unit literal
 syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
 syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
 syntax "let" ident "=" nr_expr : nr_expr
 syntax "let" "mut" ident "=" nr_expr : nr_expr
-syntax nr_expr "=" nr_expr : nr_expr
-syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
-syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
+syntax nr_expr "=" nr_expr : nr_expr -- Assignment
+syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
+syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
 syntax "(" nr_expr ")" : nr_expr
 syntax "*(" nr_expr ")" : nr_expr
-syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr
+syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda
 syntax "*" nr_expr : nr_expr -- Deref
 
 syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
 syntax "`(" nr_expr,* ")" : nr_expr -- Tuple constructor
 syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
-syntax "&" "[" nr_expr,* "]" : nr_expr -- Slice constructor
+syntax "&[" nr_expr,* "]" : nr_expr -- Slice constructor
 
 syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
 syntax nr_expr "." num : nr_expr -- Tuple access
@@ -307,6 +308,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.lit $(←mkNrType tp) $n)) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Expr.lit Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Expr.lit Tp.bool 0)) vname k
+| `(nr_expr| #unit) => do wrapSimple (←`(Expr.lit Tp.unit 0)) vname k
 | `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
 | `(nr_expr| $i:ident) => do
   if ←isAutoDeref i.getId then wrapSimple (← `(Expr.readRef $i)) vname k else match vname with
@@ -341,7 +343,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     mkExpr cond none fun cond => do
       let mainBody ← mkExpr mainBody none fun x => `(Expr.var $x)
       wrapSimple (←`(Expr.ite $cond $mainBody (Expr.skip))) vname k
-| `(nr_expr| & [ $args,* ]) => do
+| `(nr_expr| &[ $args,* ]) => do
   let args := args.getElems.toList
   let len := args.length
   mkArgs args fun argVals => do
