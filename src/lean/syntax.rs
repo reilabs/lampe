@@ -58,7 +58,7 @@ pub(super) fn format_free_function_def(
     (
         func_ident.clone(),
         formatdoc! {
-            r"nr_def {func_ident}<{def_generics}>({params}) -> {ret_type} {{
+            r"nr_def «{func_ident}»<{def_generics}>({params}) -> {ret_type} {{
             {body}
             }}"
         },
@@ -156,8 +156,6 @@ pub(super) mod lval {
     pub fn format_deref_access(lhs_lval: &str) -> String {
         expr::format_deref(lhs_lval)
     }
-
-
 }
 
 pub(super) mod expr {
@@ -175,29 +173,8 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_trait_call(
-        sub_type: &str,
-        trait_name: &str,
-        func_ident: &str,
-        func_args: &str,
-        out_ty: &str,
-    ) -> String {
-        format!("(({sub_type} as {trait_name})::{func_ident}({func_args}) : {out_ty})")
-    }
-
-    #[inline]
-    pub fn format_lambda_call(lam_expr: &str, func_args: &str, out_ty: &str) -> String {
-        format!("(^{lam_expr}({func_args}) : {out_ty})")
-    }
-
-    #[inline]
-    pub fn format_decl_call(func_expr: &str, func_args: &str, out_ty: &str) -> String {
-        format!("(@{func_expr}({func_args}) : {out_ty})")
-    }
-
-    #[inline]
-    pub fn format_builtin_call(builtin_name: BuiltinName, func_args: &str, out_ty: &str) -> String {
-        format!("({BUILTIN_PREFIX}{builtin_name}({func_args}) : {out_ty})")
+    pub fn format_call(func_expr: &str, func_args: &str, out_ty: &str) -> String {
+        format!("({func_expr}({func_args}) : {out_ty})")
     }
 
     #[inline]
@@ -260,9 +237,27 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_func_ident(ident: &str, generics: &str) -> String {
+    pub fn format_builtin_func_ident(builtin_name: BuiltinName) -> String {
+        let ident = normalize_ident(&builtin_name);
+        format!("{BUILTIN_PREFIX}{ident}")
+    }
+
+    #[inline]
+    pub fn format_decl_func_ident(ident: &str, generics: &str) -> String {
         let ident = normalize_ident(ident);
-        format!("{ident}<{generics}>")
+        format!("@{ident}<{generics}>")
+    }
+
+    #[inline]
+    pub fn format_trait_func_ident(
+        sub_type: &str,
+        trait_name: &str,
+        trait_generics: &str,
+        func_ident: &str,
+        generics: &str,
+    ) -> String {
+        let func_ident = normalize_ident(func_ident);
+        format!("({sub_type} as {trait_name}<{trait_generics}>)::{func_ident}<{generics}>")
     }
 
     #[inline]

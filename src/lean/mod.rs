@@ -9,7 +9,7 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
-    ast::{IntegerBitSize, Visibility},
+    ast::Visibility,
     graph::CrateId,
     hir::{
         def_map::{ModuleData, ModuleId},
@@ -21,7 +21,7 @@ use noirc_frontend::{
         stmt::{HirLValue, HirPattern},
         traits::TraitImpl,
     },
-    macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, Signedness, StructId},
+    macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, StructId},
     node_interner::{DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId},
     Type,
 };
@@ -185,7 +185,7 @@ impl LeanEmitter {
                     if def_name.starts_with("_") {
                         continue;
                     }
-                    func_refs.insert(format!("«fn#{def_name}»"));
+                    func_refs.insert(format!("«{def_name}»"));
                     def
                 }
                 ModuleDefId::TypeId(id) => self.emit_struct_def(ind, id)?,
@@ -518,12 +518,12 @@ impl LeanEmitter {
                     .collect_vec();
                 let arg_types_str = arg_types.join(", ");
                 let ret_str = self.emit_fully_qualified_type(ret);
-                
+
                 syntax::r#type::format_function(&arg_types_str, &ret_str)
             }
             Type::MutableReference(typ) => {
                 let typ_str = self.emit_fully_qualified_type(typ);
-                
+
                 syntax::r#type::format_mut_ref(&typ_str)
             }
             // In all the other cases we can use the default printing as internal type vars are
@@ -641,10 +641,14 @@ impl LeanEmitter {
                         .get_trait(trait_method_id.trait_id)
                         .name
                         .to_string();
-                    syntax::expr::format_trait_call(
-                        &rhs_ty_str,
-                        &trait_name,
-                        &func_name,
+                    syntax::expr::format_call(
+                        &syntax::expr::format_trait_func_ident(
+                            &rhs_ty_str,
+                            &trait_name,
+                            "",
+                            func_name,
+                            "",
+                        ),
                         &rhs,
                         &out_ty_str,
                     )
@@ -684,10 +688,14 @@ impl LeanEmitter {
                         .get_trait(trait_method_id.trait_id)
                         .name
                         .to_string();
-                    syntax::expr::format_trait_call(
-                        &lhs_ty_str,
-                        &trait_name,
-                        &func_name,
+                    syntax::expr::format_call(
+                        &syntax::expr::format_trait_func_ident(
+                            &lhs_ty_str,
+                            &trait_name,
+                            "",
+                            func_name,
+                            "",
+                        ),
                         &args_str,
                         &out_ty_str,
                     )
@@ -698,79 +706,14 @@ impl LeanEmitter {
                     !call.is_macro_call,
                     "Macros should be resolved before running this tool"
                 );
-                let function = self.emit_expr(ind, call.func)?;
                 let args: Vec<_> = call
                     .arguments
                     .iter()
                     .map(|arg| self.emit_expr(ind, *arg))
                     .try_collect()?;
                 let args_str = args.join(", ");
-                let func_expr = self.context.def_interner.expression(&call.func);
-                // If the function expression is an identifier, then get the function metadata associated with it.
-                let func_meta = match func_expr {
-                    HirExpression::Ident(ident, ..) => {
-                        let ident_def = self.context.def_interner.definition(ident.id);
-                        match ident_def.kind {
-                            DefinitionKind::Function(func_id) => {
-                                Some((func_id, self.context.def_interner.function_meta(&func_id)))
-                            }
-                            _ => None,
-                        }
-                    }
-                    _ => None,
-                };
-                // If the function expression is a function identifier, then acquire its self type.
-                let self_type = func_meta.and_then(|(_, func_meta)| func_meta.self_type.as_ref());
-                // If the function expression is a trait function identifier, then acquire the associated trait.
-                let trait_info = func_meta
-                    .and_then(|(_, m)| m.trait_impl)
-                    .map(|impl_id| self.context.def_interner.get_trait_implementation(impl_id))
-                    .map(|trait_impl| {
-                        self.context.def_interner.get_trait(trait_impl.borrow().trait_id)
-                    });
-                // If the function expression is of type function and has an environment, then this is a lambda call.
-                let is_lambda = match self.context.def_interner.id_type(call.func) {
-                    Type::Function(_, _, env) if matches!(*env, Type::Tuple(..)) => true,
-                    _ => false,
-                };
-                // Either emit a lambda call, a trait call, a builtin call, or a decl call.
-                match (is_lambda, self_type, trait_info, func_meta) {
-                    (true, _, _, _) => {
-                        syntax::expr::format_lambda_call(&function, &args_str, &out_ty_str)
-                    }
-                    (_, Some(self_type), Some(trait_info), _) => {
-                        let self_type_str = self.emit_fully_qualified_type(&self_type);
-                        syntax::expr::format_trait_call(
-                            &self_type_str,
-                            &trait_info.name.to_string(),
-                            &function,
-                            &args_str,
-                            &out_ty_str,
-                        )
-                    }
-                    (_, _, _, Some((func_id, func_meta))) => {
-                        let func_module_id = ModuleId {
-                            krate: func_meta.source_crate,
-                            local_id: func_meta.source_module,
-                        };
-                        let fq_mod_name = self.fq_module_name_from_mod_id(func_module_id);
-                        let func_name = self.context.def_interner.function_name(&func_id);
-                        let fq_func_name = format!("{fq_mod_name}::{func_name}");
-                        if let Some(builtin_fn_name) =
-                            builtin::try_func_into_builtin_name(&fq_func_name, func_meta)
-                        {
-                            syntax::expr::format_builtin_call(
-                                builtin_fn_name,
-                                &args_str,
-                                &out_ty_str,
-                            )
-                        } else {
-                            syntax::expr::format_decl_call(&function, &args_str, &out_ty_str)
-                        }
-                    }
-                    // Lhs of the call is not an identifier (this shouldn't happen)
-                    _ => syntax::expr::format_decl_call(&function, &args_str, &out_ty_str),
-                }
+                let func_expr_str = self.emit_expr(ind, call.func)?;
+                syntax::expr::format_call(&func_expr_str, &args_str, &out_ty_str)
             }
             HirExpression::Ident(ident, _) => {
                 let name = self.context.def_interner.definition_name(ident.id);
@@ -785,14 +728,59 @@ impl LeanEmitter {
                 match ident_def.kind {
                     DefinitionKind::Function(func_id) => {
                         let func_meta = self.context.def_interner.function_meta(&func_id);
-                        let fn_name = match &func_meta.self_type {
-                            Some(self_type) if func_meta.trait_impl.is_none() => {
-                                let self_type_str = self.emit_fully_qualified_type(&self_type);
-                                format!("{self_type_str}::{name}")
+                        match func_meta.trait_impl {
+                            Some(trait_impl_id) => {
+                                let trait_impl = self
+                                    .context
+                                    .def_interner
+                                    .get_trait_implementation(trait_impl_id);
+                                let trait_impl = trait_impl.borrow();
+                                let self_type_str = self.emit_fully_qualified_type(&trait_impl.typ);
+                                let trait_name = trait_impl.ident.to_string();
+                                let trait_generics = trait_impl
+                                    .trait_generics
+                                    .iter()
+                                    .map(|t| self.emit_fully_qualified_type(t))
+                                    .join(", ");
+                                syntax::expr::format_trait_func_ident(
+                                    &self_type_str,
+                                    &trait_name,
+                                    &trait_generics,
+                                    name,
+                                    &generics_str,
+                                )
                             }
-                            _ => name.to_string(),
-                        };
-                        syntax::expr::format_func_ident(&fn_name, &generics_str)
+                            _ => {
+                                let fn_name = match &func_meta.self_type {
+                                    Some(self_type) => {
+                                        let self_type_str =
+                                            self.emit_fully_qualified_type(&self_type);
+                                        format!("{self_type_str}::{name}")
+                                    }
+                                    _ => name.to_string(),
+                                };
+                                let func_module_id = ModuleId {
+                                    krate: func_meta.source_crate,
+                                    local_id: func_meta.source_module,
+                                };
+                                let fq_mod_name = self.fq_module_name_from_mod_id(func_module_id);
+                                let fq_func_name = if fq_mod_name.is_empty() {
+                                    fn_name
+                                } else {
+                                    format!("{fq_mod_name}::{fn_name}")
+                                };
+                                if let Some(builtin_fn_name) =
+                                    builtin::try_func_into_builtin_name(&fq_func_name, func_meta)
+                                {
+                                    syntax::expr::format_builtin_func_ident(builtin_fn_name)
+                                } else {
+                                    syntax::expr::format_decl_func_ident(
+                                        &fq_func_name,
+                                        &generics_str,
+                                    )
+                                }
+                            }
+                        }
                     }
                     DefinitionKind::Global(..)
                     | DefinitionKind::Local(..)
@@ -812,7 +800,11 @@ impl LeanEmitter {
                 let index_expr_str = cast_to_u32(&index_expr_str);
                 let args_str = format!("{collection_expr_str}, {index_expr_str}");
 
-                syntax::expr::format_builtin_call(index_builtin_ident, &args_str, &out_ty_str)
+                syntax::expr::format_call(
+                    &syntax::expr::format_builtin_func_ident(index_builtin_ident),
+                    &args_str,
+                    &out_ty_str,
+                )
             }
             HirExpression::Literal(lit) => self.emit_literal(ind, lit, expr)?,
             HirExpression::Constructor(constructor) => {
@@ -872,8 +864,8 @@ impl LeanEmitter {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
 
-                syntax::expr::format_builtin_call(
-                    builtin::CAST_BUILTIN_NAME.into(),
+                syntax::expr::format_call(
+                    &syntax::expr::format_builtin_func_ident(builtin::CAST_BUILTIN_NAME.into()),
                     &source,
                     &target_type,
                 )
@@ -1031,22 +1023,31 @@ impl LeanEmitter {
             } => {
                 let lhs_lval_str = self.emit_l_value(ind, object.as_ref())?;
                 let out_ty_str = self.emit_fully_qualified_type(typ);
-                
+
                 let lhs_ty = match object.as_ref() {
-                    HirLValue::Ident(_, typ) 
-                    | HirLValue::MemberAccess { typ, .. } 
-                    | HirLValue::Index { typ, .. } 
-                    | HirLValue::Dereference { element_type: typ, .. } => typ,
+                    HirLValue::Ident(_, typ)
+                    | HirLValue::MemberAccess { typ, .. }
+                    | HirLValue::Index { typ, .. }
+                    | HirLValue::Dereference {
+                        element_type: typ, ..
+                    } => typ,
                 };
                 match lhs_ty {
-                    Type::Tuple(..) => {
-                        syntax::lval::format_tuple_access(&lhs_lval_str, field_name.clone(), &out_ty_str)
-                    },
+                    Type::Tuple(..) => syntax::lval::format_tuple_access(
+                        &lhs_lval_str,
+                        field_name.clone(),
+                        &out_ty_str,
+                    ),
                     Type::Struct(..) => {
                         let struct_ty_str = self.emit_fully_qualified_type(lhs_ty);
-                        syntax::lval::format_member_access(&struct_ty_str, &lhs_lval_str, field_name.clone(), &out_ty_str)
-                    },
-                    _ => panic!("invalid member access lvalue")
+                        syntax::lval::format_member_access(
+                            &struct_ty_str,
+                            &lhs_lval_str,
+                            field_name.clone(),
+                            &out_ty_str,
+                        )
+                    }
+                    _ => panic!("invalid member access lvalue"),
                 }
             }
             HirLValue::Index {
@@ -1058,25 +1059,24 @@ impl LeanEmitter {
                 let out_ty_str = self.emit_fully_qualified_type(typ);
 
                 let lhs_ty = match array.as_ref() {
-                    HirLValue::Ident(_, typ) 
-                    | HirLValue::MemberAccess { typ, .. } 
-                    | HirLValue::Index { typ, .. } 
-                    | HirLValue::Dereference { element_type: typ, .. } => typ,
+                    HirLValue::Ident(_, typ)
+                    | HirLValue::MemberAccess { typ, .. }
+                    | HirLValue::Index { typ, .. }
+                    | HirLValue::Dereference {
+                        element_type: typ, ..
+                    } => typ,
                 };
                 match lhs_ty {
                     Type::Array(..) => {
                         syntax::lval::format_array_access(&lhs_lval_str, &idx_expr, &out_ty_str)
-                    },
+                    }
                     Type::Slice(..) => {
                         syntax::lval::format_slice_access(&lhs_lval_str, &idx_expr, &out_ty_str)
-                    },
-                    _ => panic!("invalid index access lvalue")
+                    }
+                    _ => panic!("invalid index access lvalue"),
                 }
             }
-            HirLValue::Dereference {
-                lvalue,
-                ..
-            } => {
+            HirLValue::Dereference { lvalue, .. } => {
                 let lhs_lval = self.emit_l_value(ind, lvalue.as_ref())?;
 
                 syntax::lval::format_deref_access(&lhs_lval)
@@ -1085,7 +1085,6 @@ impl LeanEmitter {
 
         Ok(result)
     }
-
 
     /// Emits the Lean code corresponding to a Noir pattern.
     ///
@@ -1241,13 +1240,11 @@ impl From<LeanEmitter> for Context<'static, 'static> {
 }
 
 fn cast_to_u32(expr: &str) -> String {
-    syntax::expr::format_builtin_call(
-        builtin::CAST_BUILTIN_NAME.into(),
+    syntax::expr::format_call(
+        &syntax::expr::format_builtin_func_ident(builtin::CAST_BUILTIN_NAME.into()),
         expr,
-        &format!(
-            "{}",
-            Type::Integer(Signedness::Unsigned, IntegerBitSize::ThirtyTwo)
-        ),
+        // [TODO] convert to a call to emit type
+        "u32",
     )
 }
 // TODO Proper emit tests

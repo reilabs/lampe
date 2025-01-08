@@ -396,3 +396,7 @@ example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)
       simp_all
   steps
   simp_all
+
+nr_def generic_trait_call_2<T>(x : Field) -> Field {
+  ((Pair<T> as Me<>)::me<> as λ(Field) → Field)(x)
+}
