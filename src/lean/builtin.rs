@@ -115,13 +115,21 @@ pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     }
 }
 
-pub fn try_prefix_into_builtin_name(op: UnaryOp, rhs_type: BuiltinType) -> Option<BuiltinName> {
-    let ty_name = rhs_type.name_prefix();
-    match op {
-        UnaryOp::Minus if rhs_type.is_arithmetic() => Some(format!("{}Neg", ty_name)),
-        UnaryOp::Not if rhs_type.is_bitwise() => Some(format!("{}Not", ty_name)),
-        UnaryOp::MutableReference => todo!(),
-        UnaryOp::Dereference { .. } => todo!(),
+pub fn try_prefix_into_builtin_name(
+    op: UnaryOp,
+    // `None` if the type is not a builtin type.
+    rhs_type: Option<BuiltinType>,
+) -> Option<BuiltinName> {
+    let rhs_ty_prefix = rhs_type.map(|ty| (ty, ty.name_prefix()));
+    match (op, rhs_ty_prefix) {
+        (UnaryOp::Minus, Some((rhs_type, prefix))) if rhs_type.is_arithmetic() => {
+            Some(format!("{}Neg", prefix))
+        }
+        (UnaryOp::Not, Some((rhs_type, prefix))) if rhs_type.is_bitwise() => {
+            Some(format!("{}Not", prefix))
+        }
+        (UnaryOp::MutableReference, _) => Some(format!("ref")),
+        (UnaryOp::Dereference { .. }, _) => Some(format!("readRef")),
         _ => None,
     }
 }

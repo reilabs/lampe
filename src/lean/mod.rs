@@ -688,11 +688,9 @@ impl LeanEmitter {
             HirExpression::Prefix(prefix) => {
                 let rhs = self.emit_expr(ind, prefix.rhs)?;
                 let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
-                if let Some(builtin_name) = rhs_ty
-                    .clone()
-                    .try_into()
-                    .ok()
-                    .and_then(|ty| builtin::try_prefix_into_builtin_name(prefix.operator, ty))
+                let rhs_builtin_ty = rhs_ty.clone().try_into().ok();
+                if let Some(builtin_name) =
+                    builtin::try_prefix_into_builtin_name(prefix.operator, rhs_builtin_ty)
                 {
                     syntax::expr::format_builtin_call(builtin_name, &rhs, &out_ty_str)
                 } else {
