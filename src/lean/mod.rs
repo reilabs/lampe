@@ -23,7 +23,7 @@ use noirc_frontend::{
     },
     macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, Signedness, StructId},
     node_interner::{DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId},
-    Type,
+    Type, TypeBindings,
 };
 
 use crate::{
@@ -254,7 +254,7 @@ impl LeanEmitter {
 
         let mut all_generics = Vec::new();
         all_generics.extend(generics.iter().cloned());
-        all_generics.extend(self.collect_generics(&trait_impl.typ));
+        all_generics.extend(self.collect_named_generics(&trait_impl.typ));
         let all_generics_str = all_generics.join(", ");
 
         // Emit the implemented functions.
@@ -278,17 +278,19 @@ impl LeanEmitter {
     }
 
     /// Collects the named generics from a type recursively.
-    pub fn collect_generics(&self, typ: &Type) -> Vec<String> {
+    pub fn collect_named_generics(&self, typ: &Type) -> Vec<String> {
         match typ {
             Type::Array(inner_type, _)
             | Type::Slice(inner_type)
-            | Type::MutableReference(inner_type) => self.collect_generics(&inner_type),
-            Type::Tuple(elems) => {
-                elems.iter().flat_map(|typ| self.collect_generics(typ)).collect_vec()
-            }
-            Type::Struct(_, generics) | Type::TraitAsType(_, _, generics) => {
-                generics.iter().flat_map(|g| self.collect_generics(g)).collect_vec()
-            }
+            | Type::MutableReference(inner_type) => self.collect_named_generics(&inner_type),
+            Type::Tuple(elems) => elems
+                .iter()
+                .flat_map(|typ| self.collect_named_generics(typ))
+                .collect_vec(),
+            Type::Struct(_, generics) | Type::TraitAsType(_, _, generics) => generics
+                .iter()
+                .flat_map(|g| self.collect_named_generics(g))
+                .collect_vec(),
             Type::Bool
             | Type::Integer(..)
             | Type::String(..)
@@ -296,7 +298,7 @@ impl LeanEmitter {
             | Type::Unit
             | Type::FieldElement => Vec::new(),
             Type::NamedGeneric(..) => Vec::from([format!("{typ}")]),
-            _ => unimplemented!("cannot collect generics from {typ} (yet)"),
+            _ => unimplemented!("cannot collect named generics from {typ} (yet)"),
         }
     }
 
@@ -459,7 +461,7 @@ impl LeanEmitter {
     pub fn emit_fully_qualified_type(&self, typ: &Type) -> String {
         match typ {
             Type::Unit => syntax::r#type::format_unit(),
-            Type::Array(elem_type, size) => {
+            Type::Array(size, elem_type) => {
                 let elem_type = self.emit_fully_qualified_type(elem_type);
 
                 syntax::r#type::format_array(&elem_type, &size.to_string())
@@ -586,6 +588,62 @@ impl LeanEmitter {
         }
     }
 
+    /// Given a type `T` and a `TypeBindings` map `m`, returns a new type where the type variables in `T` have been recursively substituted with the values in `m`.
+    pub fn substitute_bindings(&self, typ: &Type, bindings: &TypeBindings) -> Type {
+        match typ {
+            Type::TypeVariable(tv, _) | Type::NamedGeneric(tv, _, _) => {
+                bindings.get(&tv.id()).map(|(_, t)| t).cloned().unwrap_or(typ.clone())
+            }
+            Type::Array(n, e) => Type::Array(
+                Box::new(self.substitute_bindings(n.as_ref(), bindings)),
+                Box::new(self.substitute_bindings(e.as_ref(), bindings)),
+            ),
+            Type::Slice(e) => Type::Slice(Box::new(self.substitute_bindings(e.as_ref(), bindings))),
+            Type::String(n) => Type::String(Box::new(self.substitute_bindings(n, bindings))),
+            Type::FmtString(n, vec) => Type::FmtString(
+                Box::new(self.substitute_bindings(n, bindings)),
+                Box::new(self.substitute_bindings(vec, bindings)),
+            ),
+            Type::Tuple(vec) => {
+                Type::Tuple(vec.iter().map(|t| self.substitute_bindings(t, bindings)).collect())
+            }
+            Type::Struct(def, generics) => Type::Struct(
+                def.clone(),
+                generics
+                    .iter()
+                    .map(|t| self.substitute_bindings(t, bindings))
+                    .collect(),
+            ),
+            Type::Alias(def, generics) => Type::Alias(
+                def.clone(),
+                generics
+                    .iter()
+                    .map(|t| self.substitute_bindings(t, bindings))
+                    .collect(),
+            ),
+            Type::Function(params, ret, env) => Type::Function(
+                params.iter().map(|t| self.substitute_bindings(t, bindings)).collect(),
+                Box::new(self.substitute_bindings(ret, bindings)),
+                Box::new(self.substitute_bindings(env, bindings)),
+            ),
+            Type::TraitAsType(id, name, generics) => Type::TraitAsType(
+                id.clone(),
+                name.clone(),
+                generics
+                    .iter()
+                    .map(|t| self.substitute_bindings(t, bindings))
+                    .collect(),
+            ),
+            Type::MutableReference(t) => {
+                Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
+            }
+            Type::Forall(tvs, t) => {
+                Type::Forall(tvs.clone(), Box::new(self.substitute_bindings(t, bindings)))
+            }
+            _ => typ.clone(),
+        }
+    }
+
     /// Emits the Lean source code corresponding to a Noir expression.
     ///
     /// # Errors
@@ -635,12 +693,9 @@ impl LeanEmitter {
                     let func_name = self.context.def_interner.definition_name(
                         self.context.def_interner.trait_method_id(trait_method_id.clone()),
                     );
-                    let trait_name = self
-                        .context
-                        .def_interner
-                        .get_trait(trait_method_id.trait_id)
-                        .name
-                        .to_string();
+                    let corresp_trait =
+                        self.context.def_interner.get_trait(trait_method_id.trait_id);
+                    let trait_name = corresp_trait.name.to_string();
                     syntax::expr::format_call(
                         &syntax::expr::format_trait_func_ident(
                             &rhs_ty_str,
@@ -735,15 +790,10 @@ impl LeanEmitter {
                     syntax::expr::format_call(&func_expr_str, &args_str, &fn_type)
                 }
             }
-            HirExpression::Ident(ident, _) => {
+            HirExpression::Ident(ident, generics) => {
                 let name = self.context.def_interner.definition_name(ident.id);
                 let ident_def = self.context.def_interner.definition(ident.id);
-                let generics = self.context.def_interner.get_instantiation_bindings(expr);
-                // [TODO] consider argument order using TypeVariable or TypeVariableId.
-                let generics_str = generics
-                    .iter()
-                    .map(|(_tv_id, (_tv, ty))| self.emit_fully_qualified_type(ty))
-                    .join(", ");
+                let bindings = self.context.def_interner.get_instantiation_bindings(expr);
 
                 match ident_def.kind {
                     DefinitionKind::Function(func_id) => {
@@ -755,19 +805,29 @@ impl LeanEmitter {
                                     .def_interner
                                     .get_trait_implementation(trait_impl_id);
                                 let trait_impl = trait_impl.borrow();
-                                let self_type_str = self.emit_fully_qualified_type(&trait_impl.typ);
+                                let self_type = func_meta.self_type.as_ref()
+                                    .map(|t| self.substitute_bindings(t, bindings))
+                                    .expect("the function associated with a trait function identifier must have a self type");
+                                let self_type_str = self.emit_fully_qualified_type(&self_type);
                                 let trait_name = trait_impl.ident.to_string();
                                 let trait_generics = trait_impl
                                     .trait_generics
                                     .iter()
-                                    .map(|t| self.emit_fully_qualified_type(t))
+                                    .map(|g| self.substitute_bindings(g, &bindings))
+                                    .map(|t| self.emit_fully_qualified_type(&t))
+                                    .join(", ");
+                                let ident_generics = generics
+                                    .unwrap_or_default()
+                                    .iter()
+                                    .map(|g| self.substitute_bindings(g, &bindings))
+                                    .map(|t| self.emit_fully_qualified_type(&t))
                                     .join(", ");
                                 syntax::expr::format_trait_func_ident(
                                     &self_type_str,
                                     &trait_name,
                                     &trait_generics,
                                     name,
-                                    &generics_str,
+                                    &ident_generics,
                                 )
                             }
                             _ => {
@@ -789,7 +849,14 @@ impl LeanEmitter {
                                 } else {
                                     format!("{fq_mod_name}::{fn_name}")
                                 };
-                                syntax::expr::format_decl_func_ident(&fq_func_name, &generics_str)
+                                let call_generics = func_meta
+                                    .all_generics
+                                    .iter()
+                                    .flat_map(|t| bindings.get(&t.type_var.id()))
+                                    .map(|(_, ty)| self.emit_fully_qualified_type(ty))
+                                    .join(", ");
+
+                                syntax::expr::format_decl_func_ident(&fq_func_name, &call_generics)
                             }
                         }
                     }
@@ -842,7 +909,11 @@ impl LeanEmitter {
                     .map(|ty| self.emit_fully_qualified_type(ty))
                     .join(",");
 
-                syntax::expr::format_constructor(name, &constructor_gen_vals_str, &fields_str)
+                syntax::expr::format_constructor(
+                    &name.to_string(),
+                    &constructor_gen_vals_str,
+                    &fields_str,
+                )
             }
             HirExpression::MemberAccess(member) => {
                 let lhs_expr_ty = self.context.def_interner.id_type(member.lhs);
@@ -854,14 +925,12 @@ impl LeanEmitter {
                         syntax::expr::format_member_access(
                             &struct_ty_str,
                             &target_expr_str,
-                            member_iden,
-                            &out_ty_str,
+                            &member_iden.to_string(),
                         )
                     }
                     Type::Tuple(..) => syntax::expr::format_tuple_access(
                         &target_expr_str,
-                        member_iden,
-                        &out_ty_str,
+                        &member_iden.to_string(),
                     ),
                     _ => panic!("member access lhs is not a struct or tuple"),
                 }
@@ -1025,13 +1094,9 @@ impl LeanEmitter {
                 format!("{ident_str}")
             }
             HirLValue::MemberAccess {
-                object,
-                field_name,
-                typ,
-                ..
+                object, field_name, ..
             } => {
                 let lhs_lval_str = self.emit_l_value(ind, object.as_ref())?;
-                let out_ty_str = self.emit_fully_qualified_type(typ);
 
                 let lhs_ty = match object.as_ref() {
                     HirLValue::Ident(_, typ)
@@ -1042,30 +1107,24 @@ impl LeanEmitter {
                     } => typ,
                 };
                 match lhs_ty {
-                    Type::Tuple(..) => syntax::lval::format_tuple_access(
-                        &lhs_lval_str,
-                        field_name.clone(),
-                        &out_ty_str,
-                    ),
+                    Type::Tuple(..) => {
+                        syntax::lval::format_tuple_access(&lhs_lval_str, &field_name.to_string())
+                    }
                     Type::Struct(..) => {
                         let struct_ty_str = self.emit_fully_qualified_type(lhs_ty);
                         syntax::lval::format_member_access(
                             &struct_ty_str,
                             &lhs_lval_str,
-                            field_name.clone(),
-                            &out_ty_str,
+                            &field_name.to_string(),
                         )
                     }
                     _ => panic!("invalid member access lvalue: lhs is not a struct or a tuple"),
                 }
             }
-            HirLValue::Index {
-                array, index, typ, ..
-            } => {
+            HirLValue::Index { array, index, .. } => {
                 let lhs_lval_str = self.emit_l_value(ind, array.as_ref())?;
                 let idx_expr = self.emit_expr(ind, *index)?;
                 let idx_expr = self.emit_cast_to_u32(&idx_expr);
-                let out_ty_str = self.emit_fully_qualified_type(typ);
 
                 let lhs_ty = match array.as_ref() {
                     HirLValue::Ident(_, typ)
@@ -1076,12 +1135,8 @@ impl LeanEmitter {
                     } => typ,
                 };
                 match lhs_ty {
-                    Type::Array(..) => {
-                        syntax::lval::format_array_access(&lhs_lval_str, &idx_expr, &out_ty_str)
-                    }
-                    Type::Slice(..) => {
-                        syntax::lval::format_slice_access(&lhs_lval_str, &idx_expr, &out_ty_str)
-                    }
+                    Type::Array(..) => syntax::lval::format_array_access(&lhs_lval_str, &idx_expr),
+                    Type::Slice(..) => syntax::lval::format_slice_access(&lhs_lval_str, &idx_expr),
                     _ => panic!("invalid index access lvalue: lhs is not an array or a slice"),
                 }
             }

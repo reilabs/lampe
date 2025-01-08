@@ -1,6 +1,5 @@
 use indoc::formatdoc;
 use itertools::Itertools;
-use noirc_frontend::macros_api::Ident;
 
 // Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
 fn without_generic_args(ty_str: &str) -> String {
@@ -38,7 +37,7 @@ pub(super) fn format_trait_impl(
     methods: &str,
 ) -> String {
     formatdoc! {
-        "nr_trait_impl [{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {{
+        "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {{
                 {methods} 
             }}"
     }
@@ -112,7 +111,7 @@ pub(super) mod r#type {
 
     #[inline]
     pub fn format_trait_as_type(_trait_name: &str, _generics: &str) -> String {
-        todo!()
+        todo!("TraitAsType not implemented yet")
         // format!("?{trait_name}<{generics}>")
     }
 
@@ -126,28 +125,23 @@ pub(super) mod lval {
     use super::*;
 
     #[inline]
-    pub fn format_member_access(
-        struct_name: &str,
-        lhs_lval: &str,
-        member: Ident,
-        out_ty: &str,
-    ) -> String {
-        expr::format_member_access(struct_name, lhs_lval, member, out_ty)
+    pub fn format_member_access(struct_name: &str, lhs_lval: &str, member: &str) -> String {
+        expr::format_member_access(struct_name, lhs_lval, member)
     }
 
     #[inline]
-    pub fn format_tuple_access(lhs_lval: &str, member: Ident, out_ty: &str) -> String {
-        expr::format_tuple_access(lhs_lval, member, out_ty)
+    pub fn format_tuple_access(lhs_lval: &str, member: &str) -> String {
+        expr::format_tuple_access(lhs_lval, member)
     }
 
     #[inline]
-    pub fn format_array_access(lhs_lval: &str, idx_expr: &str, out_ty: &str) -> String {
-        expr::format_array_access(lhs_lval, idx_expr, out_ty)
+    pub fn format_array_access(lhs_lval: &str, idx_expr: &str) -> String {
+        expr::format_array_access(lhs_lval, idx_expr)
     }
 
     #[inline]
-    pub fn format_slice_access(lhs_lval: &str, idx_expr: &str, out_ty: &str) -> String {
-        expr::format_slice_access(lhs_lval, idx_expr, out_ty)
+    pub fn format_slice_access(lhs_lval: &str, idx_expr: &str) -> String {
+        expr::format_slice_access(lhs_lval, idx_expr)
     }
 
     #[inline]
@@ -163,7 +157,7 @@ pub(super) mod expr {
 
     #[inline]
     pub fn format_constructor(
-        struct_ident: &Ident,
+        struct_ident: &str,
         struct_generic_vals: &str,
         fields_ordered: &str,
     ) -> String {
@@ -181,27 +175,22 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_member_access(
-        struct_name: &str,
-        target_expr: &str,
-        member: Ident,
-        _out_ty: &str,
-    ) -> String {
+    pub fn format_member_access(struct_name: &str, target_expr: &str, member: &str) -> String {
         format!("({target_expr} as {struct_name}).{member}")
     }
 
     #[inline]
-    pub fn format_tuple_access(target_expr: &str, member: Ident, _out_ty: &str) -> String {
+    pub fn format_tuple_access(target_expr: &str, member: &str) -> String {
         format!("{target_expr}.{member}")
     }
 
     #[inline]
-    pub fn format_array_access(array_expr: &str, idx_expr: &str, _out_ty: &str) -> String {
+    pub fn format_array_access(array_expr: &str, idx_expr: &str) -> String {
         format!("{array_expr}[{idx_expr}]")
     }
 
     #[inline]
-    pub fn format_slice_access(slice_expr: &str, idx_expr: &str, _out_ty: &str) -> String {
+    pub fn format_slice_access(slice_expr: &str, idx_expr: &str) -> String {
         format!("{slice_expr}[[{idx_expr}]]")
     }
 
