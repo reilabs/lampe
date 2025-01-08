@@ -54,10 +54,10 @@ def Tp.denote : Tp → Type
 | .bi => Int
 | .bool => Bool
 | .unit => Unit
-| .str n => Mathlib.Vector Char n.toNat
+| .str n => List.Vector Char n.toNat
 | .field => Fp p
 | .slice tp => List (denote tp)
-| .array tp n => Mathlib.Vector (denote tp) n.toNat
+| .array tp n => List.Vector (denote tp) n.toNat
 | .ref _ => Ref
 | .tuple _ fields => Tp.denoteArgs fields
 | .fn argTps outTp => FuncRef argTps outTp

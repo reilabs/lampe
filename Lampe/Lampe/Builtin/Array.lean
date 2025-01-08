@@ -12,9 +12,9 @@ lemma Fin.n_is_non_zero {h : Fin n} : n ≠ 0 := by
   contradiction
   simp
 
-lemma Mathlib.Vector.get_after_erase {idx : Nat} {vec : Mathlib.Vector α n} {h₁ h₂ h₃} :
-  (Mathlib.Vector.eraseIdx ⟨idx, h₁⟩ vec).get ⟨idx, h₂⟩ = Mathlib.Vector.get vec ⟨idx + 1, h₃⟩ := by
-  unfold Mathlib.Vector.get Mathlib.Vector.eraseIdx
+lemma List.Vector.get_after_erase {idx : Nat} {vec : List.Vector α n} {h₁ h₂ h₃} :
+  (List.Vector.eraseIdx ⟨idx, h₁⟩ vec).get ⟨idx, h₂⟩ = List.Vector.get vec ⟨idx + 1, h₃⟩ := by
+  unfold List.Vector.get List.Vector.eraseIdx
   cases vec
   simp_all only [Fin.cast_mk, List.get_eq_getElem]
   rename List _ => l
@@ -41,12 +41,12 @@ lemma Mathlib.Vector.get_after_erase {idx : Nat} {vec : Mathlib.Vector α n} {h�
       . aesop
 
 @[simp]
-lemma Mathlib.Vector.get_after_insert {idx : Nat} {vec : Mathlib.Vector α n} {h} :
-  (Mathlib.Vector.insertNth v ⟨idx, h⟩ vec).get ⟨idx, h⟩ = v := by
-  unfold Mathlib.Vector.insertNth Mathlib.Vector.get
+lemma List.Vector.get_after_insert {idx : Nat} {vec : List.Vector α n} {h} :
+  (List.Vector.insertIdx v ⟨idx, h⟩ vec).get ⟨idx, h⟩ = v := by
+  unfold List.Vector.insertIdx List.Vector.get
   cases vec
   simp_all only [List.get_eq_getElem, Fin.coe_cast]
-  apply List.get_insertNth_self
+  apply List.get_insertIdx_self
   subst_vars
   linarith
 
@@ -54,7 +54,7 @@ namespace Lampe.Builtin
 
 @[reducible]
 def replaceArray' (arr : Tp.denote p (.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (.array tp n) :=
-  let arr' := (arr.insertNth v ⟨idx.val + 1, by aesop⟩)
+  let arr' := (arr.insertIdx v ⟨idx.val + 1, by aesop⟩)
   arr'.eraseIdx ⟨idx.val, by cases idx; tauto⟩
 
 example {p} : (replaceArray' (p := p) (n := ⟨3, by aesop⟩) (tp := .bool) ⟨[false, false, false], (by rfl)⟩ ⟨1, by tauto⟩ true).get ⟨1, by tauto⟩ = true := by rfl
@@ -65,10 +65,10 @@ theorem index_replaced_arr {n : U 32} {idx : Fin n.toNat} {arr} :
   unfold replaceArray'
   cases em (n.toNat > 0)
   . simp_all only [gt_iff_lt, eq_mp_eq_cast]
-    generalize h₁ : (Mathlib.Vector.insertNth _ _ _) = arr₁
+    generalize h₁ : (List.Vector.insertIdx _ _ _) = arr₁
     cases idx
-    rw [Mathlib.Vector.get_after_erase, ←h₁]
-    apply Mathlib.Vector.get_after_insert
+    rw [List.Vector.get_after_erase, ←h₁]
+    apply List.Vector.get_after_insert
   . simp_all only [gt_iff_lt, not_lt, nonpos_iff_eq_zero, lt_self_iff_false, dite_false]
     rename_i h
     rw [h] at idx

@@ -37,7 +37,7 @@ lemma HList.toList_length_is_n (h_same : tps = List.replicate n tp) :
   rfl
 
 @[reducible]
-def HList.toVec (l : HList rep tps) (h_same : tps = List.replicate n tp) : Mathlib.Vector (rep tp) n :=
+def HList.toVec (l : HList rep tps) (h_same : tps = List.replicate n tp) : List.Vector (rep tp) n :=
   ⟨HList.toList l h_same, by apply HList.toList_length_is_n⟩
 
 @[reducible]
