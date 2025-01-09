@@ -30,6 +30,66 @@ inductive Tp where
 | ref (tp : Tp)
 | fn (argTps : List Tp) (outTp : Tp)
 
+mutual
+
+def tpsDecEq (a b : List Tp) : Decidable (a = b) := by
+  cases a <;> cases b
+  right; rfl
+  left; simp_all
+  left; simp_all
+  rename_i tp₁ tps₁ tp₂ tps₂
+  cases (tpDecEq tp₁ tp₂)
+  left; simp_all
+  cases (tpsDecEq tps₁ tps₂)
+  left; simp_all
+  right; simp_all
+
+def tpDecEq (a b : Tp) : Decidable (a = b) := by
+  cases a <;> cases b
+  all_goals try { right; rfl }
+  all_goals try { left; simp_all }
+  all_goals try {
+    rename_i n₁ n₂
+    have h : Decidable (n₁ = n₂) := inferInstance
+    cases h
+    . left
+      simp_all
+    . right
+      tauto
+  }
+  all_goals try {
+    rename_i tp₁ tp₂
+    cases (tpDecEq tp₁ tp₂)
+    . left
+      simp_all
+    . right
+      tauto
+  }
+  case array.array =>
+    rename_i tp₁ n₁ tp₂ n₂
+    have h : Decidable (n₁ = n₂) := inferInstance
+    cases (tpDecEq tp₁ tp₂) <;> cases h <;> first
+    | right; tauto
+    | left; simp_all; done
+    right
+    subst_vars
+    rfl
+  case tuple.tuple =>
+    rename_i n₁ tps₁ n₂ tps₂
+    have h : Decidable (n₁ = n₂) := inferInstance
+    cases (tpsDecEq tps₁ tps₂) <;> cases h
+    all_goals try { left; simp_all; }
+    right; subst_vars; rfl
+  case fn.fn =>
+    rename_i args₁ out₁ args₂ out₂
+    cases (tpDecEq out₁ out₂) <;> cases (tpsDecEq args₁ args₂)
+    all_goals try { left; simp_all; }
+    right; subst_vars; rfl
+
+end
+
+instance : DecidableEq Tp := tpDecEq
+
 @[reducible]
 def Kind.denote : Kind → Type
 | .nat => Nat
