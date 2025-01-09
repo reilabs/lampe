@@ -268,81 +268,81 @@ partial def getFuncSignature [MonadSyntax m] (ty : TSyntax `nr_type) : m (List (
 
 mutual
 
-partial def mkBlock [MonadSyntax m] (autoDeref : Bool) (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
+partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match items with
 | h :: n :: rest => match h with
   | `(nr_expr | let $v = $e ) => do
-    mkExpr autoDeref e (some v) fun _ => mkBlock autoDeref (n :: rest) k
+    mkExpr e (some v) fun _ => mkBlock (n :: rest) k
   | `(nr_expr | let mut $v = $e) => do
-    mkExpr autoDeref e none fun eVal => do
+    mkExpr e none fun eVal => do
       registerAutoDeref v.getId
-      let body ← mkBlock autoDeref (n :: rest) k
+      let body ← mkBlock (n :: rest) k
       `(Lampe.Expr.letIn (Expr.ref $eVal) fun $v => $body)
   | e => do
-  mkExpr autoDeref e none fun _ => mkBlock autoDeref (n :: rest) k
+  mkExpr e none fun _ => mkBlock (n :: rest) k
 | [e] => match e with
   | `(nr_expr | let $_ = $e)
   | `(nr_expr | let mut $_ = $e)
-  | `(nr_expr | $e) => mkExpr autoDeref e none k
+  | `(nr_expr | $e) => mkExpr e none k
 | _ => do wrapSimple (←`(Lampe.Expr.skip)) none k
 
-partial def mkArgs [MonadSyntax m] (autoDeref : Bool) (args : List (TSyntax `nr_expr)) (k : List (TSyntax `term) → m (TSyntax `term)) : m (TSyntax `term) := match args with
+partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (TSyntax `term) → m (TSyntax `term)) : m (TSyntax `term) := match args with
 | [] => k []
 | h :: t =>
-  mkExpr autoDeref h none fun h => do
-    mkArgs autoDeref t fun t => k (h :: t)
+  mkExpr h none fun h => do
+    mkArgs t fun t => k (h :: t)
 
-partial def mkExpr [MonadSyntax m] (autoDeref : Bool) (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
+partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
 | `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.lit $(←mkNrType tp) $n)) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Expr.lit Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Expr.lit Tp.bool 0)) vname k
 | `(nr_expr| #unit) => do wrapSimple (←`(Expr.lit Tp.unit 0)) vname k
-| `(nr_expr| { $exprs;* }) => mkBlock autoDeref exprs.getElems.toList k
+| `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
 | `(nr_expr| $i:ident) => do
-  match ←isAutoDeref i.getId, autoDeref with
-  | true, true => wrapSimple (← `(Expr.readRef $i)) vname k
-  | _, _ => match vname with
+  if ←isAutoDeref i.getId then
+    wrapSimple (← `(Expr.readRef $i)) vname k
+  else match vname with
     | none => k i
     | some _ => wrapSimple (←`(Expr.var $i)) vname k
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
-  mkArgs autoDeref args.getElems.toList fun argVals => do
+  mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Expr.callBuiltin _ $(←mkNrType tp) $(←mkBuiltin i.getId.toString) $(←mkHListLit argVals))) vname k
 | `(nr_expr| * $i:ident) => do
   wrapSimple (←`(Expr.readRef $i)) vname k
 | `(nr_expr| * $expr:nr_expr) => do
-  mkExpr autoDeref expr none fun v => do
+  mkExpr expr none fun v => do
     wrapSimple (←`(Expr.readRef $v)) vname k
 | `(nr_expr| for $i in $lo .. $hi $body) => do
-  mkExpr autoDeref lo none fun lo =>
-  mkExpr autoDeref hi none fun hi => do
-    let body ← mkExpr autoDeref body none (fun x => `(Expr.var $x))
+  mkExpr lo none fun lo =>
+  mkExpr hi none fun hi => do
+    let body ← mkExpr body none (fun x => `(Expr.var $x))
     wrapSimple (←`(Expr.loop $lo $hi fun $i => $body)) vname k
 | `(nr_expr| $lhs:nr_expr = $rhs:nr_expr) => do
   let (lens, args) ← mkLens lhs ArgSet.empty
-  mkExpr autoDeref rhs none fun rhs => do
+  mkExpr rhs none fun rhs => do
     -- Disable auto deref while parsing the innermost expression,
     -- so that dereference operations are the only way to dereference references.
     mkExpr false (getInnermostExpr lhs) none fun r => do
-      mkArgs autoDeref args.args fun vals => do
+      mkArgs args.args fun vals => do
         wrapSimple (←`(Expr.modifyLens $r $rhs $(←args.wrap vals lens))) vname k
-| `(nr_expr| ( $e )) => mkExpr autoDeref e vname k
+| `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do
-  mkExpr autoDeref cond none fun cond => do
-    let mainBody ← mkExpr autoDeref mainBody none fun x => `(Expr.var $x)
-    let elseBody ← mkExpr autoDeref elseBody none fun x => `(Expr.var $x)
+  mkExpr cond none fun cond => do
+    let mainBody ← mkExpr mainBody none fun x => `(Expr.var $x)
+    let elseBody ← mkExpr elseBody none fun x => `(Expr.var $x)
     wrapSimple (←`(Expr.ite $cond $mainBody $elseBody)) vname k
 | `(nr_expr| if $cond $mainBody) => do
-  mkExpr autoDeref cond none fun cond => do
-    let mainBody ← mkExpr autoDeref mainBody none fun x => `(Expr.var $x)
+  mkExpr cond none fun cond => do
+    let mainBody ← mkExpr mainBody none fun x => `(Expr.var $x)
     wrapSimple (←`(Expr.ite $cond $mainBody (Expr.skip))) vname k
 | `(nr_expr| &[ $args,* ]) => do
   let args := args.getElems.toList
   let len := args.length
-  mkArgs autoDeref args fun argVals => do
+  mkArgs args fun argVals => do
     wrapSimple (←`(Expr.mkSlice $(Syntax.mkNumLit $ toString len) $(←mkHListLit argVals))) vname k
 | `(nr_expr| [ $args,* ]) => do
   let args := args.getElems.toList
   let len := args.length
-  mkArgs autoDeref args fun argVals => do
+  mkArgs args fun argVals => do
     wrapSimple (←`(Expr.mkArray $(Syntax.mkNumLit $ toString len) $(←mkHListLit argVals))) vname k
 | `(nr_expr| | $params,* | -> $outTp $lambdaBody) => do
   let outTp ← mkNrType outTp
@@ -352,15 +352,15 @@ partial def mkExpr [MonadSyntax m] (autoDeref : Bool) (e : TSyntax `nr_expr) (vn
   let args ← mkHListLit (← params.getElems.toList.mapM fun param => match param with
     | `(nr_param_decl|$i:ident : $_) => `($i)
     | _ => throwUnsupportedSyntax)
-  let body ← mkExpr autoDeref lambdaBody none fun x => `(Expr.var $x)
+  let body ← mkExpr lambdaBody none fun x => `(Expr.var $x)
   wrapSimple (←`(Expr.lam $argTps $outTp (fun $args => $body))) vname k
 | `(nr_expr| $structName:nr_ident < $structGenVals,* > { $args,* }) => do
    let structName ← mkNrIdent structName
    let fieldTps ← `(Struct.fieldTypes $(mkStructDefIdent structName) $(←mkHListLit (←structGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)))
-   mkArgs autoDeref args.getElems.toList fun argVals => do
+   mkArgs args.getElems.toList fun argVals => do
      wrapSimple (←`(Expr.mkTuple (tps := $fieldTps) (some $(Syntax.mkStrLit $ structName)) $(←mkHListLit argVals))) vname k
 | `(nr_expr| `( $args,* )) => do
-  mkArgs autoDeref args.getElems.toList fun argVals => do
+  mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Expr.mkTuple none $(←mkHListLit argVals))) vname k
 | `(nr_expr| @ $fnName:nr_ident < $callGenVals:nr_type,* > as $t:nr_type) => do
   let callGenKinds ← mkListLit (←callGenVals.getElems.toList.mapM fun _ => `(Kind.type))
@@ -379,8 +379,8 @@ partial def mkExpr [MonadSyntax m] (autoDeref : Bool) (e : TSyntax `nr_expr) (vn
   wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp
     (FuncRef.trait $(←mkNrType selfTp) $traitName $traitGenKinds $traitGenVals $methodName $callGenKinds $callGenVals))) vname k
 | `(nr_expr| $fnExpr:nr_expr ( $args:nr_expr,* )) => do
-  mkExpr autoDeref fnExpr none fun fnRef => do
-    mkArgs autoDeref args.getElems.toList fun argVals => do
+  mkExpr fnExpr none fun fnRef => do
+    mkArgs args.getElems.toList fun argVals => do
       let args ← mkHListLit argVals
       wrapSimple (←`(Expr.call _ _ $fnRef $args)) vname k
 | `(nr_expr| ( $_:nr_expr as $_:nr_ident  < $_,* > ) . $_:ident)
@@ -389,8 +389,8 @@ partial def mkExpr [MonadSyntax m] (autoDeref : Bool) (e : TSyntax `nr_expr) (vn
 | `(nr_expr| $_:nr_expr [[ $_:nr_expr ]]) => do
   let expr := getInnermostExpr e
   let (lens, args) ← mkLens e ArgSet.empty
-  mkExpr autoDeref expr none fun exprVal => do
-    mkArgs autoDeref args.args fun vals => do
+  mkExpr expr none fun exprVal => do
+    mkArgs args.args fun vals => do
       wrapSimple (←`(Expr.getLens $exprVal $(←args.wrap vals lens))) vname k
 | _ => throwUnsupportedSyntax
 
