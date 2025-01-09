@@ -117,7 +117,6 @@ syntax nr_expr "=" nr_expr : nr_expr -- Assignment
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
 syntax "(" nr_expr ")" : nr_expr
-syntax "*(" nr_expr ")" : nr_expr
 syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda
 syntax "*" nr_expr : nr_expr -- Deref
 
