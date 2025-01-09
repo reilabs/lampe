@@ -607,7 +607,6 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply mkTuple_intro
     | apply projectTuple_intro
     -- lens
-    | apply readLens_intro
     | apply modifyLens_intro
     | apply getLens_intro
   )
@@ -678,7 +677,6 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left mkTuple_intro
     | apply consequence_frame_left projectTuple_intro
     -- lens
-    | apply consequence_frame_left readLens_intro
     | apply consequence_frame_left modifyLens_intro
     | apply consequence_frame_left getLens_intro
   )
@@ -752,7 +750,6 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top mkTuple_intro
     | apply ramified_frame_top projectTuple_intro
     -- lens
-    | apply ramified_frame_top readLens_intro
     | apply ramified_frame_top modifyLens_intro
     | apply ramified_frame_top getLens_intro
   )

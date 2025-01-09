@@ -174,10 +174,6 @@ def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp�
   Expr.callBuiltin [.ref tp₁, tp₂] .unit (.modifyLens lens) h![r, v]
 
 @[reducible]
-def Expr.readLens (r : rep $ .ref tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
-  Expr.callBuiltin _ tp₂ (.readLens lens) h![r]
-
-@[reducible]
 def Expr.getLens (v : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
   Expr.callBuiltin _ tp₂ (.getLens lens) h![v]
 
@@ -235,6 +231,7 @@ partial def mkLens [MonadSyntax m] (expr : TSyntax `nr_expr) (a : ArgSet) : m $ 
 | `(nr_expr| $_:ident) => do
   let nil ← `(Lens.nil)
   pure (nil, a)
+| `(nr_expr| * $derefExpr:nr_expr) => throwUnsupportedSyntax
 | `(nr_expr| ( $structExpr:nr_expr as $structName  < $structGens,* > ) . $fieldName) => do
   let mem ← mkStructMember structName structGens.getElems.toList fieldName
   let (lhsLens, a') ← mkLens structExpr a
@@ -262,6 +259,7 @@ partial def getLeftmostRef [MonadSyntax m] (expr : TSyntax `nr_expr) : m (TSynta
 | `(nr_expr| $tupleExpr:nr_expr . $_) => getLeftmostRef tupleExpr
 | `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLeftmostRef arrayExpr
 | `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostRef sliceExpr
+| `(nr_expr| * $derefExpr) => getLeftmostRef derefExpr
 | `(nr_expr| $v:ident) => pure v
 | _ => throwUnsupportedSyntax
 
@@ -270,6 +268,7 @@ partial def getLeftmostExpr (expr : TSyntax `nr_expr) : (TSyntax `nr_expr) := ma
 | `(nr_expr| $tupleExpr:nr_expr . $_) => getLeftmostExpr tupleExpr
 | `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLeftmostExpr arrayExpr
 | `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostExpr sliceExpr
+| `(nr_expr| * $derefExpr:nr_expr) => getLeftmostExpr derefExpr
 | `(nr_expr| $e:nr_expr) => e
 
 partial def getFuncSignature [MonadSyntax m] (ty : TSyntax `nr_type) : m (List (TSyntax `term) × TSyntax `term) := match ty with

@@ -10,39 +10,6 @@ lemma Finmap.insert_mem_disjoint [DecidableEq α] {m₁ m₂ : Finmap fun _ : α
 
 namespace Lampe.Builtin
 
-inductive readLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
- | ok {st Q ref} {s : Tp.denote p tp₁} {hr : rep = Tp.denote p} :
-   st.lookup ref = some ⟨tp₁, hr ▸ s⟩ →
-   (some v = Lens.get (hr ▸ lens) s) →
-   Q (some (st, v)) →
-   (readLensOmni lens) p st [tp₁.ref] tp₂ h![ref] Q
-| err {st Q ref} {s : Tp.denote p tp₁} {hr : rep = Tp.denote p} :
-   st.lookup ref = some ⟨tp₁, hr ▸ s⟩ →
-   (none = Lens.get (hr ▸ lens) s) →
-   Q none →
-   (readLensOmni lens) p st [tp₁.ref] tp₂ h![ref] Q
-
- def readLens (lens : Lens rep tp₁ tp₂) : Builtin := {
-   omni := readLensOmni lens
-   conseq := by
-    unfold omni_conseq
-    intros
-    cases_type readLensOmni
-    constructor <;> tauto
-    apply readLensOmni.err <;> tauto
-   frame := by
-    unfold omni_frame
-    intros
-    cases_type readLensOmni
-    . constructor <;> tauto
-      rw [Finmap.lookup_union_left] <;> tauto
-      apply Finmap.mem_of_lookup_eq_some <;> tauto
-      repeat apply Exists.intro <;> tauto
-    . apply readLensOmni.err <;> tauto
-      rw [Finmap.lookup_union_left] <;> tauto
-      apply Finmap.mem_of_lookup_eq_some <;> tauto
- }
-
  inductive modifyLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
  | ok {p st Q ref} {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
    st.lookup ref = some ⟨tp₁, s⟩ →
