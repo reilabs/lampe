@@ -32,17 +32,14 @@ inductive Tp where
 
 mutual
 
-def tpsDecEq (a b : List Tp) : Decidable (a = b) := by
-  cases a <;> cases b
-  right; rfl
-  left; simp_all
-  left; simp_all
-  rename_i tp₁ tps₁ tp₂ tps₂
-  cases (tpDecEq tp₁ tp₂)
-  left; simp_all
-  cases (tpsDecEq tps₁ tps₂)
-  left; simp_all
-  right; simp_all
+def tpsDecEq (a b : List Tp) : Decidable (a = b) := match a, b with
+| [], [] => isTrue rfl
+| [], _ :: _ => isFalse (by simp)
+| _ :: _, [] => isFalse (by simp)
+| tp₁ :: tps₁, tp₂ :: tps₂ => match tpDecEq tp₁ tp₂, tpsDecEq tps₁ tps₂ with
+  | isTrue _, isTrue _ => isTrue (by subst_vars; rfl)
+  | isFalse _, _ => isFalse (by simp_all)
+  | _, isFalse _ => isFalse (by simp_all)
 
 def tpDecEq (a b : Tp) : Decidable (a = b) := by
   cases a <;> cases b
