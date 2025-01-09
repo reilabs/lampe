@@ -363,6 +363,19 @@ nr_def simple_func<>() -> Field {
   10 : Field
 }
 
+nr_def deref_lens<>() -> Field {
+  let mut y = #ref(`(5 : Field)) : &`(Field);
+  *(y).0 = 3 : Field;
+  *(y).0
+}
+
+example : STHoare p Γ ⟦⟧ (deref_lens.fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [deref_lens]
+  steps <;> tauto
+  all_goals try exact ⊤
+  stop _
+
 nr_def call<>(f : λ() → Field) -> Field {
   f()
 }

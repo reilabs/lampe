@@ -118,7 +118,7 @@ syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
 syntax "(" nr_expr ")" : nr_expr
 syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda
-syntax "*" nr_expr : nr_expr -- Deref
+syntax "*(" nr_expr ")" : nr_expr -- Deref
 
 syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
 syntax "`(" nr_expr,* ")" : nr_expr -- Tuple constructor
@@ -226,6 +226,12 @@ def ArgSet.wrap [MonadSyntax m] (a : ArgSet) (argVals : List $ TSyntax `term) (e
   else
     `((fun args => match args with | $(←mkHListLit a.ids) => $expr) $(←mkHListLit argVals))
 
+/--
+Returns a term which constructs a `Lens` object that corresponds to the lens expression or lval `expr`.
+This `Lens` object, denoted as `l`, can be used in two ways:
+1. If `expr` is a lens expression, the builtin `getLens l` can be called with `getLeftmostExpr expr` for lens access.
+2. It `expr` is an lval, the builtin `modifyLens l` can be combined with `getLValRef expr` along with a rhs for lens modification.
+-/
 partial def mkLens [MonadSyntax m] (expr : TSyntax `nr_expr) (a : ArgSet) : m $ (TSyntax `term) × ArgSet := match expr with
 | `(nr_expr| ( $structExpr:nr_expr as $structName  < $structGens,* > ) . $fieldName) => do
   let mem ← mkStructMember structName structGens.getElems.toList fieldName
@@ -251,14 +257,50 @@ partial def mkLens [MonadSyntax m] (expr : TSyntax `nr_expr) (a : ArgSet) : m $ 
   let nil ← `(Lens.nil)
   pure (nil, a)
 
-partial def getInnermostExpr (expr : TSyntax `nr_expr) : (TSyntax `nr_expr) := match expr with
-| `(nr_expr| ( $structExpr:nr_expr as $_  < $_,* > ) . $_) => getInnermostExpr structExpr
-| `(nr_expr| $tupleExpr:nr_expr . $_) => getInnermostExpr tupleExpr
-| `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getInnermostExpr arrayExpr
-| `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getInnermostExpr sliceExpr
-| `(nr_expr| * $derefExpr:nr_expr) => getInnermostExpr derefExpr
+/--
+Returns the leftmost expression of a lens access. For example, in `foo().b[3]`, this is `foo()`.
+-/
+partial def getLeftmostExpr (expr : TSyntax `nr_expr) : (TSyntax `nr_expr) := match expr with
+| `(nr_expr| ( $structExpr:nr_expr as $_  < $_,* > ) . $_) => getLeftmostExpr structExpr
+| `(nr_expr| $tupleExpr:nr_expr . $_) => getLeftmostExpr tupleExpr
+| `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLeftmostExpr arrayExpr
+| `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLeftmostExpr sliceExpr
 | `(nr_expr| $e:nr_expr) => e
 
+/--
+Represents the "source" of an lval, i.e., the value `modifyLens` should be called with.
+-/
+inductive LValRef where
+/-- The source is a mutable let binding. -/
+| ident (id : TSyntax `ident)
+/-- The source is the result of an expression which returns a reference. -/
+| expr (expr : TSyntax `nr_expr)
+/-- Malformed lval. -/
+| none
+
+instance : Inhabited LValRef := ⟨LValRef.none⟩
+
+/--
+We consider two types of lvals:
+1. Whose "sources" are mutable let bindings, e.g., in `a.b[3]`, the "source" is `a` where `a` is a mutable let binding.
+We already represent `a` as a reference. Accordingly, the `modifyLens` builtin can be called directly with `a`.
+2. Whose "sources" are expressions that return a reference, e.g., in `*e.b[3]`, the "source" is `*e` where `e` is an expression that returns a reference.
+We need to evaluate `e`, and `modifyLens` needs to be called with the result of `e` (which is a reference).
+
+These two cases can be distinguished by the existence of the `*` operator.
+-/
+partial def getLValRef (lval : TSyntax `nr_expr) : LValRef := match lval with
+| `(nr_expr| ( $structExpr:nr_expr as $_  < $_,* > ) . $_) => getLValRef structExpr
+| `(nr_expr| $tupleExpr:nr_expr . $_) => getLValRef tupleExpr
+| `(nr_expr| $arrayExpr:nr_expr [ $_ ]) => getLValRef arrayExpr
+| `(nr_expr| $sliceExpr:nr_expr [[ $_ ]]) => getLValRef sliceExpr
+| `(nr_expr| *( $refExpr:nr_expr )) => LValRef.expr refExpr
+| `(nr_expr| $i:ident) => LValRef.ident i
+| `(nr_expr| $_:nr_expr) => LValRef.none
+
+/--
+If `ty` is the syntax object corresponding to the function type, this extracts and returns the parameter types and the return type from the syntax object `ty`.
+-/
 partial def getFuncSignature [MonadSyntax m] (ty : TSyntax `nr_type) : m (List (TSyntax `term) × TSyntax `term) := match ty with
 | `(nr_type| λ( $paramTps,* ) → $outTp) => do
   let paramTps ← paramTps.getElems.toList.mapM fun p => mkNrType p
@@ -291,7 +333,7 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
   mkExpr h none fun h => do
     mkArgs t fun t => k (h :: t)
 
-partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
+partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)) : m (TSyntax `term) := match e with
 | `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.lit $(←mkNrType tp) $n)) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Expr.lit Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Expr.lit Tp.bool 0)) vname k
@@ -306,9 +348,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Expr.callBuiltin _ $(←mkNrType tp) $(←mkBuiltin i.getId.toString) $(←mkHListLit argVals))) vname k
-| `(nr_expr| * $i:ident) => do
-  wrapSimple (←`(Expr.readRef $i)) vname k
-| `(nr_expr| * $expr:nr_expr) => do
+| `(nr_expr| *( $expr:nr_expr )) => do
   mkExpr expr none fun v => do
     wrapSimple (←`(Expr.readRef $v)) vname k
 | `(nr_expr| for $i in $lo .. $hi $body) => do
@@ -319,11 +359,12 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| $lhs:nr_expr = $rhs:nr_expr) => do
   let (lens, args) ← mkLens lhs ArgSet.empty
   mkExpr rhs none fun rhs => do
-    -- Disable auto deref while parsing the innermost expression,
-    -- so that dereference operations are the only way to dereference references.
-    mkExpr false (getInnermostExpr lhs) none fun r => do
-      mkArgs args.args fun vals => do
+    mkArgs args.args fun vals => do
+      match (getLValRef lhs) with
+      | .ident r => wrapSimple (←`(Expr.modifyLens $r $rhs $(←args.wrap vals lens))) vname k
+      | .expr expr => mkExpr expr none fun r => do
         wrapSimple (←`(Expr.modifyLens $r $rhs $(←args.wrap vals lens))) vname k
+      | .none => throwUnsupportedSyntax
 | `(nr_expr| ( $e )) => mkExpr e vname k
 | `(nr_expr| if $cond $mainBody else $elseBody) => do
   mkExpr cond none fun cond => do
@@ -387,7 +428,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| $_:nr_expr . $_:num)
 | `(nr_expr| $_:nr_expr [ $_:nr_expr ])
 | `(nr_expr| $_:nr_expr [[ $_:nr_expr ]]) => do
-  let expr := getInnermostExpr e
+  let expr := getLeftmostExpr e
   let (lens, args) ← mkLens e ArgSet.empty
   mkExpr expr none fun exprVal => do
     mkArgs args.args fun vals => do
@@ -404,7 +445,7 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
   let params : List (TSyntax `term × TSyntax `term) ← params.getElems.toList.mapM fun p => match p with
     | `(nr_param_decl|$i:ident : $tp) => do pure (i, ←mkNrType tp)
     | _ => throwUnsupportedSyntax
-  let body ← MonadSyntax.run $ mkBlock true bExprs.getElems.toList fun x => `(Expr.var $x)
+  let body ← MonadSyntax.run $ mkBlock bExprs.getElems.toList fun x => `(Expr.var $x)
   let lambdaDecl ← `(fun rep generics => match generics with
     | $(←mkHListLit generics) => ⟨$(←mkListLit $ params.map Prod.snd), $(←mkNrType outTp), fun args => match args with
         | $(←mkHListLit $ params.map Prod.fst) => $body⟩)
@@ -471,7 +512,7 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
 | _ => throwUnsupportedSyntax
 
 elab "expr![" expr:nr_expr "]" : term => do
-  let term ← MonadSyntax.run $ mkExpr true expr none fun x => `(Expr.var $x)
+  let term ← MonadSyntax.run $ mkExpr expr none fun x => `(Expr.var $x)
   Elab.Term.elabTerm term.raw none
 
 elab "nrfn![" "fn" fn:nr_fn_decl "]" : term => do
