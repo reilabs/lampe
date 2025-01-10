@@ -7,7 +7,7 @@ def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Fin s.length) (v : Tp.denot
   List.modifyNth (fun _ => v) i s
 
 @[simp]
-lemma replaceSlice_length_eq_length :
+theorem replaceSlice_length_eq_length :
     (replaceSlice' s i v).length = s.length := by
   simp_all [List.length_modifyNth]
 

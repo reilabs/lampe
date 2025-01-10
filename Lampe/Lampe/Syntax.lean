@@ -1,8 +1,7 @@
-import Mathlib
 import Lean
-import Lampe.Ast
 import Qq
 
+import Lampe.Ast
 import Lampe.Builtin.Arith
 import Lampe.Builtin.Array
 import Lampe.Builtin.BigInt
