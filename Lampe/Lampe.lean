@@ -386,7 +386,10 @@ example : STHoare p Γ ⟦⟧ (deref_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [deref_lens]
   steps
-  aesop
+  subst_vars
+  simp_all only [exists_const, Lens.modify, Lens.get]
+  subst_vars
+  simp_all [Builtin.indexTpl]
 
 nr_def call<>(f : λ() → Field) -> Field {
   f()
