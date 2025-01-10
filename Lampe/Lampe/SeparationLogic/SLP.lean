@@ -1,3 +1,6 @@
+import Mathlib.Tactic.Tauto
+import Mathlib.Tactic.Use
+import Lampe.Data.Field
 import Lampe.Tactic.IntroCases
 import Lampe.SeparationLogic.LawfulHeap
 

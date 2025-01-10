@@ -1,5 +1,3 @@
-import Mathlib
-
 import Lampe.Ast
 import Lampe.Tp
 import Lampe.Data.Field

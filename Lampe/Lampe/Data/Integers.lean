@@ -1,5 +1,3 @@
-import Mathlib
-
 namespace Lampe
 
 abbrev U (n : Nat) := BitVec (n)

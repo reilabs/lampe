@@ -1,5 +1,7 @@
+import Mathlib.Data.Finmap
 import Lampe.SeparationLogic.LawfulHeap
 import Lampe.SeparationLogic.SLP
+import Lampe.Tp
 
 lemma Finmap.insert_eq_singleton_union [DecidableEq α] {ref : α}:
     m.insert ref v = Finmap.singleton ref v ∪ m := by rfl

@@ -1,3 +1,5 @@
+import Mathlib.Algebra.PUnitInstances.Algebra -- TODO: This import is necessary for the
+                                              -- `CommRing Unit` instance, but shouldn't be needed
 import Lampe.Builtin.Basic
 
 namespace Lampe.Builtin
