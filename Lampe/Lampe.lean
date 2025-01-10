@@ -298,6 +298,18 @@ example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![])
   steps <;> tauto
   aesop
 
+nr_def simple_rep_array<>() -> [Field; 4] {
+  let arr = [1 : Field ; 4];
+  arr
+}
+
+example : STHoare p Γ ⟦⟧ (simple_rep_array.fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p $ .array _ _) => v.toList = [1, 1, 1, 1] := by
+  simp only [simple_rep_array, Expr.mkArray]
+  steps <;> tauto
+  aesop
+
+
 nr_def tuple_lens<>() -> Field {
   let mut p = `(`(1 : Field, 2 : Field), 3 : Field);
   p .0 .1 = 3 : Field;

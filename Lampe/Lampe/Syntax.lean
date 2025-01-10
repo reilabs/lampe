@@ -25,13 +25,8 @@ declare_syntax_cat nr_expr
 declare_syntax_cat nr_block_contents
 declare_syntax_cat nr_param_decl
 
-syntax ident:nr_ident
-syntax ident"::"nr_ident : nr_ident
-
-partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
-| `(nr_ident|$i:ident) => pure i.getId.toString
-| `(nr_ident|$i:ident :: $j:nr_ident) => do pure s!"{i.getId}::{←mkNrIdent j}"
-| i => throwError "Unexpected ident {i}"
+syntax ident : nr_ident
+syntax ident "::" nr_ident : nr_ident
 
 syntax ident : nr_type
 syntax "${" term "}" : nr_type
@@ -41,6 +36,53 @@ syntax "[" nr_type ";" num "]" : nr_type -- Array
 syntax "`(" nr_type,* ")" : nr_type -- Tuple
 syntax "&" nr_type : nr_type -- Reference
 syntax "λ(" nr_type,* ")" "→" nr_type : nr_type -- Function
+
+syntax ident ":" nr_type : nr_param_decl
+
+syntax num ":" nr_type : nr_expr -- Numeric literal
+syntax "#unit" : nr_expr -- Unit literal
+syntax ident : nr_expr
+syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
+syntax "${" term "}" : nr_expr
+syntax "$" ident : nr_expr
+syntax "let" ident "=" nr_expr : nr_expr
+syntax "let" "mut" ident "=" nr_expr : nr_expr
+syntax nr_expr "=" nr_expr : nr_expr -- Assignment
+syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
+syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
+syntax "(" nr_expr ")" : nr_expr
+syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda
+syntax "*(" nr_expr ")" : nr_expr -- Deref
+
+syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
+syntax "`(" nr_expr,* ")" : nr_expr -- Tuple constructor
+syntax "[" nr_expr ";" num "]" : nr_expr -- Repeated array constructor
+syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
+syntax "&[" nr_expr,* "]" : nr_expr -- Slice constructor
+
+syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
+syntax nr_expr "." num : nr_expr -- Tuple access
+syntax nr_expr "[" nr_expr "]" : nr_expr -- Array access
+syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
+
+syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
+
+syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "as" nr_type : nr_expr -- Trait func ident
+syntax "@" nr_ident "<" nr_type,* ">" "as" nr_type : nr_expr -- Decl func ident
+
+syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
+
+syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
+syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
+syntax nr_trait_fn_def := "fn" nr_fn_decl
+syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
+  "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
+syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
+
+partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
+| `(nr_ident|$i:ident) => pure i.getId.toString
+| `(nr_ident|$i:ident :: $j:nr_ident) => do pure s!"{i.getId}::{←mkNrIdent j}"
+| i => throwError "Unexpected ident {i}"
 
 def mkFieldAccessorIdent (structName : String) (fieldName : String) : Lean.Ident :=
   mkIdent $ Name.mkSimple $ "field" ++ "#" ++ structName ++ "#" ++ fieldName
@@ -103,47 +145,6 @@ def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
   let accessor := mkFieldAccessorIdent (←mkNrIdent structName) (field.getId.toString)
   `($accessor $gs)
 
-syntax ident ":" nr_type : nr_param_decl
-
-syntax num ":" nr_type : nr_expr -- Numeric literal
-syntax "#unit" : nr_expr -- Unit literal
-syntax ident : nr_expr
-syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
-syntax "${" term "}" : nr_expr
-syntax "$" ident : nr_expr
-syntax "let" ident "=" nr_expr : nr_expr
-syntax "let" "mut" ident "=" nr_expr : nr_expr
-syntax nr_expr "=" nr_expr : nr_expr -- Assignment
-syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
-syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
-syntax "(" nr_expr ")" : nr_expr
-syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda
-syntax "*(" nr_expr ")" : nr_expr -- Deref
-
-syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
-syntax "`(" nr_expr,* ")" : nr_expr -- Tuple constructor
-syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
-syntax "&[" nr_expr,* "]" : nr_expr -- Slice constructor
-
-syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
-syntax nr_expr "." num : nr_expr -- Tuple access
-syntax nr_expr "[" nr_expr "]" : nr_expr -- Array access
-syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
-
-syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
-
-syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "as" nr_type : nr_expr -- Trait func ident
-syntax "@" nr_ident "<" nr_type,* ">" "as" nr_type : nr_expr -- Decl func ident
-
-syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
-
-syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
-syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
-syntax nr_trait_fn_def := "fn" nr_fn_decl
-syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
-  "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
-syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
-
 @[reducible]
 def Expr.ref (val : rep tp) : Expr rep tp.ref :=
   Expr.callBuiltin _ tp.ref .ref h![val]
@@ -205,26 +206,38 @@ def wrapSimple [MonadSyntax m] (e : TSyntax `term) (ident : Option Lean.Ident) (
   let rest ← k ident
   `(Lampe.Expr.letIn $e fun $ident => $rest)
 
-abbrev ArgSet := (Nat × List (Lean.Ident × TSyntax `nr_expr))
+/--
+Represents a list of arguments and the corresponding identifiers.
+-/
+structure ArgSet where
+  args : List $ TSyntax `nr_expr
+  idents : List Lean.Ident
+  lastId : Nat
 
-@[reducible]
-def ArgSet.empty : ArgSet := ⟨0, []⟩
+def ArgSet.empty : ArgSet := ⟨[], [], 0⟩
 
+instance : Inhabited ArgSet where
+  default := ArgSet.empty
+
+/--
+Returns a new `ArgSet` with the given expression `expr` associated with a unique identifier.
+Returns the corresponding identifier along with the new `ArgSet`.
+-/
 def ArgSet.next (a : ArgSet) (expr : TSyntax `nr_expr) : (Lean.Ident × ArgSet) :=
-  let ident := mkIdent $ Name.mkSimple $ "#arg_" ++ (toString a.1)
-  (ident, ⟨a.1 + 1, (ident, expr) :: a.2⟩)
+  let ident := mkIdent $ Name.mkSimple $ "#arg_" ++ (toString a.lastId)
+  (ident, ⟨expr :: a.args, ident :: a.idents, a.lastId + 1⟩)
 
-def ArgSet.args (a : ArgSet) : List $ TSyntax `nr_expr := a.2.map (·.2)
-
-def ArgSet.ids (a : ArgSet) : List $ Lean.Ident := a.2.map (·.1)
-
-@[reducible]
+/--
+Wraps the given expression `expr` with the identifiers in the `ArgSet`.
+If `argVals` is empty, the expression is returned as is.
+Otherwise, the expression is wrapped in a lambda that matches the identifiers in the `ArgSet` with the arguments.
+-/
 def ArgSet.wrap [MonadSyntax m] (a : ArgSet) (argVals : List $ TSyntax `term) (expr : TSyntax `term) :
     m $ TSyntax `term := do
   if argVals.isEmpty then
     `($expr)
   else
-    `((fun args => match args with | $(←mkHListLit a.ids) => $expr) $(←mkHListLit argVals))
+    `((fun args => match args with | $(←mkHListLit a.idents) => $expr) $(←mkHListLit argVals))
 
 /--
 Returns a term which constructs a `Lens` object that corresponds to the lens expression or lval `expr`.
@@ -385,6 +398,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let len := args.length
   mkArgs args fun argVals => do
     wrapSimple (←`(Expr.mkArray $(Syntax.mkNumLit $ toString len) $(←mkHListLit argVals))) vname k
+| `(nr_expr| [ $arg ; $rep:num ]) => do
+  mkExpr arg none fun argVal => do
+    let argVals := List.replicate rep.getNat argVal
+    wrapSimple (←`(Expr.mkArray $rep $(←mkHListLit argVals))) vname k
 | `(nr_expr| | $params,* | -> $outTp $lambdaBody) => do
   let outTp ← mkNrType outTp
   let argTps ← mkListLit (← params.getElems.toList.mapM fun param => match param with
