@@ -34,12 +34,12 @@ inductive readLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
     unfold omni_frame
     intros
     cases_type readLensOmni
-    . constructor <;> tauto
-      rw [Finmap.lookup_union_left] <;> tauto
+    . constructor <;> try tauto
+      rw [Finmap.lookup_union_left] <;> try tauto
       apply Finmap.mem_of_lookup_eq_some <;> tauto
       repeat apply Exists.intro <;> tauto
-    . apply readLensOmni.err <;> tauto
-      rw [Finmap.lookup_union_left] <;> tauto
+    . apply readLensOmni.err <;> try tauto
+      rw [Finmap.lookup_union_left] <;> try tauto
       apply Finmap.mem_of_lookup_eq_some <;> tauto
  }
 
@@ -69,7 +69,7 @@ inductive readLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
     rename_i p st₁ st₂ hd outTp args Q _ hd
     cases_type modifyLensOmni
     . constructor
-      rw [Finmap.lookup_union_left] <;> tauto
+      rw [Finmap.lookup_union_left] <;> try tauto
       apply Finmap.mem_of_lookup_eq_some <;> tauto
       tauto
       simp only
@@ -82,14 +82,14 @@ inductive readLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
       rw [←hst]
       apply And.intro
       . rw [←Finmap.insert_eq_singleton_union]
-        apply Finmap.insert_mem_disjoint <;> tauto
+        apply Finmap.insert_mem_disjoint <;> try tauto
         apply Finmap.mem_of_lookup_eq_some <;> tauto
       . apply And.intro
         . simp [Finmap.union_assoc, Finmap.insert_eq_singleton_union]
         . apply And.intro ?_ (by rfl)
           simp_all [Finmap.insert_union, Finmap.insert_eq_singleton_union]
-    . apply modifyLensOmni.err <;> tauto
-      rw [Finmap.lookup_union_left] <;> tauto
+    . apply modifyLensOmni.err <;> try tauto
+      rw [Finmap.lookup_union_left] <;> try tauto
       apply Finmap.mem_of_lookup_eq_some <;> tauto
  }
 
@@ -115,7 +115,7 @@ def getLens (lens : Lens rep tp₁ tp₂) : Builtin := {
     unfold omni_frame
     intros
     cases_type getLensOmni
-    . constructor <;> tauto
+    . constructor <;> try tauto
       repeat apply Exists.intro <;> tauto
     . apply getLensOmni.err <;> tauto
 }

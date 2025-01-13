@@ -33,9 +33,9 @@ theorem Access.modify_get {acc : Access (Tp.denote p) tp₁ tp₂} {h : acc.modi
   case slice =>
     rename_i idx
     cases em (idx.toNat < s.length)
-    . simp_all only [reduceDIte, Option.some.injEq, List.get_eq_getElem, dite_some_none_eq_some]
+    . simp_all only [reduceDIte, Option.some.injEq, List.get_eq_getElem, Option.dite_none_right_eq_some]
       subst h
-      simp_all only [List.length_modifyNth, exists_true_left]
+      simp_all only [List.length_modify, exists_true_left]
       apply Builtin.index_replaced_slice
     . aesop
 

@@ -74,7 +74,7 @@ nr_def simple_if<>(x : Field, y : Field) -> Field {
 example {p Γ x y} : STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, y])
     fun v => v = y := by
   simp only [simple_if]
-  steps <;> tauto
+  steps <;> try tauto
   . sl
   . sl
     simp_all
@@ -91,10 +91,10 @@ example {p Γ x y} : STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body 
     fun v => v = x := by
   simp only [simple_if_else]
   steps
-  . simp only [decide_True, exists_const]
+  . simp only [decide_true, exists_const]
     sl
     contradiction
-  . simp_all [decide_True, exists_const]
+  . simp_all [decide_true, exists_const]
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
   let add = |a : Field, b : Field| -> Field { #fAdd(a, b) : Field };
@@ -155,7 +155,7 @@ example {p} {arg : Tp.denote p Tp.field} :
     sl
     tauto
     try_impls_all [] simpleTraitEnv
-    all_goals tauto
+    all_goals try tauto
     simp only
     steps
     simp_all only [exists_const, SLP.true_star]
@@ -255,7 +255,7 @@ example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧
   . sl
     tauto
   on_goal 3 => exact add_two_fields.fn
-  all_goals tauto
+  all_goals try tauto
   on_goal 3 => exact fun v => v = 3
   . simp only [add_two_fields]
     steps
@@ -296,7 +296,7 @@ nr_def simple_array<>() -> Field {
 example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 2 := by
   simp only [simple_array, Expr.mkArray]
-  steps <;> tauto
+  steps <;> try tauto
   aesop
 
 nr_def tuple_lens<>() -> Field {
@@ -380,12 +380,12 @@ example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)
   steps
   . apply STHoare.callDecl_intro
     sl
-    all_goals tauto
+    all_goals try tauto
     simp only [call]
     steps
     . apply STHoare.callDecl_intro
       sl
-      all_goals tauto
+      all_goals try tauto
       simp only [simple_func]
       steps
       on_goal 2 => exact fun v => v = 10

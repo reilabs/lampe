@@ -212,36 +212,36 @@ def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   if e.isAppOf ``SLP.star then
     let args := e.getAppArgs
-    let fst ← parseSLExpr (←args[2]?)
-    let snd ← parseSLExpr (←args[3]?)
+    let fst ← parseSLExpr (←liftOption args[2]?)
+    let snd ← parseSLExpr (←liftOption args[3]?)
     return SLTerm.star e fst snd
   if e.isAppOf ``State.valSingleton then
     let args := e.getAppArgs
-    let fst ← args[1]?
-    let snd ← args[2]?
+    let fst ← liftOption args[1]?
+    let snd ← liftOption args[2]?
     return SLTerm.singleton fst snd
   else if e.isAppOf ``State.lmbSingleton then
     let args := e.getAppArgs
-    let fst ← args[1]?
-    let snd ← args[2]?
+    let fst ← liftOption args[1]?
+    let snd ← liftOption args[2]?
     return SLTerm.lmbSingleton fst snd
   else if e.isAppOf ``SLP.top then
     return SLTerm.top
   else if e.isAppOf ``SLP.lift then
     let args := e.getAppArgs
-    return SLTerm.lift (←args[2]?)
+    return SLTerm.lift (←liftOption args[2]?)
   else if e.getAppFn.isMVar then
     return SLTerm.mvar e
   else if e.isAppOf ``SLP.forall' then
     let args := e.getAppArgs
-    return SLTerm.all (←args[3]?)
+    return SLTerm.all (←liftOption args[3]?)
   else if e.isAppOf ``SLP.exists' then
     let args := e.getAppArgs
-    return SLTerm.exi (←args[3]?)
+    return SLTerm.exi (←liftOption args[3]?)
   else if e.isAppOf ``SLP.wand then
     let args := e.getAppArgs
-    let lhs ← parseSLExpr (←args[2]?)
-    let rhs ← parseSLExpr (←args[3]?)
+    let lhs ← parseSLExpr (←liftOption args[2]?)
+    let rhs ← parseSLExpr (←liftOption args[3]?)
     return SLTerm.wand lhs rhs
   -- else if e.isAppOf ``SLTerm.lift then
   --   let args := e.getAppArgs
@@ -257,8 +257,8 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
 partial def parseEntailment (e: Expr): TacticM (SLTerm × SLTerm) := do
   if e.isAppOf ``SLP.entails then
     let args := e.getAppArgs
-    let pre ← parseSLExpr (←args[2]?)
-    let post ← parseSLExpr (←args[3]?)
+    let pre ← parseSLExpr (←liftOption args[2]?)
+    let post ← parseSLExpr (←liftOption args[3]?)
     return (pre, post)
   else throwError "not an entailment {e}"
 
@@ -390,7 +390,7 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
   | SLTerm.singleton v _ =>
     if v == rhs then
       let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``singleton_congr_mv)
-      let newGoal ← newGoals[0]?
+      let newGoal ← liftOption newGoals[0]?
       let newGoal ← try newGoal.refl; pure []
         catch _ => pure [newGoal]
       pure $ newGoal ++ newGoals
@@ -398,7 +398,7 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
   | SLTerm.lmbSingleton v _ =>
     if v == rhs then
       let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_congr_mv)
-      let newGoal ← newGoals[0]?
+      let newGoal ← liftOption newGoals[0]?
       let newGoal ← try newGoal.refl; pure []
         catch _ => pure [newGoal]
       pure $ newGoal ++ newGoals
@@ -409,37 +409,37 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
       if v == rhs then
         -- [TODO] This should use EQ, not ent_self
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``singleton_star_congr)
-        let newGoal ← newGoals[0]?
+        let newGoal ← liftOption newGoals[0]?
         let newGoal ← try newGoal.refl; pure []
           catch _ => pure [newGoal]
         pure $ newGoal ++ newGoals
       else
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-        let newGoal ← newGoals[0]?
+        let newGoal ← liftOption newGoals[0]?
         let new' ← solveSingletonStarMV newGoal r rhs
         return new' ++ newGoals
     | SLTerm.lmbSingleton v _ => do
       if v == rhs then
         -- [TODO] This should use EQ, not ent_self as well
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_star_congr)
-        let newGoal ← newGoals[0]?
+        let newGoal ← liftOption newGoals[0]?
         let newGoal ← try newGoal.refl; pure []
           catch _ => pure [newGoal]
         pure $ newGoal ++ newGoals
       else
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-        let newGoal ← newGoals[0]?
+        let newGoal ← liftOption newGoals[0]?
         let new' ← solveSingletonStarMV newGoal r rhs
         return new' ++ newGoals
     | SLTerm.lift _ =>
       let goals ← goal.apply (←mkConstWithFreshMVarLevels ``pure_star_H_ent_pure_star_mv)
-      let g ← goals[0]?
+      let g ← liftOption goals[0]?
       let (_, g) ← g.intro1
       let ng ← solveSingletonStarMV g r rhs
       return ng ++ goals
     | _ =>
       let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-      let newGoal ← newGoals[0]?
+      let newGoal ← liftOption newGoals[0]?
       let new' ← solveSingletonStarMV newGoal r rhs
       return new' ++ newGoals
   | _ => throwError "not a singleton {lhs}"
@@ -451,13 +451,13 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM (List MVarId
     match l with
     | .lift _ =>
       let goals ← goal.apply (←mkConstWithFreshMVarLevels ``pure_star_H_ent_pure_star_mv)
-      let g ← goals[0]?
+      let g ← liftOption goals[0]?
       let (_, g) ← g.intro1
       let ng ← solvePureStarMV g r
       return ng ++ goals
     | _ =>
       let goals ← goal.apply (←mkConstWithFreshMVarLevels ``skip_left_ent_star_mv)
-      let g ← goals[0]?
+      let g ← liftOption goals[0]?
       let ng ← solvePureStarMV g l
       return ng ++ goals
   | .singleton _ _ =>
@@ -475,14 +475,14 @@ partial def solveStarMV (goal : MVarId) (lhs : SLTerm) (rhsNonMv : SLTerm): Tact
 
 partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
   let newGoal ← evalTacticAt (←`(tactic|h_norm)) goal
-  let goal ← newGoal[0]?
+  let goal ← liftOption newGoal[0]?
   let target ← goal.instantiateMVarsInType
   let (pre, post) ← parseEntailment target
 
   match pre with
   | SLTerm.exi _ => do
     let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``exi_prop_l)
-    let newGoal ← newGoals[0]?
+    let newGoal ← liftOption newGoals[0]?
     let (_, newGoal) ← newGoal.intro1
     let gls ← solveEntailment newGoal
     return gls ++ newGoals
@@ -500,7 +500,7 @@ partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
       return newGoals
     else if r.isTop then
       let g ← goal.apply (←mkConstWithFreshMVarLevels ``star_top_of_star_mvar)
-      let g' ← g[0]?
+      let g' ← liftOption g[0]?
       let ng ← solveEntailment g'
       pure $ ng ++ g
     else if r.isForAll then
@@ -511,18 +511,18 @@ partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
     goal.apply (←mkConstWithFreshMVarLevels ``SLP.entails_self)
   | SLTerm.all _ => do
     let new ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.forall_right)
-    let new' ← new[0]?
+    let new' ← liftOption new[0]?
     let (_, g) ← new'.intro1
     solveEntailment g
   | SLTerm.wand _ _ =>
     let new ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.wand_intro)
-    let new' ← new[0]?
+    let new' ← liftOption new[0]?
     solveEntailment new'
   | SLTerm.exi _ =>
     -- [TODO] this only works for prop existential - make the others an error
     let new ← goal.apply (←mkConstWithFreshMVarLevels ``exi_prop)
-    let newL ← solveEntailment (←new[0]?)
-    let (_, newR) ← (←new[1]?).intro1
+    let newL ← solveEntailment (←liftOption new[0]?)
+    let (_, newR) ← (←liftOption new[1]?).intro1
     let newR ← solveEntailment newR
     return newL ++ newR
   | _ => throwError "unknown rhs {post}"

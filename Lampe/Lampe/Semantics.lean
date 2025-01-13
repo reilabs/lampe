@@ -160,11 +160,6 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
     intro hd
     apply Omni.callLambda <;> try tauto
     simp_all
-    simp only [LawfulHeap.disjoint] at hd
-    rw [Finmap.lookup_union_left]
-    tauto
-    rw [Finmap.mem_iff]
-    tauto
   | callBuiltin hq =>
     rename Builtin => b
     intros
