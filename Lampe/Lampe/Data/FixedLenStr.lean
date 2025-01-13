@@ -18,7 +18,11 @@ def ofString (s : String) : FixedLenStr s.length where
 instance (s : String) : CoeDep String s (FixedLenStr s.length) where
   coe := ofString s
 
-def toVector (u : U 32) (s : FixedLenStr u.toNat)  : Mathlib.Vector Char u.toNat :=
+def fromVector (u : U 32) (vec : List.Vector Char u.toNat) : FixedLenStr u.toNat :=
+  let ⟨cs, h⟩ := vec
+  ⟨⟨cs⟩, by simp only [String.length, h]⟩
+
+def toVector (u : U 32) (s : FixedLenStr u.toNat) : List.Vector Char u.toNat :=
   ⟨s.data.toList, by change s.data.length = u.toNat ; apply FixedLenStr.data_len⟩
 
 end FixedLenStr

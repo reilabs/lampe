@@ -76,11 +76,10 @@ theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.litNum .field n) fun
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litStr_intro: STHoare p Γ ⟦⟧ (.litStr u s) fun v => v = s.toVector := by
+theorem Lampe.STHoare.litStr_intro: STHoare p Γ ⟦⟧ (.litStr u (.fromVector u s)) fun v => v = s := by
   unfold STHoare THoare
   intro H st hp
   constructor
-  case ns => exact s.toVector u
   simp only
   apply SLP.ent_star_top
   assumption
