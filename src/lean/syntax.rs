@@ -79,6 +79,49 @@ pub(super) fn format_trait_function_def(
     }
 }
 
+pub(super) mod literal {
+    #[inline]
+    pub fn format_bool(v : bool) -> String {
+        if v {
+            format!("true")
+        } else {
+            format!("false")
+        }
+    }
+
+    #[inline]
+    pub fn format_array(elems : Vec<String>) -> String {
+        let elems_str = elems.join(", ");
+        format!("[{elems_str}]")
+    }
+
+    #[inline]
+    pub fn format_slice(elems : Vec<String>) -> String {
+        let array_lit = format_array(elems);
+        format!("&{array_lit}")
+    }
+
+    #[inline]
+    pub fn format_repeated_array(elem : &str, rep : &str) -> String {
+        format!("[{elem} ; {rep}]")
+    }
+
+    #[inline]
+    pub fn format_repeated_slice(elem : &str, rep : &str) -> String {
+        let array_lit = format_repeated_array(elem, rep);
+        format!("&{array_lit}")
+    }
+
+    #[inline]
+    pub fn format_num(val: &str, typ: &str) -> String {
+        format!("{val} : {typ}")
+    }
+
+    pub fn format_unit() -> String {
+        format!("#unit")
+    }
+}
+
 pub(super) mod r#type {
     #[inline]
     pub fn format_unit() -> String {
@@ -197,7 +240,7 @@ pub(super) mod expr {
 
     #[inline]
     pub fn format_deref(expr: &str) -> String {
-        format!("*{expr}")
+        format!("*({expr})")
     }
 
     #[inline]

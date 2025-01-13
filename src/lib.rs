@@ -88,27 +88,28 @@ mod test {
                 (a, a)
             }
 
-            // fn literal_test() -> () {
-            //     let a = 1;
-            //     let b = true;
-            //     let c = false;
-            //     let d = [1; 5];
-            //     let e = [1, 2, 3];
-            //     let f = &[];
-            //     let g = "asdf";
-            //     let h = f"${g}";
-            // }
+            fn literal_test() -> () {
+                let a = 1;
+                let b = true;
+                let c = false;
+                let d = [1; 5];
+                let e = &[1; 5];
+                let f = [1, 2, 3];
+                let g = &[];
+                // let h = "asdf";
+                // let i = f"${g}";
+            }
 
-            // fn assigns(x: u8) {
-            //     let mut y = 3;
-            //     y += x;
-           
-            //     let mut foo = Option2::none();
-            //     foo._is_some = false;
-           
-            //     let mut arr = [1, 2];
-            //     arr[0] = 10;
-            // }
+            fn assigns(x: u8) {
+                let mut y = 3;
+                y += x;
+
+                let mut foo = Option2::none();
+                foo._is_some = false;
+
+                let mut arr = [1, 2];
+                arr[0] = 10;
+            }
 
             // unconstrained fn loop(x: u8) {
             //     for i in 0 .. x {
@@ -122,9 +123,9 @@ mod test {
             //     }
             // }
 
-            // fn check(x: u8) {
-            //     assert(x == 5);
-            // }
+            fn check(x: u8) {
+                assert(x == 5);
+            }
 
             // global TEST = 1 + 7 + 3;
             //
