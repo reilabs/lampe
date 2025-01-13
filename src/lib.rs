@@ -24,7 +24,6 @@ pub use crate::noir::project::Project;
 /// The source type for use with the library, exported here for easy access.
 pub use crate::noir::source::Source;
 
-
 /// Takes the definition of a Noir project and converts it into equivalent
 /// definitions in the Lean theorem prover and programming language.
 ///
@@ -56,34 +55,38 @@ mod test {
             use std::cmp::{Ordering, Ord, Eq};
             use std::default::Default;
 
-            // fn my_func3(a: u8) -> u8 {
-            //     my_func(a)
-            // }
+            fn my_func3(a: u8) -> u8 {
+                my_func(a)
+            }
 
-            // fn my_func(a: u8) -> u8 {
-            //     a + 1
-            // }
+            fn my_func(a: u8) -> u8 {
+                a + 1
+            }
 
-            // fn my_func2(arr: [u8; 8], b: u8) -> u8 {
-            //     arr[b]
-            // }
+            fn my_func2(arr: [u8; 8], b: u8) -> u8 {
+                arr[b]
+            }
 
-            // fn get_unchecked<T>(a: Option2<T>) -> T {
-            //     a._value
-            // }
+            fn get_unchecked<T>(a: Option2<T>) -> T {
+                a._value
+            }
 
-            // fn cast_test(a: u8) -> u64 {
-            //     if a == 0 {
-            //         0
-            //     } else {
-            //         a as u64
-            //     }
-            // }
+            fn my_fn() -> u8 {
+              1 + 1
+            }
 
-            // fn tuple_test(a: u8) -> (u8, u8) {
-            //     let b = | c | c + a + 10;
-            //     (a, a)
-            // }
+            fn cast_test(a: u8) -> u64 {
+                if a == 0 {
+                    0
+                } else {
+                    a as u64
+                }
+            }
+
+            fn tuple_test(a: u8) -> (u8, u8) {
+                let b = | c | c + a + 10;
+                (a, a)
+            }
 
             // fn literal_test() -> () {
             //     let a = 1;
@@ -99,10 +102,10 @@ mod test {
             // fn assigns(x: u8) {
             //     let mut y = 3;
             //     y += x;
-            //
+           
             //     let mut foo = Option2::none();
             //     foo._is_some = false;
-            //
+           
             //     let mut arr = [1, 2];
             //     arr[0] = 10;
             // }
@@ -146,11 +149,11 @@ mod test {
                     Self { _is_some: false, _value: std::unsafe::zeroed() }
                 }
 
-            //     /// Constructs a Some wrapper around the given value
-            //     pub fn some(_value: T) -> Self {
-            //         Self { _is_some: true, _value }
-            //     }
-            //
+                /// Constructs a Some wrapper around the given value
+                pub fn some(_value: T) -> Self {
+                   Self { _is_some: true, _value }
+                }
+          
                 /// True if this Option is None
                 pub fn is_none(self) -> bool {
                     !self.is_some()
@@ -172,6 +175,64 @@ mod test {
                 fn foo(self) -> Self {
                     self
                 }
+            }
+
+            impl<T> MyTrait for (T, bool) where T : MyTrait {
+                fn foo(self) -> Self {
+                    self
+                }
+            }
+
+            fn main() {
+                let mut op1 = Option2::some(5);
+                let op2 = Option2::default();
+                let op3 = if true { op1 } else { op2 }.foo();
+                op1.is_some();
+                let mut l = [1, 2, 3];
+                l[0];
+                let t = (1, true, 3);
+                t.2;
+                l[1] = 4;
+                op1._is_some = false;
+                let mut tpl = (1, true);
+                tpl.0 = 2;
+            }
+        "#;
+
+        let source = Source::new(file_name, source);
+
+        // Create our project
+        let project = Project::new(Path::new(""), source);
+
+        // Execute the compilation step on our project.
+        let source = noir_to_lean(project)?.take();
+
+        println!("{source}");
+
+        Ok(())
+    }
+
+    // #[test]
+    fn _associated_types() -> anyhow::Result<()> {
+        // Set up our source code
+        let file_name = Path::new("main.nr");
+        let source = r#"
+            trait Test {
+                type AssocType;
+                fn foo(self) -> bool;
+            }
+
+            impl Test for bool {
+                type AssocType = bool;
+                
+                fn foo(self) -> bool {
+                    true
+                }
+            }w
+            
+            fn main() {
+                let x = true;
+                print(x.foo());
             }
         "#;
 
