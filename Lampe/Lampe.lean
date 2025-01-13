@@ -435,3 +435,12 @@ example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)
       simp_all
   steps
   simp_all
+
+nr_def string_test<>() -> str<5> {
+    let x = "hello";
+    x
+}
+
+-- example : STHoare p sorry ⟦⟧ (string_test.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p (.str
+-- 5)) =>
+--   v = "hello" := by sorry

@@ -29,6 +29,7 @@ syntax ident "::" nr_ident : nr_ident
 
 syntax ident : nr_type
 syntax "${" term "}" : nr_type
+syntax "str<" num ">" : nr_type
 syntax nr_ident "<" nr_type,* ">" : nr_type -- Struct
 syntax "[" nr_type "]" : nr_type -- Slice
 syntax "[" nr_type ";" num "]" : nr_type -- Array
@@ -113,6 +114,7 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| u64) => `(Tp.u 64)
 | `(nr_type| bool) => `(Tp.bool)
 | `(nr_type| Field) => `(Tp.field)
+| `(nr_type| str<$n:num>) => `(Tp.str $n)
 | `(nr_type| Unit) => `(Tp.unit)
 | `(nr_type| $i:ident) => `($i)
 | `(nr_type| & $tp) => do `(Tp.ref $(←mkNrType tp))
@@ -144,6 +146,48 @@ def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
   let gs ← mkHListLit (←gs.mapM fun gVal => mkNrType gVal)
   let accessor := mkFieldAccessorIdent (←mkNrIdent structName) (field.getId.toString)
   `($accessor $gs)
+
+syntax ident ":" nr_type : nr_param_decl
+
+syntax num ":" nr_type : nr_expr
+syntax ident : nr_expr
+syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
+syntax "${" term "}" : nr_expr
+syntax "$" ident : nr_expr
+syntax "let" ident "=" nr_expr : nr_expr
+syntax "let" "mut" ident "=" nr_expr : nr_expr
+syntax nr_expr "=" nr_expr : nr_expr
+syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr
+syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr
+syntax "(" nr_expr ")" : nr_expr
+syntax "*(" nr_expr ")" : nr_expr
+syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr
+
+syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
+syntax "`(" nr_expr,* ")" : nr_expr -- Tuple constructor
+syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
+syntax "&" "[" nr_expr,* "]" : nr_expr -- Slice constructor
+
+syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- Struct access
+syntax nr_expr "." num : nr_expr -- Tuple access
+syntax nr_expr "[" nr_expr "]" : nr_expr -- Array access
+syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
+
+syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
+
+syntax "(" nr_type "as" nr_ident "<" nr_type,* ">" ")" "::" nr_ident "<" nr_type,* ">" "as" nr_type : nr_expr -- Trait func ident
+syntax "@" nr_ident "<" nr_type,* ">" "as" nr_type : nr_expr -- Decl func ident
+
+syntax str : nr_expr -- Parse string literals
+
+syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
+
+syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
+syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_type,* ">"
+syntax nr_trait_fn_def := "fn" nr_fn_decl
+syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
+  "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
+syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
 
 @[reducible]
 def Expr.ref (val : rep tp) : Expr rep tp.ref :=
@@ -346,11 +390,11 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
   mkExpr h none fun h => do
     mkArgs t fun t => k (h :: t)
 
-partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)) : m (TSyntax `term) := match e with
-| `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.lit $(←mkNrType tp) $n)) vname k
-| `(nr_expr| true) => do wrapSimple (←`(Expr.lit Tp.bool 1)) vname k
-| `(nr_expr| false) => do wrapSimple (←`(Expr.lit Tp.bool 0)) vname k
-| `(nr_expr| #unit) => do wrapSimple (←`(Expr.lit Tp.unit 0)) vname k
+partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
+| `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.litNum $(←mkNrType tp) $n)) vname k
+| `(nr_expr| $s:str) => do wrapSimple (←`(Expr.litStr (String.length $s) (FixedLenStr.mk $s))) vname k
+| `(nr_expr| true) => do wrapSimple (←`(Expr.litNum Tp.bool 1)) vname k
+| `(nr_expr| false) => do wrapSimple (←`(Expr.litNum Tp.bool 0)) vname k
 | `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
 | `(nr_expr| $i:ident) => do
   if ←isAutoDeref i.getId then

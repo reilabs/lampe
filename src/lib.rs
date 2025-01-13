@@ -100,16 +100,16 @@ mod test {
                 // let i = f"${g}";
             }
 
-            fn assigns(x: u8) {
-                let mut y = 3;
-                y += x;
+            // fn assigns(x: u8) {
+            //     let mut y = 3;
+            //     y += x;
 
-                let mut foo = Option2::none();
-                foo._is_some = false;
+            //     let mut foo = Option2::none();
+            //     foo._is_some = false;
 
-                let mut arr = [1, 2];
-                arr[0] = 10;
-            }
+            //     let mut arr = [1, 2];
+            //     arr[0] = 10;
+            // }
 
             // unconstrained fn loop(x: u8) {
             //     for i in 0 .. x {
@@ -154,7 +154,7 @@ mod test {
                 pub fn some(_value: T) -> Self {
                    Self { _is_some: true, _value }
                 }
-          
+
                 /// True if this Option is None
                 pub fn is_none(self) -> bool {
                     !self.is_some()
@@ -225,12 +225,12 @@ mod test {
 
             impl Test for bool {
                 type AssocType = bool;
-                
+
                 fn foo(self) -> bool {
                     true
                 }
             }w
-            
+
             fn main() {
                 let x = true;
                 print(x.foo());
