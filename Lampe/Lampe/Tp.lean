@@ -63,9 +63,8 @@ def tpDecEq (a b : Tp) : Decidable (a = b) := by
   case array.array =>
     rename_i tp₁ n₁ tp₂ n₂
     have h : Decidable (n₁ = n₂) := inferInstance
-    cases (tpDecEq tp₁ tp₂) <;> cases h <;> first
-    | right; tauto
-    | left; simp_all; done
+    cases (tpDecEq tp₁ tp₂) <;> cases h
+    all_goals try {left; simp_all}
     right
     subst_vars
     rfl

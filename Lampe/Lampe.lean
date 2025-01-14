@@ -307,7 +307,7 @@ nr_def simple_rep_array<>() -> [Field; 4] {
 example : STHoare p Γ ⟦⟧ (simple_rep_array.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p $ .array _ _) => v.toList = [1, 1, 1, 1] := by
   simp only [simple_rep_array, Expr.mkArray]
-  steps <;> tauto
+  steps <;> try tauto
   aesop
 
 nr_def simple_rep_slice<>() -> [Field] {
@@ -318,7 +318,7 @@ nr_def simple_rep_slice<>() -> [Field] {
 example : STHoare p Γ ⟦⟧ (simple_rep_slice.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p $ .slice _) => v = [1, 1, 1, 1] := by
   simp only [simple_rep_slice, Expr.mkArray]
-  steps <;> tauto
+  steps <;> try tauto
   aesop
 
 
