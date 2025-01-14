@@ -925,9 +925,8 @@ impl LeanEmitter {
                             }
                         }
                     }
-                    DefinitionKind::Global(..)
-                    | DefinitionKind::Local(..)
-                    | DefinitionKind::GenericType(..) => syntax::expr::format_var_ident(name),
+                    DefinitionKind::Global(..) => todo!("globals not implemented yet"),
+                    DefinitionKind::Local(..) | DefinitionKind::GenericType(..) => syntax::expr::format_var_ident(name),
                 }
             }
             HirExpression::Index(index) => {
@@ -1004,7 +1003,6 @@ impl LeanEmitter {
             HirExpression::Cast(cast) => {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
-
                 syntax::expr::format_builtin_call(
                     builtin::CAST_BUILTIN_NAME.into(),
                     &source,
@@ -1156,7 +1154,7 @@ impl LeanEmitter {
         let result = match l_val {
             HirLValue::Ident(ident, _) => {
                 let ident_str = self.context.def_interner.definition_name(ident.id);
-                format!("{ident_str}")
+                syntax::lval::format_ident(ident_str)
             }
             HirLValue::MemberAccess {
                 object, field_name, ..
@@ -1270,6 +1268,7 @@ impl LeanEmitter {
     ) -> Result<String> {
         let result = match &literal {
             HirLiteral::Array(array) | HirLiteral::Slice(array) => match array {
+                // Emit standard array/slice literal.
                 HirArrayLiteral::Standard(elems) => {
                     let elems =
                         elems.iter().map(|elem| self.emit_expr(ind, *elem)).try_collect()?;
@@ -1279,6 +1278,7 @@ impl LeanEmitter {
                         _ => unreachable!(),
                     }
                 }
+                // Emit repeated array/slice literal.
                 HirArrayLiteral::Repeated {
                     repeated_element,
                     length,

@@ -229,7 +229,7 @@ mod test {
                 fn foo(self) -> bool {
                     true
                 }
-            }w
+            }
             
             fn main() {
                 let x = true;
@@ -249,4 +249,42 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn trait_as_type() -> anyhow::Result<()> {
+        // Set up our source code
+        let file_name = Path::new("main.nr");
+        let source = r#"
+            trait Test {
+                fn foo(self) -> bool;
+            }
+
+            impl Test for bool {                
+                fn foo(self) -> bool {
+                    self
+                }
+            }
+
+            fn bar(x: impl Test, y: impl Test) -> impl Test {
+                true
+            }
+            
+            fn main() {
+                bar(true, false);
+            }
+        "#;
+
+        let source = Source::new(file_name, source);
+
+        // Create our project
+        let project = Project::new(Path::new(""), source);
+
+        // Execute the compilation step on our project.
+        let source = noir_to_lean(project)?.take();
+
+        println!("{source}");
+
+        Ok(())
+    }
+
 }

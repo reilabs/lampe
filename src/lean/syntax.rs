@@ -154,9 +154,9 @@ pub(super) mod r#type {
     }
 
     #[inline]
-    pub fn format_trait_as_type(_trait_name: &str, _generics: &str) -> String {
-        todo!("TraitAsType not implemented yet")
-        // format!("?{trait_name}<{generics}>")
+    pub fn format_trait_as_type(trait_name: &str, generics: &str) -> String {
+        // todo!("TraitAsType not implemented yet")
+        format!("?{trait_name}<{generics}>")
     }
 
     #[inline]
@@ -167,6 +167,11 @@ pub(super) mod r#type {
 
 pub(super) mod lval {
     use super::*;
+
+    #[inline]
+    pub fn format_ident(ident: &str) -> String {
+        expr::format_var_ident(ident)
+    }
 
     #[inline]
     pub fn format_member_access(struct_name: &str, lhs_lval: &str, member: &str) -> String {
