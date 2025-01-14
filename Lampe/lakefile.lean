@@ -8,7 +8,7 @@ package «Lampe» where
   ]
   -- add any additional package configuration options here
 
-require "leanprover-community" / "mathlib" @ git "v4.12.0"
+require "leanprover-community" / "mathlib" @ git "v4.15.0-patch1"
 
 @[default_target]
 lean_lib «Lampe» where
