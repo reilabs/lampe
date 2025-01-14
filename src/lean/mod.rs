@@ -9,21 +9,23 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
-    ast::{IntegerBitSize, Visibility},
+    ast::{IntegerBitSize, Signedness, Visibility},
     graph::CrateId,
     hir::{
-        def_map::{ModuleData, ModuleId},
+        def_map::{ModuleData, ModuleDefId, ModuleId},
+        type_check::generics::TraitGenerics,
         Context,
     },
     hir_def::{
-        expr::{HirArrayLiteral, HirIdent},
+        expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
         function::Parameters,
-        stmt::{HirLValue, HirPattern},
-        traits::TraitImpl,
+        stmt::{HirLValue, HirPattern, HirStatement},
+        traits::{NamedType, TraitImpl},
     },
-    macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, Signedness, StructId},
-    node_interner::{DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId},
-    Type, TypeBindings,
+    node_interner::{
+        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
+    },
+    StructField, Type, TypeBindings,
 };
 
 use crate::{
@@ -121,7 +123,7 @@ impl LeanEmitter {
 
     /// Enables reference tracking in the internal context.
     pub fn track_references(&mut self) {
-        self.context.track_references();
+        self.context.activate_lsp_mode();
     }
 
     /// Checks if the emitter knows about the file with the given ID, returning
@@ -304,9 +306,12 @@ impl LeanEmitter {
             .iter()
             .map(|cons| {
                 let typ_str = self.emit_fully_qualified_type(&cons.typ);
-                let trait_name = &self.context.def_interner.get_trait(cons.trait_id).name;
+                let trait_name =
+                    &self.context.def_interner.get_trait(cons.trait_bound.trait_id).name;
                 let trait_generics_str = cons
+                    .trait_bound
                     .trait_generics
+                    .ordered
                     .iter()
                     .map(|g| self.emit_fully_qualified_type(g))
                     .join(", ");
@@ -357,7 +362,14 @@ impl LeanEmitter {
                 .iter()
                 .flat_map(|typ| self.collect_named_generics(typ))
                 .collect_vec(),
-            Type::Struct(_, generics) | Type::TraitAsType(_, _, generics) => generics
+            Type::Struct(_, generics)
+            | Type::TraitAsType(
+                _,
+                _,
+                TraitGenerics {
+                    ordered: generics, ..
+                },
+            ) => generics
                 .iter()
                 .flat_map(|g| self.collect_named_generics(g))
                 .collect_vec(),
@@ -426,10 +438,12 @@ impl LeanEmitter {
         ind.indent();
         let field_strings = fields
             .iter()
-            .map(|(name, typ)| {
+            .map(|field| {
+                let name = &field.name;
+                let typ = &field.typ;
                 ind.run(format!(
                     "{name} : {typ}",
-                    typ = self.emit_fully_qualified_type(typ)
+                    typ = self.emit_fully_qualified_type(&typ)
                 ))
             })
             .collect_vec();
@@ -567,6 +581,7 @@ impl LeanEmitter {
                 let module_path = self.fq_module_name_from_mod_id(module_id);
 
                 let generics_resolved = generics
+                    .ordered
                     .iter()
                     .map(|g| self.emit_fully_qualified_type(g))
                     .collect_vec();
@@ -580,7 +595,7 @@ impl LeanEmitter {
 
                 syntax::r#type::format_trait_as_type(&fq_name, &generics_str)
             }
-            Type::Function(args, ret, _env) => {
+            Type::Function(args, ret, _env, _is_unconstrained) => {
                 let arg_types = args
                     .iter()
                     .map(|arg| self.emit_fully_qualified_type(arg))
@@ -658,9 +673,11 @@ impl LeanEmitter {
     /// Given a type `T` and a `TypeBindings` map `m`, returns a new type where the type variables in `T` have been recursively substituted with the values in `m`.
     pub fn substitute_bindings(&self, typ: &Type, bindings: &TypeBindings) -> Type {
         match typ {
-            Type::TypeVariable(tv, _) | Type::NamedGeneric(tv, _, _) => {
-                bindings.get(&tv.id()).map(|(_, t)| t).cloned().unwrap_or(typ.clone())
-            }
+            Type::TypeVariable(tv) | Type::NamedGeneric(tv, _) => bindings
+                .get(&tv.id())
+                .map(|(_, _, t)| t)
+                .cloned()
+                .unwrap_or(typ.clone()),
             Type::Array(n, e) => Type::Array(
                 Box::new(self.substitute_bindings(n.as_ref(), bindings)),
                 Box::new(self.substitute_bindings(e.as_ref(), bindings)),
@@ -688,18 +705,30 @@ impl LeanEmitter {
                     .map(|t| self.substitute_bindings(t, bindings))
                     .collect(),
             ),
-            Type::Function(params, ret, env) => Type::Function(
+            Type::Function(params, ret, env, unconstrained) => Type::Function(
                 params.iter().map(|t| self.substitute_bindings(t, bindings)).collect(),
                 Box::new(self.substitute_bindings(ret, bindings)),
                 Box::new(self.substitute_bindings(env, bindings)),
+                *unconstrained,
             ),
             Type::TraitAsType(id, name, generics) => Type::TraitAsType(
                 id.clone(),
                 name.clone(),
-                generics
-                    .iter()
-                    .map(|t| self.substitute_bindings(t, bindings))
-                    .collect(),
+                TraitGenerics {
+                    ordered: generics
+                        .ordered
+                        .iter()
+                        .map(|t| self.substitute_bindings(t, bindings))
+                        .collect(),
+                    named: generics
+                        .named
+                        .iter()
+                        .map(|t| NamedType {
+                            name: t.name.clone(),
+                            typ: self.substitute_bindings(&t.typ, bindings),
+                        })
+                        .collect(),
+                },
             ),
             Type::MutableReference(t) => {
                 Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
@@ -774,6 +803,7 @@ impl LeanEmitter {
                             vec![rhs_ty],
                             Box::new(out_ty),
                             Box::new(Type::Unit),
+                            false,
                         )),
                     )
                 }
@@ -829,6 +859,7 @@ impl LeanEmitter {
                             vec![lhs_ty, rhs_ty],
                             Box::new(out_ty),
                             Box::new(Type::Unit),
+                            false,
                         )),
                     )
                 }
@@ -918,7 +949,7 @@ impl LeanEmitter {
                                     .all_generics
                                     .iter()
                                     .flat_map(|t| bindings.get(&t.type_var.id()))
-                                    .map(|(_, ty)| self.emit_fully_qualified_type(ty))
+                                    .map(|(_, _, ty)| self.emit_fully_qualified_type(ty))
                                     .join(", ");
 
                                 syntax::expr::format_decl_func_ident(&fq_func_name, &call_generics)
@@ -927,7 +958,7 @@ impl LeanEmitter {
                     }
                     DefinitionKind::Global(..)
                     | DefinitionKind::Local(..)
-                    | DefinitionKind::GenericType(..) => syntax::expr::format_var_ident(name),
+                    | DefinitionKind::NumericGeneric(_, _) => syntax::expr::format_var_ident(name),
                 }
             }
             HirExpression::Index(index) => {
@@ -954,8 +985,8 @@ impl LeanEmitter {
                 // Map a field name to its order.
                 let field_orders: HashMap<_, usize> = (0..struct_def.num_fields())
                     .map(|i| {
-                        let (k, _) = struct_def.field_at(i);
-                        (k.clone(), i)
+                        let StructField { name, .. } = struct_def.field_at(i);
+                        (name.clone(), i)
                     })
                     .collect();
                 // Reorder the constructor fields before creating the string, so that they correspond to the order in the original definition.
@@ -1079,6 +1110,7 @@ impl LeanEmitter {
             HirExpression::Error => {
                 panic!("Encountered error expression where none should exist")
             }
+            HirExpression::Unsafe(_) => panic!("unsafe expressions not supported yet"),
         };
 
         Ok(expression)
