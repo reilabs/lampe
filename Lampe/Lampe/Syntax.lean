@@ -56,6 +56,7 @@ syntax "*(" nr_expr ")" : nr_expr -- Deref
 syntax nr_ident "<" nr_type,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
 syntax "`(" nr_expr,* ")" : nr_expr -- Tuple constructor
 syntax "[" nr_expr ";" num "]" : nr_expr -- Repeated array constructor
+syntax "&[" nr_expr ";" num "]" : nr_expr -- Repeated slice constructor
 syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
 syntax "&[" nr_expr,* "]" : nr_expr -- Slice constructor
 
@@ -401,6 +402,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkExpr arg none fun argVal => do
     let argVals := List.replicate rep.getNat argVal
     wrapSimple (←`(Expr.mkArray $rep $(←mkHListLit argVals))) vname k
+| `(nr_expr| &[ $arg ; $rep:num ]) => do
+  mkExpr arg none fun argVal => do
+    let argVals := List.replicate rep.getNat argVal
+    wrapSimple (←`(Expr.mkSlice $rep $(←mkHListLit argVals))) vname k
 | `(nr_expr| | $params,* | -> $outTp $lambdaBody) => do
   let outTp ← mkNrType outTp
   let argTps ← mkListLit (← params.getElems.toList.mapM fun param => match param with
