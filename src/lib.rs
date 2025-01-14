@@ -146,7 +146,7 @@ mod test {
             impl <T> Option2<T> {
                 /// Constructs a None value
                 pub fn none() -> Self {
-                    Self { _is_some: false, _value: std::unsafe::zeroed() }
+                    Self { _is_some: false, _value: std::mem::zeroed() }
                 }
 
                 /// Constructs a Some wrapper around the given value

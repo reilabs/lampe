@@ -25,7 +25,7 @@ use noirc_frontend::{
     node_interner::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
-    StructField, Type, TypeBindings,
+    StructField, Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -754,7 +754,7 @@ impl LeanEmitter {
     pub fn emit_expr(&self, ind: &mut Indenter, expr: ExprId) -> Result<String> {
         let expr_data = self.context.def_interner.expression(&expr);
         // Get the output type of this expression.
-        let out_ty = self.context.def_interner.id_type(&expr);
+        let out_ty = self.id_bound_type(expr);
         let out_ty_str = self.emit_fully_qualified_type(&out_ty);
         let expression = match expr_data {
             HirExpression::Block(block) => {
@@ -770,7 +770,7 @@ impl LeanEmitter {
             }
             HirExpression::Prefix(prefix) => {
                 let rhs = self.emit_expr(ind, prefix.rhs)?;
-                let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
+                let rhs_ty = self.id_bound_type(prefix.rhs);
                 let rhs_builtin_ty = rhs_ty.clone().try_into().ok();
                 if let Some(builtin_name) =
                     builtin::try_prefix_into_builtin_name(prefix.operator, rhs_builtin_ty)
@@ -811,8 +811,8 @@ impl LeanEmitter {
             HirExpression::Infix(infix) => {
                 let lhs = self.emit_expr(ind, infix.lhs)?;
                 let rhs = self.emit_expr(ind, infix.rhs)?;
-                let lhs_ty = self.context.def_interner.id_type(infix.lhs);
-                let rhs_ty = self.context.def_interner.id_type(infix.rhs);
+                let lhs_ty = self.id_bound_type(infix.lhs);
+                let rhs_ty = self.id_bound_type(infix.rhs);
                 if let Some(builtin_name) =
                     match (lhs_ty.clone().try_into(), rhs_ty.clone().try_into()) {
                         (Ok(lhs_ty), Ok(rhs_ty)) => builtin::try_infix_into_builtin_name(
@@ -881,8 +881,7 @@ impl LeanEmitter {
                 {
                     syntax::expr::format_builtin_call(builtin_name, &args_str, &out_ty_str)
                 } else {
-                    let fn_type = self
-                        .emit_fully_qualified_type(&self.context.def_interner.id_type(call.func));
+                    let fn_type = self.emit_fully_qualified_type(&self.id_bound_type(call.func));
                     syntax::expr::format_call(&func_expr_str, &args_str, &fn_type)
                 }
             }
@@ -962,7 +961,7 @@ impl LeanEmitter {
                 }
             }
             HirExpression::Index(index) => {
-                let coll_type = self.context.def_interner.id_type(index.collection);
+                let coll_type = self.id_bound_type(index.collection);
                 let coll_builtin_type: builtin::BuiltinType = coll_type.try_into().unwrap();
                 let index_builtin_name = builtin::get_index_builtin_name(coll_builtin_type)
                     .expect(&format!("cannot index {:?}", coll_builtin_type));
@@ -1012,7 +1011,7 @@ impl LeanEmitter {
                 )
             }
             HirExpression::MemberAccess(member) => {
-                let lhs_expr_ty = self.context.def_interner.id_type(member.lhs);
+                let lhs_expr_ty = self.id_bound_type(member.lhs);
                 let target_expr_str = self.emit_expr(ind, member.lhs)?;
                 let member_iden = member.rhs;
                 match &lhs_expr_ty {
@@ -1028,7 +1027,7 @@ impl LeanEmitter {
                         &target_expr_str,
                         &member_iden.to_string(),
                     ),
-                    _ => panic!("member access lhs is not a struct or tuple"),
+                    _ => panic!("member access lhs is not a struct or tuple: {lhs_expr_ty:?}"),
                 }
             }
 
@@ -1114,6 +1113,32 @@ impl LeanEmitter {
         };
 
         Ok(expression)
+    }
+
+    /// Identifies the type of an expression, returning the bound type if the expression's type is a `TypeVariable` that is already bound.
+    pub fn id_bound_type(&self, expr_id: ExprId) -> Type {
+        let identified_ty = self.context.def_interner.id_type(expr_id);
+        let expr_bindings = self.context.def_interner.try_get_instantiation_bindings(expr_id);
+        // Get the instantiated type of the expression.
+        let expr_ty = match (identified_ty, expr_bindings) {
+            (Type::TypeVariable(tv), Some(expr_bindings))
+                if expr_bindings.contains_key(&tv.id()) =>
+            {
+                expr_bindings[&tv.id()].2.clone()
+            }
+            (ty, _) => ty,
+        };
+        match &expr_ty {
+            Type::TypeVariable(tv) => {
+                if let TypeBinding::Bound(bound_ty) = &*tv.borrow() {
+                    bound_ty.clone()
+                } else {
+                    // [TODO] fix the unnecessary clone.
+                    expr_ty.clone()
+                }
+            }
+            _ => expr_ty,
+        }
     }
 
     /// Emits the Lean source code corresponding to a Noir statement.
@@ -1315,7 +1340,7 @@ impl LeanEmitter {
                 }
             }
             HirLiteral::Integer(felt, neg) => {
-                let typ = self.context.def_interner.id_type(expr).to_string();
+                let typ = self.id_bound_type(expr).to_string();
                 format!("{minus}{felt} : {typ}", minus = if neg { "-" } else { "" })
             }
             HirLiteral::Str(_str) => todo!("string literals not supported"),
