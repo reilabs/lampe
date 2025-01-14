@@ -347,7 +347,8 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
     simp only [SLP.star, SLP.exists', SLP.lift] at h
     tauto
   obtain ⟨r, _⟩ := h₁
-  apply Omni.callLambda <;> tauto
+  apply Omni.callLambda (ref := r) (lambdaBody := lambdaBody)
+  · tauto
   . obtain ⟨st₁, st₂, _, _, ⟨_, _, _, _, _, _, _, _, _, _, ⟨_, _⟩, _⟩, _⟩ := h
     subst_vars
     simp_all only [FuncRef.lambda.injEq]
@@ -361,7 +362,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
       simp_all only
       tauto
     . simp_all
-  apply STHoare.consequence_frame_left <;> tauto
+  · apply STHoare.consequence_frame_left <;> tauto
 
 theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}

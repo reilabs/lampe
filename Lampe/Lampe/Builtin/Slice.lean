@@ -4,17 +4,17 @@ namespace Lampe.Builtin
 
 @[reducible]
 def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Fin s.length) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
-  List.modifyNth (fun _ => v) i s
+  List.modify (fun _ => v) i s
 
 @[simp]
 theorem replaceSlice_length_eq_length :
     (replaceSlice' s i v).length = s.length := by
-  simp_all [List.length_modifyNth]
+  simp_all [List.length_modify]
 
 @[simp]
 theorem index_replaced_slice :
     (replaceSlice' s idx v).get ⟨idx.val, h⟩ = v := by
-  simp_all [List.modifyNth_eq_set_get?, List.getElem_eq_iff]
+  simp_all [List.modify_eq_set_get?, List.getElem_eq_iff]
 
 /--
 Defines the builtin slice constructor.
@@ -85,7 +85,7 @@ In Noir, this builtin corresponds to `fn insert(self, index: u32, elem: T) -> Se
 def sliceInsert := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp, .u 32, tp], .slice tp⟩)
   (fun _ h![l, i, e] => ⟨i.toNat < l.length,
-    fun _ => l.insertNth i.toNat e⟩)
+    fun _ => l.insertIdx i.toNat e⟩)
 
 
 /--
