@@ -108,7 +108,7 @@ theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.litNum .bool 1) fun v
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litUnit_intro: STHoare p Γ ⟦⟧ (.lit .unit n) fun v => v = unit := by
+theorem Lampe.STHoare.litUnit_intro: STHoare p Γ ⟦⟧ (.litNum .unit n) fun v => v = unit := by
   unfold STHoare THoare
   intro H st hp
   constructor
