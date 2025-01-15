@@ -2,8 +2,7 @@ use std::ops::Deref;
 
 use noirc_frontend::{
     ast::BinaryOpKind,
-    ast::{IntegerBitSize, UnaryOp},
-    macros_api::Signedness,
+    ast::{IntegerBitSize, Signedness, UnaryOp},
     Type, TypeBinding,
 };
 
@@ -50,7 +49,7 @@ impl TryInto<BuiltinType> for Type {
             Type::Array(_, _) => Ok(BuiltinType::Array),
             Type::Slice(_) => Ok(BuiltinType::Slice),
             Type::String(_) => Ok(BuiltinType::String),
-            Type::TypeVariable(tv, _) => match tv.borrow().deref() {
+            Type::TypeVariable(tv) => match tv.borrow().deref() {
                 TypeBinding::Bound(ty) => TryInto::<BuiltinType>::try_into(ty.clone()),
                 _ => Err(format!("unbound type variable `{tv:?}`")),
             },
