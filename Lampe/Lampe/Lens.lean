@@ -5,6 +5,9 @@ import Lampe.Builtin.Slice
 
 namespace Lampe
 
+/--
+Instructs how to access a inner value from another value, e.g., a particular value of a slice.
+-/
 inductive Access (rep : Tp → Type _) : Tp → Tp → Type _
 | tuple : (mem : Builtin.Member tp tps) → Access rep (.tuple name tps) tp
 | array : (idx : rep $ .u 32) → Access rep (.array tp n) tp
@@ -39,6 +42,9 @@ theorem Access.modify_get {acc : Access (Tp.denote p) tp₁ tp₂} {h : acc.modi
       apply Builtin.index_replaced_slice
     . aesop
 
+/--
+Represents a lens between two `Tp`s, which is a concetanation of several `Access` operations.
+-/
 inductive Lens (rep : Tp → Type _) : Tp → Tp → Type _
 | nil : Lens rep tp tp
 | cons : Lens rep tp₁ tp₂ → Access rep tp₂ tp₃ → Lens rep tp₁ tp₃

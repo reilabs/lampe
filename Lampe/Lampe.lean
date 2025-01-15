@@ -299,6 +299,29 @@ example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![])
   steps <;> try tauto
   aesop
 
+nr_def simple_rep_array<>() -> [Field; 4] {
+  let arr = [1 : Field ; 4];
+  arr
+}
+
+example : STHoare p Γ ⟦⟧ (simple_rep_array.fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p $ .array _ _) => v.toList = [1, 1, 1, 1] := by
+  simp only [simple_rep_array, Expr.mkArray]
+  steps <;> try tauto
+  aesop
+
+nr_def simple_rep_slice<>() -> [Field] {
+  let arr = &[1 : Field ; 4];
+  arr
+}
+
+example : STHoare p Γ ⟦⟧ (simple_rep_slice.fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p $ .slice _) => v = [1, 1, 1, 1] := by
+  simp only [simple_rep_slice, Expr.mkArray]
+  steps <;> try tauto
+  aesop
+
+
 nr_def tuple_lens<>() -> Field {
   let mut p = `(`(1 : Field, 2 : Field), 3 : Field);
   p .0 .1 = 3 : Field;
@@ -363,6 +386,21 @@ example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
 nr_def simple_func<>() -> Field {
   10 : Field
 }
+
+nr_def deref_lens<>() -> Field {
+  let r = #ref(`(5 : Field)) : &`(Field);
+  *(r).0 = 3 : Field;
+  *(r).0
+}
+
+example : STHoare p Γ ⟦⟧ (deref_lens.fn.body _ h![] |>.body h![])
+    fun (v : Tp.denote p .field) => v = 3 := by
+  simp only [deref_lens]
+  steps
+  subst_vars
+  simp_all only [exists_const, Lens.modify, Lens.get]
+  subst_vars
+  simp_all [Builtin.indexTpl]
 
 nr_def call<>(f : λ() → Field) -> Field {
   f()

@@ -468,26 +468,6 @@ theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) 
 
 -- Lens
 
-theorem readLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
-    STHoare p Γ
-    [r ↦ ⟨tp₁, s⟩]
-    (.callBuiltin [tp₁.ref] tp₂ (.readLens lens) h![r])
-    (fun v' => ⟦lens.get s = some v'⟧ ⋆ [r ↦ ⟨tp₁, s⟩]) := by
-  unfold STHoare THoare
-  intros H st h
-  constructor
-  cases hl : (lens.get s)
-  . apply Builtin.readLensOmni.err <;> try tauto
-    unfold SLP.star State.valSingleton at *
-    aesop
-  . apply Builtin.readLensOmni.ok <;> try tauto
-    . unfold SLP.star State.valSingleton at *
-      aesop
-    . unfold mapToValHeapCondition
-      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
-      apply SLP.ent_star_top at h
-      simp_all
-
  theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s : Tp.denote p tp₁} {v : Tp.denote p tp₂} :
     STHoare p Γ
     [r ↦ ⟨tp₁, s⟩]
