@@ -84,6 +84,14 @@ theorem Lampe.STHoare.litStr_intro: STHoare p Γ ⟦⟧ (.litStr u (.fromVector 
   apply SLP.ent_star_top
   assumption
 
+theorem Lampe.STHoare.litStr_intro': STHoare p Γ ⟦⟧ (.litStr u s) fun v => v = s.toVector := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
 theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.litNum .bool 0) fun v => v = false := by
   unfold STHoare THoare
   intro H st hp
@@ -553,8 +561,9 @@ elab "sl" : tactic => do
 macro "stephelper1" : tactic => `(tactic|(
   (first
     | apply Lampe.STHoare.litU_intro
-    | apply Lampe.STHoare.litField_intro
-    | apply Lampe.STHoare.litStr_intro
+    | apply Lampe.STHoare.litField_intro ; trace "asdf1"
+    | apply Lampe.STHoare.litStr_intro ; trace "fdsa1"
+    | apply Lampe.STHoare.litStr_intro' ; trace "zxcv1"
     | apply Lampe.STHoare.litTrue_intro
     | apply Lampe.STHoare.litFalse_intro
     | apply Lampe.STHoare.litUnit_intro
@@ -625,8 +634,9 @@ macro "stephelper1" : tactic => `(tactic|(
 macro "stephelper2" : tactic => `(tactic|(
   (first
     | apply consequence_frame_left Lampe.STHoare.litU_intro
-    | apply consequence_frame_left Lampe.STHoare.litField_intro
-    | apply consequence_frame_left Lampe.STHoare.litStr_intro
+    | apply consequence_frame_left Lampe.STHoare.litField_intro ; trace "asdf2"
+    | apply consequence_frame_left Lampe.STHoare.litStr_intro ; trace "fdsa2"
+    | apply consequence_frame_left Lampe.STHoare.litStr_intro' ; trace "zxcv2"
     | apply consequence_frame_left Lampe.STHoare.litTrue_intro
     | apply consequence_frame_left Lampe.STHoare.litFalse_intro
     | apply consequence_frame_left Lampe.STHoare.litUnit_intro
@@ -697,8 +707,9 @@ macro "stephelper2" : tactic => `(tactic|(
 macro "stephelper3" : tactic => `(tactic|(
   (first
     | apply ramified_frame_top Lampe.STHoare.litU_intro
-    | apply ramified_frame_top Lampe.STHoare.litField_intro
-    | apply ramified_frame_top Lampe.STHoare.litStr_intro
+    | apply ramified_frame_top Lampe.STHoare.litField_intro ; trace "asdf3"
+    | apply ramified_frame_top Lampe.STHoare.litStr_intro ; trace "fdsa3"
+    | apply ramified_frame_top Lampe.STHoare.litStr_intro' ; trace "zxcv3"
     | apply ramified_frame_top Lampe.STHoare.litTrue_intro
     | apply ramified_frame_top Lampe.STHoare.litFalse_intro
     | apply ramified_frame_top Lampe.STHoare.litUnit_intro

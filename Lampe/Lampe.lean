@@ -436,11 +436,14 @@ example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)
   steps
   simp_all
 
-nr_def string_test<>() -> str<5> {
-    let x = "hello";
+nr_def «string_test»<>() -> str<5> {
+    let x = "Hello";
     x
 }
 
--- example : STHoare p sorry ⟦⟧ (string_test.fn.body _ h![] |>.body h![]) fun (v : Tp.denote p (.str
--- 5)) =>
---   v = "hello" := by sorry
+example : STHoare p Γ ⟦⟧ (string_test.fn.body _ h![] |>.body h![])
+    fun v => v = (.mk "Hello" : FixedLenStr 5).toVector := by
+  simp only [string_test]
+  steps
+  simp_all
+

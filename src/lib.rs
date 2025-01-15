@@ -198,6 +198,12 @@ mod test {
                 let mut tpl = (1, true);
                 tpl.0 = 2;
             }
+
+            fn string_test() -> str<5> {
+                let x : str<5> = "Hello";
+                x
+            }
+
         "#;
 
         let source = Source::new(file_name, source);

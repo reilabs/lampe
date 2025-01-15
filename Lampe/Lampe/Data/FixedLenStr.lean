@@ -22,7 +22,7 @@ def fromVector (u : U 32) (vec : List.Vector Char u.toNat) : FixedLenStr u.toNat
   let ⟨cs, h⟩ := vec
   ⟨⟨cs⟩, by simp only [String.length, h]⟩
 
-def toVector (u : U 32) (s : FixedLenStr u.toNat) : List.Vector Char u.toNat :=
-  ⟨s.data.toList, by change s.data.length = u.toNat ; apply FixedLenStr.data_len⟩
+def toVector {n : Nat} (s : FixedLenStr n) : List.Vector Char n :=
+  ⟨s.data.toList, by change s.data.length = n ; apply FixedLenStr.data_len⟩
 
 end FixedLenStr
