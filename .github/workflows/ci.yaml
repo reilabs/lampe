@@ -61,5 +61,6 @@ jobs:
             toolchain: stable
         - name: Test (cargo)
           working-directory: lampe
-          run: cargo test
-          
+          run: |
+            export RUST_MIN_STACK=16777216;  # 16 MB
+            cargo test --all
