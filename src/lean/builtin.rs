@@ -100,7 +100,7 @@ impl BuiltinType {
 
 pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
     match func_expr {
-        "@std::unsafe::zeroed<T>" => Some(format!("zeroed")),
+        "@std::mem::zeroed<T>" => Some(format!("zeroed")),
         _ => None,
     }
 }
