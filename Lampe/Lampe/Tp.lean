@@ -14,6 +14,9 @@ inductive Kind where
 | nat
 | type
 
+/--
+Represents a concrete Noir type.
+-/
 inductive Tp where
 | u (size : Nat)
 | i (size : Nat)
@@ -27,6 +30,16 @@ inductive Tp where
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
 | fn (argTps : List Tp) (outTp : Tp)
+
+/--
+Represents a virtual type that can either be a concrete `Tp` or a type that is resolved
+during verification.
+-/
+inductive VTp where
+| concrete : Tp → VTp
+| any : VTp
+
+instance : Coe Tp VTp := ⟨VTp.concrete⟩
 
 mutual
 
@@ -119,5 +132,10 @@ def Tp.denote : Tp → Type
 | .fn argTps outTp => FuncRef argTps outTp
 
 end
+
+@[reducible]
+def VTp.denote : VTp → Type
+| .concrete tp => tp.denote p
+| .any => (tp : Tp) × tp.denote p
 
 end Lampe
