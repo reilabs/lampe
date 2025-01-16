@@ -164,40 +164,6 @@ mod test {
                 }
             }
 
-            fn main() {
-                let mut op1 = Option2::some(5);
-                let op2 = Option2::default();
-                let op3 = if true { op1 } else { op2 }.foo();
-                op1.is_some();
-                let mut l = [1, 2, 3];
-                l[0];
-                let t = (1, true, 3);
-                t.2;
-                l[1] = 4;
-                op1._is_some = false;
-                let mut tpl = (1, true);
-                tpl.0 = 2;
-            }
-        "#;
-
-        let source = Source::new(file_name, source);
-
-        // Create our project
-        let project = Project::new(Path::new(""), source);
-
-        // Execute the compilation step on our project.
-        let source = noir_to_lean(project)?.take();
-
-        println!("{source}");
-
-        Ok(())
-    }
-
-    #[test]
-    fn generic_impls() -> anyhow::Result<()> {
-        // Set up our source code
-        let file_name = Path::new("main.nr");
-        let source = r#"
             trait MyTrait {
                 fn foo(self) -> Self {
                     self
@@ -216,7 +182,20 @@ mod test {
                 }
             }
 
+
             fn main() {
+                let mut op1 = Option2::some(5);
+                let op2 = Option2::default();
+                let op3 = if true { op1 } else { op2 }.foo();
+                op1.is_some();
+                let mut l = [1, 2, 3];
+                l[0];
+                let t = (1, true, 3);
+                t.2;
+                l[1] = 4;
+                op1._is_some = false;
+                let mut tpl = (1, true);
+                tpl.0 = 2;
             }
         "#;
 
