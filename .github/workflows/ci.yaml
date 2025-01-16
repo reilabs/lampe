@@ -18,9 +18,15 @@ jobs:
                 lint: false
                 use-mathlib-cache: true
                 lake-package-directory: Lampe
+            - name: mk_all (lake)
+              working-directory: Lampe
+              run: lake exe mk_all --check --lib Lampe
             - name: Build (lake)
               working-directory: Lampe
               run: lake build
+            - name: Test (lake)
+              working-directory: Lampe
+              run: lake test
     build-cargo:
       runs-on: ubuntu-latest
       steps:
