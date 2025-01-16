@@ -259,18 +259,26 @@ mod test {
                 fn foo(self) -> bool;
             }
 
-            impl Test for bool {                
+            impl Test for bool {
                 fn foo(self) -> bool {
                     self
                 }
             }
 
-            fn bar(x: impl Test, y: impl Test) -> impl Test {
+            impl Test for Field {
+                fn foo(self) -> bool {
+                    true
+                }
+            }
+
+            fn bar(x: impl Test) -> impl Test {
                 true
             }
             
             fn main() {
-                bar(true, false);
+                bar(true);
+                bar(2);
+
             }
         "#;
 
@@ -286,5 +294,4 @@ mod test {
 
         Ok(())
     }
-
 }
