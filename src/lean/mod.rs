@@ -1356,7 +1356,7 @@ impl LeanEmitter {
             HirLiteral::Bool(bool) => syntax::literal::format_bool(*bool),
             HirLiteral::Integer(felt, neg) => {
                 let typ = self.id_bound_type(expr).to_string();
-                format!("{minus}{felt} : {typ}", minus = if neg { "-" } else { "" })
+                format!("{minus}{felt} : {typ}", minus = if *neg { "-" } else { "" })
             }
             HirLiteral::Str(_str) => todo!("string literals not supported"),
             HirLiteral::FmtStr(..) => todo!("fmtstr not supported"),
