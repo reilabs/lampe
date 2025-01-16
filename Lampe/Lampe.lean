@@ -442,7 +442,7 @@ nr_def «string_test»<>() -> str<5> {
 }
 
 example : STHoare p Γ ⟦⟧ (string_test.fn.body _ h![] |>.body h![])
-    fun v => v = (.mk "Hello" : FixedLenStr 5).toVector := by
+    fun v => v = ⟨"Hello".data, rfl⟩ := by
   simp only [string_test]
   steps
   simp_all

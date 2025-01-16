@@ -351,7 +351,7 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
 
 partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
 | `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.litNum $(←mkNrType tp) $n)) vname k
-| `(nr_expr| $s:str) => do wrapSimple (←`(Expr.litStr (String.length $s) (FixedLenStr.mk $s))) vname k
+| `(nr_expr| $s:str) => do wrapSimple (←`(Expr.litStr (String.length $s) (⟨String.data $s, by rfl⟩))) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Expr.litNum Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Expr.litNum Tp.bool 0)) vname k
 | `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k

@@ -34,8 +34,7 @@ inductive TraitResolution (Γ : Env) : TraitImplRef → List (Ident × Function)
 
 inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where
 | litField {Q} : Q (some (st, n)) → Omni Γ st (.litNum .field n) Q
-| litStr {Q} : Q (some (st, ns)) → Omni Γ st (.litStr u (.fromVector u ns)) Q
-| litStr' {Q} : Q (some (st, ns.toVector)) → Omni Γ st (.litStr u ns) Q
+| litStr {Q} : Q (some (st, ns)) → Omni Γ st (.litStr u ns) Q
 | litFalse {Q} : Q (some (st, false)) → Omni Γ st (.litNum .bool 0) Q
 | litTrue {Q} : Q (some (st, true)) → Omni Γ st (.litNum .bool 1) Q
 | litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.litNum (.u s) n) Q
@@ -128,7 +127,6 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
   induction h with
   | litField hq
   | litStr hq
-  | litStr' hq
   | litFalse hq
   | litTrue hq
   | litU hq
