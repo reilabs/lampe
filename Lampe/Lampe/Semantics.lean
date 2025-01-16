@@ -36,8 +36,8 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
 | litField {Q} : Q (some (st, n)) → Omni Γ st (.lit .field n) Q
 | litFalse {Q} : Q (some (st, false)) → Omni Γ st (.lit .bool 0) Q
 | litTrue {Q} : Q (some (st, true)) → Omni Γ st (.lit .bool 1) Q
-| litRef {Q} : Q (some (st, ⟨r⟩)) → Omni Γ st (.lit (.ref tp) r) Q
 | litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.lit (.u s) n) Q
+| litUnit {Q} : Q (some (st, ())) → Omni Γ st (.lit .unit n) Q
 | fn {Q} : Q (some (st, r)) → Omni Γ st (.fn _ _ r) Q
 | var {Q} : Q (some (st, v)) → Omni Γ st (.var v) Q
 | skip {Q} : Q (some (st, ())) → Omni Γ st (.skip) Q
@@ -128,7 +128,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
   | litFalse hq
   | litTrue hq
   | litU hq
-  | litRef hq
+  | litUnit
   | skip hq
   | fn
   | var hq =>

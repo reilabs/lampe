@@ -1264,7 +1264,6 @@ impl LeanEmitter {
             }
             HirLValue::Dereference { lvalue, .. } => {
                 let lhs_lval = self.emit_l_value(ind, lvalue.as_ref())?;
-
                 syntax::lval::format_deref_access(&lhs_lval)
             }
         };
@@ -1326,50 +1325,42 @@ impl LeanEmitter {
         literal: HirLiteral,
         expr: ExprId,
     ) -> Result<String> {
-        let result = match literal {
-            HirLiteral::Array(array) => self.emit_array_literal(ind, array)?,
-            HirLiteral::Slice(slice) => {
-                let array_lit = self.emit_array_literal(ind, slice)?;
-                format!("&{array_lit}")
-            }
-            HirLiteral::Bool(bool) => {
-                if bool {
-                    "true".to_string()
-                } else {
-                    "false".to_string()
+        let result = match &literal {
+            HirLiteral::Array(array) | HirLiteral::Slice(array) => match array {
+                HirArrayLiteral::Standard(elems) => {
+                    let elems =
+                        elems.iter().map(|elem| self.emit_expr(ind, *elem)).try_collect()?;
+                    match literal {
+                        HirLiteral::Array(..) => syntax::literal::format_array(elems),
+                        HirLiteral::Slice(..) => syntax::literal::format_slice(elems),
+                        _ => unreachable!(),
+                    }
                 }
-            }
+                HirArrayLiteral::Repeated {
+                    repeated_element,
+                    length,
+                } => {
+                    let elem_str = self.emit_expr(ind, *repeated_element)?;
+                    let rep_str = format!("{length}");
+                    match literal {
+                        HirLiteral::Array(..) => {
+                            syntax::literal::format_repeated_array(&elem_str, &rep_str)
+                        }
+                        HirLiteral::Slice(..) => {
+                            syntax::literal::format_repeated_slice(&elem_str, &rep_str)
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+            },
+            HirLiteral::Bool(bool) => syntax::literal::format_bool(*bool),
             HirLiteral::Integer(felt, neg) => {
                 let typ = self.id_bound_type(expr).to_string();
                 format!("{minus}{felt} : {typ}", minus = if neg { "-" } else { "" })
             }
             HirLiteral::Str(_str) => todo!("string literals not supported"),
             HirLiteral::FmtStr(..) => todo!("fmtstr not supported"),
-            HirLiteral::Unit => "()".into(),
-        };
-
-        Ok(result)
-    }
-
-    /// Emits the Lean code corresponding to a Noir array literal.
-    ///
-    /// # Errors
-    ///
-    /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_array_literal(
-        &self,
-        ind: &mut Indenter,
-        literal: HirArrayLiteral,
-    ) -> Result<String> {
-        let result = match literal {
-            HirArrayLiteral::Standard(elems) => {
-                let elem_strings: Vec<String> =
-                    elems.iter().map(|elem| self.emit_expr(ind, *elem)).try_collect()?;
-                let elems_string = elem_strings.join(", ");
-
-                format!("[{elems_string}]")
-            }
-            HirArrayLiteral::Repeated { .. } => todo!("repeated array literals are not supported"),
+            HirLiteral::Unit => syntax::literal::format_unit(),
         };
 
         Ok(result)
