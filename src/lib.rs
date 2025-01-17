@@ -152,7 +152,7 @@ mod test {
                 pub fn some(_value: T) -> Self {
                    Self { _is_some: true, _value }
                 }
-          
+
                 /// True if this Option is None
                 pub fn is_none(self) -> bool {
                     !self.is_some()
@@ -197,6 +197,12 @@ mod test {
                 let mut tpl = (1, true);
                 tpl.0 = 2;
             }
+
+            fn string_test() -> str<5> {
+                let x : str<5> = "Hello";
+                x
+            }
+
         "#;
 
         let source = Source::new(file_name, source);
@@ -219,12 +225,12 @@ mod test {
         let source = r#"
             trait Test {
                 type AssocType;
+
                 fn foo(self) -> bool;
             }
 
             impl Test for bool {
                 type AssocType = bool;
-                
                 fn foo(self) -> bool {
                     true
                 }

@@ -1358,7 +1358,7 @@ impl LeanEmitter {
                 let typ = self.id_bound_type(expr).to_string();
                 format!("{minus}{felt} : {typ}", minus = if *neg { "-" } else { "" })
             }
-            HirLiteral::Str(_str) => todo!("string literals not supported"),
+            HirLiteral::Str(str) => format!("\"{str}\""),
             HirLiteral::FmtStr(..) => todo!("fmtstr not supported"),
             HirLiteral::Unit => syntax::literal::format_unit(),
         };
