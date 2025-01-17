@@ -28,12 +28,6 @@ jobs:
             uses: actions/checkout@v4
             with:
               path: lampe
-          - name: "Checkout reilabs/noir (branch: lampe-v1.0.0-beta.1)"
-            uses: actions/checkout@v4
-            with:
-              path: noir
-              ref: lampe-v1.0.0-beta.1
-              repository: reilabs/noir
           - name: Set up Rust
             uses: actions-rs/toolchain@v1
             with:
@@ -49,12 +43,6 @@ jobs:
           uses: actions/checkout@v4
           with:
             path: lampe
-        - name: "Checkout reilabs/noir (branch: lampe)"
-          uses: actions/checkout@v4
-          with:
-            path: noir
-            ref: lampe-v1.0.0-beta.1
-            repository: reilabs/noir
         - name: Set up Rust
           uses: actions-rs/toolchain@v1
           with:
