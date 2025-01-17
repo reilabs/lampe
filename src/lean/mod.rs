@@ -1362,7 +1362,7 @@ impl LeanEmitter {
                     &typ_str,
                 )
             }
-            HirLiteral::Str(_str) => todo!("string literals not supported"),
+            HirLiteral::Str(str) => format!("\"{str}\""),
             HirLiteral::FmtStr(..) => todo!("fmtstr not supported"),
             HirLiteral::Unit => syntax::literal::format_unit(),
         };
