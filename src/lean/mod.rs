@@ -9,21 +9,23 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
-    ast::{IntegerBitSize, Visibility},
+    ast::{IntegerBitSize, Signedness, Visibility},
     graph::CrateId,
     hir::{
-        def_map::{ModuleData, ModuleId},
+        def_map::{ModuleData, ModuleDefId, ModuleId},
+        type_check::generics::TraitGenerics,
         Context,
     },
     hir_def::{
-        expr::{HirArrayLiteral, HirIdent},
+        expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
         function::Parameters,
-        stmt::{HirLValue, HirPattern},
-        traits::TraitImpl,
+        stmt::{HirLValue, HirPattern, HirStatement},
+        traits::{NamedType, TraitImpl},
     },
-    macros_api::{HirExpression, HirLiteral, HirStatement, ModuleDefId, Signedness, StructId},
-    node_interner::{DefinitionKind, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId},
-    Type, TypeBindings,
+    node_interner::{
+        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
+    },
+    StructField, Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -121,7 +123,7 @@ impl LeanEmitter {
 
     /// Enables reference tracking in the internal context.
     pub fn track_references(&mut self) {
-        self.context.track_references();
+        self.context.activate_lsp_mode();
     }
 
     /// Checks if the emitter knows about the file with the given ID, returning
@@ -304,9 +306,12 @@ impl LeanEmitter {
             .iter()
             .map(|cons| {
                 let typ_str = self.emit_fully_qualified_type(&cons.typ);
-                let trait_name = &self.context.def_interner.get_trait(cons.trait_id).name;
+                let trait_name =
+                    &self.context.def_interner.get_trait(cons.trait_bound.trait_id).name;
                 let trait_generics_str = cons
+                    .trait_bound
                     .trait_generics
+                    .ordered
                     .iter()
                     .map(|g| self.emit_fully_qualified_type(g))
                     .join(", ");
@@ -357,7 +362,14 @@ impl LeanEmitter {
                 .iter()
                 .flat_map(|typ| self.collect_named_generics(typ))
                 .collect_vec(),
-            Type::Struct(_, generics) | Type::TraitAsType(_, _, generics) => generics
+            Type::Struct(_, generics)
+            | Type::TraitAsType(
+                _,
+                _,
+                TraitGenerics {
+                    ordered: generics, ..
+                },
+            ) => generics
                 .iter()
                 .flat_map(|g| self.collect_named_generics(g))
                 .collect_vec(),
@@ -426,10 +438,12 @@ impl LeanEmitter {
         ind.indent();
         let field_strings = fields
             .iter()
-            .map(|(name, typ)| {
+            .map(|field| {
+                let name = &field.name;
+                let typ = &field.typ;
                 ind.run(format!(
                     "{name} : {typ}",
-                    typ = self.emit_fully_qualified_type(typ)
+                    typ = self.emit_fully_qualified_type(&typ)
                 ))
             })
             .collect_vec();
@@ -567,6 +581,7 @@ impl LeanEmitter {
                 let module_path = self.fq_module_name_from_mod_id(module_id);
 
                 let generics_resolved = generics
+                    .ordered
                     .iter()
                     .map(|g| self.emit_fully_qualified_type(g))
                     .collect_vec();
@@ -580,7 +595,7 @@ impl LeanEmitter {
 
                 syntax::r#type::format_trait_as_type(&fq_name, &generics_str)
             }
-            Type::Function(args, ret, _env) => {
+            Type::Function(args, ret, _env, _is_unconstrained) => {
                 let arg_types = args
                     .iter()
                     .map(|arg| self.emit_fully_qualified_type(arg))
@@ -658,9 +673,11 @@ impl LeanEmitter {
     /// Given a type `T` and a `TypeBindings` map `m`, returns a new type where the type variables in `T` have been recursively substituted with the values in `m`.
     pub fn substitute_bindings(&self, typ: &Type, bindings: &TypeBindings) -> Type {
         match typ {
-            Type::TypeVariable(tv, _) | Type::NamedGeneric(tv, _, _) => {
-                bindings.get(&tv.id()).map(|(_, t)| t).cloned().unwrap_or(typ.clone())
-            }
+            Type::TypeVariable(tv) | Type::NamedGeneric(tv, _) => bindings
+                .get(&tv.id())
+                .map(|(_, _, t)| t)
+                .cloned()
+                .unwrap_or(typ.clone()),
             Type::Array(n, e) => Type::Array(
                 Box::new(self.substitute_bindings(n.as_ref(), bindings)),
                 Box::new(self.substitute_bindings(e.as_ref(), bindings)),
@@ -688,18 +705,30 @@ impl LeanEmitter {
                     .map(|t| self.substitute_bindings(t, bindings))
                     .collect(),
             ),
-            Type::Function(params, ret, env) => Type::Function(
+            Type::Function(params, ret, env, unconstrained) => Type::Function(
                 params.iter().map(|t| self.substitute_bindings(t, bindings)).collect(),
                 Box::new(self.substitute_bindings(ret, bindings)),
                 Box::new(self.substitute_bindings(env, bindings)),
+                *unconstrained,
             ),
             Type::TraitAsType(id, name, generics) => Type::TraitAsType(
                 id.clone(),
                 name.clone(),
-                generics
-                    .iter()
-                    .map(|t| self.substitute_bindings(t, bindings))
-                    .collect(),
+                TraitGenerics {
+                    ordered: generics
+                        .ordered
+                        .iter()
+                        .map(|t| self.substitute_bindings(t, bindings))
+                        .collect(),
+                    named: generics
+                        .named
+                        .iter()
+                        .map(|t| NamedType {
+                            name: t.name.clone(),
+                            typ: self.substitute_bindings(&t.typ, bindings),
+                        })
+                        .collect(),
+                },
             ),
             Type::MutableReference(t) => {
                 Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
@@ -725,7 +754,7 @@ impl LeanEmitter {
     pub fn emit_expr(&self, ind: &mut Indenter, expr: ExprId) -> Result<String> {
         let expr_data = self.context.def_interner.expression(&expr);
         // Get the output type of this expression.
-        let out_ty = self.context.def_interner.id_type(&expr);
+        let out_ty = self.id_bound_type(expr);
         let out_ty_str = self.emit_fully_qualified_type(&out_ty);
         let expression = match expr_data {
             HirExpression::Block(block) => {
@@ -741,7 +770,7 @@ impl LeanEmitter {
             }
             HirExpression::Prefix(prefix) => {
                 let rhs = self.emit_expr(ind, prefix.rhs)?;
-                let rhs_ty = self.context.def_interner.id_type(prefix.rhs);
+                let rhs_ty = self.id_bound_type(prefix.rhs);
                 let rhs_builtin_ty = rhs_ty.clone().try_into().ok();
                 if let Some(builtin_name) =
                     builtin::try_prefix_into_builtin_name(prefix.operator, rhs_builtin_ty)
@@ -774,6 +803,7 @@ impl LeanEmitter {
                             vec![rhs_ty],
                             Box::new(out_ty),
                             Box::new(Type::Unit),
+                            false,
                         )),
                     )
                 }
@@ -781,8 +811,8 @@ impl LeanEmitter {
             HirExpression::Infix(infix) => {
                 let lhs = self.emit_expr(ind, infix.lhs)?;
                 let rhs = self.emit_expr(ind, infix.rhs)?;
-                let lhs_ty = self.context.def_interner.id_type(infix.lhs);
-                let rhs_ty = self.context.def_interner.id_type(infix.rhs);
+                let lhs_ty = self.id_bound_type(infix.lhs);
+                let rhs_ty = self.id_bound_type(infix.rhs);
                 if let Some(builtin_name) =
                     match (lhs_ty.clone().try_into(), rhs_ty.clone().try_into()) {
                         (Ok(lhs_ty), Ok(rhs_ty)) => builtin::try_infix_into_builtin_name(
@@ -829,6 +859,7 @@ impl LeanEmitter {
                             vec![lhs_ty, rhs_ty],
                             Box::new(out_ty),
                             Box::new(Type::Unit),
+                            false,
                         )),
                     )
                 }
@@ -850,8 +881,7 @@ impl LeanEmitter {
                 {
                     syntax::expr::format_builtin_call(builtin_name, &args_str, &out_ty_str)
                 } else {
-                    let fn_type = self
-                        .emit_fully_qualified_type(&self.context.def_interner.id_type(call.func));
+                    let fn_type = self.emit_fully_qualified_type(&self.id_bound_type(call.func));
                     syntax::expr::format_call(&func_expr_str, &args_str, &fn_type)
                 }
             }
@@ -918,7 +948,7 @@ impl LeanEmitter {
                                     .all_generics
                                     .iter()
                                     .flat_map(|t| bindings.get(&t.type_var.id()))
-                                    .map(|(_, ty)| self.emit_fully_qualified_type(ty))
+                                    .map(|(_, _, ty)| self.emit_fully_qualified_type(ty))
                                     .join(", ");
 
                                 syntax::expr::format_decl_func_ident(&fq_func_name, &call_generics)
@@ -927,11 +957,11 @@ impl LeanEmitter {
                     }
                     DefinitionKind::Global(..)
                     | DefinitionKind::Local(..)
-                    | DefinitionKind::GenericType(..) => syntax::expr::format_var_ident(name),
+                    | DefinitionKind::NumericGeneric(_, _) => syntax::expr::format_var_ident(name),
                 }
             }
             HirExpression::Index(index) => {
-                let coll_type = self.context.def_interner.id_type(index.collection);
+                let coll_type = self.id_bound_type(index.collection);
                 let coll_builtin_type: builtin::BuiltinType = coll_type.try_into().unwrap();
                 let index_builtin_name = builtin::get_index_builtin_name(coll_builtin_type)
                     .expect(&format!("cannot index {:?}", coll_builtin_type));
@@ -954,8 +984,8 @@ impl LeanEmitter {
                 // Map a field name to its order.
                 let field_orders: HashMap<_, usize> = (0..struct_def.num_fields())
                     .map(|i| {
-                        let (k, _) = struct_def.field_at(i);
-                        (k.clone(), i)
+                        let StructField { name, .. } = struct_def.field_at(i);
+                        (name.clone(), i)
                     })
                     .collect();
                 // Reorder the constructor fields before creating the string, so that they correspond to the order in the original definition.
@@ -981,7 +1011,7 @@ impl LeanEmitter {
                 )
             }
             HirExpression::MemberAccess(member) => {
-                let lhs_expr_ty = self.context.def_interner.id_type(member.lhs);
+                let lhs_expr_ty = self.id_bound_type(member.lhs);
                 let target_expr_str = self.emit_expr(ind, member.lhs)?;
                 let member_iden = member.rhs;
                 match &lhs_expr_ty {
@@ -997,7 +1027,7 @@ impl LeanEmitter {
                         &target_expr_str,
                         &member_iden.to_string(),
                     ),
-                    _ => panic!("member access lhs is not a struct or tuple"),
+                    _ => panic!("member access lhs is not a struct or tuple: {lhs_expr_ty:?}"),
                 }
             }
 
@@ -1079,9 +1109,36 @@ impl LeanEmitter {
             HirExpression::Error => {
                 panic!("Encountered error expression where none should exist")
             }
+            HirExpression::Unsafe(_) => panic!("unsafe expressions not supported yet"),
         };
 
         Ok(expression)
+    }
+
+    /// Identifies the type of an expression, returning the bound type if the expression's type is a `TypeVariable` that is already bound.
+    pub fn id_bound_type(&self, expr_id: ExprId) -> Type {
+        let identified_ty = self.context.def_interner.id_type(expr_id);
+        let expr_bindings = self.context.def_interner.try_get_instantiation_bindings(expr_id);
+        // Get the instantiated type of the expression.
+        let expr_ty = match (identified_ty, expr_bindings) {
+            (Type::TypeVariable(tv), Some(expr_bindings))
+                if expr_bindings.contains_key(&tv.id()) =>
+            {
+                expr_bindings[&tv.id()].2.clone()
+            }
+            (ty, _) => ty,
+        };
+        match &expr_ty {
+            Type::TypeVariable(tv) => {
+                if let TypeBinding::Bound(bound_ty) = &*tv.borrow() {
+                    bound_ty.clone()
+                } else {
+                    // [TODO] fix the unnecessary clone.
+                    expr_ty.clone()
+                }
+            }
+            _ => expr_ty,
+        }
     }
 
     /// Emits the Lean source code corresponding to a Noir statement.
@@ -1298,11 +1355,8 @@ impl LeanEmitter {
             },
             HirLiteral::Bool(bool) => syntax::literal::format_bool(*bool),
             HirLiteral::Integer(felt, neg) => {
-                let typ = self.context.def_interner.id_type(expr).to_string();
-                syntax::literal::format_num(
-                    &format!("{minus}{felt}", minus = if *neg { "-" } else { "" }),
-                    &typ,
-                )
+                let typ = self.id_bound_type(expr).to_string();
+                format!("{minus}{felt} : {typ}", minus = if *neg { "-" } else { "" })
             }
             HirLiteral::Str(str) => format!("\"{str}\""),
             HirLiteral::FmtStr(..) => todo!("fmtstr not supported"),
