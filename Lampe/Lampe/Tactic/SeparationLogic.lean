@@ -107,14 +107,6 @@ theorem Lampe.STHoare.litUnit_intro: STHoare p Γ ⟦⟧ (.litNum .unit n) fun v
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litUnit_intro: STHoare p Γ ⟦⟧ (.lit .unit n) fun v => v = unit := by
-  unfold STHoare THoare
-  intro H st hp
-  constructor
-  simp only
-  apply SLP.ent_star_top
-  assumption
-
 theorem ref_intro' {p} {x : Tp.denote p tp} {Γ P}:
     STHoare p Γ P (.ref x) fun v => [v ↦ ⟨tp, x⟩] ⋆ P := by
   apply ramified_frame_top
