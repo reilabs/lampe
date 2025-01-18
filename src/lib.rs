@@ -182,6 +182,15 @@ mod test {
                 }
             }
 
+            fn string_test() -> str<5> {
+                let x : str<5> = "Hello";
+                x
+            }
+
+            fn impl_test(x: impl MyTrait) -> impl MyTrait {
+                let y = x.foo();
+                y
+            }
 
             fn main() {
                 let mut op1 = Option2::some(5);
@@ -196,95 +205,11 @@ mod test {
                 op1._is_some = false;
                 let mut tpl = (1, true);
                 tpl.0 = 2;
+                let f = impl_test;
+                f(op1);
             }
 
-            fn string_test() -> str<5> {
-                let x : str<5> = "Hello";
-                x
-            }
 
-        "#;
-
-        let source = Source::new(file_name, source);
-
-        // Create our project
-        let project = Project::new(Path::new(""), source);
-
-        // Execute the compilation step on our project.
-        let source = noir_to_lean(project)?.take();
-
-        println!("{source}");
-
-        Ok(())
-    }
-
-    // #[test]
-    fn _associated_types() -> anyhow::Result<()> {
-        // Set up our source code
-        let file_name = Path::new("main.nr");
-        let source = r#"
-            trait Test {
-                type AssocType;
-
-                fn foo(self) -> bool;
-            }
-
-            impl Test for bool {
-                type AssocType = bool;
-                fn foo(self) -> bool {
-                    true
-                }
-            }
-            
-            fn main() {
-                let x = true;
-                print(x.foo());
-            }
-        "#;
-
-        let source = Source::new(file_name, source);
-
-        // Create our project
-        let project = Project::new(Path::new(""), source);
-
-        // Execute the compilation step on our project.
-        let source = noir_to_lean(project)?.take();
-
-        println!("{source}");
-
-        Ok(())
-    }
-
-    #[test]
-    fn trait_as_type() -> anyhow::Result<()> {
-        // Set up our source code
-        let file_name = Path::new("main.nr");
-        let source = r#"
-            trait Test {
-                fn foo(self) -> bool;
-            }
-
-            impl Test for bool {
-                fn foo(self) -> bool {
-                    self
-                }
-            }
-
-            impl Test for Field {
-                fn foo(self) -> bool {
-                    true
-                }
-            }
-
-            fn bar(x: impl Test) -> impl Test {
-                true
-            }
-            
-            fn main() {
-                bar(true);
-                bar(2);
-
-            }
         "#;
 
         let source = Source::new(file_name, source);

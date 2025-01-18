@@ -99,9 +99,10 @@ impl BuiltinType {
 }
 
 pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
-    match func_expr {
-        "@std::mem::zeroed<T>" => Some(format!("zeroed")),
-        _ => None,
+    if func_expr.starts_with("@std::mem::zeroed<T> as") {
+        Some(format!("zeroed"))
+    } else {
+        None
     }
 }
 

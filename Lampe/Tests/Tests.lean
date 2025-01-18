@@ -479,8 +479,7 @@ example : STHoare p ⟨[⟨impl_fn.name, impl_fn.fn⟩], []⟩ ⟦⟧
     fun v => v = x := by
   simp only [trait_as_type]
   steps
-  simp only [impl_fn]
-  simp_all
+  simp_all [impl_fn]
   . apply STHoare.callDecl_intro
     sl
     tauto

@@ -154,9 +154,8 @@ pub(super) mod r#type {
     }
 
     #[inline]
-    pub fn format_trait_as_type(trait_name: &str, generics: &str) -> String {
-        // todo!("TraitAsType not implemented yet")
-        format!("?{trait_name}<{generics}>")
+    pub fn format_any() -> String {
+        format!("?impl")
     }
 
     #[inline]
@@ -214,8 +213,8 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_call(func_expr: &str, func_args: &str, fn_type: &str) -> String {
-        format!("({func_expr} as {fn_type})({func_args})")
+    pub fn format_call(func_expr: &str, func_args: &str) -> String {
+        format!("{func_expr}({func_args})")
     }
 
     #[inline]
@@ -278,9 +277,9 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_decl_func_ident(ident: &str, generics: &str) -> String {
+    pub fn format_decl_func_ident(ident: &str, generics: &str, fn_type: &str) -> String {
         let ident = normalize_ident(ident);
-        format!("@{ident}<{generics}>")
+        format!("(@{ident}<{generics}> as {fn_type})")
     }
 
     #[inline]
@@ -290,9 +289,10 @@ pub(super) mod expr {
         trait_generics: &str,
         func_ident: &str,
         generics: &str,
+        fn_type: &str,
     ) -> String {
         let func_ident = normalize_ident(func_ident);
-        format!("({sub_type} as {trait_name}<{trait_generics}>)::{func_ident}<{generics}>")
+        format!("(({sub_type} as {trait_name}<{trait_generics}>)::{func_ident}<{generics}> as {fn_type})")
     }
 
     #[inline]

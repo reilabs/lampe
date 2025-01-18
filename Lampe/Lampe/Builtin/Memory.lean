@@ -32,9 +32,9 @@ def ref : Builtin := {
 }
 
 inductive readRefOmni : Omni where
-| mk {p st tp Q ref} {v : CTp.denote p tp} :
+| mk {p st tp Q ref} {v : Tp.denote p (.concrete tp)} :
   st.lookup ref = some ⟨tp, v⟩ → Q (some (st, v)) →
-  readRefOmni p st [(.concrete $ CTp.ref tp)] (.concrete tp) h![ref] Q
+  readRefOmni p st [(.concrete $ CTp.ref tp)] tp h![ref] Q
 
 def readRef : Builtin := {
   omni := readRefOmni
@@ -59,7 +59,7 @@ def readRef : Builtin := {
 }
 
 inductive writeRefOmni : Omni where
-| mk {p st tp Q ref} {v : CTp.denote p tp} :
+| mk {p st tp Q ref} {v : Tp.denote p (.concrete tp)} :
   ref ∈ st →
   Q (some (st.insert ref ⟨tp, v⟩, ())) →
   writeRefOmni p st [tp.ref, tp] CTp.unit h![ref, v] Q

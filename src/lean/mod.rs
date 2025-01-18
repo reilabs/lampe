@@ -585,15 +585,20 @@ impl LeanEmitter {
                     .iter()
                     .map(|g| self.emit_fully_qualified_type(g))
                     .collect_vec();
-                let generics_str = generics_resolved.join(", ");
+                let _generics_str = generics_resolved.join(", ");
 
-                let fq_name = if module_path.is_empty() {
+                let _fq_name = if module_path.is_empty() {
                     format!("{name}")
                 } else {
                     format!("{module_path}::{name}")
                 };
 
-                syntax::r#type::format_trait_as_type(&fq_name, &generics_str)
+                syntax::r#type::format_any()
+            }
+            Type::TypeVariable(..) | Type::NamedGeneric(..)
+                if format!("{typ}").starts_with("impl ") =>
+            {
+                syntax::r#type::format_any()
             }
             Type::Function(args, ret, _env, _is_unconstrained) => {
                 let arg_types = args
@@ -797,14 +802,14 @@ impl LeanEmitter {
                             "",
                             func_name,
                             "",
+                            &self.emit_fully_qualified_type(&Type::Function(
+                                vec![rhs_ty],
+                                Box::new(out_ty),
+                                Box::new(Type::Unit),
+                                false,
+                            )),
                         ),
                         &rhs,
-                        &self.emit_fully_qualified_type(&Type::Function(
-                            vec![rhs_ty],
-                            Box::new(out_ty),
-                            Box::new(Type::Unit),
-                            false,
-                        )),
                     )
                 }
             }
@@ -853,14 +858,14 @@ impl LeanEmitter {
                             "",
                             func_name,
                             "",
+                            &self.emit_fully_qualified_type(&Type::Function(
+                                vec![lhs_ty, rhs_ty],
+                                Box::new(out_ty),
+                                Box::new(Type::Unit),
+                                false,
+                            )),
                         ),
                         &args_str,
-                        &self.emit_fully_qualified_type(&Type::Function(
-                            vec![lhs_ty, rhs_ty],
-                            Box::new(out_ty),
-                            Box::new(Type::Unit),
-                            false,
-                        )),
                     )
                 }
             }
@@ -881,8 +886,7 @@ impl LeanEmitter {
                 {
                     syntax::expr::format_builtin_call(builtin_name, &args_str, &out_ty_str)
                 } else {
-                    let fn_type = self.emit_fully_qualified_type(&self.id_bound_type(call.func));
-                    syntax::expr::format_call(&func_expr_str, &args_str, &fn_type)
+                    syntax::expr::format_call(&func_expr_str, &args_str)
                 }
             }
             HirExpression::Ident(ident, generics) => {
@@ -893,8 +897,40 @@ impl LeanEmitter {
                 match ident_def.kind {
                     DefinitionKind::Function(func_id) => {
                         let func_meta = self.context.def_interner.function_meta(&func_id);
-                        match func_meta.trait_impl {
-                            Some(trait_impl_id) => {
+                        // Get the string representation of the parameters of this function from function metadata.
+                        let params_meta = func_meta
+                            .parameters
+                            .0
+                            .iter()
+                            .map(|(_, param_ty, _)| self.emit_fully_qualified_type(param_ty))
+                            .collect_vec();
+                        // Get the string representation of the parameters and the return type of this function from the expression's output type.
+                        let (params_expr, ret_expr) = match out_ty {
+                            Type::Function(params, ret, ..) => (
+                                params
+                                    .iter()
+                                    .map(|t| self.emit_fully_qualified_type(t))
+                                    .collect_vec(),
+                                self.emit_fully_qualified_type(&ret),
+                            ),
+                            _ => panic!("expected function type, found {out_ty:?}"),
+                        };
+                        // Prioritize the parameters from the metadata if they are an "any" type, since these are always replaced by concrete types in the expression's output type.
+                        let params_final = params_meta
+                            .iter()
+                            .zip(params_expr.iter())
+                            .map(|(m, e)| {
+                                if m == &syntax::r#type::format_any() {
+                                    m
+                                } else {
+                                    e
+                                }
+                            })
+                            .join(", ");
+                        // Reconstruct the string representation of the function type, i.e., the type of the output of this expression.
+                        let out_ty_str = syntax::r#type::format_function(&params_final, &ret_expr);
+                        match (func_meta.trait_impl, func_meta.trait_id) {
+                            (Some(trait_impl_id), _) => {
                                 let trait_impl = self
                                     .context
                                     .def_interner
@@ -923,9 +959,44 @@ impl LeanEmitter {
                                     &trait_generics,
                                     name,
                                     &ident_generics,
+                                    &out_ty_str,
                                 )
                             }
-                            _ => {
+                            // If the function is associated with a trait, but no particular trait implementation was found (e.g., `impl Trait` types), this branch is executed.
+                            (None, Some(trait_id)) => {
+                                let trait_meta = self.context.def_interner.get_trait(trait_id);
+                                let self_type = func_meta.self_type.as_ref()
+                                    .map(|t| self.substitute_bindings(t, bindings))
+                                    .expect("the function associated with a trait function identifier must have a self type");
+                                let self_type_str = self.emit_fully_qualified_type(&self_type);
+                                let trait_name = trait_meta.name.to_string();
+                                let trait_generics = trait_meta
+                                    .generics
+                                    .iter()
+                                    .map(|g| {
+                                        self.substitute_bindings(
+                                            &Type::TypeVariable(g.type_var.clone()),
+                                            &bindings,
+                                        )
+                                    })
+                                    .map(|t| self.emit_fully_qualified_type(&t))
+                                    .join(", ");
+                                let ident_generics = generics
+                                    .unwrap_or_default()
+                                    .iter()
+                                    .map(|g| self.substitute_bindings(g, &bindings))
+                                    .map(|t| self.emit_fully_qualified_type(&t))
+                                    .join(", ");
+                                syntax::expr::format_trait_func_ident(
+                                    &self_type_str,
+                                    &trait_name,
+                                    &trait_generics,
+                                    name,
+                                    &ident_generics,
+                                    &out_ty_str,
+                                )
+                            }
+                            (None, None) => {
                                 let fn_name = match &func_meta.self_type {
                                     Some(self_type) => {
                                         let self_type_str =
@@ -951,12 +1022,18 @@ impl LeanEmitter {
                                     .map(|(_, _, ty)| self.emit_fully_qualified_type(ty))
                                     .join(", ");
 
-                                syntax::expr::format_decl_func_ident(&fq_func_name, &call_generics)
+                                syntax::expr::format_decl_func_ident(
+                                    &fq_func_name,
+                                    &call_generics,
+                                    &out_ty_str,
+                                )
                             }
                         }
                     }
                     DefinitionKind::Global(..) => todo!("globals not implemented yet"),
-                    DefinitionKind::Local(..) | DefinitionKind::NumericGeneric(_, _) => syntax::expr::format_var_ident(name),
+                    DefinitionKind::Local(..) | DefinitionKind::NumericGeneric(_, _) => {
+                        syntax::expr::format_var_ident(name)
+                    }
                 }
             }
             HirExpression::Index(index) => {
