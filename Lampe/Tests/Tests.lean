@@ -464,3 +464,29 @@ example : STHoare p Γ ⟦⟧ (simple_unit.fn.body _ h![] |>.body h![])
   unfold SLP.entails SLP.wand
   intros
   simp
+
+nr_def impl_fn<>(x : ?impl) -> ?impl {
+  x
+}
+
+nr_def trait_as_type<>(x : Field) -> Field {
+  let f = @impl_fn<> as λ(?impl) → ?impl;
+  #cast(f(#cast(x) : ?impl)) : Field
+}
+
+example : STHoare p ⟨[⟨impl_fn.name, impl_fn.fn⟩], []⟩ ⟦⟧ (trait_as_type.fn.body _ h![] |>.body h![x]) fun v => v = x := by
+  simp only [trait_as_type]
+  steps
+  simp only [impl_fn]
+  simp_all
+  . apply STHoare.callDecl_intro
+    sl
+    tauto
+    on_goal 3 => exact impl_fn.fn
+    all_goals try rfl
+    tauto
+    steps
+  . steps
+    intros
+    subst_vars
+    simp_all

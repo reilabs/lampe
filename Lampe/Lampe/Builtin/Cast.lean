@@ -4,7 +4,7 @@ namespace Lampe.Builtin
 /--
    Represents the Noir types that can be casted to each other.
  -/
- class CastTp (tp tp' : CTp) where
+ class CastTp (tp tp' : Tp) where
    validate : Tp.denote p tp → Prop
    cast : (a : Tp.denote p tp) → (validate a) → Tp.denote p tp'
 
@@ -14,32 +14,32 @@ namespace Lampe.Builtin
    cast := fun a _ => a
 
  @[simp]
- instance : CastTp (.u s) (.i s) where
+ instance : CastTp (CTp.u s) (CTp.i s) where
    validate := fun a => a.toNat < 2^(s-1)
    cast := fun a _ => a
 
  @[simp]
- instance : CastTp (.u s) (.field) where
+ instance : CastTp (CTp.u s) (CTp.field) where
    validate := fun _ => True
    cast := fun a _ => a.toNat
 
  @[simp]
- instance : CastTp (.i s) (.u s) where
+ instance : CastTp (CTp.i s) (CTp.u s) where
    validate := fun a => a.toNat ≥ 0
    cast := fun a _ => a
 
  @[simp]
- instance : CastTp (.i s) (.field) where
+ instance : CastTp (CTp.i s) (CTp.field) where
    validate := fun _ => True
    cast := fun a _ => a.toNat
 
  @[simp]
- instance : CastTp (.field) (.u s) where
+ instance : CastTp (CTp.field) (CTp.u s) where
    validate := fun a => a.val < 2^s
    cast := fun a h => ⟨a.val, h⟩
 
  @[simp]
- instance : CastTp (.field) (.i s) where
+ instance : CastTp (CTp.field) (CTp.i s) where
    validate := fun a => a.val < 2^(s-1) ∧ a.val ≥ 0
    cast := fun a h => ⟨a.val, by
      cases s
@@ -47,6 +47,16 @@ namespace Lampe.Builtin
      . simp_all only [add_tsub_cancel_right, Nat.pow_succ]
        linarith
    ⟩
+
+@[simp]
+instance : CastTp (Tp.concrete tp) (Tp.any) where
+  validate := fun _ => True
+  cast := fun v _ => ⟨tp, v⟩
+
+@[simp]
+instance : CastTp (Tp.any) (Tp.concrete tp) where
+  validate := fun ⟨tp', _⟩ => tp = tp'
+  cast := fun ⟨_, v⟩ h => h ▸ v
 
  inductive castOmni : Omni where
  | ok {P st tp tp' v Q} [CastTp tp tp'] :

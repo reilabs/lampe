@@ -69,12 +69,12 @@ def HList.toTuple (l : HList (CTp.denote p) tps) (name : Option String) :
   | .nil => ()
   | .cons arg args => ⟨arg, HList.toTuple args name⟩
 
-abbrev Builtin.Omni := ∀(P:Prime),
-    ValHeap P →
+abbrev Builtin.Omni := ∀ (p : Prime),
+    ValHeap p →
     (argTps : List Tp) →
     (outTp : Tp) →
-    HList (Tp.denote P) argTps →
-    (Option (ValHeap P × Tp.denote P outTp) → Prop) →
+    HList (Tp.denote p) argTps →
+    (Option (ValHeap p × Tp.denote p outTp) → Prop) →
     Prop
 
 def Builtin.omni_conseq (omni : Builtin.Omni) : Prop :=
@@ -117,10 +117,10 @@ inductive genericPureOmni {A : Type}
 
 /--
 A generic pure deterministic `Builtin` definition.
-Takes a signature `sgn : A → List Tp × Tp`,
-where the first element evaluates to a list of input types and the second element evaluates to the output type.
-Takes a description `desc`,
-which is a function that takes the type evaluation input `a : A` and arguments `args : HList (Tp.denote p) sgn.fst`
+
+Takes a signature `sgn : A → List Tp × Tp`, where the first element evaluates to a list of input types and the second element evaluates to the output type.
+
+Takes a description `desc`, which is a function that takes the type evaluation input `a : A` and arguments `args : HList (Tp.denote p) sgn.fst`
 and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote p sgn.snd)`.
 
 If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc a args).snd`.
@@ -150,10 +150,10 @@ def newGenericPureBuiltin {A : Type}
 
 /--
 A pure deterministic `Builtin` definition.
-Takes a signature `sgn : List Tp × Tp`,
-where the first element is a list of input types and the second element is the output type.
-Takes a description `desc`,
-which is a function that takes arguments `args : HList (Tp.denote p) sgn.fst`
+
+Takes a signature `sgn : List Tp × Tp`, where the first element is a list of input types and the second element is the output type.
+
+Takes a description `desc`, which is a function that takes arguments `args : HList (Tp.denote p) sgn.fst`
 and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote p sgn.snd)`.
 
 If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc args).snd`.
@@ -179,7 +179,7 @@ def assert := newPureBuiltin
     fun _ => ()⟩)
 
 inductive freshOmni : Omni where
-| mk {P st tp Q} : (∀ v, Q (some (st, v))) → freshOmni P st [] tp h![] Q
+| mk {Q} : (∀ v, Q (some (st, v))) → freshOmni p st [] tp h![] Q
 
 /--
 Corresponds to an unconstrained function call

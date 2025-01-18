@@ -29,7 +29,8 @@ syntax ident "::" nr_ident : nr_ident
 
 syntax ident : nr_type
 syntax "${" term "}" : nr_type
-syntax "str<" num ">" : nr_type
+syntax "?impl" : nr_type -- TraitAsType (i.e., `impl` types)
+syntax "str<" num ">" : nr_type -- String
 syntax nr_ident "<" nr_type,* ">" : nr_type -- Struct
 syntax "[" nr_type "]" : nr_type -- Slice
 syntax "[" nr_type ";" num "]" : nr_type -- Array
@@ -108,6 +109,7 @@ def mkHListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadEr
   `(HList.cons $x $tail)
 
 partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_type → m (TSyntax `term)
+| `(nr_type| ?impl) => `(Tp.any) -- `impl` types are resolved during verification.
 | `(nr_type| u1) => `(CTp.u 1)
 | `(nr_type| u8) => `(CTp.u 8)
 | `(nr_type| u16) => `(CTp.u 16)

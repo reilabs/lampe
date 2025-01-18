@@ -4,12 +4,20 @@ import Lampe.Data.HList
 
 namespace Lampe
 
+/--
+Represents a reference in our memory model.
+A reference contains a unique natural number which identifies a value in the heap.
+-/
 structure Ref where
   val : Nat
 deriving DecidableEq
 
 variable (p : Prime)
 
+/--
+Represents the "kind" of a generic.
+This is used for polymorphic constructions where generic parameters can be types as well as natural numbers.
+-/
 inductive Kind where
 | nat
 | type
@@ -34,8 +42,7 @@ inductive CTp where
 | fn (argTps : List Tp) (outTp : Tp)
 
 /--
-Represents a virtual type that can either be a concrete `CTp` or a type that is resolved
-during verification.
+Represents a virtual type that can either be a concrete `CTp` or a type that is resolved during verification.
 -/
 inductive Tp where
 | concrete : CTp → Tp
@@ -43,8 +50,15 @@ inductive Tp where
 
 end
 
+/--
+Any concrete type `CTp` can be represented by `Tp` with the `Tp.concrete` constructor.
+-/
 instance : Coe CTp Tp := ⟨Tp.concrete⟩
 
+/--
+The default value of a `CTp` is defined to be the unit type.
+This is needed for fallible conversions from `Tp` to `CTp`.
+-/
 instance : Inhabited CTp := ⟨CTp.unit⟩
 
 mutual
