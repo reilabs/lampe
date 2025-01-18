@@ -3,8 +3,8 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 inductive refOmni : Omni where
-| mk {P st tp Q v}: (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, ref))) →
-  refOmni P st [tp] (tp.ref) h![v] Q
+| mk {p st tp Q v}: (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, ref))) →
+  refOmni p st [(.concrete tp)] (tp.ref) h![v] Q
 
 def ref : Builtin := {
   omni := refOmni
@@ -32,9 +32,9 @@ def ref : Builtin := {
 }
 
 inductive readRefOmni : Omni where
-| mk {P st tp Q ref} {v : Tp.denote P tp} :
+| mk {p st tp Q ref} {v : CTp.denote p tp} :
   st.lookup ref = some ⟨tp, v⟩ → Q (some (st, v)) →
-  readRefOmni P st [tp.ref] tp h![ref] Q
+  readRefOmni p st [(.concrete $ CTp.ref tp)] (.concrete tp) h![ref] Q
 
 def readRef : Builtin := {
   omni := readRefOmni
@@ -59,10 +59,10 @@ def readRef : Builtin := {
 }
 
 inductive writeRefOmni : Omni where
-| mk {P st tp Q ref} {v : Tp.denote P tp} :
+| mk {p st tp Q ref} {v : CTp.denote p tp} :
   ref ∈ st →
   Q (some (st.insert ref ⟨tp, v⟩, ())) →
-  writeRefOmni P st [tp.ref, tp] .unit h![ref, v] Q
+  writeRefOmni p st [tp.ref, tp] CTp.unit h![ref, v] Q
 
 def writeRef : Builtin := {
   omni := writeRefOmni

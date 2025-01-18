@@ -108,30 +108,30 @@ def mkHListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadEr
   `(HList.cons $x $tail)
 
 partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_type → m (TSyntax `term)
-| `(nr_type| u1) => `(Tp.u 1)
-| `(nr_type| u8) => `(Tp.u 8)
-| `(nr_type| u16) => `(Tp.u 16)
-| `(nr_type| u32) => `(Tp.u 32)
-| `(nr_type| u64) => `(Tp.u 64)
-| `(nr_type| bool) => `(Tp.bool)
-| `(nr_type| Field) => `(Tp.field)
-| `(nr_type| str<$n:num>) => `(Tp.str $n)
-| `(nr_type| Unit) => `(Tp.unit)
+| `(nr_type| u1) => `(CTp.u 1)
+| `(nr_type| u8) => `(CTp.u 8)
+| `(nr_type| u16) => `(CTp.u 16)
+| `(nr_type| u32) => `(CTp.u 32)
+| `(nr_type| u64) => `(CTp.u 64)
+| `(nr_type| bool) => `(CTp.bool)
+| `(nr_type| Field) => `(CTp.field)
+| `(nr_type| str<$n:num>) => `(CTp.str $n)
+| `(nr_type| Unit) => `(CTp.unit)
 | `(nr_type| $i:ident) => `($i)
-| `(nr_type| & $tp) => do `(Tp.ref $(←mkNrType tp))
+| `(nr_type| & $tp) => do `(CTp.ref $(←mkNrType tp))
 | `(nr_type| $structName:nr_ident < $generics,* >) => do
   let generics ← generics.getElems.toList.mapM mkNrType
   `(Struct.tp $(mkStructDefIdent (←mkNrIdent structName)) $(←mkHListLit generics))
 | `(nr_type| ${ $i }) => pure i
-| `(nr_type| [ $tp ]) => do `(Tp.slice $(←mkNrType tp))
-| `(nr_type| [ $tp ; $len:num ]) => do `(Tp.array $(←mkNrType tp) $len)
+| `(nr_type| [ $tp ]) => do `(CTp.slice $(←mkNrType tp))
+| `(nr_type| [ $tp ; $len:num ]) => do `(CTp.array $(←mkNrType tp) $len)
 | `(nr_type| `($tps,* )) => do
   let tps ← tps.getElems.toList.mapM mkNrType
-  `(Tp.tuple none $(←mkListLit tps))
+  `(CTp.tuple none $(←mkListLit tps))
 | `(nr_type| λ( $paramTps,* ) → $outTp) => do
   let paramTps ← (mkListLit (←paramTps.getElems.toList.mapM mkNrType))
   let outTp ← mkNrType outTp
-  `(Tp.fn $paramTps $outTp)
+  `(CTp.fn $paramTps $outTp)
 | _ => throwUnsupportedSyntax
 
 def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
@@ -149,32 +149,32 @@ def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
   `($accessor $gs)
 
 @[reducible]
-def Expr.ref (val : rep tp) : Expr rep tp.ref :=
+def Expr.ref {tp : CTp} (val : rep tp) : Expr rep tp.ref :=
   Expr.callBuiltin _ tp.ref .ref h![val]
 
 @[reducible]
-def Expr.readRef (ref : rep tp.ref) : Expr rep tp :=
+def Expr.readRef {tp : CTp} (ref : rep tp.ref) : Expr rep tp :=
   Expr.callBuiltin _ tp .readRef h![ref]
 
 @[reducible]
-def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Expr rep .unit :=
-  Expr.callBuiltin _ .unit .writeRef h![ref, val]
+def Expr.writeRef {tp : CTp} (ref : rep tp.ref) (val : rep tp) : Expr rep CTp.unit :=
+  Expr.callBuiltin _ CTp.unit .writeRef h![ref, val]
 
 @[reducible]
-def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.slice tp) :=
-  Expr.callBuiltin _ (.slice tp) (.mkSlice n) vals
+def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n (.concrete tp))) : Expr rep (CTp.slice tp) :=
+  Expr.callBuiltin _ (CTp.slice tp) (.mkSlice n) vals
 
 @[reducible]
-def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.array tp n) :=
-  Expr.callBuiltin _ (.array tp n) (.mkArray n) vals
+def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n (.concrete tp))) : Expr rep (CTp.array tp n) :=
+  Expr.callBuiltin _ (CTp.array tp n) (.mkArray n) vals
 
 @[reducible]
-def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=
-  Expr.callBuiltin tps (.tuple name tps) ( .mkTuple) args
+def Expr.mkTuple {tps : List Tp} {tps' : List CTp} (name : Option String) (args : HList rep tps) (_ : tps = ↑tps') : Expr rep (CTp.tuple name tps') :=
+  Expr.callBuiltin tps (CTp.tuple name tps') (.mkTuple) args
 
 @[reducible]
-def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
-  Expr.callBuiltin [.ref tp₁, tp₂] .unit (.modifyLens lens) h![r, v]
+def Expr.modifyLens {tp₁ tp₂ : CTp} (r : rep $ CTp.ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep CTp.unit :=
+  Expr.callBuiltin [CTp.ref tp₁, tp₂] CTp.unit (.modifyLens lens) h![r, v]
 
 @[reducible]
 def Expr.getLens (v : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
@@ -300,7 +300,7 @@ instance : Inhabited LValRef := ⟨LValRef.none⟩
 We consider two types of lvals:
 1. Whose "sources" are mutable let bindings, e.g., in `a.b[3]`, the "source" is `a` where `a` is a mutable let binding.
 We already represent `a` as a reference. Accordingly, the `modifyLens` builtin can be called directly with `a`.
-2. Whose "sources" are expressions that return a reference, e.g., in `*e.b[3]`, the "source" is `*e` where `e` is an expression that returns a reference.
+2. Whose "sources" are expressions that return a reference, e.g., in `*(e).b[3]`, the "source" is `*(e)` where `e` is an expression that returns a reference.
 We need to evaluate `e`, and `modifyLens` needs to be called with the result of `e` (which is a reference).
 
 These two cases can be distinguished by the existence of the `*` operator.
@@ -352,9 +352,9 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
 partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)) : m (TSyntax `term) := match e with
 | `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.litNum $(←mkNrType tp) $n)) vname k
 | `(nr_expr| $s:str) => do wrapSimple (←`(Expr.litStr (String.length $s) (⟨String.data $s, by rfl⟩))) vname k
-| `(nr_expr| true) => do wrapSimple (←`(Expr.litNum Tp.bool 1)) vname k
-| `(nr_expr| false) => do wrapSimple (←`(Expr.litNum Tp.bool 0)) vname k
-| `(nr_expr| #unit) => do wrapSimple (←`(Expr.lit Tp.unit 0)) vname k
+| `(nr_expr| true) => do wrapSimple (←`(Expr.litNum CTp.bool 1)) vname k
+| `(nr_expr| false) => do wrapSimple (←`(Expr.litNum CTp.bool 0)) vname k
+| `(nr_expr| #unit) => do wrapSimple (←`(Expr.lit CTp.unit 0)) vname k
 | `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
 | `(nr_expr| $i:ident) => do
   if ←isAutoDeref i.getId then
@@ -555,10 +555,10 @@ elab "nr_trait_impl[" defName:ident "]" impl:nr_trait_impl : command => do
   Elab.Command.elabCommand decl
 
 elab "nr_struct_def" defName:nr_ident defn:nr_struct_def : command => do
-  -- define the struct itself
+  -- Define the struct itself
   let cmd ← `(def $(mkStructDefIdent (←mkNrIdent defName)) := $(←mkStructDef defName defn))
   Elab.Command.elabCommand cmd
-  -- define the field projections
+  -- Define the field projections
   let projs ← mkStructProjector defName defn
   _ ← projs.mapM fun cmd => do
     Elab.Command.elabCommand cmd

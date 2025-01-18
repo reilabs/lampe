@@ -7,7 +7,7 @@ Defines the equality comparison between two units, which always returns `True`.
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `Unit`.
 -/
 def unitEq := newPureBuiltin
-  ⟨[.unit, .unit], .bool⟩
+  ⟨[CTp.unit, CTp.unit], CTp.bool⟩
   (fun _ => ⟨True,
     fun _ => True⟩)
 
@@ -17,7 +17,7 @@ Defines the equality comparison between two booleans.
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `bool`.
 -/
 def bEq := newPureBuiltin
-  ⟨[.bool, .bool], .bool⟩
+  ⟨[CTp.bool, CTp.bool], CTp.bool⟩
   (fun h![a, b] => ⟨True,
     fun _ => a = b⟩)
 
@@ -27,7 +27,7 @@ Defines the equality comparison between two field elements.
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `Field`.
 -/
 def fEq := newPureBuiltin
-  ⟨[.field, .field], .bool⟩
+  ⟨[CTp.field, CTp.field], CTp.bool⟩
   (fun h![a, b] => ⟨True,
     fun _ => a = b⟩)
 
@@ -37,7 +37,7 @@ Defines the equality comparison between two uints of size `s`.
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of uints.
 -/
 def uEq := newGenericPureBuiltin
-  (fun s => ⟨[.u s, .u s], .bool⟩)
+  (fun s => ⟨[CTp.u s, CTp.u s], CTp.bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a = b⟩)
 
@@ -47,7 +47,7 @@ Defines the equality comparison between two ints of size `s`.
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of ints.
 -/
 def iEq := newGenericPureBuiltin
-  (fun s => ⟨[.i s, .i s], .bool⟩)
+  (fun s => ⟨[CTp.i s, CTp.i s], CTp.bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a = b⟩)
 
@@ -57,7 +57,7 @@ Defines the equality comparison between two strings of length `n`.
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of `str<n>`.
 -/
 def strEq := newGenericPureBuiltin
-  (fun n => ⟨[.str n, .str n], .bool⟩)
+  (fun n => ⟨[CTp.str n, CTp.str n], CTp.bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a = b⟩)
 
@@ -69,7 +69,7 @@ We assume that the comparison between two uints evaluates to `true` if and only 
 In Noir, this builtin corresponds to `a < b` for uints `a`, `b`.
 -/
 def uLt := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u s)], .bool⟩)
+  (fun s => ⟨[(CTp.u s), (CTp.u s)], CTp.bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a < b⟩)
 
@@ -80,7 +80,7 @@ We assume that the comparison between two ints evaluates to `true` if and only i
 In Noir, this builtin corresponds to `a < b` for ints `a`, `b`.
 -/
 def iLt := newGenericPureBuiltin
-  (fun s => ⟨[(.i s), (.i s)], .bool⟩)
+  (fun s => ⟨[(CTp.i s), (CTp.i s)], CTp.bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a < b⟩)
 
@@ -91,7 +91,7 @@ We assume that the comparison between two uints evaluates to `true` if and only 
 In Noir, this builtin corresponds to `a > b` for uints `a`, `b`.
 -/
 def uGt := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u s)], .bool⟩)
+  (fun s => ⟨[(CTp.u s), (CTp.u s)], CTp.bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a > b⟩)
 
@@ -102,6 +102,6 @@ We assume that the comparison between two ints evaluates to `true` if and only i
 In Noir, this builtin corresponds to `a > b` for ints `a`, `b`.
 -/
 def iGt := newGenericPureBuiltin
-  (fun s => ⟨[(.i s), (.i s)], .bool⟩)
+  (fun s => ⟨[(CTp.i s), (CTp.i s)], CTp.bool⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a > b⟩)

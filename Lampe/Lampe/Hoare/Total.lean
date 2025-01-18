@@ -42,10 +42,10 @@ theorem letIn_intro {P Q}
   intros
   constructor <;> tauto
 
-theorem ref_intro {v P} :
+theorem ref_intro {tp : CTp} {v P} :
     THoare p Γ
       (fun st => ∀r, r ∉ st → P r ⟨(st.vals.insert r ⟨tp, v⟩), st.lambdas⟩)
-      (.callBuiltin [tp] (.ref tp) .ref h![v])
+      (.callBuiltin [tp] (CTp.ref tp) Builtin.ref h![v])
       P := by
   unfold THoare
   intros
@@ -53,20 +53,20 @@ theorem ref_intro {v P} :
   constructor
   tauto
 
-theorem readRef_intro {ref} :
+theorem readRef_intro {ref} {tp : CTp} {v P}:
     THoare p Γ
-      (fun st => st.vals.lookup ref = some ⟨tp, v⟩ ∧ P v st)
-      (.callBuiltin [.ref tp] tp .readRef h![ref])
+      (fun st => st.vals.lookup ref = some ⟨(.concrete tp), v⟩ ∧ P v st)
+      (.callBuiltin [CTp.ref tp] tp .readRef h![ref])
       P := by
   unfold THoare
   intros
   constructor
   constructor <;> tauto
 
-theorem writeRef_intro {ref v} :
+theorem writeRef_intro {ref} {tp : CTp} {v P} :
     THoare p Γ
       (fun st => ref ∈ st ∧ P () ⟨(st.vals.insert ref ⟨tp, v⟩), st.lambdas⟩)
-      (.callBuiltin [.ref tp, tp] .unit .writeRef h![ref, v])
+      (.callBuiltin [CTp.ref tp, tp] CTp.unit .writeRef h![ref, v])
       P := by
   unfold THoare
   intros

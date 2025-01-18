@@ -366,10 +366,10 @@ theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto)
 
 -- Memory
 
-theorem ref_intro :
+theorem ref_intro {tp : CTp} {v} :
     STHoare p Γ
       ⟦⟧
-      (.callBuiltin [tp] (.ref tp) .ref h![v])
+      (.callBuiltin [tp] (CTp.ref tp) .ref h![v])
       (fun r => [r ↦ ⟨tp, v⟩]) := by
   unfold STHoare
   intro H
@@ -390,10 +390,10 @@ theorem ref_intro :
       apply And.intro _ (by trivial)
       simp only [State.union_parts_left, Finmap.empty_union, Finmap.union_self]
 
-theorem readRef_intro :
+theorem readRef_intro {tp : CTp} {v} :
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
-    (.callBuiltin [.ref tp] tp .readRef h![r])
+    (.callBuiltin [CTp.ref tp] tp .readRef h![r])
     (fun v' => ⟦v' = v⟧ ⋆ [r ↦ ⟨tp, v⟩]) := by
   unfold STHoare
   intro H
@@ -423,10 +423,10 @@ theorem readRef_intro :
   apply SLP.ent_star_top
   assumption
 
-theorem writeRef_intro :
+theorem writeRef_intro {tp : CTp} {v v'} :
     STHoare p Γ
     [r ↦ ⟨tp, v⟩]
-    (.callBuiltin [.ref tp, tp] .unit .writeRef h![r, v'])
+    (.callBuiltin [CTp.ref tp, tp] CTp.unit .writeRef h![r, v'])
     (fun _ => [r ↦ ⟨tp, v'⟩]) := by
   unfold STHoare
   intro H
@@ -468,10 +468,13 @@ theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) 
 
 -- Lens
 
- theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s : Tp.denote p tp₁} {v : Tp.denote p tp₂} :
+ theorem modifyLens_intro {tp₁ tp₂ : CTp}
+  {lens : Lens (Tp.denote p) tp₁ tp₂}
+  {s : Tp.denote p tp₁}
+  {v : Tp.denote p tp₂} :
     STHoare p Γ
     [r ↦ ⟨tp₁, s⟩]
-    (.callBuiltin [tp₁.ref, tp₂] .unit (.modifyLens lens) h![r, v])
+    (.callBuiltin [tp₁.ref, tp₂] CTp.unit (.modifyLens lens) h![r, v])
     (fun _ => ∃∃h, [r ↦ ⟨tp₁, lens.modify s v |>.get h⟩]) := by
   unfold STHoare THoare
   intros H st h

@@ -10,19 +10,19 @@ lemma Finmap.insert_mem_disjoint [DecidableEq α] {m₁ m₂ : Finmap fun _ : α
 
 namespace Lampe.Builtin
 
- inductive modifyLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
+ inductive modifyLensOmni {tp₁ tp₂ : CTp} (lens : Lens rep tp₁ tp₂) : Omni where
  | ok {p st Q ref} {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
    st.lookup ref = some ⟨tp₁, s⟩ →
    some s' = Lens.modify (hr ▸ lens) s v' →
    Q (some (st.insert ref ⟨tp₁, s'⟩, ())) →
-   (modifyLensOmni lens) p st [tp₁.ref, tp₂] .unit h![ref, v'] Q
+   (modifyLensOmni lens) p st [tp₁.ref, tp₂] CTp.unit h![ref, v'] Q
  | err {p st Q ref} {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
    st.lookup ref = some ⟨tp₁, s⟩ →
    none = Lens.modify (hr ▸ lens) s v' →
    Q none →
-   (modifyLensOmni lens) p st [tp₁.ref, tp₂] .unit h![ref, v'] Q
+   (modifyLensOmni lens) p st [tp₁.ref, tp₂] CTp.unit h![ref, v'] Q
 
- def modifyLens (lens : Lens rep tp₁ tp₂) : Builtin := {
+ def modifyLens {tp₁ tp₂ : CTp} (lens : Lens rep tp₁ tp₂) : Builtin := {
    omni := modifyLensOmni lens
    conseq := by
     unfold omni_conseq

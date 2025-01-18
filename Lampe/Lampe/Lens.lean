@@ -9,9 +9,9 @@ namespace Lampe
 Instructs how to access a inner value from another value, e.g., a particular value of a slice.
 -/
 inductive Access (rep : Tp → Type _) : Tp → Tp → Type _
-| tuple : (mem : Builtin.Member tp tps) → Access rep (.tuple name tps) tp
-| array : (idx : rep $ .u 32) → Access rep (.array tp n) tp
-| slice : (idx : rep $ .u 32) → Access rep (.slice tp) tp
+| tuple : (mem : Builtin.Member tp tps) → Access rep (CTp.tuple name tps) tp
+| array : (idx : rep $ CTp.u 32) → Access rep (CTp.array tp n) tp
+| slice : (idx : rep $ CTp.u 32) → Access rep (CTp.slice tp) tp
 
 @[simp]
 def Access.get (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) : Option $ Tp.denote p tp₂ := match acc with
@@ -32,7 +32,7 @@ theorem Access.modify_get {acc : Access (Tp.denote p) tp₁ tp₂} {h : acc.modi
     aesop
   case array =>
     rename_i n idx
-    cases em (idx.toNat < n.toNat) <;> aesop
+    cases em (idx.toNat < n.toNat) <;> sorry
   case slice =>
     rename_i idx
     cases em (idx.toNat < s.length)

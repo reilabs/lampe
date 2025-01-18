@@ -4,7 +4,7 @@ namespace Lampe.Builtin
 /--
    Represents the Noir types that can be casted to each other.
  -/
- class CastTp (tp tp' : Tp) where
+ class CastTp (tp tp' : CTp) where
    validate : Tp.denote p tp → Prop
    cast : (a : Tp.denote p tp) → (validate a) → Tp.denote p tp'
 

@@ -59,7 +59,7 @@ theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x
   rw [star_exists]
   simp [SLP.star_comm]
 
-theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.litNum (.u s) n) fun v => v = n := by
+theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.litNum (CTp.u s) n) fun v => v = n := by
   unfold STHoare THoare
   intro H st hp
   constructor
@@ -67,7 +67,7 @@ theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.litNum (.u s) n) fun v =
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.litNum .field n) fun v => v = n := by
+theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.litNum CTp.field n) fun v => v = n := by
   unfold STHoare THoare
   intro H st hp
   constructor
@@ -83,7 +83,7 @@ theorem Lampe.STHoare.litStr_intro: STHoare p Γ ⟦⟧ (.litStr u s) fun v => v
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.litNum .bool 0) fun v => v = false := by
+theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.litNum CTp.bool 0) fun v => v = false := by
   unfold STHoare THoare
   intro H st hp
   constructor
@@ -91,7 +91,7 @@ theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.litNum .bool 0) fun 
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.litNum .bool 1) fun v => v = true := by
+theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.litNum CTp.bool 1) fun v => v = true := by
   unfold STHoare THoare
   intro H st hp
   constructor
@@ -99,7 +99,7 @@ theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.litNum .bool 1) fun v
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litUnit_intro: STHoare p Γ ⟦⟧ (.litNum .unit n) fun v => v = unit := by
+theorem Lampe.STHoare.litUnit_intro: STHoare p Γ ⟦⟧ (.litNum CTp.unit n) fun v => v = unit := by
   unfold STHoare THoare
   intro H st hp
   constructor
@@ -107,7 +107,7 @@ theorem Lampe.STHoare.litUnit_intro: STHoare p Γ ⟦⟧ (.litNum .unit n) fun v
   apply SLP.ent_star_top
   assumption
 
-theorem ref_intro' {p} {x : Tp.denote p tp} {Γ P}:
+theorem ref_intro' {tp : CTp} {x : Tp.denote p tp} :
     STHoare p Γ P (.ref x) fun v => [v ↦ ⟨tp, x⟩] ⋆ P := by
   apply ramified_frame_top
   apply ref_intro

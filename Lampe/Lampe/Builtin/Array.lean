@@ -53,7 +53,7 @@ lemma List.Vector.get_after_insert {idx : Nat} {vec : List.Vector α n} {h} :
 namespace Lampe.Builtin
 
 @[reducible]
-def replaceArray' (arr : Tp.denote p (.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (.array tp n) :=
+def replaceArray' (arr : Tp.denote p (CTp.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (CTp.array tp n) :=
   let arr' := (arr.insertIdx v ⟨idx.val + 1, by aesop⟩)
   arr'.eraseIdx ⟨idx.val, by cases idx; tauto⟩
 
@@ -79,9 +79,9 @@ theorem index_replaced_arr {n : U 32} {idx : Fin n.toNat} {arr} :
 Defines the builtin array constructor.
 -/
 def mkArray (n : U 32) := newGenericPureBuiltin
-  (fun (argTps, tp) => ⟨argTps, (.array tp n)⟩)
-  (fun (argTps, tp) args => ⟨argTps = List.replicate n.toNat tp,
-    fun h => HList.toVec args h⟩)
+  (fun (argTps, tp) => ⟨argTps, (CTp.array tp n)⟩)
+  (fun (argTps, tp) args => ⟨argTps = List.replicate n.toNat (.concrete tp),
+    fun h => HList.toVec (rep := Tp.denote _) args h⟩)
 
 /--
 Defines the indexing of a array `l : Array tp n` with `i : U 32`
@@ -92,7 +92,7 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `T[i]` for `T: [T; n]` and `i: uint32`.
 -/
 def arrayIndex := newGenericPureBuiltin
-  (fun (tp, n) => ⟨[.array tp n, .u 32], tp⟩)
+  (fun (tp, n) => ⟨[CTp.array tp n, CTp.u 32], tp⟩)
   (fun (_, n) h![l, i] => ⟨i.toNat < n.toNat,
     fun h => l.get (Fin.mk i.toNat h)⟩)
 
@@ -103,7 +103,7 @@ This builtin evaluates to an `U 32`. Hence, we assume that `n < 2^32`.
 In Noir, this corresponds to `fn len(self) -> u32` implemented for `[_; n]`.
 -/
 def arrayLen := newGenericPureBuiltin
-  (fun (tp, n) => ⟨[.array tp n], .u 32⟩)
+  (fun (tp, n) => ⟨[CTp.array tp n], CTp.u 32⟩)
   (fun (_, _) h![a] => ⟨a.length < 2^32,
     fun _ => a.length⟩)
 
@@ -113,7 +113,7 @@ Defines the function that converts an array to a slice.
 In Noir, this corresponds to `fn as_slice(self) -> [T]` implemented for `[T; n]`.
 -/
 def arrayAsSlice := newGenericPureBuiltin
-  (fun (tp, n) => ⟨[.array tp n], .slice tp⟩)
+  (fun (tp, n) => ⟨[CTp.array tp n], CTp.slice tp⟩)
   (fun (_, _) h![a] => ⟨True,
     fun _ => a.toList⟩)
 

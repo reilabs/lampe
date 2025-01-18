@@ -336,7 +336,7 @@ theorem lam_intro :
 
 theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
   {Q : Tp.denote p outTp → SLP (State p)}
-  {fnRef : Tp.denote p (.fn argTps outTp)}
+  {fnRef : Tp.denote p (CTp.fn argTps outTp)}
   {hlam : STHoare p Γ P (lambdaBody args) Q} :
   STHoare p Γ (P ⋆ ∃∃ r, ⟦fnRef = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩])
     (Expr.call argTps outTp fnRef args)
@@ -364,7 +364,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
     . simp_all
   · apply STHoare.consequence_frame_left <;> tauto
 
-theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
+theorem callDecl_intro {fnRef : Tp.denote p (CTp.fn argTps outTp)}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}
     {h_fn : (fnName, fn) ∈ Γ.functions}
     {hkc : fn.generics = kinds}
@@ -380,7 +380,7 @@ theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
   apply Omni.callDecl <;> tauto
 
 
-theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
+theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (CTp.fn argTps outTp)}
     (href : H ⊢  ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
     (h_fn : (fnName, fn) ∈ impls)

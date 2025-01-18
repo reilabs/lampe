@@ -9,7 +9,7 @@ Otherwise, an exception is thrown.
 In Noir, this builtin corresponds to `fn __assert_max_bit_size(self, bit_size: u32)` implemented for `Field`.
 -/
 def fApplyRangeConstraint := newPureBuiltin
-  ⟨[.field, (.u 32)], .unit⟩
+  ⟨[CTp.field, (CTp.u 32)], CTp.unit⟩
   (fun h![a, w] => ⟨a.val < 2^w.toNat,
     fun _ => ()⟩)
 
@@ -21,7 +21,7 @@ Otherwise, this builtin throws an exception.
 In Noir, this builtin corresponds to `fn modulus_num_bits() -> u64` implemented for `Field`.
 -/
 def fModNumBits := newPureBuiltin
-  ⟨[.field], (.u 64)⟩
+  ⟨[CTp.field], (CTp.u 64)⟩
   (@fun p h![_] => ⟨numBits p.val < 2^64,
     fun _ => numBits p.val⟩)
 
@@ -31,7 +31,7 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit r
 In Noir, this builtin corresponds to `fn modulus_le_bits() -> [u1]` implemented for `Field`.
 -/
 def fModLeBits := newPureBuiltin
-  ⟨[.field], (.slice (.u 1))⟩
+  ⟨[CTp.field], (CTp.slice (CTp.u 1))⟩
   (@fun p h![_] => ⟨True,
     fun _ => decomposeToRadix 2 p.val (by tauto)⟩)
 
@@ -41,7 +41,7 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit r
 In Noir, this builtin corresponds to `fn modulus_be_bits() -> [u1]` implemented for `Field`.
 -/
 def fModBeBits := newPureBuiltin
-  ⟨[.field], (.slice (.u 1))⟩
+  ⟨[CTp.field], (CTp.slice (CTp.u 1))⟩
   (@fun p h![_] => ⟨True,
     fun _ => .reverse (decomposeToRadix 2 p.val (by tauto))⟩)
 
@@ -51,7 +51,7 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the byte 
 In Noir, this builtin corresponds to `fn modulus_le_bytes() -> [u8]` implemented for `Field`.
 -/
 def fModLeBytes := newPureBuiltin
-  ⟨[.field], (.slice (.u 8))⟩
+  ⟨[CTp.field], (CTp.slice (CTp.u 8))⟩
   (@fun p h![_] => ⟨True,
     fun _ => decomposeToRadix 256 p.val (by linarith)⟩)
 
@@ -61,7 +61,7 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit r
 In Noir, this builtin corresponds to `fn modulus_be_bytes() -> [u8]` implemented for `Field`.
 -/
 def fModBeBytes := newPureBuiltin
-  ⟨[.field], (.slice (.u 8))⟩
+  ⟨[CTp.field], (CTp.slice (CTp.u 8))⟩
   (@fun p h![_] => ⟨True,
     fun _ => .reverse (decomposeToRadix 256 p.val (by linarith))⟩)
 
@@ -72,7 +72,7 @@ We assume that this conversion is done by truncating the field element when nece
 In Noir, this builtin corresponds to `fn from_field(a: Field) -> T` implemented for uints of bit size `s`.
  -/
 def uFromField := newGenericPureBuiltin
-  (fun s => ⟨[.field], (.u s)⟩)
+  (fun s => ⟨[CTp.field], (CTp.u s)⟩)
   (fun s h![f] => ⟨True,
     fun _ => BitVec.ofNat s f.val⟩)
 
@@ -85,7 +85,7 @@ We assume that this conversion is done by truncating the field element when nece
 In Noir, this builtin corresponds to `fn from_field(a: Field) -> T` implemented for ints of bit size `s`.
 -/
 def iFromField := newGenericPureBuiltin
-  (fun s => ⟨[.field], (.i s)⟩)
+  (fun s => ⟨[CTp.field], (CTp.i s)⟩)
   (fun s h![f] => ⟨True,
     fun _ => BitVec.ofNat s f.val⟩)
 
@@ -96,7 +96,7 @@ Specs are not clear.
 In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for uints of bit size `s`.
 -/
 def uAsField := newGenericPureBuiltin
-  (fun s => ⟨[.u s], (.field)⟩)
+  (fun s => ⟨[CTp.u s], (CTp.field)⟩)
   (fun s h![a] => sorry)
 
 /--
@@ -106,7 +106,7 @@ Specs are not clear.
 In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for ints of bit size `s`.
 -/
 def iAsField := newGenericPureBuiltin
-  (fun s => ⟨[.i s], (.field)⟩)
+  (fun s => ⟨[CTp.i s], (CTp.field)⟩)
   (fun s h![a] => sorry)
 
 end Lampe.Builtin

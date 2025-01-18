@@ -4,24 +4,24 @@ import Lampe.Builtin.Basic
 
 namespace Lampe.Builtin
 
-inductive Member : Tp → List Tp → Type where
+inductive Member : CTp → List CTp → Type where
 | head : Member tp (tp :: tps)
 | tail : Member tp tps → Member tp (tp' :: tps)
 
 @[reducible]
-def indexTpl (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) : Tp.denote p tp := match tps with
+def indexTpl (tpl : CTp.denoteArgs p tps) (mem : Member tp tps) : Tp.denote p tp := match tps with
 | tp :: _ => match tpl, mem with
   | (h, _), .head => h
   | (_, rem), .tail m => indexTpl rem m
 
-def exampleTuple {p} : Tp.denoteArgs p [.bool, .field, .field] := (true, 4, 5)
+def exampleTuple {p} : CTp.denoteArgs p [.bool, .field, .field] := (true, 4, 5)
 
 example : indexTpl (p := p) exampleTuple Member.head = true := rfl
 example : indexTpl (p := p) exampleTuple Member.head.tail = 4 := rfl
 example : indexTpl (p := p) exampleTuple Member.head.tail.tail = 5 := rfl
 
 @[reducible]
-def replaceTuple' (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) (v : Tp.denote p tp) : Tp.denoteArgs p tps := match tps with
+def replaceTuple' (tpl : CTp.denoteArgs p tps) (mem : Member tp tps) (v : Tp.denote p tp) : CTp.denoteArgs p tps := match tps with
 | tp :: _ => match tpl, mem with
   | (_, rem), .head => (v, rem)
   | (h, rem), .tail m => (h, replaceTuple' rem m v)
@@ -39,15 +39,15 @@ theorem index_replaced_tpl :
 Defines the builtin tuple constructor.
 -/
 def mkTuple := newGenericPureBuiltin
-  (fun (name, fieldTps) => ⟨fieldTps, (.tuple name fieldTps)⟩)
-  (fun (name, _) fieldExprs => ⟨True,
-    fun _ => HList.toTuple fieldExprs name⟩)
+  (fun (name, (fieldTps : List CTp)) => ⟨fieldTps, (CTp.tuple name fieldTps)⟩)
+  (fun (name, fieldTps) fieldExprs => ⟨HList.getTps fieldExprs = fieldTps,
+    fun h => HList.toTuple (HList.toCTps fieldExprs h) name⟩)
 
 /--
 Defines the indexing/projection of a tuple with a `Member`.
 -/
 def projectTuple (mem : Member outTp fieldTps) := newGenericPureBuiltin
-  (fun name => ⟨[.tuple name fieldTps], outTp⟩)
+  (fun name => ⟨[CTp.tuple name fieldTps], outTp⟩)
   (fun _ h![tpl] => ⟨True, fun _ => indexTpl tpl mem⟩)
 
 

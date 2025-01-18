@@ -41,9 +41,33 @@ def HList.toVec (l : HList rep tps) (h_same : tps = List.replicate n tp) : List.
   ⟨HList.toList l h_same, by apply HList.toList_length_is_n⟩
 
 @[reducible]
-def HList.toTuple (hList : HList (Tp.denote p) tps) (name : Option String) : Tp.denote p $ .tuple name tps  := match hList with
-| .nil => ()
-| .cons arg args => ⟨arg, HList.toTuple args name⟩
+def HList.toCTps {tps : List Tp} {tps' : List CTp}
+  (l : HList (Tp.denote p) tps)
+  (h_same : tps = ↑tps') : HList (CTp.denote p) tps' :=
+    match tps, l with
+    | [], .nil => match tps' with | [] => HList.nil
+    | tp :: tps, .cons x xs => match tps' with
+      | tp' :: tps' => HList.cons
+        (by
+          have h_same' : tp' = tp := by simp_all
+          subst h_same'
+          exact x)
+        (by
+          have h_same' : tps = tps' := by simp_all
+          subst h_same'
+          exact HList.toCTps xs (by tauto))
+
+@[reducible]
+def HList.toTps {tps : List CTp} (l : HList (CTp.denote p) tps) : HList (Tp.denote p) tps :=
+    match l with
+    | .nil => HList.nil
+    | .cons x xs => HList.cons x (HList.toTps xs)
+
+@[reducible]
+def HList.toTuple (l : HList (CTp.denote p) tps) (name : Option String) :
+    Tp.denote p $ CTp.tuple name tps  := match l with
+  | .nil => ()
+  | .cons arg args => ⟨arg, HList.toTuple args name⟩
 
 abbrev Builtin.Omni := ∀(P:Prime),
     ValHeap P →
@@ -150,7 +174,7 @@ Defines the assertion builtin that takes a boolean. We assume the following:
 - Else, an exception is thrown.
 -/
 def assert := newPureBuiltin
-  ⟨[.bool], .unit⟩
+  ⟨[CTp.bool], CTp.unit⟩
   (fun h![a] => ⟨a == true,
     fun _ => ()⟩)
 

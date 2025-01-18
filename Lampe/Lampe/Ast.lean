@@ -14,7 +14,7 @@ structure TraitRef where
 
 structure TraitImplRef where
   trait : TraitRef
-  self : Tp
+  self : CTp
 
 structure TraitMethodImplRef where
   trait : TraitImplRef
@@ -22,16 +22,16 @@ structure TraitMethodImplRef where
 
 inductive Expr (rep : Tp → Type) : Tp → Type where
 | litNum : (tp : Tp) → Nat → Expr rep tp
-| litStr : (len : U 32) → List.Vector Char len.toNat → Expr rep (.str len)
-| fn : (argTps : List Tp) → (outTp : Tp) → (r : FuncRef argTps outTp) → Expr rep (.fn argTps outTp)
+| litStr : (len : U 32) → List.Vector Char len.toNat → Expr rep (CTp.str len)
+| fn : (argTps : List Tp) → (outTp : Tp) → (r : FuncRef argTps outTp) → Expr rep (CTp.fn argTps outTp)
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
-| call : (argTps : List Tp) → (outTp : Tp) → (rep $ .fn argTps outTp) → (args : HList rep argTps) → Expr rep outTp
+| call : (argTps : List Tp) → (outTp : Tp) → (rep $ CTp.fn argTps outTp) → (args : HList rep argTps) → Expr rep outTp
 | callBuiltin : (argTps : List Tp) → (outTp : Tp) → (b : Builtin) → (args : HList rep argTps) → Expr rep outTp
-| ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
-| skip : Expr rep .unit
-| loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
-| lam : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep (.fn argTps outTp)
+| ite : rep CTp.bool → Expr rep a → Expr rep a → Expr rep a
+| skip : Expr rep CTp.unit
+| loop : rep (CTp.u s) → rep (CTp.u s) → (rep (CTp.u s) → Expr rep r) → Expr rep CTp.unit
+| lam : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep (CTp.fn argTps outTp)
 
 structure Lambda (rep : Tp → Type) where
   argTps : List Tp
@@ -58,18 +58,18 @@ structure Module where
 structure Struct where
   name : String
   genericKinds : List Kind
-  fieldTypes : HList Kind.denote genericKinds → List Tp
+  fieldTypes : HList Kind.denote genericKinds → List CTp
 
 structure TraitImpl where
   traitGenericKinds : List Kind
   implGenericKinds : List Kind
   traitGenerics : HList Kind.denote implGenericKinds → HList Kind.denote traitGenericKinds
   constraints : HList Kind.denote implGenericKinds → List TraitImplRef
-  self : HList Kind.denote implGenericKinds → Tp
+  self : HList Kind.denote implGenericKinds → CTp
   impl : HList Kind.denote implGenericKinds → List (Ident × Function)
 
 @[reducible]
-def Struct.tp (s: Struct) : HList Kind.denote s.genericKinds → Tp :=
-  fun generics => .tuple (some s.name) $ s.fieldTypes generics
+def Struct.tp (s : Struct) : HList Kind.denote s.genericKinds → Tp :=
+  fun generics => CTp.tuple (some s.name) $ s.fieldTypes generics
 
 end Lampe

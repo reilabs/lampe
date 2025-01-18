@@ -8,7 +8,7 @@ which evaluates to `(¬a) : Bool`.
 In Noir, this builtin corresponds to `!a` for bool `a`.
 -/
 def bNot := newPureBuiltin
-  ⟨[(.bool)], .bool⟩
+  ⟨[(CTp.bool)], CTp.bool⟩
   (fun h![a] => ⟨True,
     fun _ => a.not⟩)
 
@@ -19,7 +19,7 @@ which evaluates to `(a || b) : Bool`.
 In Noir, this builtin corresponds to `a | b` for bools `a`, `b`.
 -/
 def bOr := newPureBuiltin
-  ⟨[(.bool), (.bool)], .bool⟩
+  ⟨[(CTp.bool), (CTp.bool)], CTp.bool⟩
   (fun h![a, b] => ⟨True,
     fun _ => a || b⟩)
 
@@ -30,7 +30,7 @@ which evaluates to `(a && b) : Bool`.
 In Noir, this builtin corresponds to `a & b` for bools `a`, `b`.
 -/
 def bAnd := newPureBuiltin
-  ⟨[(.bool), (.bool)], .bool⟩
+  ⟨[(CTp.bool), (CTp.bool)], CTp.bool⟩
   (fun h![a, b] => ⟨True,
     fun _ => a && b⟩)
 
@@ -41,7 +41,7 @@ which evaluates to `(a.xor b) : Bool`.
 In Noir, this builtin corresponds to `a ^ b` for bools `a`, `b`.
 -/
 def bXor := newPureBuiltin
-  ⟨[(.bool), (.bool)], .bool⟩
+  ⟨[(CTp.bool), (CTp.bool)], CTp.bool⟩
   (fun h![a, b] => ⟨True,
     fun _ => a.xor b⟩)
 
@@ -52,7 +52,7 @@ which evaluates to `(¬a) : U s`.
 In Noir, this builtin corresponds to `!a` for uint `a` of bit-size `s`.
 -/
 def uNot := newGenericPureBuiltin
-  (fun s => ⟨[(.u s)], (.u s)⟩)
+  (fun s => ⟨[(CTp.u s)], (CTp.u s)⟩)
   (fun _ h![a] => ⟨True,
     fun _ => a.not⟩)
 
@@ -63,7 +63,7 @@ which evaluates to `(a ||| b) : U s`.
 In Noir, this builtin corresponds to `a | b` for uints `a`, `b` of bit-size `s`.
 -/
 def uOr := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun s => ⟨[(CTp.u s), (CTp.u s)], (CTp.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a ||| b⟩)
 
@@ -74,7 +74,7 @@ which evaluates to `(a &&& b) : U s`.
 In Noir, this builtin corresponds to `a & b` for uints `a`, `b` of bit-size `s`.
 -/
 def uAnd := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun s => ⟨[(CTp.u s), (CTp.u s)], (CTp.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a &&& b⟩)
 
@@ -85,7 +85,7 @@ which evaluates to `(a.xor b) : U s`.
 In Noir, this builtin corresponds to `a ^ b` for uints `a`, `b` of bit-size `s`.
 -/
 def uXor := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
+  (fun s => ⟨[(CTp.u s), (CTp.u s)], (CTp.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a.xor b⟩)
 
@@ -97,7 +97,7 @@ This is assumed to evaluate to `(a <<< b) : U s`.
 In Noir, this builtin corresponds to `a << b` for an uint `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
 def uShl := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u 8)], (.u s)⟩)
+  (fun s => ⟨[(CTp.u s), (CTp.u 8)], (CTp.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a <<< b⟩)
 
@@ -109,7 +109,7 @@ This is assumed to evaluate to `(a >>> b) : U s`.
 In Noir, this builtin corresponds to `a >> b` for an uint `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
 def uShr := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u 8)], (.u s)⟩)
+  (fun s => ⟨[(CTp.u s), (CTp.u 8)], (CTp.u s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a >>> b⟩)
 
@@ -120,7 +120,7 @@ which evaluates to `(¬a) : U s`.
 In Noir, this builtin corresponds to `!a` for an int `a` of bit-size `s`.
 -/
 def iNot := newGenericPureBuiltin
-  (fun s => ⟨[(.i s)], (.i s)⟩)
+  (fun s => ⟨[(CTp.i s)], (CTp.i s)⟩)
   (fun _ h![a] => ⟨True,
     fun _ => a.not⟩)
 
@@ -131,7 +131,7 @@ which evaluates to `(a ||| b) : I s`.
 In Noir, this builtin corresponds to `a | b` for ints `a`, `b` of bit-size `s`.
 -/
 def iOr := newGenericPureBuiltin
-  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s => ⟨[(CTp.i s), (CTp.i s)], (CTp.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a ||| b⟩)
 
@@ -142,7 +142,7 @@ which evaluates to `(a &&& b) : I s`.
 In Noir, this builtin corresponds to `a & b` for ints `a`, `b` of bit-size `s`.
 -/
 def iAnd := newGenericPureBuiltin
-  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s => ⟨[(CTp.i s), (CTp.i s)], (CTp.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a &&& b⟩)
 
@@ -153,7 +153,7 @@ which evaluates to `(a.xor b) : I s`.
 In Noir, this builtin corresponds to `a ^ b` for ints `a`, `b` of bit-size `s`.
 -/
 def iXor := newGenericPureBuiltin
-  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun s => ⟨[(CTp.i s), (CTp.i s)], (CTp.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a.xor b⟩)
 
@@ -165,7 +165,7 @@ This is assumed to evaluate to `(a <<< b) : I s`.
 In Noir, this builtin corresponds to `a << b` for an int `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
 def iShl := newGenericPureBuiltin
-  (fun s => ⟨[(.i s), (.u 8)], (.i s)⟩)
+  (fun s => ⟨[(CTp.i s), (CTp.u 8)], (CTp.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a <<< b⟩)
 
@@ -177,7 +177,7 @@ This is assumed to evaluate to `(a >>> b) : I s`.
 In Noir, this builtin corresponds to `a >> b` for an int `a` of bit-size `s` and an uint `b` of bit-size `8`.
 -/
 def iShr := newGenericPureBuiltin
-  (fun s => ⟨[(.i s), (.u 8)], (.i s)⟩)
+  (fun s => ⟨[(CTp.i s), (CTp.u 8)], (CTp.i s)⟩)
   (fun _ h![a, b] => ⟨True,
     fun _ => a >>> b⟩)
 
