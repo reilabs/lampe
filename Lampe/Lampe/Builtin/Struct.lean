@@ -39,7 +39,7 @@ theorem index_replaced_tpl :
 Defines the builtin tuple constructor.
 -/
 def mkTuple := newGenericPureBuiltin
-  (fun (name, (fieldTps : List CTp)) => ⟨fieldTps, (CTp.tuple name fieldTps)⟩)
+  (fun (name, (fieldTps : List CTp)) => ⟨fieldTps, CTp.tuple name fieldTps⟩)
   (fun (name, fieldTps) fieldExprs => ⟨HList.getTps fieldExprs = fieldTps,
     fun h => HList.toTuple (HList.toCTps fieldExprs h) name⟩)
 

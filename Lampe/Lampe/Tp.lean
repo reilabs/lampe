@@ -45,6 +45,8 @@ end
 
 instance : Coe CTp Tp := ⟨Tp.concrete⟩
 
+instance : Inhabited CTp := ⟨CTp.unit⟩
+
 mutual
 
 def tpDecEq (a b : Tp) : Decidable (a = b) := match a, b with
