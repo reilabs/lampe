@@ -1,15 +1,16 @@
 import Lake
 open Lake DSL
 
-package «Lampe» where
-  -- Settings applied to both builds and interactive editing
+package Lampe where
   leanOptions := #[
-    ⟨`pp.unicode.fun, true⟩ -- pretty-prints `fun a ↦ b`
+    ⟨`pp.unicode.fun, true⟩
   ]
-  -- add any additional package configuration options here
+  testDriver := "Tests"
 
 require "leanprover-community" / "mathlib" @ git "v4.15.0-patch1"
 
 @[default_target]
-lean_lib «Lampe» where
-  -- add any library configuration options here
+lean_lib Lampe where
+
+lean_lib Tests where
+    globs := #[.submodules `Tests]

@@ -51,8 +51,6 @@ mod test {
         // Set up our source code
         let file_name = Path::new("main.nr");
         let source = r#"
-            use std::hash::{Hash, Hasher};
-            use std::cmp::{Ordering, Ord, Eq};
             use std::default::Default;
 
             fn my_func3(a: u8) -> u8 {
@@ -183,6 +181,7 @@ mod test {
                     self
                 }
             }
+
 
             fn main() {
                 let mut op1 = Option2::some(5);

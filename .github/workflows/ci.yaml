@@ -18,9 +18,15 @@ jobs:
                 lint: false
                 use-mathlib-cache: true
                 lake-package-directory: Lampe
+            - name: mk_all (lake)
+              working-directory: Lampe
+              run: lake exe mk_all --check --lib Lampe
             - name: Build (lake)
               working-directory: Lampe
               run: lake build
+            - name: Test (lake)
+              working-directory: Lampe
+              run: lake test
     build-cargo:
       runs-on: ubuntu-latest
       steps:
@@ -28,12 +34,6 @@ jobs:
             uses: actions/checkout@v4
             with:
               path: lampe
-          - name: "Checkout utkn/noir (branch: lampe)"
-            uses: actions/checkout@v4
-            with:
-              path: noir
-              ref: lampe
-              repository: utkn/noir
           - name: Set up Rust
             uses: actions-rs/toolchain@v1
             with:
@@ -49,17 +49,12 @@ jobs:
           uses: actions/checkout@v4
           with:
             path: lampe
-        - name: "Checkout utkn/noir (branch: lampe)"
-          uses: actions/checkout@v4
-          with:
-            path: noir
-            ref: lampe
-            repository: utkn/noir
         - name: Set up Rust
           uses: actions-rs/toolchain@v1
           with:
             toolchain: stable
         - name: Test (cargo)
           working-directory: lampe
-          run: cargo test
-          
+          run: |
+            export RUST_MIN_STACK=16777216;  # 16 MB
+            cargo test --all

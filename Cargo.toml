@@ -11,11 +11,11 @@ repository = "https://github.com/reilabs/lampe"
 license = "MIT"
 
 [dependencies]
-fm = { path = "../noir/compiler/fm" }
-nargo = { path = "../noir/tooling/nargo" }
-noirc_driver = { path = "../noir/compiler/noirc_driver" }
-noirc_errors = { path = "../noir/compiler/noirc_errors" }
-noirc_frontend = { path = "../noir/compiler/noirc_frontend" }
+fm = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
 
 clap = { version = "4.5.17", features = ["unstable-v5"] }
 derivative = "2.2.0"
