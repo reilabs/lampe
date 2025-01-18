@@ -365,7 +365,13 @@ example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![])
   . simp_all
     subst_vars
     simp_all
-    sorry
+    rename_i v _ _ _ a₁ a₂ _
+    obtain ⟨_, _⟩ := a₁
+    obtain ⟨_, _⟩ := a₂
+    obtain ⟨_, snd⟩ := v
+    obtain ⟨_, _⟩ := snd
+    simp_all
+    rfl
   . simp_all
     subst_vars
     rfl
@@ -384,7 +390,13 @@ example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
   all_goals try tauto
   . simp_all
     subst_vars
-    sorry
+    simp_all
+    rename_i v _ _ _ a₁ a₂ _
+    obtain ⟨_, _⟩ := a₁
+    obtain ⟨_, _⟩ := a₂
+    obtain ⟨_, snd⟩ := v
+    simp_all
+    rfl
   . simp_all [Builtin.indexTpl]
 
 nr_def deref_lens<>() -> Field {
