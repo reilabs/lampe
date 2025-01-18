@@ -177,4 +177,8 @@ def Tp.denote : Tp → Type
 | .concrete tp => tp.denote p
 | .any => (tp : CTp) × tp.denote p
 
+instance : CoeDep (Tp.denote p .any) ⟨tp, v⟩ (Tp.denote p (.concrete tp)) := ⟨v⟩
+
+instance : CoeDep (Tp.denote p (.concrete tp)) (v) (Tp.denote p .any) := ⟨tp, v⟩
+
 end Lampe

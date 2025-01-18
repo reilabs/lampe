@@ -474,7 +474,9 @@ nr_def trait_as_type<>(x : Field) -> Field {
   #cast(f(#cast(x) : ?impl)) : Field
 }
 
-example : STHoare p ⟨[⟨impl_fn.name, impl_fn.fn⟩], []⟩ ⟦⟧ (trait_as_type.fn.body _ h![] |>.body h![x]) fun v => v = x := by
+example : STHoare p ⟨[⟨impl_fn.name, impl_fn.fn⟩], []⟩ ⟦⟧
+    (trait_as_type.fn.body _ h![] |>.body h![x])
+    fun v => v = x := by
   simp only [trait_as_type]
   steps
   simp only [impl_fn]
