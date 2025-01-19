@@ -563,6 +563,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply skip_intro
     | apply lam_intro
     | apply cast_intro
+    | apply coe_intro
     -- memory
     | apply var_intro
     | apply ref_intro
@@ -634,6 +635,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left assert_intro
     | apply consequence_frame_left lam_intro
     | apply consequence_frame_left cast_intro
+    | apply consequence_frame_left coe_intro
     -- memory
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
@@ -707,6 +709,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top lam_intro
     | apply ramified_frame_top cast_intro
+    | apply ramified_frame_top coe_intro
     -- memory
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro

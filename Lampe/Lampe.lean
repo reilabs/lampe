@@ -6,6 +6,7 @@ import Lampe.Builtin.BigInt
 import Lampe.Builtin.Bit
 import Lampe.Builtin.Cast
 import Lampe.Builtin.Cmp
+import Lampe.Builtin.Coerce
 import Lampe.Builtin.Field
 import Lampe.Builtin.Helpers
 import Lampe.Builtin.Lens

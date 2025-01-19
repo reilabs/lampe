@@ -2,6 +2,7 @@ import Lean
 import Qq
 
 import Lampe.Ast
+import Lampe.Builtin.Coerce
 import Lampe.Builtin.Arith
 import Lampe.Builtin.Array
 import Lampe.Builtin.BigInt
@@ -67,6 +68,8 @@ syntax "(" nr_expr "as" nr_ident "<" nr_type,* ">" ")" "." ident : nr_expr -- St
 syntax nr_expr "." num : nr_expr -- Tuple access
 syntax nr_expr "[" nr_expr "]" : nr_expr -- Array access
 syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
+
+syntax "↑" nr_expr : nr_expr -- Coerce
 
 syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
 
@@ -184,6 +187,13 @@ def Expr.modifyLens {tp₁ tp₂ : CTp} (r : rep $ CTp.ref tp₁) (v : rep tp₂
 @[reducible]
 def Expr.getLens (v : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
   Expr.callBuiltin _ tp₂ (.getLens lens) h![v]
+
+@[reducible]
+def Expr.coe (v : rep tp₁) : Expr rep tp₂ :=
+  if h : tp₁ = tp₂ then
+    Expr.var (h ▸ v)
+  else
+    Expr.callBuiltin [tp₁] tp₂ (.coe) h![v]
 
 structure DesugarState where
   autoDeref : Name → Bool
@@ -367,6 +377,9 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   else match vname with
     | none => k i
     | some _ => wrapSimple (←`(Expr.var $i)) vname k
+| `(nr_expr| ↑ $expr:nr_expr) => do
+  mkExpr expr none fun v => do
+    wrapSimple (←`(Expr.coe $v)) vname k
 | `(nr_expr| # $i:ident ($args,*): $tp) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Expr.callBuiltin _ $(←mkNrType tp) $(←mkBuiltin i.getId.toString) $(←mkHListLit argVals))) vname k
@@ -452,9 +465,11 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     (FuncRef.trait $(←mkNrType selfTp) $traitName $traitGenKinds $traitGenVals $methodName $callGenKinds $callGenVals))) vname k
 | `(nr_expr| $fnExpr:nr_expr ( $args:nr_expr,* )) => do
   mkExpr fnExpr none fun fnRef => do
-    mkArgs args.getElems.toList fun argVals => do
-      let args ← mkHListLit argVals
-      wrapSimple (←`(Expr.call _ _ $fnRef $args)) vname k
+    -- Automatic input coercion.
+    let args ← args.getElems.toList.mapM fun e => `(nr_expr| ↑$e)
+    mkArgs args fun argVals => do
+      -- Automatic output coercion.
+      wrapSimple (←`(Expr.letIn (.call _ _ $fnRef $(←mkHListLit argVals)) Expr.coe)) vname k
 | `(nr_expr| ( $_:nr_expr as $_:nr_ident  < $_,* > ) . $_:ident)
 | `(nr_expr| $_:nr_expr . $_:num)
 | `(nr_expr| $_:nr_expr [ $_:nr_expr ])

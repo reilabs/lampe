@@ -2,7 +2,7 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 /--
-   Represents the Noir types that can be casted to each other.
+Represents the Noir types that can be explicitly casted to each other.
  -/
  class CastTp (tp tp' : Tp) where
    validate : Tp.denote p tp → Prop
@@ -48,21 +48,11 @@ namespace Lampe.Builtin
        linarith
    ⟩
 
-@[simp]
-instance : CastTp (Tp.concrete tp) (Tp.any) where
-  validate := fun _ => True
-  cast := fun v _ => ⟨tp, v⟩
-
-@[simp]
-instance : CastTp (Tp.any) (Tp.concrete tp) where
-  validate := fun ⟨tp', _⟩ => tp = tp'
-  cast := fun ⟨_, v⟩ h => h ▸ v
-
  inductive castOmni : Omni where
- | ok {P st tp tp' v Q} [CastTp tp tp'] :
-   (h : CastTp.validate tp' v) → Q (some (st, CastTp.cast v h)) → castOmni P st [tp] tp' h![v] Q
- | err {P st tp tp' v Q} [CastTp tp tp'] :
-   ¬(CastTp.validate tp' v) → Q none → castOmni P st [tp] tp' h![v] Q
+ | ok {tp tp' v Q} [CastTp tp tp'] :
+   (h : CastTp.validate tp' v) → Q (some (st, CastTp.cast v h)) → castOmni p st [tp] tp' h![v] Q
+ | err {tp tp' v Q} [CastTp tp tp'] :
+   ¬(CastTp.validate tp' v) → Q none → castOmni p st [tp] tp' h![v] Q
 
  def cast : Builtin := {
    omni := castOmni

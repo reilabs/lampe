@@ -381,7 +381,7 @@ theorem callDecl_intro {fnRef : Tp.denote p (CTp.fn argTps outTp)}
 
 
 theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (CTp.fn argTps outTp)}
-    (href : H ⊢  ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
+    (href : H ⊢ ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
     (h_fn : (fnName, fn) ∈ impls)
     (hkc : fn.generics = kinds)

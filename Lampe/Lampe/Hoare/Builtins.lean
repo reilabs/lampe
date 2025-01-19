@@ -4,14 +4,15 @@ import Lampe.Builtin.Arith
 import Lampe.Builtin.Array
 import Lampe.Builtin.BigInt
 import Lampe.Builtin.Bit
+import Lampe.Builtin.Cast
 import Lampe.Builtin.Cmp
+import Lampe.Builtin.Coerce
 import Lampe.Builtin.Field
+import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
-import Lampe.Builtin.Cast
-import Lampe.Builtin.Lens
 
 namespace Lampe.STHoare
 
@@ -531,7 +532,7 @@ theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (
   tauto
 
 theorem cast_intro [Builtin.CastTp tp tp'] : STHoare p Γ ⟦⟧ (.callBuiltin [tp] tp' .cast h![v])
-   (fun v' => ∃∃ h, ⟦@Builtin.CastTp.cast tp tp' _ p v h = v'⟧) := by
+   (fun v' => ∃∃ h, ⟦Builtin.CastTp.cast v h = v'⟧) := by
    unfold STHoare THoare
    intros
    constructor
@@ -541,6 +542,21 @@ theorem cast_intro [Builtin.CastTp tp tp'] : STHoare p Γ ⟦⟧ (.callBuiltin [
        apply SLP.ent_star_top
        aesop
    . apply Builtin.castOmni.err
+     . tauto
+     . unfold mapToValHeapCondition
+       simp_all
+
+theorem coe_intro [Builtin.CoeTp tp tp'] : STHoare p Γ ⟦⟧ (.callBuiltin [tp] tp' .coe h![v])
+   (fun v' => ∃∃ h, ⟦Builtin.CoeTp.coe v h = v'⟧) := by
+   unfold STHoare THoare
+   intros
+   constructor
+   cases em (Builtin.CoeTp.validate tp' v)
+   . apply Builtin.coeOmni.ok
+     . simp_all only [SLP.true_star, SLP.star, SLP.exists']
+       apply SLP.ent_star_top
+       aesop
+   . apply Builtin.coeOmni.err
      . tauto
      . unfold mapToValHeapCondition
        simp_all
