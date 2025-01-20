@@ -153,43 +153,43 @@ def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
   let accessor := mkFieldAccessorIdent (←mkNrIdent structName) (field.getId.toString)
   `($accessor $gs)
 
-@[reducible]
-def argTp {rep : Tp → Type _} (_ : rep tp) : Tp := tp
+@[simp]
+abbrev tpOf {rep : Tp → Type _} (_ : rep tp) : Tp := tp
 
-@[reducible]
-def Expr.ref {tp : CTp} (val : rep tp) : Expr rep tp.ref :=
+@[simp]
+abbrev Expr.ref {tp : CTp} (val : rep tp) : Expr rep tp.ref :=
   Expr.callBuiltin _ tp.ref .ref h![val]
 
-@[reducible]
-def Expr.readRef {tp : CTp} (ref : rep tp.ref) : Expr rep tp :=
+@[simp]
+abbrev Expr.readRef {tp : CTp} (ref : rep tp.ref) : Expr rep tp :=
   Expr.callBuiltin _ tp .readRef h![ref]
 
-@[reducible]
-def Expr.writeRef {tp : CTp} (ref : rep tp.ref) (val : rep tp) : Expr rep CTp.unit :=
+@[simp]
+abbrev Expr.writeRef {tp : CTp} (ref : rep tp.ref) (val : rep tp) : Expr rep CTp.unit :=
   Expr.callBuiltin _ CTp.unit .writeRef h![ref, val]
 
-@[reducible]
-def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n (.concrete tp))) : Expr rep (CTp.slice tp) :=
+@[simp]
+abbrev Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n (.concrete tp))) : Expr rep (CTp.slice tp) :=
   Expr.callBuiltin _ (CTp.slice tp) (.mkSlice n) vals
 
-@[reducible]
-def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n (.concrete tp))) : Expr rep (CTp.array tp n) :=
+@[simp]
+abbrev Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n (.concrete tp))) : Expr rep (CTp.array tp n) :=
   Expr.callBuiltin _ (CTp.array tp n) (.mkArray n) vals
 
-@[reducible]
-def Expr.mkTuple {rep : Tp → Type _} {tps : List CTp} (name : Option String) (args : HList rep tps) : Expr rep (CTp.tuple name tps) :=
+@[simp]
+abbrev Expr.mkTuple {rep : Tp → Type _} {tps : List CTp} (name : Option String) (args : HList rep tps) : Expr rep (CTp.tuple name tps) :=
   Expr.callBuiltin tps (CTp.tuple name tps) (.mkTuple) args
 
-@[reducible]
-def Expr.modifyLens {tp₁ tp₂ : CTp} (r : rep $ CTp.ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep CTp.unit :=
+@[simp]
+abbrev Expr.modifyLens {tp₁ tp₂ : CTp} (r : rep $ CTp.ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep CTp.unit :=
   Expr.callBuiltin [CTp.ref tp₁, tp₂] CTp.unit (.modifyLens lens) h![r, v]
 
-@[reducible]
-def Expr.getLens (v : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
+@[simp]
+abbrev Expr.getLens (v : rep tp₁) (lens : Lens rep tp₁ tp₂) : Expr rep tp₂ :=
   Expr.callBuiltin _ tp₂ (.getLens lens) h![v]
 
-@[reducible]
-def Expr.coe (v : rep tp₁) : Expr rep tp₂ :=
+@[simp]
+abbrev Expr.coe (v : rep tp₁) : Expr rep tp₂ :=
   if h : tp₁ = tp₂ then
     Expr.var (h ▸ v)
   else
@@ -445,7 +445,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
      wrapSimple (←`(Expr.mkTuple (tps := $fieldTps) (some $(Syntax.mkStrLit $ structName)) $(←mkHListLit argVals))) vname k
 | `(nr_expr| `( $args,* )) => do
   mkArgs args.getElems.toList fun argVals => do
-    let fieldTps ← (argVals.mapM fun arg => `(match (argTp $arg) with | Tp.concrete tp => tp | _ => panic! "Expected concrete type"))
+    let fieldTps ← (argVals.mapM fun arg => `(match (tpOf $arg) with | Tp.concrete tp => tp | _ => panic! "Expected concrete type"))
     wrapSimple (←`(Expr.mkTuple (tps := $(←mkListLit fieldTps)) none $(←mkHListLit argVals))) vname k
 | `(nr_expr| @ $fnName:nr_ident < $callGenVals:nr_type,* > as $t:nr_type) => do
   let callGenKinds ← mkListLit (←callGenVals.getElems.toList.mapM fun _ => `(Kind.type))
@@ -461,8 +461,11 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let methodName := Syntax.mkStrLit (←mkNrIdent methodName)
   let traitName := Syntax.mkStrLit (←mkNrIdent traitName)
   let (paramTps, outTp) ← getFuncSignature t
+  let selfTp ← match (←mkNrType selfTp) with
+    | `(Tp.any) => `(none)
+    | _ => `(some $(←mkNrType selfTp))
   wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp
-    (FuncRef.trait $(←mkNrType selfTp) $traitName $traitGenKinds $traitGenVals $methodName $callGenKinds $callGenVals))) vname k
+    (FuncRef.trait $selfTp $traitName $traitGenKinds $traitGenVals $methodName $callGenKinds $callGenVals))) vname k
 | `(nr_expr| $fnExpr:nr_expr ( $args:nr_expr,* )) => do
   mkExpr fnExpr none fun fnRef => do
     -- Automatic input coercion.

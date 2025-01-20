@@ -519,9 +519,8 @@ example : STHoare p ⟨[⟨impl_fn.name, impl_fn.fn⟩], []⟩ ⟦⟧
   simp only [trait_as_type]
   steps
   simp_all [impl_fn]
-  simp [Expr.coe]
   steps
-  simp [Expr.coe]
+  simp
   steps
   apply STHoare.callDecl_intro
   sl
@@ -551,3 +550,34 @@ example : STHoare p ⟨[⟨impl_fn.name, impl_fn.fn⟩], []⟩ ⟦⟧
     simp
   . sl
     simp_all
+
+nr_def unspecified_trait_call<I> (x : I) -> I {
+  ((?impl as Bulbulize<>)::bulbulize<> as λ(I) → I)(x)
+}
+
+example {p} {arg : Tp.denote p CTp.field} :
+    STHoare p simpleTraitEnv ⟦⟧ (unspecified_trait_call.fn.body _ h![.field] |>.body h![arg])
+    fun v => v = 2 * arg := by
+  simp only [unspecified_trait_call]
+  steps
+  simp only [Expr.coe, reduceDIte]
+  . steps
+  . steps
+    . -- Explicit annotation of the self type might be necessary.
+      apply STHoare.callTrait'_intro (selfTp := CTp.field)
+      sl
+      tauto
+      try_impls_all [] simpleTraitEnv
+      all_goals try tauto
+      simp only
+      steps
+      simp_all only [exists_const, SLP.true_star]
+      on_goal 2 => exact fun v => v = 2 * arg
+      sl
+      intros
+      subst_vars
+      ring
+    simp only [Expr.coe, reduceDIte]
+    steps
+    all_goals try exact fun v => v = 2 * arg
+    repeat sl; simp_all

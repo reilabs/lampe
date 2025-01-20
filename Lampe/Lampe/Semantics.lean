@@ -62,6 +62,16 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   (htco : (fn.body (Tp.denote p) (hkc ▸ generics) |>.outTp) = outTp) →
   Omni Γ ⟨vh, lambdas⟩ (htco ▸ (fn.body (Tp.denote p) (hkc ▸ generics) |>.body (htci ▸ args))) Q →
   Omni Γ ⟨vh, lambdas⟩ (Expr.call argTps outTp fnRef args) Q
+-- `callTrait` with unspecified `selfTp`
+| callTrait' {fnRef} {selfTp} :
+  fnRef = (.trait none traitName traitKinds traitGenerics fnName kinds generics) →
+  TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls →
+  (fnName, fn) ∈ impls →
+  (hkc : fn.generics = kinds) →
+  (htci : (fn.body (Tp.denote p) (hkc ▸ generics) |>.argTps) = argTps) →
+  (htco : (fn.body (Tp.denote p) (hkc ▸ generics) |>.outTp) = outTp) →
+  Omni Γ ⟨vh, lambdas⟩ (htco ▸ (fn.body (Tp.denote p) (hkc ▸ generics) |>.body (htci ▸ args))) Q →
+  Omni Γ ⟨vh, lambdas⟩ (Expr.call argTps outTp fnRef args) Q
 | callLambda {fnRef} {lambdaBody : HList (Tp.denote p) argTps → Expr (Tp.denote p) outTp} :
   fnRef = (.lambda ref) →
   lambdas.lookup ref = some ⟨argTps, outTp, lambdaBody⟩ →
@@ -101,6 +111,9 @@ theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'} :
   | callLambda =>
     intro
     apply Omni.callLambda <;> tauto
+  | callTrait' =>
+    intro
+    apply Omni.callTrait' <;> tauto
   | callBuiltin =>
     cases_type Builtin
     intros
@@ -158,6 +171,9 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
   | callTrait =>
     intro
     apply Omni.callTrait <;> tauto
+  | callTrait' =>
+    intro
+    apply Omni.callTrait' <;> tauto
   | callLambda h =>
     intro hd
     apply Omni.callLambda <;> try tauto

@@ -141,10 +141,14 @@ def Kind.denote : Kind → Type
 | .nat => Nat
 | .type => CTp
 
+/--
+Represents a function reference in a Noir program.
+The constructors should contain all the necessary information to be able to call the function.
+-/
 inductive FuncRef (argTps : List Tp) (outTp : Tp) where
 | lambda (r : Ref)
 | decl (fnName : String) (kinds : List Kind) (generics : HList Kind.denote kinds)
-| trait (selfTp : CTp)
+| trait (selfTp : Option CTp)
   (traitName : String) (traitKinds : List Kind) (traitGenerics : HList Kind.denote traitKinds)
   (fnName : String) (fnKinds : List Kind) (fnGenerics : HList Kind.denote fnKinds)
 
