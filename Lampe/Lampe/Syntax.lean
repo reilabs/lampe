@@ -29,7 +29,8 @@ syntax ident "::" nr_ident : nr_ident
 
 syntax ident : nr_type
 syntax "${" term "}" : nr_type
-syntax "str<" num ">" : nr_type
+syntax "str<" num ">" : nr_type -- Strings
+syntax "fmtstr<" num "," "(" nr_type,* ")" ">" : nr_type -- Format strings
 syntax nr_ident "<" nr_type,* ">" : nr_type -- Struct
 syntax "[" nr_type "]" : nr_type -- Slice
 syntax "[" nr_type ";" num "]" : nr_type -- Array
@@ -41,6 +42,7 @@ syntax ident ":" nr_type : nr_param_decl
 
 syntax num ":" nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
+syntax "#format(" str "," nr_expr,* ")" : nr_expr
 syntax "#unit" : nr_expr -- Unit literal
 syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
@@ -116,6 +118,9 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| bool) => `(Tp.bool)
 | `(nr_type| Field) => `(Tp.field)
 | `(nr_type| str<$n:num>) => `(Tp.str $n)
+| `(nr_type| fmtstr<$n:num, ($tps,*)>) => do
+  let tps ← tps.getElems.toList.mapM mkNrType
+  `(Tp.fmtStr $n $(←mkListLit tps))
 | `(nr_type| Unit) => `(Tp.unit)
 | `(nr_type| $i:ident) => `($i)
 | `(nr_type| & $tp) => do `(Tp.ref $(←mkNrType tp))
@@ -170,7 +175,12 @@ def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
 
 @[reducible]
 def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=
-  Expr.callBuiltin tps (.tuple name tps) ( .mkTuple) args
+  Expr.callBuiltin tps (.tuple name tps) (.mkTuple) args
+
+@[reducible]
+def Expr.mkFmtStr (rawString : String) (args : HList rep tps) :
+    Expr rep (.fmtStr rawString.length tps) :=
+  Expr.callBuiltin tps (.fmtStr rawString.length tps) (.mkFmtStr) args
 
 @[reducible]
 def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
@@ -352,6 +362,10 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
 partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
 | `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.litNum $(←mkNrType tp) $n)) vname k
 | `(nr_expr| $s:str) => do wrapSimple (←`(Expr.litStr (String.length $s) (⟨String.data $s, by rfl⟩))) vname k
+| `(nr_expr| #format($s:str, $exprs,*)) => do
+    mkArgs exprs.getElems.toList fun argVals => do
+      let asdf ← mkHListLit argVals
+      wrapSimple (←`(Expr.fmtStr (String.length $s) (sorry) (sorry))) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Expr.litNum Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Expr.litNum Tp.bool 0)) vname k
 | `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k

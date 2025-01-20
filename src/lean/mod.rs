@@ -10,12 +10,13 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
+    StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness, Visibility},
     graph::CrateId,
     hir::{
+        Context,
         def_map::{ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
-        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -26,7 +27,6 @@ use noirc_frontend::{
     node_interner::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
-    StructField, Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -712,10 +712,8 @@ impl LeanEmitter {
                 Box::new(self.substitute_bindings(env, bindings)),
                 *unconstrained,
             ),
-            Type::TraitAsType(id, name, generics) => Type::TraitAsType(
-                id.clone(),
-                name.clone(),
-                TraitGenerics {
+            Type::TraitAsType(id, name, generics) => {
+                Type::TraitAsType(id.clone(), name.clone(), TraitGenerics {
                     ordered: generics
                         .ordered
                         .iter()
@@ -729,8 +727,8 @@ impl LeanEmitter {
                             typ: self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
-                },
-            ),
+                })
+            }
             Type::MutableReference(t) => {
                 Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
             }
@@ -1326,7 +1324,30 @@ impl LeanEmitter {
                 format!("{minus}{felt} : {typ}", minus = if *neg { "-" } else { "" })
             }
             HirLiteral::Str(str) => format!("\"{str}\""),
-            HirLiteral::FmtStr(..) => todo!("fmtstr not supported"),
+            HirLiteral::FmtStr(str_parts, vars, _) => {
+                let output_str = str_parts.iter().fold(String::new(), |mut acc, part| {
+                    match part {
+                        noirc_frontend::token::FmtStrFragment::String(s) => acc.push_str(&s),
+                        noirc_frontend::token::FmtStrFragment::Interpolation(inner, _) => {
+                            acc.push_str(&format!("{{{inner}}}"))
+                        }
+                    }
+                    acc
+                });
+
+                let output_vars: String =
+                    vars.iter()
+                        .try_fold(String::new(), |mut acc, &var_id| -> Result<String> {
+                            let var_name = self.emit_expr(ind, var_id)?;
+                            acc.push_str(&var_name);
+                            acc.push_str(", ");
+                            Ok(acc)
+                        })?;
+
+                let output_vars = output_vars.trim_end_matches(", ");
+
+                format!("#format(\"{}\", {})", output_str, output_vars)
+            }
             HirLiteral::Unit => syntax::literal::format_unit(),
         };
 

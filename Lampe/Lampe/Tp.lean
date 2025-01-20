@@ -1,6 +1,7 @@
 import Lampe.Data.Integers
 import Lampe.Data.Field
 import Lampe.Data.HList
+import Lampe.Data.Strings
 
 namespace Lampe
 
@@ -21,6 +22,7 @@ inductive Tp where
 | bool
 | unit
 | str (size: U 32)
+| fmtStr (size : U 32) (elems : List Tp)
 | field
 | slice (element : Tp)
 | array (element: Tp) (size: U 32)
@@ -74,6 +76,12 @@ def tpDecEq (a b : Tp) : Decidable (a = b) := by
     cases (tpsDecEq tps₁ tps₂) <;> cases h
     all_goals try { left; simp_all; }
     right; subst_vars; rfl
+  case fmtStr.fmtStr =>
+    rename_i n₁ tps₁ n₂ tps₂
+    have h : Decidable (n₁ = n₂) := inferInstance
+    cases (tpsDecEq tps₁ tps₂) <;> cases h
+    all_goals try { left; simp_all; }
+    right; subst_vars; rfl
   case fn.fn =>
     rename_i args₁ out₁ args₂ out₂
     cases (tpDecEq out₁ out₂) <;> cases (tpsDecEq args₁ args₂)
@@ -96,6 +104,8 @@ inductive FuncRef (argTps : List Tp) (outTp : Tp) where
   (traitName : String) (traitKinds : List Kind) (traitGenerics : HList Kind.denote traitKinds)
   (fnName : String) (fnKinds : List Kind) (fnGenerics : HList Kind.denote fnKinds)
 
+structure FormatString (n : U 32) (valTypes : Type) where
+
 mutual
 
 @[reducible]
@@ -110,7 +120,8 @@ def Tp.denote : Tp → Type
 | .bi => Int
 | .bool => Bool
 | .unit => Unit
-| .str n => List.Vector Char n.toNat
+| .str n => FixedLenStr n.toNat
+| .fmtStr n x => FormatString n (denoteArgs x)
 | .field => Fp p
 | .slice tp => List (denote tp)
 | .array tp n => List.Vector (denote tp) n.toNat
