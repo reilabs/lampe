@@ -203,6 +203,12 @@ mod test {
                 x
             }
 
+            fn pattern_test() {
+                let opt = Option2::some(true);
+                let t = (1, opt, 3);
+                let (x, Option2 { _is_some, _value }, z) = t;
+            }
+
         "#;
 
         let source = Source::new(file_name, source);

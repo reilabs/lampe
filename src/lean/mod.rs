@@ -2,6 +2,7 @@
 mod builtin;
 pub mod indent;
 mod syntax;
+mod pattern;
 
 use std::collections::{HashMap, HashSet};
 
@@ -1066,32 +1067,25 @@ impl LeanEmitter {
             HirExpression::Lambda(lambda) => {
                 let ret_type = self.emit_fully_qualified_type(&lambda.return_type);
 
-                let arg_strs: Vec<String> = lambda
+                let params = lambda
                     .parameters
                     .iter()
-                    .map(|(pattern, ty)| {
-                        let pattern_str = self.emit_pattern(pattern)?;
-                        let typ = self.emit_fully_qualified_type(ty);
-                        Ok(format!("{pattern_str} : {typ}"))
+                    .enumerate()
+                    .map(|(param_idx, (pat, param_typ))| {
+                        let lhs = format!("param#{param_idx}");
+                        let typ = self.emit_fully_qualified_type(param_typ);
+                        (pat.clone(), lhs, typ)
                     })
-                    .try_collect()?;
-                let args = arg_strs.join(", ");
-                let captures = lambda
-                    .captures
-                    .iter()
-                    .map(|capture| {
-                        let capture_type =
-                            self.context.def_interner.definition_type(capture.ident.id);
-                        let capture_type = self.emit_fully_qualified_type(&capture_type);
-                        let name = self.context.def_interner.definition_name(capture.ident.id);
-
-                        format!("{name} : {capture_type}")
-                    })
+                    .collect_vec();
+                let params_str = params.iter()
+                    .map(|(_, lhs, rhs)| format!("{lhs} : {rhs}"))
                     .join(", ");
-
+                let pattern_stmts_str = params.iter().map(|(pat, lhs, _)| {
+                    pattern::format_pattern(pat, lhs, self).join(";\n")
+                }).join(";\n");
                 let body = self.emit_expr(ind, lambda.body)?;
 
-                syntax::expr::format_lambda(&captures, &args, &body, &ret_type)
+                syntax::expr::format_lambda(&params_str, &format!("{{ {pattern_stmts_str}; {body} }}"), &ret_type)
             }
             HirExpression::MethodCall(_) => {
                 panic!("Method call expressions should not exist after type checking")
@@ -1157,20 +1151,26 @@ impl LeanEmitter {
         let result = match stmt_data {
             HirStatement::Expression(expr) => self.emit_expr(ind, expr)?,
             HirStatement::Let(lets) => {
-                let binding_type = self.emit_fully_qualified_type(&lets.r#type);
                 let bound_expr = self.emit_expr(ind, lets.expression)?;
-                let name = self.emit_pattern(&lets.pattern)?;
-                // [TODO] proper pattern support
-                syntax::stmt::format_let_in(&name, &binding_type, &bound_expr)
+                match &lets.pattern {
+                    HirPattern::Identifier(..) => {
+                        pattern::format_pattern(&lets.pattern, &bound_expr, self).pop().unwrap()
+                    }
+                    HirPattern::Mutable(sub_pat, ..) if matches!(**sub_pat, HirPattern::Identifier(..)) => {
+                        pattern::format_pattern(&lets.pattern, &bound_expr, self).pop().unwrap()
+                    },
+                    _ => {
+                        let pat_rhs = "param#0";
+                        let mut stmts = vec![syntax::stmt::format_let_in(pat_rhs, &bound_expr)];
+                        stmts.extend(pattern::format_pattern(&lets.pattern, pat_rhs, self));
+                        let mut stmts_str = stmts.join(";\n");
+                        stmts_str.push(';');
+                        stmts_str
+                    },
+                }
             }
             HirStatement::Constrain(constraint) => {
                 let constraint_expr = self.emit_expr(ind, constraint.0)?;
-                // [TODO] what to do with asserts with prints?
-                let _print_expr = if let Some(expr) = constraint.2 {
-                    Some(self.emit_expr(ind, expr)?)
-                } else {
-                    None
-                };
 
                 syntax::expr::format_builtin_call(
                     builtin::ASSERT_BUILTIN_NAME.into(),
@@ -1265,49 +1265,6 @@ impl LeanEmitter {
             HirLValue::Dereference { lvalue, .. } => {
                 let lhs_lval = self.emit_l_value(ind, lvalue.as_ref())?;
                 syntax::lval::format_deref_access(&lhs_lval)
-            }
-        };
-
-        Ok(result)
-    }
-
-    /// Emits the Lean code corresponding to a Noir pattern.
-    ///
-    /// # Errors
-    ///
-    /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_pattern(&self, pattern: &HirPattern) -> Result<String> {
-        let result = match pattern {
-            HirPattern::Identifier(id) => {
-                self.context.def_interner.definition_name(id.id).to_string()
-            }
-            HirPattern::Mutable(pattern, _) => {
-                let child_pattern = self.emit_pattern(pattern.as_ref())?;
-                format!("mut {child_pattern}")
-            }
-            HirPattern::Tuple(patterns, _) => {
-                let pattern_strs: Vec<String> = patterns
-                    .iter()
-                    .map(|pattern| self.emit_pattern(pattern))
-                    .try_collect()?;
-                let patterns_str = pattern_strs.join(", ");
-
-                format!("({patterns_str})")
-            }
-            HirPattern::Struct(struct_ty, patterns, _) => {
-                let ty_str = self.emit_fully_qualified_type(struct_ty);
-
-                let pattern_strs: Vec<String> = patterns
-                    .iter()
-                    .map(|(pat_name, pat_expr)| {
-                        let child_pat = self.emit_pattern(pat_expr)?;
-
-                        Ok(format!("{pat_name}: {child_pat}"))
-                    })
-                    .try_collect()?;
-                let patterns_str = pattern_strs.join(", ");
-
-                format!("{ty_str} {{{patterns_str}}}")
             }
         };
 
