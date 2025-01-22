@@ -75,7 +75,7 @@ theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.litNum .field n) fun
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.litStr_intro : STHoare p Γ ⟦⟧ (.litStr u s) fun v => v = s := by
+theorem Lampe.STHoare.litStr_intro: STHoare p Γ ⟦⟧ (.litStr u s) fun v => v = s := by
   unfold STHoare THoare
   intro H st hp
   constructor
@@ -83,7 +83,7 @@ theorem Lampe.STHoare.litStr_intro : STHoare p Γ ⟦⟧ (.litStr u s) fun v => 
   apply SLP.ent_star_top
   assumption
 
-theorem Lampe.STHoare.fmtStr_intro : STHoare p Γ ⟦⟧ (.fmtStr _ _ s) fun v => v = s := by
+theorem Lampe.STHoare.fmtStr_intro : STHoare p Γ ⟦⟧ (.fmtStr u tps s) fun v => v = s := by
   unfold STHoare THoare
   intro H st hp
   constructor

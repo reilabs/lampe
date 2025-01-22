@@ -1339,7 +1339,12 @@ impl LeanEmitter {
                     vars.iter()
                         .try_fold(String::new(), |mut acc, &var_id| -> Result<String> {
                             let var_name = self.emit_expr(ind, var_id)?;
-                            acc.push_str(&var_name);
+                            let var_type = self.id_bound_type(var_id);
+                            acc.push_str(&format!(
+                                "({} : {})",
+                                &var_name,
+                                self.emit_fully_qualified_type(&var_type)
+                            ));
                             acc.push_str(", ");
                             Ok(acc)
                         })?;

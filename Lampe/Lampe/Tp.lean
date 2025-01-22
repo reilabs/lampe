@@ -22,7 +22,7 @@ inductive Tp where
 | bool
 | unit
 | str (size: U 32)
-| fmtStr (size : U 32) (elems : List Tp)
+| fmtStr (size : U 32) (argTps : List Tp)
 | field
 | slice (element : Tp)
 | array (element: Tp) (size: U 32)
@@ -76,7 +76,7 @@ def tpDecEq (a b : Tp) : Decidable (a = b) := by
     cases (tpsDecEq tps₁ tps₂) <;> cases h
     all_goals try { left; simp_all; }
     right; subst_vars; rfl
-  case fmtStr.fmtStr =>
+  case fmtStr.fmtStr => -- TODO: Is there a way of combining this with the above?
     rename_i n₁ tps₁ n₂ tps₂
     have h : Decidable (n₁ = n₂) := inferInstance
     cases (tpsDecEq tps₁ tps₂) <;> cases h
@@ -104,7 +104,8 @@ inductive FuncRef (argTps : List Tp) (outTp : Tp) where
   (traitName : String) (traitKinds : List Kind) (traitGenerics : HList Kind.denote traitKinds)
   (fnName : String) (fnKinds : List Kind) (fnGenerics : HList Kind.denote fnKinds)
 
-structure FormatString (n : U 32) (valTypes : Type) where
+/-- TODO: Actually implement this at some point -/
+def FormatString (_len : U 32) (_argTps : List Tp) := Unit
 
 mutual
 
@@ -121,7 +122,7 @@ def Tp.denote : Tp → Type
 | .bool => Bool
 | .unit => Unit
 | .str n => FixedLenStr n.toNat
-| .fmtStr n x => FormatString n (denoteArgs x)
+| .fmtStr n tps => FormatString n tps
 | .field => Fp p
 | .slice tp => List (denote tp)
 | .array tp n => List.Vector (denote tp) n.toNat

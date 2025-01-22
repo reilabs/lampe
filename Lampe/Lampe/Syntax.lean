@@ -23,6 +23,7 @@ declare_syntax_cat nr_type
 declare_syntax_cat nr_expr
 declare_syntax_cat nr_block_contents
 declare_syntax_cat nr_param_decl
+declare_syntax_cat nr_fmtstr_part
 
 syntax ident : nr_ident
 syntax ident "::" nr_ident : nr_ident
@@ -42,7 +43,8 @@ syntax ident ":" nr_type : nr_param_decl
 
 syntax num ":" nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
-syntax "#format(" str "," nr_expr,* ")" : nr_expr
+syntax "#format(" str "," nr_fmtstr_part,* ")" : nr_expr -- Foramt string
+syntax "("nr_expr ":" nr_type ")" : nr_fmtstr_part
 syntax "#unit" : nr_expr -- Unit literal
 syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
@@ -139,6 +141,11 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   `(Tp.fn $paramTps $outTp)
 | _ => throwUnsupportedSyntax
 
+partial def mkFmtStrPart [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] :
+    TSyntax `nr_fmtstr_part → m ((TSyntax `nr_expr) × (TSyntax `term))
+| `(nr_fmtstr_part| ($val:nr_expr : $typ:nr_type)) => return (val, ←mkNrType typ)
+| _ => throwUnsupportedSyntax
+
 def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
    `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
 
@@ -175,12 +182,7 @@ def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
 
 @[reducible]
 def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=
-  Expr.callBuiltin tps (.tuple name tps) (.mkTuple) args
-
-@[reducible]
-def Expr.mkFmtStr (rawString : String) (args : HList rep tps) :
-    Expr rep (.fmtStr rawString.length tps) :=
-  Expr.callBuiltin tps (.fmtStr rawString.length tps) (.mkFmtStr) args
+  Expr.callBuiltin tps (.tuple name tps) ( .mkTuple) args
 
 @[reducible]
 def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=
@@ -362,10 +364,6 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
 partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)): m (TSyntax `term) := match e with
 | `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.litNum $(←mkNrType tp) $n)) vname k
 | `(nr_expr| $s:str) => do wrapSimple (←`(Expr.litStr (String.length $s) (⟨String.data $s, by rfl⟩))) vname k
-| `(nr_expr| #format($s:str, $exprs,*)) => do
-    mkArgs exprs.getElems.toList fun argVals => do
-      let asdf ← mkHListLit argVals
-      wrapSimple (←`(Expr.fmtStr (String.length $s) (sorry) (sorry))) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Expr.litNum Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Expr.litNum Tp.bool 0)) vname k
 | `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
@@ -441,6 +439,11 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| `( $args,* )) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Expr.mkTuple none $(←mkHListLit argVals))) vname k
+| `(nr_expr| #format($s:str, $args,*) ) => do
+  let fmtStrParts ← (args.getElems.toList.mapM mkFmtStrPart)
+  let (partVal, partType) := fmtStrParts.unzip
+  mkArgs partVal fun _argVals => do -- TODO: Eventually we'll need the `argVals` when constructing the fmtStr
+    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit partType) (Unit.unit))) vname k
 | `(nr_expr| @ $fnName:nr_ident < $callGenVals:nr_type,* > as $t:nr_type) => do
   let callGenKinds ← mkListLit (←callGenVals.getElems.toList.mapM fun _ => `(Kind.type))
   let callGenVals ← mkHListLit (←callGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)

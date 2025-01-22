@@ -128,11 +128,11 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
   induction h with
   | litField hq
   | litStr hq
-  | fmtStr hq
   | litFalse hq
   | litTrue hq
   | litU hq
   | litUnit
+  | fmtStr hq
   | skip hq
   | fn
   | var hq =>
