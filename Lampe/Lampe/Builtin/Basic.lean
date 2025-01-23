@@ -47,15 +47,11 @@ def HList.toCTps {tps : List Tp} {tps' : List CTp}
     match tps, l with
     | [], .nil => match tps' with | [] => HList.nil
     | tp :: tps, .cons x xs => match tps' with
-      | tp' :: tps' => HList.cons
-        (by
-          have h_same' : tp' = tp := by simp_all
-          subst h_same'
-          exact x)
-        (by
-          have h_same' : tps = tps' := by simp_all
-          subst h_same'
-          exact HList.toCTps xs (by tauto))
+       | tp' :: tps' =>
+        have h_same : tp' = tp := by simp_all
+        have h_same' : Tp.denote p tp = CTp.denote p tp' := by rw [←h_same]
+        have h_sames : tps = tps' := by simp_all
+        HList.cons (h_same' ▸ x) (HList.toCTps xs (by tauto))
 
 @[reducible]
 def HList.toTps {tps : List CTp} (l : HList (CTp.denote p) tps) : HList (Tp.denote p) tps :=

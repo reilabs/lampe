@@ -463,7 +463,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let (paramTps, outTp) ← getFuncSignature t
   let selfTp ← match (←mkNrType selfTp) with
     | `(Tp.any) => `(none)
-    | _ => `(some $(←mkNrType selfTp))
+    | t => `(some $t)
   wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp
     (FuncRef.trait $selfTp $traitName $traitGenKinds $traitGenVals $methodName $callGenKinds $callGenVals))) vname k
 | `(nr_expr| $fnExpr:nr_expr ( $args:nr_expr,* )) => do
