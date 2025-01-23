@@ -12,7 +12,9 @@ use noirc_frontend::{
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
-        def_map::{ModuleData, ModuleDefId, ModuleId}, type_check::generics::TraitGenerics, Context
+        def_map::{ModuleData, ModuleDefId, ModuleId},
+        type_check::generics::TraitGenerics,
+        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -21,8 +23,9 @@ use noirc_frontend::{
         traits::{NamedType, TraitImpl},
     },
     node_interner::{
-        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId
-    }, Type, TypeBinding, TypeBindings,
+        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
+    },
+    Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -475,7 +478,9 @@ impl LeanEmitter {
         let (params_str, fresh_type_vars) = self.function_param_string(&func_data.parameters)?;
         let ret_type_str = self.emit_fully_qualified_type(func_data.return_type());
 
-        let generics_string = func_data.all_generics.iter()
+        let generics_string = func_data
+            .all_generics
+            .iter()
             .map(|g| g.name.to_string())
             .chain(fresh_type_vars)
             .join(", ");
@@ -514,7 +519,9 @@ impl LeanEmitter {
             .fully_qualified_function_name(&func_data.source_crate, &func);
         let (params_str, fresh_type_vars) = self.function_param_string(&func_data.parameters)?;
         let ret_type = self.emit_fully_qualified_type(func_data.return_type());
-        let generics_string = func_data.direct_generics.iter()
+        let generics_string = func_data
+            .direct_generics
+            .iter()
             .map(|g| g.name.to_string())
             .chain(fresh_type_vars)
             .join(", ");
@@ -911,11 +918,15 @@ impl LeanEmitter {
                         // Find the instantiation bindings that are not part of the generics of this ident expression.
                         // We assume that these must be `impl` types.
                         // These are later appended to the emitted generics.
-                        let impl_generics = bindings.iter()
-                            .filter(|(_, (tv, _, _))| 
-                                !func_meta.all_generics.iter()
+                        let impl_generics = bindings
+                            .iter()
+                            .filter(|(_, (tv, _, _))| {
+                                !func_meta
+                                    .all_generics
+                                    .iter()
                                     .map(|resolved_gen| &resolved_gen.type_var)
-                                    .any(|tv2| tv2.id() == tv.id()))
+                                    .any(|tv2| tv2.id() == tv.id())
+                            })
                             .map(|(_, (_, _, ty))| self.emit_fully_qualified_type(ty));
                         match (func_meta.trait_impl, func_meta.trait_id) {
                             (Some(trait_impl_id), _) => {
@@ -1440,7 +1451,7 @@ impl LeanEmitter {
 
     /// Generates a function parameter string from the provided parameters.
     /// This function replaces some parameters' types with fresh type variables and these are returned along with the parameter string.
-    /// 
+    ///
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
