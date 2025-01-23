@@ -468,11 +468,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     (FuncRef.trait $selfTp $traitName $traitGenKinds $traitGenVals $methodName $callGenKinds $callGenVals))) vname k
 | `(nr_expr| $fnExpr:nr_expr ( $args:nr_expr,* )) => do
   mkExpr fnExpr none fun fnRef => do
-    -- Automatic input coercion.
-    let args ← args.getElems.toList.mapM fun e => `(nr_expr| ↑$e)
-    mkArgs args fun argVals => do
-      -- Automatic output coercion.
-      wrapSimple (←`(Expr.letIn (.call _ _ $fnRef $(←mkHListLit argVals)) Expr.coe)) vname k
+    mkArgs args.getElems.toList fun argVals => do
+      wrapSimple (←`(.call _ _ $fnRef $(←mkHListLit argVals))) vname k
 | `(nr_expr| ( $_:nr_expr as $_:nr_ident  < $_,* > ) . $_:ident)
 | `(nr_expr| $_:nr_expr . $_:num)
 | `(nr_expr| $_:nr_expr [ $_:nr_expr ])

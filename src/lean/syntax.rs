@@ -213,6 +213,11 @@ pub(super) mod expr {
     }
 
     #[inline]
+    pub fn format_coe(expr: &str) -> String {
+        format!("↑{expr}")
+    }
+
+    #[inline]
     pub fn format_call(func_expr: &str, func_args: &str) -> String {
         format!("{func_expr}({func_args})")
     }

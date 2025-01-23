@@ -9,12 +9,10 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
-    ast::{IntegerBitSize, Signedness, Visibility},
+    ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
-        def_map::{ModuleData, ModuleDefId, ModuleId},
-        type_check::generics::TraitGenerics,
-        Context,
+        def_map::{ModuleData, ModuleDefId, ModuleId}, type_check::generics::TraitGenerics, Context
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -23,9 +21,8 @@ use noirc_frontend::{
         traits::{NamedType, TraitImpl},
     },
     node_interner::{
-        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
-    },
-    StructField, Type, TypeBinding, TypeBindings,
+        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId
+    }, Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -474,9 +471,14 @@ impl LeanEmitter {
         let fq_path = self
             .context
             .fully_qualified_function_name(&func_data.source_crate, &func);
-        let generics_string = func_data.all_generics.iter().map(|g| &g.name).join(", ");
-        let parameters = self.function_param_string(&func_data.parameters)?;
-        let ret_type = self.emit_fully_qualified_type(func_data.return_type());
+
+        let (params_str, fresh_type_vars) = self.function_param_string(&func_data.parameters)?;
+        let ret_type_str = self.emit_fully_qualified_type(func_data.return_type());
+
+        let generics_string = func_data.all_generics.iter()
+            .map(|g| g.name.to_string())
+            .chain(fresh_type_vars)
+            .join(", ");
 
         // Generate the function body ready for insertion
         ind.indent();
@@ -490,7 +492,6 @@ impl LeanEmitter {
             }
             _ => String::new(),
         };
-
         let fn_ident = format!("{self_type_str}{fq_path}");
 
         // [TODO] discard the dummy trait methods
@@ -499,8 +500,8 @@ impl LeanEmitter {
         Ok(syntax::format_free_function_def(
             &fn_ident,
             &generics_string,
-            &parameters,
-            &ret_type,
+            &params_str,
+            &ret_type_str,
             &body,
         ))
     }
@@ -511,9 +512,12 @@ impl LeanEmitter {
         let fq_path = self
             .context
             .fully_qualified_function_name(&func_data.source_crate, &func);
-        let generics_string = func_data.direct_generics.iter().map(|g| &g.name).join(", ");
-        let parameters = self.function_param_string(&func_data.parameters)?;
+        let (params_str, fresh_type_vars) = self.function_param_string(&func_data.parameters)?;
         let ret_type = self.emit_fully_qualified_type(func_data.return_type());
+        let generics_string = func_data.direct_generics.iter()
+            .map(|g| g.name.to_string())
+            .chain(fresh_type_vars)
+            .join(", ");
 
         // Generate the function body ready for insertion
         ind.indent();
@@ -523,7 +527,7 @@ impl LeanEmitter {
         Ok(syntax::format_trait_function_def(
             &fq_path,
             &generics_string,
-            &parameters,
+            &params_str,
             &ret_type,
             &body,
         ))
@@ -882,53 +886,37 @@ impl LeanEmitter {
                 let args_str = args.join(", ");
                 let func_expr_str = self.emit_expr(ind, call.func)?;
 
+                // If the return type of the function call is an `impl`, then the call result should be coerced to a concrete type.
+                let should_coerce = out_ty_str == syntax::r#type::format_any();
+
                 if let Some(builtin_name) = builtin::try_func_expr_into_builtin_name(&func_expr_str)
                 {
                     syntax::expr::format_builtin_call(builtin_name, &args_str, &out_ty_str)
                 } else {
-                    syntax::expr::format_call(&func_expr_str, &args_str)
+                    let call_str = syntax::expr::format_call(&func_expr_str, &args_str);
+                    if should_coerce {
+                        syntax::expr::format_coe(&call_str)
+                    } else {
+                        call_str
+                    }
                 }
             }
             HirExpression::Ident(ident, generics) => {
                 let name = self.context.def_interner.definition_name(ident.id);
                 let ident_def = self.context.def_interner.definition(ident.id);
                 let bindings = self.context.def_interner.get_instantiation_bindings(expr);
-
                 match ident_def.kind {
                     DefinitionKind::Function(func_id) => {
                         let func_meta = self.context.def_interner.function_meta(&func_id);
-                        // Get the string representation of the parameters of this function from function metadata.
-                        let params_meta = func_meta
-                            .parameters
-                            .0
-                            .iter()
-                            .map(|(_, param_ty, _)| self.emit_fully_qualified_type(param_ty))
-                            .collect_vec();
-                        // Get the string representation of the parameters and the return type of this function from the expression's output type.
-                        let (params_expr, ret_expr) = match out_ty {
-                            Type::Function(params, ret, ..) => (
-                                params
-                                    .iter()
-                                    .map(|t| self.emit_fully_qualified_type(t))
-                                    .collect_vec(),
-                                self.emit_fully_qualified_type(&ret),
-                            ),
-                            _ => panic!("expected function type, found {out_ty:?}"),
-                        };
-                        // Prioritize the parameters from the metadata if they are an "any" type, since these are always replaced by concrete types in the expression's output type.
-                        let params_final = params_meta
-                            .iter()
-                            .zip(params_expr.iter())
-                            .map(|(m, e)| {
-                                if m == &syntax::r#type::format_any() {
-                                    m
-                                } else {
-                                    e
-                                }
-                            })
-                            .join(", ");
-                        // Reconstruct the string representation of the function type, i.e., the type of the output of this expression.
-                        let out_ty_str = syntax::r#type::format_function(&params_final, &ret_expr);
+                        // Find the instantiation bindings that are not part of the generics of this ident expression.
+                        // We assume that these must be `impl` types.
+                        // These are later appended to the emitted generics.
+                        let impl_generics = bindings.iter()
+                            .filter(|(_, (tv, _, _))| 
+                                !func_meta.all_generics.iter()
+                                    .map(|resolved_gen| &resolved_gen.type_var)
+                                    .any(|tv2| tv2.id() == tv.id()))
+                            .map(|(_, (_, _, ty))| self.emit_fully_qualified_type(ty));
                         match (func_meta.trait_impl, func_meta.trait_id) {
                             (Some(trait_impl_id), _) => {
                                 let trait_impl = self
@@ -952,6 +940,7 @@ impl LeanEmitter {
                                     .iter()
                                     .map(|g| self.substitute_bindings(g, &bindings))
                                     .map(|t| self.emit_fully_qualified_type(&t))
+                                    .chain(impl_generics)
                                     .join(", ");
                                 syntax::expr::format_trait_func_ident(
                                     &self_type_str,
@@ -986,6 +975,7 @@ impl LeanEmitter {
                                     .iter()
                                     .map(|g| self.substitute_bindings(g, &bindings))
                                     .map(|t| self.emit_fully_qualified_type(&t))
+                                    .chain(impl_generics)
                                     .join(", ");
                                 syntax::expr::format_trait_func_ident(
                                     &self_type_str,
@@ -1015,16 +1005,17 @@ impl LeanEmitter {
                                 } else {
                                     format!("{fq_mod_name}::{fn_name}")
                                 };
-                                let call_generics = func_meta
+                                let ident_generics = func_meta
                                     .all_generics
                                     .iter()
                                     .flat_map(|t| bindings.get(&t.type_var.id()))
                                     .map(|(_, _, ty)| self.emit_fully_qualified_type(ty))
+                                    .chain(impl_generics)
                                     .join(", ");
 
                                 syntax::expr::format_decl_func_ident(
                                     &fq_func_name,
-                                    &call_generics,
+                                    &ident_generics,
                                     &out_ty_str,
                                 )
                             }
@@ -1060,7 +1051,7 @@ impl LeanEmitter {
                 // Map a field name to its order.
                 let field_orders: HashMap<_, usize> = (0..struct_def.num_fields())
                     .map(|i| {
-                        let StructField { name, .. } = struct_def.field_at(i);
+                        let noirc_frontend::StructField { name, .. } = struct_def.field_at(i);
                         (name.clone(), i)
                     })
                     .collect();
@@ -1448,33 +1439,35 @@ impl LeanEmitter {
     }
 
     /// Generates a function parameter string from the provided parameters.
-    ///
+    /// This function replaces some parameters' types with fresh type variables and these are returned along with the parameter string.
+    /// 
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
-    pub fn function_param_string(&self, params: &Parameters) -> Result<String> {
+    pub fn function_param_string(&self, params: &Parameters) -> Result<(String, Vec<String>)> {
+        let mut new_type_vars = Vec::new();
         let result_params: Vec<String> = params
             .iter()
-            .map(|(pattern, typ, vis)| {
+            .enumerate()
+            .map(|(i, (pattern, typ, _))| {
                 let name = self
                     .context
                     .def_interner
                     .definition_name(expect_identifier(pattern)?.id);
-                let _vis_string: String = match vis {
-                    Visibility::Public => "pub ",
-                    Visibility::Private => "",
-                    Visibility::CallData(_) => "call_data ",
-                    Visibility::ReturnData => "ret_data ",
-                }
-                .into();
-
-                let qualified_type = self.emit_fully_qualified_type(typ);
-
-                Ok(format!("{name} : {qualified_type}"))
+                let original_type = self.emit_fully_qualified_type(typ);
+                // Replace the type with a fresh type variable if this is an `impl` type.
+                let replaced_type = if original_type == syntax::r#type::format_any() {
+                    let new_ty = format!("I#{i}");
+                    new_type_vars.push(new_ty.clone());
+                    new_ty
+                } else {
+                    original_type
+                };
+                Ok(format!("{name} : {replaced_type}"))
             })
             .try_collect()?;
 
-        Ok(result_params.join(", "))
+        Ok((result_params.join(", "), new_type_vars))
     }
 
     fn emit_cast_to_u32(&self, expr: &str) -> String {
