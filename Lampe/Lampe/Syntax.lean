@@ -43,8 +43,7 @@ syntax ident ":" nr_type : nr_param_decl
 
 syntax num ":" nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
-syntax "#format(" str "," nr_fmtstr_part,* ")" : nr_expr -- Foramt string
-syntax "("nr_expr ":" nr_type ")" : nr_fmtstr_part
+syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
 syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
@@ -84,6 +83,8 @@ syntax nr_trait_fn_def := "fn" nr_fn_decl
 syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
 syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
+
+abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
 
 partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
 | `(nr_ident|$i:ident) => pure i.getId.toString
@@ -139,11 +140,6 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   let paramTps ← (mkListLit (←paramTps.getElems.toList.mapM mkNrType))
   let outTp ← mkNrType outTp
   `(Tp.fn $paramTps $outTp)
-| _ => throwUnsupportedSyntax
-
-partial def mkFmtStrPart [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] :
-    TSyntax `nr_fmtstr_part → m ((TSyntax `nr_expr) × (TSyntax `term))
-| `(nr_fmtstr_part| ($val:nr_expr : $typ:nr_type)) => return (val, ←mkNrType typ)
 | _ => throwUnsupportedSyntax
 
 def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
@@ -440,10 +436,9 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Expr.mkTuple none $(←mkHListLit argVals))) vname k
 | `(nr_expr| #format($s:str, $args,*) ) => do
-  let fmtStrParts ← (args.getElems.toList.mapM mkFmtStrPart)
-  let (partVal, partType) := fmtStrParts.unzip
-  mkArgs partVal fun _argVals => do -- TODO: Eventually we'll need the `argVals` when constructing the fmtStr
-    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit partType) (Unit.unit))) vname k
+  mkArgs args.getElems.toList fun argVals => do
+    let argTps <- argVals.mapM fun arg => `(typeOf $arg)
+    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) (Unit.unit))) vname k
 | `(nr_expr| @ $fnName:nr_ident < $callGenVals:nr_type,* > as $t:nr_type) => do
   let callGenKinds ← mkListLit (←callGenVals.getElems.toList.mapM fun _ => `(Kind.type))
   let callGenVals ← mkHListLit (←callGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)

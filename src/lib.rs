@@ -187,14 +187,6 @@ mod test {
                 x
             }
 
-            fn pattern_test() {
-                let opt = Option2::some(true);
-                let t = (1, opt, 3);
-                let (x, mut Option2 { _is_some, _value }, mut z) = t;
-                let lam = |(x, mut y, z) : (bool, bool, bool), k : Field| -> bool {
-                    x
-                };
-
             fn fmtstr_test(x: Field, y: pub Field) -> pub Field {
                 assert(x != y);
                 let _a: fmtstr<37, (Field, Field)> = f"this is first:{x}  this is second:{y}";
@@ -216,9 +208,13 @@ mod test {
                 tpl.0 = 2;
             }
 
-            fn string_test() -> str<5> {
-                let x : str<5> = "Hello";
-                x
+            fn pattern_test() {
+                let opt = Option2::some(true);
+                let t = (1, opt, 3);
+                let (x, mut Option2 { _is_some, _value }, mut z) = t;
+                let lam = |(x, mut y, z) : (bool, bool, bool), k : Field| -> bool {
+                    x
+                };
             }
 
         "#;

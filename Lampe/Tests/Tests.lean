@@ -438,6 +438,6 @@ example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)
 
 nr_def fmtstr_test<>() -> Field {
   let y = 3 : Field;
-  let _x = #format("y: {}", (y : Field));
+  let _x = #format("y: {}", y);
   y
 }
