@@ -1031,7 +1031,6 @@ impl LeanEmitter {
                     _ => panic!("member access lhs is not a struct or tuple: {lhs_expr_ty:?}"),
                 }
             }
-
             HirExpression::Cast(cast) => {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
@@ -1067,43 +1066,62 @@ impl LeanEmitter {
             HirExpression::Lambda(lambda) => {
                 let ret_type = self.emit_fully_qualified_type(&lambda.return_type);
 
-                let params = lambda
+                // Divide the parameters into simple and complex parameters, where simple parameters are parameters that can be expressed as a single let or let mut binding.
+                let (simple_params, complex_params): (Vec<_>, Vec<_>) = lambda
                     .parameters
                     .iter()
                     .enumerate()
-                    .map(|(param_idx, (pat, param_typ))| {
-                        let lhs = format!("param#{param_idx}");
-                        let typ = self.emit_fully_qualified_type(param_typ);
-                        (pat.clone(), lhs, typ)
+                    .partition_map(|(param_idx, (pat, param_typ))| {
+                        let rhs = self.emit_fully_qualified_type(param_typ);
+                        if let Some((_, lhs)) =
+                            pattern::try_format_simple_pattern(pat, "", self)
+                        {
+                            // If the parameter is simple, we can directly use the ident as the lhs.
+                            let lhs = self.context.def_interner.definition_name(lhs.id);
+                            itertools::Either::Left(format!("{lhs} : {rhs}"))
+                        } else {
+                            // If the parameter is complex, we need to generate a fresh binding for it.
+                            let lhs = format!("param#{param_idx}");
+                            itertools::Either::Right((pat.clone(), lhs, rhs))
+                        }
+                    });
+                // Convert the parameters into strings.
+                let params_str = complex_params.iter()
+                    .map(|(_, lhs, rhs)| {
+                        format!("{lhs} : {rhs}")
                     })
-                    .collect_vec();
-                let params_str = params.iter()
-                    .map(|(_, lhs, rhs)| format!("{lhs} : {rhs}"))
+                    .chain(simple_params)
                     .join(", ");
-                let pattern_stmts_str = params.iter().map(|(pat, lhs, _)| {
+                // Convert the complex parameters into a series of let (mut) bindings.
+                let pattern_stmts_str = complex_params.iter().map(|(pat, lhs, _)| {
                     pattern::format_pattern(pat, lhs, self).join(";\n")
                 }).join(";\n");
                 let body = self.emit_expr(ind, lambda.body)?;
+                // Prepend the body with the appropriate block of let (mut) bindings if there are any complex parameters.
+                let body = if pattern_stmts_str.is_empty() {
+                    body
+                } else {
+                    ind.run(format!("{{\n{pattern_stmts_str};\n{{\n{body}\n}}\n}}"))
+                };
 
-                syntax::expr::format_lambda(&params_str, &format!("{{ {pattern_stmts_str}; {body} }}"), &ret_type)
+                syntax::expr::format_lambda(&params_str, &body, &ret_type)
             }
-            HirExpression::MethodCall(_) => {
+            HirExpression::MethodCall(..) => {
                 panic!("Method call expressions should not exist after type checking")
             }
-            HirExpression::Comptime(_) => {
+            HirExpression::Comptime(..) => {
                 panic!("Comptime expressions should not exist after compilation is done")
             }
-            HirExpression::Quote(_) => {
+            HirExpression::Quote(..) => {
                 panic!("Quote expressions should not exist after macro resolution")
             }
-            HirExpression::Unquote(_) => {
+            HirExpression::Unquote(..) => {
                 panic!("Unquote expressions should not exist after macro resolution")
             }
-
             HirExpression::Error => {
                 panic!("Encountered error expression where none should exist")
             }
-            HirExpression::Unsafe(_) => panic!("unsafe expressions not supported yet"),
+            HirExpression::Unsafe(..) => panic!("Unsafe expressions not supported yet"),
         };
 
         Ok(expression)
@@ -1152,21 +1170,13 @@ impl LeanEmitter {
             HirStatement::Expression(expr) => self.emit_expr(ind, expr)?,
             HirStatement::Let(lets) => {
                 let bound_expr = self.emit_expr(ind, lets.expression)?;
-                match &lets.pattern {
-                    HirPattern::Identifier(..) => {
-                        pattern::format_pattern(&lets.pattern, &bound_expr, self).pop().unwrap()
-                    }
-                    HirPattern::Mutable(sub_pat, ..) if matches!(**sub_pat, HirPattern::Identifier(..)) => {
-                        pattern::format_pattern(&lets.pattern, &bound_expr, self).pop().unwrap()
-                    },
-                    _ => {
-                        let pat_rhs = "param#0";
-                        let mut stmts = vec![syntax::stmt::format_let_in(pat_rhs, &bound_expr)];
-                        stmts.extend(pattern::format_pattern(&lets.pattern, pat_rhs, self));
-                        let mut stmts_str = stmts.join(";\n");
-                        stmts_str.push(';');
-                        stmts_str
-                    },
+                if let Some((simple_stmt, _)) = pattern::try_format_simple_pattern(&lets.pattern, &bound_expr, self) {
+                    simple_stmt
+                } else {
+                    let pat_rhs = "param#0";
+                    let mut stmts = vec![syntax::stmt::format_let_in(pat_rhs, &bound_expr)];
+                    stmts.extend(pattern::format_pattern(&lets.pattern, pat_rhs, self));
+                    stmts.join(";\n")
                 }
             }
             HirStatement::Constrain(constraint) => {

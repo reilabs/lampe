@@ -206,7 +206,10 @@ mod test {
             fn pattern_test() {
                 let opt = Option2::some(true);
                 let t = (1, opt, 3);
-                let (x, Option2 { _is_some, _value }, z) = t;
+                let (x, mut Option2 { _is_some, _value }, mut z) = t;
+                let lam = |(x, mut y, z) : (bool, bool, bool), k : Field| -> bool {
+                    x
+                };
             }
 
         "#;
