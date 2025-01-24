@@ -16,6 +16,7 @@ import Lampe.Builtin.Struct
 import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.Data.Integers
+import Lampe.Data.Strings
 import Lampe.Hoare.Builtins
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Total

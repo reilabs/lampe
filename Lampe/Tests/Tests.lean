@@ -435,3 +435,9 @@ example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)
       simp_all
   steps
   simp_all
+
+nr_def fmtstr_test<>() -> Field {
+  let y = 3 : Field;
+  let _x = #format("y: {}", y);
+  y
+}

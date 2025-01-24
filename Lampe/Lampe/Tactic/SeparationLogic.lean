@@ -83,6 +83,14 @@ theorem Lampe.STHoare.litStr_intro: STHoare p Γ ⟦⟧ (.litStr u s) fun v => v
   apply SLP.ent_star_top
   assumption
 
+theorem Lampe.STHoare.fmtStr_intro : STHoare p Γ ⟦⟧ (.fmtStr u tps s) fun v => v = s := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
 theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.litNum .bool 0) fun v => v = false := by
   unfold STHoare THoare
   intro H st hp
@@ -554,6 +562,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litU_intro
     | apply Lampe.STHoare.litField_intro
     | apply Lampe.STHoare.litStr_intro
+    | apply Lampe.STHoare.fmtStr_intro
     | apply Lampe.STHoare.litTrue_intro
     | apply Lampe.STHoare.litFalse_intro
     | apply Lampe.STHoare.litUnit_intro
@@ -626,6 +635,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left Lampe.STHoare.litU_intro
     | apply consequence_frame_left Lampe.STHoare.litField_intro
     | apply consequence_frame_left Lampe.STHoare.litStr_intro
+    | apply consequence_frame_left Lampe.STHoare.fmtStr_intro
     | apply consequence_frame_left Lampe.STHoare.litTrue_intro
     | apply consequence_frame_left Lampe.STHoare.litFalse_intro
     | apply consequence_frame_left Lampe.STHoare.litUnit_intro
@@ -698,6 +708,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top Lampe.STHoare.litU_intro
     | apply ramified_frame_top Lampe.STHoare.litField_intro
     | apply ramified_frame_top Lampe.STHoare.litStr_intro
+    | apply ramified_frame_top Lampe.STHoare.fmtStr_intro
     | apply ramified_frame_top Lampe.STHoare.litTrue_intro
     | apply ramified_frame_top Lampe.STHoare.litFalse_intro
     | apply ramified_frame_top Lampe.STHoare.litUnit_intro

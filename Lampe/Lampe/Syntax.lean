@@ -23,13 +23,15 @@ declare_syntax_cat nr_type
 declare_syntax_cat nr_expr
 declare_syntax_cat nr_block_contents
 declare_syntax_cat nr_param_decl
+declare_syntax_cat nr_fmtstr_part
 
 syntax ident : nr_ident
 syntax ident "::" nr_ident : nr_ident
 
 syntax ident : nr_type
 syntax "${" term "}" : nr_type
-syntax "str<" num ">" : nr_type
+syntax "str<" num ">" : nr_type -- Strings
+syntax "fmtstr<" num "," "(" nr_type,* ")" ">" : nr_type -- Format strings
 syntax nr_ident "<" nr_type,* ">" : nr_type -- Struct
 syntax "[" nr_type "]" : nr_type -- Slice
 syntax "[" nr_type ";" num "]" : nr_type -- Array
@@ -41,6 +43,7 @@ syntax ident ":" nr_type : nr_param_decl
 
 syntax num ":" nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
+syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
 syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
@@ -81,6 +84,8 @@ syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
 syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
 
+abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
+
 partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
 | `(nr_ident|$i:ident) => pure i.getId.toString
 | `(nr_ident|$i:ident :: $j:nr_ident) => do pure s!"{i.getId}::{←mkNrIdent j}"
@@ -116,6 +121,9 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| bool) => `(Tp.bool)
 | `(nr_type| Field) => `(Tp.field)
 | `(nr_type| str<$n:num>) => `(Tp.str $n)
+| `(nr_type| fmtstr<$n:num, ($tps,*)>) => do
+  let tps ← tps.getElems.toList.mapM mkNrType
+  `(Tp.fmtStr $n $(←mkListLit tps))
 | `(nr_type| Unit) => `(Tp.unit)
 | `(nr_type| $i:ident) => `($i)
 | `(nr_type| & $tp) => do `(Tp.ref $(←mkNrType tp))
@@ -427,6 +435,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| `( $args,* )) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Expr.mkTuple none $(←mkHListLit argVals))) vname k
+| `(nr_expr| #format($s:str, $args,*) ) => do
+  mkArgs args.getElems.toList fun argVals => do
+    let argTps <- argVals.mapM fun arg => `(typeOf $arg)
+    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) (Unit.unit))) vname k
 | `(nr_expr| @ $fnName:nr_ident < $callGenVals:nr_type,* > as $t:nr_type) => do
   let callGenKinds ← mkListLit (←callGenVals.getElems.toList.mapM fun _ => `(Kind.type))
   let callGenVals ← mkHListLit (←callGenVals.getElems.toList.mapM fun gVal => mkNrType gVal)
