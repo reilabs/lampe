@@ -154,12 +154,6 @@ pub(super) mod r#type {
     }
 
     #[inline]
-    pub fn format_trait_as_type(_trait_name: &str, _generics: &str) -> String {
-        todo!("TraitAsType not implemented yet")
-        // format!("?{trait_name}<{generics}>")
-    }
-
-    #[inline]
     pub fn format_function(param_types: &str, ret_type: &str) -> String {
         format!("λ({param_types}) → {ret_type}")
     }
@@ -309,7 +303,6 @@ pub(super) mod stmt {
     pub fn format_let_mut_in(lhs: &str, rhs: &str) -> String {
         format!("let mut {lhs} = {rhs}")
     }
-
 
     #[inline]
     pub fn format_for_loop(loop_var: &str, loop_start: &str, loop_end: &str, body: &str) -> String {

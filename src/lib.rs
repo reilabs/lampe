@@ -193,6 +193,19 @@ mod test {
                 x + y
             }
 
+            fn pattern_test() {
+                let opt = Option2::some(true);
+                let t = (1, opt, 3);
+                let (x, mut Option2 { _is_some, _value }, mut z) = t;
+                let lam = |(x, mut y, z) : (bool, bool, bool), k : Field| -> bool {
+                    x
+                };
+            }
+
+            fn impl_test(x: impl MyTrait, z: impl Default) -> impl MyTrait {
+                x
+            }
+
             fn main() {
                 let mut op1 = Option2::some(5);
                 let op2 = Option2::default();
@@ -206,16 +219,9 @@ mod test {
                 op1._is_some = false;
                 let mut tpl = (1, true);
                 tpl.0 = 2;
+                let impl_res = impl_test(op1, 0);
             }
 
-            fn pattern_test() {
-                let opt = Option2::some(true);
-                let t = (1, opt, 3);
-                let (x, mut Option2 { _is_some, _value }, mut z) = t;
-                let lam = |(x, mut y, z) : (bool, bool, bool), k : Field| -> bool {
-                    x
-                };
-            }
 
         "#;
 
