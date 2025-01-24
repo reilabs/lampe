@@ -187,7 +187,7 @@ mod test {
                 x
             }
 
-            fn fmtstr_test(x: Field, y: pub Field) -> pub Field {
+            fn fmtstr_test(x: Field, y: Field) -> Field {
                 assert(x != y);
                 let _a: fmtstr<37, (Field, Field)> = f"this is first:{x}  this is second:{y}";
                 x + y
@@ -202,8 +202,8 @@ mod test {
                 };
             }
 
-            fn impl_test(x: impl MyTrait, z: impl Default) -> impl MyTrait {
-                x
+            fn impl_test<I : MyTrait>(x: I, y: impl Default) -> impl MyTrait {
+                I
             }
 
             fn main() {

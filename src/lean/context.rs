@@ -1,11 +1,6 @@
 use std::collections::HashMap;
 
-use noirc_frontend::{
-    hir::def_map::ModuleData,
-    hir_def::{expr::HirExpression, stmt::HirStatement},
-    node_interner::NodeInterner,
-    Type,
-};
+use noirc_frontend::{hir::def_map::ModuleData, node_interner::NodeInterner, Type};
 
 pub struct EmitterCtx {
     // Maps an impl parameter type to a type variable name.
@@ -52,27 +47,11 @@ impl EmitterCtx {
             if is_impl(ret_type) {
                 let fn_body = interner.function(&fn_id).as_expr();
                 let fn_body_ret = interner.id_type(fn_body);
-                match &fn_body_ret {
-                    Type::TypeVariable(tv) | Type::NamedGeneric(tv, ..) => {
-                        let fn_body_last_expr = match &interner.expression(&fn_body) {
-                            HirExpression::Block(block_expr) => match block_expr
-                                .statements()
-                                .last()
-                                .map(|stmt_id| interner.statement(stmt_id))
-                            {
-                                Some(HirStatement::Expression(expr_id)) => expr_id,
-                                _ => fn_body,
-                            },
-                            _ => fn_body,
-                        };
-                        let bindings = interner.try_get_instantiation_bindings(fn_body_last_expr);
-                        if let Some((_, _, subst_typ)) =
-                            bindings.and_then(|bindings| bindings.get(&tv.id()))
-                        {
-                            if impl_param_overrides.contains_key(subst_typ) {
-                                panic!("oh no!");
-                            }
-                        }
+                // If the return type of the body is not a concrete type, then we fail.
+                // As of Noir v1.0.0-beta.1, the compiler cannot handle these.
+                match fn_body_ret {
+                    Type::TypeVariable(_) | Type::TraitAsType(..) | Type::NamedGeneric(..) => {
+                        todo!("impl returns that are not concrete types are not supported")
                     }
                     _ => {}
                 }

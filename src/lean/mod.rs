@@ -929,9 +929,9 @@ impl LeanEmitter {
                 {
                     syntax::expr::format_builtin_call(builtin_name, &args_str, &out_ty_str)
                 } else {
-                    let fn_type =
+                    let fn_typ_str =
                         self.emit_fully_qualified_type(&self.id_bound_type(call.func), ctx);
-                    syntax::expr::format_call(&func_expr_str, &args_str, &fn_type)
+                    syntax::expr::format_call(&func_expr_str, &args_str, &fn_typ_str)
                 }
             }
             HirExpression::Ident(ident, generics) => {
@@ -1011,7 +1011,7 @@ impl LeanEmitter {
                                 } else {
                                     format!("{fq_mod_name}::{fn_name}")
                                 };
-                                let call_generics = func_meta
+                                let ident_generics = func_meta
                                     .all_generics
                                     .iter()
                                     .flat_map(|t| bindings.get(&t.type_var.id()))
@@ -1019,7 +1019,7 @@ impl LeanEmitter {
                                     .chain(impl_generics)
                                     .join(", ");
 
-                                syntax::expr::format_decl_func_ident(&fq_func_name, &call_generics)
+                                syntax::expr::format_decl_func_ident(&fq_func_name, &ident_generics)
                             }
                         }
                     }
