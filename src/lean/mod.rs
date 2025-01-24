@@ -2,6 +2,7 @@
 mod builtin;
 pub mod indent;
 mod syntax;
+mod pattern;
 
 use std::collections::{HashMap, HashSet};
 
@@ -1030,7 +1031,6 @@ impl LeanEmitter {
                     _ => panic!("member access lhs is not a struct or tuple: {lhs_expr_ty:?}"),
                 }
             }
-
             HirExpression::Cast(cast) => {
                 let source = self.emit_expr(ind, cast.lhs)?;
                 let target_type = self.emit_fully_qualified_type(&cast.r#type);
@@ -1066,50 +1066,62 @@ impl LeanEmitter {
             HirExpression::Lambda(lambda) => {
                 let ret_type = self.emit_fully_qualified_type(&lambda.return_type);
 
-                let arg_strs: Vec<String> = lambda
+                // Divide the parameters into simple and complex parameters, where simple parameters are parameters that can be expressed as a single let or let mut binding.
+                let (simple_params, complex_params): (Vec<_>, Vec<_>) = lambda
                     .parameters
                     .iter()
-                    .map(|(pattern, ty)| {
-                        let pattern_str = self.emit_pattern(pattern)?;
-                        let typ = self.emit_fully_qualified_type(ty);
-                        Ok(format!("{pattern_str} : {typ}"))
+                    .enumerate()
+                    .partition_map(|(param_idx, (pat, param_typ))| {
+                        let rhs = self.emit_fully_qualified_type(param_typ);
+                        if let Some((_, lhs)) =
+                            pattern::try_format_simple_pattern(pat, "", self)
+                        {
+                            // If the parameter is simple, we can directly use the ident as the lhs.
+                            let lhs = self.context.def_interner.definition_name(lhs.id);
+                            itertools::Either::Left(format!("{lhs} : {rhs}"))
+                        } else {
+                            // If the parameter is complex, we need to generate a fresh binding for it.
+                            let lhs = format!("param#{param_idx}");
+                            itertools::Either::Right((pat.clone(), lhs, rhs))
+                        }
+                    });
+                // Convert the parameters into strings.
+                let params_str = complex_params.iter()
+                    .map(|(_, lhs, rhs)| {
+                        format!("{lhs} : {rhs}")
                     })
-                    .try_collect()?;
-                let args = arg_strs.join(", ");
-                let captures = lambda
-                    .captures
-                    .iter()
-                    .map(|capture| {
-                        let capture_type =
-                            self.context.def_interner.definition_type(capture.ident.id);
-                        let capture_type = self.emit_fully_qualified_type(&capture_type);
-                        let name = self.context.def_interner.definition_name(capture.ident.id);
-
-                        format!("{name} : {capture_type}")
-                    })
+                    .chain(simple_params)
                     .join(", ");
-
+                // Convert the complex parameters into a series of let (mut) bindings.
+                let pattern_stmts_str = complex_params.iter().map(|(pat, lhs, _)| {
+                    pattern::format_pattern(pat, lhs, self).join(";\n")
+                }).join(";\n");
                 let body = self.emit_expr(ind, lambda.body)?;
+                // Prepend the body with the appropriate block of let (mut) bindings if there are any complex parameters.
+                let body = if pattern_stmts_str.is_empty() {
+                    body
+                } else {
+                    ind.run(format!("{{\n{pattern_stmts_str};\n{{\n{body}\n}}\n}}"))
+                };
 
-                syntax::expr::format_lambda(&captures, &args, &body, &ret_type)
+                syntax::expr::format_lambda(&params_str, &body, &ret_type)
             }
-            HirExpression::MethodCall(_) => {
+            HirExpression::MethodCall(..) => {
                 panic!("Method call expressions should not exist after type checking")
             }
-            HirExpression::Comptime(_) => {
+            HirExpression::Comptime(..) => {
                 panic!("Comptime expressions should not exist after compilation is done")
             }
-            HirExpression::Quote(_) => {
+            HirExpression::Quote(..) => {
                 panic!("Quote expressions should not exist after macro resolution")
             }
-            HirExpression::Unquote(_) => {
+            HirExpression::Unquote(..) => {
                 panic!("Unquote expressions should not exist after macro resolution")
             }
-
             HirExpression::Error => {
                 panic!("Encountered error expression where none should exist")
             }
-            HirExpression::Unsafe(_) => panic!("unsafe expressions not supported yet"),
+            HirExpression::Unsafe(..) => panic!("Unsafe expressions not supported yet"),
         };
 
         Ok(expression)
@@ -1157,20 +1169,18 @@ impl LeanEmitter {
         let result = match stmt_data {
             HirStatement::Expression(expr) => self.emit_expr(ind, expr)?,
             HirStatement::Let(lets) => {
-                let binding_type = self.emit_fully_qualified_type(&lets.r#type);
                 let bound_expr = self.emit_expr(ind, lets.expression)?;
-                let name = self.emit_pattern(&lets.pattern)?;
-                // [TODO] proper pattern support
-                syntax::stmt::format_let_in(&name, &binding_type, &bound_expr)
+                if let Some((simple_stmt, _)) = pattern::try_format_simple_pattern(&lets.pattern, &bound_expr, self) {
+                    simple_stmt
+                } else {
+                    let pat_rhs = "param#0";
+                    let mut stmts = vec![syntax::stmt::format_let_in(pat_rhs, &bound_expr)];
+                    stmts.extend(pattern::format_pattern(&lets.pattern, pat_rhs, self));
+                    stmts.join(";\n")
+                }
             }
             HirStatement::Constrain(constraint) => {
                 let constraint_expr = self.emit_expr(ind, constraint.0)?;
-                // [TODO] what to do with asserts with prints?
-                let _print_expr = if let Some(expr) = constraint.2 {
-                    Some(self.emit_expr(ind, expr)?)
-                } else {
-                    None
-                };
 
                 syntax::expr::format_builtin_call(
                     builtin::ASSERT_BUILTIN_NAME.into(),
@@ -1265,49 +1275,6 @@ impl LeanEmitter {
             HirLValue::Dereference { lvalue, .. } => {
                 let lhs_lval = self.emit_l_value(ind, lvalue.as_ref())?;
                 syntax::lval::format_deref_access(&lhs_lval)
-            }
-        };
-
-        Ok(result)
-    }
-
-    /// Emits the Lean code corresponding to a Noir pattern.
-    ///
-    /// # Errors
-    ///
-    /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_pattern(&self, pattern: &HirPattern) -> Result<String> {
-        let result = match pattern {
-            HirPattern::Identifier(id) => {
-                self.context.def_interner.definition_name(id.id).to_string()
-            }
-            HirPattern::Mutable(pattern, _) => {
-                let child_pattern = self.emit_pattern(pattern.as_ref())?;
-                format!("mut {child_pattern}")
-            }
-            HirPattern::Tuple(patterns, _) => {
-                let pattern_strs: Vec<String> = patterns
-                    .iter()
-                    .map(|pattern| self.emit_pattern(pattern))
-                    .try_collect()?;
-                let patterns_str = pattern_strs.join(", ");
-
-                format!("({patterns_str})")
-            }
-            HirPattern::Struct(struct_ty, patterns, _) => {
-                let ty_str = self.emit_fully_qualified_type(struct_ty);
-
-                let pattern_strs: Vec<String> = patterns
-                    .iter()
-                    .map(|(pat_name, pat_expr)| {
-                        let child_pat = self.emit_pattern(pat_expr)?;
-
-                        Ok(format!("{pat_name}: {child_pat}"))
-                    })
-                    .try_collect()?;
-                let patterns_str = pattern_strs.join(", ");
-
-                format!("{ty_str} {{{patterns_str}}}")
             }
         };
 

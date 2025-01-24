@@ -291,7 +291,7 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_lambda(_captures: &str, args: &str, body: &str, ret_type: &str) -> String {
+    pub fn format_lambda(args: &str, body: &str, ret_type: &str) -> String {
         format!("|{args}| -> {ret_type} {body}")
     }
 }
@@ -301,9 +301,15 @@ pub(super) mod stmt {
     use super::*;
 
     #[inline]
-    pub fn format_let_in(pat: &str, _binding_type: &str, bound_expr: &str) -> String {
-        format!("let {pat} = {bound_expr}")
+    pub fn format_let_in(lhs: &str, rhs: &str) -> String {
+        format!("let {lhs} = {rhs}")
     }
+
+    #[inline]
+    pub fn format_let_mut_in(lhs: &str, rhs: &str) -> String {
+        format!("let mut {lhs} = {rhs}")
+    }
+
 
     #[inline]
     pub fn format_for_loop(loop_var: &str, loop_start: &str, loop_end: &str, body: &str) -> String {
