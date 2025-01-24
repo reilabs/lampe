@@ -202,8 +202,8 @@ mod test {
                 };
             }
 
-            fn impl_test<I : MyTrait>(x: I, y: impl Default) -> impl MyTrait {
-                I
+            fn impl_test(x: impl MyTrait, y: impl Default) -> impl Default {
+                false
             }
 
             fn main() {
