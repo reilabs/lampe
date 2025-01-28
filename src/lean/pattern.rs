@@ -1,5 +1,7 @@
 use noirc_frontend::{ast::Ident, hir_def::{expr::HirIdent, stmt::HirPattern}, Type};
 
+use super::{context::EmitterCtx, LeanEmitter};
+
 #[derive(Clone, Debug)]
 enum PatType {
     Tuple(usize),
@@ -73,14 +75,14 @@ fn parse_pattern(pat: &HirPattern, ctx: &mut PatCtx) -> Vec<PatRes> {
 
 /// Emits the Lean code corresponding to a Noir pattern as a single `let` or `let mut` binding, along with the `HirIdent` at the lhs of the pattern.
 /// Returns `None` if the pattern is not simple enough to be expressed as a single binding.
-pub(super) fn try_format_simple_pattern(pat: &HirPattern, pat_rhs: &str, emitter: &super::LeanEmitter) -> Option<(String, HirIdent)> {
+pub(super) fn try_format_simple_pattern(pat: &HirPattern, pat_rhs: &str, emitter: &LeanEmitter, ctx: &EmitterCtx) -> Option<(String, HirIdent)> {
     match pat {
         HirPattern::Identifier(ident) => {
-            format_pattern(pat, pat_rhs, emitter).pop().map(|pat| (pat, ident.clone()))
+            format_pattern(pat, pat_rhs, emitter, ctx).pop().map(|pat| (pat, ident.clone()))
         }
         HirPattern::Mutable(sub_pat, ..)  => {
             if let HirPattern::Identifier(ident) = sub_pat.as_ref() {
-                format_pattern(pat, pat_rhs, emitter).pop().map(|pat| (pat, ident.clone()))
+                format_pattern(pat, pat_rhs, emitter, ctx).pop().map(|pat| (pat, ident.clone()))
             } else {
                 None
             }
@@ -90,7 +92,7 @@ pub(super) fn try_format_simple_pattern(pat: &HirPattern, pat_rhs: &str, emitter
 }
 
 /// Emits the Lean code corresponding to a Noir pattern as a series of `let` or `let mut` bindings.
-pub(super) fn format_pattern(pat: &HirPattern, pat_rhs: &str, emitter: &super::LeanEmitter) -> Vec<String> {
+pub(super) fn format_pattern(pat: &HirPattern, pat_rhs: &str, emitter: &LeanEmitter, emitter_ctx: &EmitterCtx) -> Vec<String> {
     let mut ctx = PatCtx::default();
      parse_pattern(pat, &mut ctx).into_iter().map(|pat_res| {
         let PatRes(id, ctx) = pat_res;
@@ -102,7 +104,7 @@ pub(super) fn format_pattern(pat: &HirPattern, pat_rhs: &str, emitter: &super::L
                     rhs = super::syntax::expr::format_tuple_access(&rhs, &format!("{}", i));
                 },
                 PatType::Struct { struct_type, field } => {
-                    let struct_name = emitter.emit_fully_qualified_type(&struct_type);
+                    let struct_name = emitter.emit_fully_qualified_type(&struct_type, emitter_ctx);
                     rhs = super::syntax::expr::format_member_access(&struct_name, &rhs, &field.to_string());
                 },
             }

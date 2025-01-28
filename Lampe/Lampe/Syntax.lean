@@ -38,6 +38,7 @@ syntax "[" nr_type ";" num "]" : nr_type -- Array
 syntax "`(" nr_type,* ")" : nr_type -- Tuple
 syntax "&" nr_type : nr_type -- Reference
 syntax "λ(" nr_type,* ")" "→" nr_type : nr_type -- Function
+syntax "_" : nr_type -- Placeholder
 
 syntax ident ":" nr_type : nr_param_decl
 
@@ -140,6 +141,7 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   let paramTps ← (mkListLit (←paramTps.getElems.toList.mapM mkNrType))
   let outTp ← mkNrType outTp
   `(Tp.fn $paramTps $outTp)
+| `(nr_type | _) => `(_)
 | _ => throwUnsupportedSyntax
 
 def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
