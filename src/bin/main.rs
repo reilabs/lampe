@@ -58,7 +58,7 @@ fn main() -> ExitCode {
 ///
 /// - [`Error`] if the extraction process fails for any reason.
 pub fn run(args: &ProgramOptions) -> Result<ExitCode> {
-    let source = Source::read(&args.file)?;
+    let source = Source::read(&args.root, &args.file)?;
     let project = Project::new(&args.root, source);
 
     let emit_result = noir_to_lean(project)?;

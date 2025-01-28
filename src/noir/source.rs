@@ -29,13 +29,17 @@ impl Source {
     /// # Errors
     ///
     /// - [`Error::MissingFile`] if the provided file cannot be read.
-    pub fn read(path: impl Into<PathBuf>) -> Result<Self> {
-        let name = path.into();
+    pub fn read(root: impl Into<PathBuf>, relative_path: impl Into<PathBuf>) -> Result<Self> {
+        let relative_path = relative_path.into();
+        let name = root.into().join(relative_path.clone());
         let mut file = File::open(&name).map_err(|_| Error::MissingFile(name.clone()))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)
             .map_err(|_| Error::MissingFile(name.clone()))?;
 
-        Ok(Self { name, contents })
+        Ok(Self {
+            name: relative_path,
+            contents,
+        })
     }
 }

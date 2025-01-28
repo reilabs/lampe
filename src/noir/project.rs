@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use fm::{FileId, FileManager};
+use fm::{FileId, FileManager, PathString};
 use nargo::parse_all;
 use noirc_driver::{check_crate, file_manager_with_stdlib, prepare_crate, CompileOptions};
 use noirc_frontend::hir::Context;
@@ -28,6 +28,9 @@ pub struct Project {
     /// The internal file manager for the Noir project.
     manager: FileManager,
 
+    /// The root directory of the project
+    project_root: PathBuf,
+
     /// The root file name for the project.
     root_file_name: PathBuf,
 
@@ -43,13 +46,14 @@ impl Project {
     /// Creates a new project with the provided root.
     #[allow(clippy::missing_panics_doc)]
     pub fn new(root: impl Into<PathBuf>, root_file: Source) -> Self {
-        let root = root.into();
-        let manager = file_manager_with_stdlib(&root);
+        let project_root = root.into();
+        let manager = file_manager_with_stdlib(&project_root);
         let root_file_name = root_file.name.clone();
         let file_ids = KnownFiles::new();
 
         let mut project = Self {
             manager,
+            project_root,
             root_file_name,
             known_files: file_ids,
         };
@@ -121,7 +125,7 @@ impl Project {
         // Then we build our compilation context
         let mut context = Context::new(manager, parsed_files);
         context.activate_lsp_mode();
-        let root_crate = prepare_crate(&mut context, root_path.as_path());
+        let root_crate = prepare_crate(&mut context, &self.project_root.join(root_path).as_path());
 
         // Perform compilation to check the code within it.
         let ((), warnings) = check_crate(
