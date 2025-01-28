@@ -9,7 +9,12 @@
 
 #![warn(clippy::all, clippy::cargo, clippy::pedantic)]
 
-use std::{fs::File, io::Write, path::PathBuf, process::ExitCode};
+use std::{
+    fs::{File, OpenOptions},
+    io::Write,
+    path::PathBuf,
+    process::ExitCode,
+};
 
 use clap::{arg, Parser};
 use lampe::{noir::source::Source, noir_to_lean, Project, Result};
@@ -69,11 +74,17 @@ pub fn run(args: &ProgramOptions) -> Result<ExitCode> {
     }
 
     let lean_source = emit_result.take();
-    let mut out_file = File::open(&args.out_file)
+
+    let mut out_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&args.out_file)
         .map_err(|_| lampe::error::file::Error::MissingFile(args.out_file.clone()))?;
+
     out_file
         .write(lean_source.as_bytes())
-        .map_err(|_| lampe::error::file::Error::MissingFile(args.out_file.clone()))?;
+        .map_err(|_| lampe::error::file::Error::WritingError(args.out_file.clone()))?;
 
     Ok(ExitCode::SUCCESS)
 }
