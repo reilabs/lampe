@@ -25,6 +25,7 @@ declare_syntax_cat nr_block_contents
 declare_syntax_cat nr_param_decl
 declare_syntax_cat nr_fmtstr_part
 declare_syntax_cat nr_generic
+declare_syntax_cat nr_generic_def
 
 syntax ident : nr_ident
 syntax ident "::" nr_ident : nr_ident
@@ -33,7 +34,7 @@ syntax ident : nr_type
 syntax "${" term "}" : nr_type
 syntax "str<" num ">" : nr_type -- Strings
 syntax "fmtstr<" num "," "(" nr_type,* ")" ">" : nr_type -- Format strings
-syntax nr_ident "<" nr_type,* ">" : nr_type -- Struct
+syntax nr_ident "<" nr_generic,* ">" : nr_type -- Struct
 syntax "[" nr_type "]" : nr_type -- Slice
 syntax "[" nr_type ";" num "]" : nr_type -- Array
 syntax "`(" nr_type,* ")" : nr_type -- Tuple
@@ -43,6 +44,9 @@ syntax "_" : nr_type -- Placeholder
 
 syntax num : nr_generic
 syntax nr_type : nr_generic
+
+syntax "@" ident : nr_generic_def -- Kind.Nat
+syntax ident : nr_generic_def -- Kind.Type
 
 syntax ident ":" nr_type : nr_param_decl
 
@@ -82,12 +86,12 @@ syntax "@" nr_ident "<" nr_generic,* ">" "as" nr_type : nr_expr -- Decl func ide
 
 syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
 
-syntax nr_fn_decl := nr_ident "<" ident,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
+syntax nr_fn_decl := nr_ident "<" nr_generic_def,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_generic,* ">"
 syntax nr_trait_fn_def := "fn" nr_fn_decl
-syntax nr_trait_impl := "<" ident,* ">" nr_ident "<" nr_type,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
+syntax nr_trait_impl := "<" nr_generic_def,* ">" nr_ident "<" nr_generic,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
-syntax nr_struct_def := "<" ident,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
+syntax nr_struct_def := "<" nr_generic_def,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
 
 abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
 
@@ -117,6 +121,8 @@ def mkHListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadEr
   let tail ← mkHListLit xs
   `(HList.cons $x $tail)
 
+mutual
+
 partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_type → m (TSyntax `term)
 | `(nr_type| u1) => `(Tp.u 1)
 | `(nr_type| u8) => `(Tp.u 8)
@@ -133,8 +139,8 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| $i:ident) => `($i) -- Type variable
 | `(nr_type| & $tp) => do `(Tp.ref $(←mkNrType tp))
 | `(nr_type| $structName:nr_ident < $generics,* >) => do
-  let generics ← generics.getElems.toList.mapM mkNrType
-  `(Struct.tp $(mkStructDefIdent (←mkNrIdent structName)) $(←mkHListLit generics))
+  let (_, genericVals) ← mkGenericVals generics.getElems.toList
+  `(Struct.tp $(mkStructDefIdent (←mkNrIdent structName)) $genericVals)
 | `(nr_type| ${ $i }) => pure i
 | `(nr_type| [ $tp ]) => do `(Tp.slice $(←mkNrType tp))
 | `(nr_type| [ $tp ; $len:num ]) => do `(Tp.array $(←mkNrType tp) $len)
@@ -148,6 +154,36 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type | _) => `(_)
 | _ => throwUnsupportedSyntax
 
+partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
+    (generics : List $ TSyntax `nr_generic) : m $ (TSyntax `term) × (TSyntax `term) := do
+  let kinds ← mkListLit (←generics.mapM fun g =>
+    match g with
+    | `(nr_generic| $_:nr_type) => `(Kind.type)
+    | `(nr_generic| $_:num) => `(Kind.nat)
+    | _ => throwUnsupportedSyntax)
+  let vals ← mkHListLit (←generics.mapM fun g =>
+    match g with
+    | `(nr_generic| $t:nr_type) => (mkNrType t)
+    | `(nr_generic| $n:num) => `($n)
+    | _ => throwUnsupportedSyntax)
+  pure (kinds, vals)
+
+end
+
+def mkGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
+    (generics : List $ TSyntax `nr_generic_def) : m $ (TSyntax `term) × (TSyntax `term) := do
+  let kinds ← mkListLit (←generics.mapM fun g =>
+    match g with
+    | `(nr_generic_def| @ $_:ident) => `(Kind.nat)
+    | `(nr_generic_def| $_:ident) => `(Kind.type)
+    | _ => throwUnsupportedSyntax)
+  let vals ← mkHListLit (←generics.mapM fun g =>
+    match g with
+    | `(nr_generic_def| @ $i:ident) => `($i)
+    | `(nr_generic_def| $i:ident) => `($i)
+    | _ => throwUnsupportedSyntax)
+  pure (kinds, vals)
+
 def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
    `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
 
@@ -160,24 +196,6 @@ def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mon
     m (TSyntax `term) := do
   let accessor := mkFieldAccessorIdent (←mkNrIdent structName) (field.getId.toString)
   `($accessor $gs)
-
-/--
-Takes a list of `nr_generic`s and returns a pair of terms, where the first term is a list literal of the type kinds
-and the second term is a `HList` of the type values.
--/
-def mkGenerics [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
-    (generics : List $ TSyntax `nr_generic) : m $ (TSyntax `term) × (TSyntax `term) := do
-  let kinds ← mkListLit (←generics.mapM fun g =>
-    match g with
-    | `(nr_generic| $_:nr_type) => `(Kind.nat)
-    | `(nr_generic| $_:num) => `(Kind.type)
-    | _ => throwUnsupportedSyntax)
-  let vals ← mkHListLit (←generics.mapM fun g =>
-    match g with
-    | `(nr_generic| $t:nr_type) => (mkNrType t)
-    | `(nr_generic| $n:num) => `($n)
-    | _ => throwUnsupportedSyntax)
-  pure (kinds, vals)
 
 @[reducible]
 def Expr.ref (val : rep tp) : Expr rep tp.ref :=
@@ -281,7 +299,7 @@ This `Lens` object, denoted as `l`, can be used in two ways:
 -/
 partial def mkLens [MonadSyntax m] (expr : TSyntax `nr_expr) (a : ArgSet) : m $ (TSyntax `term) × ArgSet := match expr with
 | `(nr_expr| ( $structExpr:nr_expr as $structName  < $structGens,* > ) . $fieldName) => do
-  let (_structGenKinds, structGenVals) ← mkGenerics structGens.getElems.toList
+  let (_structGenKinds, structGenVals) ← mkGenericVals structGens.getElems.toList
   let mem ← mkStructMember structName structGenVals fieldName
   let (lhsLens, a') ← mkLens structExpr a
   let lens' ← `(Lens.cons $lhsLens (Access.tuple $mem))
@@ -452,7 +470,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let body ← mkExpr lambdaBody none fun x => `(Expr.var $x)
   wrapSimple (←`(Expr.lam $argTps $outTp (fun $args => $body))) vname k
 | `(nr_expr| $structName:nr_ident < $structGens,* > { $args,* }) => do
-    let (_structGenKinds, structGenVals) ← mkGenerics structGens.getElems.toList
+    let (_structGenKinds, structGenVals) ← mkGenericVals structGens.getElems.toList
     let structName ← mkNrIdent structName
     let fieldTps ← `(Struct.fieldTypes $(mkStructDefIdent structName) $structGenVals)
     mkArgs args.getElems.toList fun argVals => do
@@ -465,13 +483,13 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     let argTps <- argVals.mapM fun arg => `(typeOf $arg)
     wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) (Unit.unit))) vname k
 | `(nr_expr| @ $fnName:nr_ident < $callGens:nr_generic,* > as $t:nr_type) => do
-  let (callGenKinds, callGenVals) ← mkGenerics callGens.getElems.toList
+  let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
   let (paramTps, outTp) ← getFuncSignature t
   wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp (FuncRef.decl $fnName $callGenKinds $callGenVals))) vname k
 | `(nr_expr| ( $selfTp as $traitName < $traitGens,* > ) :: $methodName < $callGens,* > as $t:nr_type) => do
-  let (callGenKinds, callGenVals) ← mkGenerics callGens.getElems.toList
-  let (traitGenKinds, traitGenVals) ← mkGenerics traitGens.getElems.toList
+  let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
+  let (traitGenKinds, traitGenVals) ← mkGenericVals traitGens.getElems.toList
   let methodName := Syntax.mkStrLit (←mkNrIdent methodName)
   let traitName := Syntax.mkStrLit (←mkNrIdent traitName)
   let (paramTps, outTp) ← getFuncSignature t
@@ -498,25 +516,22 @@ end
 def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (syn : Syntax) :  m (String × TSyntax `term) := match syn with
 | `(nr_fn_decl| $name < $generics,* > ( $params,* ) -> $outTp { $bExprs;* }) => do
   let name ← mkNrIdent name
-  let generics := generics.getElems.toList.map fun i => (mkIdent $ Name.mkSimple i.getId.toString)
-  let genericsDecl ← mkListLit (← generics.mapM fun _ => `(Kind.type))
+  let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
   let params : List (TSyntax `term × TSyntax `term) ← params.getElems.toList.mapM fun p => match p with
     | `(nr_param_decl|$i:ident : $tp) => do pure (i, ←mkNrType tp)
     | _ => throwUnsupportedSyntax
   let body ← MonadSyntax.run $ mkBlock bExprs.getElems.toList fun x => `(Expr.var $x)
   let lambdaDecl ← `(fun rep generics => match generics with
-    | $(←mkHListLit generics) => ⟨$(←mkListLit $ params.map Prod.snd), $(←mkNrType outTp), fun args => match args with
+    | $(genericDefs) => ⟨$(←mkListLit $ params.map Prod.snd), $(←mkNrType outTp), fun args => match args with
         | $(←mkHListLit $ params.map Prod.fst) => $body⟩)
-  let syn : TSyntax `term ← `(FunctionDecl.mk $(Syntax.mkStrLit name) $ Function.mk $genericsDecl $lambdaDecl)
+  let syn : TSyntax `term ← `(FunctionDecl.mk $(Syntax.mkStrLit name) $ Function.mk $genericKinds $lambdaDecl)
   pure (name, syn)
 | _ => throwUnsupportedSyntax
 
 def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m (String × TSyntax `term)
-| `(nr_trait_impl| < $generics,* > $traitName < $traitGenVals,* > for $targetType where $constraints,* { $fns;* }) => do
-  let implGenericKinds ← mkListLit (←generics.getElems.toList.mapM fun _ => `(Kind.type))
-  let traitGenValKinds ← mkListLit (←traitGenVals.getElems.toList.mapM fun _ => `(Kind.type))
-  let implGenerics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
-  let traitGenVals ← traitGenVals.getElems.toList.mapM fun tyVar => mkNrType tyVar
+| `(nr_trait_impl| < $generics,* > $traitName < $traitGens,* > for $targetType where $constraints,* { $fns;* }) => do
+  let (implGenericKinds, implGenericDefs) ← mkGenericDefs generics.getElems.toList
+  let (traitGenKinds, traitGenVals) ← mkGenericVals traitGens.getElems.toList
   let traitName ← mkNrIdent traitName
   let fnDecls ← mkListLit (←fns.getElems.toList.mapM fun fnSyn => match fnSyn with
     | `(nr_trait_fn_def| fn $fnDecl) => do
@@ -526,28 +541,27 @@ def mkTraitImpl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
   let constraints ← constraints.getElems.mapM fun constraint => match constraint with
     | `(nr_trait_constraint| $ty : $tr:nr_ident < $tgVals,* >) => do
       let traitName ← mkNrIdent tr
-      let (tgKinds, tgVals) ← mkGenerics tgVals.getElems.toList
+      let (tgKinds, tgVals) ← mkGenericVals tgVals.getElems.toList
       `(⟨⟨$(Syntax.mkStrLit traitName), $tgKinds, $tgVals⟩, $(←mkNrType ty)⟩)
     | _ => throwUnsupportedSyntax
   let targetType ← mkNrType targetType
   let syn : TSyntax `term ← `(TraitImpl.mk
-    (traitGenericKinds := $traitGenValKinds)
+    (traitGenericKinds := $traitGenKinds)
     (implGenericKinds := $implGenericKinds)
-    (traitGenerics := fun gs => match gs with | $(←mkHListLit implGenerics) => $(←mkHListLit traitGenVals))
-    (constraints := fun gs => match gs with | $(←mkHListLit implGenerics) => $(←mkListLit constraints.toList))
-    (self := fun gs => match gs with | $(←mkHListLit implGenerics) => $targetType)
-    (impl := fun gs => match gs with | $(←mkHListLit implGenerics) => $fnDecls))
+    (traitGenerics := fun gs => match gs with | $implGenericDefs => $traitGenVals)
+    (constraints := fun gs => match gs with | $implGenericDefs => $(←mkListLit constraints.toList))
+    (self := fun gs => match gs with | $implGenericDefs => $targetType)
+    (impl := fun gs => match gs with | $implGenericDefs => $fnDecls))
   pure (traitName, syn)
 | _ => throwUnsupportedSyntax
 
 def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `nr_ident) : Syntax → m (TSyntax `term)
 | `(nr_struct_def| < $generics,* > { $params,* }) => do
-  let genericKinds ← mkListLit (←generics.getElems.toList.mapM fun _ => `(Kind.type))
-  let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
+  let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
   let fieldTypes ← params.getElems.toList.mapM fun paramSyn => match paramSyn with
     | `(nr_param_decl| $_:ident : $ty:nr_type) => mkNrType ty
     | _ => throwUnsupportedSyntax
-  let fieldTypes ← `(fun gs => match gs with | $(←mkHListLit generics) => $(←mkListLit fieldTypes))
+  let fieldTypes ← `(fun gs => match gs with | $genericDefs => $(←mkListLit fieldTypes))
   let structNameStrLit := Syntax.mkStrLit (←mkNrIdent structName)
   let syn ← `(Struct.mk $structNameStrLit $genericKinds $fieldTypes)
   pure syn
@@ -555,14 +569,13 @@ def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
 
 def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `nr_ident) : Syntax → m (List $ TSyntax `command)
 | `(nr_struct_def| < $generics,* > { $params,* }) => do
-  let genericKinds ← mkListLit (←generics.getElems.toList.mapM fun _ => `(Kind.type))
-  let generics := generics.getElems.toList.map fun tyVar => (mkIdent $ Name.mkSimple tyVar.getId.toString)
+  let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
   params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
     | `(nr_param_decl| $paramName:ident : $paramType:nr_type) => do
       let paramDefTy ← `(match generics with
-        | $(←mkHListLit generics) => Builtin.Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))
+        | $genericDefs => Builtin.Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))
       let paramDefSyn ← `(match generics with
-        | $(←mkHListLit generics) => $(←mkTupleMember idx))
+        | $genericDefs => $(←mkTupleMember idx))
       let defnNameSyn := mkFieldAccessorIdent (←mkNrIdent structName) paramName.getId.toString
       `(def $defnNameSyn (generics : HList Kind.denote $genericKinds) : $paramDefTy := $paramDefSyn)
     | _ => throwUnsupportedSyntax
