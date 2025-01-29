@@ -26,17 +26,18 @@ declare_syntax_cat nr_param_decl
 declare_syntax_cat nr_fmtstr_part
 declare_syntax_cat nr_generic
 declare_syntax_cat nr_generic_def
+declare_syntax_cat nr_const_num
 
 syntax ident : nr_ident
 syntax ident "::" nr_ident : nr_ident
 
 syntax ident : nr_type
 syntax "${" term "}" : nr_type
-syntax "str<" num ">" : nr_type -- Strings
-syntax "fmtstr<" num "," "(" nr_type,* ")" ">" : nr_type -- Format strings
+syntax "str<" nr_const_num ">" : nr_type -- Strings
+syntax "fmtstr<" nr_const_num "," "(" nr_type,* ")" ">" : nr_type -- Format strings
 syntax nr_ident "<" nr_generic,* ">" : nr_type -- Struct
 syntax "[" nr_type "]" : nr_type -- Slice
-syntax "[" nr_type ";" num "]" : nr_type -- Array
+syntax "[" nr_type ";" nr_const_num "]" : nr_type -- Array
 syntax "`(" nr_type,* ")" : nr_type -- Tuple
 syntax "&" nr_type : nr_type -- Reference
 syntax "λ(" nr_type,* ")" "→" nr_type : nr_type -- Function
@@ -45,8 +46,11 @@ syntax "_" : nr_type -- Placeholder
 syntax num : nr_generic
 syntax nr_type : nr_generic
 
-syntax "@" ident : nr_generic_def -- Kind.Nat
+syntax "#" ident : nr_generic_def -- Kind.Nat
 syntax ident : nr_generic_def -- Kind.Type
+
+syntax num : nr_const_num
+syntax ident : nr_const_num
 
 syntax ident ":" nr_type : nr_param_decl
 
@@ -69,8 +73,8 @@ syntax "*(" nr_expr ")" : nr_expr -- Deref
 
 syntax nr_ident "<" nr_generic,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
 syntax "`(" nr_expr,* ")" : nr_expr -- Tuple constructor
-syntax "[" nr_expr ";" num "]" : nr_expr -- Repeated array constructor
-syntax "&[" nr_expr ";" num "]" : nr_expr -- Repeated slice constructor
+syntax "[" nr_expr ";" nr_const_num "]" : nr_expr -- Repeated array constructor
+syntax "&[" nr_expr ";" nr_const_num "]" : nr_expr -- Repeated slice constructor
 syntax "[" nr_expr,* "]" : nr_expr -- Array constructor
 syntax "&[" nr_expr,* "]" : nr_expr -- Slice constructor
 
@@ -94,6 +98,11 @@ syntax nr_trait_impl := "<" nr_generic_def,* ">" nr_ident "<" nr_generic,* ">" "
 syntax nr_struct_def := "<" nr_generic_def,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
 
 abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
+
+partial def mkConstNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_const_num → m (TSyntax `term)
+| `(nr_const_num|$n:num) => pure $ n
+| `(nr_const_num|$i:ident) => pure $ mkIdent $ Name.mkSimple i.getId.toString
+| _ => throwUnsupportedSyntax
 
 partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
 | `(nr_ident|$i:ident) => pure i.getId.toString
@@ -131,10 +140,10 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| u64) => `(Tp.u 64)
 | `(nr_type| bool) => `(Tp.bool)
 | `(nr_type| Field) => `(Tp.field)
-| `(nr_type| str<$n:num>) => `(Tp.str $n)
-| `(nr_type| fmtstr<$n:num, ($tps,*)>) => do
+| `(nr_type| str<$n:nr_const_num>) => do `(Tp.str $(←mkConstNum n))
+| `(nr_type| fmtstr<$n:nr_const_num, ($tps,*)>) => do
   let tps ← tps.getElems.toList.mapM mkNrType
-  `(Tp.fmtStr $n $(←mkListLit tps))
+  `(Tp.fmtStr $(←mkConstNum n) $(←mkListLit tps))
 | `(nr_type| Unit) => `(Tp.unit)
 | `(nr_type| $i:ident) => `($i) -- Type variable
 | `(nr_type| & $tp) => do `(Tp.ref $(←mkNrType tp))
@@ -143,7 +152,7 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   `(Struct.tp $(mkStructDefIdent (←mkNrIdent structName)) $genericVals)
 | `(nr_type| ${ $i }) => pure i
 | `(nr_type| [ $tp ]) => do `(Tp.slice $(←mkNrType tp))
-| `(nr_type| [ $tp ; $len:num ]) => do `(Tp.array $(←mkNrType tp) $len)
+| `(nr_type| [ $tp ; $len:nr_const_num ]) => do `(Tp.array $(←mkNrType tp) $(←mkConstNum len))
 | `(nr_type| `($tps,* )) => do
   let tps ← tps.getElems.toList.mapM mkNrType
   `(Tp.tuple none $(←mkListLit tps))
@@ -174,12 +183,12 @@ def mkGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mona
     (generics : List $ TSyntax `nr_generic_def) : m $ (TSyntax `term) × (TSyntax `term) := do
   let kinds ← mkListLit (←generics.mapM fun g =>
     match g with
-    | `(nr_generic_def| @ $_:ident) => `(Kind.nat)
+    | `(nr_generic_def| # $_:ident) => `(Kind.nat)
     | `(nr_generic_def| $_:ident) => `(Kind.type)
     | _ => throwUnsupportedSyntax)
   let vals ← mkHListLit (←generics.mapM fun g =>
     match g with
-    | `(nr_generic_def| @ $i:ident) => `($i)
+    | `(nr_generic_def| # $i:ident) => `($i)
     | `(nr_generic_def| $i:ident) => `($i)
     | _ => throwUnsupportedSyntax)
   pure (kinds, vals)
@@ -216,6 +225,14 @@ def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
 @[reducible]
 def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.array tp n) :=
   Expr.callBuiltin _ (.array tp n) (.mkArray n) vals
+
+@[reducible]
+def Expr.mkRepSlice (n : Nat) (val : rep tp) : Expr rep (.slice tp) :=
+  Expr.callBuiltin _ (.slice tp) (.mkSlice n) (HList.replicate val n)
+
+@[reducible]
+def Expr.mkRepArray (n : Nat) (val : rep tp) : Expr rep (.array tp n) :=
+  Expr.callBuiltin _ (.array tp n) (.mkArray n) (HList.replicate val n)
 
 @[reducible]
 def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=
@@ -451,14 +468,12 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let len := args.length
   mkArgs args fun argVals => do
     wrapSimple (←`(Expr.mkArray $(Syntax.mkNumLit $ toString len) $(←mkHListLit argVals))) vname k
-| `(nr_expr| [ $arg ; $rep:num ]) => do
+| `(nr_expr| [ $arg ; $rep:nr_const_num ]) => do
   mkExpr arg none fun argVal => do
-    let argVals := List.replicate rep.getNat argVal
-    wrapSimple (←`(Expr.mkArray $rep $(←mkHListLit argVals))) vname k
-| `(nr_expr| &[ $arg ; $rep:num ]) => do
+    wrapSimple (←`(Expr.mkRepArray $(←mkConstNum rep) $argVal)) vname k
+| `(nr_expr| &[ $arg ; $rep:nr_const_num ]) => do
   mkExpr arg none fun argVal => do
-    let argVals := List.replicate rep.getNat argVal
-    wrapSimple (←`(Expr.mkSlice $rep $(←mkHListLit argVals))) vname k
+    wrapSimple (←`(Expr.mkRepSlice $(←mkConstNum rep) $argVal)) vname k
 | `(nr_expr| | $params,* | -> $outTp $lambdaBody) => do
   let outTp ← mkNrType outTp
   let argTps ← mkListLit (← params.getElems.toList.mapM fun param => match param with

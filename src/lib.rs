@@ -206,6 +206,10 @@ mod test {
                 false
             }
 
+            fn nat_generic_test<let N: u32>() -> [Field; N] {
+                [1; N]
+            }
+
             fn main() {
                 let mut op1 = Option2::some(5);
                 let op2 = Option2::default();
@@ -220,6 +224,7 @@ mod test {
                 let mut tpl = (1, true);
                 tpl.0 = 2;
                 let impl_res = impl_test(op1, 0);
+                let five_ones = nat_generic_test::<5>();
             }
 
 
