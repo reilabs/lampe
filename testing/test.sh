@@ -42,18 +42,23 @@ fi
 
 # Set the environment variables
 export LEAN_PATH=$(lake env | grep LEAN_PATH | cut -d= -f2 | tr ':' '\n' | xargs realpath | tr '\n' ':')
+export LEAN=$(lake env | grep LEAN= | cut -d= -f2)
+
+elan default $(cat lean-toolchain)
 
 cd $TEST_PATH/src
 
 echo "Parsing output file..."
-lean $OUTPUT_FILE -o $OUTPUT_OLEAN
+$LEAN $OUTPUT_FILE -o $OUTPUT_OLEAN
 
 echo "Checking proofs..."
 export LEAN_PATH=$LEAN_PATH:$TEST_PATH"/src/"
-lean $PROOF_FILE
+$LEAN $PROOF_FILE
 
 echo "All tests passed!"
 
+unset LEAN_PATH
+unset LEAN
 rm $OUTPUT_FILE
 rm $OUTPUT_OLEAN
 
