@@ -58,3 +58,10 @@ jobs:
           run: |
             export RUST_MIN_STACK=16777216;  # 16 MB
             cargo test --all
+    end-to-end:
+      needs: build-lake, build-cargo
+      runs-on: ubuntu-latest
+      steps:
+        - name: Run test script
+          working-directory: lampe
+          run: ./testing/test.sh

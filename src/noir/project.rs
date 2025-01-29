@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use fm::{FileId, FileManager, PathString};
+use fm::{FileId, FileManager};
 use nargo::parse_all;
 use noirc_driver::{check_crate, file_manager_with_stdlib, prepare_crate, CompileOptions};
 use noirc_frontend::hir::Context;

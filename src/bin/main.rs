@@ -9,12 +9,7 @@
 
 #![warn(clippy::all, clippy::cargo, clippy::pedantic)]
 
-use std::{
-    fs::{File, OpenOptions},
-    io::Write,
-    path::PathBuf,
-    process::ExitCode,
-};
+use std::{fs::OpenOptions, io::Write, path::PathBuf, process::ExitCode};
 
 use clap::{arg, Parser};
 use lampe::{noir::source::Source, noir_to_lean, Project, Result};
@@ -27,6 +22,9 @@ const DEFAULT_NOIR_FILE_NAME: &str = "main.nr";
 
 /// The default output file for the generated definitions.
 const DEFAULT_OUT_FILE_NAME: &str = "Main.lean";
+
+/// The
+const LEAN_HEADER: &str = "import Lampe\n\nopen Lampe\n\nnamespace Test\n\n";
 
 /// A utility to extract Noir code to Lean in order to enable the formal
 /// verification of Noir programs.
@@ -73,7 +71,8 @@ pub fn run(args: &ProgramOptions) -> Result<ExitCode> {
         }
     }
 
-    let lean_source = emit_result.take();
+    let mut lean_source = LEAN_HEADER.to_owned();
+    lean_source.push_str(&emit_result.take());
 
     let mut out_file = OpenOptions::new()
         .write(true)
