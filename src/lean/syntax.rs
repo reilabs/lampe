@@ -79,6 +79,15 @@ pub(super) fn format_trait_function_def(
     }
 }
 
+#[inline]
+pub(super) fn format_generic_def(name: &str, is_num: bool) -> String {
+    if is_num {
+        format!("#{name}")
+    } else {
+        format!("{name}")
+    }
+}
+
 pub(super) mod literal {
     #[inline]
     pub fn format_bool(v: bool) -> String {
