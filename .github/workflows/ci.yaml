@@ -59,9 +59,26 @@ jobs:
             export RUST_MIN_STACK=16777216;  # 16 MB
             cargo test --all
     end-to-end:
-      needs: build-lake, build-cargo
+      needs: [build-lake, build-cargo]
       runs-on: ubuntu-latest
       steps:
+        - name: Checkout current branch
+          uses: actions/checkout@v4
+          with:
+            path: lampe
+        - name: Set up Rust
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: stable
+        - name: Set up Lean 4
+          uses: leanprover/lean-action@v1
+          with:
+            auto-config: false
+            build: false
+            test: false
+            lint: false
+            use-mathlib-cache: true
+            lake-package-directory: lampe/Lampe
         - name: Run test script
           working-directory: lampe
           run: ./testing/test.sh

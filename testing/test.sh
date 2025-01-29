@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 set -euxo pipefail
 
 ORIGINAL_DIR=$(pwd)
