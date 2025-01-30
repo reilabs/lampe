@@ -28,7 +28,7 @@ use noirc_frontend::{
     node_interner::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
-    StructField, Type, TypeBinding, TypeBindings,
+    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -428,6 +428,15 @@ impl LeanEmitter {
         Ok(format!("global {value}"))
     }
 
+    /// Emits the Lean source code corresponding to a resolved generics occuring at generic declarations.
+    pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
+        let is_num = match g.kind() {
+            Kind::Any | Kind::Normal => false,
+            Kind::IntegerOrField | Kind::Integer | Kind::Numeric(_) => true,
+        };
+        syntax::format_generic_def(&g.name, is_num)
+    }
+
     /// Emits the Lean source code corresponding to a Noir structure at the
     /// module level.
     ///
@@ -446,7 +455,7 @@ impl LeanEmitter {
             .context
             .fully_qualified_struct_path(&struct_data.id.module_id().krate, s);
         let generics = &struct_data.generics;
-        let generics_string = generics.iter().map(|g| &g.name).join(", ");
+        let generics_str = generics.iter().map(|g| self.emit_resolved_generic(g, ctx)).join(", ");
         let fields = struct_data.get_fields_as_written();
 
         // We generate the fields under a higher indentation level to make it look nice
@@ -468,7 +477,7 @@ impl LeanEmitter {
 
         Ok(syntax::format_struct_def(
             &fq_path,
-            &generics_string,
+            &generics_str,
             &fields_string,
         ))
     }
@@ -498,7 +507,7 @@ impl LeanEmitter {
         let generics_string = func_meta
             .all_generics
             .iter()
-            .map(|g| g.name.to_string())
+            .map(|g| self.emit_resolved_generic(g, ctx))
             .chain(impl_generics)
             .join(", ");
         let parameters = self.emit_parameters(&func_meta.parameters, ctx)?;
@@ -560,7 +569,7 @@ impl LeanEmitter {
         let generics_string = func_meta
             .direct_generics
             .iter()
-            .map(|g| g.name.to_string())
+            .map(|g| self.emit_resolved_generic(g, ctx))
             .chain(impl_generics)
             .join(", ");
         let parameters = self.emit_parameters(&func_meta.parameters, ctx)?;

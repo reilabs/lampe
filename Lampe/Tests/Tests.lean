@@ -441,3 +441,16 @@ nr_def fmtstr_test<>() -> Field {
   let _x = #format("y: {}", y);
   y
 }
+
+nr_def create_arr<#N>() -> [Field; N] {
+  [1 : Field ; N]
+}
+
+example : STHoare p Γ ⟦⟧ (create_arr.fn.body _ h![3] |>.body h![])
+    fun (v : Tp.denote p $ .array .field 3) => v.toList = [1, 1, 1] := by
+  simp only [create_arr]
+  steps
+  tauto
+  intros
+  simp_all
+  rfl

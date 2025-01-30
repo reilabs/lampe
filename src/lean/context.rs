@@ -38,7 +38,7 @@ impl EmitterCtx {
             let params = fn_meta.parameters.0.iter();
             for (param_idx, (_, typ, _)) in params.enumerate() {
                 if is_impl(typ) {
-                    let var_name = format!("I#{param_idx}");
+                    let var_name = format!("μ{param_idx}");
                     impl_param_overrides.insert(typ.clone(), var_name);
                 }
             }

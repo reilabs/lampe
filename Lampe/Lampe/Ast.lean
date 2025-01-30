@@ -70,7 +70,7 @@ structure TraitImpl where
   impl : HList Kind.denote implGenericKinds → List (Ident × Function)
 
 @[reducible]
-def Struct.tp (s: Struct) : HList Kind.denote s.genericKinds → Tp :=
+def Struct.tp (s : Struct) : HList Kind.denote s.genericKinds → Tp :=
   fun generics => .tuple (some s.name) $ s.fieldTypes generics
 
 end Lampe
