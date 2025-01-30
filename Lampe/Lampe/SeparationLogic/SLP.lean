@@ -1,3 +1,6 @@
+import Mathlib.Tactic.Tauto
+import Mathlib.Tactic.Use
+import Lampe.Data.Field
 import Lampe.Tactic.IntroCases
 import Lampe.SeparationLogic.LawfulHeap
 
@@ -263,5 +266,12 @@ theorem wand_cancel [LawfulHeap α] {P Q : SLP α} : (P ⋆ (P -⋆ Q)) ⊢ Q :=
   tauto
 
 end wand
+
+theorem extract_prop [LawfulHeap α] {H₁ H₂ : SLP α} (h₁ : (H₁ ⋆ H₂) st) (h₂ : H₁ ⊢ ⟦P⟧ ⋆ ⊤) : P := by
+  apply SLP.star_mono_r at h₂
+  apply SLP.ent_drop_left at h₁
+  apply h₂ at h₁
+  simp only [SLP.lift, SLP.top, SLP.star] at h₁
+  aesop
 
 end Lampe.SLP

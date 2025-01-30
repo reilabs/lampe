@@ -7,7 +7,7 @@ use std::{
 
 use fm::{FileId, FileManager};
 use nargo::parse_all;
-use noirc_driver::{check_crate, file_manager_with_stdlib, prepare_crate};
+use noirc_driver::{check_crate, file_manager_with_stdlib, prepare_crate, CompileOptions};
 use noirc_frontend::hir::Context;
 
 use crate::{
@@ -120,12 +120,21 @@ impl Project {
 
         // Then we build our compilation context
         let mut context = Context::new(manager, parsed_files);
-        context.track_references();
+        context.activate_lsp_mode();
         let root_crate = prepare_crate(&mut context, root_path.as_path());
 
         // Perform compilation to check the code within it.
-        let ((), warnings) = check_crate(&mut context, root_crate, false, false, None)
-            .map_err(|diagnostics| CompileError::CheckFailure { diagnostics })?;
+        let ((), warnings) = check_crate(
+            &mut context,
+            root_crate,
+            &CompileOptions {
+                deny_warnings: false,
+                disable_macros: false,
+                debug_comptime_in_file: None,
+                ..Default::default()
+            },
+        )
+        .map_err(|diagnostics| CompileError::CheckFailure { diagnostics })?;
 
         Ok(WithWarnings::new(
             LeanEmitter::new(context, known_files, root_crate),

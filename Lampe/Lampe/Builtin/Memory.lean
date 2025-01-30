@@ -1,4 +1,5 @@
 import Lampe.Builtin.Basic
+
 namespace Lampe.Builtin
 
 inductive refOmni : Omni where

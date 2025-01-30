@@ -2,6 +2,7 @@ import Lampe.Ast
 import Lampe.Tp
 import Lampe.Semantics
 import Lampe.SeparationLogic.LawfulHeap
+import Lampe.Builtin.Memory
 
 namespace Lampe
 
@@ -44,7 +45,7 @@ theorem letIn_intro {P Q}
 theorem ref_intro {v P} :
     THoare p Γ
       (fun st => ∀r, r ∉ st → P r ⟨(st.vals.insert r ⟨tp, v⟩), st.lambdas⟩)
-      (.call h![] [tp] (Tp.ref tp) (.builtin .ref) h![v])
+      (.callBuiltin [tp] (.ref tp) .ref h![v])
       P := by
   unfold THoare
   intros
@@ -55,7 +56,7 @@ theorem ref_intro {v P} :
 theorem readRef_intro {ref} :
     THoare p Γ
       (fun st => st.vals.lookup ref = some ⟨tp, v⟩ ∧ P v st)
-      (.call h![] [tp.ref] tp (.builtin .readRef) h![ref])
+      (.callBuiltin [.ref tp] tp .readRef h![ref])
       P := by
   unfold THoare
   intros
@@ -65,7 +66,7 @@ theorem readRef_intro {ref} :
 theorem writeRef_intro {ref v} :
     THoare p Γ
       (fun st => ref ∈ st ∧ P () ⟨(st.vals.insert ref ⟨tp, v⟩), st.lambdas⟩)
-      (.call h![] [tp.ref, tp] .unit (.builtin .writeRef) h![ref, v])
+      (.callBuiltin [.ref tp, tp] .unit .writeRef h![ref, v])
       P := by
   unfold THoare
   intros
@@ -75,7 +76,7 @@ theorem writeRef_intro {ref v} :
 theorem fresh_intro {P} :
     THoare p Γ
       (∀∀v, P v)
-      (.call h![] [] tp (.builtin .fresh) h![])
+      (.callBuiltin [] tp .fresh h![])
       P := by
   unfold THoare
   intro st h

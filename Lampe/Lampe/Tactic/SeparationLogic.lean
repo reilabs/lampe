@@ -59,8 +59,55 @@ theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x
   rw [star_exists]
   simp [SLP.star_comm]
 
-theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.lit (.u s) n) fun v => v = n := by
-  -- apply litU_intro
+theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.litNum (.u s) n) fun v => v = n := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litField_intro: STHoare p Γ ⟦⟧ (.litNum .field n) fun v => v = n := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litStr_intro: STHoare p Γ ⟦⟧ (.litStr u s) fun v => v = s := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.fmtStr_intro : STHoare p Γ ⟦⟧ (.fmtStr u tps s) fun v => v = s := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litFalse_intro: STHoare p Γ ⟦⟧ (.litNum .bool 0) fun v => v = false := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litTrue_intro: STHoare p Γ ⟦⟧ (.litNum .bool 1) fun v => v = true := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem Lampe.STHoare.litUnit_intro: STHoare p Γ ⟦⟧ (.litNum .unit n) fun v => v = unit := by
   unfold STHoare THoare
   intro H st hp
   constructor
@@ -186,44 +233,39 @@ def isLetIn (e : Expr) : Bool := e.isAppOf ``Lampe.Expr.letIn
 
 def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
 
-def isCallTrait (e : Expr) : Bool := e.isAppOf `Lampe.Expr.call &&
-  match (e.getArg? 5) with
-  | some callTarget => callTarget.isAppOf `Lampe.FunctionIdent.trait
-  | _ => false
-
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
   if e.isAppOf ``SLP.star then
     let args := e.getAppArgs
-    let fst ← parseSLExpr (←args[2]?)
-    let snd ← parseSLExpr (←args[3]?)
+    let fst ← parseSLExpr (←liftOption args[2]?)
+    let snd ← parseSLExpr (←liftOption args[3]?)
     return SLTerm.star e fst snd
   if e.isAppOf ``State.valSingleton then
     let args := e.getAppArgs
-    let fst ← args[1]?
-    let snd ← args[2]?
+    let fst ← liftOption args[1]?
+    let snd ← liftOption args[2]?
     return SLTerm.singleton fst snd
   else if e.isAppOf ``State.lmbSingleton then
     let args := e.getAppArgs
-    let fst ← args[1]?
-    let snd ← args[2]?
+    let fst ← liftOption args[1]?
+    let snd ← liftOption args[2]?
     return SLTerm.lmbSingleton fst snd
   else if e.isAppOf ``SLP.top then
     return SLTerm.top
   else if e.isAppOf ``SLP.lift then
     let args := e.getAppArgs
-    return SLTerm.lift (←args[2]?)
+    return SLTerm.lift (←liftOption args[2]?)
   else if e.getAppFn.isMVar then
     return SLTerm.mvar e
   else if e.isAppOf ``SLP.forall' then
     let args := e.getAppArgs
-    return SLTerm.all (←args[3]?)
+    return SLTerm.all (←liftOption args[3]?)
   else if e.isAppOf ``SLP.exists' then
     let args := e.getAppArgs
-    return SLTerm.exi (←args[3]?)
+    return SLTerm.exi (←liftOption args[3]?)
   else if e.isAppOf ``SLP.wand then
     let args := e.getAppArgs
-    let lhs ← parseSLExpr (←args[2]?)
-    let rhs ← parseSLExpr (←args[3]?)
+    let lhs ← parseSLExpr (←liftOption args[2]?)
+    let rhs ← parseSLExpr (←liftOption args[3]?)
     return SLTerm.wand lhs rhs
   -- else if e.isAppOf ``SLTerm.lift then
   --   let args := e.getAppArgs
@@ -239,8 +281,8 @@ partial def parseSLExpr (e: Expr): TacticM SLTerm := do
 partial def parseEntailment (e: Expr): TacticM (SLTerm × SLTerm) := do
   if e.isAppOf ``SLP.entails then
     let args := e.getAppArgs
-    let pre ← parseSLExpr (←args[2]?)
-    let post ← parseSLExpr (←args[3]?)
+    let pre ← parseSLExpr (←liftOption args[2]?)
+    let post ← parseSLExpr (←liftOption args[3]?)
     return (pre, post)
   else throwError "not an entailment {e}"
 
@@ -361,19 +403,6 @@ theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda _} {R : SLP (State p
   rintro rfl
   apply SLP.entails_self
 
-lemma nested_triple {Q : _ → SLP (State p)}
-  (h_hoare_imp : STHoare p Γ P e₁ Q → STHoare p Γ (P ⋆ H) e₂ (fun v => Q v ⋆ H))
-  (h_hoare : STHoare p Γ P e₁ Q)
-  (h_ent_pre : H ⊢ P ⋆ H) :
-  STHoare p Γ H e₂ Q := by
-  have h_ent_post : ∀ v, ((Q v) ⋆ H) ⋆ ⊤ ⊢ (Q v) ⋆ ⊤ := by
-    simp [SLP.ent_drop_left]
-  have h_hoare' := h_hoare_imp h_hoare
-  apply consequence h_ent_pre (fun v => SLP.entails_self)
-  apply consequence SLP.entails_self h_ent_post
-  tauto
-
-
 def canSolveSingleton (lhs : SLTerm) (rhsV : Expr): Bool :=
   match lhs with
   | SLTerm.singleton v _ => v == rhsV
@@ -385,7 +414,7 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
   | SLTerm.singleton v _ =>
     if v == rhs then
       let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``singleton_congr_mv)
-      let newGoal ← newGoals[0]?
+      let newGoal ← liftOption newGoals[0]?
       let newGoal ← try newGoal.refl; pure []
         catch _ => pure [newGoal]
       pure $ newGoal ++ newGoals
@@ -393,7 +422,7 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
   | SLTerm.lmbSingleton v _ =>
     if v == rhs then
       let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_congr_mv)
-      let newGoal ← newGoals[0]?
+      let newGoal ← liftOption newGoals[0]?
       let newGoal ← try newGoal.refl; pure []
         catch _ => pure [newGoal]
       pure $ newGoal ++ newGoals
@@ -404,37 +433,37 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
       if v == rhs then
         -- [TODO] This should use EQ, not ent_self
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``singleton_star_congr)
-        let newGoal ← newGoals[0]?
+        let newGoal ← liftOption newGoals[0]?
         let newGoal ← try newGoal.refl; pure []
           catch _ => pure [newGoal]
         pure $ newGoal ++ newGoals
       else
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-        let newGoal ← newGoals[0]?
+        let newGoal ← liftOption newGoals[0]?
         let new' ← solveSingletonStarMV newGoal r rhs
         return new' ++ newGoals
     | SLTerm.lmbSingleton v _ => do
       if v == rhs then
         -- [TODO] This should use EQ, not ent_self as well
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_star_congr)
-        let newGoal ← newGoals[0]?
+        let newGoal ← liftOption newGoals[0]?
         let newGoal ← try newGoal.refl; pure []
           catch _ => pure [newGoal]
         pure $ newGoal ++ newGoals
       else
         let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-        let newGoal ← newGoals[0]?
+        let newGoal ← liftOption newGoals[0]?
         let new' ← solveSingletonStarMV newGoal r rhs
         return new' ++ newGoals
     | SLTerm.lift _ =>
       let goals ← goal.apply (←mkConstWithFreshMVarLevels ``pure_star_H_ent_pure_star_mv)
-      let g ← goals[0]?
+      let g ← liftOption goals[0]?
       let (_, g) ← g.intro1
       let ng ← solveSingletonStarMV g r rhs
       return ng ++ goals
     | _ =>
       let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-      let newGoal ← newGoals[0]?
+      let newGoal ← liftOption newGoals[0]?
       let new' ← solveSingletonStarMV newGoal r rhs
       return new' ++ newGoals
   | _ => throwError "not a singleton {lhs}"
@@ -446,13 +475,13 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM (List MVarId
     match l with
     | .lift _ =>
       let goals ← goal.apply (←mkConstWithFreshMVarLevels ``pure_star_H_ent_pure_star_mv)
-      let g ← goals[0]?
+      let g ← liftOption goals[0]?
       let (_, g) ← g.intro1
       let ng ← solvePureStarMV g r
       return ng ++ goals
     | _ =>
       let goals ← goal.apply (←mkConstWithFreshMVarLevels ``skip_left_ent_star_mv)
-      let g ← goals[0]?
+      let g ← liftOption goals[0]?
       let ng ← solvePureStarMV g l
       return ng ++ goals
   | .singleton _ _ =>
@@ -470,14 +499,14 @@ partial def solveStarMV (goal : MVarId) (lhs : SLTerm) (rhsNonMv : SLTerm): Tact
 
 partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
   let newGoal ← evalTacticAt (←`(tactic|h_norm)) goal
-  let goal ← newGoal[0]?
+  let goal ← liftOption newGoal[0]?
   let target ← goal.instantiateMVarsInType
   let (pre, post) ← parseEntailment target
 
   match pre with
   | SLTerm.exi _ => do
     let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``exi_prop_l)
-    let newGoal ← newGoals[0]?
+    let newGoal ← liftOption newGoals[0]?
     let (_, newGoal) ← newGoal.intro1
     let gls ← solveEntailment newGoal
     return gls ++ newGoals
@@ -495,7 +524,7 @@ partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
       return newGoals
     else if r.isTop then
       let g ← goal.apply (←mkConstWithFreshMVarLevels ``star_top_of_star_mvar)
-      let g' ← g[0]?
+      let g' ← liftOption g[0]?
       let ng ← solveEntailment g'
       pure $ ng ++ g
     else if r.isForAll then
@@ -506,18 +535,18 @@ partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := do
     goal.apply (←mkConstWithFreshMVarLevels ``SLP.entails_self)
   | SLTerm.all _ => do
     let new ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.forall_right)
-    let new' ← new[0]?
+    let new' ← liftOption new[0]?
     let (_, g) ← new'.intro1
     solveEntailment g
   | SLTerm.wand _ _ =>
     let new ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.wand_intro)
-    let new' ← new[0]?
+    let new' ← liftOption new[0]?
     solveEntailment new'
   | SLTerm.exi _ =>
     -- [TODO] this only works for prop existential - make the others an error
     let new ← goal.apply (←mkConstWithFreshMVarLevels ``exi_prop)
-    let newL ← solveEntailment (←new[0]?)
-    let (_, newR) ← (←new[1]?).intro1
+    let newL ← solveEntailment (←liftOption new[0]?)
+    let (_, newR) ← (←liftOption new[1]?).intro1
     let newR ← solveEntailment newR
     return newL ++ newR
   | _ => throwError "unknown rhs {post}"
@@ -531,24 +560,36 @@ elab "sl" : tactic => do
 macro "stephelper1" : tactic => `(tactic|(
   (first
     | apply Lampe.STHoare.litU_intro
+    | apply Lampe.STHoare.litField_intro
+    | apply Lampe.STHoare.litStr_intro
+    | apply Lampe.STHoare.fmtStr_intro
+    | apply Lampe.STHoare.litTrue_intro
+    | apply Lampe.STHoare.litFalse_intro
+    | apply Lampe.STHoare.litUnit_intro
+    | apply fn_intro
     | apply fresh_intro
     | apply assert_intro
     | apply skip_intro
-    | apply nested_triple STHoare.callLambda_intro
     | apply lam_intro
-    | apply callTrait_intro
-    -- memory builtins
+    | apply cast_intro
+    -- memory
     | apply var_intro
     | apply ref_intro
     | apply readRef_intro
     | apply writeRef_intro
-    -- slice builtins
+    -- array
+    | apply mkArray_intro
+    | apply arrayLen_intro
+    | apply arrayIndex_intro
+    | apply arrayAsSlice_intro
+    -- slice
+    | apply mkSlice_intro
     | apply sliceLen_intro
     | apply sliceIndex_intro
     | apply slicePushBack_intro
     -- equality
     | apply unitEq_intro
-    | apply boolEq_intro
+    | apply bEq_intro
     | apply fEq_intro
     | apply uEq_intro
     | apply iEq_intro
@@ -580,28 +621,47 @@ macro "stephelper1" : tactic => `(tactic|(
     -- remainder
     | apply uRem_intro
     | apply iRem_intro
+    -- struct
+    | apply mkTuple_intro
+    | apply projectTuple_intro
+    -- lens
+    | apply modifyLens_intro
+    | apply getLens_intro
   )
 ))
 
 macro "stephelper2" : tactic => `(tactic|(
   (first
-    | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left Lampe.STHoare.litU_intro
+    | apply consequence_frame_left Lampe.STHoare.litField_intro
+    | apply consequence_frame_left Lampe.STHoare.litStr_intro
+    | apply consequence_frame_left Lampe.STHoare.fmtStr_intro
+    | apply consequence_frame_left Lampe.STHoare.litTrue_intro
+    | apply consequence_frame_left Lampe.STHoare.litFalse_intro
+    | apply consequence_frame_left Lampe.STHoare.litUnit_intro
+    | apply consequence_frame_left fn_intro
+    | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left assert_intro
-    -- | apply consequence_frame_left skip_intro
     | apply consequence_frame_left lam_intro
-    -- memory builtins
+    | apply consequence_frame_left cast_intro
+    -- memory
     | apply consequence_frame_left var_intro
     | apply consequence_frame_left ref_intro
     | apply consequence_frame_left readRef_intro
     | apply consequence_frame_left writeRef_intro
-    -- slice builtins
+    -- array
+    | apply consequence_frame_left mkArray_intro
+    | apply consequence_frame_left arrayLen_intro
+    | apply consequence_frame_left arrayIndex_intro
+    | apply consequence_frame_left arrayAsSlice_intro
+    -- slice
+    | apply consequence_frame_left mkSlice_intro
     | apply consequence_frame_left sliceLen_intro
     | apply consequence_frame_left sliceIndex_intro
     | apply consequence_frame_left slicePushBack_intro
     -- equality
     | apply consequence_frame_left unitEq_intro
-    | apply consequence_frame_left boolEq_intro
+    | apply consequence_frame_left bEq_intro
     | apply consequence_frame_left fEq_intro
     | apply consequence_frame_left uEq_intro
     | apply consequence_frame_left iEq_intro
@@ -633,29 +693,50 @@ macro "stephelper2" : tactic => `(tactic|(
     -- remainder
     | apply consequence_frame_left uRem_intro
     | apply consequence_frame_left iRem_intro
+    -- struct
+    | apply consequence_frame_left mkTuple_intro
+    | apply consequence_frame_left projectTuple_intro
+    -- lens
+    | apply consequence_frame_left modifyLens_intro
+    | apply consequence_frame_left getLens_intro
   )
   repeat sl
 ))
 
 macro "stephelper3" : tactic => `(tactic|(
   (first
-    | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top Lampe.STHoare.litU_intro
+    | apply ramified_frame_top Lampe.STHoare.litField_intro
+    | apply ramified_frame_top Lampe.STHoare.litStr_intro
+    | apply ramified_frame_top Lampe.STHoare.fmtStr_intro
+    | apply ramified_frame_top Lampe.STHoare.litTrue_intro
+    | apply ramified_frame_top Lampe.STHoare.litFalse_intro
+    | apply ramified_frame_top Lampe.STHoare.litUnit_intro
+    | apply ramified_frame_top fn_intro
+    | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top assert_intro
     | apply ramified_frame_top skip_intro
     | apply ramified_frame_top lam_intro
-    -- memory builtins
+    | apply ramified_frame_top cast_intro
+    -- memory
     | apply ramified_frame_top var_intro
     | apply ramified_frame_top ref_intro
     | apply ramified_frame_top readRef_intro
     | apply ramified_frame_top writeRef_intro
-    -- slice builtins
+    -- array
+    | apply ramified_frame_top mkArray_intro
+    | apply ramified_frame_top arrayLen_intro
+    | apply ramified_frame_top arrayIndex_intro
+    | apply ramified_frame_top arrayAsSlice_intro
+    -- slice
+    | apply ramified_frame_top mkSlice_intro
     | apply ramified_frame_top sliceLen_intro
     | apply ramified_frame_top sliceIndex_intro
     | apply ramified_frame_top slicePushBack_intro
     -- equality
     | apply ramified_frame_top unitEq_intro
-    | apply ramified_frame_top boolEq_intro
+    | apply ramified_frame_top bEq_intro
+    | apply ramified_frame_top bEq_intro
     | apply ramified_frame_top fEq_intro
     | apply ramified_frame_top uEq_intro
     | apply ramified_frame_top iEq_intro
@@ -687,6 +768,12 @@ macro "stephelper3" : tactic => `(tactic|(
     -- remainder
     | apply ramified_frame_top uRem_intro
     | apply ramified_frame_top iRem_intro
+    -- struct
+    | apply ramified_frame_top mkTuple_intro
+    | apply ramified_frame_top projectTuple_intro
+    -- lens
+    | apply ramified_frame_top modifyLens_intro
+    | apply ramified_frame_top getLens_intro
   )
   repeat sl
 ))

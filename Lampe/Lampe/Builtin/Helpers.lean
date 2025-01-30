@@ -1,4 +1,4 @@
-import Mathlib
+import Mathlib.Tactic.Linarith
 
 namespace Lampe
 
@@ -6,6 +6,7 @@ namespace Lampe
 def extList (lst : List α) (len : Nat) (default : α) : List α
   := lst ++ (List.replicate (len - lst.length) default)
 
+@[reducible]
 def decomposeToRadix (r : Nat) (v : Nat) (h : r > 1) : List Nat := match v with
 | .zero => List.nil
 | v' + 1 => List.cons ((v' + 1) % r) (decomposeToRadix r ((v' + 1) / r) h)

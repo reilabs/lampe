@@ -72,7 +72,7 @@ Converts a list `l` to a vector of size `n`s.
 - If `n < l.length`, then the output is truncated from the end.
 - If `n > l.length`, then the higher indices are populated with `zero`.
 -/
-def listToVec (l : List α) (zero : α) : Mathlib.Vector α n :=
+def listToVec (l : List α) (zero : α) : List.Vector α n :=
   ⟨l.takeD n zero, List.takeD_length _ _ _⟩
 
 /--

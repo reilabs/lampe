@@ -1,5 +1,28 @@
 import Lampe.Builtin.Basic
+
 namespace Lampe.Builtin
+
+@[reducible]
+def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Fin s.length) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
+  List.modify (fun _ => v) i s
+
+@[simp]
+theorem replaceSlice_length_eq_length :
+    (replaceSlice' s i v).length = s.length := by
+  simp_all [List.length_modify]
+
+@[simp]
+theorem index_replaced_slice :
+    (replaceSlice' s idx v).get ⟨idx.val, h⟩ = v := by
+  simp_all [List.modify_eq_set_get?, List.getElem_eq_iff]
+
+/--
+Defines the builtin slice constructor.
+-/
+def mkSlice (n : Nat) := newGenericPureBuiltin
+  (fun (argTps, tp) => ⟨argTps, (.slice tp)⟩)
+  (fun (argTps, tp) args => ⟨argTps = List.replicate n tp,
+    fun h => HList.toList args h⟩)
 
 /--
 Defines the indexing of a slice `l : List tp` with `i : U 32`
@@ -62,7 +85,7 @@ In Noir, this builtin corresponds to `fn insert(self, index: u32, elem: T) -> Se
 def sliceInsert := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp, .u 32, tp], .slice tp⟩)
   (fun _ h![l, i, e] => ⟨i.toNat < l.length,
-    fun _ => l.insertNth i.toNat e⟩)
+    fun _ => l.insertIdx i.toNat e⟩)
 
 
 /--
@@ -74,7 +97,7 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `fn pop_front(self) -> (T, Self)` implemented for `[T]`.
 -/
 def slicePopFront := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp], .struct [tp, .slice tp]⟩)
+  (fun tp => ⟨[.slice tp], .tuple none [tp, .slice tp]⟩)
   (fun _ h![l] => ⟨l ≠ [],
     fun h => (l.head h, l.tail, ())⟩)
 
@@ -87,7 +110,7 @@ We make the following assumptions:
 In Noir, this builtin corresponds to `fn pop_back(self) -> (Self, T)` implemented for `[T]`.
 -/
 def slicePopBack := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp], .struct [.slice tp, tp]⟩)
+  (fun tp => ⟨[.slice tp], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l] => ⟨l ≠ [],
     fun h => (l.dropLast, l.getLast h, ())⟩)
 
@@ -101,7 +124,7 @@ where `l'` is `l` except that the element at index `i` is removed, and all the e
 In Noir, this builtin corresponds to `fn remove(self, index: u32) -> (Self, T)` implemented for `[T]`.
 -/
 def sliceRemove := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp, .u 32], .struct [.slice tp, tp]⟩)
+  (fun tp => ⟨[.slice tp, .u 32], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
 
