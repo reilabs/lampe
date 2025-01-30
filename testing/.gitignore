@@ -1,0 +1,4 @@
+# Outputs from the testing script to avoid accidentally commiting
+test_fixture/Out.lean
+*.olean
+
