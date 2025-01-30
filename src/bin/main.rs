@@ -9,7 +9,7 @@
 
 #![warn(clippy::all, clippy::cargo, clippy::pedantic)]
 
-use std::{fs::File, io::Write, path::PathBuf, process::ExitCode};
+use std::{fs::OpenOptions, io::Write, path::PathBuf, process::ExitCode};
 
 use clap::{arg, Parser};
 use lampe::{noir::source::Source, noir_to_lean, Project, Result};
@@ -22,6 +22,9 @@ const DEFAULT_NOIR_FILE_NAME: &str = "main.nr";
 
 /// The default output file for the generated definitions.
 const DEFAULT_OUT_FILE_NAME: &str = "Main.lean";
+
+/// The
+const LEAN_HEADER: &str = "import Lampe\n\nopen Lampe\n\nnamespace Test\n\n";
 
 /// A utility to extract Noir code to Lean in order to enable the formal
 /// verification of Noir programs.
@@ -58,7 +61,7 @@ fn main() -> ExitCode {
 ///
 /// - [`Error`] if the extraction process fails for any reason.
 pub fn run(args: &ProgramOptions) -> Result<ExitCode> {
-    let source = Source::read(&args.file)?;
+    let source = Source::read(&args.root, &args.file)?;
     let project = Project::new(&args.root, source);
 
     let emit_result = noir_to_lean(project)?;
@@ -68,12 +71,19 @@ pub fn run(args: &ProgramOptions) -> Result<ExitCode> {
         }
     }
 
-    let lean_source = emit_result.take();
-    let mut out_file = File::open(&args.out_file)
+    let mut lean_source = LEAN_HEADER.to_owned();
+    lean_source.push_str(&emit_result.take());
+
+    let mut out_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&args.out_file)
         .map_err(|_| lampe::error::file::Error::MissingFile(args.out_file.clone()))?;
+
     out_file
         .write(lean_source.as_bytes())
-        .map_err(|_| lampe::error::file::Error::MissingFile(args.out_file.clone()))?;
+        .map_err(|_| lampe::error::file::Error::WritingError(args.out_file.clone()))?;
 
     Ok(ExitCode::SUCCESS)
 }
