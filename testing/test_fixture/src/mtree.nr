@@ -2,52 +2,66 @@ trait MHash<F> {
     fn hash_two(self, l: F, r: F) -> F;
 }
 
+/// Returns the numerical index from a boolean index.
+/// If `idx` is empty, this returns 0.
+///
+/// [TODO] This should be a `from_bits` call.
+fn abs_idx(idx: [bool]) -> u32 {
+    let mut abs_idx = 0 as u32;
+    for dir in idx {
+        abs_idx = abs_idx * 2 + (dir as u32);
+    }
+    abs_idx
+}
+
 /// Represents a Merkle tree with hash digests of `F`.
 struct MTree<F> {
-    leafs: [F],
-    is_leaf: bool,
+    leaves: [F],
+    depth: u32,
 }
 
 impl<F> MTree<F> {
-    /// Builds a Merkle tree of depth `d` from a list of leafs of length `2^d`.
-    /// If the length of `leafs` is 1, then this builds a leaf (`d = 0`) instead.
-    fn build(leafs: [F]) -> Self {
-        assert(leafs.len() > 0);
-        let is_leaf = leafs.len() < 2;
-        assert((leafs.len() % 2 == 0) | is_leaf);
-        Self { leafs, is_leaf }
+    /// Builds a Merkle tree of depth `d` from a list of leaves of length `2^d`.
+    /// If `d = 0`, then the tree is a leaf with a single leaf node.
+    fn build(leaves: [F], d: u32) -> Self {
+        Self { leaves, depth: d }
     }
 
-    /// Builds a Merkle tree from two subtrees/leafs.
+    /// Builds a Merkle tree from two subtrees/leaves.
     fn build_from(l: MTree<F>, r: MTree<F>) -> Self {
-        let leafs = l.leafs.append(r.leafs);
-        Self::build(leafs)
+        assert(l.depth == r.depth);
+        let leaves = l.leaves.append(r.leaves);
+        Self::build(leaves, l.depth + 1)
+    }
+
+    /// Returns `true` iff this Merkle tree is a leaf.
+    pub fn is_leaf(self) -> bool {
+        self.depth == 0
     }
 
     /// Returns the left subtree of a non-leaf Merkle tree.
     fn left(self) -> MTree<F> {
-        assert(!self.is_leaf);
-        let mut l_leafs = &[];
-        for i in 0..self.leafs.len() / 2 {
-            l_leafs = l_leafs.push_back(self.leafs[i]);
+        assert(self.depth > 0);
+        let mut l_leaves = &[];
+        for i in 0..self.leaves.len() / 2 {
+            l_leaves = l_leaves.push_back(self.leaves[i]);
         }
-        Self::build(l_leafs)
+        Self::build(l_leaves, self.depth - 1)
     }
 
     /// Returns the right subtree of a non-leaf Merkle tree.
     fn right(self) -> MTree<F> {
-        assert(!self.is_leaf);
-        let mut r_leafs = &[];
-        for i in (self.leafs.len() / 2)..self.leafs.len() {
-            r_leafs = r_leafs.push_back(self.leafs[i]);
+        assert(self.depth > 0);
+        let mut r_leaves = &[];
+        for i in (self.leaves.len() / 2)..self.leaves.len() {
+            r_leaves = r_leaves.push_back(self.leaves[i]);
         }
-        Self::build(r_leafs)
+        Self::build(r_leaves, self.depth - 1)
     }
 
     /// Returns the child subtree in the direction of the given direction `dir`
-    /// where `false` denotes the left direction and `true` denotes the right direction.
-    fn child(self, dir: bool) -> MTree<F> {
-        assert(!self.is_leaf);
+    /// where `0` denotes the left direction and `1` denotes the right direction.
+    pub fn child(self, dir: bool) -> MTree<F> {
         if dir {
             self.right()
         } else {
@@ -57,68 +71,65 @@ impl<F> MTree<F> {
 
     /// Returns the leaf at the given index denoted by `idx`.
     /// If `self` is a leaf, then `idx` must be empty, and this returns the value of the leaf.
-    fn get_leaf(self, idx: [bool]) -> F {
-        if self.is_leaf {
-            self.leafs[0]
-        } else {
-            let (dir, rem) = idx.pop_front();
-            if dir {
-                self.right().get_leaf(rem)
-            } else {
-                self.left().get_leaf(rem)
-            }
+    pub fn get_leaf(self, idx: [bool]) -> F {
+        let mut tree = self;
+        for dir in idx {
+            tree = tree.child(dir);
         }
+        tree.leaves[0]
     }
 
     /// Sets the leaf at the given index denoted by `idx` to `new_leaf` and returns the new tree.
-    /// If `self` is a leaf, then `idx` must be empty, and this updates the value of the leaf.
-    fn set_leaf(self, idx: [bool], new_leaf: F) -> MTree<F> {
-        if self.is_leaf {
-            assert(idx.len() == 0);
-            MTree::build([new_leaf])
-        } else {
-            assert(idx.len() > 0);
-            let (dir, rem) = idx.pop_front();
-            if dir {
-                let l = self.left();
-                let r = self.right().set_leaf(rem, new_leaf);
-                MTree::build_from(l, r)
-            } else {
-                let l = self.left().set_leaf(rem, new_leaf);
-                let r = self.right();
-                MTree::build_from(l, r)
+    /// If `self` is a leaf, then this updates the value of the leaf.
+    pub fn set_leaf(self, idx: [bool], new_leaf: F) -> MTree<F> {
+        let mut new_leaves = self.leaves;
+        let mut abs_idx = abs_idx(idx);
+        new_leaves[abs_idx] = new_leaf;
+        MTree::build(new_leaves, self.depth)
+    }
+
+    /// Reduces the Merkle tree once by using `h`.
+    /// Reducing means that the tree is reduced by one level by hashing adjacent leaves.
+    fn reduce_leaves(self, h: impl MHash<F>) -> MTree<F> {
+        assert(self.depth > 0);
+        let mut leaves = &[];
+        for j in 1..self.leaves.len() {
+            if (j + 1) % 2 == 0 {
+                let l = self.leaves[j - 1];
+                let r = self.leaves[j];
+                let h = h.hash_two(l, r);
+                leaves = leaves.push_back(h);
             }
         }
+        MTree::build(leaves, self.depth - 1)
     }
 
     /// Returns the root hash of this Merkle tree/leaf.
     /// If `self` is a leaf, then this returns the value of the leaf.
-    fn root(self, h: impl MHash<F>) -> F {
-        if self.is_leaf {
-            self.leafs[0]
-        } else {
-            let l = self.left();
-            let r = self.right();
-            h.hash_two(l.root(h), r.root(h))
+    pub fn root(self, h: impl MHash<F>) -> F {
+        let mut t = self;
+        for _ in 0..self.depth {
+            t = t.reduce_leaves(h);
         }
+        t.leaves[0]
     }
 
     /// Returns the Merkle proof for the leaf at `idx`.
-    /// If `self` is a leaf, then `idx` must be empty, and this returns an empty list.
+    /// If `self` is a leaf, then this returns an empty list.
     ///
     /// The proof represents the minimal information that can be used to reconstruct `self.root(h)` from the leaf at `idx`.
     fn proof(self, h: impl MHash<F>, idx: [bool]) -> [F] {
-        if self.is_leaf {
-            assert(idx.len() == 0);
+        if self.is_leaf() {
             &[]
         } else {
-            assert(idx.len() > 0);
-            let (dir, rem) = idx.pop_front();
-            // Get the root hash of the sibling subtree.
-            let root_proof = self.child(!dir).root(h);
-            // Get the subproofs for the remaining path.
-            let rem_proofs = self.child(dir).proof(h, rem);
-            &[root_proof].append(rem_proofs)
+            let mut proof = &[];
+            let mut t = self;
+            for dir in idx {
+                let sibling_root = t.child(!dir).root(h);
+                proof = proof.push_back(sibling_root);
+                t = t.child(dir);
+            }
+            proof
         }
     }
 
@@ -150,29 +161,51 @@ impl MHash<Field> for AddFields {
 }
 
 #[test]
-pub fn test_mtree_basic() {
-    let leafs = &[1, 2, 3, 4];
-    let tree = MTree::build(leafs);
-    assert(tree.leafs == leafs);
-    assert(!tree.is_leaf);
-    let t0 = tree.left();
-    let t1 = tree.left().left();
-    let t2 = tree.left().right();
-    let t3 = tree.right();
-    let t4 = tree.right().left();
-    let t5 = tree.right().right();
-    assert(t0.leafs == &[1, 2]);
-    assert(t1.leafs == &[1]);
-    assert(t2.leafs == &[2]);
-    assert(t3.leafs == &[3, 4]);
-    assert(t4.leafs == &[3]);
-    assert(t5.leafs == &[4]);
-    assert(!t0.is_leaf);
-    assert(t1.is_leaf);
-    assert(t2.is_leaf);
-    assert(!t3.is_leaf);
-    assert(t4.is_leaf);
-    assert(t5.is_leaf);
-    let l = tree.get_leaf(&[true, false]); // Crashes the compiler
-    assert(l == 3);
+fn test_mtree_basic() {
+    let leaves = &[1, 2, 3, 4];
+    let tree = MTree::build(leaves, 2);
+    assert(tree.leaves == leaves);
+    assert(!tree.is_leaf());
+    assert(tree.left().leaves == &[1, 2]);
+    assert(!tree.left().is_leaf());
+    assert(tree.left().left().is_leaf());
+    assert(tree.left().left().leaves == &[1]);
+    assert(tree.left().right().leaves == &[2]);
+    assert(tree.left().right().is_leaf());
+    // get_leaf
+    assert(tree.get_leaf(&[true, false]) == 3);
+    assert(tree.get_leaf(&[true, true]) == tree.right().right().get_leaf(&[]));
+    // set_leaf
+    let new_tree = tree.set_leaf(&[true, false], 5);
+    assert(tree.get_leaf(&[true, false]) == 3);
+    assert(new_tree.get_leaf(&[true, false]) == 5);
+}
+
+#[test]
+fn test_mtree_root() {
+    let h = AddFields {};
+    let leaves = &[1, 2, 3, 4];
+    let tree = MTree::build(leaves, 2);
+    assert(tree.root(h) == 10);
+    let leaves = &[1, 2, 3, 4, 5, 6, 7, 8];
+    let tree = MTree::build(leaves, 3);
+    assert(tree.root(h) == 36);
+}
+
+#[test]
+fn test_mtree_proof() {
+    let h = AddFields {};
+    let leaves = &[1, 2, 3, 4, 5, 6, 7, 8];
+    let tree = MTree::build(leaves, 3);
+    assert(tree.proof(h, &[true, false, false]) == &[10, 15, 6]);
+}
+
+#[test]
+fn test_mtree_recover() {
+    let h = AddFields {};
+    let leaves = &[1, 2, 3, 4, 5, 6, 7, 8];
+    let tree = MTree::build(leaves, 3);
+    let idx = &[true, false, false];
+    let p = tree.proof(h, idx);
+    assert(MTree::recover(h, idx, p, 5) == tree.root(h));
 }
