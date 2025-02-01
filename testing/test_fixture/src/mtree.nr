@@ -1,4 +1,4 @@
-trait MHash<F> {
+pub trait MHash<F> {
     fn hash_two(self, l: F, r: F) -> F;
 }
 
@@ -15,7 +15,7 @@ fn abs_idx(idx: [bool]) -> u32 {
 }
 
 /// Represents a Merkle tree with hash digests of `F`.
-struct MTree<F> {
+pub struct MTree<F> {
     leaves: [F],
     depth: u32,
 }
@@ -118,7 +118,7 @@ impl<F> MTree<F> {
     /// If `self` is a leaf, then this returns an empty list.
     ///
     /// The proof represents the minimal information that can be used to reconstruct `self.root(h)` from the leaf at `idx`.
-    fn proof(self, h: impl MHash<F>, idx: [bool]) -> [F] {
+    pub fn proof(self, h: impl MHash<F>, idx: [bool]) -> [F] {
         if self.is_leaf() {
             &[]
         } else {
@@ -135,7 +135,7 @@ impl<F> MTree<F> {
 
     /// Recovers the root hash of a Merkle tree `t` from the proof `p` such that `p = t.proof(h, idx)` and `idx` is the supposed index of `item` in `t`.
     /// Accordingly, we must have `t.root(h) == recover(h, idx, p, item)`.
-    fn recover(h: impl MHash<F>, idx: [bool], p: [F], item: F) -> F {
+    pub fn recover(h: impl MHash<F>, idx: [bool], p: [F], item: F) -> F {
         assert(idx.len() == p.len());
         if idx.len() == 0 {
             item
