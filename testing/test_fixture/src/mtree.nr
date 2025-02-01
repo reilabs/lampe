@@ -2,6 +2,7 @@ trait MHash<F> {
     fn hash_two(self, l: F, r: F) -> F;
 }
 
+/// Represents a Merkle tree with hash digests of `F`.
 struct MTree<F> {
     leafs: [F],
     is_leaf: bool,
@@ -9,7 +10,7 @@ struct MTree<F> {
 
 impl<F> MTree<F> {
     /// Builds a Merkle tree of depth `d` from a list of leafs of length `2^d`.
-    /// If the length of `leafs` is 1, then this builds a leaf instead.
+    /// If the length of `leafs` is 1, then this builds a leaf (`d = 0`) instead.
     fn build(leafs: [F]) -> Self {
         assert(leafs.len() > 0);
         let is_leaf = leafs.len() == 1;
@@ -56,7 +57,7 @@ impl<F> MTree<F> {
 
     /// Returns the leaf at the given index denoted by `idx`.
     /// If `self` is a leaf, then `idx` must be empty, and this returns the value of the leaf.
-    fn itemAt(self, idx: [bool]) -> F {
+    fn getLeaf(self, idx: [bool]) -> F {
         if self.is_leaf {
             assert(idx.len() == 0);
             self.leafs[0]
@@ -64,16 +65,16 @@ impl<F> MTree<F> {
             assert(idx.len() > 0);
             let (dir, rem) = idx.pop_front();
             if dir {
-                self.right().itemAt(rem)
+                self.right().getLeaf(rem)
             } else {
-                self.left().itemAt(rem)
+                self.left().getLeaf(rem)
             }
         }
     }
 
     /// Sets the leaf at the given index denoted by `idx` to `new_leaf` and returns the new tree.
     /// If `self` is a leaf, then `idx` must be empty, and this updates the value of the leaf.
-    fn set(self, idx: [bool], new_leaf: F) -> MTree<F> {
+    fn setLeaf(self, idx: [bool], new_leaf: F) -> MTree<F> {
         if self.is_leaf {
             assert(idx.len() == 0);
             MTree::build([new_leaf])
@@ -82,10 +83,10 @@ impl<F> MTree<F> {
             let (dir, rem) = idx.pop_front();
             if dir {
                 let l = self.left();
-                let r = self.right().set(rem, new_leaf);
+                let r = self.right().setLeaf(rem, new_leaf);
                 MTree::build_from(l, r)
             } else {
-                let l = self.left().set(rem, new_leaf);
+                let l = self.left().setLeaf(rem, new_leaf);
                 let r = self.right();
                 MTree::build_from(l, r)
             }
@@ -104,38 +105,39 @@ impl<F> MTree<F> {
         }
     }
 
-    /// Returns the Merkle proof for the `path` leading to a leaf.
-    /// If `self` is a leaf, then `path` must be empty, and this returns an empty list.
-    fn proof(self, h: impl MHash<F>, path: [bool]) -> [F] {
+    /// Returns the Merkle proof for the leaf at `idx`.
+    /// If `self` is a leaf, then `idx` must be empty, and this returns an empty list.
+    ///
+    /// The proof represents the minimal information that can be used to reconstruct `self.root(h)` from the leaf at `idx`.
+    fn proof(self, h: impl MHash<F>, idx: [bool]) -> [F] {
         if self.is_leaf {
-            assert(path.len() == 0);
+            assert(idx.len() == 0);
             &[]
         } else {
-            assert(path.len() > 0);
-            let (dir, rem) = path.pop_front();
+            assert(idx.len() > 0);
+            let (dir, rem) = idx.pop_front();
             // Get the root hash of the sibling subtree.
             let root_proof = self.treeFor(!dir).root(h);
-            // Get the proofs for the remaining path.
+            // Get the subproofs for the remaining path.
             let rem_proofs = self.treeFor(dir).proof(h, rem);
             &[root_proof].append(rem_proofs)
         }
     }
 
-    fn recover(self, h: impl MHash<F>, idx: [bool], proof: [F], item: F) -> F {
-        if self.is_leaf {
-            assert(idx.len() == 0);
-            assert(proof.len() == 0);
+    /// Recovers the root hash of a Merkle tree `t` from the proof `p` such that `p = t.proof(h, idx)` and `idx` is the supposed index of `item` in `t`.
+    /// Accordingly, we must have `t.root(h) == recover(h, idx, p, item)`.
+    fn recover(h: impl MHash<F>, idx: [bool], p: [F], item: F) -> F {
+        assert(idx.len() == p.len());
+        if idx.len() == 0 {
             item
         } else {
-            assert(idx.len() > 0);
-            assert(proof.len() > 0);
             let (dir, rem_idx) = idx.pop_front();
-            let (root_proof, rem_proof) = proof.pop_front();
-            let recover2 = self.recover(h, rem_idx, rem_proof, item);
+            let (sibling_root, rem_proof) = p.pop_front();
+            let rec = Self::recover(h, rem_idx, rem_proof, item);
             if dir {
-                h.hash_two(root_proof, recover2)
+                h.hash_two(sibling_root, rec)
             } else {
-                h.hash_two(recover2, root_proof)
+                h.hash_two(rec, sibling_root)
             }
         }
     }
