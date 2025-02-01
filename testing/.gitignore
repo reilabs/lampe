@@ -2,3 +2,5 @@
 test_fixture/Out.lean
 *.olean
 
+# Output from `nargo build`
+target/

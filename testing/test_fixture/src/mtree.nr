@@ -13,7 +13,7 @@ impl<F> MTree<F> {
     /// If the length of `leafs` is 1, then this builds a leaf (`d = 0`) instead.
     fn build(leafs: [F]) -> Self {
         assert(leafs.len() > 0);
-        let is_leaf = leafs.len() == 1;
+        let is_leaf = leafs.len() < 2;
         assert((leafs.len() % 2 == 0) | is_leaf);
         Self { leafs, is_leaf }
     }
@@ -44,9 +44,9 @@ impl<F> MTree<F> {
         Self::build(r_leafs)
     }
 
-    /// Returns the subtree in the direction of the given direction `dir`
+    /// Returns the child subtree in the direction of the given direction `dir`
     /// where `false` denotes the left direction and `true` denotes the right direction.
-    fn treeFor(self, dir: bool) -> MTree<F> {
+    fn child(self, dir: bool) -> MTree<F> {
         assert(!self.is_leaf);
         if dir {
             self.right()
@@ -57,24 +57,22 @@ impl<F> MTree<F> {
 
     /// Returns the leaf at the given index denoted by `idx`.
     /// If `self` is a leaf, then `idx` must be empty, and this returns the value of the leaf.
-    fn getLeaf(self, idx: [bool]) -> F {
+    fn get_leaf(self, idx: [bool]) -> F {
         if self.is_leaf {
-            assert(idx.len() == 0);
             self.leafs[0]
         } else {
-            assert(idx.len() > 0);
             let (dir, rem) = idx.pop_front();
             if dir {
-                self.right().getLeaf(rem)
+                self.right().get_leaf(rem)
             } else {
-                self.left().getLeaf(rem)
+                self.left().get_leaf(rem)
             }
         }
     }
 
     /// Sets the leaf at the given index denoted by `idx` to `new_leaf` and returns the new tree.
     /// If `self` is a leaf, then `idx` must be empty, and this updates the value of the leaf.
-    fn setLeaf(self, idx: [bool], new_leaf: F) -> MTree<F> {
+    fn set_leaf(self, idx: [bool], new_leaf: F) -> MTree<F> {
         if self.is_leaf {
             assert(idx.len() == 0);
             MTree::build([new_leaf])
@@ -83,10 +81,10 @@ impl<F> MTree<F> {
             let (dir, rem) = idx.pop_front();
             if dir {
                 let l = self.left();
-                let r = self.right().setLeaf(rem, new_leaf);
+                let r = self.right().set_leaf(rem, new_leaf);
                 MTree::build_from(l, r)
             } else {
-                let l = self.left().setLeaf(rem, new_leaf);
+                let l = self.left().set_leaf(rem, new_leaf);
                 let r = self.right();
                 MTree::build_from(l, r)
             }
@@ -117,9 +115,9 @@ impl<F> MTree<F> {
             assert(idx.len() > 0);
             let (dir, rem) = idx.pop_front();
             // Get the root hash of the sibling subtree.
-            let root_proof = self.treeFor(!dir).root(h);
+            let root_proof = self.child(!dir).root(h);
             // Get the subproofs for the remaining path.
-            let rem_proofs = self.treeFor(dir).proof(h, rem);
+            let rem_proofs = self.child(dir).proof(h, rem);
             &[root_proof].append(rem_proofs)
         }
     }
@@ -141,4 +139,40 @@ impl<F> MTree<F> {
             }
         }
     }
+}
+
+struct AddFields;
+
+impl MHash<Field> for AddFields {
+    fn hash_two(self, l: Field, r: Field) -> Field {
+        (l + r)
+    }
+}
+
+#[test]
+pub fn test_mtree_basic() {
+    let leafs = &[1, 2, 3, 4];
+    let tree = MTree::build(leafs);
+    assert(tree.leafs == leafs);
+    assert(!tree.is_leaf);
+    let t0 = tree.left();
+    let t1 = tree.left().left();
+    let t2 = tree.left().right();
+    let t3 = tree.right();
+    let t4 = tree.right().left();
+    let t5 = tree.right().right();
+    assert(t0.leafs == &[1, 2]);
+    assert(t1.leafs == &[1]);
+    assert(t2.leafs == &[2]);
+    assert(t3.leafs == &[3, 4]);
+    assert(t4.leafs == &[3]);
+    assert(t5.leafs == &[4]);
+    assert(!t0.is_leaf);
+    assert(t1.is_leaf);
+    assert(t2.is_leaf);
+    assert(!t3.is_leaf);
+    assert(t4.is_leaf);
+    assert(t5.is_leaf);
+    let l = tree.get_leaf(&[true, false]); // Crashes the compiler
+    assert(l == 3);
 }
