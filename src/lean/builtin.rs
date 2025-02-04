@@ -99,19 +99,21 @@ impl BuiltinType {
 }
 
 pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
-    if func_expr.starts_with("@std::slice::len<") {
-        Some(format!("sliceLen"))
-    } else if func_expr.starts_with("@std::slice::push_back<") {
-        Some(format!("slicePushBack"))
-    } else if func_expr.starts_with("@std::slice::push_front<") {
-        Some(format!("slicePushFront"))
-    } else if func_expr.starts_with("@std::array::len<") {
-        Some(format!("arrayLen"))
-    } else if func_expr.starts_with("@std::mem::zeroed<") {
-        Some(format!("zeroed"))
-    } else {
-        None
+    let builtin_names = [
+        ("@std::slice::len", "sliceLen"),
+        ("@std::slice::push_back", "slicePushBack"),
+        ("@std::slice::push_front", "slicePushFront"),
+        ("@std::slice::pop_back", "slicePopBack"),
+        ("@std::slice::pop_front", "slicePopFront"),
+        ("@std::array::len", "arrayLen"),
+        ("@std::mem::zeroed", "zeroed"),
+    ];
+    for (prefix, builtin) in builtin_names {
+        if func_expr.starts_with(prefix) {
+            return Some(builtin.to_string());
+        }
     }
+    None
 }
 
 pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
