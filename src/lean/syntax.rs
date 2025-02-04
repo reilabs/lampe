@@ -281,7 +281,13 @@ pub(super) mod expr {
 
     #[inline]
     pub fn format_var_ident(ident: &str) -> String {
-        normalize_ident(ident)
+        let var = normalize_ident(ident);
+        // Replace placeholders `_` with a valid Lean identifier.
+        let var = if var == "_" { "_?".to_string() } else { var };
+        // The compiler seems to add intermediate variables with `$` prefix.
+        // We have to replace these with valid Lean identifier characters.
+        let var = var.replace("$", "ζ");
+        var
     }
 
     #[inline]
