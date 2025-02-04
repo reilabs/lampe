@@ -1,7 +1,7 @@
 use indoc::formatdoc;
 use itertools::Itertools;
 
-// Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
+/// Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
 fn without_generic_args(ty_str: &str) -> String {
     let mut ty_str = ty_str.to_string();
     let Some(left_bracket_idx) = ty_str.find('<') else {
@@ -14,8 +14,17 @@ fn without_generic_args(ty_str: &str) -> String {
     ty_str
 }
 
+/// Returns true if the given type string (extracted by `format_type`) is a slice or array type, e.g., `[T]`.
+fn is_slice_or_array(ty_str: &str) -> bool {
+    ty_str.starts_with("[") && ty_str.ends_with("]")
+}
+
 fn normalize_ident(ident: &str) -> String {
-    ident.split("::").map(|p| without_generic_args(p)).join("::")
+    ident
+        .split("::")
+        .map(|p| without_generic_args(p))
+        .filter(|p| !is_slice_or_array(p))
+        .join("::")
 }
 
 #[inline]

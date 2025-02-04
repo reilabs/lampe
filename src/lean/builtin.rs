@@ -99,9 +99,18 @@ impl BuiltinType {
 }
 
 pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
-    match func_expr {
-        "@std::mem::zeroed<T>" => Some(format!("zeroed")),
-        _ => None,
+    if func_expr.starts_with("@std::slice::len<") {
+        Some(format!("sliceLen"))
+    } else if func_expr.starts_with("@std::slice::push_back<") {
+        Some(format!("slicePushBack"))
+    } else if func_expr.starts_with("@std::slice::push_front<") {
+        Some(format!("slicePushFront"))
+    } else if func_expr.starts_with("@std::array::len<") {
+        Some(format!("arrayLen"))
+    } else if func_expr.starts_with("@std::mem::zeroed<") {
+        Some(format!("zeroed"))
+    } else {
+        None
     }
 }
 
