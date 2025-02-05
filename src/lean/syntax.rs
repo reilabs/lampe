@@ -88,6 +88,11 @@ pub(super) fn format_generic_def(name: &str, is_num: bool) -> String {
     }
 }
 
+#[inline]
+pub(super) fn format_alias(alias_name: &str, generics: &str, typ: &str) -> String {
+    format!("nr_type_alias {alias_name}<{generics}> = {typ}")
+}
+
 pub(super) mod literal {
     #[inline]
     pub fn format_bool(v: bool) -> String {
@@ -165,6 +170,11 @@ pub(super) mod r#type {
     #[inline]
     pub fn format_function(param_types: &str, ret_type: &str) -> String {
         format!("λ({param_types}) → {ret_type}")
+    }
+
+    #[inline]
+    pub fn format_alias(alias_name: &str, alias_generics: &str) -> String {
+        format!("@{alias_name}<{alias_generics}>")
     }
 }
 
