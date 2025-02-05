@@ -210,6 +210,12 @@ mod test {
                 [1; N]
             }
 
+            type AliasedOpt<T> = Option2<T>;
+
+            fn is_alias_some<T>(x: AliasedOpt<T>) -> bool {
+                x.is_some()
+            }
+
             fn main() {
                 let mut op1 = Option2::some(5);
                 let op2 = Option2::default();
@@ -225,6 +231,8 @@ mod test {
                 tpl.0 = 2;
                 let impl_res = impl_test(op1, 0);
                 let five_ones = nat_generic_test::<5>();
+                let aliased_opt = AliasedOpt::none();
+                is_alias_some(aliased_opt);
             }
 
 

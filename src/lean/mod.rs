@@ -397,18 +397,14 @@ impl LeanEmitter {
     pub fn emit_alias(&self, alias: TypeAliasId, ctx: &EmitterCtx) -> Result<String> {
         let alias_data = self.context.def_interner.get_type_alias(alias);
         let alias_data = alias_data.borrow();
-        let alias_name = &alias_data.name;
+        let alias_name = alias_data.name.to_string();
         let generics = alias_data
             .generics
             .iter()
-            .map(|g| {
-                let gen = &g.name;
-                format!("{gen}")
-            })
+            .map(|g| self.emit_resolved_generic(g, ctx))
             .join(", ");
         let typ = self.emit_fully_qualified_type(&alias_data.typ, ctx);
-
-        Ok(format!("type {alias_name}<{generics}> = {typ};"))
+        Ok(syntax::format_alias(&alias_name, &generics, &typ))
     }
 
     /// Emits the Lean code corresponding to a Noir global definition.
@@ -637,7 +633,6 @@ impl LeanEmitter {
                 let name = self
                     .context
                     .fully_qualified_struct_path(&module_id.krate, struct_type.id);
-
                 let generics_resolved = generics
                     .iter()
                     .map(|g| self.emit_fully_qualified_type(g, ctx))
@@ -657,6 +652,15 @@ impl LeanEmitter {
             Type::MutableReference(typ) => {
                 let typ_str = self.emit_fully_qualified_type(typ, ctx);
                 syntax::r#type::format_mut_ref(&typ_str)
+            }
+            Type::Alias(alias, generics) => {
+                let generics_resolved = generics
+                    .iter()
+                    .map(|g| self.emit_fully_qualified_type(g, ctx))
+                    .collect_vec();
+                let generics_str = generics_resolved.join(", ");
+                let alias_name_str = alias.borrow().name.to_string();
+                syntax::r#type::format_alias(&alias_name_str, &generics_str)
             }
             // _ if context::is_impl(typ) => {
             //     panic!("impl types must be replaced with type variables or concrete types")
@@ -822,7 +826,7 @@ impl LeanEmitter {
             HirExpression::Prefix(prefix) => {
                 let rhs = self.emit_expr(ind, prefix.rhs, ctx)?;
                 let rhs_ty = self.id_bound_type(prefix.rhs);
-                let rhs_builtin_ty = rhs_ty.clone().try_into().ok();
+                let rhs_builtin_ty = self.unfold_alias(rhs_ty.clone()).try_into().ok();
                 if let Some(builtin_name) =
                     builtin::try_prefix_into_builtin_name(prefix.operator, rhs_builtin_ty)
                 {
@@ -867,16 +871,15 @@ impl LeanEmitter {
                 let rhs = self.emit_expr(ind, infix.rhs, ctx)?;
                 let lhs_ty = self.id_bound_type(infix.lhs);
                 let rhs_ty = self.id_bound_type(infix.rhs);
-                if let Some(builtin_name) =
-                    match (lhs_ty.clone().try_into(), rhs_ty.clone().try_into()) {
-                        (Ok(lhs_ty), Ok(rhs_ty)) => builtin::try_infix_into_builtin_name(
-                            infix.operator.kind,
-                            lhs_ty,
-                            rhs_ty,
-                        ),
-                        _ => None,
+                if let Some(builtin_name) = match (
+                    self.unfold_alias(lhs_ty.clone()).try_into(),
+                    self.unfold_alias(rhs_ty.clone()).try_into(),
+                ) {
+                    (Ok(lhs_ty), Ok(rhs_ty)) => {
+                        builtin::try_infix_into_builtin_name(infix.operator.kind, lhs_ty, rhs_ty)
                     }
-                {
+                    _ => None,
+                } {
                     syntax::expr::format_builtin_call(
                         builtin_name,
                         &[lhs, rhs].join(", "),
@@ -1039,7 +1042,8 @@ impl LeanEmitter {
             }
             HirExpression::Index(index) => {
                 let coll_type = self.id_bound_type(index.collection);
-                let coll_builtin_type: builtin::BuiltinType = coll_type.try_into().unwrap();
+                let coll_builtin_type: builtin::BuiltinType =
+                    self.unfold_alias(coll_type.clone()).try_into().unwrap();
                 let index_builtin_name = builtin::get_index_builtin_name(coll_builtin_type)
                     .expect(&format!("cannot index {:?}", coll_builtin_type));
 
@@ -1091,7 +1095,7 @@ impl LeanEmitter {
                 let lhs_expr_ty = self.id_bound_type(member.lhs);
                 let target_expr_str = self.emit_expr(ind, member.lhs, ctx)?;
                 let member_iden = member.rhs;
-                match &lhs_expr_ty {
+                match self.unfold_alias(lhs_expr_ty.clone()) {
                     Type::Struct(..) => {
                         let struct_ty_str = self.emit_fully_qualified_type(&lhs_expr_ty, ctx);
                         syntax::expr::format_member_access(
@@ -1227,6 +1231,17 @@ impl LeanEmitter {
                 }
             }
             _ => expr_ty,
+        }
+    }
+
+    /// If `typ` is an alias, unfolds it until it is no longer an alias.
+    fn unfold_alias(&self, typ: Type) -> Type {
+        match typ {
+            Type::Alias(alias, generics) => {
+                let unfolded_typ = alias.borrow().get_type(&generics);
+                self.unfold_alias(unfolded_typ)
+            }
+            typ => typ,
         }
     }
 
