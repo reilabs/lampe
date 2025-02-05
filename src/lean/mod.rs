@@ -826,7 +826,7 @@ impl LeanEmitter {
             HirExpression::Prefix(prefix) => {
                 let rhs = self.emit_expr(ind, prefix.rhs, ctx)?;
                 let rhs_ty = self.id_bound_type(prefix.rhs);
-                let rhs_builtin_ty = self.unfold_alias(rhs_ty.clone()).clone().try_into().ok();
+                let rhs_builtin_ty = self.unfold_alias(rhs_ty.clone()).try_into().ok();
                 if let Some(builtin_name) =
                     builtin::try_prefix_into_builtin_name(prefix.operator, rhs_builtin_ty)
                 {
@@ -872,8 +872,8 @@ impl LeanEmitter {
                 let lhs_ty = self.id_bound_type(infix.lhs);
                 let rhs_ty = self.id_bound_type(infix.rhs);
                 if let Some(builtin_name) = match (
-                    self.unfold_alias(lhs_ty.clone()).clone().try_into(),
-                    self.unfold_alias(rhs_ty.clone()).clone().try_into(),
+                    self.unfold_alias(lhs_ty.clone()).try_into(),
+                    self.unfold_alias(rhs_ty.clone()).try_into(),
                 ) {
                     (Ok(lhs_ty), Ok(rhs_ty)) => {
                         builtin::try_infix_into_builtin_name(infix.operator.kind, lhs_ty, rhs_ty)
