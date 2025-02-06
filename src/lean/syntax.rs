@@ -175,6 +175,11 @@ pub(super) mod r#type {
     pub fn format_function(param_types: &str, ret_type: &str) -> String {
         format!("λ({param_types}) → {ret_type}")
     }
+
+    #[inline]
+    pub fn format_placeholder() -> String {
+        format!("_")
+    }
 }
 
 pub(super) mod lval {

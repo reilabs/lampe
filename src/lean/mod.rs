@@ -612,7 +612,10 @@ impl LeanEmitter {
         if let Some(typ) = ctx.get_impl_return(typ) {
             return self.emit_fully_qualified_type(typ, ctx);
         }
-
+        // If `typ` is still an `impl` type, return a placeholder type.
+        if context::is_impl(typ) {
+            return syntax::r#type::format_placeholder();
+        }
         match typ {
             Type::Unit => syntax::r#type::format_unit(),
             Type::Array(size, elem_type) => {
@@ -967,7 +970,9 @@ impl LeanEmitter {
                             .filter(|(_, (tv, _, _))| {
                                 ctx.get_impl_param(&Type::TypeVariable(tv.clone())).is_some()
                             })
-                            .map(|(_, (_, _, ty))| self.emit_fully_qualified_type(ty, ctx));
+                            .map(|(_, (tv, _, _))| {
+                                self.emit_fully_qualified_type(&Type::TypeVariable(tv.clone()), ctx)
+                            });
                         match (func_meta.trait_impl, func_meta.trait_id) {
                             (Some(trait_impl_id), _) => {
                                 let trait_impl = self
