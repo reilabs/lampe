@@ -27,6 +27,10 @@ fn normalize_ident(ident: &str) -> String {
         .join("::")
 }
 
+fn escape_ident(ident: &str) -> String {
+    ident.split("::").map(|s| format!("«{s}»")).join("::")
+}
+
 #[inline]
 pub(super) fn format_struct_def(name: &str, def_generics: &str, fields: &str) -> String {
     formatdoc! {
@@ -62,10 +66,11 @@ pub(super) fn format_free_function_def(
     body: &str,
 ) -> (String, String) {
     let func_ident = normalize_ident(func_ident);
+    let escaped_func_ident = escape_ident(&func_ident);
     (
         func_ident.clone(),
         formatdoc! {
-            r"nr_def «{func_ident}»<{def_generics}>({params}) -> {ret_type} {{
+            r"nr_def {escaped_func_ident}<{def_generics}>({params}) -> {ret_type} {{
             {body}
             }}"
         },
@@ -81,8 +86,9 @@ pub(super) fn format_trait_function_def(
     body: &str,
 ) -> String {
     let func_ident = normalize_ident(func_ident);
+    let escaped_func_ident = escape_ident(&func_ident);
     formatdoc! {
-        r"fn {func_ident}<{def_generics}> ({params}) -> {ret_type} {{
+        r"fn {escaped_func_ident}<{def_generics}> ({params}) -> {ret_type} {{
             {body}
             }}"
     }
