@@ -12,12 +12,13 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
+    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
+        Context,
         def_map::{ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
-        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -28,7 +29,6 @@ use noirc_frontend::{
     node_interner::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
-    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -421,11 +421,33 @@ impl LeanEmitter {
         ind: &mut Indenter,
         global: GlobalId,
         ctx: &EmitterCtx,
-    ) -> Result<String> {
+    ) -> Result<(String, String)> {
         let global_data = self.context.def_interner.get_global(global);
-        let value = self.emit_statement(ind, global_data.let_statement, ctx)?;
+        let asdf = self.context.def_interner.statement(&global_data.let_statement);
 
-        Ok(format!("global {value}"))
+        // TODO: Clean up
+        let asdf = match asdf {
+            HirStatement::Let(lets) => {
+                let bound_expr = self.emit_expr(ind, lets.expression, ctx)?;
+                let name = if let Some((simple_stmt, _)) =
+                    pattern::try_format_simple_pattern(&lets.pattern, &bound_expr, self, ctx)
+                {
+                    Ok(simple_stmt)
+                } else {
+                    Err(Error::GlobalStatementNotLet("".to_owned())) // TODO: Clean up
+                }?;
+                let expr_type = self.emit_fully_qualified_type(&lets.r#type, ctx);
+
+                let body = format!("");
+
+                Ok(syntax::format_free_function_def(
+                    &name, &"", &"", &expr_type, &body,
+                ))
+            }
+            _ => Err(Error::GlobalStatementNotLet("".to_owned())), // TODO: Clean up
+        }?;
+
+        Ok(asdf)
     }
 
     /// Emits the Lean source code corresponding to a resolved generics occuring at generic declarations.
@@ -762,10 +784,8 @@ impl LeanEmitter {
                 Box::new(self.substitute_bindings(env, bindings)),
                 *unconstrained,
             ),
-            Type::TraitAsType(id, name, generics) => Type::TraitAsType(
-                id.clone(),
-                name.clone(),
-                TraitGenerics {
+            Type::TraitAsType(id, name, generics) => {
+                Type::TraitAsType(id.clone(), name.clone(), TraitGenerics {
                     ordered: generics
                         .ordered
                         .iter()
@@ -779,8 +799,8 @@ impl LeanEmitter {
                             typ: self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
-                },
-            ),
+                })
+            }
             Type::MutableReference(t) => {
                 Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
             }
