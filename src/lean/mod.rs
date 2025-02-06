@@ -248,8 +248,13 @@ impl LeanEmitter {
                     func_refs.insert(format!("«{def_name}»"));
                     EmitOutput::Function(def)
                 }
+                ModuleDefId::GlobalId(id) => {
+                    let (global_name, global_string) = self.emit_global(ind, id, &ctx)?;
+
+                    func_refs.insert(format!("«{global_name}»"));
+                    EmitOutput::Global(global_string)
+                }
                 ModuleDefId::TypeId(id) => EmitOutput::Struct(self.emit_struct_def(ind, id, &ctx)?),
-                ModuleDefId::GlobalId(id) => EmitOutput::Global(self.emit_global(ind, id, &ctx)?),
                 ModuleDefId::TypeAliasId(id) => EmitOutput::Alias(self.emit_alias(id, &ctx)?),
                 ModuleDefId::ModuleId(_) => {
                     unimplemented!("It is unclear what actually generates these.")
@@ -423,31 +428,33 @@ impl LeanEmitter {
         ctx: &EmitterCtx,
     ) -> Result<(String, String)> {
         let global_data = self.context.def_interner.get_global(global);
-        let asdf = self.context.def_interner.statement(&global_data.let_statement);
+        let statement = self.context.def_interner.statement(&global_data.let_statement);
 
-        // TODO: Clean up
-        let asdf = match asdf {
+        match statement {
             HirStatement::Let(lets) => {
-                let bound_expr = self.emit_expr(ind, lets.expression, ctx)?;
-                let name = if let Some((simple_stmt, _)) =
-                    pattern::try_format_simple_pattern(&lets.pattern, &bound_expr, self, ctx)
-                {
-                    Ok(simple_stmt)
-                } else {
-                    Err(Error::GlobalStatementNotLet("".to_owned())) // TODO: Clean up
+                let ident = match &lets.pattern {
+                    HirPattern::Identifier(hir_ident) => {
+                        Ok(self.context.def_interner.definition_name(hir_ident.id).to_string())
+                    }
+                    _ => Err(Error::GlobalStatementNotLet),
                 }?;
+
                 let expr_type = self.emit_fully_qualified_type(&lets.r#type, ctx);
 
-                let body = format!("");
+                let bound_expr = self.emit_expr(ind, lets.expression, ctx)?;
+
+                // Get indentation right
+                // TODO: Am I doing this right?
+                ind.indent();
+                let body = ind.run(bound_expr);
+                ind.dedent()?;
 
                 Ok(syntax::format_free_function_def(
-                    &name, &"", &"", &expr_type, &body,
+                    &ident, &"", &"", &expr_type, &body,
                 ))
             }
-            _ => Err(Error::GlobalStatementNotLet("".to_owned())), // TODO: Clean up
-        }?;
-
-        Ok(asdf)
+            _ => Err(Error::GlobalStatementNotLet),
+        }
     }
 
     /// Emits the Lean source code corresponding to a resolved generics occuring at generic declarations.
@@ -1052,9 +1059,41 @@ impl LeanEmitter {
                             }
                         }
                     }
-                    DefinitionKind::Global(..)
-                    | DefinitionKind::Local(..)
-                    | DefinitionKind::NumericGeneric(_, _) => syntax::expr::format_var_ident(name),
+                    DefinitionKind::Global(id) => {
+                        let global_info = self.context.def_interner.get_global(id);
+                        let let_stmt =
+                            self.context.def_interner.statement(&global_info.let_statement);
+
+                        let (global_name, global_type) = match let_stmt {
+                            HirStatement::Let(let_stmt) => {
+                                let ident = match &let_stmt.pattern {
+                                    HirPattern::Identifier(hir_ident) => Ok(self
+                                        .context
+                                        .def_interner
+                                        .definition_name(hir_ident.id)
+                                        .to_string()),
+                                    _ => Err(Error::GlobalStatementNotLet),
+                                }?;
+
+                                Ok((ident, let_stmt.r#type))
+                            }
+                            _ => Err(Error::GlobalStatementNotLet),
+                        }?;
+
+                        let dummy_func_type = Type::Function(
+                            vec![],
+                            Box::new(global_type),
+                            Box::new(Type::Unit),
+                            false,
+                        );
+
+                        let global_name = syntax::expr::format_decl_func_ident(&global_name, "");
+                        let global_type = self.emit_fully_qualified_type(&dummy_func_type, ctx);
+                        syntax::expr::format_call(&global_name, "", &global_type)
+                    }
+                    DefinitionKind::Local(..) | DefinitionKind::NumericGeneric(_, _) => {
+                        syntax::expr::format_var_ident(name)
+                    }
                 }
             }
             HirExpression::Index(index) => {

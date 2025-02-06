@@ -14,6 +14,6 @@ pub enum Error {
     #[error("Indentation level cannot be decreased below zero")]
     CannotDecreaseIndentLevel,
 
-    #[error("Global {_0} is not extracted as a let statement")]
-    GlobalStatementNotLet(String),
+    #[error("Global is not extracted as a let statement")]
+    GlobalStatementNotLet,
 }
