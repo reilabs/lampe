@@ -968,8 +968,8 @@ impl LeanEmitter {
                                 ctx.get_impl_param(&Type::TypeVariable(tv.clone())).is_some()
                             })
                             .map(|(_, (_, _, ty))| self.emit_fully_qualified_type(ty, ctx));
-                        match func_meta.trait_impl {
-                            Some(trait_impl_id) => {
+                        match (func_meta.trait_impl, func_meta.trait_id) {
+                            (Some(trait_impl_id), _) => {
                                 let trait_impl = self
                                     .context
                                     .def_interner
@@ -995,6 +995,32 @@ impl LeanEmitter {
                                     .join(", ");
                                 syntax::expr::format_trait_func_ident(
                                     &self_type_str,
+                                    &trait_name,
+                                    &trait_generics,
+                                    name,
+                                    &ident_generics,
+                                )
+                            }
+                            // This branch is executed when the trait method is called on an `impl` type, i.e., the concrete type is unknown.
+                            (None, Some(trait_id)) => {
+                                let trt = self.context.def_interner.get_trait(trait_id);
+                                let trait_name = trt.name.to_string();
+                                let trait_generics = trt
+                                    .generics
+                                    .iter()
+                                    .map(|rg| Type::TypeVariable(rg.type_var.clone()))
+                                    .map(|g| self.substitute_bindings(&g, &bindings))
+                                    .map(|t| self.emit_fully_qualified_type(&t, ctx))
+                                    .join(", ");
+                                let ident_generics = generics
+                                    .unwrap_or_default()
+                                    .iter()
+                                    .map(|g| self.substitute_bindings(g, &bindings))
+                                    .map(|t| self.emit_fully_qualified_type(&t, ctx))
+                                    .chain(impl_generics)
+                                    .join(", ");
+                                syntax::expr::format_trait_func_ident(
+                                    "_",
                                     &trait_name,
                                     &trait_generics,
                                     name,

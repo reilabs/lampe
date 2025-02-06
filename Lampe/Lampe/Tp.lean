@@ -100,7 +100,7 @@ def Kind.denote : Kind → Type
 inductive FuncRef (argTps : List Tp) (outTp : Tp) where
 | lambda (r : Ref)
 | decl (fnName : String) (kinds : List Kind) (generics : HList Kind.denote kinds)
-| trait (selfTp : Tp)
+| trait (selfTp : Option Tp)
   (traitName : String) (traitKinds : List Kind) (traitGenerics : HList Kind.denote traitKinds)
   (fnName : String) (fnKinds : List Kind) (fnGenerics : HList Kind.denote fnKinds)
 

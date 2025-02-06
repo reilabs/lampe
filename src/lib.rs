@@ -226,8 +226,6 @@ mod test {
                 let impl_res = impl_test(op1, 0);
                 let five_ones = nat_generic_test::<5>();
             }
-
-
         "#;
 
         let source = Source::new(file_name, source);
