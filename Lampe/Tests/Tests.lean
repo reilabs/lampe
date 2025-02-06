@@ -199,6 +199,25 @@ example {p} {x : Tp.denote p Tp.field} :
   . steps
     simp_all
 
+nr_def unknown_trait_call<>(x : Field) -> Field {
+  ((_ as Me<>)::me<> as λ(_) → _)(x)
+}
+
+example {p} {x : Tp.denote p Tp.field} :
+    STHoare p genericTraitEnv ⟦⟧ (unknown_trait_call.fn.body _ h![] |>.body h![x])
+    fun v => v = x := by
+  simp only [unknown_trait_call]
+  steps
+  . apply STHoare.callTrait'_intro Tp.field /- Manually provide the implementor type -/
+    sl
+    tauto
+    try_impls_all [Tp.field] genericTraitEnv
+    tauto
+    all_goals try rfl
+    steps
+  . steps
+    simp_all
+
 nr_struct_def Pair <I> {
   a : I,
   b : I
