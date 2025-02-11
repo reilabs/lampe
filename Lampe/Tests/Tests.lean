@@ -42,6 +42,13 @@ lemma BitVec.add_toNat_of_lt_max {a b : BitVec w} (h: a.toNat + b.toNat < 2^w) :
   rw [Nat.mod_eq_of_lt]
   assumption
 
+lemma BitVec.ofNat_ge_zero {n : Nat} (a : Nat) : 0 ≤ BitVec.ofNat n a := by
+  simp only [ofNat_eq_ofNat, ofNat_le_ofNat, Nat.zero_mod, zero_le]
+
+lemma BitVec.toNat_zero {n : Nat} : BitVec.toNat (n := n) (0 : Int) = 0 := by
+  change BitVec.toNat 0 = 0
+  simp
+
 example {self that : Tp.denote p (.slice tp)} :
     STHoare p Γ ⟦⟧ (sliceAppend.fn.body _ h![tp] |>.body h![self, that])
     fun v => v = self ++ that := by
@@ -58,8 +65,8 @@ example {self that : Tp.denote p (.slice tp)} :
       linarith
     simp only [this, List.take_succ]
     aesop
-  · simp_all
-  · simp_all
+  · simp_all ; apply BitVec.ofNat_ge_zero
+  · simp_all [BitVec.toNat_zero]
   steps
   simp_all [Nat.mod_eq_of_lt]
 
@@ -372,6 +379,11 @@ nr_def slice_lens<>() -> Field {
   p .0 [[1 : u32]] = 3 : Field;
   p .0 [[1 : u32]]
 }
+
+@[simp]
+lemma BitVec.toNat_one {n : Nat} {h : n > 0} : BitVec.toNat (n := n) (1 : Int) = 1 := by
+  change BitVec.toNat 1 = 1
+  simp [h]
 
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
