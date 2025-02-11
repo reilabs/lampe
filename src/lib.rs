@@ -287,4 +287,28 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn globals() -> anyhow::Result<()> {
+        let file_name = Path::new("main.nr");
+        let source = r#"
+            global FOOS: [Field; 2] = [FOO, FOO + 1];
+
+            global FOO: Field  = 42;
+
+            fn main() -> pub Field {
+                FOOS[1]
+            }
+        "#;
+
+        let source = Source::new(file_name, source);
+
+        let project = Project::new(Path::new(""), source);
+
+        let source = noir_to_lean(project)?.take();
+
+        println!("{source}");
+
+        Ok(())
+    }
 }

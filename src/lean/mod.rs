@@ -12,12 +12,13 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
+    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
+        Context,
         def_map::{ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
-        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -28,7 +29,6 @@ use noirc_frontend::{
     node_interner::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
-    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -248,8 +248,13 @@ impl LeanEmitter {
                     func_refs.insert(format!("«{def_name}»"));
                     EmitOutput::Function(def)
                 }
+                ModuleDefId::GlobalId(id) => {
+                    let (global_name, global_string) = self.emit_global(ind, id, &ctx)?;
+
+                    func_refs.insert(format!("«{global_name}»"));
+                    EmitOutput::Global(global_string)
+                }
                 ModuleDefId::TypeId(id) => EmitOutput::Struct(self.emit_struct_def(ind, id, &ctx)?),
-                ModuleDefId::GlobalId(id) => EmitOutput::Global(self.emit_global(ind, id, &ctx)?),
                 ModuleDefId::TypeAliasId(id) => EmitOutput::Alias(self.emit_alias(id, &ctx)?),
                 ModuleDefId::ModuleId(_) => {
                     unimplemented!("It is unclear what actually generates these.")
@@ -417,11 +422,35 @@ impl LeanEmitter {
         ind: &mut Indenter,
         global: GlobalId,
         ctx: &EmitterCtx,
-    ) -> Result<String> {
+    ) -> Result<(String, String)> {
         let global_data = self.context.def_interner.get_global(global);
-        let value = self.emit_statement(ind, global_data.let_statement, ctx)?;
+        let statement = self.context.def_interner.statement(&global_data.let_statement);
 
-        Ok(format!("global {value}"))
+        match statement {
+            HirStatement::Let(lets) => {
+                let ident = match &lets.pattern {
+                    HirPattern::Identifier(hir_ident) => {
+                        Ok(self.context.def_interner.definition_name(hir_ident.id).to_string())
+                    }
+                    _ => Err(Error::GlobalStatementNotLet),
+                }?;
+
+                let expr_type = self.emit_fully_qualified_type(&lets.r#type, ctx);
+
+                let bound_expr = self.emit_expr(ind, lets.expression, ctx)?;
+
+                // Get indentation right
+                // TODO: Am I doing this right?
+                ind.indent();
+                let body = ind.run(bound_expr);
+                ind.dedent()?;
+
+                Ok(syntax::format_free_function_def(
+                    &ident, &"", &"", &expr_type, &body,
+                ))
+            }
+            _ => Err(Error::GlobalStatementNotLet),
+        }
     }
 
     /// Emits the Lean source code corresponding to a resolved generics occuring at generic declarations.
@@ -766,10 +795,8 @@ impl LeanEmitter {
                 Box::new(self.substitute_bindings(env, bindings)),
                 *unconstrained,
             ),
-            Type::TraitAsType(id, name, generics) => Type::TraitAsType(
-                id.clone(),
-                name.clone(),
-                TraitGenerics {
+            Type::TraitAsType(id, name, generics) => {
+                Type::TraitAsType(id.clone(), name.clone(), TraitGenerics {
                     ordered: generics
                         .ordered
                         .iter()
@@ -783,8 +810,8 @@ impl LeanEmitter {
                             typ: self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
-                },
-            ),
+                })
+            }
             Type::MutableReference(t) => {
                 Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
             }
@@ -1035,9 +1062,41 @@ impl LeanEmitter {
                             }
                         }
                     }
-                    DefinitionKind::Global(..)
-                    | DefinitionKind::Local(..)
-                    | DefinitionKind::NumericGeneric(_, _) => syntax::expr::format_var_ident(name),
+                    DefinitionKind::Global(id) => {
+                        let global_info = self.context.def_interner.get_global(id);
+                        let let_stmt =
+                            self.context.def_interner.statement(&global_info.let_statement);
+
+                        let (global_name, global_type) = match let_stmt {
+                            HirStatement::Let(let_stmt) => {
+                                let ident = match &let_stmt.pattern {
+                                    HirPattern::Identifier(hir_ident) => Ok(self
+                                        .context
+                                        .def_interner
+                                        .definition_name(hir_ident.id)
+                                        .to_string()),
+                                    _ => Err(Error::GlobalStatementNotLet),
+                                }?;
+
+                                Ok((ident, let_stmt.r#type))
+                            }
+                            _ => Err(Error::GlobalStatementNotLet),
+                        }?;
+
+                        let dummy_func_type = Type::Function(
+                            vec![],
+                            Box::new(global_type),
+                            Box::new(Type::Unit),
+                            false,
+                        );
+
+                        let global_name = syntax::expr::format_decl_func_ident(&global_name, "");
+                        let global_type = self.emit_fully_qualified_type(&dummy_func_type, ctx);
+                        syntax::expr::format_call(&global_name, "", &global_type)
+                    }
+                    DefinitionKind::Local(..) | DefinitionKind::NumericGeneric(_, _) => {
+                        syntax::expr::format_var_ident(name)
+                    }
                 }
             }
             HirExpression::Index(index) => {
