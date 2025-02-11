@@ -42,6 +42,7 @@ syntax "`(" nr_type,* ")" : nr_type -- Tuple
 syntax "&" nr_type : nr_type -- Reference
 syntax "λ(" nr_type,* ")" "→" nr_type : nr_type -- Function
 syntax "_" : nr_type -- Placeholder
+syntax "@" nr_ident "<" nr_generic,* ">" : nr_type -- Type alias
 
 syntax num : nr_generic
 syntax nr_type : nr_generic
@@ -96,6 +97,7 @@ syntax nr_trait_fn_def := "fn" nr_fn_decl
 syntax nr_trait_impl := "<" nr_generic_def,* ">" nr_ident "<" nr_generic,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
 syntax nr_struct_def := "<" nr_generic_def,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
+syntax nr_type_alias := nr_ident "<" nr_generic_def,* ">" "=" nr_type
 
 abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
 
@@ -117,6 +119,9 @@ def mkStructDefIdent (structName : String) : Lean.Ident :=
 
 def mkFunctionDefIdent (fnName : String) : Lean.Ident :=
   mkIdent $ Name.mkSimple fnName
+
+def mkTypeAliasIdent (aliasName : String) : Lean.Ident :=
+  mkIdent $ Name.mkSimple $ "alias" ++ "#" ++ aliasName
 
 def mkListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
 | [] => `([])
@@ -160,6 +165,10 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   let paramTps ← (mkListLit (←paramTps.getElems.toList.mapM mkNrType))
   let outTp ← mkNrType outTp
   `(Tp.fn $paramTps $outTp)
+| `(nr_type| @ $aliasName < $generics,* >) => do
+  let (_, genericVals) ← mkGenericVals generics.getElems.toList
+  let aliasFunc := mkTypeAliasIdent (←mkNrIdent aliasName)
+  `($aliasFunc $genericVals)
 | `(nr_type | _) => `(_)
 | _ => throwUnsupportedSyntax
 
@@ -596,6 +605,15 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
     | _ => throwUnsupportedSyntax
 | _ => throwUnsupportedSyntax
 
+def mkTypeAlias [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m ((TSyntax `ident) × (TSyntax `term))
+| `(nr_type_alias| $aliasName:nr_ident < $generics,* > = $tp:nr_type) => do
+  let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
+  let tp ← mkNrType tp
+  let syn ← `(fun (generics: HList Kind.denote $genericKinds) => match generics with | $genericDefs => $tp)
+  let defName := mkTypeAliasIdent (←mkNrIdent aliasName)
+  pure (defName, syn)
+| _ => throwUnsupportedSyntax
+
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => `(Expr.var $x)
   Elab.Term.elabTerm term.raw none
@@ -622,5 +640,10 @@ elab "nr_struct_def" defName:nr_ident defn:nr_struct_def : command => do
   let projs ← mkStructProjector defName defn
   _ ← projs.mapM fun cmd => do
     Elab.Command.elabCommand cmd
+
+elab "nr_type_alias" typeAlias:nr_type_alias : command => do
+  let (defName, al) ← mkTypeAlias typeAlias
+  let decl ← `(@[reducible] def $defName := $al)
+  Elab.Command.elabCommand decl
 
 end Lampe
