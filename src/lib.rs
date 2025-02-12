@@ -210,6 +210,12 @@ mod test {
                 [1; N]
             }
 
+            type AliasedOpt<T> = Option2<T>;
+
+            fn is_alias_some<T>(x: AliasedOpt<T>) -> bool {
+                x.is_some()
+            }
+
             fn main() {
                 let mut op1 = Option2::some(5);
                 let op2 = Option2::default();
@@ -225,6 +231,8 @@ mod test {
                 tpl.0 = 2;
                 let impl_res = impl_test(op1, 0);
                 let five_ones = nat_generic_test::<5>();
+                let aliased_opt = AliasedOpt::none();
+                is_alias_some(aliased_opt);
             }
         "#;
 
@@ -271,6 +279,30 @@ mod test {
         let project = Project::new(Path::new(""), source);
 
         // Execute the compilation step on our project.
+        let source = noir_to_lean(project)?.take();
+
+        println!("{source}");
+
+        Ok(())
+    }
+
+    #[test]
+    fn globals() -> anyhow::Result<()> {
+        let file_name = Path::new("main.nr");
+        let source = r#"
+            global FOOS: [Field; 2] = [FOO, FOO + 1];
+
+            global FOO: Field  = 42;
+
+            fn main() -> pub Field {
+                FOOS[1]
+            }
+        "#;
+
+        let source = Source::new(file_name, source);
+
+        let project = Project::new(Path::new(""), source);
+
         let source = noir_to_lean(project)?.take();
 
         println!("{source}");

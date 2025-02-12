@@ -473,3 +473,15 @@ example : STHoare p Γ ⟦⟧ (create_arr.fn.body _ h![3] |>.body h![])
   intros
   simp_all
   rfl
+
+nr_type_alias Array<T, #N> = [T; N]
+
+nr_def alias_test<>(x : @Array<Field, 3>) -> Field {
+  x[1 : u32]
+}
+
+example : STHoare p Γ ⟦⟧ (alias_test.fn.body _ h![] |>.body h![⟨[1, 2, 3], by tauto⟩])
+    fun (v : Tp.denote p .field) => v = 2 := by
+  simp only [alias_test]
+  steps
+  aesop
