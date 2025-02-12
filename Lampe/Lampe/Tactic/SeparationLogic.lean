@@ -595,6 +595,11 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply iEq_intro
     | apply bigIntEq_intro
     | apply strEq_intro
+    -- comparison
+    | apply uGt_intro
+    | apply iGt_intro
+    | apply uLt_intro
+    | apply iLt_intro
     -- negation
     | apply fNeg_intro
     | apply iNeg_intro
@@ -667,6 +672,11 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left iEq_intro
     | apply consequence_frame_left bigIntEq_intro
     | apply consequence_frame_left strEq_intro
+    -- comparison
+    | apply consequence_frame_left uGt_intro
+    | apply consequence_frame_left iGt_intro
+    | apply consequence_frame_left uLt_intro
+    | apply consequence_frame_left iLt_intro
     -- negation
     | apply consequence_frame_left fNeg_intro
     | apply consequence_frame_left iNeg_intro
@@ -742,6 +752,11 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top iEq_intro
     | apply ramified_frame_top bigIntEq_intro
     | apply ramified_frame_top strEq_intro
+    -- comparison
+    | apply ramified_frame_top uGt_intro
+    | apply ramified_frame_top iGt_intro
+    | apply ramified_frame_top uLt_intro
+    | apply ramified_frame_top iLt_intro
     -- negation
     | apply ramified_frame_top fNeg_intro
     | apply ramified_frame_top iNeg_intro
