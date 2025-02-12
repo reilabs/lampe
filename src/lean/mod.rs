@@ -637,7 +637,10 @@ impl LeanEmitter {
         if let Some(typ) = ctx.get_impl_return(typ) {
             return self.emit_fully_qualified_type(typ, ctx);
         }
-
+        // If `typ` is still an `impl` type, return a placeholder type.
+        if context::is_impl(typ) {
+            return syntax::r#type::format_placeholder();
+        }
         match typ {
             Type::Unit => syntax::r#type::format_unit(),
             Type::Array(size, elem_type) => {
@@ -997,9 +1000,11 @@ impl LeanEmitter {
                             .filter(|(_, (tv, _, _))| {
                                 ctx.get_impl_param(&Type::TypeVariable(tv.clone())).is_some()
                             })
-                            .map(|(_, (_, _, ty))| self.emit_fully_qualified_type(ty, ctx));
-                        match func_meta.trait_impl {
-                            Some(trait_impl_id) => {
+                            .map(|(_, (tv, _, _))| {
+                                self.emit_fully_qualified_type(&Type::TypeVariable(tv.clone()), ctx)
+                            });
+                        match (func_meta.trait_impl, func_meta.trait_id) {
+                            (Some(trait_impl_id), _) => {
                                 let trait_impl = self
                                     .context
                                     .def_interner
@@ -1025,6 +1030,32 @@ impl LeanEmitter {
                                     .join(", ");
                                 syntax::expr::format_trait_func_ident(
                                     &self_type_str,
+                                    &trait_name,
+                                    &trait_generics,
+                                    name,
+                                    &ident_generics,
+                                )
+                            }
+                            // This branch is executed when the trait method is called on an `impl` type, i.e., the concrete type is unknown.
+                            (None, Some(trait_id)) => {
+                                let trt = self.context.def_interner.get_trait(trait_id);
+                                let trait_name = trt.name.to_string();
+                                let trait_generics = trt
+                                    .generics
+                                    .iter()
+                                    .map(|rg| Type::TypeVariable(rg.type_var.clone()))
+                                    .map(|g| self.substitute_bindings(&g, &bindings))
+                                    .map(|t| self.emit_fully_qualified_type(&t, ctx))
+                                    .join(", ");
+                                let ident_generics = generics
+                                    .unwrap_or_default()
+                                    .iter()
+                                    .map(|g| self.substitute_bindings(g, &bindings))
+                                    .map(|t| self.emit_fully_qualified_type(&t, ctx))
+                                    .chain(impl_generics)
+                                    .join(", ");
+                                syntax::expr::format_trait_func_ident(
+                                    "_",
                                     &trait_name,
                                     &trait_generics,
                                     name,
@@ -1220,7 +1251,7 @@ impl LeanEmitter {
                                 itertools::Either::Left(format!("{lhs} : {rhs}"))
                             } else {
                                 // If the parameter is complex, we need to generate a fresh binding for it.
-                                let lhs = format!("param#{param_idx}");
+                                let lhs = format!("π{param_idx}");
                                 itertools::Either::Right((pat.clone(), lhs, rhs))
                             }
                         },
@@ -1321,7 +1352,6 @@ impl LeanEmitter {
         ctx: &EmitterCtx,
     ) -> Result<String> {
         let stmt_data = self.context.def_interner.statement(&statement);
-
         let result = match stmt_data {
             HirStatement::Expression(expr) => self.emit_expr(ind, expr, ctx)?,
             HirStatement::Let(lets) => {
@@ -1331,7 +1361,7 @@ impl LeanEmitter {
                 {
                     simple_stmt
                 } else {
-                    let pat_rhs = "param#0";
+                    let pat_rhs = "π0";
                     let mut stmts = vec![syntax::stmt::format_let_in(pat_rhs, &bound_expr)];
                     stmts.extend(pattern::format_pattern(&lets.pattern, pat_rhs, self, ctx));
                     stmts.join(";\n")
@@ -1353,10 +1383,10 @@ impl LeanEmitter {
             }
             HirStatement::For(fors) => {
                 let loop_var = self.context.def_interner.definition_name(fors.identifier.id);
+                let loop_var = &syntax::expr::format_var_ident(loop_var);
                 let loop_start = self.emit_expr(ind, fors.start_range, ctx)?;
                 let loop_end = self.emit_expr(ind, fors.end_range, ctx)?;
                 let body = self.emit_expr(ind, fors.block, ctx)?;
-
                 syntax::stmt::format_for_loop(loop_var, &loop_start, &loop_end, &body)
             }
             HirStatement::Break => "break".into(),
@@ -1367,8 +1397,14 @@ impl LeanEmitter {
             }
             HirStatement::Error => panic!("Encountered error statement where none should exist"),
         };
-
-        Ok(format!("{result};"))
+        // Append a semicolon to the statement if it doesn't already end with one.
+        // We emit some statements already with a semicolon, so we don't want to add another.
+        // [TODO] maybe fix this for consistency
+        if result.ends_with(";") {
+            Ok(result)
+        } else {
+            Ok(format!("{result};"))
+        }
     }
 
     /// Generates a Lean representation of a Noir l-value (something that can be
@@ -1386,13 +1422,12 @@ impl LeanEmitter {
         let result = match l_val {
             HirLValue::Ident(ident, _) => {
                 let ident_str = self.context.def_interner.definition_name(ident.id);
-                format!("{ident_str}")
+                syntax::expr::format_var_ident(ident_str)
             }
             HirLValue::MemberAccess {
                 object, field_name, ..
             } => {
                 let lhs_lval_str = self.emit_l_value(ind, object.as_ref(), ctx)?;
-
                 let lhs_ty = match object.as_ref() {
                     HirLValue::Ident(_, typ)
                     | HirLValue::MemberAccess { typ, .. }

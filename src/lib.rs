@@ -234,8 +234,6 @@ mod test {
                 let aliased_opt = AliasedOpt::none();
                 is_alias_some(aliased_opt);
             }
-
-
         "#;
 
         let source = Source::new(file_name, source);
