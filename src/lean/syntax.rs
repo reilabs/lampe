@@ -1,7 +1,7 @@
 use indoc::formatdoc;
 use itertools::Itertools;
 
-// Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
+/// Drops the generic arguments wrapped between angled brackets from a string of form `T<...>`.
 fn without_generic_args(ty_str: &str) -> String {
     let mut ty_str = ty_str.to_string();
     let Some(left_bracket_idx) = ty_str.find('<') else {
@@ -14,8 +14,21 @@ fn without_generic_args(ty_str: &str) -> String {
     ty_str
 }
 
+/// Returns true if the given type string (extracted by `format_type`) is a slice or array type, e.g., `[T]`.
+fn is_slice_or_array(ty_str: &str) -> bool {
+    ty_str.starts_with("[") && ty_str.ends_with("]")
+}
+
 fn normalize_ident(ident: &str) -> String {
-    ident.split("::").map(|p| without_generic_args(p)).join("::")
+    ident
+        .split("::")
+        .map(|p| without_generic_args(p))
+        .filter(|p| !is_slice_or_array(p))
+        .join("::")
+}
+
+fn escape_ident(ident: &str) -> String {
+    ident.split("::").map(|s| format!("«{s}»")).join("::")
 }
 
 #[inline]
@@ -53,10 +66,11 @@ pub(super) fn format_free_function_def(
     body: &str,
 ) -> (String, String) {
     let func_ident = normalize_ident(func_ident);
+    let escaped_func_ident = escape_ident(&func_ident);
     (
         func_ident.clone(),
         formatdoc! {
-            r"nr_def «{func_ident}»<{def_generics}>({params}) -> {ret_type} {{
+            r"nr_def {escaped_func_ident}<{def_generics}>({params}) -> {ret_type} {{
             {body}
             }}"
         },
@@ -72,8 +86,9 @@ pub(super) fn format_trait_function_def(
     body: &str,
 ) -> String {
     let func_ident = normalize_ident(func_ident);
+    let escaped_func_ident = escape_ident(&func_ident);
     formatdoc! {
-        r"fn {func_ident}<{def_generics}> ({params}) -> {ret_type} {{
+        r"fn {escaped_func_ident}<{def_generics}> ({params}) -> {ret_type} {{
             {body}
             }}"
     }
@@ -175,6 +190,11 @@ pub(super) mod r#type {
     #[inline]
     pub fn format_alias(alias_name: &str, alias_generics: &str) -> String {
         format!("@{alias_name}<{alias_generics}>")
+    }
+
+    #[inline]
+    pub fn format_placeholder() -> String {
+        format!("_")
     }
 }
 
@@ -282,7 +302,13 @@ pub(super) mod expr {
 
     #[inline]
     pub fn format_var_ident(ident: &str) -> String {
-        normalize_ident(ident)
+        let var = normalize_ident(ident);
+        // Replace placeholders `_` with a valid Lean identifier.
+        let var = if var == "_" { "_?".to_string() } else { var };
+        // The compiler seems to add intermediate variables with `$` prefix.
+        // We have to replace these with valid Lean identifier characters.
+        let var = var.replace("$", "ζ");
+        var
     }
 
     #[inline]
