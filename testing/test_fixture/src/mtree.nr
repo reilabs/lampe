@@ -5,7 +5,7 @@ pub trait MHash<F> {
 /// Recovers the root hash of a Merkle tree `t` from the proof `p`.
 /// `idx` is the index of the leaf in little endian.
 /// `p` is the sibling roots starting from the leaf.
-pub fn mtree_recover(h: impl MHash<Field>, idx: [bool], p: [Field], item: Field) -> Field {
+pub fn mtree_recover<F>(h: impl MHash<F>, idx: [bool], p: [F], item: F) -> F {
     assert(idx.len() == p.len());
     let mut curr_h = item;
     for i in 0..idx.len() {
