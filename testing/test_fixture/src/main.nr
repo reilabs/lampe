@@ -1,5 +1,3 @@
-// mod mtree;
-
-pub fn main(x: Field, y: pub Field) -> pub Field {
+fn main(x: Field, y: Field) -> pub Field {
     x + y
 }
