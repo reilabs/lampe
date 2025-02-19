@@ -627,6 +627,9 @@ macro "stephelper1" : tactic => `(tactic|(
     -- lens
     | apply modifyLens_intro
     | apply getLens_intro
+    -- bitwise
+    | apply uShr_intro
+    | apply uShl_intro
   )
 ))
 
@@ -699,6 +702,9 @@ macro "stephelper2" : tactic => `(tactic|(
     -- lens
     | apply consequence_frame_left modifyLens_intro
     | apply consequence_frame_left getLens_intro
+    -- bitwise
+    | apply consequence_frame_left uShr_intro
+    | apply consequence_frame_left uShl_intro
   )
   repeat sl
 ))
@@ -774,6 +780,9 @@ macro "stephelper3" : tactic => `(tactic|(
     -- lens
     | apply ramified_frame_top modifyLens_intro
     | apply ramified_frame_top getLens_intro
+    --- bitwise
+    | apply ramified_frame_top uShr_intro
+    | apply ramified_frame_top uShl_intro
   )
   repeat sl
 ))
