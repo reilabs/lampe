@@ -29,7 +29,7 @@ def env := Lampe.Env.mk [(«mtree_recover».name, «mtree_recover».fn)] []
 
 def Hash (t : Type) (n : Nat) := List.Vector t n -> t
 
-def addTwoFields : Hash (Tp.denote p .field) 2 := fun ⟨[a, b], _⟩ => a + b
+def babyHash : Hash (Tp.denote p .field) 2 := fun ⟨[a, b], _⟩ => (a + 2 * b) * 3
 
 inductive MerkleTree (F : Type) (H : Hash F 2) : Nat -> Type
 | leaf : F  -> MerkleTree F H 0
@@ -74,39 +74,41 @@ def recover {depth : Nat} {F: Type} (H : Hash F 2) (ix : List.Vector Bool depth)
     | false => H ⟨[recover', pitem], by tauto⟩
     | true => H ⟨[pitem, recover'], by tauto⟩
 
-theorem length_is_log2_depth {t : MerkleTree f h d} {hd : d > 0} : t.leaves.length.log2 = d := by
-  cases d
-  . contradiction
-  . rename Nat => d'
-    induction d'
-    . casesm* MerkleTree _ _ _
-      unfold leaves
-      unfold leaves
-      simp only [List.singleton_append, List.length_cons, List.length_singleton, Nat.reduceAdd,
-        zero_add]
-      simp only [List.length_nil, zero_add, Nat.reduceAdd]
-      unfold Nat.log2
-      simp only [ge_iff_le, le_refl, ↓reduceIte, Nat.ofNat_pos, Nat.div_self, add_left_eq_self]
-      unfold Nat.log2
-      simp_all
-    . unfold leaves
-      split
-      contradiction
-      simp only [List.length_append]
-      sorry
-
-theorem length_is_power_of_two {t : MerkleTree f h d} {hd : d > 0} : t.leaves.length.isPowerOfTwo := by
-  have : t.leaves.length.log2 = d := length_is_log2_depth (hd := hd)
-  unfold Nat.isPowerOfTwo
-  exists d
-  generalize (t.leaves.length) = n at *
-  sorry
-
 end MerkleTree
 
-example {t : MerkleTree (Tp.denote p tp) h d} {hh : (Tp.denote p hTp) = Hash (Tp.denote p tp) 2}
+@[reducible]
+def recoverAux {α : Type} [Inhabited α] (h : Hash α 2) (i : Nat) (idx : List Bool) (proof : List α) (leaf : α) : α := match i with
+| 0 => leaf
+| i' + 1 =>
+  let dir := idx.reverse.get! i'
+  let siblingRoot := proof.reverse.get! i'
+  let subRoot := recoverAux h i' idx proof leaf
+  if dir == true then
+    h ⟨[siblingRoot, subRoot], rfl⟩
+  else
+    h ⟨[subRoot, siblingRoot], rfl⟩
+
+def babyHash' : Hash Nat 2 := fun ⟨[a, b], _⟩ => (a + 2 * b) * 3
+
+example : (recoverAux (α := Nat) babyHash' 0 [true, false, false] [243, 69, 6] 5) = 5 := rfl
+
+example : (recoverAux (α := Nat) babyHash' 1 [true, false, false] [243, 69, 6] 5) = 51 := rfl
+
+example : (recoverAux (α := Nat) babyHash' 2 [true, false, false] [243, 69, 6] 5) = 567 := rfl
+
+example : (recoverAux (α := Nat) babyHash' 3 [true, false, false] [243, 69, 6] 5) = 4131 := rfl
+
+example [Inhabited (Tp.denote p tp)] {t : MerkleTree (Tp.denote p tp) h d} {hh : (Tp.denote p hTp) = Hash (Tp.denote p tp) 2}
   {h₁ : t.proof idx = proof} {h₂ : t.itemAt idx = item} :
     STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![tp, hTp] |>.body h![hh ▸ h, idx.toList.reverse, proof.toList.reverse, item])
     fun v => v = MerkleTree.recover h idx proof item := by
   simp only [mtree_recover]
-  sorry
+  steps
+  rename Ref => r
+  . loop_inv (fun i _ _ => [r ↦ ⟨tp, recoverAux (α := (Tp.denote p tp)) h i.toNat idx.toList proof.toList item⟩])
+    intros
+    . steps
+      stop _
+    . simp_all
+    . aesop
+  . sorry
