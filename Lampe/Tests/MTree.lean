@@ -77,12 +77,12 @@ def recover {depth : Nat} {F: Type} (H : Hash F 2) (ix : List.Vector Bool depth)
 end MerkleTree
 
 @[reducible]
-def recoverAux {α : Type} [Inhabited α] (h : Hash α 2) (i : Nat) (idx : List Bool) (proof : List α) (leaf : α) : α := match i with
-| 0 => leaf
+def recoverAux {α : Type} [Inhabited α] (h : Hash α 2) (i : Nat) (idx : List Bool) (proof : List α) (item : α) : α := match i with
+| 0 => item
 | i' + 1 =>
   let dir := idx.reverse.get! i'
   let siblingRoot := proof.reverse.get! i'
-  let subRoot := recoverAux h i' idx proof leaf
+  let subRoot := recoverAux h i' idx proof item
   if dir == true then
     h ⟨[siblingRoot, subRoot], rfl⟩
   else
@@ -111,4 +111,16 @@ example [Inhabited (Tp.denote p tp)] {t : MerkleTree (Tp.denote p tp) h d} {hh :
       stop _
     . simp_all
     . aesop
-  . sorry
+  . steps
+    simp only [exists_const] at *
+    subst_vars
+    rename_i hp₁ _ _ _ _
+    obtain ⟨_, hp₁⟩ := hp₁
+    subst hp₁
+    generalize hil₁ : (idx.toList.reverse.length) = l at *
+    generalize hil₂ : BitVec.toNat ↑l = l' at *
+    cases t
+    . unfold MerkleTree.recover
+      aesop
+    . unfold MerkleTree.recover
+      sorry
