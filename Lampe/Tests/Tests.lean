@@ -473,7 +473,7 @@ nr_def fmtstr_test<>() -> Field {
   y
 }
 
-nr_def create_arr<#N>() -> [Field; N] {
+nr_def create_arr<#N : 32>() -> [Field; N] {
   [1 : Field ; N]
 }
 
@@ -486,9 +486,9 @@ example : STHoare p Γ ⟦⟧ (create_arr.fn.body _ h![3] |>.body h![])
   simp_all
   rfl
 
-nr_type_alias Array<T, #N> = [T; N]
+nr_type_alias Array<T, #N : 32> = [T; N]
 
-nr_def alias_test<>(x : @Array<Field, 3>) -> Field {
+nr_def alias_test<>(x : @Array<Field, 3 : 32>) -> Field {
   x[1 : u32]
 }
 
@@ -497,3 +497,12 @@ example : STHoare p Γ ⟦⟧ (alias_test.fn.body _ h![] |>.body h![⟨[1, 2, 3]
   simp only [alias_test]
   steps
   aesop
+
+nr_def «test»<#N : 8>(x : Field) -> Field {
+    let mut res = x;
+    for _? in 0 : u8 .. N {
+            res = #fMul(res, 2 : Field) : Field;
+    }
+    ;
+    res;
+}
