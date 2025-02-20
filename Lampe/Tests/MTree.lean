@@ -114,13 +114,35 @@ example [Inhabited (Tp.denote p tp)] {t : MerkleTree (Tp.denote p tp) h d} {hh :
   . steps
     simp only [exists_const] at *
     subst_vars
-    rename_i hp₁ _ _ _ _
-    obtain ⟨_, hp₁⟩ := hp₁
-    subst hp₁
+    rename_i h₁ h₂ h₃ h₄ _
+    obtain ⟨_, _⟩ := h₁
+    obtain ⟨_, _⟩ := h₂
+    obtain ⟨_, _⟩ := h₃
+    obtain ⟨_, _⟩ := h₄
+    subst_vars
     generalize hil₁ : (idx.toList.reverse.length) = l at *
     generalize hil₂ : BitVec.toNat ↑l = l' at *
-    cases t
+    have : l' = idx.length := by
+      rw [←hil₂, ←hil₁]
+      aesop
+    clear hil₁ hil₂
+    subst_vars
+    induction t generalizing l
     . unfold MerkleTree.recover
       aesop
-    . unfold MerkleTree.recover
-      sorry
+    . unfold MerkleTree.recover recoverAux
+      simp_all only [BitVec.ofNat_le_ofNat, Nat.zero_mod, zero_le, List.get!_eq_getElem!,
+        List.getElem!_eq_getElem?_getD, List.length_reverse, List.Vector.toList_length,
+        lt_add_iff_pos_right, zero_lt_one, List.getElem?_eq_getElem, List.getElem_reverse,
+        add_tsub_cancel_right, tsub_self, Bool.default_bool, Option.getD_some, Nat.succ_eq_add_one,
+        Nat.add_one_sub_one]
+      have : idx.head = idx.toList[0] := by sorry
+      rw [this]
+      rename_i ih₁ ih₂ _ _ _ _
+      cases idx.toList[0]
+      . simp_all
+        congr
+        sorry
+      . simp_all
+        congr
+        sorry
