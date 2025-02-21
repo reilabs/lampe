@@ -47,7 +47,7 @@ syntax "@" nr_ident "<" nr_generic,* ">" : nr_type -- Type alias
 syntax num ":" num : nr_generic
 syntax nr_type : nr_generic
 
-syntax "#" ident ":" num : nr_generic_def -- Kind.u
+syntax "@" ident ":" num : nr_generic_def -- Kind.u
 syntax ident : nr_generic_def -- Kind.type
 
 syntax num : nr_const_num
@@ -63,8 +63,9 @@ syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
 syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
-syntax "let" ident "=" nr_expr : nr_expr
-syntax "let" "mut" ident "=" nr_expr : nr_expr
+syntax "@" ident : nr_expr -- Const
+syntax "let" ident "=" nr_expr : nr_expr -- Let binding
+syntax "let" "mut" ident "=" nr_expr : nr_expr -- Mutable let binding
 syntax nr_expr "=" nr_expr : nr_expr -- Assignment
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
@@ -195,12 +196,12 @@ def mkGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mona
   let kinds ← mkListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic_def| $_:ident) => `(Kind.type)
-    | `(nr_generic_def| # $_:ident : $w) => `(Kind.u $w)
+    | `(nr_generic_def| @ $_:ident : $w) => `(Kind.u $w)
     | _ => throwUnsupportedSyntax)
   let vals ← mkHListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic_def| $i:ident) => `($i)
-    | `(nr_generic_def| # $i:ident : $_) => `($i)
+    | `(nr_generic_def| @ $i:ident : $_) => `($i)
     | _ => throwUnsupportedSyntax)
   pure (kinds, vals)
 
@@ -514,6 +515,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
   let (paramTps, outTp) ← getFuncSignature t
   wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp (FuncRef.decl $fnName $callGenKinds $callGenVals))) vname k
+| `(nr_expr| @ $i:ident) => do
+  wrapSimple (←`(Expr.const $i)) vname k
 | `(nr_expr| ( $selfTp as $traitName < $traitGens,* > ) :: $methodName < $callGens,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let (traitGenKinds, traitGenVals) ← mkGenericVals traitGens.getElems.toList
