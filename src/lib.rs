@@ -297,7 +297,7 @@ mod test {
         Ok(())
     }
 
-    // #[test]
+    #[test]
     fn globals() -> anyhow::Result<()> {
         let file_name = Path::new("main.nr");
         let source = r#"
