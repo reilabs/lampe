@@ -40,6 +40,7 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
 | litTrue {Q} : Q (some (st, true)) → Omni Γ st (.litNum .bool 1) Q
 | litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.litNum (.u s) n) Q
 | litUnit {Q} : Q (some (st, ())) → Omni Γ st (.litNum .unit n) Q
+| const {Q} {c : U w} : Q (some (st, c)) → Omni Γ st (.const c) Q
 | fn {Q} : Q (some (st, r)) → Omni Γ st (.fn _ _ r) Q
 | var {Q} : Q (some (st, v)) → Omni Γ st (.var v) Q
 | skip {Q} : Q (some (st, ())) → Omni Γ st (.skip) Q
@@ -145,6 +146,7 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
   | litTrue hq
   | litU hq
   | litUnit
+  | const
   | fmtStr hq
   | skip hq
   | fn
