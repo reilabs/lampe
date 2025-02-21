@@ -45,12 +45,29 @@ mod test {
         noir_to_lean,
     };
 
+    fn extract_str(source: &str) -> anyhow::Result<String> {
+        // Set up our source code
+        let file_name = Path::new("main.nr");
+        let source = Source::new(file_name, source);
+        // Create our project
+        let project = Project::new(Path::new(""), source);
+        // Execute the compilation step on our project.
+        let output = noir_to_lean(project)?.take();
+        Ok(output)
+    }
+
+    /// Runs the extraction on `source` and prints the result to the std output.
+    fn print_result(source: &str) -> anyhow::Result<()> {
+        let output = extract_str(source)?;
+        println!("{output}");
+        Ok(())
+    }
+
     /// This test is a bit of a mess and exists purely for experimentation.
     #[test]
     fn runs() -> anyhow::Result<()> {
-        // Set up our source code
-        let file_name = Path::new("main.nr");
-        let source = r#"
+        print_result(
+            r#"
             use std::default::Default;
 
             fn my_func3(a: u8) -> u8 {
@@ -125,12 +142,6 @@ mod test {
                 assert(x == 5);
             }
 
-            // global TEST = 1 + 7 + 3;
-            //
-            // fn use_global() -> Field {
-            //     TEST
-            // }
-
             struct Option2<T> {
                 _is_some: bool,
                 _value: T,
@@ -193,32 +204,8 @@ mod test {
                 x + y
             }
 
-            fn pattern_test() {
-                let opt = Option2::some(true);
-                let t = (1, opt, 3);
-                let (x, mut Option2 { _is_some, _value }, mut z) = t;
-                let lam = |(x, mut y, z) : (bool, bool, bool), k : Field| -> bool {
-                    x
-                };
-            }
-
             fn impl_test(x: impl MyTrait, y: impl Default) -> impl Default {
                 false
-            }
-
-            fn nat_generic_test<let N: u32>() -> [Field; N] {
-                for i in 0..N {
-                    i;
-                }
-                [1; N]
-            }
-
-            fn nat_generic_test_2<let N: u8>(x: Field) -> Field {
-                let mut res = x;
-                for _ in 0..N {
-                    res = res * 2;
-                }
-                res
             }
 
             type AliasedOpt<T> = Option2<T>;
@@ -241,66 +228,67 @@ mod test {
                 let mut tpl = (1, true);
                 tpl.0 = 2;
                 let impl_res = impl_test(op1, 0);
-                let five_ones = nat_generic_test::<5>();
                 let aliased_opt = AliasedOpt::none();
                 is_alias_some(aliased_opt);
             }
-        "#;
-
-        let source = Source::new(file_name, source);
-
-        // Create our project
-        let project = Project::new(Path::new(""), source);
-
-        // Execute the compilation step on our project.
-        let source = noir_to_lean(project)?.take();
-
-        println!("{source}");
-
-        Ok(())
+        "#,
+        )
     }
 
-    // #[test]
-    fn _associated_types() -> anyhow::Result<()> {
-        // Set up our source code
-        let file_name = Path::new("main.nr");
-        let source = r#"
-            trait Test {
-                type AssocType;
-
-                fn foo(self) -> bool;
+    #[test]
+    fn patterns() -> anyhow::Result<()> {
+        print_result(
+            r#"
+            struct Option2<T> {
+                _is_some: bool,
+                _value: T,
             }
 
-            impl Test for bool {
-                type AssocType = bool;
-                fn foo(self) -> bool {
-                    true
+            impl <T> Option2<T> {
+                /// Constructs a Some wrapper around the given value
+                pub fn some(_value: T) -> Self {
+                   Self { _is_some: true, _value }
                 }
             }
 
-            fn main() {
-                let x = true;
-                print(x.foo());
+            fn pattern_test() {
+                let opt = Option2::some(true);
+                let t = (1, opt, 3);
+                let (x, mut Option2 { _is_some, _value }, mut z) = t;
+                let lam = |(x, mut y, z) : (bool, bool, bool), k : Field| -> bool {
+                    x
+                };
             }
-        "#;
+        "#,
+        )
+    }
 
-        let source = Source::new(file_name, source);
+    #[test]
+    fn const_generics() -> anyhow::Result<()> {
+        print_result(
+            r#"
+            fn nat_generic_test<let N: u32>() -> [Field; N] {
+                for i in 0..N {
+                    i;
+                }
+                [1; N]
+            }
 
-        // Create our project
-        let project = Project::new(Path::new(""), source);
-
-        // Execute the compilation step on our project.
-        let source = noir_to_lean(project)?.take();
-
-        println!("{source}");
-
-        Ok(())
+            fn nat_generic_test_2<let N: u8>(x: Field) -> Field {
+                let mut res = x;
+                for _ in 0..N {
+                    res = res * 2;
+                }
+                res
+            }
+        "#,
+        )
     }
 
     #[test]
     fn globals() -> anyhow::Result<()> {
-        let file_name = Path::new("main.nr");
-        let source = r#"
+        print_result(
+            r#"
             global FOOS: [Field; 2] = [FOO, FOO + 1];
 
             global FOO: Field  = 42;
@@ -308,16 +296,7 @@ mod test {
             fn main() -> pub Field {
                 FOOS[1]
             }
-        "#;
-
-        let source = Source::new(file_name, source);
-
-        let project = Project::new(Path::new(""), source);
-
-        let source = noir_to_lean(project)?.take();
-
-        println!("{source}");
-
-        Ok(())
+        "#,
+        )
     }
 }

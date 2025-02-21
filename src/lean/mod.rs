@@ -5,10 +5,7 @@ pub mod indent;
 mod pattern;
 mod syntax;
 
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::format,
-};
+use std::collections::{HashMap, HashSet};
 
 use context::EmitterCtx;
 use fm::FileId;

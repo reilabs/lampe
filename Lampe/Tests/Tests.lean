@@ -506,7 +506,7 @@ nr_def const_test<@N : 8>(x : Field) -> Field {
   res;
 }
 
-lemma hypothesize_left {h : P₁ → STHoare p Γ P₂ e Q } :
+theorem hypothesize_left {h : P₁ → STHoare p Γ P₂ e Q } :
     STHoare p Γ (⟦P₁⟧ ⋆ P₂) e Q := by
   unfold STHoare THoare SLP.lift at *
   intros H st h
@@ -517,8 +517,7 @@ lemma hypothesize_left {h : P₁ → STHoare p Γ P₂ e Q } :
   have : s₂' = s₁ := by simp_all
   subst this
   have hp : P₁ := by tauto
-  have := h hp H st ?_
-  apply this
+  apply h hp H st ?_
   exists s₂', s₂
   tauto
 
