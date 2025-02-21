@@ -8,12 +8,22 @@ namespace Test
 
 /- Extracted Start -/
 
+nr_struct_def BabyHash<> {
+
+}
+
+nr_trait_impl[impl_405] <> MHash<Field> for BabyHash<> where  {
+    fn «hash_two»<> (_self : BabyHash<>, l : Field, r : Field) -> Field {
+      #fMul(#fAdd(l, #fMul(2 : Field, r) : Field) : Field, 3 : Field) : Field;
+    }
+}
+
 nr_def «mtree_recover»<F, μ0>(h : μ0, idx : [bool], p : [F], item : F) -> F {
   #assert(#uEq(#sliceLen(idx) : u32, #sliceLen(p) : u32) : bool) : Unit;
   let mut curr_h = item;
   for i in 0 : u32 .. #sliceLen(idx) : u32 {
-    let dir = #sliceIndex(idx, #cast(i) : u32) : bool;
-    let sibling_root = #sliceIndex(p, #cast(i) : u32) : F;
+    let dir = #sliceIndex(idx, i) : bool;
+    let sibling_root = #sliceIndex(p, i) : F;
     if dir {
       curr_h = ((_ as MHash<F>)::hash_two<> as λ(_, F, F) → F)(h, sibling_root, curr_h);
     } else {
@@ -24,8 +34,10 @@ nr_def «mtree_recover»<F, μ0>(h : μ0, idx : [bool], p : [F], item : F) -> F 
 }
 
 
-def env := Lampe.Env.mk [(«mtree_recover».name, «mtree_recover».fn)] []
+def env := Lampe.Env.mk [(«mtree_recover».name, «mtree_recover».fn)] [impl_405]
 /- Extracted End -/
+
+example : Struct.tp «struct#BabyHash» h![] = Tp.tuple "BabyHash" [] := rfl
 
 def Hash (t : Type) (n : Nat) := List.Vector t n -> t
 
@@ -98,16 +110,28 @@ example : (recoverAux (α := Nat) babyHash' 2 [true, false, false] [243, 69, 6] 
 
 example : (recoverAux (α := Nat) babyHash' 3 [true, false, false] [243, 69, 6] 5) = 4131 := rfl
 
-example [Inhabited (Tp.denote p tp)] {t : MerkleTree (Tp.denote p tp) h d} {hh : (Tp.denote p hTp) = Hash (Tp.denote p tp) 2}
+abbrev babyHashTp := «struct#BabyHash».tp h![]
+
+example [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h d}
   {h₁ : t.proof idx = proof} {h₂ : t.itemAt idx = item} :
-    STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![tp, hTp] |>.body h![hh ▸ h, idx.toList.reverse, proof.toList.reverse, item])
+    STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![.field, babyHashTp] |>.body h![h', idx.toList.reverse, proof.toList.reverse, item])
     fun v => v = MerkleTree.recover h idx proof item := by
   simp only [mtree_recover]
   steps
   rename Ref => r
-  . loop_inv (fun i _ _ => [r ↦ ⟨tp, recoverAux (α := (Tp.denote p tp)) h i.toNat idx.toList proof.toList item⟩])
+  . loop_inv (fun i _ _ => [r ↦ ⟨.field, recoverAux (α := (Tp.denote p .field)) h i.toNat idx.toList proof.toList item⟩])
     intros
     . steps
+      apply STHoare.callTrait'_intro («struct#BabyHash».tp h![])
+      sl
+      subst_vars
+      rfl
+      try_impls_all [] env
+      all_goals try tauto
+      simp_all
+      steps
+      simp_all
+      subst_vars
       stop _
     . simp_all
     . aesop
