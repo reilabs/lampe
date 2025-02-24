@@ -12,6 +12,7 @@ nr_struct_def BabyHash<> {
 
 }
 
+/- [Todo] Fix impl generics -/
 nr_trait_impl[impl_405] <> MHash<Field> for BabyHash<> where  {
     fn «hash_two»<> (_self : BabyHash<>, l : Field, r : Field) -> Field {
       #fMul(#fAdd(l, #fMul(2 : Field, r) : Field) : Field, 3 : Field) : Field;
@@ -22,6 +23,7 @@ nr_def «mtree_recover»<F, μ0>(h : μ0, idx : [bool], p : [F], item : F) -> F 
   #assert(#uEq(#sliceLen(idx) : u32, #sliceLen(p) : u32) : bool) : Unit;
   let mut curr_h = item;
   for i in 0 : u32 .. #sliceLen(idx) : u32 {
+    /- [Todo] Add casts back into index arguments -/
     let dir = #sliceIndex(idx, i) : bool;
     let sibling_root = #sliceIndex(p, i) : F;
     if dir {
@@ -112,6 +114,23 @@ example : (recoverAux (α := Nat) babyHash' 3 [true, false, false] [243, 69, 6] 
 
 abbrev babyHashTp := «struct#BabyHash».tp h![]
 
+abbrev babyHashFn := impl_405.snd.impl h![] |>.head (by tauto) |>.snd
+
+theorem babyHashImpl_intro : STHoare p env ⟦⟧ (babyHashFn.body _ h![] |>.body h![s, l, r])
+    fun v => v = (l + 2 * r) * 3 := by
+  simp only [babyHashFn, impl_405, List.head_cons]
+  steps
+  intros
+  simp_all [exists_const]
+
+theorem hypothesize {_ : P₁ → STHoare p env P₂ e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by sorry
+
+theorem extract_lift [LawfulHeap α] {P₁ : Prop} {P₂ : SLP α} :
+    (⟦P₁⟧ ⋆ P₂) st → P₁ ∧ P₂ st := by sorry
+
+
+set_option maxHeartbeats 500000
+
 example [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h d}
   {h₁ : t.proof idx = proof} {h₂ : t.itemAt idx = item} :
     STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![.field, babyHashTp] |>.body h![h', idx.toList.reverse, proof.toList.reverse, item])
@@ -121,21 +140,73 @@ example [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h 
   rename Ref => r
   . loop_inv (fun i _ _ => [r ↦ ⟨.field, recoverAux (α := (Tp.denote p .field)) h i.toNat idx.toList proof.toList item⟩])
     intros
-    . steps
-      apply STHoare.callTrait'_intro («struct#BabyHash».tp h![])
-      sl
-      subst_vars
-      rfl
-      try_impls_all [] env
-      all_goals try tauto
-      simp_all
+    . simp only
+      generalize hrv : recoverAux (α := (Tp.denote p .field)) _ _ _ _ _ = rv
       steps
-      simp_all
-      subst_vars
-      stop _
-    . simp_all
-    . aesop
-  . steps
+      . rename_i v₁ _ _ v₂
+        apply STHoare.callTrait'_intro («struct#BabyHash».tp h![]) (Q := fun v => [r ↦ ⟨.field, rv⟩] ⋆ ⟦v = (v₁ + 2 * v₂) * 3⟧)
+        sl
+        tauto
+        try_impls_all [] env
+        all_goals try tauto
+        simp_all
+        steps
+        simp_all
+        intros st₁ h v
+        repeat (apply extract_lift at h; obtain ⟨_, h⟩ := h)
+        unfold SLP.wand SLP.star
+        intros st₂ _ _
+        exists st₁, st₂
+        refine ⟨by tauto, by tauto, by tauto, ?_⟩
+        exists ∅, ∅
+        rename_i h'
+        obtain ⟨_, _⟩ := h'
+        refine ⟨by simp, by simp_all, ?_, by simp⟩
+        unfold SLP.lift
+        refine ⟨?_, by rfl⟩
+        aesop
+      . apply STHoare.letIn_intro
+        . rw [SLP.star_comm]
+          apply hypothesize
+          intros
+          apply STHoare.modifyLens_intro
+        . intros
+          steps
+          unfold SLP.exists' SLP.forall'
+          intros st₁ h
+          simp_all
+          unfold SLP.wand
+          intros v st₂
+          intros
+          have : st₂ = ∅ := by simp_all [SLP.lift]
+          simp_all
+          apply SLP.ent_star_top
+          tauto
+      . rename_i v₁ _ _ v₂
+        apply STHoare.callTrait'_intro («struct#BabyHash».tp h![]) (Q := fun v => [r ↦ ⟨.field, rv⟩] ⋆ ⟦v = (v₂ + 2 * v₁) * 3⟧)
+        sl
+        tauto
+        try_impls_all [] env
+        all_goals try tauto
+        simp_all
+        steps
+        simp_all
+        intros st₁ h v
+        repeat (apply extract_lift at h; obtain ⟨_, h⟩ := h)
+        unfold SLP.wand SLP.star
+        intros st₂ _ _
+        exists st₁, st₂
+        refine ⟨by tauto, by tauto, by tauto, ?_⟩
+        exists ∅, ∅
+        rename_i h'
+        obtain ⟨_, _⟩ := h'
+        refine ⟨by simp, by simp_all, ?_, by simp⟩
+        unfold SLP.lift
+        refine ⟨?_, by rfl⟩
+        aesop
+      . sorry
+      . sorry
+    . sorry
     simp only [exists_const] at *
     subst_vars
     rename_i h₁ h₂ h₃ h₄ _
@@ -164,9 +235,6 @@ example [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h 
       rw [this]
       rename_i ih₁ ih₂ _ _ _ _
       cases idx.toList[0]
-      . simp_all
-        congr
-        sorry
       . simp_all
         congr
         sorry
