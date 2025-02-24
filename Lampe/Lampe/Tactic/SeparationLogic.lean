@@ -633,6 +633,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply uAnd_intro
     | apply uOr_intro
     | apply uNot_intro
+    | apply uXor_intro
   )
 ))
 
@@ -711,6 +712,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left uAnd_intro
     | apply consequence_frame_left uOr_intro
     | apply consequence_frame_left uNot_intro
+    | apply consequence_frame_left uXor_intro
   )
   repeat sl
 ))
@@ -792,6 +794,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top uAnd_intro
     | apply ramified_frame_top uOr_intro
     | apply ramified_frame_top uNot_intro
+    | apply ramified_frame_top uXor_intro
   )
   repeat sl
 ))
