@@ -93,6 +93,7 @@ def recover {depth : Nat} {F: Type} (H : Hash F 2) (ix : List.Vector Bool depth)
 
 end MerkleTree
 
+/-- Represents the output of the `i`th output of the Noir recovery function. -/
 @[reducible]
 def recoverAux {α : Type} [Inhabited α] (h : Hash α 2) (i : Nat) (idx : List Bool) (proof : List α) (item : α) : α := match i with
 | 0 => item
@@ -105,18 +106,65 @@ def recoverAux {α : Type} [Inhabited α] (h : Hash α 2) (i : Nat) (idx : List 
   else
     h ⟨[subRoot, siblingRoot], rfl⟩
 
-theorem recoverAux_eq_MerkleTree_recover [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h d} :
-    recoverAux babyHash d idx.toList (t.proof idx).toList (t.itemAt idx) = MerkleTree.recover babyHash idx (t.proof idx) (t.itemAt idx) := by
+lemma List.get!_append_eq_get! [Inhabited α] {l : List α} {h : i < l.length} : (l ++ [a]).get! i = l.get! i := by
+  cases h' : l.get? i
+  . have _ := List.get?_eq_get h
+    simp_all
+  . simp only [List.get!_eq_getElem!, List.getElem!_eq_getElem?_getD]
+    rw [List.getElem?_append_left h]
+
+theorem recoverAux_eq_cons [Inhabited α] {idx : List Bool} {proof : List α} {hd₁ : d < idx.length} {hd₂ : d < proof.length}  :
+    recoverAux h d idx proof item = recoverAux h d (a :: idx) (b :: proof) item := by
+  induction d
+  . rfl
+  . rename_i n ih
+    unfold recoverAux
+    have h₁ : idx.reverse.get! n = (a :: idx).reverse.get! n := by
+      simp only [List.reverse_cons]
+      symm
+      apply List.get!_append_eq_get!
+      simp_all only [List.length_reverse]
+      linarith
+    have h₂ : proof.reverse.get! n = (b :: proof).reverse.get! n := by
+      simp only [List.reverse_cons]
+      symm
+      apply List.get!_append_eq_get!
+      simp_all only [List.length_reverse]
+      linarith
+    rw [←h₁, ←h₂, ih]
+    simp_all
+    linarith
+    linarith
+
+theorem recoverAux_eq_MerkleTree_recover [Inhabited α] {idx : List.Vector Bool d} {proof : List.Vector α d} {item : α} :
+    recoverAux h d idx.toList proof.toList item = MerkleTree.recover h idx proof item := by
   induction d
   . rfl
   . rename Nat => n
     rename_i _ ih
     simp [recoverAux, MerkleTree.recover]
-    have : idx.toList[0] = idx.head := by sorry
-    rw [this]
-    cases idx.head <;> (simp; congr)
-    . sorry
-    . sorry
+    have _ : n < idx.toList.length := by simp
+    have _ : n < proof.toList.length := by simp
+    have h₁ : idx.toList[0] = idx.head := by sorry
+    have h₂ : proof.toList[0] = proof.head := by sorry
+    rw [h₁, ←h₂]
+    cases idx.head <;> {
+      simp only [Bool.false_eq_true, ↓reduceIte]
+      congr
+      cases h₁ : idx.toList <;> cases h₂ : proof.toList
+      all_goals try {
+        have _ : idx.length = 0 := by simp_all
+        contradiction
+      }
+      rw [←recoverAux_eq_cons]
+      rename_i tail₁ _ tail₂
+      have h₁ : tail₁ = idx.tail.toList := by sorry
+      have h₂ : tail₂ = proof.tail.toList := by sorry
+      rw [h₁, h₂]
+      apply ih (idx := idx.tail) (proof := proof.tail)
+      sorry
+      sorry
+    }
 
 def babyHash' : Hash Nat 2 := fun ⟨[a, b], _⟩ => (a + 2 * b) * 3
 
@@ -133,7 +181,8 @@ abbrev babyHashTp := «struct#BabyHash».tp h![]
 abbrev babyHashFn := impl_405.snd.impl h![] |>.head (by tauto) |>.snd
 
 theorem hypothesize {_ : P₁ → STHoare p env P₂ e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
-  sorry
+  apply STHoare.consequence
+  <;> sorry
 
 theorem hypothesize' {_ : P₁ → STHoare p env (⟦P₁⟧ ⋆ P₂) e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
   sorry
