@@ -105,6 +105,19 @@ def recoverAux {α : Type} [Inhabited α] (h : Hash α 2) (i : Nat) (idx : List 
   else
     h ⟨[subRoot, siblingRoot], rfl⟩
 
+theorem recoverAux_eq_MerkleTree_recover [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h d} :
+    recoverAux babyHash d idx.toList (t.proof idx).toList (t.itemAt idx) = MerkleTree.recover babyHash idx (t.proof idx) (t.itemAt idx) := by
+  induction d
+  . rfl
+  . rename Nat => n
+    rename_i _ ih
+    simp [recoverAux, MerkleTree.recover]
+    have : idx.toList[0] = idx.head := by sorry
+    rw [this]
+    cases idx.head <;> (simp; congr)
+    . sorry
+    . sorry
+
 def babyHash' : Hash Nat 2 := fun ⟨[a, b], _⟩ => (a + 2 * b) * 3
 
 example : (recoverAux (α := Nat) babyHash' 0 [true, false, false] [243, 69, 6] 5) = 5 := rfl
@@ -119,16 +132,11 @@ abbrev babyHashTp := «struct#BabyHash».tp h![]
 
 abbrev babyHashFn := impl_405.snd.impl h![] |>.head (by tauto) |>.snd
 
-theorem babyHashImpl_intro : STHoare p env ⟦⟧ (babyHashFn.body _ h![] |>.body h![s, l, r])
-    fun v => v = (l + 2 * r) * 3 := by
-  simp only [babyHashFn, impl_405, List.head_cons]
-  steps
-  intros
-  simp_all [exists_const]
+theorem hypothesize {_ : P₁ → STHoare p env P₂ e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
+  sorry
 
-theorem hypothesize {_ : P₁ → STHoare p env P₂ e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by sorry
-
-theorem hypothesize' {_ : P₁ → STHoare p env (⟦P₁⟧ ⋆ P₂) e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by sorry
+theorem hypothesize' {_ : P₁ → STHoare p env (⟦P₁⟧ ⋆ P₂) e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
+  sorry
 
 theorem extract_lift [LawfulHeap α] {P₁ : Prop} {P₂ : SLP α} :
     (⟦P₁⟧ ⋆ P₂) st → P₁ ∧ P₂ st := by sorry
@@ -138,7 +146,7 @@ theorem List.reverse_index [Inhabited α] {l : List α} : l.reverse[i]! = l[l.le
 
 set_option maxHeartbeats 500000
 
-example [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h d}
+example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.denote p .field) h d}
   {h₁ : t.proof idx = proof} {h₂ : t.itemAt idx = item} :
     STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![.field, babyHashTp] |>.body h![h', idx.toList.reverse, proof.toList.reverse, item])
     fun v => v = MerkleTree.recover babyHash idx proof item := by
@@ -152,7 +160,7 @@ example [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h 
       apply STHoare.letIn_intro
       . steps
       . intros dir
-        simp
+        simp [-Nat.reducePow]
         apply hypothesize'
         intro hdir₁
         obtain ⟨_, hdir₁⟩ := hdir₁
@@ -209,7 +217,10 @@ example [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h 
                     obtain ⟨st₁', st₂', h⟩ := h
                     obtain ⟨_, _, h₀, ⟨_, _, _⟩⟩ := h
                     have _ : v₂ = rv := by tauto
-                    have _ : v₃ = (v₁ + 2 * v₂) * 3 := by tauto
+                    have _ : v₃ = (v₁ + 2 * v₂) * 3 := by
+                      rename_i hu _
+                      rw [←hv₁'] at hu
+                      tauto
                     simp [exists_const] at h₀
                     have _ : st₁' = st := by simp_all
                     convert h₀
@@ -280,9 +291,17 @@ example [Inhabited (Tp.denote p .field)] {t : MerkleTree (Tp.denote p .field) h 
                     unfold babyHash
                     simp_all
           . intros _
-            sorry
+            steps
+            congr
+            have : i.toNat + 1 ≤ d := by linarith
+            generalize i.toNat = i' at *
+            symm
+            apply Nat.mod_eq_of_lt
+            linarith
     . aesop
     . aesop
   . steps
-    simp_all
-    sorry
+    simp_all [-Nat.reducePow]
+    have : d % (2 ^ 32) = d := by simp_all
+    rw [this]
+    apply recoverAux_eq_MerkleTree_recover
