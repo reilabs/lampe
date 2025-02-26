@@ -2,10 +2,30 @@ import Lampe
 import Mathlib
 import Mathlib.Data.Nat.Log
 
+lemma List.get!_append_eq_get! [Inhabited α] {l : List α} {h : i < l.length} : (l ++ [a]).get! i = l.get! i := by
+  cases h' : l.get? i
+  . have _ := List.get?_eq_get h
+    simp_all
+  . simp only [List.get!_eq_getElem!, List.getElem!_eq_getElem?_getD]
+    rw [List.getElem?_append_left h]
+
+lemma List.reverse_index [Inhabited α] {l : List α} {h : i < l.length} : l.reverse[i]! = l[l.length - 1 - i]! := by
+  simp only [←List.get!_eq_getElem!, List.get!_eq_getD]
+  rw [List.getD_reverse (h := h)]
+
+lemma List.Vector.tail_toList_eq_toList_tail {l : List.Vector α n} : l.tail.toList = l.toList.tail := by
+  cases l
+  simp only [List.tail, List.Vector.tail, List.Vector.toList]
+  aesop
+
+lemma List.Vector.head_eq_toList_head {l : List.Vector α (n + 1)} (h : l.toList ≠ []) : l.head = l.toList.head h := by
+  cases l
+  simp only [List.head, List.Vector.head, List.Vector.toList]
+  aesop
+
 open Lampe
 
 namespace Test
-
 
 /- Extracted Start -/
 
@@ -106,14 +126,7 @@ def recoverAux {α : Type} [Inhabited α] (h : Hash α 2) (i : Nat) (idx : List 
   else
     h ⟨[subRoot, siblingRoot], rfl⟩
 
-lemma List.get!_append_eq_get! [Inhabited α] {l : List α} {h : i < l.length} : (l ++ [a]).get! i = l.get! i := by
-  cases h' : l.get? i
-  . have _ := List.get?_eq_get h
-    simp_all
-  . simp only [List.get!_eq_getElem!, List.getElem!_eq_getElem?_getD]
-    rw [List.getElem?_append_left h]
-
-theorem recoverAux_eq_cons [Inhabited α] {idx : List Bool} {proof : List α} {hd₁ : d < idx.length} {hd₂ : d < proof.length}  :
+theorem recoverAux_eq_cons [Inhabited α] {idx : List Bool} {proof : List α} {hd₁ : d ≤ idx.length} {hd₂ : d ≤ proof.length}  :
     recoverAux h d idx proof item = recoverAux h d (a :: idx) (b :: proof) item := by
   induction d
   . rfl
@@ -145,8 +158,21 @@ theorem recoverAux_eq_MerkleTree_recover [Inhabited α] {idx : List.Vector Bool 
     simp [recoverAux, MerkleTree.recover]
     have _ : n < idx.toList.length := by simp
     have _ : n < proof.toList.length := by simp
-    have h₁ : idx.toList[0] = idx.head := by sorry
-    have h₂ : proof.toList[0] = proof.head := by sorry
+    have h₁ : idx.toList[0] = idx.head := by
+      have _ : idx.toList ≠ [] := by
+        cases idx; aesop
+      have : idx.head = idx.toList.head (by tauto) := by
+        cases idx; simp only [List.head, List.Vector.head]; aesop
+      rw [this]
+      symm
+      apply List.head_eq_getElem
+    have h₂ : proof.toList[0] = proof.head := by
+      have _ : proof.toList ≠ [] := by cases proof; aesop
+      have : proof.head = proof.toList.head (by tauto) := by
+        cases proof; unfold List.head List.Vector.head; aesop
+      rw [this]
+      symm
+      apply List.head_eq_getElem
     rw [h₁, ←h₂]
     cases idx.head <;> {
       simp only [Bool.false_eq_true, ↓reduceIte]
@@ -156,14 +182,22 @@ theorem recoverAux_eq_MerkleTree_recover [Inhabited α] {idx : List.Vector Bool 
         have _ : idx.length = 0 := by simp_all
         contradiction
       }
-      rw [←recoverAux_eq_cons]
-      rename_i tail₁ _ tail₂
-      have h₁ : tail₁ = idx.tail.toList := by sorry
-      have h₂ : tail₂ = proof.tail.toList := by sorry
+      rename_i _ _ _ _ tail₁ _ tail₂
+      have _ : idx.toList.length = n + 1 := by apply List.Vector.length_val
+      have _ : proof.toList.length = n + 1 := by apply List.Vector.length_val
+      rw [←recoverAux_eq_cons (hd₁ := by simp_all) (hd₂ := by simp_all)]
+      have h₁ : tail₁ = idx.tail.toList := by
+        have : tail₁ = idx.toList.tail := by simp_all
+        rw [this]
+        symm
+        apply List.Vector.tail_toList_eq_toList_tail
+      have h₂ : tail₂ = proof.tail.toList := by
+        have : tail₂ = proof.toList.tail := by simp_all
+        rw [this]
+        symm
+        apply List.Vector.tail_toList_eq_toList_tail
       rw [h₁, h₂]
       apply ih (idx := idx.tail) (proof := proof.tail)
-      sorry
-      sorry
     }
 
 def babyHash' : Hash Nat 2 := fun ⟨[a, b], _⟩ => (a + 2 * b) * 3
@@ -180,18 +214,28 @@ abbrev babyHashTp := «struct#BabyHash».tp h![]
 
 abbrev babyHashFn := impl_405.snd.impl h![] |>.head (by tauto) |>.snd
 
-theorem hypothesize {_ : P₁ → STHoare p env P₂ e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
-  apply STHoare.consequence
-  <;> sorry
+lemma hypothesize {_ : P₁ → STHoare p env P₂ e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
+  simp only [STHoare, THoare] at *
+  intros H st h
+  have _ : P₁ := by
+    simp only [SLP.lift, SLP.star] at h
+    tauto
+  simp_all
 
-theorem hypothesize' {_ : P₁ → STHoare p env (⟦P₁⟧ ⋆ P₂) e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
-  sorry
+lemma hypothesize' {_ : P₁ → STHoare p env (⟦P₁⟧ ⋆ P₂) e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
+  simp only [STHoare, THoare] at *
+  intros H st h
+  have _ : P₁ := by
+    simp only [SLP.lift, SLP.star] at h
+    tauto
+  simp_all
 
-theorem extract_lift [LawfulHeap α] {P₁ : Prop} {P₂ : SLP α} :
-    (⟦P₁⟧ ⋆ P₂) st → P₁ ∧ P₂ st := by sorry
-
-theorem List.reverse_index [Inhabited α] {l : List α} : l.reverse[i]! = l[l.length - 1 - i]! := by
-  sorry
+lemma extract_lift [LawfulHeap α] {P₁ : Prop} {P₂ : SLP α} :
+    (⟦P₁⟧ ⋆ P₂) st → P₁ ∧ P₂ st := by
+  simp only [SLP.star, SLP.lift]
+  intros h
+  obtain ⟨_, _, _, _, _⟩ := h
+  simp_all
 
 set_option maxHeartbeats 500000
 
@@ -202,6 +246,10 @@ example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.den
   simp only [mtree_recover]
   steps
   rename Ref => r
+  rename_i vt₁ vt₂
+  apply hypothesize'
+  intro hvt₂
+  simp [-Nat.reducePow] at hvt₂
   . loop_inv (fun i _ _ => [r ↦ ⟨.field, recoverAux (α := (Tp.denote p .field)) babyHash i.toNat idx.toList proof.toList item⟩])
     intros i hlo hhi
     . simp only
@@ -276,6 +324,16 @@ example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.den
                     conv =>
                       lhs
                       unfold recoverAux babyHash
+                    have _ : i.toNat < d := by
+                      have : d = (BitVec.ofNat 32 d).toNat := by
+                        rw [BitVec.toNat_ofNat]
+                        simp [Nat.reducePow]
+                        symm
+                        apply Nat.mod_eq_of_lt
+                        tauto
+                      rw [this]
+                      rw [←BitVec.lt_def]
+                      tauto
                     have : idx.toList.reverse[BitVec.toNat i]! := by
                       have : idx.toList.length = d := by
                         apply List.Vector.toList_length
@@ -283,8 +341,7 @@ example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.den
                       have : idx.toList[d - 1 - i.toNat]! = idx.toList[d - 1 - i.toNat] := by
                         apply List.getElem!_of_getElem?
                         simp
-                      rw [this]
-                      tauto
+                      repeat { rw [this]; tauto }
                     simp [this]
                     have : (t.proof idx).toList.reverse[BitVec.toNat i]! = v₁ := by
                       have : proof.toList.length = d := by
@@ -293,6 +350,8 @@ example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.den
                       rw [List.reverse_index]
                       apply List.getElem!_of_getElem?
                       simp
+                      rw [this]
+                      tauto
                     subst_vars
                     simp [this]
                     apply Or.inl; apply Or.inl;
