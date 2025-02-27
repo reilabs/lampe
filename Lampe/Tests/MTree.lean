@@ -320,8 +320,8 @@ example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.den
                     simp_all
                     apply hypothesize'
                     intro hv₂
-                    generalize (Expr.letIn _ _) = e
-                    have : e = (babyHashFn.body _ h![] |>.body h![by tauto, v₁, v₂]) := by sorry
+                    generalize he : (Expr.letIn _ _) = e
+                    have : e = (babyHashFn.body _ h![] |>.body h![by tauto, v₁, v₂]) := by simp_all [babyHashFn, impl_405]
                     rw [this]
                     apply STHoare.babyHash_intro
                   . intro v₃
@@ -346,8 +346,8 @@ example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.den
                     simp_all
                     apply hypothesize'
                     intro hv₂
-                    generalize (Expr.letIn _ _) = e
-                    have : e = (babyHashFn.body _ h![] |>.body h![by tauto, v₂, v₁]) := by sorry
+                    generalize he : (Expr.letIn _ _) = e
+                    have : e = (babyHashFn.body _ h![] |>.body h![by tauto, v₂, v₁]) := by simp_all [babyHashFn, impl_405]
                     rw [this]
                     apply STHoare.babyHash_intro
                   . intro v₃
