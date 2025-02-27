@@ -200,6 +200,21 @@ theorem recoverAux_eq_MerkleTree_recover [Inhabited α] {idx : List.Vector Bool 
       apply ih (idx := idx.tail) (proof := proof.tail)
     }
 
+theorem recoverAux_next_true [Inhabited α] {idx : List Bool} {proof : List α} {item : α} :
+    idx.reverse.get! i = true → l = proof.reverse.get! i →
+    (recoverAux h (i + 1) idx proof item = h ⟨[l, recoverAux h i idx proof item], by tauto⟩) := by
+  intros
+  conv => lhs; unfold recoverAux
+  simp_all
+
+theorem recoverAux_next_false [Inhabited α] {idx : List Bool} {proof : List α} {item : α} :
+    idx.reverse.get! i = false → r = proof.reverse.get! i →
+    (recoverAux h (i + 1) idx proof item = h ⟨[recoverAux h i idx proof item, r], by tauto⟩) := by
+  intros
+  conv => lhs; unfold recoverAux
+  simp_all
+
+
 def babyHash' : Hash Nat 2 := fun ⟨[a, b], _⟩ => (a + 2 * b) * 3
 
 example : (recoverAux (α := Nat) babyHash' 0 [true, false, false] [243, 69, 6] 5) = 5 := rfl
@@ -239,6 +254,26 @@ lemma extract_lift [LawfulHeap α] {P₁ : Prop} {P₂ : SLP α} :
 
 set_option maxHeartbeats 500000
 
+theorem STHoare.babyHash_intro [Inhabited (Tp.denote p .field)] {a b : Tp.denote p .field} :
+    STHoare p env P (babyHashFn.body _ h![] |>.body h![(), a, b])
+    fun v => ⟦v = babyHash ⟨[a, b], by tauto⟩⟧ ⋆ P := by
+  simp only [babyHashFn, impl_405]
+  simp_all
+  steps
+  simp_all
+  intro st₁ h
+  repeat (apply extract_lift at h; obtain ⟨_, h⟩ := h)
+  simp only [SLP.forall']
+  intro v
+  simp only [SLP.lift, SLP.star, SLP.wand]
+  intros st₂ _ _
+  exists ∅, st₁
+  refine ⟨by simp_all, by simp_all, ⟨?_, by simp⟩, ?_, ?_⟩
+  . simp_all [babyHash]
+  . exact st₁
+  . exists ∅
+    refine ⟨by simp_all, by simp_all, ⟨by tauto, by simp_all⟩⟩
+
 example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.denote p .field) h d}
   {h₁ : t.proof idx = proof} {h₂ : t.itemAt idx = item} :
     STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![.field, babyHashTp] |>.body h![h', idx.toList.reverse, proof.toList.reverse, item])
@@ -269,7 +304,7 @@ example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.den
           simp at hv₁'
           obtain ⟨_, hv₁'⟩ := hv₁'
           apply STHoare.letIn_intro
-          . apply STHoare.ite_intro <;> intro hdir₂
+          . apply STHoare.ite_intro (Q := fun _ => [r ↦ ⟨.field, recoverAux babyHash (i.toNat + 1) idx.toList proof.toList item⟩]) <;> intro hdir₂
             . apply STHoare.letIn_intro
               . steps
               . intro fRef
@@ -277,127 +312,51 @@ example [Inhabited (Tp.denote p .field)] {hd : d < 2^32} {t : MerkleTree (Tp.den
                 . steps
                 . intro v₂
                   apply STHoare.letIn_intro
-                  . apply STHoare.callTrait'_intro babyHashTp (Q := fun v => [r ↦ ⟨.field, rv⟩] ⋆ ⟦v₂ = rv⟧ ⋆ ⟦v = (v₁ + 2 * v₂) * 3⟧)
+                  . apply STHoare.callTrait'_intro babyHashTp
                     sl
                     tauto
                     try_impls_all [] env
                     all_goals try tauto
                     simp_all
-                    steps
-                    simp_all
-                    intros st₁ h v
-                    repeat (apply extract_lift at h; obtain ⟨_, h⟩ := h)
-                    unfold SLP.wand SLP.star
-                    intros st₂ _ _
-                    exists st₁, st₂
-                    refine ⟨by tauto, by tauto, by tauto, ?_⟩
-                    exists ∅, ∅
-                    rename_i h'
-                    obtain ⟨_, _⟩ := h'
-                    refine ⟨by simp, by simp_all, ?_, ?_⟩
-                    . unfold SLP.lift
-                      refine ⟨?_, by rfl⟩
-                      aesop
-                    . exists ∅, ∅
-                      refine ⟨by simp, by simp, ?_⟩
-                      simp_all [SLP.lift]
-                  . intro v₃
-                    steps
-                    on_goal 2 => exact fun _ => [r ↦ ⟨.field, (recoverAux babyHash (i.toNat + 1) idx.toList proof.toList item)⟩]
-                    simp_all
-                    intros st h
-                    simp_all [SLP.wand, SLP.lift]
-                    intros st' _ _
-                    exists st, st'
-                    refine ⟨by tauto, by simp_all, ?_, by simp⟩
-                    unfold SLP.exists' SLP.star SLP.lift at h
-                    obtain ⟨st₁', st₂', h⟩ := h
-                    obtain ⟨_, _, h₀, ⟨_, _, _⟩⟩ := h
-                    have _ : v₂ = rv := by tauto
-                    have _ : v₃ = (v₁ + 2 * v₂) * 3 := by
-                      rename_i hu _
-                      rw [←hv₁'] at hu
-                      tauto
-                    simp [exists_const] at h₀
-                    have _ : st₁' = st := by simp_all
-                    convert h₀
-                    conv =>
-                      lhs
-                      unfold recoverAux babyHash
-                    have _ : i.toNat < d := by
-                      have : d = (BitVec.ofNat 32 d).toNat := by
-                        rw [BitVec.toNat_ofNat]
-                        simp [Nat.reducePow]
-                        symm
-                        apply Nat.mod_eq_of_lt
-                        tauto
-                      rw [this]
-                      rw [←BitVec.lt_def]
-                      tauto
-                    have : idx.toList.reverse[BitVec.toNat i]! := by
-                      have : idx.toList.length = d := by
-                        apply List.Vector.toList_length
-                      rw [List.reverse_index, this]
-                      have : idx.toList[d - 1 - i.toNat]! = idx.toList[d - 1 - i.toNat] := by
-                        apply List.getElem!_of_getElem?
-                        simp
-                      repeat { rw [this]; tauto }
-                    simp [this]
-                    have : (t.proof idx).toList.reverse[BitVec.toNat i]! = v₁ := by
-                      have : proof.toList.length = d := by
-                        apply List.Vector.toList_length
-                      rw [hv₁', h₁]
-                      rw [List.reverse_index]
-                      apply List.getElem!_of_getElem?
-                      simp
-                      rw [this]
-                      tauto
-                    subst_vars
-                    simp [this]
-                    apply Or.inl; apply Or.inl;
-                    unfold babyHash
-                    rfl
-                    tauto
-            . apply STHoare.letIn_intro
-              . steps
-              . intro fRef
-                apply STHoare.letIn_intro
-                . steps
-                . intro v₂
-                  apply STHoare.letIn_intro
-                  . apply STHoare.callTrait'_intro babyHashTp (Q := fun v => [r ↦ ⟨.field, rv⟩] ⋆ ⟦v₂ = rv⟧ ⋆ ⟦v = (v₂ + 2 * v₁) * 3⟧)
-                    sl
-                    tauto
-                    try_impls_all [] env
-                    all_goals try tauto
-                    simp_all
-                    steps
-                    simp_all
-                    intros st₁ h v
-                    repeat (apply extract_lift at h; obtain ⟨_, h⟩ := h)
-                    unfold SLP.wand SLP.star
-                    intros st₂ _ _
-                    exists st₁, st₂
-                    refine ⟨by tauto, by tauto, by tauto, ?_⟩
-                    exists ∅, ∅
-                    rename_i h'
-                    obtain ⟨_, _⟩ := h'
-                    refine ⟨by simp, by simp_all, ?_, ?_⟩
-                    . unfold SLP.lift
-                      refine ⟨?_, by rfl⟩
-                      aesop
-                    . exists ∅, ∅
-                      refine ⟨by simp, by simp, ?_⟩
-                      simp_all [SLP.lift]
+                    apply hypothesize'
+                    intro hv₂
+                    generalize (Expr.letIn _ _) = e
+                    have : e = (babyHashFn.body _ h![] |>.body h![by tauto, v₁, v₂]) := by sorry
+                    rw [this]
+                    apply STHoare.babyHash_intro
                   . intro v₃
                     steps
                     congr
-                    generalize hrv' : recoverAux (α := (Tp.denote p .field)) _ _ _ _ _ = rv' at *
+                    simp
+                    subst v₃ v₂
+                    symm
+                    apply recoverAux_next_true <;> { simp_all }
+            . apply STHoare.letIn_intro
+              . steps
+              . intro fRef
+                apply STHoare.letIn_intro
+                . steps
+                . intro v₂
+                  apply STHoare.letIn_intro
+                  . apply STHoare.callTrait'_intro babyHashTp
+                    sl
+                    tauto
+                    try_impls_all [] env
+                    all_goals try tauto
                     simp_all
-                    unfold recoverAux
-                    simp_all
-                    unfold babyHash
-                    simp_all
+                    apply hypothesize'
+                    intro hv₂
+                    generalize (Expr.letIn _ _) = e
+                    have : e = (babyHashFn.body _ h![] |>.body h![by tauto, v₂, v₁]) := by sorry
+                    rw [this]
+                    apply STHoare.babyHash_intro
+                  . intro v₃
+                    steps
+                    congr
+                    simp
+                    subst v₃ v₂
+                    symm
+                    apply recoverAux_next_false <;> { simp_all }
           . intros _
             steps
             congr
