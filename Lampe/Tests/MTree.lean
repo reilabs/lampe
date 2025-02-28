@@ -263,7 +263,8 @@ example [Inhabited (Tp.denote p .field)]
             obtain ⟨_, hv₁'⟩ := hv₁'
             apply STHoare.letIn_intro
             . apply STHoare.ite_intro (Q := fun _ => [r ↦ ⟨.field, recoverAux h (i.toNat + 1) idx.toList proof.toList item⟩]) <;> intro hdir₂
-              . apply STHoare.letIn_intro
+              <;> {
+                apply STHoare.letIn_intro
                 . steps
                 . intro fnRef
                   apply STHoare.letIn_intro
@@ -279,24 +280,10 @@ example [Inhabited (Tp.denote p .field)]
                       simp only [Lens.modify, Option.get_some]
                       subst v₃ v₂
                       symm
-                      apply recoverAux_next_true <;> { simp_all }
-              . apply STHoare.letIn_intro
-                . steps
-                . intro fnRef
-                  apply STHoare.letIn_intro
-                  . steps
-                  . intro v₂
-                    apply STHoare.letIn_intro
-                    . apply mhash_intro h
-                      sl
-                      tauto
-                    . intro v₃
-                      steps
-                      congr
-                      simp only [Lens.modify, Option.get_some]
-                      subst v₃ v₂
-                      symm
-                      apply recoverAux_next_false <;> { simp_all }
+                      first
+                      | apply recoverAux_next_true <;> { simp_all } /- for the main branch -/
+                      | apply recoverAux_next_false <;> { simp_all } /- for the else branch -/
+              }
             . intros _
               steps
               congr
@@ -308,7 +295,10 @@ example [Inhabited (Tp.denote p .field)]
     . aesop
     . aesop
   . steps
-    simp_all [-Nat.reducePow]
+    simp_all only [Nat.cast_zero, BitVec.ofNat_eq_ofNat, List.length_reverse,
+      List.Vector.toList_length, BitVec.natCast_eq_ofNat, exists_prop, beq_true, and_true,
+      true_eq_decide_iff, exists_const, BitVec.toNat_ofNat, BitVec.ofNat_le_ofNat, Nat.zero_mod,
+      zero_le, -Nat.reducePow]
     have : d % (2 ^ 32) = d := by simp_all
     rw [this]
     apply recoverAux_eq_MerkleTree_recover
