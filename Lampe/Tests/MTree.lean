@@ -257,6 +257,23 @@ lemma exists_lift_eq_lift [LawfulHeap α] {hb : Inhabited β} : (∃∃ (_ : β)
 
 set_option maxHeartbeats 500000
 
+axiom hash_intro {p : Prime} [Inhabited (Tp.denote p .field)]
+  (h : Hash (Tp.denote p .field) 2) (hTp : Tp) (hFn : Function)
+  {a b : Tp.denote p .field}
+  {s : Tp.denote p hTp}
+  {P : SLP (State p)}
+  {hKinds : hFn.generics = []}
+  {hArgTps : (hFn.body (Tp.denote p) (hKinds ▸ h![]) |>.argTps) = [hTp, .field, .field]}
+  {hOutTp : (hFn.body (Tp.denote p) (hKinds ▸ h![]) |>.outTp) = .field} :
+    STHoare p env P (hOutTp ▸ (hFn.body _ (hKinds ▸ h![]) |>.body (hArgTps ▸ h![s, a, b])))
+    fun v => ⟦v = h ⟨[a, b], by tauto⟩⟧ ⋆ P
+
+theorem babyHash_intro [Inhabited (Tp.denote p .field)] {a b : Tp.denote p .field} {self : Tp.denote p _} :
+    STHoare p env P (babyHashFn.body _ h![] |>.body h![self, a, b])
+    fun v => ⟦v = babyHash ⟨[a, b], by tauto⟩⟧ ⋆ P := by
+      have _ := hash_intro (p := p) (P := P) (s := self) (a := a) (b := b) babyHash babyHashTp babyHashFn (hKinds := rfl) (hOutTp := by simp; rfl) (hArgTps := by simp; rfl)
+      tauto
+
 theorem STHoare.babyHash_intro [Inhabited (Tp.denote p .field)] {a b : Tp.denote p .field} {self : Tp.denote p _} :
     STHoare p env P (babyHashFn.body _ h![] |>.body h![self, a, b])
     fun v => ⟦v = babyHash ⟨[a, b], by tauto⟩⟧ ⋆ P := by
@@ -277,8 +294,7 @@ theorem STHoare.babyHash_intro [Inhabited (Tp.denote p .field)] {a b : Tp.denote
   . exists ∅
     refine ⟨by simp_all, by simp_all, ⟨by tauto, by simp_all⟩⟩
 
-example [Inhabited (Tp.denote p .field)] {d : Nat} {proof item idx} {t : MerkleTree (Tp.denote p .field) h d}
-  {h₁ : t.proof idx = proof} {h₂ : t.itemAt idx = item} :
+example [Inhabited (Tp.denote p .field)] {d : Nat} {idx : List.Vector Bool d} {proof : List.Vector (Tp.denote p .field) d} {item : Tp.denote p .field} :
     STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![.field, babyHashTp] |>.body h![h', idx.toList.reverse, proof.toList.reverse, item])
     fun v => v = MerkleTree.recover babyHash idx proof item := by
   simp only [mtree_recover]
