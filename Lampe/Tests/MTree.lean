@@ -201,8 +201,6 @@ lemma exists_lift_eq_lift [LawfulHeap α] {hb : Inhabited β} : (∃∃ (_ : β)
   unfold SLP.exists' SLP.lift
   simp_all
 
-set_option maxHeartbeats 500000
-
 /- Assume that `mhash` is a valid hash function for any given `h` -/
 axiom mhash_intro {p : Prime} {P : SLP (State p)} (h : Hash (Tp.denote p .field) 2)
     {a b : Tp.denote p .field}
