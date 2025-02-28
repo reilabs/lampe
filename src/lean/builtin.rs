@@ -106,6 +106,7 @@ pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
         ("@std::slice::pop_back", "slicePopBack"),
         ("@std::slice::pop_front", "slicePopFront"),
         ("@std::array::len", "arrayLen"),
+        ("@std::array::as_slice", "arrayAsSlice"),
         ("@std::mem::zeroed", "zeroed"),
     ];
     for (prefix, builtin) in builtin_names {

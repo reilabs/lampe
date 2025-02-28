@@ -566,6 +566,7 @@ macro "stephelper1" : tactic => `(tactic|(
     | apply Lampe.STHoare.litTrue_intro
     | apply Lampe.STHoare.litFalse_intro
     | apply Lampe.STHoare.litUnit_intro
+    | apply const_intro
     | apply fn_intro
     | apply fresh_intro
     | apply assert_intro
@@ -632,6 +633,9 @@ macro "stephelper1" : tactic => `(tactic|(
     -- lens
     | apply modifyLens_intro
     | apply getLens_intro
+    -- bitwise
+    | apply uShr_intro
+    | apply uShl_intro
   )
 ))
 
@@ -644,6 +648,7 @@ macro "stephelper2" : tactic => `(tactic|(
     | apply consequence_frame_left Lampe.STHoare.litTrue_intro
     | apply consequence_frame_left Lampe.STHoare.litFalse_intro
     | apply consequence_frame_left Lampe.STHoare.litUnit_intro
+    | apply consequence_frame_left const_intro
     | apply consequence_frame_left fn_intro
     | apply consequence_frame_left fresh_intro
     | apply consequence_frame_left assert_intro
@@ -709,6 +714,9 @@ macro "stephelper2" : tactic => `(tactic|(
     -- lens
     | apply consequence_frame_left modifyLens_intro
     | apply consequence_frame_left getLens_intro
+    -- bitwise
+    | apply consequence_frame_left uShr_intro
+    | apply consequence_frame_left uShl_intro
   )
   repeat sl
 ))
@@ -722,6 +730,7 @@ macro "stephelper3" : tactic => `(tactic|(
     | apply ramified_frame_top Lampe.STHoare.litTrue_intro
     | apply ramified_frame_top Lampe.STHoare.litFalse_intro
     | apply ramified_frame_top Lampe.STHoare.litUnit_intro
+    | apply ramified_frame_top const_intro
     | apply ramified_frame_top fn_intro
     | apply ramified_frame_top fresh_intro
     | apply ramified_frame_top assert_intro
@@ -789,6 +798,9 @@ macro "stephelper3" : tactic => `(tactic|(
     -- lens
     | apply ramified_frame_top modifyLens_intro
     | apply ramified_frame_top getLens_intro
+    --- bitwise
+    | apply ramified_frame_top uShr_intro
+    | apply ramified_frame_top uShl_intro
   )
   repeat sl
 ))

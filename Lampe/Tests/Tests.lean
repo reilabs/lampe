@@ -30,8 +30,8 @@ example {x y : Tp.denote p .field} :
 
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;
-  for i in (0 : u32) .. #sliceLen(y):u32 {
-    self = #slicePushBack(self, #sliceIndex(y, i): I): [I]
+  for i in (0 : u32) .. #sliceLen(y) : u32 {
+    self = #slicePushBack(self, #sliceIndex(y, i) : I) : [I]
   };
   self
 }
@@ -41,6 +41,13 @@ lemma BitVec.add_toNat_of_lt_max {a b : BitVec w} (h: a.toNat + b.toNat < 2^w) :
   simp only [BitVec.add_def, BitVec.toNat_ofNat]
   rw [Nat.mod_eq_of_lt]
   assumption
+
+lemma BitVec.ofNat_ge_zero {n : Nat} (a : Nat) : 0 ≤ BitVec.ofNat n a := by
+  simp only [ofNat_eq_ofNat, ofNat_le_ofNat, Nat.zero_mod, zero_le]
+
+lemma BitVec.toNat_zero {n : Nat} : BitVec.toNat (n := n) (0 : Int) = 0 := by
+  change BitVec.toNat 0 = 0
+  simp
 
 example {self that : Tp.denote p (.slice tp)} :
     STHoare p Γ ⟦⟧ (sliceAppend.fn.body _ h![tp] |>.body h![self, that])
@@ -58,8 +65,8 @@ example {self that : Tp.denote p (.slice tp)} :
       linarith
     simp only [this, List.take_succ]
     aesop
-  · simp_all
-  · simp_all
+  · simp_all ; apply BitVec.ofNat_ge_zero
+  · simp_all [BitVec.toNat_zero]
   steps
   simp_all [Nat.mod_eq_of_lt]
 
@@ -392,6 +399,11 @@ nr_def slice_lens<>() -> Field {
   p .0 [[1 : u32]]
 }
 
+@[simp]
+lemma BitVec.toNat_one {n : Nat} {h : n > 0} : BitVec.toNat (n := n) (1 : Int) = 1 := by
+  change BitVec.toNat 1 = 1
+  simp [h]
+
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [slice_lens]
@@ -461,7 +473,7 @@ nr_def fmtstr_test<>() -> Field {
   y
 }
 
-nr_def create_arr<#N>() -> [Field; N] {
+nr_def create_arr<@N : 32>() -> [Field; N] {
   [1 : Field ; N]
 }
 
@@ -473,3 +485,67 @@ example : STHoare p Γ ⟦⟧ (create_arr.fn.body _ h![3] |>.body h![])
   intros
   simp_all
   rfl
+
+nr_type_alias Array<T, @N : 32> = [T; N]
+
+nr_def alias_test<>(x : @Array<Field, 3 : 32>) -> Field {
+  x[1 : u32]
+}
+
+example : STHoare p Γ ⟦⟧ (alias_test.fn.body _ h![] |>.body h![⟨[1, 2, 3], by tauto⟩])
+    fun (v : Tp.denote p .field) => v = 2 := by
+  simp only [alias_test]
+  steps
+  aesop
+
+nr_def const_test<@N : 8>(x : Field) -> Field {
+  let mut res = x;
+  for _? in 0 : u8 .. @N {
+    res = #fMul(res, 2 : Field) : Field;
+  };
+  res;
+}
+
+theorem hypothesize_left {h : P₁ → STHoare p Γ P₂ e Q } :
+    STHoare p Γ (⟦P₁⟧ ⋆ P₂) e Q := by
+  unfold STHoare THoare SLP.lift at *
+  intros H st h
+  unfold SLP.star at h
+  obtain ⟨s₁, s₂, ⟨_, _, ⟨⟨s₁', s₂', _⟩⟩⟩⟩ := h
+  have : s₁' = ∅ := by tauto
+  subst this
+  have : s₂' = s₁ := by simp_all
+  subst this
+  have hp : P₁ := by tauto
+  apply h hp H st ?_
+  exists s₂', s₂
+  tauto
+
+example : STHoare p Γ ⟦⟧ (const_test.fn.body _ h![3] |>.body h![1])
+    fun (v : Tp.denote p .field) => v = 8 := by
+  simp only [const_test]
+  steps
+  apply hypothesize_left
+  intro hv
+  subst hv
+  rename Tp.denote p $ .ref .field => res
+  loop_inv (fun i _ _ => [res ↦ ⟨.field, 2^(i.toNat) * 1⟩])
+  . intros i _ _
+    steps
+    congr
+    simp_all
+    have : i.toNat < 3 := by tauto
+    have : (i.toNat + 1) % 256 = i.toNat + 1 := by
+      apply Nat.mod_eq_of_lt
+      linarith
+    rw [this]
+    rfl
+  . subst_vars
+    tauto
+  . congr
+    subst_vars
+    simp_all only [BitVec.ofNat_eq_ofNat, mul_one]
+    rfl
+  . steps
+    simp_all
+    ring

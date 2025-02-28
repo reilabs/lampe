@@ -215,7 +215,7 @@ theorem uShl_intro : STHoarePureBuiltin p Γ Builtin.uShl (by tauto) h![a, b] :=
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
-theorem uShr_intro : STHoarePureBuiltin p Γ Builtin.uShl (by tauto) h![a, b] := by
+theorem uShr_intro : STHoarePureBuiltin p Γ Builtin.uShr (by tauto) h![a, b] := by
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 

@@ -42,19 +42,20 @@ syntax "`(" nr_type,* ")" : nr_type -- Tuple
 syntax "&" nr_type : nr_type -- Reference
 syntax "λ(" nr_type,* ")" "→" nr_type : nr_type -- Function
 syntax "_" : nr_type -- Placeholder
+syntax "@" nr_ident "<" nr_generic,* ">" : nr_type -- Type alias
 
-syntax num : nr_generic
+syntax num ":" num : nr_generic
 syntax nr_type : nr_generic
 
-syntax "#" ident : nr_generic_def -- Kind.Nat
-syntax ident : nr_generic_def -- Kind.Type
+syntax "@" ident ":" num : nr_generic_def -- Kind.u
+syntax ident : nr_generic_def -- Kind.type
 
 syntax num : nr_const_num
 syntax ident : nr_const_num
 
 syntax ident ":" nr_type : nr_param_decl
 
-syntax num ":" nr_type : nr_expr -- Numeric literal
+syntax ("-" noWs)? num ":" nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
 syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
@@ -62,8 +63,9 @@ syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
 syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
-syntax "let" ident "=" nr_expr : nr_expr
-syntax "let" "mut" ident "=" nr_expr : nr_expr
+syntax "@" ident : nr_expr -- Const
+syntax "let" ident "=" nr_expr : nr_expr -- Let binding
+syntax "let" "mut" ident "=" nr_expr : nr_expr -- Mutable let binding
 syntax nr_expr "=" nr_expr : nr_expr -- Assignment
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
@@ -96,12 +98,15 @@ syntax nr_trait_fn_def := "fn" nr_fn_decl
 syntax nr_trait_impl := "<" nr_generic_def,* ">" nr_ident "<" nr_generic,* ">" "for" nr_type "where" sepBy(nr_trait_constraint, ",", ",", allowTrailingSep)
   "{" sepBy(nr_trait_fn_def, ";", ";", allowTrailingSep) "}"
 syntax nr_struct_def := "<" nr_generic_def,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
+syntax nr_type_alias := nr_ident "<" nr_generic_def,* ">" "=" nr_type
 
 abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
 
 partial def mkConstNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_const_num → m (TSyntax `term)
 | `(nr_const_num|$n:num) => pure $ n
-| `(nr_const_num|$i:ident) => pure $ mkIdent $ Name.mkSimple i.getId.toString
+| `(nr_const_num|$i:ident) => do
+  let ident := mkIdent $ Name.mkSimple i.getId.toString
+  `(BitVec.toNat $ident)
 | _ => throwUnsupportedSyntax
 
 partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
@@ -117,6 +122,9 @@ def mkStructDefIdent (structName : String) : Lean.Ident :=
 
 def mkFunctionDefIdent (fnName : String) : Lean.Ident :=
   mkIdent $ Name.mkSimple fnName
+
+def mkTypeAliasIdent (aliasName : String) : Lean.Ident :=
+  mkIdent $ Name.mkSimple $ "alias" ++ "#" ++ aliasName
 
 def mkListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
 | [] => `([])
@@ -160,6 +168,10 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   let paramTps ← (mkListLit (←paramTps.getElems.toList.mapM mkNrType))
   let outTp ← mkNrType outTp
   `(Tp.fn $paramTps $outTp)
+| `(nr_type| @ $aliasName < $generics,* >) => do
+  let (_, genericVals) ← mkGenericVals generics.getElems.toList
+  let aliasFunc := mkTypeAliasIdent (←mkNrIdent aliasName)
+  `($aliasFunc $genericVals)
 | `(nr_type | _) => `(_)
 | _ => throwUnsupportedSyntax
 
@@ -168,12 +180,12 @@ partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception 
   let kinds ← mkListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic| $_:nr_type) => `(Kind.type)
-    | `(nr_generic| $_:num) => `(Kind.nat)
+    | `(nr_generic| $_:num : $w) => `(Kind.u $w)
     | _ => throwUnsupportedSyntax)
   let vals ← mkHListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic| $t:nr_type) => (mkNrType t)
-    | `(nr_generic| $n:num) => `($n)
+    | `(nr_generic| $n:num : $w) => `(BitVec.ofNat $w $n)
     | _ => throwUnsupportedSyntax)
   pure (kinds, vals)
 
@@ -183,13 +195,13 @@ def mkGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mona
     (generics : List $ TSyntax `nr_generic_def) : m $ (TSyntax `term) × (TSyntax `term) := do
   let kinds ← mkListLit (←generics.mapM fun g =>
     match g with
-    | `(nr_generic_def| # $_:ident) => `(Kind.nat)
     | `(nr_generic_def| $_:ident) => `(Kind.type)
+    | `(nr_generic_def| @ $_:ident : $w) => `(Kind.u $w)
     | _ => throwUnsupportedSyntax)
   let vals ← mkHListLit (←generics.mapM fun g =>
     match g with
-    | `(nr_generic_def| # $i:ident) => `($i)
     | `(nr_generic_def| $i:ident) => `($i)
+    | `(nr_generic_def| @ $i:ident : $_) => `($i)
     | _ => throwUnsupportedSyntax)
   pure (kinds, vals)
 
@@ -418,6 +430,7 @@ partial def mkArgs [MonadSyntax m] (args : List (TSyntax `nr_expr)) (k : List (T
 
 partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.Ident) (k : TSyntax `term → m (TSyntax `term)) : m (TSyntax `term) := match e with
 | `(nr_expr| $n:num : $tp) => do wrapSimple (←`(Expr.litNum $(←mkNrType tp) $n)) vname k
+| `(nr_expr| -$n:num : $tp) => do wrapSimple (←`(Expr.litNum $(←mkNrType tp) (-$n))) vname k
 | `(nr_expr| $s:str) => do wrapSimple (←`(Expr.litStr (String.length $s) (⟨String.data $s, by rfl⟩))) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Expr.litNum Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Expr.litNum Tp.bool 0)) vname k
@@ -502,6 +515,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
   let (paramTps, outTp) ← getFuncSignature t
   wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp (FuncRef.decl $fnName $callGenKinds $callGenVals))) vname k
+| `(nr_expr| @ $i:ident) => do
+  wrapSimple (←`(Expr.const $i)) vname k
 | `(nr_expr| ( $selfTp as $traitName < $traitGens,* > ) :: $methodName < $callGens,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let (traitGenKinds, traitGenVals) ← mkGenericVals traitGens.getElems.toList
@@ -603,6 +618,15 @@ def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [
     | _ => throwUnsupportedSyntax
 | _ => throwUnsupportedSyntax
 
+def mkTypeAlias [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m ((TSyntax `ident) × (TSyntax `term))
+| `(nr_type_alias| $aliasName:nr_ident < $generics,* > = $tp:nr_type) => do
+  let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
+  let tp ← mkNrType tp
+  let syn ← `(fun (generics: HList Kind.denote $genericKinds) => match generics with | $genericDefs => $tp)
+  let defName := mkTypeAliasIdent (←mkNrIdent aliasName)
+  pure (defName, syn)
+| _ => throwUnsupportedSyntax
+
 elab "expr![" expr:nr_expr "]" : term => do
   let term ← MonadSyntax.run $ mkExpr expr none fun x => `(Expr.var $x)
   Elab.Term.elabTerm term.raw none
@@ -629,5 +653,10 @@ elab "nr_struct_def" defName:nr_ident defn:nr_struct_def : command => do
   let projs ← mkStructProjector defName defn
   _ ← projs.mapM fun cmd => do
     Elab.Command.elabCommand cmd
+
+elab "nr_type_alias" typeAlias:nr_type_alias : command => do
+  let (defName, al) ← mkTypeAlias typeAlias
+  let decl ← `(@[reducible] def $defName := $al)
+  Elab.Command.elabCommand decl
 
 end Lampe
