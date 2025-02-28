@@ -329,17 +329,31 @@ impl LeanEmitter {
                 format!("{typ_str} : {trait_str}")
             })
             .join(", ");
-        let generics = &trait_impl
+        let trait_generic_vals = &trait_impl
             .trait_generics
             .iter()
             .map(|g| self.emit_fully_qualified_type(g, ctx))
+            .collect_vec()
+            .join(", ");
+        // Get the named generics of the trait reference.
+        // These must be included in the type variable declarations of the impl block.
+        let trait_generic_vars = &trait_impl
+            .trait_generics
+            .iter()
+            // Only named generics need to be included in the `<>`.
+            .filter(|g| match g {
+                Type::NamedGeneric(_, _) => true,
+                _ => false,
+            })
+            .map(|g| self.emit_fully_qualified_type(g, ctx))
             .collect_vec();
-        let trait_gens = generics.join(", ");
 
-        let mut all_generics = Vec::new();
-        all_generics.extend(generics.iter().cloned());
-        all_generics.extend(self.collect_named_generics(&trait_impl.typ));
-        let all_generics_str = all_generics.join(", ");
+        let mut impl_generic_decls = Vec::new();
+        // Extend with the generics for the trait.
+        impl_generic_decls.extend(trait_generic_vars.iter().cloned());
+        // Extend with the generics for the implementor.
+        impl_generic_decls.extend(self.collect_named_generics(&trait_impl.typ));
+        let impl_generic_decls_str = impl_generic_decls.join(", ");
 
         // Emit the implemented functions.
         ind.indent();
@@ -353,9 +367,9 @@ impl LeanEmitter {
         let methods = method_strings.join(";\n");
         Ok(syntax::format_trait_impl(
             impl_id,
-            &all_generics_str,
+            &impl_generic_decls_str,
             &full_name,
-            &trait_gens,
+            &trait_generic_vals,
             &target,
             &methods,
             &where_clause_str,
