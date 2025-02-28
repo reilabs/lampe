@@ -27,64 +27,9 @@ open Lampe
 
 namespace Test
 
-/- Extracted Start -/
-
-nr_def «mtree_recover»<>(idx : [bool], p : [Field], item : Field) -> Field {
-  #assert(#uEq(#sliceLen(idx) : u32, #sliceLen(p) : u32) : bool) : Unit;
-  let mut curr_h = item;
-  for i in 0 : u32 .. #sliceLen(idx) : u32 {
-    let dir = #sliceIndex(idx, #cast(i) : u32) : bool;
-    let sibling_root = #sliceIndex(p, #cast(i) : u32) : Field;
-    if dir {
-            curr_h = (@mhash<> as λ(Field, Field) → Field)(sibling_root, curr_h);
-    } else {
-            curr_h = (@mhash<> as λ(Field, Field) → Field)(curr_h, sibling_root);
-    };
-  };
-  curr_h;
-}
-
-/- Extracted End -/
-
-/- Define the environment without the extracted `mhash` -/
-def env := Lampe.Env.mk [(«mtree_recover».name, «mtree_recover».fn)] []
-
 def Hash (t : Type) (n : Nat) := List.Vector t n -> t
 
-inductive MerkleTree (F : Type) (H : Hash F 2) : Nat -> Type
-| leaf : F  -> MerkleTree F H 0
-| bin : MerkleTree F H depth -> MerkleTree F H depth -> MerkleTree F H (depth+1)
-deriving Repr
-
-namespace MerkleTree
-
-def left {depth : Nat} {F: Type} {H: Hash F 2} (t : MerkleTree F H (Nat.succ depth)) : MerkleTree F H depth := match t with
-| bin l _ => l
-
-def leaves {depth : Nat} {F: Type} {H: Hash F 2} (t : MerkleTree F H depth) : List F := match t with
-| leaf f => [f]
-| bin l r => leaves l ++ leaves r
-
-def right {depth : Nat} {F: Type} {H: Hash F 2} (t : MerkleTree F H (Nat.succ depth)) : MerkleTree F H depth := match t with
-| bin _ r => r
-
-def treeFor {depth : Nat} {F: Type} {H: Hash F 2} (t : MerkleTree F H (Nat.succ depth)) (dir : Bool) : MerkleTree F H depth := match dir with
-| false => t.left
-| true => t.right
-
-def root {depth : Nat} {F: Type} {H: Hash F 2} (t : MerkleTree F H depth) : F := match t with
-| leaf f => f
-| bin l r => H ⟨[root l, root r], by tauto⟩
-
-def itemAt {depth : Nat} {F: Type} {H: Hash F 2} (t : MerkleTree F H depth) (p : List.Vector Bool depth) : F := match depth with
-  | Nat.zero => match t with
-    | leaf f => f
-  | Nat.succ _ => (t.treeFor p.head).itemAt p.tail
-
-def proof {depth : Nat} {F: Type} {H: Hash F 2} (t : MerkleTree F H depth) (p : List.Vector Bool depth) : List.Vector F depth := match depth with
-  | Nat.zero => List.Vector.nil
-  | Nat.succ _ => List.Vector.cons (t.treeFor !p.head).root ((t.treeFor p.head).proof p.tail)
-
+/-- The reference recovery implementation. -/
 def recover {depth : Nat} {F: Type} (H : Hash F 2) (ix : List.Vector Bool depth) (proof : List.Vector F depth) (item : F) : F := match depth with
   | Nat.zero => item
   | Nat.succ _ =>
@@ -94,9 +39,29 @@ def recover {depth : Nat} {F: Type} (H : Hash F 2) (ix : List.Vector Bool depth)
     | false => H ⟨[recover', pitem], by tauto⟩
     | true => H ⟨[pitem, recover'], by tauto⟩
 
-end MerkleTree
+/- Extracted Start -/
 
-/-- Represents the output of the `i`th output of the Noir recovery function. -/
+nr_def «mtree_recover»<>(idx : [bool], p : [Field], item : Field) -> Field {
+  #assert(#uEq(#sliceLen(idx) : u32, #sliceLen(p) : u32) : bool) : Unit;
+  let mut curr_h = item;
+  for i in 0 : u32 .. #sliceLen(idx) : u32 {
+    let dir = #sliceIndex(idx, #cast(i) : u32) : bool;
+    let sibling_root = #sliceIndex(p, #cast(i) : u32) : Field;
+    if dir {
+      curr_h = (@mhash<> as λ(Field, Field) → Field)(sibling_root, curr_h);
+    } else {
+      curr_h = (@mhash<> as λ(Field, Field) → Field)(curr_h, sibling_root);
+    };
+  };
+  curr_h;
+}
+
+/- Extracted End -/
+
+/- Define the environment without the extracted `mhash`, since we define a separate axiom for this below. -/
+def env := Lampe.Env.mk [(«mtree_recover».name, «mtree_recover».fn)] []
+
+/-- Represents the output (i.e., the value of `curr_h`) at the end of the `i`th iteration of the Noir recovery function. -/
 @[reducible]
 def recoverAux {α : Type} [Inhabited α] (h : Hash α 2) (i : Nat) (idx : List Bool) (proof : List α) (item : α) : α := match i with
 | 0 => item
@@ -133,12 +98,12 @@ theorem recoverAux_eq_cons [Inhabited α] {idx : List Bool} {proof : List α} {h
     linarith
 
 theorem recoverAux_eq_MerkleTree_recover [Inhabited α] {idx : List.Vector Bool d} {proof : List.Vector α d} {item : α} :
-    recoverAux h d idx.toList proof.toList item = MerkleTree.recover h idx proof item := by
+    recoverAux h d idx.toList proof.toList item = recover h idx proof item := by
   induction d
   . rfl
   . rename Nat => n
     rename_i _ ih
-    simp [recoverAux, MerkleTree.recover]
+    simp [recoverAux, recover]
     have _ : n < idx.toList.length := by simp
     have _ : n < proof.toList.length := by simp
     have h₁ : idx.toList[0] = idx.head := by
@@ -198,6 +163,7 @@ theorem recoverAux_next_false [Inhabited α] {idx : List Bool} {proof : List α}
   simp_all
 
 
+/- Just for testing purposes... -/
 def babyHash' : Hash Nat 2 := fun ⟨[a, b], _⟩ => (a + 2 * b) * 3
 
 example : (recoverAux (α := Nat) babyHash' 0 [true, false, false] [243, 69, 6] 5) = 5 := rfl
@@ -244,6 +210,7 @@ axiom mhash_intro {p : Prime} {P : SLP (State p)} (h : Hash (Tp.denote p .field)
     {_ : P ⊢ ⟦fnRef = FuncRef.decl "mhash" [] h![]⟧ ⋆ ⊤} :
     STHoare p env P (Expr.call [.field, .field] .field fnRef h![a, b]) fun v => ⟦v = h ⟨[a, b], by tauto⟩⟧ ⋆ P
 
+/- Show that the output of `mtree_recover` matches with reference `recover` for every input, assuming that `mhash_intro` holds for `h`. -/
 example [Inhabited (Tp.denote p .field)]
   {h : Hash (Tp.denote p .field) 2}
   {d : Nat}
@@ -251,7 +218,7 @@ example [Inhabited (Tp.denote p .field)]
   {proof : List.Vector (Tp.denote p .field) d}
   {item : Tp.denote p .field} :
     STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![] |>.body h![idx.toList.reverse, proof.toList.reverse, item])
-    fun v => v = MerkleTree.recover h idx proof item := by
+    fun v => v = recover h idx proof item := by
   simp only [mtree_recover]
   steps
   rename Ref => r
