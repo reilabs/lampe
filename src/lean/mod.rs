@@ -12,13 +12,12 @@ use fm::FileId;
 
 use itertools::Itertools;
 use noirc_frontend::{
-    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
-        Context,
         def_map::{ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
+        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -29,6 +28,7 @@ use noirc_frontend::{
     node_interner::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
+    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
 };
 
 use crate::{
@@ -455,11 +455,14 @@ impl LeanEmitter {
 
     /// Emits the Lean source code corresponding to a resolved generics occuring at generic declarations.
     pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
-        let is_num = match g.kind() {
-            Kind::Any | Kind::Normal => false,
-            Kind::IntegerOrField | Kind::Integer | Kind::Numeric(_) => true,
+        let u_size = match g.kind() {
+            Kind::Numeric(num_tp) => match num_tp.as_ref() {
+                Type::Integer(_, bit_size) => Some(bit_size.bit_size()),
+                _ => None,
+            },
+            _ => None,
         };
-        syntax::format_generic_def(&g.name, is_num)
+        syntax::format_generic_def(&g.name, u_size)
     }
 
     /// Emits the Lean source code corresponding to a Noir structure at the
@@ -645,7 +648,8 @@ impl LeanEmitter {
             Type::Unit => syntax::r#type::format_unit(),
             Type::Array(size, elem_type) => {
                 let elem_type = self.emit_fully_qualified_type(elem_type, ctx);
-                syntax::r#type::format_array(&elem_type, &size.to_string())
+                let size = self.emit_fully_qualified_type(size.as_ref(), ctx);
+                syntax::r#type::format_array(&elem_type, &size)
             }
             Type::Slice(elem_type) => {
                 let elem_type = self.emit_fully_qualified_type(elem_type, ctx);
@@ -694,6 +698,13 @@ impl LeanEmitter {
                 let alias_name_str = alias.borrow().name.to_string();
                 syntax::r#type::format_alias(&alias_name_str, &generics_str)
             }
+            Type::Constant(num, Kind::Numeric(num_typ)) => match num_typ.as_ref() {
+                Type::Integer(_, bit_size) => {
+                    let bit_size = bit_size.bit_size();
+                    syntax::r#type::format_const(&num.to_string(), &format!("{bit_size}"))
+                }
+                _ => unimplemented!("unsupported numeric type {num_typ}"),
+            },
             // _ if context::is_impl(typ) => {
             //     panic!("impl types must be replaced with type variables or concrete types")
             // }
@@ -798,8 +809,10 @@ impl LeanEmitter {
                 Box::new(self.substitute_bindings(env, bindings)),
                 *unconstrained,
             ),
-            Type::TraitAsType(id, name, generics) => {
-                Type::TraitAsType(id.clone(), name.clone(), TraitGenerics {
+            Type::TraitAsType(id, name, generics) => Type::TraitAsType(
+                id.clone(),
+                name.clone(),
+                TraitGenerics {
                     ordered: generics
                         .ordered
                         .iter()
@@ -813,8 +826,8 @@ impl LeanEmitter {
                             typ: self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
-                })
-            }
+                },
+            ),
             Type::MutableReference(t) => {
                 Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
             }
@@ -1125,9 +1138,8 @@ impl LeanEmitter {
                         let global_type = self.emit_fully_qualified_type(&dummy_func_type, ctx);
                         syntax::expr::format_call(&global_name, "", &global_type)
                     }
-                    DefinitionKind::Local(..) | DefinitionKind::NumericGeneric(_, _) => {
-                        syntax::expr::format_var_ident(name)
-                    }
+                    DefinitionKind::Local(..) => syntax::expr::format_var_ident(name),
+                    DefinitionKind::NumericGeneric(_, _) => syntax::expr::format_const(name),
                 }
             }
             HirExpression::Index(index) => {
