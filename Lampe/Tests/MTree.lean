@@ -29,43 +29,27 @@ namespace Test
 
 /- Extracted Start -/
 
-nr_struct_def BabyHash<> {
-
-}
-
-/- [Todo] Fix impl generics -/
-nr_trait_impl[impl_405] <> MHash<Field> for BabyHash<> where  {
-    fn «hash_two»<> (_self : BabyHash<>, l : Field, r : Field) -> Field {
-      #fMul(#fAdd(l, #fMul(2 : Field, r) : Field) : Field, 3 : Field) : Field;
-    }
-}
-
-nr_def «mtree_recover»<F, μ0>(h : μ0, idx : [bool], p : [F], item : F) -> F {
+nr_def «mtree_recover»<>(idx : [bool], p : [Field], item : Field) -> Field {
   #assert(#uEq(#sliceLen(idx) : u32, #sliceLen(p) : u32) : bool) : Unit;
   let mut curr_h = item;
   for i in 0 : u32 .. #sliceLen(idx) : u32 {
     let dir = #sliceIndex(idx, #cast(i) : u32) : bool;
-    let sibling_root = #sliceIndex(p, #cast(i) : u32) : F;
+    let sibling_root = #sliceIndex(p, #cast(i) : u32) : Field;
     if dir {
-      let new_h = ((_ as MHash<F>)::hash_two<> as λ(_, F, F) → F)(h, sibling_root, curr_h);
-      curr_h = new_h;
+            curr_h = (@mhash<> as λ(Field, Field) → Field)(sibling_root, curr_h);
     } else {
-      let new_h = ((_ as MHash<F>)::hash_two<> as λ(_, F, F) → F)(h, curr_h, sibling_root);
-      curr_h = new_h;
+            curr_h = (@mhash<> as λ(Field, Field) → Field)(curr_h, sibling_root);
     };
   };
   curr_h;
 }
 
-
-def env := Lampe.Env.mk [(«mtree_recover».name, «mtree_recover».fn)] [impl_405]
 /- Extracted End -/
 
-example : Struct.tp «struct#BabyHash» h![] = Tp.tuple "BabyHash" [] := rfl
+/- Define the environment without the extracted `mhash` -/
+def env := Lampe.Env.mk [(«mtree_recover».name, «mtree_recover».fn)] []
 
 def Hash (t : Type) (n : Nat) := List.Vector t n -> t
-
-def babyHash : Hash (Tp.denote p .field) 2 := fun ⟨[a, b], _⟩ => (a + 2 * b) * 3
 
 inductive MerkleTree (F : Type) (H : Hash F 2) : Nat -> Type
 | leaf : F  -> MerkleTree F H 0
@@ -224,10 +208,6 @@ example : (recoverAux (α := Nat) babyHash' 2 [true, false, false] [243, 69, 6] 
 
 example : (recoverAux (α := Nat) babyHash' 3 [true, false, false] [243, 69, 6] 5) = 4131 := rfl
 
-abbrev babyHashTp := «struct#BabyHash».tp h![]
-
-abbrev babyHashFn := impl_405.snd.impl h![] |>.head (by tauto) |>.snd
-
 lemma hypothesize {_ : P₁ → STHoare p env P₂ e Q} : STHoare p env (⟦P₁⟧ ⋆ P₂) e Q := by
   simp only [STHoare, THoare] at *
   intros H st h
@@ -257,46 +237,21 @@ lemma exists_lift_eq_lift [LawfulHeap α] {hb : Inhabited β} : (∃∃ (_ : β)
 
 set_option maxHeartbeats 500000
 
-axiom hash_intro {p : Prime} [Inhabited (Tp.denote p .field)]
-  (h : Hash (Tp.denote p .field) 2) (hTp : Tp) (hFn : Function)
-  {a b : Tp.denote p .field}
-  {s : Tp.denote p hTp}
-  {P : SLP (State p)}
-  {hKinds : hFn.generics = []}
-  {hArgTps : (hFn.body (Tp.denote p) (hKinds ▸ h![]) |>.argTps) = [hTp, .field, .field]}
-  {hOutTp : (hFn.body (Tp.denote p) (hKinds ▸ h![]) |>.outTp) = .field} :
-    STHoare p env P (hOutTp ▸ (hFn.body _ (hKinds ▸ h![]) |>.body (hArgTps ▸ h![s, a, b])))
-    fun v => ⟦v = h ⟨[a, b], by tauto⟩⟧ ⋆ P
+/- Assume that `mhash` is a valid hash function for any given `h` -/
+axiom mhash_intro {p : Prime} {P : SLP (State p)} (h : Hash (Tp.denote p .field) 2)
+    {a b : Tp.denote p .field}
+    {fnRef : Tp.denote p $ .fn [.field, .field] .field}
+    {_ : P ⊢ ⟦fnRef = FuncRef.decl "mhash" [] h![]⟧ ⋆ ⊤} :
+    STHoare p env P (Expr.call [.field, .field] .field fnRef h![a, b]) fun v => ⟦v = h ⟨[a, b], by tauto⟩⟧ ⋆ P
 
-theorem babyHash_intro [Inhabited (Tp.denote p .field)] {a b : Tp.denote p .field} {self : Tp.denote p _} :
-    STHoare p env P (babyHashFn.body _ h![] |>.body h![self, a, b])
-    fun v => ⟦v = babyHash ⟨[a, b], by tauto⟩⟧ ⋆ P := by
-      have _ := hash_intro (p := p) (P := P) (s := self) (a := a) (b := b) babyHash babyHashTp babyHashFn (hKinds := rfl) (hOutTp := by simp; rfl) (hArgTps := by simp; rfl)
-      tauto
-
-theorem STHoare.babyHash_intro [Inhabited (Tp.denote p .field)] {a b : Tp.denote p .field} {self : Tp.denote p _} :
-    STHoare p env P (babyHashFn.body _ h![] |>.body h![self, a, b])
-    fun v => ⟦v = babyHash ⟨[a, b], by tauto⟩⟧ ⋆ P := by
-  simp only [babyHashFn, impl_405]
-  simp_all
-  steps
-  simp_all
-  intro st₁ h
-  repeat (apply extract_lift at h; obtain ⟨_, h⟩ := h)
-  simp only [SLP.forall']
-  intro v
-  simp only [SLP.lift, SLP.star, SLP.wand]
-  intros st₂ _ _
-  exists ∅, st₁
-  refine ⟨by simp_all, by simp_all, ⟨?_, by simp⟩, ?_, ?_⟩
-  . simp_all [babyHash]
-  . exact st₁
-  . exists ∅
-    refine ⟨by simp_all, by simp_all, ⟨by tauto, by simp_all⟩⟩
-
-example [Inhabited (Tp.denote p .field)] {d : Nat} {idx : List.Vector Bool d} {proof : List.Vector (Tp.denote p .field) d} {item : Tp.denote p .field} :
-    STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![.field, babyHashTp] |>.body h![h', idx.toList.reverse, proof.toList.reverse, item])
-    fun v => v = MerkleTree.recover babyHash idx proof item := by
+example [Inhabited (Tp.denote p .field)]
+  {h : Hash (Tp.denote p .field) 2}
+  {d : Nat}
+  {idx : List.Vector Bool d}
+  {proof : List.Vector (Tp.denote p .field) d}
+  {item : Tp.denote p .field} :
+    STHoare p env ⟦⟧ (mtree_recover.fn.body _ h![] |>.body h![idx.toList.reverse, proof.toList.reverse, item])
+    fun v => v = MerkleTree.recover h idx proof item := by
   simp only [mtree_recover]
   steps
   rename Ref => r
@@ -305,7 +260,7 @@ example [Inhabited (Tp.denote p .field)] {d : Nat} {idx : List.Vector Bool d} {p
   intro hvt₂
   simp only [List.length_reverse, List.Vector.toList_length, BitVec.natCast_eq_ofNat,
     exists_prop, -Nat.reducePow] at hvt₂
-  . loop_inv (fun i _ _ => [r ↦ ⟨.field, recoverAux (α := (Tp.denote p .field)) babyHash i.toNat idx.toList proof.toList item⟩])
+  . loop_inv (fun i _ _ => [r ↦ ⟨.field, recoverAux (α := (Tp.denote p .field)) h i.toNat idx.toList proof.toList item⟩])
     intros i hlo hhi
     . simp only
       generalize hrv : recoverAux (α := (Tp.denote p .field)) _ _ _ _ _ = rv
@@ -340,26 +295,17 @@ example [Inhabited (Tp.denote p .field)] {d : Nat} {idx : List.Vector Bool d} {p
             simp at hv₁'
             obtain ⟨_, hv₁'⟩ := hv₁'
             apply STHoare.letIn_intro
-            . apply STHoare.ite_intro (Q := fun _ => [r ↦ ⟨.field, recoverAux babyHash (i.toNat + 1) idx.toList proof.toList item⟩]) <;> intro hdir₂
+            . apply STHoare.ite_intro (Q := fun _ => [r ↦ ⟨.field, recoverAux h (i.toNat + 1) idx.toList proof.toList item⟩]) <;> intro hdir₂
               . apply STHoare.letIn_intro
                 . steps
-                . intro fRef
+                . intro fnRef
                   apply STHoare.letIn_intro
                   . steps
                   . intro v₂
                     apply STHoare.letIn_intro
-                    . apply STHoare.callTrait'_intro babyHashTp
+                    . apply mhash_intro h
                       sl
                       tauto
-                      try_impls_all [] env
-                      all_goals try tauto
-                      simp_all
-                      apply hypothesize'
-                      intro hv₂
-                      generalize he : (Expr.letIn _ _) = e
-                      have : e = (babyHashFn.body _ h![] |>.body h![by tauto, v₁, v₂]) := by simp_all [babyHashFn, impl_405]
-                      rw [this]
-                      apply STHoare.babyHash_intro
                     . intro v₃
                       steps
                       congr
@@ -369,23 +315,14 @@ example [Inhabited (Tp.denote p .field)] {d : Nat} {idx : List.Vector Bool d} {p
                       apply recoverAux_next_true <;> { simp_all }
               . apply STHoare.letIn_intro
                 . steps
-                . intro fRef
+                . intro fnRef
                   apply STHoare.letIn_intro
                   . steps
                   . intro v₂
                     apply STHoare.letIn_intro
-                    . apply STHoare.callTrait'_intro babyHashTp
+                    . apply mhash_intro h
                       sl
                       tauto
-                      try_impls_all [] env
-                      all_goals try tauto
-                      simp_all
-                      apply hypothesize'
-                      intro hv₂
-                      generalize he : (Expr.letIn _ _) = e
-                      have : e = (babyHashFn.body _ h![] |>.body h![by tauto, v₂, v₁]) := by simp_all [babyHashFn, impl_405]
-                      rw [this]
-                      apply STHoare.babyHash_intro
                     . intro v₃
                       steps
                       congr
