@@ -35,8 +35,8 @@ namespace Lampe.Builtin
 
  @[simp]
  instance : CastTp (.field) (.u s) where
-   validate := fun a => a.val < 2^s
-   cast := fun a h => ⟨a.val, h⟩
+   validate := fun _ => True
+   cast := fun a _ => a.val
 
  @[simp]
  instance : CastTp (.field) (.i s) where

@@ -231,6 +231,13 @@ partial def extractTripleExpr (e: Expr): TacticM (Option Expr) := do
 
 def isLetIn (e : Expr) : Bool := e.isAppOf ``Lampe.Expr.letIn
 
+def getLetInVarName (e : Expr) : TacticM (Option Name) := do
+  let args := Expr.getAppArgs e
+  let body := args[4]!
+  match body with
+  | Lean.Expr.lam n _ _ _ => return some n
+  | _ => return none
+
 def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
 
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
@@ -630,6 +637,9 @@ macro "stephelper1" : tactic => `(tactic|(
     -- bitwise
     | apply uShr_intro
     | apply uShl_intro
+    | apply uOr_intro
+    | apply uAnd_intro
+    | apply uXor_intro
   )
 ))
 
@@ -705,6 +715,9 @@ macro "stephelper2" : tactic => `(tactic|(
     -- bitwise
     | apply consequence_frame_left uShr_intro
     | apply consequence_frame_left uShl_intro
+    | apply consequence_frame_left uOr_intro
+    | apply consequence_frame_left uAnd_intro
+    | apply consequence_frame_left uXor_intro
   )
   repeat sl
 ))
@@ -783,26 +796,94 @@ macro "stephelper3" : tactic => `(tactic|(
     --- bitwise
     | apply ramified_frame_top uShr_intro
     | apply ramified_frame_top uShl_intro
+    | apply ramified_frame_top uOr_intro
+    | apply ramified_frame_top uAnd_intro
+    | apply ramified_frame_top uXor_intro
   )
   repeat sl
 ))
+
+lemma STHoare.pure_left_star {p tp} {E : Expr (Tp.denote p) tp} {Γ P₁ P₂ Q} : (P₁ → STHoare  p Γ P₂ E Q) → STHoare p Γ (⟦P₁⟧ ⋆ P₂) E Q := by
+  intro h
+  intro H st Hh
+  unfold STHoare THoare at h
+  apply h
+  · simp [SLP.star, SLP.lift, SLP.entails] at Hh
+    casesm* ∃_,_, _∧_
+    assumption
+  · simp only [SLP.star, SLP.lift, SLP.entails] at Hh
+    rcases Hh with ⟨s₁, s₂, hdss, rfl, ⟨s₃, s₄, hdsss, rfl, ⟨⟨hp, rfl⟩⟩⟩, _⟩
+    unfold SLP.star
+    exists s₄
+    exists s₂
+    simp_all [LawfulHeap.union_empty, LawfulHeap.empty_union]
+
+
+lemma STHoare.letIn_trivial_intro {p tp₁ tp₂} {P Q} {E : Expr (Tp.denote p) tp₁} {v'} {cont : Tp.denote p tp₁ → Expr (Tp.denote p) tp₂}
+    (hE : STHoare p Γ ⟦True⟧ E (fun v => v = v'))
+    (hCont : STHoare p Γ P (cont v') Q):
+    STHoare p Γ P (E.letIn cont) Q := by
+  apply STHoare.letIn_intro
+  apply STHoare.ramified_frame_top hE (Q₂:= fun v => ⟦v = v'⟧ ⋆ P)
+  · simp
+    apply SLP.forall_right
+    intro
+    apply SLP.wand_intro
+    rw [SLP.star_comm]
+    apply SLP.pure_left
+    rintro rfl
+    simp
+  · intro
+    apply STHoare.pure_left_star
+    rintro rfl
+    assumption
+
+syntax "inlined_var" : tactic
+macro_rules
+| `(tactic|inlined_var) => `(tactic |
+  (first
+    | apply STHoare.letIn_trivial_intro
+      (first
+      | apply STHoare.fn_intro
+      | apply STHoare.litU_intro
+      | apply STHoare.litField_intro
+      | apply STHoare.mkArray_intro
+      | apply (STHoare.consequence (h_hoare := STHoare.fMul_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
+      | apply (STHoare.consequence (h_hoare := STHoare.uNot_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
+      | apply (STHoare.consequence (h_hoare := STHoare.uAnd_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
+      | apply (STHoare.consequence (h_hoare := STHoare.uXor_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
+      | apply (STHoare.consequence (h_hoare := STHoare.uOr_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
+      | apply (STHoare.consequence (h_hoare := STHoare.uShr_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
+      | apply (STHoare.consequence (h_hoare := STHoare.uShl_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
+      )
+    -- | apply STHoare.var_intro
+  )
+)
 
 partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
   let target ← mvar.instantiateMVarsInType
   match ←extractTripleExpr target with
   | some body => do
     if isLetIn body then
-      if let [fst, snd, trd] ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro)
-      then
-        let snd ← if let [snd] ← evalTacticAt (←`(tactic|intro)) snd
-          then pure snd
-          else throwError "couldn't intro in letIn"
-        let fstGoals ← try steps fst catch _ => return [fst, snd, trd]
-        let sndGoals ← do
-          try steps snd
-          catch _ => pure [snd]
-        return fstGoals ++ sndGoals ++ [trd]
-      else return [mvar]
+      let vname ← getLetInVarName body
+      let isInternal := vname.map (·.toString.startsWith "#") |>.getD true
+      let nextGoal ← if isInternal then
+        try some <$> evalTacticAt (←`(tactic|inlined_var)) mvar
+        catch _ => pure none
+      else pure none
+      match nextGoal with
+      | some nxt => steps nxt[0]!
+      | none =>
+          let vname := vname.getD `v
+          if let [fst, snd, trd] ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro)
+          then
+            let (_, snd) ← snd.intro vname
+            let fstGoals ← try steps fst catch _ => return [fst, snd, trd]
+            let sndGoals ← do
+              try steps snd
+              catch _ => pure [snd]
+            return fstGoals ++ sndGoals ++ [trd]
+          else return [mvar]
     else if isIte body then
       if let [fGoal, tGoal] ← mvar.apply (← mkConstWithFreshMVarLevels ``ite_intro) then
         let fGoal ← if let [fGoal] ← evalTacticAt (←`(tactic|intro)) fGoal then pure fGoal

@@ -10,10 +10,15 @@ nr_def simple_muts<>(x : Field) -> Field {
   y
 }
 
+lemma SLP.exists_left [LawfulHeap h] {P : α → SLP h} : (∀x, P x ⊢ Q) → ((∃∃x, P x) ⊢ Q) := by
+  simp [SLP.entails, SLP.exists']
+  tauto
+
 example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
   simp only [simple_muts]
   steps
   simp_all
+
 
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
@@ -27,6 +32,9 @@ example {x y : Tp.denote p .field} :
   simp only [weirdEq]
   steps
   simp_all
+
+
+
 
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;
@@ -81,12 +89,12 @@ nr_def simple_if<>(x : Field, y : Field) -> Field {
 example {p Γ x y} : STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, y])
     fun v => v = y := by
   simp only [simple_if]
-  steps <;> try tauto
-  . sl
-  . sl
-    simp_all
-  . subst_vars
-    rfl
+
+  steps
+
+  any_goals sl -- TODO why sl needed?
+  all_goals simp_all
+
 
 
 nr_def simple_if_else<>(x : Field, y : Field) -> Field {
@@ -322,7 +330,7 @@ nr_def simple_array<>() -> Field {
 example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 2 := by
   simp only [simple_array, Expr.mkArray]
-  steps <;> try tauto
+  steps
   aesop
 
 nr_def simple_rep_array<>() -> [Field; 4] {
@@ -333,7 +341,7 @@ nr_def simple_rep_array<>() -> [Field; 4] {
 example : STHoare p Γ ⟦⟧ (simple_rep_array.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p $ .array _ _) => v.toList = [1, 1, 1, 1] := by
   simp only [simple_rep_array, Expr.mkArray]
-  steps <;> try tauto
+  steps
   aesop
 
 nr_def simple_rep_slice<>() -> [Field] {
@@ -386,12 +394,7 @@ example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [array_lens]
   steps
-  rfl
-  on_goal 3 => exact (⟨[1, 3], (by rfl)⟩, 3)
-  . simp_all
-    rfl
-  . simp_all
-    aesop
+  aesop
 
 nr_def slice_lens<>() -> Field {
   let mut p = `(&[1 : Field, 2 : Field], 3 : Field);
@@ -457,9 +460,6 @@ example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)
       all_goals try tauto
       simp only [simple_func]
       steps
-      on_goal 2 => exact fun v => v = 10
-      sl
-      simp_all
     . steps
       on_goal 2 => exact fun v => v = 10
       sl
@@ -481,10 +481,7 @@ example : STHoare p Γ ⟦⟧ (create_arr.fn.body _ h![3] |>.body h![])
     fun (v : Tp.denote p $ .array .field 3) => v.toList = [1, 1, 1] := by
   simp only [create_arr]
   steps
-  tauto
-  intros
-  simp_all
-  rfl
+  aesop
 
 nr_type_alias Array<T, #N> = [T; N]
 

@@ -232,7 +232,7 @@ def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
   Expr.callBuiltin _ (.slice tp) (.mkSlice n) vals
 
 @[reducible]
-def Expr.mkArray (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.array tp n) :=
+def Expr.mkArray (n : U 32) (vals : HList rep (List.replicate n.toNat tp)) : Expr rep (.array tp n) :=
   Expr.callBuiltin _ (.array tp n) (.mkArray n) vals
 
 @[reducible]
@@ -240,8 +240,8 @@ def Expr.mkRepSlice (n : Nat) (val : rep tp) : Expr rep (.slice tp) :=
   Expr.callBuiltin _ (.slice tp) (.mkSlice n) (HList.replicate val n)
 
 @[reducible]
-def Expr.mkRepArray (n : Nat) (val : rep tp) : Expr rep (.array tp n) :=
-  Expr.callBuiltin _ (.array tp n) (.mkArray n) (HList.replicate val n)
+def Expr.mkRepArray (n : U 32) (val : rep tp) : Expr rep (.array tp n) :=
+  Expr.callBuiltin _ (.array tp n) (.mkArray n) (HList.replicate val n.toNat)
 
 @[reducible]
 def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=

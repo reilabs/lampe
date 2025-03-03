@@ -127,8 +127,10 @@ lemma pureBuiltin_intro_consequence
 
 -- Arrays
 
-theorem mkArray_intro {n} {argTps : List Tp} {args : HList (Tp.denote p) argTps} {_ : argTps.length = n} :
-  STHoarePureBuiltin p Γ (Builtin.mkArray n) (by tauto) args (a := (argTps, tp)) := by
+theorem mkArray_intro {n : U 32} {tp : Tp} {args : HList (Tp.denote p) (List.replicate n.toNat tp)}:
+    STHoare p Γ ⟦⟧
+      (.callBuiltin (List.replicate n.toNat tp) (tp.array n) (Builtin.mkArray n) args)
+      (fun v => v = HList.toVec args (by rfl)) := by
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 

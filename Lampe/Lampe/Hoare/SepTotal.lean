@@ -33,6 +33,15 @@ abbrev STHoarePureBuiltin p (Γ : Env)
       (.callBuiltin (sgn a).fst (sgn a).snd b args)
       (fun v => ∃h, v = (desc a (args)).snd h)
 
+abbrev STHoarePureBuiltin' p (Γ : Env)
+  {a : A}
+  {sgn: A → List Tp × Tp}
+  {desc : {p : Prime} → (a : A) → (args : HList (Tp.denote p) (sgn a).fst) → (Tp.denote p (sgn a).snd)}
+  (args : HList (Tp.denote p) (sgn a).fst) : Prop :=
+    STHoare p Γ ⟦⟧
+      (.callBuiltin (sgn a).fst (sgn a).snd (@Builtin.newGenericPureBuiltin A sgn (@fun p a args => ⟨True, fun _ => @desc p a args⟩)) args)
+      (fun v => v = desc a args)
+
 namespace STHoare
 
 theorem frame (h_hoare: STHoare p Γ P e Q): STHoare p Γ (P ⋆ H) e (fun v => Q v ⋆ H) := by

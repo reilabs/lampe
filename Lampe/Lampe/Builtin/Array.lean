@@ -79,9 +79,9 @@ theorem index_replaced_arr {n : U 32} {idx : Fin n.toNat} {arr} :
 Defines the builtin array constructor.
 -/
 def mkArray (n : U 32) := newGenericPureBuiltin
-  (fun (argTps, tp) => ⟨argTps, (.array tp n)⟩)
-  (fun (argTps, tp) args => ⟨argTps = List.replicate n.toNat tp,
-    fun h => HList.toVec args h⟩)
+  (fun tp => ⟨List.replicate n.toNat tp, (.array tp n)⟩)
+  (fun tp args => ⟨True,
+    fun h => HList.toVec args (by rfl)⟩)
 
 /--
 Defines the indexing of a array `l : Array tp n` with `i : U 32`
