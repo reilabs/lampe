@@ -54,8 +54,9 @@ namespace Lampe.Builtin
 
 @[reducible]
 def replaceArray' (arr : Tp.denote p (.array tp n)) (idx : Fin n.toNat) (v : Tp.denote p tp) : Tp.denote p (.array tp n) :=
-  let arr' := (arr.insertIdx v ⟨idx.val + 1, by aesop⟩)
-  arr'.eraseIdx ⟨idx.val, by cases idx; tauto⟩
+  -- let arr' := (arr.insertIdx v ⟨idx.val + 1, by aesop⟩)
+  -- arr'.eraseIdx ⟨idx.val, by cases idx; tauto⟩
+  arr.set idx v
 
 example {p} : (replaceArray' (p := p) (n := ⟨3, by aesop⟩) (tp := .bool) ⟨[false, false, false], (by rfl)⟩ ⟨1, by tauto⟩ true).get ⟨1, by tauto⟩ = true := by rfl
 
@@ -64,11 +65,12 @@ theorem index_replaced_arr {n : U 32} {idx : Fin n.toNat} {arr} :
   (replaceArray' arr idx v').get idx = v' := by
   unfold replaceArray'
   cases em (n.toNat > 0)
-  . simp_all only [gt_iff_lt, eq_mp_eq_cast]
-    generalize h₁ : (List.Vector.insertIdx _ _ _) = arr₁
-    cases idx
-    rw [List.Vector.get_after_erase, ←h₁]
-    apply List.Vector.get_after_insert
+  -- . simp_all only [gt_iff_lt, eq_mp_eq_cast]
+  --   generalize h₁ : (List.Vector.insertIdx _ _ _) = arr₁
+  --   cases idx
+  --   rw [List.Vector.get_after_erase, ←h₁]
+  --   apply List.Vector.get_after_insert
+  · apply List.Vector.get_set_same
   . simp_all only [gt_iff_lt, not_lt, nonpos_iff_eq_zero, lt_self_iff_false, dite_false]
     rename_i h
     rw [h] at idx

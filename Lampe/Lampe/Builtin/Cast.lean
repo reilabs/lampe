@@ -18,6 +18,11 @@ namespace Lampe.Builtin
    validate := fun a => a.toNat < 2^(s-1)
    cast := fun a _ => a
 
+@[simp]
+instance : CastTp (.u s) (.u t) where
+  validate := fun a => a.toNat < 2 ^ t
+  cast := fun a _ => BitVec.truncate t a
+
  @[simp]
  instance : CastTp (.u s) (.field) where
    validate := fun _ => True
