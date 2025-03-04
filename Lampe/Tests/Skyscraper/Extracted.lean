@@ -108,7 +108,7 @@ nr_def «bar»<>(a : Field) -> Field {
             new_right[#cast(i) : u32] = (@sbox<> as λ(u8) → u8)(#arrayIndex(bytes, #cast(#uAdd(16 : u32, i) : u32) : u32) : u8);
     }
     ;
-    let mut new_bytes = (@std::array::as_slice<u8, 16> as λ([u8; 16]) → [u8])(new_right);
+    let mut new_bytes = #arrayAsSlice(new_right) : [u8];
         let ζi0 = new_left;
         for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
                 let elem = #arrayIndex(ζi0, #cast(ζi1) : u32) : u8;

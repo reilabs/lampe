@@ -32,6 +32,10 @@ lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st �
 lemma STHoare.pure_left_of_imp (h : P → STHoare lp Γ ⟦P⟧ E Q): STHoare lp Γ ⟦P⟧ E Q := by
   simp_all [STHoare, THoare, SLP.pure_star_iff_and]
 
+lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
+  intro h
+  simp_all [STHoare, THoare, SLP.pure_star_iff_and]
+
 lemma STHoare.pure_left {E : Expr (Tp.denote lp) tp} {Γ P Q} : (P → STHoare lp Γ ⟦True⟧ E Q) → STHoare lp Γ ⟦P⟧ E Q := by
   intro h
   apply STHoare.pure_left_of_imp
@@ -147,6 +151,36 @@ theorem bitvec_lt (w : Nat) (b N : BitVec w) (hb : b < N) (hN : N < (2 ^ w : Nat
     : b.toNat < N.toNat := by
   sorry
 
+lemma SLP.exists_true [LawfulHeap α] (Q : (x : True) → SLP α) : (∃∃ (x : True), Q x) = Q ⟨⟩ := by
+  unfold SLP.exists'
+  funext st
+  simp only [←iff_iff_eq]
+  apply Iff.intro
+  · rintro ⟨_, h⟩
+    exact h
+  · intro h
+    exact ⟨⟨⟩, h⟩
+
+lemma SLP.exists_prop_unused [LawfulHeap α] (P : Prop) (Q : SLP α) : (∃∃ (_ : P), Q) = (P ⋆ Q) := by
+  apply SLP.eq_of_iff
+  · apply exi_prop_l
+    intro
+    apply SLP.entails_self
+  · apply SLP.pure_left
+    intro
+    apply SLP.exists_intro
+    apply SLP.entails_self
+    assumption
+
+lemma rfl_iff_true : α = α ↔ True := by tauto
+
+
+set_option trace.Lampe.SL true
+
+theorem pluck_pure_exi_l' [LawfulHeap α] {P : Prop} {f : β → SLP α} : (SLP.exists' f ⋆ P) = (P ⋆ SLP.exists' f) := by
+  simp [SLP.star_comm]
+
+
 theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h![] |>.body h![input, N])
     fun output => output = Skyscraper.rotateLeft input N := by
   simp only [Extracted.rotate_left]
@@ -159,22 +193,24 @@ theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h!
     · apply STHoare.consequence_frame_left rl_intro
       sl
     · steps
-      · congr
+      intro
+      congr
+      simp_all
+      have i_lt : i < 254 := by bv_decide
+      have i_succ_lt : i + 1 < 255 := by bv_decide
+      have x := bitvec_lt 8 i N hhi (by bv_decide)
+      have y := bitvec_lt 8 N 254 h (by decide)
+      set iNat := BitVec.toNat i
+      have : (iNat + 1) % 256 = iNat + 1 := by
         simp_all
-        have i_lt : i < 254 := by bv_decide
-        have i_succ_lt : i + 1 < 255 := by bv_decide
-        have x := bitvec_lt 8 i N hhi (by bv_decide)
-        have y := bitvec_lt 8 N 254 h (by decide)
-        set iNat := BitVec.toNat i
-        have : (iNat + 1) % 256 = iNat + 1 := by
-          simp_all
-          linarith
-        rw [this]
-        rfl
+        linarith
+      rw [this]
+      rfl
   · simp only [Int.cast, IntCast.intCast]
     bv_decide
-  · steps
-    subst_vars
+  · simp only [SLP.exists_prop_unused]
+    steps
+    simp_all
     rfl
 
 theorem star_lift_entails {α : Type _} [LawfulHeap α] (P Q : Prop) : (⟦P⟧ : SLP α) ⋆ ⟦Q⟧ ⊢ ⟦Q⟧ := by
@@ -184,7 +220,7 @@ theorem star_lift_entails {α : Type _} [LawfulHeap α] (P Q : Prop) : (⟦P⟧ 
     exact LawfulHeap.union_empty
   tauto
 
-theorem rotate_left_intro (hN : N < 254) : STHoare lp env ⟦⟧
+theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
     (Expr.call [Tp.u 8, Tp.u 8] (Tp.u 8) (FuncRef.decl "rotate_left" [] HList.nil) h![input, N])
       fun output => output = Skyscraper.rotateLeft input N := by
   enter_fn
@@ -196,7 +232,7 @@ theorem sbox_spec : STHoare lp env ⟦⟧ (sbox.fn.body _ h![] |>.body h![input]
     fun output => output = Skyscraper.sbox input := by
   simp only [sbox]
   steps
-  apply rotate_left_intro (by decide)
+  apply STHoare.consequence_frame_left rotate_left_intro (by sl; decide)
   steps
   apply STHoare.consequence_frame_left (rotate_left_intro (by decide)) (by sl)
   steps
@@ -218,8 +254,7 @@ theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRe
   simp only [sgn0]
   steps
   rintro rfl
-  subst_vars
-  simp [Builtin.CastTp.cast]
+  simp_all
 
 opaque BitVec.bytesLE : BitVec n → List.Vector (U 8) n
 
@@ -266,6 +301,40 @@ theorem STHoare.consequence' {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q�
   apply STHoare.consequence
   all_goals assumption
 
+set_option trace.Lampe.SL true
+
+theorem exi_pure' [LawfulHeap α] {P : α → Prop} : (SLP.exists' fun x =>  ⟦P x⟧) = SLP.lift (α := α) (∃x, P x) := by
+  unfold SLP.exists' SLP.lift
+  simp
+
+def List.Vector.map_pfx {α n} (v : List.Vector α n) (d : Nat) (f : α → α) : List.Vector α n := match d, n with
+| 0, _ => v
+| _, 0 => v
+| Nat.succ d, Nat.succ _ => f v.head ::ᵥ List.Vector.map_pfx v.tail d f
+
+lemma List.Vector.map_pfx_get_of_lt {n} {v : Vector α n} {f} {i} {hi : i.val < d} : (map_pfx v d f).get i = f (v.get i) := by
+  induction d generalizing v i n with
+  | zero => simp_all
+  | succ d ih =>
+    have : ∃n', n = n' + 1 := by
+      have := i.prop
+      simp
+      linarith
+    rcases this with ⟨n, rfl⟩
+    simp only [map_pfx]
+    cases i using Fin.cases
+    · simp
+    · simp only [get_cons_succ]
+      simp at hi
+      rw [ih]
+      · simp
+      assumption
+
+def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
+| 0, _ => List.Vector.nil
+| d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
+| d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
+
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.bar output := by
   simp only [bar]
@@ -273,16 +342,91 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
   apply to_le_bytes_intro
   steps
 
-  -- apply STHoare.consequence_frame_left
-  -- apply STHoare.loop_inv_intro (fun (i: U 32) _ _ => [new_left ↦ ⟨(Tp.u 8).array 16,  List.Vector.replicate 16 (0 : U 8)⟩])
+  loop_inv fun (i: U 32) _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+  · intro i _ hlt
+    steps
+    apply STHoare.consequence_frame_left sbox_intro
+    sl
+    steps
+    · intro
+      casesm* ∃_,_
+      subst_vars
+      simp [Builtin.CastTp.cast, Access.modify]
+      -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
+      sorry
+  · decide
 
-  loop_inv fun (i: U 32) _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 (0 : U 8)⟩]
+  steps
+
+  loop_inv fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+  · intro i _ hlt
+    steps
+    apply STHoare.consequence_frame_left sbox_intro
+    sl
+    steps
+    · intro
+      casesm* ∃_,_
+      subst_vars
+      simp [Builtin.CastTp.cast, Access.modify]
+      -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
+      sorry
+  · decide
+
+  steps
+  · intro; rfl
+
+  loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
   · intro i _ _
     steps
-    apply skip_left_ent_star_mv
-    apply skip_evidence_pure
-    trivial
-    simp [SLP.exists', exists_const]
+    · intro
+      casesm* ∃_,_
+      subst_vars
+      simp [Builtin.CastTp.cast, Access.modify]
+      -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
+      sorry
+  · simp [BitVec.le_def, Int.cast, IntCast.intCast]
+
+  steps
+
+  · simp_all
+    congr 1
+    sorry
+  steps
+
+
+  apply STHoare.consequence_frame_left
+  apply STHoare.loop_inv_intro fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
+
+  intros
+
+  on_goal 2 =>
+    h_norm
+    sl
+
+
+
+
+
+  loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
+  · intro i _ _
+    steps
+    · intro
+      casesm* ∃_,_
+      subst_vars
+      simp [Builtin.CastTp.cast, Access.modify]
+      -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
+      sorry
+
+
+
+
+  apply STHoare.loop_inv_intro fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+
+  · sorry
+  · sl
+
+  loop_inv fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+
 
 
 
