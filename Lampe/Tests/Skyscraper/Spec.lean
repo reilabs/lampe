@@ -184,8 +184,7 @@ theorem pluck_pure_exi_l' [LawfulHeap α] {P : Prop} {f : β → SLP α} : (SLP.
 theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h![] |>.body h![input, N])
     fun output => output = Skyscraper.rotateLeft input N := by
   simp only [Extracted.rotate_left]
-  apply STHoare.pure_left_of_imp
-  intro h
+
   steps
   loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Skyscraper.rl i.toNat input⟩]
   · intros i hlo hhi
@@ -199,7 +198,7 @@ theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h!
       have i_lt : i < 254 := by bv_decide
       have i_succ_lt : i + 1 < 255 := by bv_decide
       have x := bitvec_lt 8 i N hhi (by bv_decide)
-      have y := bitvec_lt 8 N 254 h (by decide)
+      have y := bitvec_lt 8 N 254 (by assumption) (by decide)
       set iNat := BitVec.toNat i
       have : (iNat + 1) % 256 = iNat + 1 := by
         simp_all
@@ -228,20 +227,18 @@ theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
   simp_all [SLP.entails]
   simp [SLP.star, SLP.top, SLP.entails]
 
+set_option pp.rawOnError true
+
+set_option trace.Lampe.STHoare.Helpers true
+
 theorem sbox_spec : STHoare lp env ⟦⟧ (sbox.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.sbox input := by
   simp only [sbox]
-  steps
-  apply STHoare.consequence_frame_left rotate_left_intro (by sl; decide)
-  steps
-  apply STHoare.consequence_frame_left (rotate_left_intro (by decide)) (by sl)
-  steps
-  apply STHoare.consequence_frame_left (rotate_left_intro (by decide)) (by sl)
-  steps
-  apply STHoare.consequence_frame_left (rotate_left_intro (by decide)) (by sl)
-  steps
+  steps' [rotate_left_intro]
+  any_goals (intro; decide)
+  intro
   subst_vars
-  tauto
+  rfl
 
 theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil) h![input])
     fun output => output = Skyscraper.sbox input := by
@@ -336,18 +333,13 @@ def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Ve
 | d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
 
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
-    fun output => output = Skyscraper.bar output := by
+    fun output => output = Skyscraper.bar input := by
   simp only [bar]
-  steps
-  apply to_le_bytes_intro
-  steps
+  steps' [to_le_bytes_intro]
 
   loop_inv fun (i: U 32) _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
   · intro i _ hlt
-    steps
-    apply STHoare.consequence_frame_left sbox_intro
-    sl
-    steps
+    steps' [sbox_intro]
     · intro
       casesm* ∃_,_
       subst_vars
@@ -360,10 +352,7 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
 
   loop_inv fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
   · intro i _ hlt
-    steps
-    apply STHoare.consequence_frame_left sbox_intro
-    sl
-    steps
+    steps' [sbox_intro]
     · intro
       casesm* ∃_,_
       subst_vars
@@ -372,8 +361,8 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       sorry
   · decide
 
-  steps
-  · intro; rfl
+  steps' []
+  on_goal 2 => intro; rfl
 
   loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
   · intro i _ _
@@ -386,321 +375,55 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       sorry
   · simp [BitVec.le_def, Int.cast, IntCast.intCast]
 
-  steps
+  steps' []
 
   · simp_all
     congr 1
     sorry
-  steps
-
-
-  apply STHoare.consequence_frame_left
-  apply STHoare.loop_inv_intro fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
-
-  intros
-
-  on_goal 2 =>
-    h_norm
-    sl
-
-
-
-
-
-  loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
-  · intro i _ _
-    steps
-    · intro
-      casesm* ∃_,_
-      subst_vars
-      simp [Builtin.CastTp.cast, Access.modify]
-      -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
-      sorry
-
-
-
-
-  apply STHoare.loop_inv_intro fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
-
-  · sorry
-  · sl
-
-  loop_inv fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
-
-
-
-
-
-  /---
-
-  steps
-  · rfl -- TODO auto array
-  · rfl
-  steps
-
-  inlined_var
-  apply STHoare.letIn_trivial_intro
-
-
-
-  steps
-
-  apply STHoare.callDecl_intro («fn» := Extracted.to_le_bytes.fn)
-  on_goal 5 => sl; intro; rfl
-
-
-  any_goals tauto
-
-
-  sl
-
-  tauto
-
-
-  apply STHoare.pure_left
-  rintro rfl
-  apply to_le_bytes_intro
-  steps
-  · rfl
-  · rfl
-  simp
-  rename_i l _ _ r _ _
-
-  loop_inv fun i _ _ => [l ↦ ]
-
-
-
-  trivial_steps [to_le_bytes_intro]
-  apply STHoare.letIn_trivial_intro (STHoare.consequence (h_hoare := STHoare.mkArray_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp [exists_const, List.replicate]; apply SLP.entails_self))
-  any_goals rfl
-  apply STHoare.letIn_intro
-  apply STHoare.ref_intro
-  intro newLeft
-  trivial_steps []
-  apply STHoare.letIn_trivial_intro (STHoare.consequence (h_hoare := STHoare.mkArray_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp [exists_const, List.replicate]; apply SLP.entails_self))
-  any_goals rfl
-  apply STHoare.letIn_intro
-  apply STHoare.consequence_frame_left STHoare.ref_intro
-  simp; apply SLP.entails_self
-  intro newRight
-  trivial_steps []
-  apply STHoare.letIn_intro
-
-  repeat (
-    apply STHoare.loopNext_intro (by decide)
-    trivial_steps [to_le_bytes_intro]
-    apply STHoare.letIn_trivial_intro
-    apply STHoare.consequence (h_hoare := STHoare.arrayIndex_intro) (SLP.entails_self) (by intro; simp [exists_const, Int.cast, IntCast.intCast]; apply SLP.entails_self)
-
-    trivial_steps [sbox_intro]
-
-    apply STHoare.letIn_intro
-    apply STHoare.ramified_frame_top STHoare.modifyLens_intro
-    · apply SLP.skip_fst
-      apply SLP.entails_star_true
-      apply SLP.forall_right
-      intro v
-      apply SLP.wand_intro
-      rw [SLP.exists_prop_of_proof]
-      on_goal 2 =>
-        rw [Lens.modify_array_isSome_iff_len_lt]
-        try simp only [Lens.modify_array_length]
-        decide
-      simp only [SLP.star_true]
-      apply SLP.ent_star_top
-    intro ()
-    apply STHoare.consequence_frame_left
-    apply blockExit
-    simp only [SLP.true_star]
-    apply SLP.entails_self
-    simp only [SLP.true_star]
-  )
-
-
-  -- repeat
-  --   apply STHoare.loopNext_intro (by decide)
-  --   trivial_steps []
-  --   apply STHoare.letIn_trivial_intro
-
-  --   apply STHoare.consequence'
-  --   apply STHoare.arrayIndex_intro
-  --   apply SLP.entails_self
-  --   intro; simp [exists_const, Int.cast, IntCast.intCast]; apply SLP.entails_self
-
-  --   trivial_steps [sbox_intro]
-  --   apply STHoare.letIn_intro
-  --   apply STHoare.modifyLens_intro
-  --   rw [SLP.exists_prop_of_proof]
-  --   on_goal 2 =>
-  --     rw [Lens.modify_array_isSome_iff_len_lt]
-  --     try simp only [Lens.modify_array_length]
-  --     decide
-  --   intro ()
-  --   apply STHoare.consequence_frame_left
-  --   apply blockExit
-  --   simp only [SLP.true_star]
-  --   apply SLP.entails_self
-  --   simp only [SLP.true_star]
-  apply STHoare.ramified_frame_top
-  apply STHoare.loopDone_intro
-  simp only [SLP.true_star]
-  apply SLP.forall_right
-  intro v
-  apply SLP.wand_intro
-  simp only [SLP.star_true]
-  apply SLP.ent_star_top
-  intro .unit
-
-  trivial_steps []
-
-  apply SLP.
-
-
-
-  apply STHoare.letIn_trivial_intro STHoare.fn_intro
-
-
-  trivial_steps []
-  apply STHoare.letIn_trivial_intro
-  apply STHoare.consequence (h_hoare := STHoare.arrayIndex_intro) (SLP.entails_self) (by intro; simp [exists_const, Int.cast, IntCast.intCast]; apply SLP.entails_self)
-  trivial_steps [sbox_intro]
-  apply STHoare.letIn_intro
-  apply STHoare.ramified_frame_top STHoare.modifyLens_intro
-  · apply SLP.skip_fst
-    apply SLP.entails_star_true
-    apply SLP.forall_right
-    intro v
-    apply SLP.wand_intro
-    rw [SLP.exists_prop_of_proof]
-    on_goal 2 =>
-      rw [Lens.modify_array_isSome_iff_len_lt]
-      try simp only [Lens.modify_array_length]
-      decide
-    simp only [SLP.star_true]
-    apply SLP.ent_star_top
-  intro ()
-  apply STHoare.consequence_frame_left
-  apply blockExit
-  simp only [SLP.true_star]
-  apply SLP.entails_self
-  simp only [SLP.true_star]
-
-  apply STHoare.loopNext_intro (by decide)
-  trivial_steps [to_le_bytes_intro]
-  apply STHoare.letIn_trivial_intro
-  apply STHoare.consequence (h_hoare := STHoare.arrayIndex_intro) (SLP.entails_self) (by intro; simp [exists_const, Int.cast, IntCast.intCast]; apply SLP.entails_self)
-  trivial_steps [sbox_intro]
-  apply STHoare.letIn_intro
-  apply STHoare.ramified_frame_top STHoare.modifyLens_intro
-  · apply SLP.skip_fst
-    apply SLP.entails_star_true
-    apply SLP.forall_right
-    intro v
-    apply SLP.wand_intro
-    rw [SLP.exists_prop_of_proof]
-    on_goal 2 =>
-      rw [Lens.modify_array_isSome_iff_len_lt]
-      try simp only [Lens.modify_array_length]
-      decide
-    simp only [SLP.star_true]
-    apply SLP.ent_star_top
-  intro ()
-  apply STHoare.consequence_frame_left
-  apply blockExit
-  simp only [SLP.true_star]
-  apply SLP.entails_self
-  simp only [SLP.true_star]
-
-
-
-  repeat (
-    apply STHoare.loopNext_intro (by decide)
-    trivial_steps [to_le_bytes_intro]
-    apply STHoare.letIn_trivial_intro
-    apply STHoare.consequence (h_hoare := STHoare.arrayIndex_intro) (SLP.entails_self) (by intro; simp [exists_const, Int.cast, IntCast.intCast]; apply SLP.entails_self)
-
-    trivial_steps [sbox_intro]
-
-    apply STHoare.letIn_intro
-    apply STHoare.ramified_frame_top STHoare.modifyLens_intro
-    · apply SLP.skip_fst
-      apply SLP.entails_star_true
-      apply SLP.forall_right
-      intro v
-      apply SLP.wand_intro
-      rw [SLP.exists_prop_of_proof]
-      on_goal 2 =>
-        rw [Lens.modify_array_isSome_iff_len_lt]
-        try simp only [Lens.modify_array_length]
-        decide
-      simp only [SLP.star_true]
-      apply SLP.ent_star_top
-    intro ()
-    apply STHoare.consequence_frame_left
-    apply blockExit
-    simp only [SLP.true_star]
-    apply SLP.entails_self
-    simp only [SLP.true_star]
-  )
-
-  apply STHoare.ramified_frame_top STHoare.loopDone_intro
-  simp only [SLP.true_star]
-  apply SLP.forall_right
-  intro ()
-  apply SLP.wand_intro
-  simp only [SLP.star_true]
-  simp
-  apply ent_star_top_unused
-
-
-  apply STHoare.loopNext_intro (by decide)
-  trivial_steps [to_le_bytes_intro]
-  apply STHoare.letIn_trivial_intro
-  apply STHoare.consequence (h_hoare := STHoare.arrayIndex_intro) (SLP.entails_self) (by intro; simp [exists_const, Int.cast, IntCast.intCast]; apply SLP.entails_self)
-
-  trivial_steps [sbox_intro]
-
-  apply STHoare.letIn_intro
-  apply STHoare.ramified_frame_top STHoare.modifyLens_intro
-  · apply SLP.skip_fst
-    apply SLP.entails_star_true
-    apply SLP.forall_right
-    intro v
-    apply SLP.wand_intro
-    rw [SLP.exists_prop_of_proof]
-    on_goal 2 =>
-      simp
-      rw [Access.modify_array_isSome_iff_len_lt]
-      decide
-    simp
-    apply SLP.ent_star_top
-  intro ()
-  apply STHoare.consequence_frame_left
-  apply blockExit
-  simp
-  apply ent_star_top_unused
-  simp
-  rw [←unusedFn]
-
-
-
-
-
-
-
-  sorry
+  steps' []
+
+theorem bar_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field] Tp.field (FuncRef.decl "bar" [] HList.nil) h![input])
+    fun output => output = Skyscraper.bar input := by
+  enter_fn
+  apply bar_spec
 
 theorem sigma_intro : STHoare lp env (⟦⟧)
     (Expr.call [] Tp.field (FuncRef.decl "SIGMA" [] HList.nil) h![])
       fun output => output = Skyscraper.SIGMA := by
   enter_fn
-  trivial_steps []
+  simp only [Extracted.SIGMA]
+  steps' []
+
+theorem rc_intro : STHoare lp env (⟦⟧)
+    (Expr.call [] (Tp.field.array 8) (FuncRef.decl "RC" [] HList.nil) h![])
+      fun output => output = ⟨Skyscraper.RC.toList, by rfl⟩ := by
+  enter_fn
+  simp only [Extracted.RC]
+  steps' []
 
 theorem square_intro : STHoare lp env (⟦⟧)
     (Expr.call [Tp.field] Tp.field (FuncRef.decl "square" [] HList.nil) h![input])
       fun output => output = Skyscraper.square input := by
   enter_fn
-  trivial_steps [sigma_intro]
+  simp only [Extracted.square]
+  steps' [sigma_intro]
+
+set_option trace.Lampe.STHoare.Helpers false
+set_option trace.Lampe.SL false
+
+theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "permute" [] HList.nil) h![i])
+    fun output => output = (Skyscraper.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Skyscraper.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
+  enter_fn
+  simp only [Extracted.permute]
+  steps' [bar_intro, square_intro, rc_intro]
+  casesm* ∃_,_
+  simp [Builtin.indexTpl] at *
+  intro
+  subst_vars
+  rfl
+
+
+
 
 theorem compress_spec : STHoare lp env ⟦⟧ (compress.fn.body _ h![] |>.body h![l, r])
     fun output => output = Skyscraper.compress l r := by

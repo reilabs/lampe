@@ -11,6 +11,7 @@ open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq Lampe.STHoare
 
 initialize
   Lean.registerTraceClass `Lampe.SL
+  Lean.registerTraceClass `Lampe.STHoare.Helpers
 
 inductive SLTerm where
 | top : SLTerm
@@ -338,13 +339,13 @@ theorem solve_with_true [LawfulHeap α] {H Q : SLP α}: (H ⊢ Q) → (H ⊢ Q �
   aesop
 -- partial def solveNonMVarEntailment (goal : MVarId) (lhs : SLTerm) (rhs : SLTerm): TacticM (List MVarId × SLTerm) := do
 
-theorem pure_ent_pure_star_mv [LawfulHeap α] : (P → Q) → ((P : SLP α) ⊢ Q ⋆ ⟦⟧) := by
+theorem pure_ent_pure_star_mv [LawfulHeap α] : (P → Q) → ((P : SLP α) ⊢ Q ⋆ P) := by
   intro h
   apply SLP.pure_left'
   intro
   apply SLP.pure_right
   tauto
-  tauto
+  simp [*, SLP.entails_self]
 
 theorem pure_star_H_ent_pure_star_mv [LawfulHeap α] {H Q R : SLP α} :
   (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
@@ -552,7 +553,8 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
 
 partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM (List MVarId) := withTraceNode `Lampe.SL (fun e => return f!"solvePureStarMV {Lean.exceptEmoji e}") do
   match lhs with
-  | .lift _ => goal.apply (←mkConstWithFreshMVarLevels ``pure_ent_pure_star_mv)
+  | .lift _ =>
+    goal.apply (←mkConstWithFreshMVarLevels ``pure_ent_pure_star_mv)
   | .star _ l r => do
     match l with
     | .lift _ =>
@@ -739,17 +741,40 @@ def builtinLemmas : List Name :=
   , ``uXor_intro
   ]
 
-def stepHelper1 (goal : MVarId) (names : List Name): TacticM (List MVarId) := match names with
-| [] => throwError "stepHelper1 failed"
-| (n::ns) => do
-  try goal.apply (←mkConstWithFreshMVarLevels n)
-  catch _ => stepHelper1 goal ns
+def tryApplySyntaxes (goal : MVarId) (lemmas : List (TSyntax `term)): TacticM (List MVarId) := match lemmas with
+| [] => throwError "no lemmas left"
+| n::ns => do
+  trace[Lampe.STHoare.Helpers] "trying {n}"
+  try
+    evalTacticAt (←`(tactic|apply $n)) goal
+  catch e =>
+    trace[Lampe.STHoare.Helpers] "failed {n} with {e.toMessageData}"
+    tryApplySyntaxes goal ns
 
-def stepHelper2 (goal : MVarId) (names : List Name): TacticM (List MVarId) := do
-  let hr :: ent :: _ ← goal.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "consequence_frame_left failed"
-  let furtherGoals ← stepHelper1 ent names
-  let entGoals ← solveEntailment hr
-  return entGoals ++ furtherGoals
+def tryApplyNames (goal : MVarId) (lemmas : List Name): TacticM (List MVarId) := match lemmas with
+| [] => throwError "no lemmas left"
+| n::ns => do
+  try goal.apply (←mkConstWithFreshMVarLevels n)
+  catch _ => tryApplyNames goal ns
+
+def stepHelper1 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper1: {Lean.exceptEmoji e}") do
+  try tryApplySyntaxes goal addLemmas
+  catch _ =>
+    trace[Lampe.STHoare.Helpers] "additional lemmas failed"
+    tryApplyNames goal names
+
+
+def stepHelper2 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper2 {Lean.exceptEmoji e}") do
+  let hr :: ent :: r ← goal.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "consequence_frame_left failed"
+  let furtherGoals ← stepHelper1 hr names addLemmas
+  let entGoals ← try solveEntailment ent catch _ => pure [ent]
+  return furtherGoals ++ entGoals ++ r
+
+def stepHelper3 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper3 {Lean.exceptEmoji e}") do
+  let hr :: ent :: r ← goal.apply (←mkConstWithFreshMVarLevels ``ramified_frame_top) | throwError "ramified_frame_top failed"
+  let furtherGoals ← stepHelper1 hr names addLemmas
+  let entGoals ← try solveEntailment ent catch _ => pure [ent]
+  return furtherGoals ++ entGoals ++ r
 
 macro "stephelper1" : tactic => `(tactic|(
   (first
@@ -1047,7 +1072,7 @@ macro_rules
   )
 )
 
-partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
+partial def steps (mvar : MVarId) (addLemmas : List $ TSyntax `term) : TacticM (List MVarId) := do
   let target ← mvar.instantiateMVarsInType
   match ←extractTripleExpr target with
   | some body => do
@@ -1059,15 +1084,15 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
         catch _ => pure none
       else pure none
       match nextGoal with
-      | some nxt => steps nxt[0]!
+      | some nxt => steps nxt[0]! addLemmas
       | none =>
           let vname := vname.getD `v
           if let [fst, snd, trd] ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro)
           then
             let (_, snd) ← snd.intro vname
-            let fstGoals ← try steps fst catch _ => return [fst, snd, trd]
+            let fstGoals ← try steps fst addLemmas catch _ => return [fst, snd, trd]
             let sndGoals ← do
-              try steps snd
+              try steps snd addLemmas
               catch _ => pure [snd]
             return fstGoals ++ sndGoals ++ [trd]
           else return [mvar]
@@ -1077,20 +1102,26 @@ partial def steps (mvar : MVarId) : TacticM (List MVarId) := do
           else throwError "couldn't intro into false branch"
         let tGoal ← if let [tGoal] ← evalTacticAt (←`(tactic|intro)) tGoal then pure tGoal
           else throwError "couldn't intro into true branch"
-        let fSubGoals ← try steps fGoal catch _ => pure [fGoal]
-        let tSubGoals ← try steps tGoal catch _ => pure [tGoal]
+        let fSubGoals ← try steps fGoal addLemmas catch _ => pure [fGoal]
+        let tSubGoals ← try steps tGoal addLemmas catch _ => pure [tGoal]
         return fSubGoals ++ tSubGoals
       else return [mvar]
     else
-      try evalTacticAt (←`(tactic|stephelper1)) mvar
-      catch _ => try evalTacticAt (←`(tactic|stephelper2)) mvar
-      catch _ => try evalTacticAt (←`(tactic|stephelper3)) mvar
+      try stepHelper1 mvar builtinLemmas addLemmas
+      catch _ => try stepHelper2 mvar builtinLemmas addLemmas
+      catch _ => try stepHelper3 mvar builtinLemmas addLemmas
       catch _ => throwTacticEx (`steps) mvar s!"Can't solve"
   | _ => return [mvar]
 
 syntax "steps" : tactic
 elab "steps" : tactic => do
-  let newGoals ← steps (← getMainGoal)
+  let newGoals ← steps (← getMainGoal) []
+  replaceMainGoal newGoals
+
+syntax "steps'" ("[" term,* "]")?: tactic
+elab "steps'"  "[" ts:term,*  "]" : tactic => do
+  let addLemmas := ts.getElems.toList
+  let newGoals ← steps (← getMainGoal) addLemmas
   replaceMainGoal newGoals
 
 lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by
