@@ -18,23 +18,23 @@ def RC : List Int :=
 def SIGMA : Int :=
     9915499612839321149637521777990102151350674507940716049588462388200839649614
 
-lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by
-  simp [SLP.star, SLP.lift]
-  apply Iff.intro
-  · rintro ⟨st₁, st₂, hdis, hst, ⟨hp, rfl⟩, hH⟩
-    simp only [LawfulHeap.empty_union] at hst
-    cases hst
-    simp_all
-  · intro ⟨hP, hH⟩
-    exists ∅, st
-    simp_all
+-- lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by
+--   simp [SLP.star, SLP.lift]
+--   apply Iff.intro
+--   · rintro ⟨st₁, st₂, hdis, hst, ⟨hp, rfl⟩, hH⟩
+--     simp only [LawfulHeap.empty_union] at hst
+--     cases hst
+--     simp_all
+--   · intro ⟨hP, hH⟩
+--     exists ∅, st
+--     simp_all
 
 lemma STHoare.pure_left_of_imp (h : P → STHoare lp Γ ⟦P⟧ E Q): STHoare lp Γ ⟦P⟧ E Q := by
   simp_all [STHoare, THoare, SLP.pure_star_iff_and]
 
-lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
-  intro h
-  simp_all [STHoare, THoare, SLP.pure_star_iff_and]
+-- lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
+--   intro h
+--   simp_all [STHoare, THoare, SLP.pure_star_iff_and]
 
 lemma STHoare.pure_left {E : Expr (Tp.denote lp) tp} {Γ P Q} : (P → STHoare lp Γ ⟦True⟧ E Q) → STHoare lp Γ ⟦P⟧ E Q := by
   intro h
@@ -255,10 +255,10 @@ theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRe
 
 opaque BitVec.bytesLE : BitVec n → List.Vector (U 8) n
 
-axiom toLeBytesPadLen {input : Lampe.Fp lp} : (padEnd 256 (Lampe.toLeBytes input)).length = 32
+axiom toLeBytesPadLen {input : Lampe.Fp lp} : (padEnd 32 (Lampe.toLeBytes input)).length = 32
 
 axiom to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.array (Tp.u 8) 32) (FuncRef.decl "to_le_bytes" [] HList.nil) h![input])
-    fun output => output = ⟨padEnd 256 (Lampe.toLeBytes input), toLeBytesPadLen⟩
+    fun output => output = ⟨padEnd 32 (Lampe.toLeBytes input), toLeBytesPadLen⟩
 
 lemma SLP.exists_prop_of_proof {P : Prop} {h} [LawfulHeap h] {Q : P → SLP h} {pr : P}: (∃∃ (x : P), Q x) = Q pr := by
   unfold SLP.exists'
@@ -332,6 +332,100 @@ def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Ve
 | d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
 | d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
 
+lemma asdfasdf {d n : Nat} : (min d.succ n.succ) = (min d (n.succ - 1)).succ := by omega
+
+lemma List.Vector.take_cons_head_tail {α} {n d : Nat} (v : List.Vector α (n.succ))
+    : v.head ::ᵥ (v.tail.take d) = v.take d.succ := by
+  sorry
+
+lemma List.Vector.pad_thm_le {α n} (v : List.Vector α n) (d : Nat) (hd : d ≤ n) (pad : α) :
+    v.pad d pad = ⟨v.val.take d, by simp; omega⟩ := by
+  induction n with
+  | zero =>
+    have : d = 0 := by omega
+    subst this
+    rfl
+  | succ n hn =>
+    match Nat.lt_trichotomy d (n + 1) with
+    | .inl hlt =>
+      -- have : d ≤ n := by omega
+      -- have := hn v.tail this
+      -- unfold List.Vector.pad
+      cases d with
+      | zero => rfl
+      | succ d =>
+        unfold List.Vector.pad
+        simp
+        have := hn v.tail (by omega)
+        rw [List.Vector.pad_thm_le]
+        sorry -- Should follow from the take_cons_head_tail above
+        · omega
+    | .inr (.inl heq) =>
+      unfold List.Vector.pad
+      subst heq
+      simp
+      rw [List.Vector.pad_thm_le]
+      simp
+      sorry -- Should follow from the take_cons_head_tail above
+      omega
+    | .inr (.inr hgt) => linarith
+
+abbrev paddedInput : ZMod lp.natVal → List.Vector (U 8) 32 := fun input => ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩
+
+#check List.getElem_take
+
+lemma take_get_eq_get (vec : List.Vector α n) (k : Fin (i ⊓ n)):  (vec.take i)[k] = vec[k] := by
+  let ⟨l, _⟩ := vec
+  simp [List.Vector.take, List.Vector.getElem_def]
+
+lemma take_map_comm (vec : List.Vector α n) (f : α → β) :
+    (vec.take i |>.map f) = (vec.map f |>.take i) := by
+  let ⟨l, _⟩ := vec
+  simp [List.Vector.get, List.Vector.take, List.Vector.map]
+
+lemma pad_get (vec : List.Vector α n) (a : α) (i : Nat) (hi : i < n) (hi' : i < N) :
+    (vec.pad N a).get ⟨i, hi'⟩ = vec.get ⟨i, hi⟩ := by
+  match Nat.lt_trichotomy n N with
+  | .inl hlt =>
+    sorry
+  | .inr (.inl eq) =>
+    let ⟨l, _⟩ := vec
+    simp [List.Vector.pad, List.Vector.get]
+    rw [List.Vector.pad_thm_le]
+    simp
+    omega
+  | .inr (.inr gt) =>
+    let ⟨l, _⟩ := vec
+    simp [List.Vector.pad, List.Vector.get]
+    rw [List.Vector.pad_thm_le]
+    simp
+    omega
+
+#check List.Vector.get_set_same
+
+lemma take_succ_pad (vec : List.Vector α n) (a : α) (i : Nat) (hi : i < n) (hi' : i < N) :
+    (vec |>.take (i + 1) |>.pad N a) = (vec |>.take i |>.pad N a |>.set ⟨i, hi'⟩ (vec.get ⟨i, hi⟩))
+    := by
+  ext n
+  rw [pad_get]
+  match Nat.lt_trichotomy n i with
+  | .inl lt => sorry
+  | .inr (.inl eq) => sorry
+  | .inr (.inr gt) => sorry
+
+lemma take_succ_map_pad_eq (vec : List.Vector α n) (b : β) (f : α → β) (i : Nat) (hi : i < n) (hi' : i < N):
+    (vec |>.take (i + 1)
+         |>.map f
+         |>.pad N b) =
+    (vec |>.take i
+         |>.map f
+         |>.pad N b
+         |>.set ⟨i, hi'⟩ (f (vec.get ⟨i, hi⟩))) := by
+    rw [take_map_comm, take_map_comm]
+    have := take_succ_pad (vec.map f) b i (n := n) (N := N) hi hi'
+    convert this
+    · simp
+
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.bar input := by
   simp only [bar]
@@ -345,7 +439,15 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       subst_vars
       simp [Builtin.CastTp.cast, Access.modify]
       -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
-      sorry
+      congr
+      have : (i.toNat + 1) % 4294967296 = i.toNat + 1 := by
+        set iNat := i.toNat
+        simp
+        have : iNat < 16 := by aesop
+        omega
+      rw [this]
+      have : i.toNat < 16 := by aesop
+      convert take_succ_map_pad_eq ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ 0#8 Skyscraper.sbox i.toNat (by omega) this
   · decide
 
   steps
@@ -358,13 +460,40 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       subst_vars
       simp [Builtin.CastTp.cast, Access.modify]
       -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
-      sorry
+      congr
+      have : (BitVec.toNat i + 1) % 4294967296 = BitVec.toNat i + 1 := by
+        set iNat := BitVec.toNat i
+        simp
+        have : iNat < 16 := by aesop
+        omega
+      rw [this]
+      have weirdcast : BitVec.toNat (BitVec.instIntCast.intCast 16 : U 32) = 16 := by decide
+      have ilt : BitVec.toNat i < 16 := by aesop
+      have :
+      List.Vector.get ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ ⟨(16 + BitVec.toNat i) % 4294967296, by sorry⟩ =
+      (List.Vector.drop 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ |>.get (BitVec.toNat i)) := by sorry
+      conv_rhs =>
+        congr
+        · skip
+        · skip
+        · congr
+          congr
+          · skip
+          · congr
+            congr
+            congr
+            · rw [weirdcast]
+      rw [this]
+      have asdf :=
+      take_succ_map_pad_eq (List.Vector.drop 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩) 0#8 Skyscraper.sbox (BitVec.toNat i) (by omega) ilt
+      convert asdf
+      simp [ilt]
   · decide
 
   steps' []
   on_goal 2 => intro; rfl
 
-  loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
+  loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.toList⟩]
   · intro i _ _
     steps
     · intro
@@ -372,14 +501,49 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       subst_vars
       simp [Builtin.CastTp.cast, Access.modify]
       -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
-      sorry
+      congr
+      have : 16 + (BitVec.toNat i + 1) % 4294967296 = 16 + BitVec.toNat i + 1 := by
+        set iNat := BitVec.toNat i
+        have : iNat < 16 := by aesop
+        omega
+      rw [this]
+      apply List.ext_getElem
+      · simp
+        sorry
+      · intro n hn hn'
+        simp [List.getElem_append]
+        have : (padEnd 32 (toLeBytes input)).length = 32 := by sorry
+        simp [this]
+        match Nat.lt_trichotomy n 16 with
+        | .inl lt =>
+          simp_all [lt]
+          have : (n < 16 + i.toNat ∧ n < 32) := by
+            constructor
+            · omega
+            · omega
+          simp [this]
+        | .inr (.inl eq) =>
+          simp [eq]
+          match Nat.lt_trichotomy 0 i.toNat with
+          | .inl lt =>
+            simp_all [lt]
+          | .inr (.inl eq) =>
+            simp_all [eq]
+            sorry
+          | .inr (.inr gt) =>
+            simp_all [gt]
+        | .inr (.inr gt) =>
+          simp_all [gt]
+          sorry
+
   · simp [BitVec.le_def, Int.cast, IntCast.intCast]
 
   steps' []
 
   · simp_all
-    congr 1
+    congr
     sorry
+
   steps' []
 
 theorem bar_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field] Tp.field (FuncRef.decl "bar" [] HList.nil) h![input])
@@ -421,9 +585,6 @@ theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.
   intro
   subst_vars
   rfl
-
-
-
 
 theorem compress_spec : STHoare lp env ⟦⟧ (compress.fn.body _ h![] |>.body h![l, r])
     fun output => output = Skyscraper.compress l r := by
