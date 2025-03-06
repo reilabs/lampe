@@ -124,6 +124,13 @@ def newGenericPureBuiltin {A : Type}
     . apply genericPureOmni.err <;> assumption
 }
 
+def newGenericTotalPureBuiltin {A : Type}
+  (sgn : A → List Tp × Tp)
+  (desc : {p : Prime}
+    → (a : A)
+    → (args : HList (Tp.denote p) (sgn a).fst)
+    → (Tp.denote p (sgn a).snd)) : Builtin := newGenericPureBuiltin sgn (fun a args => ⟨True, fun _ => desc a args⟩)
+
 /--
 A pure deterministic `Builtin` definition.
 Takes a signature `sgn : List Tp × Tp`,
@@ -141,6 +148,15 @@ def newPureBuiltin
     → (args : HList (Tp.denote p) sgn.fst)
     → (h : Prop) × (h → (Tp.denote p sgn.snd))) :=
     newGenericPureBuiltin
+      (fun (_ : Unit) => sgn)
+      (fun _ args => desc args)
+
+def newTotalPureBuiltin
+  (sgn : List Tp × Tp)
+  (desc : {p : Prime}
+    → (args : HList (Tp.denote p) sgn.fst)
+    → (Tp.denote p sgn.snd)) :=
+    newGenericTotalPureBuiltin
       (fun (_ : Unit) => sgn)
       (fun _ args => desc args)
 

@@ -38,17 +38,16 @@ theorem index_replaced_tpl :
 /--
 Defines the builtin tuple constructor.
 -/
-def mkTuple := newGenericPureBuiltin
+def mkTuple := newGenericTotalPureBuiltin
   (fun (name, fieldTps) => ⟨fieldTps, (.tuple name fieldTps)⟩)
-  (fun (name, _) fieldExprs => ⟨True,
-    fun _ => HList.toTuple fieldExprs name⟩)
+  (fun (name, _) fieldExprs => HList.toTuple fieldExprs name)
 
 /--
 Defines the indexing/projection of a tuple with a `Member`.
 -/
-def projectTuple (mem : Member outTp fieldTps) := newGenericPureBuiltin
+def projectTuple (mem : Member outTp fieldTps) := newGenericTotalPureBuiltin
   (fun name => ⟨[.tuple name fieldTps], outTp⟩)
-  (fun _ h![tpl] => ⟨True, fun _ => indexTpl tpl mem⟩)
+  (fun _ h![tpl] => indexTpl tpl mem)
 
 
 end Lampe.Builtin

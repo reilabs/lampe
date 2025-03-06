@@ -180,38 +180,6 @@ set_option trace.Lampe.SL true
 theorem pluck_pure_exi_l' [LawfulHeap α] {P : Prop} {f : β → SLP α} : (SLP.exists' f ⋆ P) = (P ⋆ SLP.exists' f) := by
   simp [SLP.star_comm]
 
-
-theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h![] |>.body h![input, N])
-    fun output => output = Skyscraper.rotateLeft input N := by
-  simp only [Extracted.rotate_left]
-
-  steps
-  loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Skyscraper.rl i.toNat input⟩]
-  · intros i hlo hhi
-    steps
-    · apply STHoare.consequence_frame_left rl_intro
-      sl
-    · steps
-      intro
-      congr
-      simp_all
-      have i_lt : i < 254 := by bv_decide
-      have i_succ_lt : i + 1 < 255 := by bv_decide
-      have x := bitvec_lt 8 i N hhi (by bv_decide)
-      have y := bitvec_lt 8 N 254 (by assumption) (by decide)
-      set iNat := BitVec.toNat i
-      have : (iNat + 1) % 256 = iNat + 1 := by
-        simp_all
-        linarith
-      rw [this]
-      rfl
-  · simp only [Int.cast, IntCast.intCast]
-    bv_decide
-  · simp only [SLP.exists_prop_unused]
-    steps
-    simp_all
-    rfl
-
 theorem star_lift_entails {α : Type _} [LawfulHeap α] (P Q : Prop) : (⟦P⟧ : SLP α) ⋆ ⟦Q⟧ ⊢ ⟦Q⟧ := by
   intro st ⟨st1, ⟨st2, ⟨_, ⟨h12, ⟨p, h1⟩, q, h2⟩⟩⟩⟩
   have : st = ∅ := by
@@ -223,27 +191,43 @@ theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
     (Expr.call [Tp.u 8, Tp.u 8] (Tp.u 8) (FuncRef.decl "rotate_left" [] HList.nil) h![input, N])
       fun output => output = Skyscraper.rotateLeft input N := by
   enter_fn
-  apply STHoare.consequence (h_hoare := rotateLeft_spec)
-  simp_all [SLP.entails]
-  simp [SLP.star, SLP.top, SLP.entails]
-
+  simp only [rotate_left]
+  steps'
+  loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Skyscraper.rl i.toNat input⟩]
+  · intros i hlo hhi
+    steps' [rl_intro]
+    intro
+    congr
+    simp_all
+    have i_lt : i < 254 := by bv_decide
+    have i_succ_lt : i + 1 < 255 := by bv_decide
+    have x := bitvec_lt 8 i N hhi (by bv_decide)
+    have y := bitvec_lt 8 N 254 (by assumption) (by decide)
+    set iNat := BitVec.toNat i
+    have : (iNat + 1) % 256 = iNat + 1 := by
+      simp_all
+      linarith
+    rw [this]
+    rfl
+  · simp only [Int.cast, IntCast.intCast]
+    bv_decide
+  · simp only [SLP.exists_prop_unused]
+    steps
+    simp_all
+    rfl
 set_option pp.rawOnError true
 
 set_option trace.Lampe.STHoare.Helpers true
 
-theorem sbox_spec : STHoare lp env ⟦⟧ (sbox.fn.body _ h![] |>.body h![input])
+theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil) h![input])
     fun output => output = Skyscraper.sbox input := by
+  enter_fn
   simp only [sbox]
   steps' [rotate_left_intro]
   any_goals (intro; decide)
   intro
   subst_vars
   rfl
-
-theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil) h![input])
-    fun output => output = Skyscraper.sbox input := by
-  enter_fn
-  apply sbox_spec
 
 theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRef.decl "sgn0" [] HList.nil) h![input])
     fun output => output = (input.val % 2) := by
@@ -348,7 +332,7 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       sorry
   · decide
 
-  steps
+  steps' [sbox_intro]
 
   loop_inv fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
   · intro i _ hlt
@@ -361,8 +345,15 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       sorry
   · decide
 
-  steps' []
-  on_goal 2 => intro; rfl
+  steps' 3 []
+
+  apply STHoare.letIn_intro
+  apply STHoare.consequence_frame_left
+  apply STHoare.readRef_intro
+  rotate_left
+  sl
+
+  steps'
 
   loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
   · intro i _ _
@@ -393,6 +384,8 @@ theorem sigma_intro : STHoare lp env (⟦⟧)
   enter_fn
   simp only [Extracted.SIGMA]
   steps' []
+  rintro rfl
+  rfl
 
 theorem rc_intro : STHoare lp env (⟦⟧)
     (Expr.call [] (Tp.field.array 8) (FuncRef.decl "RC" [] HList.nil) h![])
@@ -400,6 +393,8 @@ theorem rc_intro : STHoare lp env (⟦⟧)
   enter_fn
   simp only [Extracted.RC]
   steps' []
+  rintro rfl
+  rfl
 
 theorem square_intro : STHoare lp env (⟦⟧)
     (Expr.call [Tp.field] Tp.field (FuncRef.decl "square" [] HList.nil) h![input])
@@ -407,25 +402,29 @@ theorem square_intro : STHoare lp env (⟦⟧)
   enter_fn
   simp only [Extracted.square]
   steps' [sigma_intro]
-
-set_option trace.Lampe.STHoare.Helpers false
-set_option trace.Lampe.SL false
+  intro
+  subst_vars
+  rfl
 
 theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "permute" [] HList.nil) h![i])
     fun output => output = (Skyscraper.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Skyscraper.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
   enter_fn
   simp only [Extracted.permute]
-  steps' [bar_intro, square_intro, rc_intro]
+  steps' [square_intro, rc_intro, bar_intro]
+
   casesm* ∃_,_
-  simp [Builtin.indexTpl] at *
+  simp [Builtin.indexTpl, OfNat.ofNat] at *
   intro
   subst_vars
   rfl
 
-
-
-
 theorem compress_spec : STHoare lp env ⟦⟧ (compress.fn.body _ h![] |>.body h![l, r])
     fun output => output = Skyscraper.compress l r := by
   simp only [compress]
-  sorry
+  steps' [permute_intro]
+  intro
+  casesm* ∃_,_
+  subst_vars
+  simp [Skyscraper.compress, HList.toVec, HList.toList]
+  rfl
+  -- rfl

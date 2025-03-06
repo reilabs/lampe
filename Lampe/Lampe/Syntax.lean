@@ -233,7 +233,7 @@ def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (
 
 @[reducible]
 def Expr.mkArray (n : U 32) (vals : HList rep (List.replicate n.toNat tp)) : Expr rep (.array tp n) :=
-  Expr.callBuiltin _ (.array tp n) (.mkArray n) vals
+  Expr.callBuiltin _ (.array tp n) .mkArray vals
 
 @[reducible]
 def Expr.mkRepSlice (n : Nat) (val : rep tp) : Expr rep (.slice tp) :=
@@ -241,11 +241,11 @@ def Expr.mkRepSlice (n : Nat) (val : rep tp) : Expr rep (.slice tp) :=
 
 @[reducible]
 def Expr.mkRepArray (n : U 32) (val : rep tp) : Expr rep (.array tp n) :=
-  Expr.callBuiltin _ (.array tp n) (.mkArray n) (HList.replicate val n.toNat)
+  Expr.callBuiltin _ (.array tp n) .mkArray (HList.replicate val n.toNat)
 
 @[reducible]
 def Expr.mkTuple (name : Option String) (args : HList rep tps) : Expr rep (.tuple name tps) :=
-  Expr.callBuiltin tps (.tuple name tps) ( .mkTuple) args
+  Expr.callBuiltin tps (.tuple name tps) .mkTuple args
 
 @[reducible]
 def Expr.modifyLens (r : rep $ .ref tp₁) (v : rep tp₂) (lens : Lens rep tp₁ tp₂) : Expr rep .unit :=

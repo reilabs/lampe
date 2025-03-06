@@ -266,6 +266,150 @@ def getLetInVarName (e : Expr) : TacticM (Option Name) := do
   | Lean.Expr.lam n _ _ _ => return some n
   | _ => return none
 
+#check Expr.letIn
+
+
+def builtinLemmas : List Name :=
+  [ ``Lampe.STHoare.litU_intro
+  , ``Lampe.STHoare.litField_intro
+  , ``Lampe.STHoare.litStr_intro
+  , ``Lampe.STHoare.fmtStr_intro
+  , ``Lampe.STHoare.litTrue_intro
+  , ``Lampe.STHoare.litFalse_intro
+  , ``Lampe.STHoare.litUnit_intro
+  , ``fn_intro
+  , ``fresh_intro
+  , ``assert_intro
+  , ``skip_intro
+  , ``lam_intro
+  , ``cast_intro
+  -- memory
+  , ``var_intro
+  , ``ref_intro
+  , ``readRef_intro
+  , ``writeRef_intro
+  -- array
+  -- , ``mkArray_intro
+  , ``arrayLen_intro
+  , ``arrayIndex_intro
+  , ``arrayAsSlice_intro
+  -- slice
+  , ``mkSlice_intro
+  , ``sliceLen_intro
+  , ``sliceIndex_intro
+  , ``slicePushBack_intro
+  -- equality
+  , ``unitEq_intro
+  , ``bEq_intro
+  , ``fEq_intro
+  , ``uEq_intro
+  , ``iEq_intro
+  , ``bigIntEq_intro
+  , ``strEq_intro
+  -- negation
+  , ``fNeg_intro
+  , ``iNeg_intro
+  -- addition
+  , ``fAdd_intro
+  , ``uAdd_intro
+  , ``iAdd_intro
+  , ``bigIntAdd_intro
+  -- subtraction
+  , ``fSub_intro
+  , ``uSub_intro
+  , ``iSub_intro
+  , ``bigIntSub_intro
+  -- division
+  , ``fDiv_intro
+  , ``uDiv_intro
+  , ``iDiv_intro
+  , ``bigIntDiv_intro
+  -- multiplication
+  , ``fMul_intro
+  , ``uMul_intro
+  , ``iMul_intro
+  , ``bigIntMul_intro
+  -- remainder
+  , ``uRem_intro
+  , ``iRem_intro
+  -- struct
+  , ``mkTuple_intro
+  , ``projectTuple_intro
+  -- lens
+  , ``modifyLens_intro
+  , ``getLens_intro
+  -- bitwise
+  , ``uShr_intro
+  , ``uShl_intro
+  , ``uOr_intro
+  , ``uAnd_intro
+  , ``uXor_intro
+  ]
+
+def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := do
+  let head := val.getAppFn
+  match head with
+  | Lean.Expr.const n _ =>
+    match n with
+    | ``Expr.var => return some (←``(var_intro), true)
+    | ``Expr.mkTuple => return some (←``(genericTotalPureBuiltin_intro (a := (_,_)) Builtin.mkTuple rfl), true)
+    | ``Expr.mkArray =>
+      let some size := val.getAppArgs[2]? | throwError "malformed mkArray"
+      let size ← size.toSyntax
+      return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := ($size, _)) rfl), true)
+    | ``Expr.mkRepArray =>
+      let some size := val.getAppArgs[2]? | throwError "malformed mkArray"
+      let size ← size.toSyntax
+      return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := ($size, _)) rfl), true)
+    | ``Expr.getLens => return some (←``(getLens_intro), false)
+    | ``Expr.modifyLens => return some (←``(modifyLens_intro), false)
+    | ``Lampe.Expr.fn => return some (←``(fn_intro), true)
+    | ``Lampe.Expr.callBuiltin =>
+      let some builtin := val.getAppArgs[3]? | throwError "malformed builtin"
+      let builtinName := builtin.getAppFn
+      match builtinName with
+      | Lean.Expr.const n _ =>
+        match n with
+        | ``Lampe.Builtin.uNot => return some (←``(genericTotalPureBuiltin_intro Builtin.uNot rfl), true)
+        | ``Lampe.Builtin.uAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.uAnd rfl), true)
+        | ``Lampe.Builtin.uOr => return some (←``(genericTotalPureBuiltin_intro Builtin.uOr rfl), true)
+        | ``Lampe.Builtin.uXor => return some (←``(genericTotalPureBuiltin_intro Builtin.uXor rfl), true)
+        | ``Lampe.Builtin.uShl => return some (←``(genericTotalPureBuiltin_intro Builtin.uShl rfl), true)
+        | ``Lampe.Builtin.uShr => return some (←``(genericTotalPureBuiltin_intro Builtin.uShr rfl), true)
+
+        | ``Lampe.Builtin.cast => return some (←``(cast_intro), true)
+
+        | ``Lampe.Builtin.fAdd => return some (←``(genericTotalPureBuiltin_intro Builtin.fAdd rfl (a := ())), true)
+        | ``Lampe.Builtin.fMul => return some (←``(genericTotalPureBuiltin_intro Builtin.fMul rfl (a := ())), true)
+        | ``Lampe.Builtin.fSub => return some (←``(genericTotalPureBuiltin_intro Builtin.fSub rfl (a := ())), true)
+        | ``Lampe.Builtin.fNeg => return some (←``(genericTotalPureBuiltin_intro Builtin.fNeg rfl (a := ())), true)
+
+        | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro), false)
+
+        | ``Lampe.Builtin.mkArray => return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray rfl), true)
+        | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)
+        | ``Lampe.Builtin.arrayLen => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayLen rfl), true)
+        | ``Lampe.Builtin.arrayAsSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayAsSlice (a := (_,_)) rfl), true)
+        | _ => return none
+      | _ => return none
+    | ``Lampe.Expr.ref => return some (←``(ref_intro), false)
+    | ``Lampe.Expr.readRef => return some (←``(readRef_intro), false)
+    | ``Lampe.Expr.litNum =>
+      let some vtp := val.getAppArgs[1]? | throwError "malformed litNum"
+      let  Lean.Expr.const vtp _ := vtp.getAppFn | throwError "malformed litNum"
+      match vtp with
+      | ``Tp.field => return some (←``(litField_intro), true)
+      | ``Tp.u => return some (←``(litU_intro), true)
+      | _ => return none
+    | _ => return none
+
+  | _ => pure none
+
+def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bool)) := do
+  let args := Expr.getAppArgs e
+  let some val := args[3]? | throwError "malformed letIn"
+  getClosingTerm val
+
 def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
 
 partial def parseSLExpr (e: Expr): TacticM SLTerm := do
@@ -664,83 +808,6 @@ elab "sl" : tactic => do
   let newGoals ← solveEntailment target
   replaceMainGoal newGoals
 
-def builtinLemmas : List Name :=
-  [ ``Lampe.STHoare.litU_intro
-  , ``Lampe.STHoare.litField_intro
-  , ``Lampe.STHoare.litStr_intro
-  , ``Lampe.STHoare.fmtStr_intro
-  , ``Lampe.STHoare.litTrue_intro
-  , ``Lampe.STHoare.litFalse_intro
-  , ``Lampe.STHoare.litUnit_intro
-  , ``fn_intro
-  , ``fresh_intro
-  , ``assert_intro
-  , ``skip_intro
-  , ``lam_intro
-  , ``cast_intro
-  -- memory
-  , ``var_intro
-  , ``ref_intro
-  , ``readRef_intro
-  , ``writeRef_intro
-  -- array
-  , ``mkArray_intro
-  , ``arrayLen_intro
-  , ``arrayIndex_intro
-  , ``arrayAsSlice_intro
-  -- slice
-  , ``mkSlice_intro
-  , ``sliceLen_intro
-  , ``sliceIndex_intro
-  , ``slicePushBack_intro
-  -- equality
-  , ``unitEq_intro
-  , ``bEq_intro
-  , ``fEq_intro
-  , ``uEq_intro
-  , ``iEq_intro
-  , ``bigIntEq_intro
-  , ``strEq_intro
-  -- negation
-  , ``fNeg_intro
-  , ``iNeg_intro
-  -- addition
-  , ``fAdd_intro
-  , ``uAdd_intro
-  , ``iAdd_intro
-  , ``bigIntAdd_intro
-  -- subtraction
-  , ``fSub_intro
-  , ``uSub_intro
-  , ``iSub_intro
-  , ``bigIntSub_intro
-  -- division
-  , ``fDiv_intro
-  , ``uDiv_intro
-  , ``iDiv_intro
-  , ``bigIntDiv_intro
-  -- multiplication
-  , ``fMul_intro
-  , ``uMul_intro
-  , ``iMul_intro
-  , ``bigIntMul_intro
-  -- remainder
-  , ``uRem_intro
-  , ``iRem_intro
-  -- struct
-  , ``mkTuple_intro
-  , ``projectTuple_intro
-  -- lens
-  , ``modifyLens_intro
-  , ``getLens_intro
-  -- bitwise
-  , ``uShr_intro
-  , ``uShl_intro
-  , ``uOr_intro
-  , ``uAnd_intro
-  , ``uXor_intro
-  ]
-
 def tryApplySyntaxes (goal : MVarId) (lemmas : List (TSyntax `term)): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
 | n::ns => do
@@ -846,12 +913,6 @@ macro "stephelper1" : tactic => `(tactic|(
     -- lens
     | apply modifyLens_intro
     | apply getLens_intro
-    -- bitwise
-    | apply uShr_intro
-    | apply uShl_intro
-    | apply uOr_intro
-    | apply uAnd_intro
-    | apply uXor_intro
   )
 ))
 
@@ -1060,68 +1121,107 @@ macro_rules
       | apply STHoare.litU_intro
       | apply STHoare.litField_intro
       | apply STHoare.mkArray_intro
+      | apply genericTotalPureBuiltin_intro Builtin.uNot rfl
       | apply (STHoare.consequence (h_hoare := STHoare.fMul_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uNot_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uAnd_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uXor_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uOr_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uShr_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uShl_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
       )
-    -- | apply STHoare.var_intro
   )
 )
 
-partial def steps (mvar : MVarId) (addLemmas : List $ TSyntax `term) : TacticM (List MVarId) := do
+partial def steps (mvar : MVarId) (limit : Nat) (addLemmas : List $ TSyntax `term) : TacticM (List MVarId) := do
+  if limit == 0 then return [mvar]
+  let limit := limit - 1
   let target ← mvar.instantiateMVarsInType
   match ←extractTripleExpr target with
   | some body => do
     if isLetIn body then
+      let closer ← getLetInHeadClosingTheorem body
       let vname ← getLetInVarName body
       let isInternal := vname.map (·.toString.startsWith "#") |>.getD true
-      let nextGoal ← if isInternal then
-        try some <$> evalTacticAt (←`(tactic|inlined_var)) mvar
-        catch _ => pure none
-      else pure none
-      match nextGoal with
-      | some nxt => steps nxt[0]! addLemmas
+      trace[Lampe.STHoare.Helpers] "letIn {closer} {vname} {isInternal}"
+      match closer with
+      | some (cl, true) =>
+        if isInternal then
+          let [nextGoal] ← evalTacticAt (←`(tactic|apply STHoare.letIn_trivial_intro; apply $cl)) mvar | throwError "bad application"
+          try steps nextGoal limit addLemmas
+          catch _ => return [nextGoal]
+        else
+          let hHead :: hTail :: rest₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
+          let hHead :: hEnt :: rest₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
+          let rest₃ ← evalTacticAt (←`(tactic|apply $cl)) hHead
+          let rest₄ ← try solveEntailment hEnt catch _ => pure [hEnt]
+          let (_, hTail) ← hTail.intro (vname.getD `v)
+          let rest₅ ← try steps hTail limit addLemmas catch _ => pure [hTail]
+          return rest₁ ++ rest₂ ++ rest₃ ++ rest₄ ++ rest₅
+      | some (cl, false) =>
+        let hHead :: hTail :: rest₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
+        let hHead :: hEnt :: rest₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
+        let rest₃ ← evalTacticAt (←`(tactic|apply $cl)) hHead
+        let rest₄ ← try solveEntailment hEnt catch _ => pure [hEnt]
+        let (_, hTail) ← hTail.intro (vname.getD `v)
+        let rest₅ ← try steps hTail limit addLemmas catch _ => pure [hTail]
+        return rest₃ ++ rest₅ ++ rest₁ ++ rest₂ ++ rest₄
       | none =>
-          let vname := vname.getD `v
-          if let [fst, snd, trd] ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro)
-          then
-            let (_, snd) ← snd.intro vname
-            let fstGoals ← try steps fst addLemmas catch _ => return [fst, snd, trd]
-            let sndGoals ← do
-              try steps snd addLemmas
-              catch _ => pure [snd]
-            return fstGoals ++ sndGoals ++ [trd]
-          else return [mvar]
+        let hHead :: hTail :: rest₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
+        let (_, hTail) ← hTail.intro (vname.getD `v)
+        try
+          let hHead :: hEnt :: rest₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
+          let rest₃ ← tryApplySyntaxes hHead addLemmas
+          let rest₄ ← try solveEntailment hEnt catch _ => pure [hEnt]
+          let rest₅ ← try steps hTail limit addLemmas catch _ => pure [hTail]
+          return rest₁ ++ rest₂ ++ rest₃ ++ rest₄ ++ rest₅
+        catch _ => return (hHead :: hTail :: rest₁)
+
+      -- let nextGoal ← if isInternal then
+      --   try some <$> evalTacticAt (←`(tactic|inlined_var)) mvar
+      --   catch _ => pure none
+      -- else pure none
+      -- match nextGoal with
+      -- | some nxt => steps nxt[0]! limit addLemmas
+      -- | none =>
+      --     let vname := vname.getD `v
+      --     if let [fst, snd, trd] ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro)
+      --     then
+      --       let (_, snd) ← snd.intro vname
+      --       let fstGoals ← try steps fst limit addLemmas catch _ => return [fst, snd, trd]
+      --       let sndGoals ← do
+      --         try steps snd limit addLemmas
+      --         catch _ => pure [snd]
+      --       return fstGoals ++ sndGoals ++ [trd]
+      --     else return [mvar]
     else if isIte body then
       if let [fGoal, tGoal] ← mvar.apply (← mkConstWithFreshMVarLevels ``ite_intro) then
         let fGoal ← if let [fGoal] ← evalTacticAt (←`(tactic|intro)) fGoal then pure fGoal
           else throwError "couldn't intro into false branch"
         let tGoal ← if let [tGoal] ← evalTacticAt (←`(tactic|intro)) tGoal then pure tGoal
           else throwError "couldn't intro into true branch"
-        let fSubGoals ← try steps fGoal addLemmas catch _ => pure [fGoal]
-        let tSubGoals ← try steps tGoal addLemmas catch _ => pure [tGoal]
+        let fSubGoals ← try steps fGoal limit addLemmas catch _ => pure [fGoal]
+        let tSubGoals ← try steps tGoal limit addLemmas catch _ => pure [tGoal]
         return fSubGoals ++ tSubGoals
       else return [mvar]
     else
-      try stepHelper1 mvar builtinLemmas addLemmas
-      catch _ => try stepHelper2 mvar builtinLemmas addLemmas
-      catch _ => try stepHelper3 mvar builtinLemmas addLemmas
-      catch _ => throwTacticEx (`steps) mvar s!"Can't solve"
+      match (←getClosingTerm body) with
+      | some (closer, _) => do
+        let hHoare :: hEnt :: rest ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "ramified_frame_top failed"
+        let rest₂ ← evalTacticAt (←`(tactic|apply $closer)) hHoare
+        let rest₃ ← try solveEntailment hEnt catch _ => pure [hEnt]
+        return rest ++ rest₂ ++ rest₃
+      | none => throwError "no closer"
   | _ => return [mvar]
 
 syntax "steps" : tactic
 elab "steps" : tactic => do
-  let newGoals ← steps (← getMainGoal) []
+  let newGoals ← steps (← getMainGoal) 10000 []
   replaceMainGoal newGoals
 
-syntax "steps'" ("[" term,* "]")?: tactic
-elab "steps'"  "[" ts:term,*  "]" : tactic => do
+syntax "steps'" (num)? ("[" term,* "]")?: tactic
+elab "steps'" limit:optional(num) "[" ts:term,*  "]" : tactic => do
+  let limit := limit.map (fun n => n.getNat) |>.getD 10000
   let addLemmas := ts.getElems.toList
-  let newGoals ← steps (← getMainGoal) addLemmas
+  let newGoals ← steps (← getMainGoal) limit addLemmas
+  replaceMainGoal newGoals
+elab "steps'" limit:optional(num) : tactic => do
+  let limit := limit.map (fun n => n.getNat) |>.getD 10000
+  let newGoals ← steps (← getMainGoal) limit []
   replaceMainGoal newGoals
 
 lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by

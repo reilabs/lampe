@@ -78,10 +78,9 @@ theorem index_replaced_arr {n : U 32} {idx : Fin n.toNat} {arr} :
 /--
 Defines the builtin array constructor.
 -/
-def mkArray (n : U 32) := newGenericPureBuiltin
-  (fun tp => ⟨List.replicate n.toNat tp, (.array tp n)⟩)
-  (fun tp args => ⟨True,
-    fun h => HList.toVec args (by rfl)⟩)
+def mkArray := newGenericTotalPureBuiltin
+  (fun (a : U 32 × Tp) => ⟨List.replicate a.1.toNat a.2, (.array a.2 a.1)⟩)
+  (fun _ args => HList.toVec args (by rfl))
 
 /--
 Defines the indexing of a array `l : Array tp n` with `i : U 32`
@@ -102,19 +101,17 @@ This builtin evaluates to an `U 32`. Hence, we assume that `n < 2^32`.
 
 In Noir, this corresponds to `fn len(self) -> u32` implemented for `[_; n]`.
 -/
-def arrayLen := newGenericPureBuiltin
+def arrayLen := newGenericTotalPureBuiltin
   (fun (tp, n) => ⟨[.array tp n], .u 32⟩)
-  (fun (_, _) h![a] => ⟨a.length < 2^32,
-    fun _ => a.length⟩)
+  (fun (_, n) _ => n)
 
 /--
 Defines the function that converts an array to a slice.
 
 In Noir, this corresponds to `fn as_slice(self) -> [T]` implemented for `[T; n]`.
 -/
-def arrayAsSlice := newGenericPureBuiltin
+def arrayAsSlice := newGenericTotalPureBuiltin
   (fun (tp, n) => ⟨[.array tp n], .slice tp⟩)
-  (fun (_, _) h![a] => ⟨True,
-    fun _ => a.toList⟩)
+  (fun (_, _) h![a] => a.toList)
 
 end Lampe.Builtin
