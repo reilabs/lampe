@@ -43,6 +43,7 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
     match n with
     | ``Expr.skip => return some (←``(skip_intro), true)
     | ``Expr.var => return some (←``(var_intro), true)
+    | ``Lampe.Expr.const => return some (←``(const_intro), true)
     | ``Lampe.Expr.lam => return some (←``(lam_intro), false)
     | ``Expr.mkTuple => return some (←``(genericTotalPureBuiltin_intro (a := (_,_)) Builtin.mkTuple rfl), true)
     | ``Expr.mkArray =>

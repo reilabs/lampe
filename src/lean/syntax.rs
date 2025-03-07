@@ -95,9 +95,9 @@ pub(super) fn format_trait_function_def(
 }
 
 #[inline]
-pub(super) fn format_generic_def(name: &str, is_num: bool) -> String {
-    if is_num {
-        format!("#{name}")
+pub(super) fn format_generic_def(name: &str, u_size: Option<u8>) -> String {
+    if let Some(w) = u_size {
+        format!("@{name} : {w}")
     } else {
         format!("{name}")
     }
@@ -195,6 +195,11 @@ pub(super) mod r#type {
     #[inline]
     pub fn format_placeholder() -> String {
         format!("_")
+    }
+
+    #[inline]
+    pub fn format_const(ident: &str, size: &str) -> String {
+        format!("{ident} : {size}")
     }
 }
 
@@ -312,6 +317,12 @@ pub(super) mod expr {
     }
 
     #[inline]
+    pub fn format_const(ident: &str) -> String {
+        let var = normalize_ident(ident);
+        format!("@{var}")
+    }
+
+    #[inline]
     pub fn format_decl_func_ident(ident: &str, generics: &str) -> String {
         let ident = normalize_ident(ident);
         format!("@{ident}<{generics}>")
@@ -354,8 +365,7 @@ pub(super) mod stmt {
         formatdoc! {
             r"for {loop_var} in {loop_start} .. {loop_end} {{
                 {body}
-            }}
-            "
+            }}"
         }
     }
 

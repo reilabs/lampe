@@ -35,8 +35,8 @@ example {x y : Tp.denote p .field} :
 
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;
-  for i in (0 : u32) .. #sliceLen(y):u32 {
-    self = #slicePushBack(self, #sliceIndex(y, i): I): [I]
+  for i in (0 : u32) .. #sliceLen(y) : u32 {
+    self = #slicePushBack(self, #sliceIndex(y, i) : I) : [I]
   };
   self
 }
@@ -442,7 +442,7 @@ nr_def fmtstr_test<>() -> Field {
   y
 }
 
-nr_def create_arr<#N>() -> [Field; N] {
+nr_def create_arr<@N : 32>() -> [Field; N] {
   [1 : Field ; N]
 }
 
@@ -452,9 +452,9 @@ example : STHoare p Γ ⟦⟧ (create_arr.fn.body _ h![3] |>.body h![])
   steps
   aesop
 
-nr_type_alias Array<T, #N> = [T; N]
+nr_type_alias Array<T, @N : 32> = [T; N]
 
-nr_def alias_test<>(x : @Array<Field, 3>) -> Field {
+nr_def alias_test<>(x : @Array<Field, 3 : 32>) -> Field {
   x[1 : u32]
 }
 
@@ -463,3 +463,50 @@ example : STHoare p Γ ⟦⟧ (alias_test.fn.body _ h![] |>.body h![⟨[1, 2, 3]
   simp only [alias_test]
   steps
   aesop
+
+nr_def const_test<@N : 8>(x : Field) -> Field {
+  let mut res = x;
+  for _? in 0 : u8 .. @N {
+    res = #fMul(res, 2 : Field) : Field;
+  };
+  res;
+}
+
+theorem hypothesize_left {h : P₁ → STHoare p Γ P₂ e Q } :
+    STHoare p Γ (⟦P₁⟧ ⋆ P₂) e Q := by
+  unfold STHoare THoare SLP.lift at *
+  intros H st h
+  unfold SLP.star at h
+  obtain ⟨s₁, s₂, ⟨_, _, ⟨⟨s₁', s₂', _⟩⟩⟩⟩ := h
+  have : s₁' = ∅ := by tauto
+  subst this
+  have : s₂' = s₁ := by simp_all
+  subst this
+  have hp : P₁ := by tauto
+  apply h hp H st ?_
+  exists s₂', s₂
+  tauto
+
+example : STHoare p Γ ⟦⟧ (const_test.fn.body _ h![3] |>.body h![1])
+    fun (v : Tp.denote p .field) => v = 8 := by
+  simp only [const_test]
+  steps
+  loop_inv (fun i _ _ => [res ↦ ⟨.field, 2^(i.toNat) * 1⟩])
+  · simp [Int.cast, IntCast.intCast]
+  · congr
+    simp_all only [BitVec.ofNat_eq_ofNat, mul_one]
+    rfl
+  . intros i _ _
+    steps
+    congr
+    simp_all
+    have : i.toNat < 3 := by tauto
+    have : (i.toNat + 1) % 256 = i.toNat + 1 := by
+      apply Nat.mod_eq_of_lt
+      linarith
+    rw [this]
+    rfl
+  steps
+  subst_vars
+  simp
+  ring

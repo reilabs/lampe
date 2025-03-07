@@ -23,6 +23,7 @@ structure TraitMethodImplRef where
 inductive Expr (rep : Tp → Type) : Tp → Type where
 | litNum : (tp : Tp) → Int → Expr rep tp
 | litStr : (len : U 32) → FixedLenStr len.toNat → Expr rep (.str len)
+| const : U w → Expr rep (.u w)
 | fmtStr : (len : U 32) → (tps : List Tp) → FormatString len tps → Expr rep (.fmtStr len tps)
 | fn : (argTps : List Tp) → (outTp : Tp) → (r : FuncRef argTps outTp) → Expr rep (.fn argTps outTp)
 | var : rep tp → Expr rep tp

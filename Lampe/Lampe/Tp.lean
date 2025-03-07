@@ -11,10 +11,6 @@ deriving DecidableEq
 
 variable (p : Prime)
 
-inductive Kind where
-| nat
-| type
-
 inductive Tp where
 | u (size : Nat)
 | i (size : Nat)
@@ -29,6 +25,10 @@ inductive Tp where
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
 | fn (argTps : List Tp) (outTp : Tp)
+
+inductive Kind where
+| u (size : Nat)
+| type
 
 mutual
 
@@ -94,7 +94,7 @@ instance : DecidableEq Tp := tpDecEq
 
 @[reducible]
 def Kind.denote : Kind → Type
-| .nat => Nat
+| .u w  => U w
 | .type => Tp
 
 inductive FuncRef (argTps : List Tp) (outTp : Tp) where
