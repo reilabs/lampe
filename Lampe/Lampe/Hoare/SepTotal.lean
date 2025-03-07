@@ -107,6 +107,63 @@ theorem var_intro {v : Tp.denote p tp}:
   apply THoare.consequence ?_ THoare.var_intro (fun _ => SLP.entails_self)
   simp
 
+
+theorem litU_intro: STHoare p Γ ⟦⟧ (.litNum (.u s) n) fun v => v = n := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem litField_intro: STHoare p Γ ⟦⟧ (.litNum .field n) fun v => v = n := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem litStr_intro: STHoare p Γ ⟦⟧ (.litStr u s) fun v => v = s := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem fmtStr_intro : STHoare p Γ ⟦⟧ (.fmtStr u tps s) fun v => v = s := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem litFalse_intro: STHoare p Γ ⟦⟧ (.litNum .bool 0) fun v => v = false := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem litTrue_intro: STHoare p Γ ⟦⟧ (.litNum .bool 1) fun v => v = true := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem litUnit_intro: STHoare p Γ ⟦⟧ (.litNum .unit n) fun v => v = unit := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
 theorem letIn_intro {tp} {P} {Q : Tp.denote p tp → SLP (State p)} {e₁ e₂}
     (h_first: STHoare p Γ P e₁ Q)
     (h_rest: ∀v, STHoare p Γ (Q v) (e₂ v) R):
