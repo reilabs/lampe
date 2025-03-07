@@ -677,7 +677,8 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     subst right
     simp [take_map_comm]
     simp [take_pad_eq]
-    sorry -- This doesn't seem right... the LHS has length 16, the RHS has length 32
+    simp only [List.Vector.toList_length] at h1
+    simp [List.getElem_append, toLeBytesPadLen, h1]
 
   steps' []
 
