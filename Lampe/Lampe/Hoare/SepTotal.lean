@@ -317,7 +317,7 @@ theorem skip_intro :
 
 theorem lam_intro :
   STHoare p Γ ⟦⟧ (.lam argTps outTp lambdaBody)
-    fun v => ∃∃ r, ⟦v = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩] := by
+    fun v => ∃∃ (h:v.isLambda), [λ(v.asLambda h) ↦ ⟨argTps, outTp, lambdaBody⟩] := by
   unfold STHoare THoare
   intros H st h
   constructor
@@ -338,12 +338,12 @@ theorem lam_intro :
       apply Finmap.singleton_disjoint_of_not_mem (by assumption)
     simp only [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
   . unfold State.lmbSingleton SLP.exists'
-    exists r
-    simp_all only [SLP.true_star]
+    simp [FuncRef.isLambda]
+    rfl
   . apply SLP.ent_star_top
     tauto
 
-theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
+theorem callLambda_intro' {lambdaBody} {P : SLP $ State p}
   {Q : Tp.denote p outTp → SLP (State p)}
   {fnRef : Tp.denote p (.fn argTps outTp)}
   {hlam : STHoare p Γ P (lambdaBody args) Q} :
@@ -372,6 +372,40 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
       tauto
     . simp_all
   · apply STHoare.consequence_frame_left <;> tauto
+
+
+lemma FuncRef.lambda_asLambda {f : FuncRef a o} {h} : FuncRef.lambda (FuncRef.asLambda f h) = f := by
+  unfold FuncRef.isLambda at h
+  split at h
+  · rfl
+  · contradiction
+
+theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
+  {Q : Tp.denote p outTp → SLP (State p)}
+  {fnRef : Tp.denote p (.fn argTps outTp)}
+  {hlam : STHoare p Γ P (lambdaBody args) Q} :
+  STHoare p Γ ((∃∃ h, [λfnRef.asLambda h ↦ ⟨argTps, outTp, lambdaBody⟩]) ⋆ P)
+    (Expr.call argTps outTp fnRef args)
+    (fun v => (∃∃ h, [λfnRef.asLambda h ↦ ⟨argTps, outTp, lambdaBody⟩]) ⋆ Q v) := by
+  apply STHoare.consequence (h_hoare := callLambda_intro' (P := P) (Q := Q) (hlam := hlam))
+  · rw [SLP.star_comm]
+    apply SLP.star_mono_l
+    apply SLP.exists_intro_l
+    intro h
+    apply SLP.exists_intro_r (a := fnRef.asLambda h)
+    simp [FuncRef.lambda_asLambda]
+    apply SLP.entails_self
+  · intro
+    apply SLP.star_mono_r
+    rw [SLP.star_comm]
+    apply SLP.star_mono_r
+    apply SLP.exists_intro_l
+    intro r
+    apply SLP.pure_left
+    rintro rfl
+    apply SLP.exists_intro_r
+    apply SLP.entails_self
+    rfl
 
 theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}

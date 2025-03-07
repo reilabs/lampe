@@ -104,6 +104,16 @@ inductive FuncRef (argTps : List Tp) (outTp : Tp) where
   (traitName : String) (traitKinds : List Kind) (traitGenerics : HList Kind.denote traitKinds)
   (fnName : String) (fnKinds : List Kind) (fnGenerics : HList Kind.denote fnKinds)
 
+def FuncRef.isLambda : FuncRef a o → Bool
+| FuncRef.lambda _ => true
+| _ => false
+
+def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Ref :=
+  match h' : f with
+  | FuncRef.lambda r => r
+  | FuncRef.decl _ _ _ => by cases h
+  | FuncRef.trait _ _ _ _ _ _ _ => by cases h
+
 /-- TODO: Actually implement this at some point -/
 def FormatString (_len : U 32) (_argTps : List Tp) := Unit
 

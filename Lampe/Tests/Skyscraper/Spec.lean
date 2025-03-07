@@ -21,7 +21,7 @@ def SIGMA : Int :=
 theorem rl_intro : STHoare lp env ⟦⟧
   (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "rl" [] HList.nil) h![input])
     fun output => output = Skyscraper.rl input := by
-  enter_fn
+  enter_decl
   simp only [rl]
   steps
   subst_vars
@@ -39,13 +39,15 @@ set_option trace.Lampe.SL true
 theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
     (Expr.call [Tp.u 8, Tp.u 8] (Tp.u 8) (FuncRef.decl "rotate_left" [] HList.nil) h![input, N])
       fun output => output = Skyscraper.rotateLeft input N := by
-  enter_fn
+  enter_decl
   simp only [rotate_left]
   steps
+
   loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Skyscraper.rl i.toNat input⟩]
+  · simp only [Int.cast, IntCast.intCast]
+    bv_decide
   · intros i hlo hhi
     steps [rl_intro]
-    intro
     congr
     simp_all
     have i_lt : i < 254 := by bv_decide
@@ -58,11 +60,11 @@ theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
       linarith
     rw [this]
     rfl
-  · simp only [Int.cast, IntCast.intCast]
-    bv_decide
-  · steps
-    simp_all
-    rfl
+
+  steps
+  simp_all
+  rfl
+
 
 set_option pp.rawOnError true
 
@@ -70,7 +72,7 @@ set_option trace.Lampe.STHoare.Helpers true
 
 theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil) h![input])
     fun output => output = Skyscraper.sbox input := by
-  enter_fn
+  enter_decl
   simp only [sbox]
   steps [rotate_left_intro]
   any_goals decide
@@ -79,7 +81,7 @@ theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef
 
 theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRef.decl "sgn0" [] HList.nil) h![input])
     fun output => output = (input.val % 2) := by
-  enter_fn
+  enter_decl
   simp only [sgn0]
   steps
   simp_all
@@ -179,13 +181,11 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
   simp only [bar]
   steps [to_le_bytes_intro]
 
-
-
   loop_inv fun (i: U 32) _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+  · decide
   · intro i _ hlt
     steps [sbox_intro]
-    · intro
-      casesm* ∃_,_
+    · casesm* ∃_,_
       subst_vars
       simp [Builtin.CastTp.cast, Access.modify]
       congr 1
@@ -193,46 +193,42 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       simp
       -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
       sorry
-  · decide
 
   steps [sbox_intro]
 
   loop_inv fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+  · decide
   · intro i _ hlt
     steps [sbox_intro]
-    · intro
-      casesm* ∃_,_
-      subst_vars
-      simp [Builtin.CastTp.cast, Access.modify]
+    casesm* ∃_,_
+    subst_vars
+    simp [Builtin.CastTp.cast, Access.modify]
+    sorry
       -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
-      sorry
-  · decide
-
   steps
 
   loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
+  · simp [BitVec.le_def, Int.cast, IntCast.intCast]
+  · sorry
   · intro i _ _
     steps
-    · intro
-      casesm* ∃_,_
-      subst_vars
-      simp [Builtin.CastTp.cast, Access.modify]
-      -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
-      sorry
-  · simp [BitVec.le_def, Int.cast, IntCast.intCast]
-  · simp_all; sorry -- ANOTHER VECTOR GOAL
+    casesm* ∃_,_
+    subst_vars
+    simp [Builtin.CastTp.cast, Access.modify]
+    -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
+    sorry
 
   sorry -- missing fn
 
 theorem bar_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field] Tp.field (FuncRef.decl "bar" [] HList.nil) h![input])
     fun output => output = Skyscraper.bar input := by
-  enter_fn
+  enter_decl
   apply bar_spec
 
 theorem sigma_intro : STHoare lp env (⟦⟧)
     (Expr.call [] Tp.field (FuncRef.decl "SIGMA" [] HList.nil) h![])
       fun output => output = Skyscraper.SIGMA := by
-  enter_fn
+  enter_decl
   simp only [Extracted.SIGMA]
   steps
   simp_all [Skyscraper.SIGMA]
@@ -240,7 +236,7 @@ theorem sigma_intro : STHoare lp env (⟦⟧)
 theorem rc_intro : STHoare lp env (⟦⟧)
     (Expr.call [] (Tp.field.array 8) (FuncRef.decl "RC" [] HList.nil) h![])
       fun output => output = ⟨Skyscraper.RC.toList, by rfl⟩ := by
-  enter_fn
+  enter_decl
   simp only [Extracted.RC]
   steps
   subst_vars; rfl
@@ -248,7 +244,7 @@ theorem rc_intro : STHoare lp env (⟦⟧)
 theorem square_intro : STHoare lp env (⟦⟧)
     (Expr.call [Tp.field] Tp.field (FuncRef.decl "square" [] HList.nil) h![input])
       fun output => output = Skyscraper.square input := by
-  enter_fn
+  enter_decl
   simp only [Extracted.square]
   steps [sigma_intro]
   subst_vars
@@ -256,10 +252,9 @@ theorem square_intro : STHoare lp env (⟦⟧)
 
 theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "permute" [] HList.nil) h![i])
     fun output => output = (Skyscraper.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Skyscraper.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
-  enter_fn
+  enter_decl
   simp only [Extracted.permute]
   steps [square_intro, rc_intro, bar_intro]
-
   casesm* ∃_,_
   simp [Builtin.indexTpl, OfNat.ofNat] at *
   subst_vars

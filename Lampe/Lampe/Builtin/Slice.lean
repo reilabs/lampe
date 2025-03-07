@@ -19,10 +19,9 @@ theorem index_replaced_slice :
 /--
 Defines the builtin slice constructor.
 -/
-def mkSlice (n : Nat) := newGenericPureBuiltin
-  (fun (argTps, tp) => ⟨argTps, (.slice tp)⟩)
-  (fun (argTps, tp) args => ⟨argTps = List.replicate n tp,
-    fun h => HList.toList args h⟩)
+def mkSlice := newGenericTotalPureBuiltin
+  (fun (n, tp) => ⟨List.replicate n tp, (.slice tp)⟩)
+  (fun _ args => HList.toList args rfl)
 
 /--
 Defines the indexing of a slice `l : List tp` with `i : U 32`

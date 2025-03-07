@@ -229,7 +229,7 @@ def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Expr rep .unit :=
 
 @[reducible]
 def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.slice tp) :=
-  Expr.callBuiltin _ (.slice tp) (.mkSlice n) vals
+  Expr.callBuiltin _ (.slice tp) .mkSlice vals
 
 @[reducible]
 def Expr.mkArray (n : U 32) (vals : HList rep (List.replicate n.toNat tp)) : Expr rep (.array tp n) :=
@@ -237,7 +237,7 @@ def Expr.mkArray (n : U 32) (vals : HList rep (List.replicate n.toNat tp)) : Exp
 
 @[reducible]
 def Expr.mkRepSlice (n : Nat) (val : rep tp) : Expr rep (.slice tp) :=
-  Expr.callBuiltin _ (.slice tp) (.mkSlice n) (HList.replicate val n)
+  Expr.callBuiltin _ (.slice tp) .mkSlice (HList.replicate val n)
 
 @[reducible]
 def Expr.mkRepArray (n : U 32) (val : rep tp) : Expr rep (.array tp n) :=
