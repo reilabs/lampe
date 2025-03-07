@@ -18,184 +18,33 @@ def RC : List Int :=
 def SIGMA : Int :=
     9915499612839321149637521777990102151350674507940716049588462388200839649614
 
-lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by
-  simp [SLP.star, SLP.lift]
-  apply Iff.intro
-  · rintro ⟨st₁, st₂, hdis, hst, ⟨hp, rfl⟩, hH⟩
-    simp only [LawfulHeap.empty_union] at hst
-    cases hst
-    simp_all
-  · intro ⟨hP, hH⟩
-    exists ∅, st
-    simp_all
-
-lemma STHoare.pure_left_of_imp (h : P → STHoare lp Γ ⟦P⟧ E Q): STHoare lp Γ ⟦P⟧ E Q := by
-  simp_all [STHoare, THoare, SLP.pure_star_iff_and]
-
-lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
-  intro h
-  simp_all [STHoare, THoare, SLP.pure_star_iff_and]
-
-lemma STHoare.pure_left {E : Expr (Tp.denote lp) tp} {Γ P Q} : (P → STHoare lp Γ ⟦True⟧ E Q) → STHoare lp Γ ⟦P⟧ E Q := by
-  intro h
-  apply STHoare.pure_left_of_imp
-  intro
-  apply STHoare.consequence (h_hoare := h (by assumption))
-  · simp [SLP.lift, SLP.entails]
-  · intro; apply SLP.entails_self
-
--- lemma STHoare.pure_left_star {p tp} {E : Expr (Tp.denote p) tp} {Γ P₁ P₂ Q} : (P₁ → STHoare  p Γ P₂ E Q) → STHoare p Γ (⟦P₁⟧ ⋆ P₂) E Q := by
---   intro h
---   intro H st Hh
---   unfold STHoare THoare at h
---   apply h
---   · simp [SLP.star, SLP.lift, SLP.entails] at Hh
---     casesm* ∃_,_, _∧_
---     assumption
---   · simp only [SLP.star, SLP.lift, SLP.entails] at Hh
---     rcases Hh with ⟨s₁, s₂, hdss, rfl, ⟨s₃, s₄, hdsss, rfl, ⟨⟨hp, rfl⟩⟩⟩, _⟩
---     unfold SLP.star
---     exists s₄
---     exists s₂
---     simp_all [LawfulHeap.union_empty, LawfulHeap.empty_union]
-
--- TODO fix this in Lampe
-axiom castField_u1_intro {p Γ f}: STHoare p Γ ⟦⟧ (Expr.callBuiltin [Tp.field] (Tp.u 1) Builtin.cast h![f]) fun o => o = f.val % 2
-axiom castU_self {p Γ s u} : STHoare p Γ ⟦⟧ (Expr.callBuiltin [Tp.u s] (Tp.u s) Builtin.cast h![u]) fun o => o = u
-
--- lemma STHoare.letIn_trivial_intro {p tp₁ tp₂} {P Q} {E : Expr (Tp.denote p) tp₁} {v'} {cont : Tp.denote p tp₁ → Expr (Tp.denote p) tp₂}
---     (hE : STHoare p Γ ⟦True⟧ E (fun v => v = v'))
---     (hCont : STHoare p Γ P (cont v') Q):
---     STHoare p Γ P (E.letIn cont) Q := by
---   apply STHoare.letIn_intro
---   apply STHoare.ramified_frame_top hE (Q₂:= fun v => ⟦v = v'⟧ ⋆ P)
---   · simp
---     apply SLP.forall_right
---     intro
---     apply SLP.wand_intro
---     rw [SLP.star_comm]
---     apply SLP.pure_left
---     rintro rfl
---     simp
---   · intro
---     apply STHoare.pure_left_star
---     rintro rfl
---     assumption
-
-syntax "trivial_steps" ("[" term,* "]")?: tactic
-macro_rules
-| `(tactic|trivial_steps []) => `(tactic |
-  repeat1 (first
-    | apply STHoare.letIn_trivial_intro
-      (first
-      | apply STHoare.fn_intro
-      | apply STHoare.litU_intro
-      | apply STHoare.litField_intro
-      | apply castField_u1_intro
-      | apply castU_self
-      | apply (STHoare.consequence (h_hoare := STHoare.fMul_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uNot_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uAnd_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uXor_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uOr_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uShr_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.uShl_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      | apply (STHoare.consequence (h_hoare := STHoare.mkArray_intro) (h_pre_conseq := SLP.entails_self) (by intro; simp only [exists_const]; apply SLP.entails_self))
-      )
-    | apply STHoare.var_intro
-  )
-)
-macro_rules | `(tactic|trivial_steps [$x]) => `(tactic |
-  repeat1 (first
-    | apply STHoare.letIn_trivial_intro; apply $x
-    | trivial_steps []
-  )
-)
-macro_rules | `(tactic|trivial_steps [$x,$xs:term,*]) => `(tactic |
-  repeat1 (first
-    | apply STHoare.letIn_trivial_intro; apply $x
-    | trivial_steps [$xs,*]
-  )
-)
-
-theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
-    (h_found : (Γ.functions.find? (fun (n, f) => n = fnName)) = some (fnName, func))
-    (hkc : func.generics = kinds)
-    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
-    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
-    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) (htco ▸ Q)) :
-    STHoare p Γ H (Expr.call argTps outTp (.decl fnName kinds generics) args) Q := by
-  apply STHoare.callDecl_intro (fnName := fnName) (outTp := outTp) (generics := generics)
-  · exact func
-  · simp [SLP.entails_top]
-  all_goals sorry
-
-syntax "enter_fn" : tactic
-macro_rules | `(tactic|enter_fn) => `(tactic|apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl))
-
 theorem rl_intro : STHoare lp env ⟦⟧
   (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "rl" [] HList.nil) h![input])
     fun output => output = Skyscraper.rl input := by
-  apply STHoare.callDecl_intro
-  · sl
-    tauto
-  on_goal 3 => exact Extracted.rl.fn
-  all_goals try tauto
+  enter_fn
   simp only [rl]
   steps
-  simp_all
-  tauto
+  subst_vars
+  rfl
 
 -- This is almost certainly stated incorrectly, but something like this is true
 theorem bitvec_lt (w : Nat) (b N : BitVec w) (hb : b < N) (hN : N < (2 ^ w : Nat) - 1)
     : b.toNat < N.toNat := by
   sorry
 
-lemma SLP.exists_true [LawfulHeap α] (Q : (x : True) → SLP α) : (∃∃ (x : True), Q x) = Q ⟨⟩ := by
-  unfold SLP.exists'
-  funext st
-  simp only [←iff_iff_eq]
-  apply Iff.intro
-  · rintro ⟨_, h⟩
-    exact h
-  · intro h
-    exact ⟨⟨⟩, h⟩
-
-lemma SLP.exists_prop_unused [LawfulHeap α] (P : Prop) (Q : SLP α) : (∃∃ (_ : P), Q) = (P ⋆ Q) := by
-  apply SLP.eq_of_iff
-  · apply exi_prop_l
-    intro
-    apply SLP.entails_self
-  · apply SLP.pure_left
-    intro
-    apply SLP.exists_intro
-    apply SLP.entails_self
-    assumption
-
 lemma rfl_iff_true : α = α ↔ True := by tauto
 
-
 set_option trace.Lampe.SL true
-
-theorem pluck_pure_exi_l' [LawfulHeap α] {P : Prop} {f : β → SLP α} : (SLP.exists' f ⋆ P) = (P ⋆ SLP.exists' f) := by
-  simp [SLP.star_comm]
-
-theorem star_lift_entails {α : Type _} [LawfulHeap α] (P Q : Prop) : (⟦P⟧ : SLP α) ⋆ ⟦Q⟧ ⊢ ⟦Q⟧ := by
-  intro st ⟨st1, ⟨st2, ⟨_, ⟨h12, ⟨p, h1⟩, q, h2⟩⟩⟩⟩
-  have : st = ∅ := by
-    rw [h12, h1, h2]
-    exact LawfulHeap.union_empty
-  tauto
 
 theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
     (Expr.call [Tp.u 8, Tp.u 8] (Tp.u 8) (FuncRef.decl "rotate_left" [] HList.nil) h![input, N])
       fun output => output = Skyscraper.rotateLeft input N := by
   enter_fn
   simp only [rotate_left]
-  steps'
+  steps
   loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Skyscraper.rl i.toNat input⟩]
   · intros i hlo hhi
-    steps' [rl_intro]
+    steps [rl_intro]
     intro
     congr
     simp_all
@@ -211,10 +60,10 @@ theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
     rfl
   · simp only [Int.cast, IntCast.intCast]
     bv_decide
-  · simp only [SLP.exists_prop_unused]
-    steps
+  · steps
     simp_all
     rfl
+
 set_option pp.rawOnError true
 
 set_option trace.Lampe.STHoare.Helpers true
@@ -223,9 +72,8 @@ theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef
     fun output => output = Skyscraper.sbox input := by
   enter_fn
   simp only [sbox]
-  steps' [rotate_left_intro]
-  any_goals (intro; decide)
-  intro
+  steps [rotate_left_intro]
+  any_goals decide
   subst_vars
   rfl
 
@@ -234,7 +82,6 @@ theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRe
   enter_fn
   simp only [sgn0]
   steps
-  rintro rfl
   simp_all
 
 opaque BitVec.bytesLE : BitVec n → List.Vector (U 8) n
@@ -316,27 +163,43 @@ def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Ve
 | d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
 | d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
 
+def List.pad {α} (l : List α) (d : Nat) (pad : α) : List α := match d, l with
+| 0, _ => []
+| d+1, [] => pad :: List.pad [] d pad
+| d+1, h::t => h :: List.pad t d pad
+
+@[simp]
+lemma List.Vector.toList_pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : (List.Vector.pad v d pad).toList = List.pad v.toList d pad := by
+  sorry
+
+
+
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.bar input := by
   simp only [bar]
-  steps' [to_le_bytes_intro]
+  steps [to_le_bytes_intro]
+
+
 
   loop_inv fun (i: U 32) _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
   · intro i _ hlt
-    steps' [sbox_intro]
+    steps [sbox_intro]
     · intro
       casesm* ∃_,_
       subst_vars
       simp [Builtin.CastTp.cast, Access.modify]
+      congr 1
+      apply List.Vector.eq
+      simp
       -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
       sorry
   · decide
 
-  steps' [sbox_intro]
+  steps [sbox_intro]
 
   loop_inv fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
   · intro i _ hlt
-    steps' [sbox_intro]
+    steps [sbox_intro]
     · intro
       casesm* ∃_,_
       subst_vars
@@ -345,15 +208,7 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       sorry
   · decide
 
-  steps' 3 []
-
-  apply STHoare.letIn_intro
-  apply STHoare.consequence_frame_left
-  apply STHoare.readRef_intro
-  rotate_left
-  sl
-
-  steps'
+  steps
 
   loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.pad 32 0 |>.toList⟩]
   · intro i _ _
@@ -365,13 +220,9 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       -- THIS IS A SOLVABLE GOAL ABOUT VECTORS
       sorry
   · simp [BitVec.le_def, Int.cast, IntCast.intCast]
+  · simp_all; sorry -- ANOTHER VECTOR GOAL
 
-  steps' []
-
-  · simp_all
-    congr 1
-    sorry
-  steps' []
+  sorry -- missing fn
 
 theorem bar_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field] Tp.field (FuncRef.decl "bar" [] HList.nil) h![input])
     fun output => output = Skyscraper.bar input := by
@@ -383,26 +234,23 @@ theorem sigma_intro : STHoare lp env (⟦⟧)
       fun output => output = Skyscraper.SIGMA := by
   enter_fn
   simp only [Extracted.SIGMA]
-  steps' []
-  rintro rfl
-  rfl
+  steps
+  simp_all [Skyscraper.SIGMA]
 
 theorem rc_intro : STHoare lp env (⟦⟧)
     (Expr.call [] (Tp.field.array 8) (FuncRef.decl "RC" [] HList.nil) h![])
       fun output => output = ⟨Skyscraper.RC.toList, by rfl⟩ := by
   enter_fn
   simp only [Extracted.RC]
-  steps' []
-  rintro rfl
-  rfl
+  steps
+  subst_vars; rfl
 
 theorem square_intro : STHoare lp env (⟦⟧)
     (Expr.call [Tp.field] Tp.field (FuncRef.decl "square" [] HList.nil) h![input])
       fun output => output = Skyscraper.square input := by
   enter_fn
   simp only [Extracted.square]
-  steps' [sigma_intro]
-  intro
+  steps [sigma_intro]
   subst_vars
   rfl
 
@@ -410,21 +258,18 @@ theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.
     fun output => output = (Skyscraper.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Skyscraper.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
   enter_fn
   simp only [Extracted.permute]
-  steps' [square_intro, rc_intro, bar_intro]
+  steps [square_intro, rc_intro, bar_intro]
 
   casesm* ∃_,_
   simp [Builtin.indexTpl, OfNat.ofNat] at *
-  intro
   subst_vars
   rfl
 
 theorem compress_spec : STHoare lp env ⟦⟧ (compress.fn.body _ h![] |>.body h![l, r])
     fun output => output = Skyscraper.compress l r := by
   simp only [compress]
-  steps' [permute_intro]
-  intro
+  steps [permute_intro]
   casesm* ∃_,_
   subst_vars
   simp [Skyscraper.compress, HList.toVec, HList.toList]
   rfl
-  -- rfl

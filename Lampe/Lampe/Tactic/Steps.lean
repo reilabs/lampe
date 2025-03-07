@@ -2,6 +2,8 @@ import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
 import Lampe.Syntax
+import Lampe.Tactic.SLNorm
+import Lampe.Tactic.SL
 
 import Lean.Meta.Tactic.Simp.Main
 
@@ -10,72 +12,7 @@ open Lampe
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq Lampe.STHoare
 
 initialize
-  Lean.registerTraceClass `Lampe.SL
   Lean.registerTraceClass `Lampe.STHoare.Helpers
-
-inductive SLTerm where
-| top : SLTerm
-| star : Expr → SLTerm → SLTerm → SLTerm
-| lift : Expr → SLTerm
-| singleton : Expr → Expr → SLTerm
-| lmbSingleton : Expr → Expr → SLTerm
-| mvar : Expr → SLTerm
-| all : Expr → SLTerm
-| exi : Expr → SLTerm
-| wand : SLTerm → SLTerm → SLTerm
-| unrecognized : Expr → SLTerm
-
-def SLTerm.toString : SLTerm → String
-| top => "⊤"
-| wand a b => s!"{a.toString} -⋆ {b.toString}"
-| exi e => s!"∃∃ {e}"
-| all e => s!"∀∀ {e}"
-| star _ a b => s!"({a.toString} ⋆ {b.toString})"
-| lift e => s!"⟦{e.dbgToString}⟧"
-| singleton e₁ _ => s!"[{e₁.dbgToString} ↦ _]"
-| lmbSingleton e₁ _ => s!"[λ {e₁.dbgToString} ↦ _]"
-| mvar e => s!"MV{e.dbgToString}"
-| unrecognized e => s!"<unrecognized: {e.dbgToString}>"
-
-def SLTerm.printShape : SLTerm → String
-| SLTerm.top => "⊤"
-| wand a b => s!"({a.printShape} -⋆ {b.printShape})"
-| exi e => s!"(∃∃)"
-| all e => s!"(∀∀)"
-| star _ a b => s!"({a.printShape} ⋆ {b.printShape})"
-| lift e => s!"⟦⟧"
-| singleton e₁ _ => s!"[_ ↦ _]"
-| lmbSingleton e₁ _ => s!"[λ _ ↦ _]"
-| mvar e => s!"MV"
-| unrecognized e => s!"<unrecognized>"
-
-
-
-def SLTerm.isMVar : SLTerm → Bool
-| SLTerm.mvar _ => true
-| _ => false
-
-def SLTerm.isTop : SLTerm → Bool
-| SLTerm.top => true
-| _ => false
-
-def SLTerm.isForAll : SLTerm → Bool
-| SLTerm.all _ => true
-| _ => false
-
-instance : ToString SLTerm := ⟨SLTerm.toString⟩
-
-instance : Inhabited SLTerm := ⟨SLTerm.top⟩
-
-theorem star_exists [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, Q x ⋆ P) := by
-  unfold SLP.exists' SLP.star
-  funext st
-  simp
-  tauto
-
-theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : ((∃∃x, Q x) ⋆ P) = (∃∃x, P ⋆ Q x) := by
-  rw [star_exists]
-  simp [SLP.star_comm]
 
 theorem Lampe.STHoare.litU_intro: STHoare p Γ ⟦⟧ (.litNum (.u s) n) fun v => v = n := by
   unfold STHoare THoare
@@ -169,33 +106,9 @@ theorem Lampe.SLP.skip_fst' : (⟦⟧ ⊢ Q ⋆ X) → ([a ↦ b] ⋆ X ⊢ R₂
 theorem Lampe.SLP.entails_star_true [LawfulHeap α] {H : SLP α} : H ⊢ H ⋆ ⟦⟧ := by
   simp [SLP.entails_self]
 
-theorem SLP.eq_of_iff [LawfulHeap α] {P Q : SLP α} : (P ⊢ Q) → (Q ⊢ P) → P = Q := by
-  intros
-  apply funext
-  intro
-  apply eq_iff_iff.mpr
-  apply Iff.intro <;> apply_assumption
-
 theorem exi_pure [LawfulHeap α] {P : β → Prop} : (SLP.exists' fun x =>  ⟦P x⟧) = SLP.lift (α := α) (∃x, P x) := by
   unfold SLP.exists' SLP.lift
   simp
-
-theorem pluck_pure_l {P : Prop} : ([a ↦ b] ⋆ P) = (P ⋆ [a ↦ b]) := by
-  simp [SLP.star_comm]
-
-theorem pluck_pure_all_l [LawfulHeap α] {P : Prop} {f : β → SLP α} : (SLP.forall' f ⋆ P) = (P ⋆ SLP.forall' f) := by
-  simp [SLP.star_comm]
-
-theorem pluck_pure_exi_l [LawfulHeap α] {P : Prop} {f : β → SLP α} : (SLP.exists' f ⋆ P) = (P ⋆ SLP.exists' f) := by
-  simp [SLP.star_comm]
-
-theorem pluck_pure_l_assoc {P : Prop} {Q : SLP (State p)} : ([a ↦ b] ⋆ P ⋆ Q) = (P ⋆ [a ↦ b] ⋆ Q) := by
-  rw [SLP.star_comm, SLP.star_assoc]
-  apply SLP.eq_of_iff <;> {apply SLP.star_mono_l; rw [SLP.star_comm]; apply SLP.entails_self}
-
-theorem pluck_pure_l_exi_assoc {P : Prop} {Q : SLP (State p)} : (SLP.exists' f ⋆ P ⋆ Q) = (P ⋆ SLP.exists' f ⋆ Q) := by
-  rw [SLP.star_comm, SLP.star_assoc]
-  apply SLP.eq_of_iff <;> {apply SLP.star_mono_l; rw [SLP.star_comm]; apply SLP.entails_self}
 
 theorem SLP.pure_star_pure [LawfulHeap α] {P Q : Prop} : (P ⋆ Q) = (⟦P ∧ Q⟧ : SLP α) := by
   unfold SLP.star SLP.lift
@@ -210,14 +123,7 @@ theorem SLP.pure_star_pure [LawfulHeap α] {P Q : Prop} : (P ⋆ Q) = (⟦P ∧ 
     apply LawfulHeap.disjoint_empty
     all_goals simp_all [LawfulHeap.disjoint_empty]
 
-macro "h_norm" : tactic => `(tactic|(
-  try simp only [SLP.star_assoc,
-    pluck_pure_l, pluck_pure_l_assoc, pluck_pure_all_l, pluck_pure_exi_l, pluck_pure_l_exi_assoc,
-    SLP.star_true, SLP.true_star, exi_pure];
-  -- repeat (apply STHoare.pure_left; intro_cases);
-  -- repeat (apply SLP.pure_left; intro_cases);
-  subst_vars;
-))
+
 
 theorem SLP.pure_leftX [LawfulHeap α] {H Q R : SLP α} : (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
   intro
@@ -250,6 +156,12 @@ theorem star_mono_l_sing' : (⟦⟧ ⊢ Q) → (v₁ = v₂) → ([r ↦ v₁] �
   rw [h₂]
   apply SLP.star_mono_l'
   apply h₁
+
+def parseTriple (e : Expr) : TacticM (Option (Expr × Expr × Expr)) := do
+  if e.isAppOf ``STHoare then
+    let args := e.getAppArgsN 5
+    return some (args[2]!, args[3]!, args[4]!)
+  else return none
 
 partial def extractTripleExpr (e: Expr): TacticM (Option Expr) := do
   if e.isAppOf ``STHoare then
@@ -351,6 +263,7 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := do
   match head with
   | Lean.Expr.const n _ =>
     match n with
+    | ``Expr.skip => return some (←``(skip_intro), true)
     | ``Expr.var => return some (←``(var_intro), true)
     | ``Expr.mkTuple => return some (←``(genericTotalPureBuiltin_intro (a := (_,_)) Builtin.mkTuple rfl), true)
     | ``Expr.mkArray =>
@@ -370,6 +283,9 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := do
       match builtinName with
       | Lean.Expr.const n _ =>
         match n with
+        | ``Lampe.Builtin.fresh => return some (←``(fresh_intro), false)
+        | ``Lampe.Builtin.assert => return some (←``(assert_intro), false)
+
         | ``Lampe.Builtin.uNot => return some (←``(genericTotalPureBuiltin_intro Builtin.uNot rfl), true)
         | ``Lampe.Builtin.uAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.uAnd rfl), true)
         | ``Lampe.Builtin.uOr => return some (←``(genericTotalPureBuiltin_intro Builtin.uOr rfl), true)
@@ -384,12 +300,20 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := do
         | ``Lampe.Builtin.fSub => return some (←``(genericTotalPureBuiltin_intro Builtin.fSub rfl (a := ())), true)
         | ``Lampe.Builtin.fNeg => return some (←``(genericTotalPureBuiltin_intro Builtin.fNeg rfl (a := ())), true)
 
+        | ``Lampe.Builtin.fEq => return some (←``(genericTotalPureBuiltin_intro Builtin.fEq rfl (a := ())), true)
+
         | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro), false)
 
         | ``Lampe.Builtin.mkArray => return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray rfl), true)
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)
-        | ``Lampe.Builtin.arrayLen => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayLen rfl), true)
+        | ``Lampe.Builtin.arrayLen => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayLen (a := (_,_)) rfl), true)
         | ``Lampe.Builtin.arrayAsSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayAsSlice (a := (_,_)) rfl), true)
+
+        | ``Lampe.Builtin.slicePushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushBack rfl), true)
+        | ``Lampe.Builtin.slicePushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushFront rfl), true)
+        | ``Lampe.Builtin.sliceLen => return some (←``(sliceLen_intro), false)
+        | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro), false)
+
         | _ => return none
       | _ => return none
     | ``Lampe.Expr.ref => return some (←``(ref_intro), false)
@@ -412,66 +336,6 @@ def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bo
 
 def isIte (e : Expr) : Bool := e.isAppOf `Lampe.Expr.ite
 
-partial def parseSLExpr (e: Expr): TacticM SLTerm := do
-  if e.isAppOf ``SLP.star then
-    let args := e.getAppArgs
-    let fst ← parseSLExpr (←liftOption args[2]?)
-    let snd ← parseSLExpr (←liftOption args[3]?)
-    return SLTerm.star e fst snd
-  if e.isAppOf ``State.valSingleton then
-    let args := e.getAppArgs
-    let fst ← liftOption args[1]?
-    let snd ← liftOption args[2]?
-    return SLTerm.singleton fst snd
-  else if e.isAppOf ``State.lmbSingleton then
-    let args := e.getAppArgs
-    let fst ← liftOption args[1]?
-    let snd ← liftOption args[2]?
-    return SLTerm.lmbSingleton fst snd
-  else if e.isAppOf ``SLP.top then
-    return SLTerm.top
-  else if e.isAppOf ``SLP.lift then
-    let args := e.getAppArgs
-    return SLTerm.lift (←liftOption args[2]?)
-  else if e.getAppFn.isMVar then
-    return SLTerm.mvar e
-  else if e.isAppOf ``SLP.forall' then
-    let args := e.getAppArgs
-    return SLTerm.all (←liftOption args[3]?)
-  else if e.isAppOf ``SLP.exists' then
-    let args := e.getAppArgs
-    return SLTerm.exi (←liftOption args[3]?)
-  else if e.isAppOf ``SLP.wand then
-    let args := e.getAppArgs
-    let lhs ← parseSLExpr (←liftOption args[2]?)
-    let rhs ← parseSLExpr (←liftOption args[3]?)
-    return SLTerm.wand lhs rhs
-  -- else if e.isAppOf ``SLTerm.lift then
-  --   let args := e.getAppArgs
-  --   return SLTerm.lift args[0]
-  -- else if e.isAppOf ``SLTerm.singleton then
-  --   let args := e.getAppArgs
-  --   return SLTerm.singleton args[0] args[1]
-  -- else if e.isAppOf ``SLTerm.mvar then
-  --   let args := e.getAppArgs
-  --   return SLTerm.mvar args[0]
-  else pure $ .unrecognized e
-
-partial def parseEntailment (e: Expr): TacticM (SLTerm × SLTerm) := do
-  if e.isAppOf ``SLP.entails then
-    let args := e.getAppArgs
-    let pre ← parseSLExpr (←liftOption args[2]?)
-    let post ← parseSLExpr (←liftOption args[3]?)
-    return (pre, post)
-  else throwError "not an entailment {e}"
-
-theorem star_top_of_star_mvar [LawfulHeap α] {H Q R : SLP α} : (H ⊢ Q ⋆ R) → (H ⊢ Q ⋆ ⊤) := by
-  intro h
-  apply SLP.entails_trans
-  assumption
-  apply SLP.star_mono_l
-  apply SLP.entails_top
-
 theorem solve_left_with_leftovers [LawfulHeap α] {H Q R : SLP α} : (H ⊢ Q ⋆ R) → (R ⊢ P) → (H ⊢ Q ⋆ P) := by
   intros
   apply SLP.entails_trans
@@ -491,17 +355,6 @@ theorem pure_ent_pure_star_mv [LawfulHeap α] : (P → Q) → ((P : SLP α) ⊢ 
   tauto
   simp [*, SLP.entails_self]
 
-theorem pure_star_H_ent_pure_star_mv [LawfulHeap α] {H Q R : SLP α} :
-  (P → (H ⊢ Q ⋆ R)) → (P ⋆ H ⊢ Q ⋆ P ⋆ R) := by
-  intro
-  apply SLP.pure_left
-  intro
-  rw [SLP.star_comm, SLP.star_assoc]
-  apply SLP.pure_right
-  assumption
-  rw [SLP.star_comm]
-  tauto
-
 theorem skip_left_ent_star_mv [LawfulHeap α] {R L P H : SLP α} : (R ⊢ P ⋆ H) → (L ⋆ R ⊢ P ⋆ L ⋆ H) := by
   intro h
   apply SLP.entails_trans
@@ -518,12 +371,6 @@ theorem skip_evidence_pure [LawfulHeap α] {H : SLP α} : Q → (H ⊢ Q ⋆ H) 
   tauto
   tauto
 
-theorem SLP.exists_intro [LawfulHeap α] {H : SLP α} {Q : β → SLP α} {a} : (H ⊢ Q a) → (H ⊢ ∃∃a, Q a) := by
-  intro h st H
-  unfold SLP.exists'
-  exists a
-  tauto
-
 theorem exi_prop [LawfulHeap α] {P : Prop} {H : SLP α} {Q : P → SLP α} :
   (H ⊢ P ⋆ ⊤) → (∀(p : P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p) := by
   intro h₁ h₂
@@ -536,13 +383,6 @@ theorem exi_prop [LawfulHeap α] {P : Prop} {H : SLP α} {Q : P → SLP α} :
   apply_assumption
   assumption
 
-theorem SLP.exists_intro_l [LawfulHeap α] {H : β → SLP α} {Q : SLP α}:
-  (∀ a, (H a ⊢ Q)) → ((∃∃a, H a) ⊢ Q) := by
-  intro h st
-  unfold SLP.entails SLP.exists' at *
-  rintro ⟨v, hH⟩
-  apply h
-  use hH
 
 theorem exi_prop_l [LawfulHeap α] {P : Prop} {H : P → SLP α} {Q : SLP α} :
   ((x : P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
@@ -570,243 +410,21 @@ theorem singleton_congr {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → ([r
   rw [h]
   apply SLP.entails_self
 
-theorem singleton_congr_mv {p} {r} {v₁ v₂ : AnyValue p} : (v₁ = v₂) → ([r ↦ v₁] ⊢ [r ↦ v₂] ⋆ ⟦⟧) := by
-  rintro rfl
-  simp
-  apply SLP.entails_self
 
-theorem lmbSingleton_congr_mv {p} {r} {l₁ l₂ : Lambda _} : (l₁ = l₂) → (([λr ↦ l₁] : SLP (State p)) ⊢ [λr ↦ l₂] ⋆ ⟦⟧) := by
-  rintro rfl
-  simp
-  apply SLP.entails_self
-
-theorem exi_singleton_congr_mv {p} {r} {v₁ : AnyValue p} {v₂ : α → AnyValue p} : (∀a, v₁ = v₂ a) →
-    ((∃∃a, [r ↦ v₂ a]) ⊢ [r ↦ v₁] ⋆ ⟦⟧) := by
-  intro h
-  simp
-  apply SLP.exists_intro_l
-  intro a
-  rw [←h _]
-  apply SLP.entails_self
-
-theorem singleton_star_congr {p} {r} {v₁ v₂ : AnyValue p} {R} : (v₁ = v₂) → ([r ↦ v₁] ⋆ R ⊢ [r ↦ v₂] ⋆ R) := by
-  rintro rfl
-  apply SLP.entails_self
 
 theorem lmbSingleton_star_congr {p} {r} {v₁ v₂ : Lambda _} {R : SLP (State p)} :
   (v₁ = v₂) → ([λr ↦ v₁] ⋆ R ⊢ [λr ↦ v₂] ⋆ R) := by
   rintro rfl
   apply SLP.entails_self
 
-theorem exi_singleton_star_congr {p r} {R : SLP (State p)} {v₁ : AnyValue p} {v₂ : α → AnyValue p} : (∀a, v₁ = v₂ a) →
-    ((∃∃a, [r ↦ v₂ a]) ⋆ R ⊢ [r ↦ v₁] ⋆ R) := by
-  intro h
-  simp only [exists_star]
-  apply SLP.exists_intro_l
-  intro a
-  rw [SLP.star_comm]
-  apply SLP.star_mono_r
-  rw [←h _]
-  apply SLP.entails_self
-
-partial def solvesSingleton (lhs : SLTerm) (rhsV : Expr): TacticM Bool :=
-  match lhs with
-  | SLTerm.singleton v _ => pure $ v == rhsV
-  | SLTerm.exi (Lean.Expr.lam _ _ body _) => do solvesSingleton (←parseSLExpr body) rhsV
-  | _ => pure false
-
-partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): TacticM (List MVarId) := do
-  match lhs with
-  | SLTerm.singleton v _ =>
-    if v == rhs then
-      let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``singleton_congr_mv)
-      let newGoal ← liftOption newGoals[0]?
-      let newGoal ← try newGoal.refl; pure []
-        catch _ => pure [newGoal]
-      pure $ newGoal ++ newGoals
-    else throwError "not equal"
-  | SLTerm.lmbSingleton v _ =>
-    if v == rhs then
-      let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_congr_mv)
-      let newGoal ← liftOption newGoals[0]?
-      let newGoal ← try newGoal.refl; pure []
-        catch _ => pure [newGoal]
-      pure $ newGoal ++ newGoals
-    else throwError "not equal"
-  | SLTerm.exi _ =>
-    if (←solvesSingleton lhs rhs) then
-      let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``exi_singleton_congr_mv)
-      let newGoal ← liftOption newGoals[0]?
-      let newGoal ← try newGoal.refl; pure []
-        catch _ => pure [newGoal]
-      pure $ newGoal ++ newGoals
-    else
-      throwError "existential cannot solve the singleton"
-  | SLTerm.star _ l r =>
-    match l with
-    | SLTerm.singleton v _ => do
-      if v == rhs then
-        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``singleton_star_congr)
-        let newGoal ← liftOption newGoals[0]?
-        let newGoal ← try newGoal.refl; pure []
-          catch _ => pure [newGoal]
-        pure $ newGoal ++ newGoals
-      else
-        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-        let newGoal ← liftOption newGoals[0]?
-        let new' ← solveSingletonStarMV newGoal r rhs
-        return new' ++ newGoals
-    | SLTerm.lmbSingleton v _ => do
-      if v == rhs then
-        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``lmbSingleton_star_congr)
-        let newGoal ← liftOption newGoals[0]?
-        let newGoal ← try newGoal.refl; pure []
-          catch _ => pure [newGoal]
-        pure $ newGoal ++ newGoals
-      else
-        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-        let newGoal ← liftOption newGoals[0]?
-        let new' ← solveSingletonStarMV newGoal r rhs
-        return new' ++ newGoals
-    | SLTerm.lift _ =>
-      let goals ← goal.apply (←mkConstWithFreshMVarLevels ``pure_star_H_ent_pure_star_mv)
-      let g ← liftOption goals[0]?
-      let (_, g) ← g.intro1
-      let ng ← solveSingletonStarMV g r rhs
-      return ng ++ goals
-    | SLTerm.exi _ =>
-      if (←solvesSingleton l rhs) then
-        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``exi_singleton_star_congr)
-        let newGoal ← liftOption newGoals[0]?
-        let (_, newGoal) ← newGoal.intro1
-        let newGoal ← try newGoal.refl; pure []
-          catch _ => pure [newGoal]
-        pure $ newGoal ++ newGoals.drop 1
-      else
-        let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-        let newGoal ← liftOption newGoals[0]?
-        let new' ← solveSingletonStarMV newGoal r rhs
-        return new' ++ newGoals
-
-    | _ =>
-      let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``use_right)
-      let newGoal ← liftOption newGoals[0]?
-      let new' ← solveSingletonStarMV newGoal r rhs
-      return new' ++ newGoals
-  | _ => throwError "not a singleton {lhs}"
-
-partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM (List MVarId) := withTraceNode `Lampe.SL (fun e => return f!"solvePureStarMV {Lean.exceptEmoji e}") do
-  match lhs with
-  | .lift _ =>
-    goal.apply (←mkConstWithFreshMVarLevels ``pure_ent_pure_star_mv)
-  | .star _ l r => do
-    match l with
-    | .lift _ =>
-      let goals ← goal.apply (←mkConstWithFreshMVarLevels ``pure_star_H_ent_pure_star_mv)
-      let g ← liftOption goals[0]?
-      let (_, g) ← g.intro1
-      let ng ← solvePureStarMV g r
-      return ng ++ goals
-    | _ =>
-      let goals ← goal.apply (←mkConstWithFreshMVarLevels ``skip_left_ent_star_mv)
-      let g ← liftOption goals[0]?
-      let ng ← solvePureStarMV g l
-      return ng ++ goals
-  | .singleton _ _ =>
-      goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
-  | .lmbSingleton _ _ =>
-      goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
-  | .exi _ =>
-      goal.apply (←mkConstWithFreshMVarLevels ``skip_evidence_pure)
-  | _ => throwError "not a lift {lhs}"
-
 -- (H ⊢ P ⋆ ⊤) → (∀(p : P), H ⊢ Q p) → (H ⊢ ∃∃p, Q p)
 
-lemma solve_exi_prop_star_mv {p} {P R : SLP (State p)} {Q : H → SLP (State p)} : (P ⊢ ⟦H⟧ ⋆ ⊤) → (∀(h : H), P ⊢ Q h ⋆ R) → (P ⊢ (∃∃h, Q h) ⋆ R) := by
-  simp only [exists_star, star_exists]
-  intros
-  apply exi_prop
-  assumption
-  simp_all [SLP.star_comm]
-
-mutual
-
-partial def solveStarMV (goal : MVarId) (lhs : SLTerm) (rhsNonMv : SLTerm): TacticM (List MVarId) := do
-  match rhsNonMv with
-  | .singleton v _ => solveSingletonStarMV goal lhs v
-  | .lmbSingleton v _ => solveSingletonStarMV goal lhs v
-  | .lift _ => solvePureStarMV goal lhs
-  | .exi _ =>
-    let new ← goal.apply (←mkConstWithFreshMVarLevels ``solve_exi_prop_star_mv)
-    let newL ← solveEntailment (←liftOption new[0]?)
-    let (_, newR) ← (←liftOption new[1]?).intro1
-    let newR ← solveEntailment newR
-    return newL ++ newR
-  | _ => throwError "not a singleton srry {rhsNonMv}"
-
-partial def solveEntailment (goal : MVarId): TacticM (List MVarId) := withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
-  let newGoal ← evalTacticAt (←`(tactic|h_norm)) goal
-  let goal ← liftOption newGoal[0]?
-  let target ← goal.instantiateMVarsInType
-  let (pre, post) ← parseEntailment target
-
-  trace[Lampe.SL] "Current goal: {pre.printShape} ⊢ {post.printShape}"
-  trace[Lampe.SL] (←Lean.PrettyPrinter.ppExpr target)
-  match pre with
-  | SLTerm.exi _ => do
-    let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``exi_prop_l)
-    let newGoal ← liftOption newGoals[0]?
-    let (_, newGoal) ← newGoal.intro1
-    let gls ← solveEntailment newGoal
-    return gls ++ newGoals
-  | SLTerm.top => do
-    let newGoals ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.entails_top)
-    return newGoals
-  | _ => pure ()
-
-  match post with
-  | SLTerm.mvar _ => goal.apply (←mkConstWithFreshMVarLevels ``SLP.entails_self)
-  | SLTerm.star _ l r =>
-    -- [TODO] left can be mvar – should be rotated back
-    if r.isMVar then
-      let newGoals ← solveStarMV goal pre l
-      return newGoals
-    else if r.isTop then
-      let g ← goal.apply (←mkConstWithFreshMVarLevels ``star_top_of_star_mvar)
-      let g' ← liftOption g[0]?
-      let ng ← solveEntailment g'
-      pure $ ng ++ g
-    else if r.isForAll then
-      throwError "cannot solve forall"
-    else throwError "todo {l} {r}"
-  | SLTerm.singleton _ _ =>
-    -- [TODO] handle pure on the left
-    goal.apply (←mkConstWithFreshMVarLevels ``SLP.entails_self)
-  | SLTerm.all _ => do
-    let new ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.forall_right)
-    let new' ← liftOption new[0]?
-    let (_, g) ← new'.intro1
-    solveEntailment g
-  | SLTerm.wand _ _ =>
-    let new ← goal.apply (←mkConstWithFreshMVarLevels ``SLP.wand_intro)
-    let new' ← liftOption new[0]?
-    solveEntailment new'
-  | SLTerm.exi _ =>
-    -- [TODO] this only works for prop existential - make the others an error
-    let new ← goal.apply (←mkConstWithFreshMVarLevels ``exi_prop)
-    let newL ← solveEntailment (←liftOption new[0]?)
-    let (_, newR) ← (←liftOption new[1]?).intro1
-    let newR ← solveEntailment newR
-    return newL ++ newR
-  | _ => throwError "unknown rhs {post}"
-
-end
-
-syntax "sl" : tactic
-elab "sl" : tactic => do
-  let target ← getMainGoal
-  let newGoals ← solveEntailment target
-  replaceMainGoal newGoals
+-- lemma solve_exi_prop_star_mv {p} {P R : SLP (State p)} {Q : H → SLP (State p)} : (P ⊢ ⟦H⟧ ⋆ ⊤) → (∀(h : H), P ⊢ Q h ⋆ R) → (P ⊢ (∃∃h, Q h) ⋆ R) := by
+--   simp only [exists_star, star_exists]
+--   intros
+--   apply exi_prop
+--   assumption
+--   simp_all [SLP.star_comm]
 
 def tryApplySyntaxes (goal : MVarId) (lemmas : List (TSyntax `term)): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
@@ -824,24 +442,24 @@ def tryApplyNames (goal : MVarId) (lemmas : List Name): TacticM (List MVarId) :=
   try goal.apply (←mkConstWithFreshMVarLevels n)
   catch _ => tryApplyNames goal ns
 
-def stepHelper1 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper1: {Lean.exceptEmoji e}") do
-  try tryApplySyntaxes goal addLemmas
-  catch _ =>
-    trace[Lampe.STHoare.Helpers] "additional lemmas failed"
-    tryApplyNames goal names
+-- def stepHelper1 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper1: {Lean.exceptEmoji e}") do
+--   try tryApplySyntaxes goal addLemmas
+--   catch _ =>
+--     trace[Lampe.STHoare.Helpers] "additional lemmas failed"
+--     tryApplyNames goal names
 
 
-def stepHelper2 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper2 {Lean.exceptEmoji e}") do
-  let hr :: ent :: r ← goal.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "consequence_frame_left failed"
-  let furtherGoals ← stepHelper1 hr names addLemmas
-  let entGoals ← try solveEntailment ent catch _ => pure [ent]
-  return furtherGoals ++ entGoals ++ r
+-- def stepHelper2 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper2 {Lean.exceptEmoji e}") do
+--   let hr :: ent :: r ← goal.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "consequence_frame_left failed"
+--   let furtherGoals ← stepHelper1 hr names addLemmas
+--   let entGoals ← try solveEntailment ent catch _ => pure [ent]
+--   return furtherGoals ++ entGoals ++ r
 
-def stepHelper3 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper3 {Lean.exceptEmoji e}") do
-  let hr :: ent :: r ← goal.apply (←mkConstWithFreshMVarLevels ``ramified_frame_top) | throwError "ramified_frame_top failed"
-  let furtherGoals ← stepHelper1 hr names addLemmas
-  let entGoals ← try solveEntailment ent catch _ => pure [ent]
-  return furtherGoals ++ entGoals ++ r
+-- def stepHelper3 (goal : MVarId) (names : List Name) (addLemmas : List (TSyntax `term)): TacticM (List MVarId) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepHelper3 {Lean.exceptEmoji e}") do
+--   let hr :: ent :: r ← goal.apply (←mkConstWithFreshMVarLevels ``ramified_frame_top) | throwError "ramified_frame_top failed"
+--   let furtherGoals ← stepHelper1 hr names addLemmas
+--   let entGoals ← try solveEntailment ent catch _ => pure [ent]
+--   return furtherGoals ++ entGoals ++ r
 
 macro "stephelper1" : tactic => `(tactic|(
   (first
@@ -1127,121 +745,90 @@ macro_rules
   )
 )
 
+structure TripleGoals where
+  triples : List MVarId
+  entailments : List MVarId
+  props : List MVarId
+  implicits : List MVarId
+
+
+
 partial def steps (mvar : MVarId) (limit : Nat) (addLemmas : List $ TSyntax `term) : TacticM (List MVarId) := do
   if limit == 0 then return [mvar]
   let limit := limit - 1
   let target ← mvar.instantiateMVarsInType
-  match ←extractTripleExpr target with
-  | some body => do
-    if isLetIn body then
-      let closer ← getLetInHeadClosingTheorem body
-      let vname ← getLetInVarName body
-      let isInternal := vname.map (·.toString.startsWith "#") |>.getD true
-      trace[Lampe.STHoare.Helpers] "letIn {closer} {vname} {isInternal}"
-      match closer with
-      | some (cl, true) =>
-        if isInternal then
-          let [nextGoal] ← evalTacticAt (←`(tactic|apply STHoare.letIn_trivial_intro; apply $cl)) mvar | throwError "bad application"
-          try steps nextGoal limit addLemmas
-          catch _ => return [nextGoal]
-        else
-          let hHead :: hTail :: rest₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
-          let hHead :: hEnt :: rest₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
-          let rest₃ ← evalTacticAt (←`(tactic|apply $cl)) hHead
-          let rest₄ ← try solveEntailment hEnt catch _ => pure [hEnt]
-          let (_, hTail) ← hTail.intro (vname.getD `v)
-          let rest₅ ← try steps hTail limit addLemmas catch _ => pure [hTail]
-          return rest₁ ++ rest₂ ++ rest₃ ++ rest₄ ++ rest₅
-      | some (cl, false) =>
+  let some (_, body, postCond) ← parseTriple target | throwError "not a triple"
+
+  if isLetIn body then
+    let closer ← getLetInHeadClosingTheorem body
+    let vname ← getLetInVarName body
+    let isInternal := vname.map (·.toString.startsWith "#") |>.getD true
+    trace[Lampe.STHoare.Helpers] "letIn {closer} {vname} {isInternal}"
+    match closer with
+    | some (cl, true) =>
+      if isInternal then
+        let [nextGoal] ← evalTacticAt (←`(tactic|apply STHoare.letIn_trivial_intro; apply $cl)) mvar | throwError "bad application"
+        try steps nextGoal limit addLemmas
+        catch _ => return [nextGoal]
+      else
         let hHead :: hTail :: rest₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
         let hHead :: hEnt :: rest₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
         let rest₃ ← evalTacticAt (←`(tactic|apply $cl)) hHead
-        let rest₄ ← try solveEntailment hEnt catch _ => pure [hEnt]
+        let rest₄ ← try pure (←solveEntailment hEnt).flatten catch _ => pure $ [hEnt]
         let (_, hTail) ← hTail.intro (vname.getD `v)
         let rest₅ ← try steps hTail limit addLemmas catch _ => pure [hTail]
-        return rest₃ ++ rest₅ ++ rest₁ ++ rest₂ ++ rest₄
-      | none =>
-        let hHead :: hTail :: rest₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
-        let (_, hTail) ← hTail.intro (vname.getD `v)
-        try
-          let hHead :: hEnt :: rest₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
-          let rest₃ ← tryApplySyntaxes hHead addLemmas
-          let rest₄ ← try solveEntailment hEnt catch _ => pure [hEnt]
-          let rest₅ ← try steps hTail limit addLemmas catch _ => pure [hTail]
-          return rest₁ ++ rest₂ ++ rest₃ ++ rest₄ ++ rest₅
-        catch _ => return (hHead :: hTail :: rest₁)
+        return rest₁ ++ rest₂ ++ rest₃ ++ rest₄ ++ rest₅
+    | some (cl, false) =>
+      let hHead :: hTail :: rest₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
+      let hHead :: hEnt :: rest₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
+      let rest₃ ← evalTacticAt (←`(tactic|apply $cl)) hHead
+      let rest₄ ← try pure (←solveEntailment hEnt).flatten catch _ => pure [hEnt]
+      let (_, hTail) ← hTail.intro (vname.getD `v)
+      let rest₅ ← try steps hTail limit addLemmas catch _ => pure [hTail]
+      return rest₃ ++ rest₅ ++ rest₁ ++ rest₂ ++ rest₄
+    | none =>
+      let hHead :: hTail :: rest₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
+      let (_, hTail) ← hTail.intro (vname.getD `v)
+      try
+        let hHead :: hEnt :: rest₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
+        let rest₃ ← tryApplySyntaxes hHead addLemmas
+        let rest₄ ← try pure (←solveEntailment hEnt).flatten catch _ => pure [hEnt]
+        let rest₅ ← try steps hTail limit addLemmas catch _ => pure [hTail]
+        return rest₁ ++ rest₂ ++ rest₃ ++ rest₄ ++ rest₅
+      catch _ => return (hHead :: hTail :: rest₁)
+  else if isIte body then
+    if let [fGoal, tGoal] ← mvar.apply (← mkConstWithFreshMVarLevels ``ite_intro) then
+      let fGoal ← if let [fGoal] ← evalTacticAt (←`(tactic|intro)) fGoal then pure fGoal
+        else throwError "couldn't intro into false branch"
+      let tGoal ← if let [tGoal] ← evalTacticAt (←`(tactic|intro)) tGoal then pure tGoal
+        else throwError "couldn't intro into true branch"
+      let fSubGoals ← try steps fGoal limit addLemmas catch _ => pure [fGoal]
+      let tSubGoals ← try steps tGoal limit addLemmas catch _ => pure [tGoal]
+      return fSubGoals ++ tSubGoals
+    else return [mvar]
+  else
+    match (←getClosingTerm body) with
+    | some (closer, _) => do
+      let hHoare :: hEnt :: rest ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "ramified_frame_top failed"
+      let rest₂ ← evalTacticAt (←`(tactic|apply $closer)) hHoare
+      let rest₃ ← try pure (←solveEntailment hEnt).flatten catch _ => pure [hEnt]
+      return rest ++ rest₂ ++ rest₃
+    | none => throwError "no closer"
 
-      -- let nextGoal ← if isInternal then
-      --   try some <$> evalTacticAt (←`(tactic|inlined_var)) mvar
-      --   catch _ => pure none
-      -- else pure none
-      -- match nextGoal with
-      -- | some nxt => steps nxt[0]! limit addLemmas
-      -- | none =>
-      --     let vname := vname.getD `v
-      --     if let [fst, snd, trd] ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro)
-      --     then
-      --       let (_, snd) ← snd.intro vname
-      --       let fstGoals ← try steps fst limit addLemmas catch _ => return [fst, snd, trd]
-      --       let sndGoals ← do
-      --         try steps snd limit addLemmas
-      --         catch _ => pure [snd]
-      --       return fstGoals ++ sndGoals ++ [trd]
-      --     else return [mvar]
-    else if isIte body then
-      if let [fGoal, tGoal] ← mvar.apply (← mkConstWithFreshMVarLevels ``ite_intro) then
-        let fGoal ← if let [fGoal] ← evalTacticAt (←`(tactic|intro)) fGoal then pure fGoal
-          else throwError "couldn't intro into false branch"
-        let tGoal ← if let [tGoal] ← evalTacticAt (←`(tactic|intro)) tGoal then pure tGoal
-          else throwError "couldn't intro into true branch"
-        let fSubGoals ← try steps fGoal limit addLemmas catch _ => pure [fGoal]
-        let tSubGoals ← try steps tGoal limit addLemmas catch _ => pure [tGoal]
-        return fSubGoals ++ tSubGoals
-      else return [mvar]
-    else
-      match (←getClosingTerm body) with
-      | some (closer, _) => do
-        let hHoare :: hEnt :: rest ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "ramified_frame_top failed"
-        let rest₂ ← evalTacticAt (←`(tactic|apply $closer)) hHoare
-        let rest₃ ← try solveEntailment hEnt catch _ => pure [hEnt]
-        return rest ++ rest₂ ++ rest₃
-      | none => throwError "no closer"
-  | _ => return [mvar]
-
-syntax "steps" : tactic
-elab "steps" : tactic => do
-  let newGoals ← steps (← getMainGoal) 10000 []
-  replaceMainGoal newGoals
-
-syntax "steps'" (num)? ("[" term,* "]")?: tactic
-elab "steps'" limit:optional(num) "[" ts:term,*  "]" : tactic => do
+syntax "steps" (num)? ("[" term,* "]")?: tactic
+elab "steps" limit:optional(num) "[" ts:term,*  "]" : tactic => do
   let limit := limit.map (fun n => n.getNat) |>.getD 10000
   let addLemmas := ts.getElems.toList
   let newGoals ← steps (← getMainGoal) limit addLemmas
   replaceMainGoal newGoals
-elab "steps'" limit:optional(num) : tactic => do
+elab "steps" limit:optional(num) : tactic => do
   let limit := limit.map (fun n => n.getNat) |>.getD 10000
   let newGoals ← steps (← getMainGoal) limit []
   replaceMainGoal newGoals
 
-lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by
-  simp [SLP.star, SLP.lift]
-  apply Iff.intro
-  · rintro ⟨st₁, st₂, hdis, hst, ⟨hp, rfl⟩, hH⟩
-    simp only [LawfulHeap.empty_union] at hst
-    cases hst
-    simp_all
-  · intro ⟨hP, hH⟩
-    exists ∅, st
-    simp_all
-
-lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
-  intro h
-  simp_all [STHoare, THoare, SLP.pure_star_iff_and]
-
 syntax "loop_inv" term : tactic
 macro "loop_inv" inv:term : tactic => `(tactic|(
-  h_norm
+  sl_norm
   repeat
     apply STHoare.pluck_pures
     intro
@@ -1252,3 +839,30 @@ macro "loop_inv" inv:term : tactic => `(tactic|(
   )
   on_goal 2 => sl
 ))
+
+theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
+    (h_found : (Γ.functions.find? (fun (n, f) => n = fnName)) = some (fnName, func))
+    (hkc : func.generics = kinds)
+    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
+    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
+    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) (htco ▸ Q)) :
+    STHoare p Γ H (Expr.call argTps outTp (.decl fnName kinds generics) args) Q := by
+  apply STHoare.callDecl_intro (fnName := fnName) (outTp := outTp) (generics := generics)
+  · exact func
+  · simp [SLP.entails_top]
+  · simp only [Option.eq_some_iff_get_eq] at h_found
+    cases h_found
+    rename_i h
+    rw [←h]
+    simp [List.get_find?_mem]
+  · assumption
+  · assumption
+  · assumption
+  · convert h_hoare
+    cases hkc
+    cases htco
+    cases htci
+    rfl
+
+syntax "enter_fn" : tactic
+macro_rules | `(tactic|enter_fn) => `(tactic|apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl))

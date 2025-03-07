@@ -33,9 +33,6 @@ example {x y : Tp.denote p .field} :
   steps
   simp_all
 
-
-
-
 nr_def sliceAppend<I>(x: [I], y: [I]) -> [I] {
   let mut self = x;
   for i in (0 : u32) .. #sliceLen(y):u32 {
@@ -86,11 +83,23 @@ nr_def simple_if<>(x : Field, y : Field) -> Field {
   z
 }
 
+set_option trace.Lampe.SL true
+
 example {p Γ x y} : STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, y])
     fun v => v = y := by
   simp only [simple_if]
 
   steps
+
+  steps
+
+  on_goal 3 => steps
+
+  sl
+
+
+  sl_norm
+  sl
 
   any_goals sl -- TODO why sl needed?
   all_goals simp_all
