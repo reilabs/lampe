@@ -334,9 +334,28 @@ def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Ve
 
 lemma asdfasdf {d n : Nat} : (min d.succ n.succ) = (min d (n.succ - 1)).succ := by omega
 
+lemma List.Vector.toList_cast (h : n₁ = n₂) (v : List.Vector α n₁) :
+    (h ▸ v : List.Vector α n₂).toList = v.toList := by
+  cases v
+  cases h
+  rfl
+
 lemma List.Vector.take_cons_head_tail {α} {n d : Nat} (v : List.Vector α (n.succ))
-    : v.head ::ᵥ (v.tail.take d) = v.take d.succ := by
-  sorry
+    : v.head ::ᵥ (v.tail.take d) = Nat.succ_min_succ _ _ ▸ v.take d.succ := by
+  apply List.Vector.eq
+  cases v using List.Vector.casesOn
+  simp [List.Vector.toList_cast]
+
+lemma List.Vector.take_eq_take_list {α} {n d : Nat} (v : List.Vector α n) (hd : d ≤ n):
+    (Nat.min_eq_left hd ▸ v.take d : List.Vector α d) = ⟨v.val.take d, by aesop⟩ := by
+  convert_to v.take d = ⟨v.val.take d, by aesop⟩
+  · rw [Nat.min_eq_left hd]
+  · simp
+  · rename_i h
+    sorry -- This seems like an obvious HEq goal
+  · aesop
+
+lemma aaasdf (n : Nat) : (n.succ ⊓ (n + 1)) = (n ⊓ (n + 1 - 1)).succ := by aesop
 
 lemma List.Vector.pad_thm_le {α n} (v : List.Vector α n) (d : Nat) (hd : d ≤ n) (pad : α) :
     v.pad d pad = ⟨v.val.take d, by simp; omega⟩ := by
@@ -348,9 +367,6 @@ lemma List.Vector.pad_thm_le {α n} (v : List.Vector α n) (d : Nat) (hd : d ≤
   | succ n hn =>
     match Nat.lt_trichotomy d (n + 1) with
     | .inl hlt =>
-      -- have : d ≤ n := by omega
-      -- have := hn v.tail this
-      -- unfold List.Vector.pad
       cases d with
       | zero => rfl
       | succ d =>
@@ -358,7 +374,15 @@ lemma List.Vector.pad_thm_le {α n} (v : List.Vector α n) (d : Nat) (hd : d ≤
         simp
         have := hn v.tail (by omega)
         rw [List.Vector.pad_thm_le]
-        sorry -- Should follow from the take_cons_head_tail above
+        · have this1 := List.Vector.take_eq_take_list (d := d) v.tail (by omega)
+          have this2 := List.Vector.take_eq_take_list (d := d + 1) v (by omega)
+          rw [←this1]
+          rw [←this2]
+          convert_to v.head ::ᵥ (v.tail.take d) = Nat.succ_min_succ _ _ ▸ v.take d.succ
+          · aesop
+          · sorry -- This seems like an obvious HEq goal
+          · simp
+          · convert List.Vector.take_cons_head_tail v
         · omega
     | .inr (.inl heq) =>
       unfold List.Vector.pad
@@ -366,13 +390,20 @@ lemma List.Vector.pad_thm_le {α n} (v : List.Vector α n) (d : Nat) (hd : d ≤
       simp
       rw [List.Vector.pad_thm_le]
       simp
-      sorry -- Should follow from the take_cons_head_tail above
+      have this1 := List.Vector.take_eq_take_list (d := n) v.tail (by omega)
+      have this2 := List.Vector.take_eq_take_list (d := n + 1) v (by omega)
+      simp [List.Vector.tail_val] at this1
+      rw [←this1]
+      rw [←this2]
+      convert_to v.head ::ᵥ (v.tail.take n) = (aaasdf n) ▸ v.take n.succ
+      · simp
+      · sorry -- This seems like an obvious HEq goal
+      · simp
+      · convert List.Vector.take_cons_head_tail v
       omega
     | .inr (.inr hgt) => linarith
 
 abbrev paddedInput : ZMod lp.natVal → List.Vector (U 8) 32 := fun input => ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩
-
-#check List.getElem_take
 
 lemma take_get_eq_get (vec : List.Vector α n) (k : Fin (i ⊓ n)):  (vec.take i)[k] = vec[k] := by
   let ⟨l, _⟩ := vec
@@ -387,7 +418,23 @@ lemma pad_get (vec : List.Vector α n) (a : α) (i : Nat) (hi : i < n) (hi' : i 
     (vec.pad N a).get ⟨i, hi'⟩ = vec.get ⟨i, hi⟩ := by
   match Nat.lt_trichotomy n N with
   | .inl hlt =>
-    sorry
+    unfold List.Vector.pad
+    cases n
+    · linarith
+    · have ha : ∃(k : Nat), N = k.succ := by simp; omega
+      simp
+      rcases ha with ⟨w, rfl⟩
+      simp
+      cases i
+      · simp
+      · rename_i t
+        conv_rhs =>
+          change vec.get (Fin.succ ⟨t, by omega⟩)
+        rw [← List.Vector.get_tail_succ]
+        conv_lhs =>
+          change (vec.head ::ᵥ vec.tail.pad w a).get (Fin.succ ⟨t, by omega⟩)
+        rw [List.Vector.get_cons_succ]
+        rw [pad_get]
   | .inr (.inl eq) =>
     let ⟨l, _⟩ := vec
     simp [List.Vector.pad, List.Vector.get]
@@ -401,17 +448,16 @@ lemma pad_get (vec : List.Vector α n) (a : α) (i : Nat) (hi : i < n) (hi' : i 
     simp
     omega
 
-#check List.Vector.get_set_same
-
 lemma take_succ_pad (vec : List.Vector α n) (a : α) (i : Nat) (hi : i < n) (hi' : i < N) :
     (vec |>.take (i + 1) |>.pad N a) = (vec |>.take i |>.pad N a |>.set ⟨i, hi'⟩ (vec.get ⟨i, hi⟩))
     := by
-  ext n
-  rw [pad_get]
-  match Nat.lt_trichotomy n i with
-  | .inl lt => sorry
-  | .inr (.inl eq) => sorry
-  | .inr (.inr gt) => sorry
+  sorry
+  -- ext n
+  -- rw [pad_get]
+  -- match Nat.lt_trichotomy n i with
+  -- | .inl lt => sorry
+  -- | .inr (.inl eq) => sorry
+  -- | .inr (.inr gt) => sorry
 
 lemma take_succ_map_pad_eq (vec : List.Vector α n) (b : β) (f : α → β) (i : Nat) (hi : i < n) (hi' : i < N):
     (vec |>.take (i + 1)
@@ -470,7 +516,7 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       have weirdcast : BitVec.toNat (BitVec.instIntCast.intCast 16 : U 32) = 16 := by decide
       have ilt : BitVec.toNat i < 16 := by aesop
       have :
-      List.Vector.get ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ ⟨(16 + BitVec.toNat i) % 4294967296, by sorry⟩ =
+      List.Vector.get ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ ⟨(16 + BitVec.toNat i) % 4294967296, by omega⟩ =
       (List.Vector.drop 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ |>.get (BitVec.toNat i)) := by sorry
       conv_rhs =>
         congr
@@ -509,10 +555,17 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
       rw [this]
       apply List.ext_getElem
       · simp
-        sorry
+        have : (padEnd 32 (toLeBytes input)).length = 32 := toLeBytesPadLen
+        rw [this]
+        rename_i hhi _ _ _
+        simp at hhi
+        have : i.toNat < 16 := by
+          change i.toNat < (16#32).toNat
+          aesop
+        omega
       · intro n hn hn'
         simp [List.getElem_append]
-        have : (padEnd 32 (toLeBytes input)).length = 32 := by sorry
+        have : (padEnd 32 (toLeBytes input)).length = 32 := toLeBytesPadLen
         simp [this]
         match Nat.lt_trichotomy n 16 with
         | .inl lt =>
@@ -545,6 +598,8 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     sorry
 
   steps' []
+
+#exit
 
 theorem bar_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field] Tp.field (FuncRef.decl "bar" [] HList.nil) h![input])
     fun output => output = Skyscraper.bar input := by
