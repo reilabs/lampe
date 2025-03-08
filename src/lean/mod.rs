@@ -1081,8 +1081,12 @@ impl LeanEmitter {
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
                                     .chain(impl_generics)
                                     .join(", ");
+                                let self_type = func_meta.self_type.as_ref()
+                                    .map(|t| self.substitute_bindings(t, bindings))
+                                    .map(|t| self.emit_fully_qualified_type(&t, ctx))
+                                    .expect("self type must be present");
                                 syntax::expr::format_trait_func_ident(
-                                    "_",
+                                    &self_type,
                                     &trait_name,
                                     &trait_generics,
                                     name,
