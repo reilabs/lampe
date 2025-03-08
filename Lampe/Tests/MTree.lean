@@ -137,9 +137,7 @@ theorem recover_intro {H N idx proof item}
       linarith []
     congr 1
     simp_rw [List.Vector.takeF_congr this, List.Vector.cast_reverse]
-    rw [Eq.comm]
-    apply Eq.trans
-    apply List.Vector.congrArg₂ (f := fun a b => recover H' a b item)
+    rw [List.Vector.congrArg₂ (f := fun a b => recover _ a b _)]
     casesm* ∃_, _
     rename dir = _ => hdir
     rename sibling_root = _ => hsr
