@@ -368,11 +368,17 @@ theorem callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
 syntax "enter_trait" "[" term,* "]" term  : tactic
 macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn) (by rfl) (by rfl) (by rfl) (by rfl))
 
+theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
+  apply hp v
+
 theorem enter_block H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
 
-syntax "enter_block_as" "("term")" "("term")" : tactic
-elab "enter_block_as" "(" pre:term ")" "(" post:term ")" : tactic => do
+-- syntax "enter_block_as" (ident "=>")? "("term")" "("term")" : tactic
+elab "enter_block_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
   let goal ← getMainGoal
-  let enterer ← ``(enter_block $pre $post)
+  trace[Lampe.STHoare.Helpers] "enter_block_as {n}"
+  let enterer ← match n with
+  | some n => ``(bindVar (fun $n => enter_block $pre $post))
+  | none => ``(enter_block $pre $post)
   let newGoals ← steps goal 1 [enterer]
   replaceMainGoal newGoals

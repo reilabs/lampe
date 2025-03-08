@@ -174,12 +174,153 @@ def List.pad {α} (l : List α) (d : Nat) (pad : α) : List α := match d, l wit
 lemma List.Vector.toList_pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : (List.Vector.pad v d pad).toList = List.pad v.toList d pad := by
   sorry
 
+theorem captureCounterValue:
+  ((i : Nat) → (i = lo) → STHoare lp Γ P (Expr.loop lo hi body) Q) →
+  STHoare lp Γ P (Expr.loop lo hi body) Q := by
+  intro h
+  exact h lo rfl
 
+theorem captureBody:
+  ((b : (Tp.u s).denote lp → Expr (Tp.denote lp) .unit) → (b = body) → STHoare lp Γ P (Expr.loop lo hi b) Q) →
+  STHoare lp Γ P (Expr.loop lo hi body) Q := by
+  intro h
+  exact h body rfl
+
+set_option trace.Lampe.STHoare.Helpers false
+set_option trace.Lampe.SL false
+
+theorem as_array_spec (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.call [Tp.slice (Tp.u 8)] (Tp.array (Tp.u 8) 32) (FuncRef.decl "as_array" [] HList.nil) h![input])
+    fun output => output = ⟨input, hi⟩ := by
+  enter_decl
+  simp only [as_array]
+  steps
+  loop_inv fun i _ _ => [array ↦ ⟨Tp.array (Tp.u 8) 32, List.Vector.pad ⟨input.takeD i.toNat 0#8, List.takeD_length i.toNat _ _⟩ 32 0#8⟩]
+  · decide
+  · intros
+    steps
+    sorry -- Vector stuff
+  · steps
+    simp_all
+    sorry -- Vector stuff
+
+lemma foo1 (l : List α) (h : l.length = 1) : l = [l[0] ] := by
+  apply List.ext_get
+  · simp? [h]
+  · intros n _ _
+    have : n = 0 := by omega
+    simp [this]
+
+lemma upList {l₁ l₂ : List α} {len} (hl₁ : l₁.length = len) (hl₂ : l₂.length = len):
+  (Subtype.mk l₁ hl₁ : List.Vector α len) = (Subtype.mk l₂ hl₂ : List.Vector α len) → l₁ = l₂ := by
+  intro h
+  cases h
+  rfl
+
+lemma upGet (l₁ : List α) (h : l₁.length = len) {i : Nat} {hi : i < l₁.length} :
+  l₁[i]'hi = List.Vector.get (Subtype.mk l₁ h) ⟨i, h ▸ hi⟩ := by
+  simp [List.Vector.get]
+
+
+lemma List.ofFn_cast {a b} (h : a = b) {f : Fin a → α} :
+    List.ofFn f = List.ofFn (fun (i:Fin b) => f ⟨i.val, by linarith [i.prop]⟩) := by
+  cases h
+  rfl
+
+lemma foo2 (l : List α) (h : l.length = 7) : l = [l[0], l[1], l[2], l[3], l[4], l[5], l[6] ] := by
+  conv => lhs; rw [←List.ofFn_get (l:=l)]
+  rw [List.ofFn_cast h]
+  rfl
+
+lemma foo2' (v : List.Vector α 2): v = v[0] ::ᵥ v[1] ::ᵥ List.Vector.nil := by
+  rw [←List.Vector.ofFn_get (v:=v)]
+  rfl
 
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.bar input := by
   simp only [bar]
   steps [to_le_bytes_intro]
+
+  enter_block_as ([new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩]) (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Skyscraper.sbox⟩])
+
+  apply captureBody
+  intro b hb
+  have : ∀i v, (hh: i.toNat < 16) → STHoare lp env [new_left ↦ ⟨(Tp.u 8).array 16, v⟩] (b i) (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, v.set ⟨i.toNat, hh⟩ (Skyscraper.sbox (bytes[i.toNat]'(by simp; linarith)))⟩]) := by
+    intro i v hh
+    cases hb
+    simp only
+    steps [sbox_intro]
+    casesm* ∃_,_
+    subst_vars
+    simp [Access.modify, *, getElem]
+
+  repeat
+    apply STHoare.loopNext_intro
+    · decide
+    · apply this
+      · decide
+  apply STHoare.ramified_frame_top STHoare.loopDone_intro
+  · simp [Int.cast, IntCast.intCast, getElem, List.Vector.set_cons_zero]
+    rw [List.Vector.set_cons_succ]
+    -- sl
+    -- congr 1
+    -- apply List.Vector.eq
+    -- simp
+    -- ext1 i
+    -- fin_cases i
+
+    -- fin_cases i <;> rfl
+
+
+
+    -- intro i v
+    -- simp only [bar.fn.body]
+    -- apply STHoare.loopNext_intro
+    -- · decide
+    -- · steps [sbox_intro]
+    --   casesm* ∃_,_, _ = _
+    --   simp [Access.modify, getElem]
+
+  -- ·
+    -- -- repeat (
+    -- --   apply captureCounterValue
+    -- --   intro i hi
+    -- --   apply STHoare.loopNext_intro (P := [new_left ↦ ⟨(Tp.u 8).array 16, ?v⟩]) (Q := [new_left ↦ ⟨(Tp.u 8).array 16, (?v).set ⟨i, by cases hi; decide⟩ (Skyscraper.sbox bytes[0])⟩])
+    -- --   · decide
+    -- --   · steps [sbox_intro]
+    -- --     casesm* ∃_,_, _ = _
+    -- --     simp [Access.modify, getElem]
+    -- -- )
+
+    -- apply captureCounterValue
+    -- intro i hi
+    -- apply STHoare.loopNext_intro -- (P := [new_left ↦ ⟨(Tp.u 8).array 16, ?v⟩]) (Q := [new_left ↦ ⟨(Tp.u 8).array 16, (?v).set ⟨i, by cases hi; decide⟩ (Skyscraper.sbox bytes[0])⟩])
+    -- · decide
+    -- · steps [sbox_intro]
+    --   casesm* ∃_,_, _ = _
+    --   rename _ < _ => hp
+    --   have : hp = (by simp) := rfl
+    --   cases this
+    --   cases «#v_12»
+    --   apply STHoare.ramified_frame_top
+    --   apply STHoare.var_intro
+
+
+
+    -- apply captureCounterValue
+    -- intro i hi
+    -- apply STHoare.loopNext_intro -- (P := [new_left ↦ ⟨(Tp.u 8).array 16, ?vv⟩]) (Q := [new_left ↦ ⟨(Tp.u 8).array 16, (?vv).set ⟨i, by cases hi; decide⟩ (Skyscraper.sbox bytes[1])⟩])
+    -- · decide
+    -- · steps [sbox_intro]
+    --   casesm* ∃_,_, _ = _
+    --   simp [Access.modify, getElem]
+
+/---
+
+
+
+
+
+
 
   loop_inv fun (i: U 32) _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
   · decide

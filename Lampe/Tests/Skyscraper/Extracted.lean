@@ -77,7 +77,7 @@ nr_def «rotate_left»<>(u : u8, N : u8) -> u8 {
 }
 
 nr_def «Skyscraper»::«new»<>(iv : [u8; 32]) -> Skyscraper<> {
-    let felt = (@std::field::Field::from_le_bytes<32> as λ([u8; 32]) → Field)(iv);
+    let felt = (@std::field::Field::from_le_bytes<32:8> as λ([u8; 32]) → Field)(iv);
     Skyscraper<> { [0 : Field, felt] };
 }
 
