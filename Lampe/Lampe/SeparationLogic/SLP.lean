@@ -49,6 +49,32 @@ theorem entails_trans [LawfulHeap α] {P Q R : SLP α}: (P ⊢ Q) → (Q ⊢ R) 
 
 section basic
 
+theorem eq_of_iff [LawfulHeap α] {P Q : SLP α} : (P ⊢ Q) → (Q ⊢ P) → P = Q := by
+  intros
+  apply funext
+  intro
+  apply eq_iff_iff.mpr
+  apply Iff.intro <;> apply_assumption
+
+theorem exists_pure [LawfulHeap α] {P : β → Prop} : (SLP.exists' fun x =>  ⟦P x⟧) = SLP.lift (α := α) (∃x, P x) := by
+  unfold SLP.exists' SLP.lift
+  simp
+
+theorem exists_intro_l [LawfulHeap α] {H : β → SLP α} {Q : SLP α}:
+  (∀ a, (H a ⊢ Q)) → ((∃∃a, H a) ⊢ Q) := by
+  intro h st
+  unfold SLP.entails SLP.exists' at *
+  rintro ⟨v, hH⟩
+  apply h
+  use hH
+
+theorem exists_intro_r [LawfulHeap α] {H : SLP α} {Q : β → SLP α} {a} : (H ⊢ Q a) → (H ⊢ ∃∃a, Q a) := by
+  intro h st H
+  unfold SLP.exists'
+  exists a
+  tauto
+
+
 @[simp]
 theorem apply_top [LawfulHeap α] {st : α} : ⊤ st := by trivial
 
@@ -273,5 +299,15 @@ theorem extract_prop [LawfulHeap α] {H₁ H₂ : SLP α} (h₁ : (H₁ ⋆ H₂
   apply h₂ at h₁
   simp only [SLP.lift, SLP.top, SLP.star] at h₁
   aesop
+
+theorem star_exists [LawfulHeap α] {P : SLP α} {Q : β → SLP α} :  (∃∃x, Q x ⋆ P) = ((∃∃x, Q x) ⋆ P):= by
+  unfold SLP.exists' SLP.star
+  funext st
+  simp
+  tauto
+
+theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : (∃∃x, P ⋆ Q x) = ((∃∃x, Q x) ⋆ P)  := by
+  conv => lhs; arg 1; ext x; rw [SLP.star_comm]
+  simp [star_exists]
 
 end Lampe.SLP

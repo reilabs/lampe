@@ -162,10 +162,9 @@ This is assumed to evaluate to `(a + b) : Fp p`.
 
 In Noir, this builtin corresponds to `a + b` for field elements `a`, `b`.
 -/
-def fAdd := newPureBuiltin
+def fAdd := newTotalPureBuiltin
   ⟨[(.field), (.field)], .field⟩
-  (fun h![a, b] => ⟨True,
-    fun _ => a + b⟩)
+  (fun h![a, b] => a + b)
 
 /--
 Defines the multiplication of two field elements `(a b: Fp p)` in `ZMod p`.
@@ -173,10 +172,9 @@ This is assumed to evaluate to `(a * b) : Fp p`.
 
 In Noir, this builtin corresponds to `a * b` for field elements `a`, `b`.
 -/
-def fMul := newPureBuiltin
+def fMul := newTotalPureBuiltin
   ⟨[(.field), (.field)], .field⟩
-  (fun h![a, b] => ⟨True,
-    fun _ => a * b⟩)
+  (fun h![a, b] => a * b)
 
 /--
 Defines the subtraction of two field elements `(a b: Fp p)` in `ZMod p`.
@@ -184,10 +182,9 @@ This is assumed to evaluate to `(a - b) : Fp p`.
 
 In Noir, this builtin corresponds to `a - b` for field elements `a`, `b`.
 -/
-def fSub := newPureBuiltin
+def fSub := newTotalPureBuiltin
   ⟨[(.field), (.field)], .field⟩
-  (fun h![a, b] => ⟨True,
-    fun _ => a - b⟩)
+  (fun h![a, b] => a - b)
 
 /--
 Defines the division of two field elements `(a b: Fp p)` in `ZMod p`.
@@ -208,9 +205,8 @@ This is assumed to evaluate to `-a : Fp p`.
 
 In Noir, this builtin corresponds to `-a` for a field element `a`.
 -/
-def fNeg := newPureBuiltin
+def fNeg := newTotalPureBuiltin
   ⟨[(.field)], .field⟩
-  (fun h![a] => ⟨True,
-    fun _ => -a⟩)
+  (fun h![a] => -a)
 
 end Lampe.Builtin

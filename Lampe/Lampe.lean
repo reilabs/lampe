@@ -28,6 +28,8 @@ import Lampe.SeparationLogic.State
 import Lampe.SeparationLogic.ValHeap
 import Lampe.Syntax
 import Lampe.Tactic.IntroCases
-import Lampe.Tactic.SeparationLogic
+import Lampe.Tactic.SL
+import Lampe.Tactic.SLNorm
+import Lampe.Tactic.Steps
 import Lampe.Tactic.Traits
 import Lampe.Tp

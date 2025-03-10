@@ -19,10 +19,9 @@ theorem index_replaced_slice :
 /--
 Defines the builtin slice constructor.
 -/
-def mkSlice (n : Nat) := newGenericPureBuiltin
-  (fun (argTps, tp) => ⟨argTps, (.slice tp)⟩)
-  (fun (argTps, tp) args => ⟨argTps = List.replicate n tp,
-    fun h => HList.toList args h⟩)
+def mkSlice := newGenericTotalPureBuiltin
+  (fun (n, tp) => ⟨List.replicate n tp, (.slice tp)⟩)
+  (fun _ args => HList.toList args rfl)
 
 /--
 Defines the indexing of a slice `l : List tp` with `i : U 32`
@@ -57,10 +56,9 @@ On these inputs, the builtin is assumed to return `l ++ [e]`.
 
 In Noir, this builtin corresponds to `fn push_back(self, elem: T) -> Self` implemented for `[T]`.
 -/
-def slicePushBack := newGenericPureBuiltin
+def slicePushBack := newGenericTotalPureBuiltin
   (fun tp => ⟨[.slice tp, tp], .slice tp⟩)
-  (fun _ h![l, e] => ⟨True,
-    fun _ => l ++ [e]⟩)
+  (fun _ h![l, e] => l ++ [e])
 
 /--
 Defines the builtin that pushes front an element `e : Tp.denote tp` to a slice `l : List tp`.
@@ -68,10 +66,9 @@ On these inputs, the builtin is assumed to return `[e] ++ l`.
 
 In Noir, this builtin corresponds to `fn push_front(self, elem: T) -> Self` implemented for `[T]`.
 -/
-def slicePushFront := newGenericPureBuiltin
+def slicePushFront := newGenericTotalPureBuiltin
   (fun tp => ⟨[.slice tp, tp], .slice tp⟩)
-  (fun _ h![l, e] => ⟨True,
-    fun _ => [e] ++ l⟩)
+  (fun _ h![l, e] => [e] ++ l)
 
 /--
 Defines the insertion of an element `e : Tp.denote tp` at index `i : U 32` to a slice `l : List tp`.

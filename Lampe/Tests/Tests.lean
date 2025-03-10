@@ -15,6 +15,7 @@ example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v =
   steps
   simp_all
 
+
 nr_def weirdEq<I>(x : I, y : I) -> Unit {
   let a = #fresh() : I;
   #fAdd(x, y) : I;
@@ -49,13 +50,14 @@ lemma BitVec.toNat_zero {n : Nat} : BitVec.toNat (n := n) (0 : Int) = 0 := by
   change BitVec.toNat 0 = 0
   simp
 
-example {self that : Tp.denote p (.slice tp)} :
-    STHoare p Γ ⟦⟧ (sliceAppend.fn.body _ h![tp] |>.body h![self, that])
-    fun v => v = self ++ that := by
+example {selfV that : Tp.denote p (.slice tp)} :
+    STHoare p Γ ⟦⟧ (sliceAppend.fn.body _ h![tp] |>.body h![selfV, that])
+    fun v => v = selfV ++ that := by
   simp only [sliceAppend]
   steps
-  rename Tp.denote _ tp.slice.ref => selfRef
-  loop_inv (fun i _ _ => [selfRef ↦ ⟨.slice tp, self ++ that.take i.toNat⟩])
+  loop_inv (fun i _ _ => [self ↦ ⟨.slice tp, selfV ++ that.take i.toNat⟩])
+  · simp_all ; apply BitVec.ofNat_ge_zero
+  · simp_all [BitVec.toNat_zero]
   · intros i _ _
     steps
     have : (i + 1).toNat = i.toNat + 1 := by
@@ -65,8 +67,7 @@ example {self that : Tp.denote p (.slice tp)} :
       linarith
     simp only [this, List.take_succ]
     aesop
-  · simp_all ; apply BitVec.ofNat_ge_zero
-  · simp_all [BitVec.toNat_zero]
+
   steps
   simp_all [Nat.mod_eq_of_lt]
 
@@ -74,20 +75,23 @@ nr_def simple_if<>(x : Field, y : Field) -> Field {
   let mut z = x;
   if #fEq(x, x) : bool {
     z = y
-   };
+  };
   z
 }
 
 example {p Γ x y} : STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, y])
     fun v => v = y := by
   simp only [simple_if]
-  steps <;> try tauto
-  . sl
-  . sl
-    simp_all
-  . subst_vars
-    rfl
 
+  steps
+
+  enter_block_as ([z ↦ ⟨_, x⟩]) (fun _ => [z ↦ ⟨_, y⟩])
+  · apply STHoare.ite_intro
+    · intro; steps
+    · intro h; cases h
+
+  steps
+  simp_all
 
 nr_def simple_if_else<>(x : Field, y : Field) -> Field {
   let z = if #fEq(x, x) : bool { x } else { y };
@@ -98,10 +102,14 @@ example {p Γ x y} : STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body 
     fun v => v = x := by
   simp only [simple_if_else]
   steps
-  . simp only [decide_true, exists_const]
-    sl
-    contradiction
-  . simp_all [decide_true, exists_const]
+
+  enter_block_as (⟦⟧) (fun z => z = x)
+  · apply STHoare.ite_intro
+    · intro; steps; simp_all
+    · intro h; cases h
+
+  steps
+  simp_all
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
   let add = |a : Field, b : Field| -> Field { #fAdd(a, b) : Field };
@@ -113,24 +121,29 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
     fun v => v = x + y := by
   simp only [simple_lambda]
   steps
-  . apply STHoare.consequence_frame_left STHoare.callLambda_intro
-    . rw [SLP.star_assoc, SLP.star_comm, SLP.star_assoc]
-      rw [SLP.top_star_top]
-      apply SLP.ent_star_top
-    . exact fun v => v = x + y
-    . simp only
-      steps
-      simp_all only [exists_const, SLP.true_star]
-      unfold SLP.wand SLP.entails SLP.forall'
-      intros _ _ _ _ _ _
-      simp_all [SLP.star, SLP.lift]
-  simp_all
-  steps
-  simp_all
-  intros st₁ h₁ v st₂ _ _
-  apply SLP.ent_drop_left at h₁
-  unfold SLP.lift SLP.star at *
-  simp_all
+
+  apply STHoare.letIn_intro (Q := fun v => v = x + y)
+  . apply STHoare.ramified_frame_top (H₁ := (∃∃h, [λadd.asLambda h ↦ _]) ⋆ ⟦⟧) (Q₁ := fun v => (∃∃h, [λadd.asLambda h ↦ _]) ⋆ v = x + y)
+    apply STHoare.callLambda_intro
+    case h_ent =>
+      sl_norm
+      rw [←SLP.exists_star]
+      apply SLP.exists_intro_l
+      intro hp
+      apply SLP.exists_intro_r
+      rw [SLP.star_comm]
+      apply SLP.star_mono_l'
+      apply SLP.forall_right
+      intro
+      apply SLP.wand_intro
+      sl_norm
+      apply SLP.star_mono_l
+      apply SLP.entails_top
+    steps
+    assumption
+  · intro
+    steps
+    simp_all
 
 nr_trait_impl[bulbulizeField] <> Bulbulize<> for Field where {
     fn bulbulize<>(x : Field) -> Field {
@@ -158,23 +171,16 @@ example {p} {arg : Tp.denote p Tp.field} :
     fun v => v = 2 * arg := by
   simp only [simple_trait_call]
   steps
-  . apply STHoare.callTrait_intro
-    sl
-    tauto
-    try_impls_all [] simpleTraitEnv
-    all_goals try tauto
-    simp only
+
+  enter_block_as (⟦⟧) (fun v => v = 2 * arg)
+  · enter_trait [] simpleTraitEnv
     steps
-    simp_all only [exists_const, SLP.true_star]
-    on_goal 2 => exact (fun v => v = 2 * arg)
-    sl
-    intros
     subst_vars
     ring
+
   steps
-  intros
-  subst_vars
-  rfl
+  simp_all
+
 
 nr_trait_impl[me] <I> Me<> for I where {
     fn me<>(x : I) -> I {
@@ -196,34 +202,14 @@ example {p} {x : Tp.denote p Tp.field} :
     fun v => v = x := by
   simp only [generic_trait_call]
   steps
-  . apply STHoare.callTrait_intro
-    sl
-    tauto
-    try_impls_all [Tp.field] genericTraitEnv
-    tauto
-    all_goals try rfl
+  enter_block_as (⟦⟧) (fun v => v = x)
+  · enter_trait [Tp.field] genericTraitEnv
     steps
-  . steps
-    simp_all
+    assumption
 
-nr_def unknown_trait_call<>(x : Field) -> Field {
-  ((_ as Me<>)::me<> as λ(_) → _)(x)
-}
-
-example {p} {x : Tp.denote p Tp.field} :
-    STHoare p genericTraitEnv ⟦⟧ (unknown_trait_call.fn.body _ h![] |>.body h![x])
-    fun v => v = x := by
-  simp only [unknown_trait_call]
   steps
-  . apply STHoare.callTrait'_intro Tp.field /- Manually provide the implementor type -/
-    sl
-    tauto
-    try_impls_all [Tp.field] genericTraitEnv
-    tauto
-    all_goals try rfl
-    steps
-  . steps
-    simp_all
+  simp_all
+
 
 nr_struct_def Pair <I> {
   a : I,
@@ -239,7 +225,7 @@ example {p} {a b : Tp.denote p .field} :
     fun v => v.fst = a ∧ v.snd = (b, ()) := by
   simp only [struct_construct]
   steps
-  aesop
+  simp_all
 
 nr_def struct_project<>(x : Field, y : Field) -> Field {
   let s = Pair<Field> { x, y };
@@ -277,19 +263,15 @@ example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [call_decl]
   steps
-  apply STHoare.callDecl_intro
-  . sl
-    tauto
-  on_goal 3 => exact add_two_fields.fn
-  all_goals try tauto
-  on_goal 3 => exact fun v => v = 3
-  . simp only [add_two_fields]
+  enter_block_as (⟦⟧) (fun v => v = 3)
+  · enter_decl
+    simp only [add_two_fields]
     steps
-    simp_all
-    intros
+    subst_vars
     ring
-  . steps
-    simp_all
+
+  steps
+  simp_all
 
 nr_def simple_tuple<>() -> Field {
   let t = `(1 : Field, true, 3 : Field);
@@ -309,9 +291,8 @@ nr_def simple_slice<>() -> bool {
 
 example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .bool) => v = false := by
-  simp only [simple_slice, Expr.mkSlice]
+  simp only [simple_slice]
   steps
-  rfl
   aesop
 
 nr_def simple_array<>() -> Field {
@@ -321,9 +302,10 @@ nr_def simple_array<>() -> Field {
 
 example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 2 := by
-  simp only [simple_array, Expr.mkArray]
-  steps <;> try tauto
-  aesop
+  simp only [simple_array]
+  steps
+  casesm* _ = _
+  rfl
 
 nr_def simple_rep_array<>() -> [Field; 4] {
   let arr = [1 : Field ; 4];
@@ -333,7 +315,7 @@ nr_def simple_rep_array<>() -> [Field; 4] {
 example : STHoare p Γ ⟦⟧ (simple_rep_array.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p $ .array _ _) => v.toList = [1, 1, 1, 1] := by
   simp only [simple_rep_array, Expr.mkArray]
-  steps <;> try tauto
+  steps
   aesop
 
 nr_def simple_rep_slice<>() -> [Field] {
@@ -344,9 +326,9 @@ nr_def simple_rep_slice<>() -> [Field] {
 example : STHoare p Γ ⟦⟧ (simple_rep_slice.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p $ .slice _) => v = [1, 1, 1, 1] := by
   simp only [simple_rep_slice, Expr.mkArray]
-  steps <;> try tauto
-  aesop
-
+  steps
+  subst_vars
+  rfl
 
 nr_def tuple_lens<>() -> Field {
   let mut p = `(`(1 : Field, 2 : Field), 3 : Field);
@@ -358,10 +340,7 @@ example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [tuple_lens]
   steps
-  subst_vars
-  simp_all only [Access.get, exists_const, Lens.modify, Lens.get, Option.bind_eq_bind,
-    Option.some_bind, Option.bind_some, Option.some.injEq]
-  subst_vars
+  casesm* _ = _
   rfl
 
 nr_def struct_lens<>() -> Field {
@@ -386,12 +365,7 @@ example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [array_lens]
   steps
-  rfl
-  on_goal 3 => exact (⟨[1, 3], (by rfl)⟩, 3)
-  . simp_all
-    rfl
-  . simp_all
-    aesop
+  aesop
 
 nr_def slice_lens<>() -> Field {
   let mut p = `(&[1 : Field, 2 : Field], 3 : Field);
@@ -408,11 +382,8 @@ example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [slice_lens]
   steps
-  all_goals try exact ([1, 3], 3)
-  all_goals try tauto
-  . simp_all
-    rfl
-  . simp_all [Builtin.indexTpl]
+  casesm* _ = _
+  rfl
 
 nr_def simple_func<>() -> Field {
   10 : Field
@@ -428,10 +399,7 @@ example : STHoare p Γ ⟦⟧ (deref_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [deref_lens]
   steps
-  subst_vars
-  simp_all only [exists_const, Lens.modify, Lens.get]
-  subst_vars
-  simp_all [Builtin.indexTpl]
+  simp_all
 
 nr_def call<>(f : λ() → Field) -> Field {
   f()
@@ -447,23 +415,20 @@ example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [simple_hof]
   steps
-  . apply STHoare.callDecl_intro
-    sl
-    all_goals try tauto
+  apply pluck_final_pure_destructively
+  rintro rfl
+
+  enter_block_as (⟦⟧) (fun v => v = 10)
+  · enter_decl
     simp only [call]
-    steps
-    . apply STHoare.callDecl_intro
-      sl
-      all_goals try tauto
+    enter_block_as (⟦⟧) (fun v => v = 10)
+    · enter_decl
       simp only [simple_func]
       steps
-      on_goal 2 => exact fun v => v = 10
-      sl
-      simp_all
-    . steps
-      on_goal 2 => exact fun v => v = 10
-      sl
-      simp_all
+      assumption
+    steps
+    simp_all
+
   steps
   simp_all
 
@@ -481,10 +446,7 @@ example : STHoare p Γ ⟦⟧ (create_arr.fn.body _ h![3] |>.body h![])
     fun (v : Tp.denote p $ .array .field 3) => v.toList = [1, 1, 1] := by
   simp only [create_arr]
   steps
-  tauto
-  intros
-  simp_all
-  rfl
+  aesop
 
 nr_type_alias Array<T, @N : 32> = [T; N]
 
@@ -506,30 +468,15 @@ nr_def const_test<@N : 8>(x : Field) -> Field {
   res;
 }
 
-theorem hypothesize_left {h : P₁ → STHoare p Γ P₂ e Q } :
-    STHoare p Γ (⟦P₁⟧ ⋆ P₂) e Q := by
-  unfold STHoare THoare SLP.lift at *
-  intros H st h
-  unfold SLP.star at h
-  obtain ⟨s₁, s₂, ⟨_, _, ⟨⟨s₁', s₂', _⟩⟩⟩⟩ := h
-  have : s₁' = ∅ := by tauto
-  subst this
-  have : s₂' = s₁ := by simp_all
-  subst this
-  have hp : P₁ := by tauto
-  apply h hp H st ?_
-  exists s₂', s₂
-  tauto
-
 example : STHoare p Γ ⟦⟧ (const_test.fn.body _ h![3] |>.body h![1])
     fun (v : Tp.denote p .field) => v = 8 := by
   simp only [const_test]
   steps
-  apply hypothesize_left
-  intro hv
-  subst hv
-  rename Tp.denote p $ .ref .field => res
   loop_inv (fun i _ _ => [res ↦ ⟨.field, 2^(i.toNat) * 1⟩])
+  · simp [Int.cast, IntCast.intCast]
+  · congr
+    simp_all only [BitVec.ofNat_eq_ofNat, mul_one]
+    rfl
   . intros i _ _
     steps
     congr
@@ -540,12 +487,7 @@ example : STHoare p Γ ⟦⟧ (const_test.fn.body _ h![3] |>.body h![1])
       linarith
     rw [this]
     rfl
-  . subst_vars
-    tauto
-  . congr
-    subst_vars
-    simp_all only [BitVec.ofNat_eq_ofNat, mul_one]
-    rfl
-  . steps
-    simp_all
-    ring
+  steps
+  subst_vars
+  simp
+  ring
