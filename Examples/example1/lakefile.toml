@@ -1,0 +1,14 @@
+name = "example1"
+version = "0.1.0"
+defaultTargets = ["Example1"]
+
+[[lean_lib]]
+name = "Example1"
+
+[[require]]
+name = "Lampe"
+rev = "main"
+path = "../../Lampe/"
+# In a real setup, require Lampe like this:
+# git = "https://github.com/reilabs/lampe"
+# subDir = "Lampe"
