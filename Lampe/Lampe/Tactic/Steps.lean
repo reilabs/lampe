@@ -374,7 +374,6 @@ theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
   apply hp v
 theorem enter_block H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
 
--- syntax "enter_block_as" (ident "=>")? "("term")" "("term")" : tactic
 elab "enter_block_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
   let goal ← getMainGoal
   trace[Lampe.STHoare.Helpers] "enter_block_as {n}"

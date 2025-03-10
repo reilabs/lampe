@@ -10,10 +10,6 @@ nr_def simple_muts<>(x : Field) -> Field {
   y
 }
 
-lemma SLP.exists_left [LawfulHeap h] {P : α → SLP h} : (∀x, P x ⊢ Q) → ((∃∃x, P x) ⊢ Q) := by
-  simp [SLP.entails, SLP.exists']
-  tauto
-
 example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
   simp only [simple_muts]
   steps
