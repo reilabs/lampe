@@ -1,7 +1,8 @@
-
 import Example1.Extracted
 import Example1.Ref
 import Lampe
+
+import ProvenZk
 
 import Mathlib.Data.Vector.Snoc
 
@@ -16,7 +17,7 @@ axiom pPrime : Nat.Prime (p + 1)
 
 def lp : Lampe.Prime := ⟨p, pPrime⟩
 
-theorem recover_zero (h : n = 0) : recover (depth := n) H' idx proof item = item := by
+theorem recover_zero (h : n = 0) : MerkleTree.recover (depth := n) H' idx proof item = item := by
   cases h
   rfl
 
@@ -63,13 +64,13 @@ theorem recover_intro {H N idx proof item}
         (Expr.call [Tp.field, Tp.field] Tp.field
           (FuncRef.trait (some H) "BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b])
         (fun v => v = H' (a ::ᵥ b ::ᵥ .nil))):
-    STHoare lp env ⟦True⟧ (mtree_recover.call h![H, N] h![idx, proof, item]) (fun v => v = recover H' idx.reverse proof.reverse item) := by
+    STHoare lp env ⟦True⟧ (mtree_recover.call h![H, N] h![idx, proof, item]) (fun v => v = MerkleTree.recover H' idx.reverse proof.reverse item) := by
   enter_decl
   simp only [mtree_recover]
   steps
   loop_inv fun i _ _ =>
     [curr_h ↦ ⟨Tp.field,
-      recover H' (List.Vector.takeF idx i.toNat (by simpa [←BitVec.lt_def];)).reverse
+      MerkleTree.recover H' (List.Vector.takeF idx i.toNat (by simpa [←BitVec.lt_def];)).reverse
                  (List.Vector.takeF proof i.toNat (by simpa [←BitVec.lt_def])).reverse item⟩]
   · simp [BitVec.le_def, Int.cast, IntCast.intCast]
   · intro i _ hi
@@ -90,15 +91,47 @@ theorem recover_intro {H N idx proof item}
       linarith []
     congr 1
     simp_rw [List.Vector.takeF_congr this, List.Vector.cast_reverse]
-    rw [List.Vector.congrArg₂ (f := fun a b => recover _ a b _)]
+    rw [List.Vector.congrArg₂ (f := fun a b => MerkleTree.recover _ a b _)]
     casesm* ∃_, _
     rename dir = _ => hdir
     rename sibling_root = _ => hsr
     simp at hdir hsr
-    simp [recover, List.Vector.takeF_succ_eq_snoc_get, ←hdir, ←hsr]
+    simp [MerkleTree.recover, List.Vector.takeF_succ_eq_snoc_get, ←hdir, ←hsr]
     cases dir <;> rfl
 
   steps
   subst_vars
   congr
   all_goals simp
+
+instance {α H n} : Membership α (MerkleTree α H n) where
+  mem t e := ∃p, e = MerkleTree.itemAt t p
+
+def DH : Hash (Fp lp) 2 := fun vec![a, b] => a + b
+
+lemma DummyHash_correct:
+    STHoare lp env
+        ⟦True⟧
+        (Expr.call [Tp.field, Tp.field] Tp.field
+          (FuncRef.trait (some $ «struct#DummyHasher».tp h![]) "BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b])
+        (fun v => v = DH vec![a,b]) := by
+  enter_trait [] env
+  steps
+  subst_vars
+  rfl
+
+theorem main_correct [Fact (CollisionResistant DH)] {tree : MerkleTree (Fp lp) DH 32}:
+    STHoare lp env
+        ⟦⟧
+        (main.call h![] h![tree.root, proof, item, index])
+        (fun _ => item ∈ tree) := by
+  enter_decl
+  simp only
+  steps [recover_intro (H:= «struct#DummyHasher».tp h![]) (N:=32) (hHash := DummyHash_correct)]
+  use index.reverse
+  rename ∃_, True => heq
+  simp at heq
+  cases heq
+  rename tree.root = _ => hroot
+  rw [Eq.comm, MerkleTree.recover_eq_root_iff_proof_and_item_correct] at hroot
+  exact hroot.2
