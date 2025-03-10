@@ -7,6 +7,8 @@ name = "Example1"
 
 [[require]]
 name = "Lampe"
-git = "https://github.com/reilabs/lampe/"
 rev = "main"
-subDir = "Lampe"
+path = "../../Lampe/"
+# In a real setup, require Lampe like this:
+# git = "https://github.com/reilabs/lampe"
+# subDir = "Lampe"
