@@ -30,12 +30,14 @@ use noirc_frontend::{
     },
     Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
 };
-
+use noirc_frontend::hir_def::function::FuncMeta;
 use crate::{
     error::emit::{Error, Result},
     lean::indent::Indenter,
     noir::project::KnownFiles,
 };
+use crate::lean::builtin::BuiltinName;
+use crate::lean::syntax::expr::format_builtin_call;
 
 #[derive(PartialEq, Eq, Clone, Hash)]
 pub enum EmitOutput {
@@ -524,6 +526,14 @@ impl LeanEmitter {
         ))
     }
 
+    fn is_func_unconstrained(tp: &Type) -> bool {
+        match tp {
+            Type::Function(_, _, _, is_unconstrained) => *is_unconstrained,
+            Type::Forall(_, tp) => Self::is_func_unconstrained(tp),
+            _ => false,
+        }
+    }
+
     /// Emits the Lean source code corresponding to a Noir function at the module level.
     /// Returns the definition name and the emitted function definition.
     ///
@@ -555,13 +565,19 @@ impl LeanEmitter {
         let parameters = self.emit_parameters(&func_meta.parameters, ctx)?;
         let ret_type = self.emit_fully_qualified_type(func_meta.return_type(), ctx);
 
+        let is_unconstrained = Self::is_func_unconstrained(&func_meta.typ);
+
         // Generate the function body ready for insertion
         ind.indent();
-        let body = self.emit_expr(
-            ind,
-            self.context.def_interner.function(&func).as_expr(),
-            ctx,
-        )?;
+        let body = if is_unconstrained {
+            ind.run(format_builtin_call("fresh".to_string(), "", &ret_type))
+        } else {
+            self.emit_expr(
+                ind,
+                self.context.def_interner.function(&func).as_expr(),
+                ctx,
+            )?
+        };
         ind.dedent()?;
 
         let self_type_str = match &func_meta.self_type {

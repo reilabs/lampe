@@ -1,5 +1,6 @@
 import Tests.Skyscraper.Ref
 import Tests.Skyscraper.Extracted
+import Tests.MTree
 
 open Lampe Extracted
 
@@ -79,16 +80,87 @@ theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef
   subst_vars
   rfl
 
-theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRef.decl "sgn0" [] HList.nil) h![input])
-    fun output => output = (input.val % 2) := by
+theorem sgn0_intro : STHoare lp env ⟦⟧ (sgn0.call h![] h![input])
+    fun output => output = ⟨input.val % 2, by simp [Nat.mod_lt]⟩  := by
   enter_decl
   simp only [sgn0]
   steps
   simp_all
+  rfl
 
 opaque BitVec.bytesLE : BitVec n → List.Vector (U 8) n
 
 axiom toLeBytesPadLen {input : Lampe.Fp lp} : (padEnd 256 (Lampe.toLeBytes input)).length = 32
+
+
+def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
+| 0, _ => List.Vector.nil
+| d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
+| d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
+
+def List.pad {α} (l : List α) (d : Nat) (pad : α) : List α := match d, l with
+| 0, _ => []
+| d+1, [] => pad :: List.pad [] d pad
+| d+1, h::t => h :: List.pad t d pad
+
+def toLeBits (n : Nat) : Nat → List.Vector (U 1) n := match n with
+| 0 => fun _ => .nil
+| n + 1 => fun i => (i % 2) ::ᵥ toLeBits n (i / 2)
+
+lemma to_le_bits_intro {input} : STHoare lp env ⟦⟧ (to_le_bits.call h![] h![input]) fun o => o = toLeBits 256 input.val := by
+  enter_decl
+  simp only [Extracted.to_le_bits]
+  steps
+  -- apply STHoare.letIn_intro
+  -- apply STHoare.consequence_frame_left
+  -- apply STHoare.loop_inv_intro fun i _ _ => ([bits ↦ ⟨(Tp.u 1).array 256, toLeBits i.toNat input.val |>.pad 256 0⟩] ⋆ [val ↦ ⟨Tp.field, ↑(input.val / (2^i.toNat))⟩])
+  -- on_goal 2 =>
+  --   sl
+  loop_inv fun i _ _ => [bits ↦ ⟨(Tp.u 1).array 256, toLeBits i.toNat input.val |>.pad 256 0⟩] ⋆ [val ↦ ⟨Tp.field, ↑(input.val / (2^i.toNat))⟩]
+
+  · decide
+  · simp [Int.cast, IntCast.intCast]
+    rw [ZMod.cast_id']
+    rfl
+  · intro i _ hhi
+    steps [sgn0_intro]
+
+    · let x : i.toNat < 256 := by
+        simp [BitVec.lt_def, Int.cast, IntCast.intCast] at hhi
+        exact hhi
+      simp [Access.modify, x]
+      rfl
+
+    steps
+
+    enter_block_as =>
+      ([val ↦ ⟨.field,  ↑(ZMod.val input / 2 ^ BitVec.toNat i)⟩])
+      (fun _ => [val ↦ ⟨.field,  ↑(ZMod.val input / 2 ^ BitVec.toNat i / 2)⟩])
+    · apply STHoare.ite_intro
+      · simp
+        rintro rfl
+        steps
+        casesm* ∃_,_
+        subst_vars
+        congr 1
+        rename _ = List.Vector.get _ _ => h0
+        simp at h0
+        injection h0 with h0
+        injection h0 with h0
+        simp at h0
+        simp
+        have := Nat.dvd_of_mod_eq_zero (Eq.symm h0)
+        rcases this with ⟨k, hk⟩
+        simp at *
+
+    · subst_vars
+      sorry
+
+    cases «#v_8»
+    simp [Access.modify]
+    intro
+    rfl
+    · intro; rfl
 
 axiom to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.array (Tp.u 8) 32) (FuncRef.decl "to_le_bytes" [] HList.nil) h![input])
     fun output => output = ⟨padEnd 256 (Lampe.toLeBytes input), toLeBytesPadLen⟩
@@ -160,16 +232,6 @@ lemma List.Vector.map_pfx_get_of_lt {n} {v : Vector α n} {f} {i} {hi : i.val < 
       · simp
       assumption
 
-def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
-| 0, _ => List.Vector.nil
-| d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
-| d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
-
-def List.pad {α} (l : List α) (d : Nat) (pad : α) : List α := match d, l with
-| 0, _ => []
-| d+1, [] => pad :: List.pad [] d pad
-| d+1, h::t => h :: List.pad t d pad
-
 @[simp]
 lemma List.Vector.toList_pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : (List.Vector.pad v d pad).toList = List.pad v.toList d pad := by
   sorry
@@ -235,10 +297,21 @@ lemma foo2' (v : List.Vector α 2): v = v[0] ::ᵥ v[1] ::ᵥ List.Vector.nil :=
   rw [←List.Vector.ofFn_get (v:=v)]
   rfl
 
+lemma HList.toVec_replicate : HList.toVec (HList.replicate x n) h = List.Vector.replicate n x := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    simp [HList.toVec, HList.toList, List.Vector.replicate] at ih
+    injection ih with ih
+    simp [HList.replicate, HList.toVec, List.Vector.replicate, HList.toList, List.replicate, ←ih]
+
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.bar input := by
   simp only [bar]
   steps [to_le_bytes_intro]
+  simp only [HList.toVec_replicate]
+
+  loop_inv fun i _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.map Skyscraper.sbox |>.takeF i |>.pad 16⟩ ]
 
   enter_block_as ([new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩]) (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Skyscraper.sbox⟩])
 

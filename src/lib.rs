@@ -326,4 +326,16 @@ mod test {
         "#,
         )
     }
+
+    #[test]
+    fn unconstrained() -> anyhow::Result<()> {
+        print_result(
+            r#"
+            unconstrained fn fun() -> Field{
+                let x = 5;
+                x
+            }
+        "#,
+        )
+    }
 }
