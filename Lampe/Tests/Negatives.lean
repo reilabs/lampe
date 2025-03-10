@@ -10,7 +10,7 @@ nr_def «zero?»<>() -> Field {
   #fAdd((@NEGONE<> as λ() → Field)(), 1 : Field) : Field
 }
 
-def env := Env.mk [("zero?", zero?.fn), ("NEGONE", NEGONE.fn)] []
+def env := Env.mk [zero?, NEGONE] []
 
 example : STHoare p env ⟦⟧ (zero?.fn.body _ h![] |>.body h![])
   fun (v : Tp.denote p .field) => v = 0 := by

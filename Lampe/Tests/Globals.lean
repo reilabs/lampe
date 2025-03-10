@@ -9,5 +9,3 @@ nr_def «FOOS»<>() -> [Field; 2] {
 nr_def «FOO»<>() -> Field {
     42 : Field
 }
-
-
