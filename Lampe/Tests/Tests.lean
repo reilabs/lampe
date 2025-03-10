@@ -472,21 +472,6 @@ nr_def const_test<@N : 8>(x : Field) -> Field {
   res;
 }
 
-theorem hypothesize_left {h : P₁ → STHoare p Γ P₂ e Q } :
-    STHoare p Γ (⟦P₁⟧ ⋆ P₂) e Q := by
-  unfold STHoare THoare SLP.lift at *
-  intros H st h
-  unfold SLP.star at h
-  obtain ⟨s₁, s₂, ⟨_, _, ⟨⟨s₁', s₂', _⟩⟩⟩⟩ := h
-  have : s₁' = ∅ := by tauto
-  subst this
-  have : s₂' = s₁ := by simp_all
-  subst this
-  have hp : P₁ := by tauto
-  apply h hp H st ?_
-  exists s₂', s₂
-  tauto
-
 example : STHoare p Γ ⟦⟧ (const_test.fn.body _ h![3] |>.body h![1])
     fun (v : Tp.denote p .field) => v = 8 := by
   simp only [const_test]
