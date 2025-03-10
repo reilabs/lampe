@@ -5,39 +5,51 @@ pub mod indent;
 mod pattern;
 mod syntax;
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+};
 
 use context::EmitterCtx;
 use fm::FileId;
-
 use itertools::Itertools;
 use noirc_frontend::{
+    Kind,
+    ResolvedGeneric,
+    StructField,
+    Type,
+    TypeBinding,
+    TypeBindings,
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
+        Context,
         def_map::{ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
-        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
-        function::Parameters,
+        function::{FuncMeta, Parameters},
         stmt::{HirLValue, HirPattern, HirStatement},
         traits::{NamedType, TraitImpl},
     },
     node_interner::{
-        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
+        DefinitionKind,
+        ExprId,
+        FuncId,
+        GlobalId,
+        StmtId,
+        StructId,
+        TraitId,
+        TypeAliasId,
     },
-    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
 };
-use noirc_frontend::hir_def::function::FuncMeta;
+
 use crate::{
     error::emit::{Error, Result},
-    lean::indent::Indenter,
+    lean::{builtin::BuiltinName, indent::Indenter, syntax::expr::format_builtin_call},
     noir::project::KnownFiles,
 };
-use crate::lean::builtin::BuiltinName;
-use crate::lean::syntax::expr::format_builtin_call;
 
 #[derive(PartialEq, Eq, Clone, Hash)]
 pub enum EmitOutput {
@@ -86,7 +98,7 @@ impl ToString for EmitOutput {
 pub struct ModuleEntries {
     pub impl_refs: HashSet<String>,
     pub func_refs: HashSet<String>,
-    pub defs: Vec<EmitOutput>,
+    pub defs:      Vec<EmitOutput>,
 }
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
@@ -199,7 +211,6 @@ impl LeanEmitter {
 
         let env_funcs = all_func_refs
             .into_iter()
-            .map(|r| format!("({r}.name, {r}.fn)"))
             .join(", ");
         let env_traits = all_impl_refs.into_iter().join(", ");
         let env_def = format!("def env := Lampe.Env.mk [{env_funcs}] [{env_traits}]");
@@ -344,7 +355,7 @@ impl LeanEmitter {
             .iter()
             // Only named generics need to be included in the `<>`.
             .filter(|g| match g {
-                Type::NamedGeneric(_, _) => true,
+                Type::NamedGeneric(..) => true,
                 _ => false,
             })
             .map(|g| self.emit_fully_qualified_type(g, ctx))
@@ -469,7 +480,8 @@ impl LeanEmitter {
         }
     }
 
-    /// Emits the Lean source code corresponding to a resolved generics occuring at generic declarations.
+    /// Emits the Lean source code corresponding to a resolved generics occuring
+    /// at generic declarations.
     pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
         let u_size = match g.kind() {
             Kind::Numeric(num_tp) => match num_tp.as_ref() {
@@ -534,8 +546,9 @@ impl LeanEmitter {
         }
     }
 
-    /// Emits the Lean source code corresponding to a Noir function at the module level.
-    /// Returns the definition name and the emitted function definition.
+    /// Emits the Lean source code corresponding to a Noir function at the
+    /// module level. Returns the definition name and the emitted function
+    /// definition.
     ///
     /// # Errors
     ///
@@ -550,7 +563,8 @@ impl LeanEmitter {
         let fq_path = self
             .context
             .fully_qualified_function_name(&func_meta.source_crate, &func);
-        // The parameters whose type must be replaced by a type variable should be appended to the list of generics.
+        // The parameters whose type must be replaced by a type variable should be
+        // appended to the list of generics.
         let impl_generics = func_meta
             .parameters
             .iter()
@@ -602,7 +616,8 @@ impl LeanEmitter {
         ))
     }
 
-    /// Emits the Lean source code corresponding to a Noir function that belongs to a trait implementation.
+    /// Emits the Lean source code corresponding to a Noir function that belongs
+    /// to a trait implementation.
     ///
     /// # Errors
     ///
@@ -613,12 +628,14 @@ impl LeanEmitter {
         func: FuncId,
         ctx: &EmitterCtx,
     ) -> Result<String> {
-        // [TODO] signature generation should be moved to a separate function that is also called from `emit_free_function_def`.
+        // [TODO] signature generation should be moved to a separate function that is
+        // also called from `emit_free_function_def`.
         let func_meta = self.context.function_meta(&func);
         let fq_path = self
             .context
             .fully_qualified_function_name(&func_meta.source_crate, &func);
-        // The parameters whose type must be replaced by a type variable should be appended to the list of generics.
+        // The parameters whose type must be replaced by a type variable should be
+        // appended to the list of generics.
         let impl_generics = func_meta
             .parameters
             .iter()
@@ -651,6 +668,21 @@ impl LeanEmitter {
         ))
     }
 
+    fn emit_numeric_type_const(&self, typ: &Type, ctx: &EmitterCtx) -> String {
+        match typ {
+            Type::TypeVariable(tv) => match tv.borrow().deref() {
+                TypeBinding::Bound(b) => {
+                    let b = b.follow_bindings();
+                    self.emit_numeric_type_const(&b, ctx)
+                }
+                TypeBinding::Unbound(..) => format!("{typ}"),
+            },
+            Type::Constant(num, Kind::Numeric(_)) => format!("{num}"),
+
+            _ => format!("{typ}"),
+        }
+    }
+
     /// Emits a fully-qualified type name for types where this is relevant.
     ///
     /// The correct operation of this function relies on type resolution having
@@ -662,11 +694,13 @@ impl LeanEmitter {
     /// When encountering situations that would indicate a bug in the Noir
     /// compiler.
     pub fn emit_fully_qualified_type(&self, typ: &Type, ctx: &EmitterCtx) -> String {
-        // If `typ` is an `impl` param type, directly return the substituted type variable name.
+        // If `typ` is an `impl` param type, directly return the substituted type
+        // variable name.
         if let Some(name) = ctx.get_impl_param(typ) {
             return name.to_string();
         }
-        // If `typ` is an `impl` return type, return the substituted type's string representation.
+        // If `typ` is an `impl` return type, return the substituted type's string
+        // representation.
         if let Some(typ) = ctx.get_impl_return(typ) {
             return self.emit_fully_qualified_type(typ, ctx);
         }
@@ -678,7 +712,7 @@ impl LeanEmitter {
             Type::Unit => syntax::r#type::format_unit(),
             Type::Array(size, elem_type) => {
                 let elem_type = self.emit_fully_qualified_type(elem_type, ctx);
-                let size = self.emit_fully_qualified_type(size.as_ref(), ctx);
+                let size = self.emit_numeric_type_const(size.as_ref(), ctx);
                 syntax::r#type::format_array(&elem_type, &size)
             }
             Type::Slice(elem_type) => {
@@ -734,6 +768,13 @@ impl LeanEmitter {
                     syntax::r#type::format_const(&num.to_string(), &format!("{bit_size}"))
                 }
                 _ => unimplemented!("unsupported numeric type {num_typ}"),
+            },
+            Type::TypeVariable(tv) => match tv.borrow().deref() {
+                TypeBinding::Bound(b) => {
+                    let b = b.follow_bindings();
+                    self.emit_fully_qualified_type(&b, ctx)
+                }
+                TypeBinding::Unbound(..) => format!("{typ}"),
             },
             // _ if context::is_impl(typ) => {
             //     panic!("impl types must be replaced with type variables or concrete types")
@@ -798,7 +839,9 @@ impl LeanEmitter {
         }
     }
 
-    /// Given a type `T` and a `TypeBindings` map `m`, returns a new type where the type variables in `T` have been recursively substituted with the values in `m`.
+    /// Given a type `T` and a `TypeBindings` map `m`, returns a new type where
+    /// the type variables in `T` have been recursively substituted with the
+    /// values in `m`.
     pub fn substitute_bindings(&self, typ: &Type, bindings: &TypeBindings) -> Type {
         match typ {
             Type::TypeVariable(tv) | Type::NamedGeneric(tv, _) => bindings
@@ -839,25 +882,23 @@ impl LeanEmitter {
                 Box::new(self.substitute_bindings(env, bindings)),
                 *unconstrained,
             ),
-            Type::TraitAsType(id, name, generics) => Type::TraitAsType(
-                id.clone(),
-                name.clone(),
-                TraitGenerics {
+            Type::TraitAsType(id, name, generics) => {
+                Type::TraitAsType(id.clone(), name.clone(), TraitGenerics {
                     ordered: generics
                         .ordered
                         .iter()
                         .map(|t| self.substitute_bindings(t, bindings))
                         .collect(),
-                    named: generics
+                    named:   generics
                         .named
                         .iter()
                         .map(|t| NamedType {
                             name: t.name.clone(),
-                            typ: self.substitute_bindings(&t.typ, bindings),
+                            typ:  self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
-                },
-            ),
+                })
+            }
             Type::MutableReference(t) => {
                 Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
             }
@@ -905,7 +946,8 @@ impl LeanEmitter {
                 {
                     syntax::expr::format_builtin_call(builtin_name, &rhs, &out_ty_str)
                 } else {
-                    // Convert to a trait call if this prefix call doesn't correspond to a builtin call.
+                    // Convert to a trait call if this prefix call doesn't correspond to a builtin
+                    // call.
                     let rhs_ty_str = self.emit_fully_qualified_type(&rhs_ty, ctx);
                     let trait_method_id = self
                         .context
@@ -959,7 +1001,8 @@ impl LeanEmitter {
                         &out_ty_str,
                     )
                 } else {
-                    // Convert to a trait call if this infix call doesn't correspond to a builtin call.
+                    // Convert to a trait call if this infix call doesn't correspond to a builtin
+                    // call.
                     let lhs_ty_str = self.emit_fully_qualified_type(&lhs_ty, ctx);
                     let rhs_ty_str = self.emit_fully_qualified_type(&rhs_ty, ctx);
                     let args_str = [lhs_ty_str.as_str(), rhs_ty_str.as_str()].join(", ");
@@ -1031,8 +1074,9 @@ impl LeanEmitter {
                         // These are later appended to the emitted generics.
                         let impl_generics = bindings
                             .iter()
-                            // Find the instantiation bindings that are not part of the generics of this ident expression.
-                            .filter(|(_, (tv, _, _))| {
+                            // Find the instantiation bindings that are not part of the generics of
+                            // this ident expression.
+                            .filter(|(_, (tv, ..))| {
                                 !func_meta
                                     .all_generics
                                     .iter()
@@ -1040,10 +1084,10 @@ impl LeanEmitter {
                                     .any(|tv2| tv2.id() == tv.id())
                             })
                             // Ensure that the original type variable is substituted in the context.
-                            .filter(|(_, (tv, _, _))| {
+                            .filter(|(_, (tv, ..))| {
                                 ctx.get_impl_param(&Type::TypeVariable(tv.clone())).is_some()
                             })
-                            .map(|(_, (tv, _, _))| {
+                            .map(|(_, (tv, ..))| {
                                 self.emit_fully_qualified_type(&Type::TypeVariable(tv.clone()), ctx)
                             });
                         match (func_meta.trait_impl, func_meta.trait_id) {
@@ -1053,9 +1097,14 @@ impl LeanEmitter {
                                     .def_interner
                                     .get_trait_implementation(trait_impl_id);
                                 let trait_impl = trait_impl.borrow();
-                                let self_type = func_meta.self_type.as_ref()
+                                let self_type = func_meta
+                                    .self_type
+                                    .as_ref()
                                     .map(|t| self.substitute_bindings(t, bindings))
-                                    .expect("the function associated with a trait function identifier must have a self type");
+                                    .expect(
+                                        "the function associated with a trait function identifier \
+                                         must have a self type",
+                                    );
                                 let self_type_str = self.emit_fully_qualified_type(&self_type, ctx);
                                 let trait_name = trait_impl.ident.to_string();
                                 let trait_generics = trait_impl
@@ -1079,7 +1128,8 @@ impl LeanEmitter {
                                     &ident_generics,
                                 )
                             }
-                            // This branch is executed when the trait method is called on an `impl` type, i.e., the concrete type is unknown.
+                            // This branch is executed when the trait method is called on an `impl`
+                            // type, i.e., the concrete type is unknown.
                             (None, Some(trait_id)) => {
                                 let trt = self.context.def_interner.get_trait(trait_id);
                                 let trait_name = trt.name.to_string();
@@ -1097,7 +1147,9 @@ impl LeanEmitter {
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
                                     .chain(impl_generics)
                                     .join(", ");
-                                let self_type = func_meta.self_type.as_ref()
+                                let self_type = func_meta
+                                    .self_type
+                                    .as_ref()
                                     .map(|t| self.substitute_bindings(t, bindings))
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
                                     .expect("self type must be present");
@@ -1119,7 +1171,7 @@ impl LeanEmitter {
                                     _ => name.to_string(),
                                 };
                                 let func_module_id = ModuleId {
-                                    krate: func_meta.source_crate,
+                                    krate:    func_meta.source_crate,
                                     local_id: func_meta.source_module,
                                 };
                                 let fq_mod_name = self.fq_module_name_from_mod_id(func_module_id);
@@ -1173,7 +1225,7 @@ impl LeanEmitter {
                         syntax::expr::format_call(&global_name, "", &global_type)
                     }
                     DefinitionKind::Local(..) => syntax::expr::format_var_ident(name),
-                    DefinitionKind::NumericGeneric(_, _) => syntax::expr::format_const(name),
+                    DefinitionKind::NumericGeneric(..) => syntax::expr::format_const(name),
                 }
             }
             HirExpression::Index(index) => {
@@ -1205,7 +1257,8 @@ impl LeanEmitter {
                         (name.clone(), i)
                     })
                     .collect();
-                // Reorder the constructor fields before creating the string, so that they correspond to the order in the original definition.
+                // Reorder the constructor fields before creating the string, so that they
+                // correspond to the order in the original definition.
                 let fields_strings: Vec<String> = fields
                     .iter()
                     .sorted_by_key(|(i, _)| field_orders.get(i).cloned().unwrap_or_default())
@@ -1284,24 +1337,28 @@ impl LeanEmitter {
             HirExpression::Lambda(lambda) => {
                 let ret_type = self.emit_fully_qualified_type(&lambda.return_type, ctx);
 
-                // Divide the parameters into simple and complex parameters, where simple parameters are parameters that can be expressed as a single let or let mut binding.
-                let (simple_params, complex_params): (Vec<_>, Vec<_>) =
-                    lambda.parameters.iter().enumerate().partition_map(
-                        |(param_idx, (pat, param_typ))| {
-                            let rhs = self.emit_fully_qualified_type(param_typ, ctx);
-                            if let Some((_, lhs)) =
-                                pattern::try_format_simple_pattern(pat, "", self, ctx)
-                            {
-                                // If the parameter is simple, we can directly use the ident as the lhs.
-                                let lhs = self.context.def_interner.definition_name(lhs.id);
-                                itertools::Either::Left(format!("{lhs} : {rhs}"))
-                            } else {
-                                // If the parameter is complex, we need to generate a fresh binding for it.
-                                let lhs = format!("π{param_idx}");
-                                itertools::Either::Right((pat.clone(), lhs, rhs))
-                            }
-                        },
-                    );
+                // Divide the parameters into simple and complex parameters, where simple
+                // parameters are parameters that can be expressed as a single let or let mut
+                // binding.
+                let (simple_params, complex_params): (Vec<_>, Vec<_>) = lambda
+                    .parameters
+                    .iter()
+                    .enumerate()
+                    .partition_map(|(param_idx, (pat, param_typ))| {
+                        let rhs = self.emit_fully_qualified_type(param_typ, ctx);
+                        if let Some((_, lhs)) =
+                            pattern::try_format_simple_pattern(pat, "", self, ctx)
+                        {
+                            // If the parameter is simple, we can directly use the ident as the lhs.
+                            let lhs = self.context.def_interner.definition_name(lhs.id);
+                            itertools::Either::Left(format!("{lhs} : {rhs}"))
+                        } else {
+                            // If the parameter is complex, we need to generate a fresh binding for
+                            // it.
+                            let lhs = format!("π{param_idx}");
+                            itertools::Either::Right((pat.clone(), lhs, rhs))
+                        }
+                    });
                 // Convert the parameters into strings.
                 let params_str = complex_params
                     .iter()
@@ -1314,7 +1371,8 @@ impl LeanEmitter {
                     .map(|(pat, lhs, _)| pattern::format_pattern(pat, lhs, self, ctx).join(";\n"))
                     .join(";\n");
                 let body = self.emit_expr(ind, lambda.body, ctx)?;
-                // Prepend the body with the appropriate block of let (mut) bindings if there are any complex parameters.
+                // Prepend the body with the appropriate block of let (mut) bindings if there
+                // are any complex parameters.
                 let body = if pattern_stmts_str.is_empty() {
                     body
                 } else {
@@ -1344,7 +1402,8 @@ impl LeanEmitter {
         Ok(expression)
     }
 
-    /// Identifies the type of an expression, returning the bound type if the expression's type is a `TypeVariable` that is already bound.
+    /// Identifies the type of an expression, returning the bound type if the
+    /// expression's type is a `TypeVariable` that is already bound.
     pub fn id_bound_type(&self, expr_id: ExprId) -> Type {
         let identified_ty = self.context.def_interner.id_type(expr_id);
         let expr_bindings = self.context.def_interner.try_get_instantiation_bindings(expr_id);
@@ -1444,8 +1503,8 @@ impl LeanEmitter {
             HirStatement::Error => panic!("Encountered error statement where none should exist"),
         };
         // Append a semicolon to the statement if it doesn't already end with one.
-        // We emit some statements already with a semicolon, so we don't want to add another.
-        // [TODO] maybe fix this for consistency
+        // We emit some statements already with a semicolon, so we don't want to add
+        // another. [TODO] maybe fix this for consistency
         if result.ends_with(";") {
             Ok(result)
         } else {

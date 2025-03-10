@@ -321,7 +321,7 @@ elab "loop_inv" inv:term : tactic => do
   replaceMainGoal goals
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
-    (h_found : (Γ.functions.find? (fun (n, _) => n = fnName)) = some (fnName, func))
+    (h_found : (Γ.functions.find? (fun ⟨n, _⟩ => n = fnName)) = some ⟨fnName, func⟩)
     (hkc : func.generics = kinds)
     (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
     (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
