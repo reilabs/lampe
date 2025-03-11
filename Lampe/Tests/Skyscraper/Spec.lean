@@ -101,6 +101,10 @@ axiom from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.array (
   -- simp only [from_le_bytes]
   -- steps
 
+@[simp]
+lemma Vector.cons_cast {α m n v} {vs : List.Vector α n} {h : n = m}:
+  v ::ᵥ (h ▸ vs) = h ▸ (v ::ᵥ vs) := by cases h; rfl
+
 def List.Vector.map_pfx {α n} (v : List.Vector α n) (d : Nat) (f : α → α) : List.Vector α n := match d, n with
 | 0, _ => v
 | _, 0 => v
@@ -129,6 +133,34 @@ def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Ve
 | d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
 | d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
 
+lemma List.Vector.pad_eq_listpad {d : Nat} {a : α} (vec : List.Vector α n) (h : n ≤ d)
+    : vec.pad d a = ⟨vec.val.rightpad d a, by simp [h]⟩ := by
+  rcases vec with ⟨l, p⟩
+  simp
+  induction d with
+  | zero =>
+    have : l = [] := by apply List.length_eq_zero.mp (by omega)
+    simp [this]; rfl
+  | succ d hd =>
+    cases n with
+    | zero =>
+      have : l = [] := by apply List.length_eq_zero.mp (by omega)
+      simp [this] at hd
+      simp [List.length_eq_zero.mp, p]
+      unfold pad
+      rw [hd]
+      simp [List.Vector.cons]
+      congr
+    | succ n =>
+      unfold pad
+      have := List.Vector.pad_eq_listpad (a := a) (d := d) (tail ⟨l, p⟩) (by omega)
+      rw [this]
+      simp [List.Vector.head, List.Vector.cons]
+      congr
+      cases l
+      · contradiction
+      · simp
+
 lemma List.Vector.pad_eq_self {α n} (v : List.Vector α n) (pad : α) : v.pad n pad = v := by
   induction n with
   | zero =>
@@ -140,6 +172,7 @@ lemma List.Vector.pad_eq_self {α n} (v : List.Vector α n) (pad : α) : v.pad n
 
 lemma asdfasdf {d n : Nat} : (min d.succ n.succ) = (min d (n.succ - 1)).succ := by omega
 
+@[simp]
 lemma List.Vector.toList_cast (h : n₁ = n₂) (v : List.Vector α n₁) :
     (h ▸ v : List.Vector α n₂).toList = v.toList := by
   cases v
@@ -154,12 +187,9 @@ lemma List.Vector.take_cons_head_tail {α} {n d : Nat} (v : List.Vector α (n.su
 
 lemma List.Vector.take_eq_take_list {α} {n d : Nat} (v : List.Vector α n) (hd : d ≤ n):
     (Nat.min_eq_left hd ▸ v.take d : List.Vector α d) = ⟨v.val.take d, by aesop⟩ := by
-  convert_to v.take d = ⟨v.val.take d, by aesop⟩
-  · rw [Nat.min_eq_left hd]
-  · simp
-  · rename_i h
-    sorry -- TODO: This seems like an obvious HEq goal
-  · aesop
+  cases v
+  apply List.Vector.eq
+  simp [List.Vector.take]
 
 lemma aaasdf (n : Nat) : (n.succ ⊓ (n + 1)) = (n ⊓ (n + 1 - 1)).succ := by aesop
 
@@ -186,7 +216,7 @@ lemma List.Vector.pad_thm_le {α n} (v : List.Vector α n) (d : Nat) (hd : d ≤
           rw [←this2]
           convert_to v.head ::ᵥ (v.tail.take d) = Nat.succ_min_succ _ _ ▸ v.take d.succ
           · aesop
-          · sorry -- TODO: This seems like an obvious HEq goal
+          · simp
           · simp
           · convert List.Vector.take_cons_head_tail v
         · omega
@@ -203,7 +233,7 @@ lemma List.Vector.pad_thm_le {α n} (v : List.Vector α n) (d : Nat) (hd : d ≤
       rw [←this2]
       convert_to v.head ::ᵥ (v.tail.take n) = (aaasdf n) ▸ v.take n.succ
       · simp
-      · sorry -- TODO: This seems like an obvious HEq goal
+      · simp
       · simp
       · convert List.Vector.take_cons_head_tail v
       omega
@@ -260,6 +290,10 @@ lemma drop_get (vec : List.Vector α n) (d i : Nat) (h : d + i < n) :
   unfold List.Vector.get List.Vector.drop
   simp
 
+lemma List.Vector.pad_eq_self' {α n} (v : List.Vector α n) (pad : α) (h : m = n) : v.pad m pad = h ▸ v := by
+  cases h
+  apply List.Vector.pad_eq_self
+
 lemma take_pad_lt (vec : List.Vector α n) (a : α) (d : Nat) (h : d < n)
     : (vec.take d |>.pad d a) = Nat.min_eq_left (Nat.le_of_lt h) ▸ vec.take d := by
   cases d
@@ -273,16 +307,96 @@ lemma take_pad_lt (vec : List.Vector α n) (a : α) (d : Nat) (h : d < n)
     rw [List.Vector.toList_cast]
     simp
     rfl
-  · sorry -- TODO: haven't thought hard about this
+  · rw [List.Vector.pad_eq_self']
+    simp; omega
 
 lemma take_pad_eq (vec : List.Vector α n) (a : α) (d : Nat) (h : d ≤ n) :
     (vec.take d |>.pad d a) = (Nat.min_eq_left h ▸ vec.take d) := by
-  sorry -- TODO: haven't thought hard about this
+  rw [List.Vector.pad_thm_le]
+  let ⟨l, p⟩ := vec
+  simp [List.Vector.take, List.take_take]
+  apply List.Vector.eq
+  simp [List.Vector.toList_cast]
+  omega
 
 lemma take_succ_pad (vec : List.Vector α n) (a : α) (i : Nat) (hi : i < n) (hi' : i < N) :
-    (vec |>.take (i + 1) |>.pad N a) = (vec |>.take i |>.pad N a |>.set ⟨i, hi'⟩ (vec.get ⟨i, hi⟩))
+    (vec |>.take (i + 1) |>.pad N a) = (vec |>.take i |>.pad N a |>.set ⟨i, by omega⟩ (vec.get ⟨i, hi⟩))
     := by
-  sorry -- TODO: haven't thought hard about this
+  rcases vec with ⟨l, p⟩
+  simp [List.Vector.take, List.Vector.set]
+  have := List.Vector.pad_eq_listpad (a := a) (d := N) (⟨List.take i l, by simp [List.length_take]; omega⟩ : List.Vector α (i ⊓ n)) (by omega)
+  conv_rhs =>
+    congr
+    · congr
+      · congr
+        rw [this]
+      · skip
+      . skip
+  have := List.Vector.pad_eq_listpad (a := a) (d := N) (⟨List.take (i + 1) l, by simp [List.length_take]; omega⟩ : List.Vector α ((i + 1) ⊓ n)) (by omega)
+  rw [this]
+  congr
+  simp
+  have ipo : (i + 1) ⊓ l.length = (i + 1) := by omega
+  have il : i ⊓ l.length = i := by omega
+  simp [ipo, il]
+  apply List.ext_get
+  · simp [ipo, il]
+    omega
+  · intro m hl hr
+    simp [ipo, il] at hl
+    simp [ipo, il] at hr
+    match Nat.lt_trichotomy i m with
+    | .inl lt =>
+      simp [lt, List.getElem_append]
+      have : i + 1 ≤ m := by omega
+      split; split
+      · rfl
+      · linarith
+      · split
+        · linarith
+        · simp [List.Vector.get, il, List.Vector.get, List.getElem_set]
+          split
+          · have : 0 ≠ m - i := by omega
+            contradiction
+          · rfl
+    | .inr (.inl eq) =>
+      simp [eq, List.getElem_append]
+      split
+      · rw [eq] at il
+        simp [il]
+        simp [List.Vector.get]
+      · simp [List.Vector.get]
+        rw [eq] at il
+        simp [il]
+        rw [eq] at hi
+        rename_i hh
+        rw [p] at hh
+        linarith
+    | .inr (.inr gt) =>
+      simp [gt, List.getElem_append]
+      split; split
+      · rfl
+      · linarith
+      · split
+        · rename_i h1 h2
+          push_neg at h1
+          have : l.length ≤ m := h1 (by omega)
+          linarith
+        · simp [il]
+          simp [List.Vector.get]
+          simp [List.getElem_set]
+          split
+          · linarith
+          · rfl
+
+lemma pad_eq_take (vec : List.Vector α n) (a : α) (d : Nat) (h : d ≤ n) :
+    (vec.pad d a) = (Nat.min_eq_left h ▸ (vec.take d)) := by
+  rw [List.Vector.pad_thm_le]
+  let ⟨l, p⟩ := vec
+  simp [List.Vector.take, List.take_take]
+  apply List.Vector.eq
+  simp [List.Vector.toList_cast]
+  omega
 
 lemma take_succ_map_pad_eq (vec : List.Vector α n) (b : β) (f : α → β) (i : Nat) (hi : i < n) (hi' : i < N):
     (vec |>.take (i + 1)
@@ -303,33 +417,35 @@ lemma List.Vector.cast_head {n m : Nat} (h : n = m) (vec : List.Vector α n.succ
   cases h
   rfl
 
+lemma List.Vector.cast_head' {n m : Nat} (h : n = m.succ) (vec : List.Vector α n) :
+    (h ▸ vec).head = vec[0] := by
+  rcases vec with ⟨l, p⟩
+  cases h
+  simp [List.Vector.cast_head, List.Vector.head, List.Vector.getElem_def]
+  match l with
+  | [] => contradiction
+  | h :: t => rfl
+
 lemma List.Vector.take_head {n d : Nat} (vec : List.Vector α n.succ) (d : Nat) (h : d.succ < n.succ) :
     vec.head = ((Nat.succ_min_succ _ _ ▸ vec.take d.succ) : List.Vector α (min d n ).succ).head := by
-  sorry -- TODO: Haven't thought hard about this
+  rcases vec with ⟨l, p⟩
+  match l with
+  | [] => contradiction
+  | head :: tail =>
+    rw [List.Vector.cast_head']
+    simp [List.Vector.head, List.Vector.take, List.Vector.getElem_def]
 
 lemma List.Vector.take_eq_self_iff (vec : List.Vector α n) : vec.take n = (Nat.min_self n |>.symm) ▸ vec := by
-  rcases vec with ⟨l, p⟩
-  simp [List.Vector.take]
-  congr
-  have := List.take_eq_self_iff l (n := n) |>.mpr (by omega)
-  rw [this]
-  sorry -- TODO: Some annoying cast issue
+  apply List.Vector.eq
+  cases vec
+  simp_all [List.Vector.take]
 
 lemma List.Vector.take_append (vec₁ : List.Vector α n₁) (vec₂ : List.Vector α n₂) :
     (vec₁.append vec₂ |>.take n₁) = (Nat.min_eq_left (Nat.le_add_right _ _)) ▸ vec₁ := by
   cases vec₁
   cases vec₂
-  unfold List.Vector.take
-  split
-  aesop
-  unfold List.Vector.append at heq
+  apply List.Vector.eq
   simp_all
-  have : l = val ++ val_1 := by
-    cases heq
-    rfl
-  simp [this]
-  congr
-  sorry -- TODO: Some annoying cast issue
 
 lemma List.Vector.map_append (vec₁ : List.Vector α n₁) (vec₂ : List.Vector α n₂) (f : α → β) :
     (vec₁.append vec₂).map f = (vec₁.map f).append (vec₂.map f) := by
@@ -343,13 +459,60 @@ lemma upList {l₁ l₂ : List α} {len} (hl₁ : l₁.length = len) (hl₂ : l�
   cases h
   rfl
 
-lemma List.Vector.pad_eq_listpad {d : Nat} {a : α} (vec : List.Vector α n) (h : n ≤ d)
-    : vec.pad d a = ⟨vec.val.rightpad d a, by simp [h]⟩ := by
-  sorry -- TODO: Haven't thought hard about this
-
-lemma rightpad_taked_set_succ (a : α) (d N : Nat) (l : List α) (h : d < l.length):
+lemma rightpad_taked_set_succ (a : α) (d N : Nat) (l : List α) (h : d < l.length) (h' : d < N) :
   (l.takeD d a |>.rightpad N a |>.set d l[d]) = (l.takeD (d + 1) a |>.rightpad N a) := by
-  sorry -- TODO: Haven't thought hard about this
+  cases d with
+  | zero =>
+    simp
+    unfold List.replicate
+    split
+    · linarith
+    split
+    · simp
+      refine ⟨?_, by omega⟩
+      simp [List.head?, Option.getD]
+      aesop
+      contradiction
+    · simp_all
+      constructor
+      have : ∃(k : Nat), l.length = k.succ := by simp [h]
+      rcases this with ⟨k, hk⟩
+      have : l ≠ [] := by apply List.ne_nil_of_length_eq_add_one; simp [hk]; rfl
+      · simp [List.ne_nil_of_length_eq_add_one, List.head?_eq_head, this]
+        simp [List.head, List.getElem_zero]
+      · rfl
+  | succ d =>
+    have simp1 := List.takeD_eq_take a h
+    have : d < l.length := by omega
+    have simp2 := List.takeD_eq_take a this
+    simp only [simp1, simp2]
+    apply List.ext_getElem
+    · simp; omega
+    · intro n h1 h2
+      simp [List.getElem_append]
+      split; split
+      · rfl
+      · simp_all
+        linarith
+      · have : d + 1 ≤ l.length := by omega
+        simp [this]
+        simp [List.getElem_set]
+        split; split
+        · have : n = d + 1 := by omega
+          simp [this]
+        · simp_all
+          rename_i hh
+          have : d = n + 1 := by omega
+          rw [this] at hh
+          have c1 := hh (by omega)
+          linarith
+        · split
+          · rename_i h3 h4 h5 h6
+            simp_all
+            have : n ≠ d + 1 := by omega
+            have : n = d + 1 := by omega
+            contradiction
+          · rfl
 
 theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.call [Tp.slice (Tp.u 8)] (Tp.array (Tp.u 8) 32) (FuncRef.decl "as_array" [] HList.nil) h![input])
     fun output => output = ⟨input, hi⟩ := by
@@ -379,7 +542,7 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.ca
     unfold List.Vector.set
     congr
     simp only
-    have := rightpad_taked_set_succ 0#8 (i.toNat) 32 input (by omega)
+    have := rightpad_taked_set_succ 0#8 (i.toNat) 32 input (by omega) (by omega)
     rw [this]
   · steps []
     simp_all
@@ -395,7 +558,6 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.ca
     rw [←List.Vector.ofFn_get (v:=⟨input, hi⟩)]
     rfl
 
-set_option maxHeartbeats 500000000000000 in
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.bar input := by
   simp only [bar]
@@ -627,15 +789,19 @@ theorem square_intro : STHoare lp env (⟦⟧)
   subst_vars
   rfl
 
+set_option maxHeartbeats 50000000
 theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "permute" [] HList.nil) h![i])
-    fun output => output = (Skyscraper.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Skyscraper.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by sorry -- TODO: This has a bad timeout now?
-  -- enter_decl
-  -- simp only [Extracted.permute]
-  -- steps [bar_intro, square_intro, rc_intro]
-  -- casesm* ∃_,_
-  -- simp [Builtin.indexTpl] at *
-  -- subst_vars
-  -- unfold Skyscraper.permute
+    fun output => output = (Skyscraper.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Skyscraper.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
+  enter_decl
+  cases i using List.Vector.casesOn with | cons _ i =>
+  cases i using List.Vector.casesOn with | cons _ i =>
+  cases i using List.Vector.casesOn
+  simp only [Extracted.permute]
+  steps [bar_intro, square_intro, rc_intro]
+  casesm* ∃_,_
+  simp [Builtin.indexTpl, Nat.mod_eq_of_lt, lp] at *
+  subst_vars
+  rfl
 
 theorem compress_spec : STHoare lp env ⟦⟧ (compress.fn.body _ h![] |>.body h![l, r])
     fun output => output = Skyscraper.compress l r := by
