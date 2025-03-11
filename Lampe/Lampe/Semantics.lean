@@ -9,7 +9,7 @@ namespace Lampe
 variable (p : Prime)
 
 structure Env where
-  functions : List (Ident × Function)
+  functions : List FunctionDecl
   traits : List (Ident × TraitImpl)
 
 inductive TraitResolvable (Γ : Env) : TraitImplRef → Prop where
@@ -81,7 +81,7 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   Omni Γ ⟨vh, lambdas⟩ (Expr.call argTps outTp fnRef args) Q
 | callDecl {fnRef} :
   fnRef = (.decl fnName kinds generics) →
-  (fnName, fn) ∈ Γ.functions →
+  ⟨fnName, fn⟩ ∈ Γ.functions →
   (hkc : fn.generics = kinds) →
   (htci : (fn.body (Tp.denote p) (hkc ▸ generics) |>.argTps) = argTps) →
   (htco : (fn.body (Tp.denote p) (hkc ▸ generics) |>.outTp) = outTp) →
