@@ -258,7 +258,7 @@ nr_def call_decl<>() -> Field {
   (@add_two_fields<> as λ(Field, Field) → Field)(1 : Field, 2 : Field)
 }
 
-example : STHoare p ⟨[(add_two_fields.name, add_two_fields.fn)], []⟩ ⟦⟧
+example : STHoare p ⟨[add_two_fields], []⟩ ⟦⟧
     (call_decl.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [call_decl]
@@ -410,7 +410,7 @@ nr_def simple_hof<>() -> Field {
   (@call<> as λ(λ() → Field) → Field)(func)
 }
 
-example : STHoare p ⟨[(simple_func.name, simple_func.fn), (call.name, call.fn)], []⟩ ⟦⟧
+example : STHoare p ⟨[simple_func, call], []⟩ ⟦⟧
     (simple_hof.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [simple_hof]

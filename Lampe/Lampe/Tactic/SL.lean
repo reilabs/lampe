@@ -218,6 +218,12 @@ lemma solve_exi_prop_star_mv {p} {P R : SLP (State p)} {Q : H → SLP (State p)}
   assumption
   simp_all [SLP.star_comm]
 
+lemma solve_compose [LawfulHeap α] {P Q R S : SLP α} (h₁ : P ⊢ Q ⋆ R) (h₂ : R ⊢ S): P ⊢ Q ⋆ S := by
+  apply SLP.entails_trans
+  assumption
+  apply SLP.star_mono_l
+  assumption
+
 end Internal
 
 structure SLGoals where
@@ -367,9 +373,11 @@ partial def solveEntailment (goal : MVarId): TacticM SLGoals := withTraceNode `L
       let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.star_top_of_star_mvar) | throwError "unexpected goals in star_top_of_star_mvar"
       let ng ← solveEntailment g
       return ng ++ SLGoals.mk [] impls
-    else if r.isForAll then
-      throwError "cannot solve forall on the RHS"
-    else throwError "todo {l} {r}"
+    else
+      let g₁ :: g₂ :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_compose) | throwError "unexpected goals in solve_compose"
+      let ng₁ ← solveEntailment g₁
+      let ng₂ ← solveEntailment g₂
+      return ng₁ ++ ng₂ ++ SLGoals.mk [] impls
   | SLTerm.singleton _ _ =>
     -- [TODO] handle pure on the left
     let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_self)

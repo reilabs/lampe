@@ -54,6 +54,17 @@ structure FunctionDecl where
   name : Ident
   fn : Function
 
+@[reducible, simp]
+def FunctionDecl.call {lp} (f : FunctionDecl)
+    (gs : HList Kind.denote f.fn.generics)
+    (args : HList (Tp.denote lp) (f.fn.body (Tp.denote lp) gs).argTps):
+    Expr (Tp.denote lp) (f.fn.body (Tp.denote lp) gs).outTp :=
+    (.call
+        (f.fn.body (Tp.denote lp) gs).argTps
+        (f.fn.body (Tp.denote lp) gs).outTp
+        (FuncRef.decl f.name f.fn.generics gs)
+        args)
+
 structure Module where
   decls : List FunctionDecl
 

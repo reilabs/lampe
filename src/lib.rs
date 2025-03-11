@@ -286,6 +286,33 @@ mod test {
     }
 
     #[test]
+    fn trait_generics() -> anyhow::Result<()> {
+        print_result(
+            r#"
+            trait BinaryHasher<F> {
+                fn hash(a: F, b: F) -> F;
+            }
+
+            pub fn mtree_recover<H, let N : u32>(idx: [bool; N], p: [Field; N], item: Field) -> Field
+            where H: BinaryHasher<Field>
+            {
+                let mut curr_h = item;
+                for i in 0..N {
+                    let dir = idx[i];
+                    let sibling_root = p[i];
+                    if dir {
+                        curr_h = H::hash(sibling_root, curr_h);
+                    } else {
+                        curr_h = H::hash(curr_h, sibling_root);
+                    }
+                }
+                curr_h
+            }
+        "#,
+        )
+    }
+
+    #[test]
     fn globals() -> anyhow::Result<()> {
         print_result(
             r#"
@@ -295,6 +322,34 @@ mod test {
 
             fn main() -> pub Field {
                 FOOS[1]
+            }
+        "#,
+        )
+    }
+
+    #[test]
+    fn unconstrained() -> anyhow::Result<()> {
+        print_result(
+            r#"
+            unconstrained fn fun() -> Field{
+                let x = 5;
+                x
+            }
+        "#,
+        )
+    }
+
+    #[test]
+    fn arrays() -> anyhow::Result<()> {
+        print_result(
+            r#"
+            pub fn mtree_recover<let N : u32>(idx: [bool; N], p: [Field; N], item: Field) -> Field
+            {
+                item
+            }
+
+            fn main(root: pub Field, proof : pub [Field; 32], idx : pub [bool; 32], item : pub Field) {
+                assert(root == mtree_recover(idx, proof, item));
             }
         "#,
         )

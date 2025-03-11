@@ -474,7 +474,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
 
 theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}
-    {h_fn : (fnName, fn) ∈ Γ.functions}
+    {h_fn : ⟨fnName, fn⟩ ∈ Γ.functions}
     {hkc : fn.generics = kinds}
     {htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps}
     {htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp}

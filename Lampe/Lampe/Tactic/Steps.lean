@@ -87,8 +87,10 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.fMul => return some (←``(genericTotalPureBuiltin_intro Builtin.fMul rfl (a := ())), true)
         | ``Lampe.Builtin.fSub => return some (←``(genericTotalPureBuiltin_intro Builtin.fSub rfl (a := ())), true)
         | ``Lampe.Builtin.fNeg => return some (←``(genericTotalPureBuiltin_intro Builtin.fNeg rfl (a := ())), true)
+        | ``Lampe.Builtin.fDiv => return some (←``(fDiv_intro), false)
 
         | ``Lampe.Builtin.fEq => return some (←``(genericTotalPureBuiltin_intro Builtin.fEq rfl (a := ())), true)
+        | ``Lampe.Builtin.uEq => return some (←``(genericTotalPureBuiltin_intro Builtin.uEq rfl), true)
 
         | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro), false)
 
@@ -319,7 +321,7 @@ elab "loop_inv" inv:term : tactic => do
   replaceMainGoal goals
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
-    (h_found : (Γ.functions.find? (fun (n, f) => n = fnName)) = some (fnName, func))
+    (h_found : (Γ.functions.find? (fun ⟨n, _⟩ => n = fnName)) = some ⟨fnName, func⟩)
     (hkc : func.generics = kinds)
     (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
     (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
@@ -347,7 +349,7 @@ macro_rules | `(tactic|enter_decl) => `(tactic|apply callDecl_direct_intro (by r
 
 theorem callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
-    (h_fn : impls.find? (fun (n, f) => n = fnName) = some (fnName, func))
+    (h_fn : impls.find? (fun (n, _) => n = fnName) = some (fnName, func))
     (hkc : func.generics = kinds)
     (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
     (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
@@ -368,11 +370,15 @@ theorem callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
 syntax "enter_trait" "[" term,* "]" term  : tactic
 macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn) (by rfl) (by rfl) (by rfl) (by rfl))
 
+theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
+  apply hp v
 theorem enter_block H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
 
-syntax "enter_block_as" "("term")" "("term")" : tactic
-elab "enter_block_as" "(" pre:term ")" "(" post:term ")" : tactic => do
+elab "enter_block_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
   let goal ← getMainGoal
-  let enterer ← ``(enter_block $pre $post)
+  trace[Lampe.STHoare.Helpers] "enter_block_as {n}"
+  let enterer ← match n with
+  | some n => ``(bindVar (fun $n => enter_block $pre $post))
+  | none => ``(enter_block $pre $post)
   let newGoals ← steps goal 1 [enterer]
   replaceMainGoal newGoals
