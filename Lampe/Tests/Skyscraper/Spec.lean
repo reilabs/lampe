@@ -159,155 +159,117 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.ca
   have : input.length ≤ input.length := by linarith
   simp only [←hi, Int.cast, IntCast.intCast, BitVec.ofInt, List.takeD_eq_take, this, List.take_length]
 
-lemma bar_loop_1 {bytes : Tp.denote lp ((Tp.u 8).array 32)} {new_left : Tp.denote lp ((Tp.u 8).array 16).ref}:
-    STHoare lp env
-    [new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩]
-    ((Expr.loop ↑0 ↑16 fun i ↦
-    (Expr.fn [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil)).letIn fun v_7 ↦
-      (Expr.callBuiltin [Tp.u 32] (Tp.u 32) Builtin.cast (HList.cons i HList.nil)).letIn fun v_8 ↦
-        (Expr.callBuiltin [(Tp.u 8).array 32, Tp.u 32] (Tp.u 8) Builtin.arrayIndex
-              (HList.cons bytes (HList.cons v_8 HList.nil))).letIn
-          fun v_9 ↦
-          (Expr.call [Tp.u 8] (Tp.u 8) v_7 (HList.cons v_9 HList.nil)).letIn fun v_10 ↦
-            (Expr.callBuiltin [Tp.u 32] (Tp.u 32) Builtin.cast (HList.cons i HList.nil)).letIn fun v_11 ↦
-              (Expr.modifyLens new_left v_10 (Lens.nil.cons (Access.array v_11))).letIn fun v_12 ↦ Expr.var v_12))
-    fun (_:Tp.denote lp .unit) => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Skyscraper.sbox⟩] := by
-  apply STHoare.ramified_frame_top
-  apply STHoare.loop_inv_intro fun i _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
-  on_goal 2 =>
-    rw [<-SLP.star_true (H := [_ ↦ _])]
-    apply SLP.star_mono
-    · sl; decide
-    · sl
-      congr 1
-      apply List.Vector.eq
-      simp [-List.takeD_succ, List.takeD_eq_take_append]
-  · intro i _ hlt
-    steps [sbox_intro]
-    subst_vars
-    steps [sbox_intro]
-
-    rcases i with ⟨i, hi⟩
-    rw [BitVec.lt_def] at hlt
-    conv at hlt => congr <;> whnf
-    have : i + 1 < 4294967296 := by
-      linarith
-    casesm* ∃_,_
-    subst_vars
-    congr 1
-    apply List.Vector.eq
-    simp [-List.takeD_zero, -List.takeD_succ, Access.modify, List.Vector.get, Fin.add_def, Nat.mod_eq_of_lt, this]
-    have i₁ : i ≤ 32 := by linarith
-    have i₂ : i + 1 ≤ 32 := by linarith
-    have i₃ : i ≤ 16 := by linarith
-    have i₄ : i + 1 ≤ 16 := by linarith
-    have i₅ : i < 32 := by linarith
-    simp [-List.takeD_zero, -List.takeD_succ,
-      List.takeD_eq_take_append,
-      List.take_take,
-      i₁, i₂, i₃, i₄]
-    simp only [List.take_succ, List.append_assoc]
-    have : (16 - i) = (15 - i) + 1 := by omega
-    simp [this, List.replicate_succ, getElem?, decidableGetElem?, i₅, List.Vector.toList]
-
-lemma bar_loop_2 {bytes : Tp.denote lp ((Tp.u 8).array 32)} {new_right : Tp.denote lp ((Tp.u 8).array 16).ref}:
-  STHoare lp env
-  [new_right ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩]
-  (Expr.loop ↑0 ↑16 fun i ↦
-        (Expr.fn [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil)).letIn fun v_16 ↦
-          (Expr.litNum (Tp.u 32) 16).letIn fun v_17 ↦
-            (Expr.callBuiltin [Tp.u 32, Tp.u 32] (Tp.u 32) Builtin.uAdd
-                  (HList.cons v_17 (HList.cons i HList.nil))).letIn
-              fun v_18 ↦
-              (Expr.callBuiltin [Tp.u 32] (Tp.u 32) Builtin.cast (HList.cons v_18 HList.nil)).letIn fun v_19 ↦
-                (Expr.callBuiltin [(Tp.u 8).array 32, Tp.u 32] (Tp.u 8) Builtin.arrayIndex
-                      (HList.cons bytes (HList.cons v_19 HList.nil))).letIn
-                  fun v_20 ↦
-                  (Expr.call [Tp.u 8] (Tp.u 8) v_16 (HList.cons v_20 HList.nil)).letIn fun v_21 ↦
-                    (Expr.callBuiltin [Tp.u 32] (Tp.u 32) Builtin.cast (HList.cons i HList.nil)).letIn fun v_22 ↦
-                      (Expr.modifyLens new_right v_21 (Lens.nil.cons (Access.array v_22))).letIn fun v_12 ↦
-                        Expr.var v_12)
-  fun _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.map Skyscraper.sbox⟩] := by
-  apply STHoare.ramified_frame_top
-  apply STHoare.loop_inv_intro fun i _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
-  on_goal 2 =>
-    rw [<-SLP.star_true (H := [_ ↦ _])]
-    apply SLP.star_mono
-    · sl; decide
-    · sl
-      congr 1
-      apply List.Vector.eq
-      simp [-List.takeD_succ, List.takeD_eq_take_append, List.take_take]
-  · intro i _ hlt
-    steps [sbox_intro]
-    subst_vars
-    steps [sbox_intro]
-    casesm* ∃_,_
-    subst_vars
-    rcases i with ⟨i, hi⟩
-    rw [BitVec.lt_def] at hlt
-    conv at hlt => congr <;> whnf
-    simp [-List.takeD_zero, -List.takeD_succ, Builtin.CastTp.cast, Access.modify]
-    congr 1
-    apply List.Vector.eq
-    simp [-List.takeD_zero, -List.takeD_succ, -List.map_drop, List.Vector.get, Fin.add_def, Int.cast, IntCast.intCast, OfNat.ofNat]
-    have : 16 + i < 4294967296 := by linarith
-    have : i + 1 < 4294967296 := by linarith
-    simp only [Nat.mod_eq_of_lt, *, List.getElem_drop']
-    simp only [List.takeD_eq_take_append]
-    have i₁ : i ≤ 16 := by linarith
-    have i₂ : i + 1 ≤ 16 := by linarith
-    simp [i₁, i₂, List.take_take]
-    simp only [List.take_succ, List.append_assoc]
-    congr 1
-    have : (16 - i) = (15 - i) + 1 := by omega
-    simp [this, List.replicate_succ, getElem?, decidableGetElem?]
-    simp only [hlt, dite_true, Option.toList]
-    simp [List.cons_append, List.nil_append, List.Vector.toList]
-
-lemma bar_loop_3:
-    STHoare lp env
-
-    [new_bytes ↦ ⟨(Tp.u 8).slice, init⟩]
-    (Expr.loop (↑0) 16 fun ζi1 ↦
-        (Expr.callBuiltin [Tp.u 32] (Tp.u 32) Builtin.cast (HList.cons ζi1 HList.nil)).letIn fun v_29 ↦
-          (Expr.callBuiltin [(Tp.u 8).array 16, Tp.u 32] (Tp.u 8) Builtin.arrayIndex
-                (HList.cons ζi0 (HList.cons v_29 HList.nil))).letIn
-            fun elem ↦
-            (Expr.readRef new_bytes).letIn fun v_30 ↦
-              (Expr.callBuiltin [(Tp.u 8).slice, Tp.u 8] (Tp.u 8).slice Builtin.slicePushBack
-                    (HList.cons v_30 (HList.cons elem HList.nil))).letIn
-                fun v_31 ↦ (Expr.modifyLens new_bytes v_31 Lens.nil).letIn fun v_12 ↦ Expr.var v_12)
-    fun _ => [new_bytes ↦ ⟨(Tp.u 8).slice, init ++ ζi0.toList⟩] := by
-  apply STHoare.ramified_frame_top
-  apply STHoare.loop_inv_intro fun i _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice, init ++ ζi0.toList.take i.toNat⟩]
-  on_goal 2 =>
-    rw [<-SLP.star_true (H := [_ ↦ _])]
-    apply SLP.star_mono
-    · simp; sl; decide
-    · sl
-      congr
-      simp
-  intro i _ hlt
-  steps
-  simp
-  congr 1
-  rcases i with ⟨i, hi⟩
-  rw [BitVec.lt_def] at hlt
-  conv at hlt => congr <;> whnf
-  casesm* ∃_,_
-  subst_vars
-  have : i + 1 < 4294967296 := by linarith
-  simp [Nat.mod_eq_of_lt, this, List.take_succ]
-  simp [getElem?, decidableGetElem?, hlt]
-  rfl
-
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.bar input := by
   simp only [bar]
-  steps [to_le_bytes_intro, bar_loop_1, bar_loop_2, bar_loop_3, as_array_intro, from_le_bytes_intro]
+  steps [to_le_bytes_intro]
+
+  enter_block_as
+    ([new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
+    (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Skyscraper.sbox⟩])
+
+  · loop_inv fun i _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+    · decide
+    · congr 1
+      apply List.Vector.eq
+      simp [-List.takeD_succ, List.takeD_eq_take_append, Int.cast, IntCast.intCast]
+    · intro i _ hlt
+      rename bytes = _ => bytes_def
+      clear bytes_def
+      steps [sbox_intro]
+      rcases i with ⟨i, hi⟩
+      rw [BitVec.lt_def] at hlt
+      conv at hlt => congr <;> whnf
+      have : i + 1 < 4294967296 := by
+        linarith
+      casesm* ∃_,_
+      subst_vars
+      congr 1
+      apply List.Vector.eq
+      simp [-List.takeD_zero, -List.takeD_succ, Access.modify, List.Vector.get, Fin.add_def, Nat.mod_eq_of_lt, this]
+      have i₁ : i ≤ 32 := by linarith
+      have i₂ : i + 1 ≤ 32 := by linarith
+      have i₃ : i ≤ 16 := by linarith
+      have i₄ : i + 1 ≤ 16 := by linarith
+      have i₅ : i < 32 := by linarith
+      simp [-List.takeD_zero, -List.takeD_succ,
+        List.takeD_eq_take_append,
+        List.take_take,
+        i₁, i₂, i₃, i₄]
+      simp only [List.take_succ, List.append_assoc]
+      have : (16 - i) = (15 - i) + 1 := by omega
+      simp [this, List.replicate_succ, getElem?, decidableGetElem?, i₅, List.Vector.toList]
+
+  steps
+
+  enter_block_as
+    ([new_right ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
+    (fun _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.map Skyscraper.sbox⟩])
+
+  · loop_inv fun i _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+    · decide
+    · congr 1
+      apply List.Vector.eq
+      simp [-List.takeD_succ, Int.cast, IntCast.intCast, List.takeD_eq_take_append, List.take_take]
+    · intro i _ hlt
+      rename bytes = _ => bytes_def
+      clear bytes_def
+      steps [sbox_intro]
+      casesm* ∃_,_
+      subst_vars
+      rcases i with ⟨i, hi⟩
+      rw [BitVec.lt_def] at hlt
+      conv at hlt => congr <;> whnf
+      simp [-List.takeD_zero, -List.takeD_succ, Builtin.CastTp.cast, Access.modify]
+      congr 1
+      apply List.Vector.eq
+      simp [-List.takeD_zero, -List.takeD_succ, -List.map_drop, List.Vector.get, Fin.add_def, Int.cast, IntCast.intCast, OfNat.ofNat]
+      have : 16 + i < 4294967296 := by linarith
+      have : i + 1 < 4294967296 := by linarith
+      simp only [Nat.mod_eq_of_lt, *, List.getElem_drop']
+      simp only [List.takeD_eq_take_append]
+      have i₁ : i ≤ 16 := by linarith
+      have i₂ : i + 1 ≤ 16 := by linarith
+      simp [i₁, i₂, List.take_take]
+      simp only [List.take_succ, List.append_assoc]
+      congr 1
+      have : (16 - i) = (15 - i) + 1 := by omega
+      simp [this, List.replicate_succ, getElem?, decidableGetElem?]
+      simp only [hlt, dite_true, Option.toList]
+      simp [List.cons_append, List.nil_append, List.Vector.toList]
+
+  steps
+
+  rename' «#v_25» => v
+
+  enter_block_as =>
+    ([new_bytes ↦ ⟨(Tp.u 8).slice, v.toList⟩])
+    (fun _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ ζi0.toList⟩])
+  · loop_inv fun i _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ ζi0.toList.take i.toNat⟩]
+    · decide
+    · congr 1
+      simp [Int.cast, IntCast.intCast]
+    · congr 1
+      simp
+    · intro i _ hlt
+      rename bytes = _ => bytes_def
+      clear bytes_def
+      steps
+      simp
+      congr 1
+      rcases i with ⟨i, hi⟩
+      rw [BitVec.lt_def] at hlt
+      conv at hlt => congr <;> whnf
+      casesm* ∃_,_
+      subst «#v_30» elem
+      have : i + 1 < 4294967296 := by linarith
+      simp [Nat.mod_eq_of_lt, this, List.take_succ]
+      simp [getElem?, decidableGetElem?, hlt]
+      rfl
+
+  steps [as_array_intro, from_le_bytes_intro]
   rotate_left
-  · subst «#v_35» «#v_25»
+  · subst «#v_35» v
     simp
   · subst_vars
     rfl
