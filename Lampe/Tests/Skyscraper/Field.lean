@@ -25,7 +25,7 @@ def fromLeBytes (b : List (U 8)) : bnField :=
     | b :: bs => aux bs (256 * acc + b.toNat)
   aux b 0
 
-def toLeBytes (f : bnField) : List (U 8) := padEnd 32 <| Lampe.toLeBytes f
+def toLeBytes (f : bnField) : List (U 8) := (Lampe.toLeBytes f).takeD 32 0#8
 
 end bnField
 
