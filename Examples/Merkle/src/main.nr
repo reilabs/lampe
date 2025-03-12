@@ -2,6 +2,7 @@ trait BinaryHasher<F> {
     fn hash(a: F, b: F) -> F;
 }
 
+#[allow(dead_code)]
 struct DummyHasher {}
 
 impl BinaryHasher<Field> for DummyHasher {
@@ -26,6 +27,6 @@ pub fn mtree_recover<H, let N : u32>(idx: [bool; N], p: [Field; N], item: Field)
     curr_h
 }
 
-fn main(root: pub Field, proof : pub [Field; 32], item : pub Field, idx : [bool; 32]) {
+fn main(root: pub Field, proof: pub [Field; 32], item: pub Field, idx: [bool; 32]) {
     assert(root == mtree_recover::<DummyHasher, _>(idx, proof, item));
 }

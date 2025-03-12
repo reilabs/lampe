@@ -1,6 +1,0 @@
-[package]
-name = "test_fixture"
-type = "bin"
-authors = [""]
-
-[dependencies]

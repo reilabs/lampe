@@ -8,8 +8,7 @@ import Mathlib.Data.Vector.Snoc
 
 open Lampe Ref
 
-namespace Test
-
+namespace Extracted
 
 def p := 21888242871839275222246405745257275088548364400416034343698204186575808495617 - 1
 

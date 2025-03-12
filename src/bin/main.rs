@@ -11,8 +11,8 @@
 
 use std::{fs::OpenOptions, io::Write, path::PathBuf, process::ExitCode};
 
-use clap::{arg, Parser};
-use lampe::{noir::source::Source, noir_to_lean, Project, Result};
+use clap::{Parser, arg};
+use lampe::{Project, Result, noir::source::Source, noir_to_lean};
 
 /// The default Noir project path for the CLI to extract from.
 const DEFAULT_NOIR_PROJECT_PATH: &str = "";
@@ -24,7 +24,7 @@ const DEFAULT_NOIR_FILE_NAME: &str = "main.nr";
 const DEFAULT_OUT_FILE_NAME: &str = "Main.lean";
 
 /// The
-const LEAN_HEADER: &str = "import Lampe\n\nopen Lampe\n\nnamespace Test\n\n";
+const LEAN_HEADER: &str = "import Lampe\n\nopen Lampe\n\nnamespace Extracted\n\n";
 
 /// A utility to extract Noir code to Lean in order to enable the formal
 /// verification of Noir programs.
