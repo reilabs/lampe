@@ -1,5 +1,5 @@
-import Tests.Skyscraper.Ref
-import Tests.Skyscraper.Extracted
+import Skyscraper.Ref
+import Skyscraper.Extracted
 
 open Lampe Extracted
 

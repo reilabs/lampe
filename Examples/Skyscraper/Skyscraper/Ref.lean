@@ -1,4 +1,4 @@
-import Tests.Skyscraper.Field
+import Skyscraper.Field
 
 namespace Skyscraper
 
