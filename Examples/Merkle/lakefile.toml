@@ -1,9 +1,9 @@
 name = "example1"
 version = "0.1.0"
-defaultTargets = ["Example1"]
+defaultTargets = ["Merkle"]
 
 [[lean_lib]]
-name = "Example1"
+name = "Merkle"
 
 [[require]]
 name = "Lampe"

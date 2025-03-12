@@ -1,5 +1,5 @@
-import Example1.Extracted
-import Example1.Ref
+import Merkle.Extracted
+import Merkle.Ref
 import Lampe
 
 import ProvenZk
