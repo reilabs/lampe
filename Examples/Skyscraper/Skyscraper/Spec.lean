@@ -21,15 +21,10 @@ def SIGMA : Int :=
 theorem rl_intro : STHoare lp env ⟦⟧
   (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "rl" [] HList.nil) h![input])
     fun output => output = Skyscraper.rl input := by
-  apply STHoare.callDecl_intro
-  · sl
-    tauto
-  on_goal 3 => exact Extracted.rl.fn
-  all_goals try tauto
-  simp only [rl]
+  enter_decl
   steps
-  simp_all
-  tauto
+  subst_vars
+  rfl
 
 theorem u8_ge_zero (u : U 8) : 0 ≤ u := by bv_decide
 
