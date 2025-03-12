@@ -184,4 +184,4 @@ nr_def «as_array»<>(self : [u8]) -> [u8; 32] {
 }
 
 
-def env := Lampe.Env.mk [(«from_le_bytes».name, «from_le_bytes».fn), («sgn0».name, «sgn0».fn), («rl».name, «rl».fn), («RC».name, «RC».fn), («sbox».name, «sbox».fn), («permute».name, «permute».fn), («Skyscraper::permute».name, «Skyscraper::permute».fn), («SIGMA».name, «SIGMA».fn), («compress».name, «compress».fn), («Skyscraper::new».name, «Skyscraper::new».fn), («as_array».name, «as_array».fn), («bar».name, «bar».fn), («to_le_bytes».name, «to_le_bytes».fn), («rotate_left».name, «rotate_left».fn), («square».name, «square».fn), («to_le_bits».name, «to_le_bits».fn)] []
+def env := Lampe.Env.mk [«from_le_bytes», «sgn0», «rl», «RC», «sbox», «permute», «Skyscraper::permute», «SIGMA», «compress», «Skyscraper::new», «as_array», «bar», «to_le_bytes», «rotate_left», «square», «to_le_bits»] []

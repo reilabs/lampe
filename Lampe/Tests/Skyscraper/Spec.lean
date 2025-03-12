@@ -3,8 +3,6 @@ import Tests.Skyscraper.Extracted
 
 open Lampe Extracted
 
-set_option trace.Lampe.SL true
-
 def lp : Lampe.Prime := ⟨p, pPrime⟩
 
 def RC : List Int :=
@@ -68,12 +66,8 @@ theorem sbox_spec : STHoare lp env ⟦⟧ (sbox.fn.body _ h![] |>.body h![input]
     fun output => output = Skyscraper.sbox input := by
   simp only [sbox]
   steps [rotate_left_intro]
-  simp_all [Skyscraper.sbox]
-  congr
-  · change 1 < 254; bv_decide
-  · change 3 < 254; bv_decide
-  · change 2 < 254; bv_decide
-  · change 1 < 254; bv_decide
+  · subst_vars; rfl
+  all_goals decide
 
 theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil) h![input])
     fun output => output = Skyscraper.sbox input := by
@@ -92,427 +86,35 @@ opaque BitVec.bytesLE : BitVec n → List.Vector (U 8) n
 axiom toLeBytesPadLen {input : Lampe.Fp lp} : (padEnd 32 (Lampe.toLeBytes input)).length = 32
 
 axiom to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.array (Tp.u 8) 32) (FuncRef.decl "to_le_bytes" [] HList.nil) h![input])
-    fun output => output = ⟨padEnd 32 (Lampe.toLeBytes input), toLeBytesPadLen⟩
+    fun output => output = ⟨List.takeD 32 (Lampe.toLeBytes input) 0, List.takeD_length _ _ _⟩
 
--- TODO: Do we want this as an axiom or not?
 axiom from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.array (Tp.u 8) 32] Tp.field (FuncRef.decl "from_le_bytes" [] HList.nil) h![input])
-    fun output => output = Skyscraper.bnField.fromLeBytes input.toList -- := by
-  -- enter_decl
-  -- simp only [from_le_bytes]
-  -- steps
-
-@[simp]
-lemma Vector.cons_cast {α m n v} {vs : List.Vector α n} {h : n = m}:
-  v ::ᵥ (h ▸ vs) = h ▸ (v ::ᵥ vs) := by cases h; rfl
-
-def List.Vector.map_pfx {α n} (v : List.Vector α n) (d : Nat) (f : α → α) : List.Vector α n := match d, n with
-| 0, _ => v
-| _, 0 => v
-| Nat.succ d, Nat.succ _ => f v.head ::ᵥ List.Vector.map_pfx v.tail d f
-
-lemma List.Vector.map_pfx_get_of_lt {n} {v : Vector α n} {f} {i} {hi : i.val < d} : (map_pfx v d f).get i = f (v.get i) := by
-  induction d generalizing v i n with
-  | zero => simp_all
-  | succ d ih =>
-    have : ∃n', n = n' + 1 := by
-      have := i.prop
-      simp
-      linarith
-    rcases this with ⟨n, rfl⟩
-    simp only [map_pfx]
-    cases i using Fin.cases
-    · simp
-    · simp only [get_cons_succ]
-      simp at hi
-      rw [ih]
-      · simp
-      assumption
+    fun output => output = Skyscraper.bnField.fromLeBytes input.toList
 
 def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
 | 0, _ => List.Vector.nil
 | d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
 | d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
 
-lemma List.Vector.pad_eq_listpad {d : Nat} {a : α} (vec : List.Vector α n) (h : n ≤ d)
-    : vec.pad d a = ⟨vec.val.rightpad d a, by simp [h]⟩ := by
-  rcases vec with ⟨l, p⟩
-  simp
-  induction d with
-  | zero =>
-    have : l = [] := by apply List.length_eq_zero.mp (by omega)
-    simp [this]; rfl
-  | succ d hd =>
-    cases n with
-    | zero =>
-      have : l = [] := by apply List.length_eq_zero.mp (by omega)
-      simp [this] at hd
-      simp [List.length_eq_zero.mp, p]
-      unfold pad
-      rw [hd]
-      simp [List.Vector.cons]
-      congr
-    | succ n =>
-      unfold pad
-      have := List.Vector.pad_eq_listpad (a := a) (d := d) (tail ⟨l, p⟩) (by omega)
-      rw [this]
-      simp [List.Vector.head, List.Vector.cons]
-      congr
-      cases l
-      · contradiction
-      · simp
-
-lemma List.Vector.pad_eq_self {α n} (v : List.Vector α n) (pad : α) : v.pad n pad = v := by
-  induction n with
-  | zero =>
-    unfold List.Vector.pad
-    simp [List.Vector.eq_nil]
-  | succ i ih =>
-    unfold List.Vector.pad
-    simp? [ih]
-
-lemma asdfasdf {d n : Nat} : (min d.succ n.succ) = (min d (n.succ - 1)).succ := by omega
-
 @[simp]
-lemma List.Vector.toList_cast (h : n₁ = n₂) (v : List.Vector α n₁) :
-    (h ▸ v : List.Vector α n₂).toList = v.toList := by
-  cases v
-  cases h
-  rfl
-
-lemma List.Vector.take_cons_head_tail {α} {n d : Nat} (v : List.Vector α (n.succ))
-    : v.head ::ᵥ (v.tail.take d) = Nat.succ_min_succ _ _ ▸ v.take d.succ := by
-  apply List.Vector.eq
-  cases v using List.Vector.casesOn
-  simp [List.Vector.toList_cast]
-
-lemma List.Vector.take_eq_take_list {α} {n d : Nat} (v : List.Vector α n) (hd : d ≤ n):
-    (Nat.min_eq_left hd ▸ v.take d : List.Vector α d) = ⟨v.val.take d, by aesop⟩ := by
-  cases v
-  apply List.Vector.eq
-  simp [List.Vector.take]
-
-lemma aaasdf (n : Nat) : (n.succ ⊓ (n + 1)) = (n ⊓ (n + 1 - 1)).succ := by aesop
-
-lemma List.Vector.pad_thm_le {α n} (v : List.Vector α n) (d : Nat) (hd : d ≤ n) (pad : α) :
-    v.pad d pad = ⟨v.val.take d, by simp; omega⟩ := by
-  induction n with
-  | zero =>
-    have : d = 0 := by omega
-    subst this
-    rfl
-  | succ n hn =>
-    match Nat.lt_trichotomy d (n + 1) with
-    | .inl hlt =>
-      cases d with
-      | zero => rfl
-      | succ d =>
-        unfold List.Vector.pad
-        simp
-        have := hn v.tail (by omega)
-        rw [List.Vector.pad_thm_le]
-        · have this1 := List.Vector.take_eq_take_list (d := d) v.tail (by omega)
-          have this2 := List.Vector.take_eq_take_list (d := d + 1) v (by omega)
-          rw [←this1]
-          rw [←this2]
-          convert_to v.head ::ᵥ (v.tail.take d) = Nat.succ_min_succ _ _ ▸ v.take d.succ
-          · aesop
-          · simp
-          · simp
-          · convert List.Vector.take_cons_head_tail v
-        · omega
-    | .inr (.inl heq) =>
-      unfold List.Vector.pad
-      subst heq
-      simp
-      rw [List.Vector.pad_thm_le]
-      simp
-      have this1 := List.Vector.take_eq_take_list (d := n) v.tail (by omega)
-      have this2 := List.Vector.take_eq_take_list (d := n + 1) v (by omega)
-      simp [List.Vector.tail_val] at this1
-      rw [←this1]
-      rw [←this2]
-      convert_to v.head ::ᵥ (v.tail.take n) = (aaasdf n) ▸ v.take n.succ
-      · simp
-      · simp
-      · simp
-      · convert List.Vector.take_cons_head_tail v
-      omega
-    | .inr (.inr hgt) => linarith
-
-abbrev paddedInput : ZMod lp.natVal → List.Vector (U 8) 32 := fun input => ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩
-
-lemma take_get_eq_get (vec : List.Vector α n) (k : Fin (i ⊓ n)):  (vec.take i)[k] = vec[k] := by
-  let ⟨l, _⟩ := vec
-  simp [List.Vector.take, List.Vector.getElem_def]
-
-lemma take_map_comm (vec : List.Vector α n) (f : α → β) :
-    (vec.take i |>.map f) = (vec.map f |>.take i) := by
-  let ⟨l, _⟩ := vec
-  simp [List.Vector.get, List.Vector.take, List.Vector.map]
-
-lemma pad_get (vec : List.Vector α n) (a : α) (i : Nat) (hi : i < n) (hi' : i < N) :
-    (vec.pad N a).get ⟨i, hi'⟩ = vec.get ⟨i, hi⟩ := by
-  match Nat.lt_trichotomy n N with
-  | .inl hlt =>
-    unfold List.Vector.pad
+theorem List.Vector.toList_pad {v : List.Vector α n} {pad} : (v.pad d pad).toList = v.toList.takeD d pad := by
+  rcases v with ⟨l, prop⟩
+  induction d generalizing l n with
+  | zero => simp
+  | succ d ih =>
     cases n
-    · linarith
-    · have ha : ∃(k : Nat), N = k.succ := by simp; omega
-      simp
-      rcases ha with ⟨w, rfl⟩
-      simp
-      cases i
-      · simp
-      · rename_i t
-        conv_rhs =>
-          change vec.get (Fin.succ ⟨t, by omega⟩)
-        rw [← List.Vector.get_tail_succ]
-        conv_lhs =>
-          change (vec.head ::ᵥ vec.tail.pad w a).get (Fin.succ ⟨t, by omega⟩)
-        rw [List.Vector.get_cons_succ]
-        rw [pad_get]
-  | .inr (.inl eq) =>
-    let ⟨l, _⟩ := vec
-    simp [List.Vector.pad, List.Vector.get]
-    rw [List.Vector.pad_thm_le]
-    simp
-    omega
-  | .inr (.inr gt) =>
-    let ⟨l, _⟩ := vec
-    simp [List.Vector.pad, List.Vector.get]
-    rw [List.Vector.pad_thm_le]
-    simp
-    omega
+    · simp [List.Vector.pad, ih, List.replicate_succ]
+    · rcases (List.exists_of_length_succ _ prop) with ⟨h, t, ⟨rfl⟩⟩
+      simp at prop
+      simp [List.Vector.pad, List.Vector.head, List.Vector.tail, ih]
 
-lemma drop_get (vec : List.Vector α n) (d i : Nat) (h : d + i < n) :
-    (vec.drop d |>.get ⟨i, by omega⟩) = vec.get ⟨d + i, h⟩ := by
-  rcases vec with ⟨l, rfl⟩
-  unfold List.Vector.get List.Vector.drop
-  simp
-
-lemma List.Vector.pad_eq_self' {α n} (v : List.Vector α n) (pad : α) (h : m = n) : v.pad m pad = h ▸ v := by
-  cases h
-  apply List.Vector.pad_eq_self
-
-lemma take_pad_lt (vec : List.Vector α n) (a : α) (d : Nat) (h : d < n)
-    : (vec.take d |>.pad d a) = Nat.min_eq_left (Nat.le_of_lt h) ▸ vec.take d := by
-  cases d
-  · convert_to List.Vector.nil = ⟨List.take 0 vec.val, by simp [List.take_length]⟩
-    unfold List.Vector.take
-    simp
-    conv_lhs =>
-      congr
-      change ⟨[], _⟩
-    apply List.Vector.eq
-    rw [List.Vector.toList_cast]
-    simp
-    rfl
-  · rw [List.Vector.pad_eq_self']
-    simp; omega
-
-lemma take_pad_eq (vec : List.Vector α n) (a : α) (d : Nat) (h : d ≤ n) :
-    (vec.take d |>.pad d a) = (Nat.min_eq_left h ▸ vec.take d) := by
-  rw [List.Vector.pad_thm_le]
-  let ⟨l, p⟩ := vec
-  simp [List.Vector.take, List.take_take]
-  apply List.Vector.eq
-  simp [List.Vector.toList_cast]
-  omega
-
-lemma take_succ_pad (vec : List.Vector α n) (a : α) (i : Nat) (hi : i < n) (hi' : i < N) :
-    (vec |>.take (i + 1) |>.pad N a) = (vec |>.take i |>.pad N a |>.set ⟨i, by omega⟩ (vec.get ⟨i, hi⟩))
-    := by
-  rcases vec with ⟨l, p⟩
-  simp [List.Vector.take, List.Vector.set]
-  have := List.Vector.pad_eq_listpad (a := a) (d := N) (⟨List.take i l, by simp [List.length_take]; omega⟩ : List.Vector α (i ⊓ n)) (by omega)
-  conv_rhs =>
-    congr
-    · congr
-      · congr
-        rw [this]
-      · skip
-      . skip
-  have := List.Vector.pad_eq_listpad (a := a) (d := N) (⟨List.take (i + 1) l, by simp [List.length_take]; omega⟩ : List.Vector α ((i + 1) ⊓ n)) (by omega)
-  rw [this]
-  congr
-  simp
-  have ipo : (i + 1) ⊓ l.length = (i + 1) := by omega
-  have il : i ⊓ l.length = i := by omega
-  simp [ipo, il]
-  apply List.ext_get
-  · simp [ipo, il]
-    omega
-  · intro m hl hr
-    simp [ipo, il] at hl
-    simp [ipo, il] at hr
-    match Nat.lt_trichotomy i m with
-    | .inl lt =>
-      simp [lt, List.getElem_append]
-      have : i + 1 ≤ m := by omega
-      split; split
-      · rfl
-      · linarith
-      · split
-        · linarith
-        · simp [List.Vector.get, il, List.Vector.get, List.getElem_set]
-          split
-          · have : 0 ≠ m - i := by omega
-            contradiction
-          · rfl
-    | .inr (.inl eq) =>
-      simp [eq, List.getElem_append]
-      split
-      · rw [eq] at il
-        simp [il]
-        simp [List.Vector.get]
-      · simp [List.Vector.get]
-        rw [eq] at il
-        simp [il]
-        rw [eq] at hi
-        rename_i hh
-        rw [p] at hh
-        linarith
-    | .inr (.inr gt) =>
-      simp [gt, List.getElem_append]
-      split; split
-      · rfl
-      · linarith
-      · split
-        · rename_i h1 h2
-          push_neg at h1
-          have : l.length ≤ m := h1 (by omega)
-          linarith
-        · simp [il]
-          simp [List.Vector.get]
-          simp [List.getElem_set]
-          split
-          · linarith
-          · rfl
-
-lemma pad_eq_take (vec : List.Vector α n) (a : α) (d : Nat) (h : d ≤ n) :
-    (vec.pad d a) = (Nat.min_eq_left h ▸ (vec.take d)) := by
-  rw [List.Vector.pad_thm_le]
-  let ⟨l, p⟩ := vec
-  simp [List.Vector.take, List.take_take]
-  apply List.Vector.eq
-  simp [List.Vector.toList_cast]
-  omega
-
-lemma take_succ_map_pad_eq (vec : List.Vector α n) (b : β) (f : α → β) (i : Nat) (hi : i < n) (hi' : i < N):
-    (vec |>.take (i + 1)
-         |>.map f
-         |>.pad N b) =
-    (vec |>.take i
-         |>.map f
-         |>.pad N b
-         |>.set ⟨i, hi'⟩ (f (vec.get ⟨i, hi⟩))) := by
-    rw [take_map_comm, take_map_comm]
-    have := take_succ_pad (vec.map f) b i (n := n) (N := N) hi hi'
-    convert this
-    · simp
-
-lemma List.Vector.cast_head {n m : Nat} (h : n = m) (vec : List.Vector α n.succ) :
-    (h ▸ vec).head = vec.head := by
-  cases vec
-  cases h
-  rfl
-
-lemma List.Vector.cast_head' {n m : Nat} (h : n = m.succ) (vec : List.Vector α n) :
-    (h ▸ vec).head = vec[0] := by
-  rcases vec with ⟨l, p⟩
-  cases h
-  simp [List.Vector.cast_head, List.Vector.head, List.Vector.getElem_def]
-  match l with
-  | [] => contradiction
-  | h :: t => rfl
-
-lemma List.Vector.take_head {n d : Nat} (vec : List.Vector α n.succ) (d : Nat) (h : d.succ < n.succ) :
-    vec.head = ((Nat.succ_min_succ _ _ ▸ vec.take d.succ) : List.Vector α (min d n ).succ).head := by
-  rcases vec with ⟨l, p⟩
-  match l with
-  | [] => contradiction
-  | head :: tail =>
-    rw [List.Vector.cast_head']
-    simp [List.Vector.head, List.Vector.take, List.Vector.getElem_def]
-
-lemma List.Vector.take_eq_self_iff (vec : List.Vector α n) : vec.take n = (Nat.min_self n |>.symm) ▸ vec := by
-  apply List.Vector.eq
-  cases vec
-  simp_all [List.Vector.take]
-
-lemma List.Vector.take_append (vec₁ : List.Vector α n₁) (vec₂ : List.Vector α n₂) :
-    (vec₁.append vec₂ |>.take n₁) = (Nat.min_eq_left (Nat.le_add_right _ _)) ▸ vec₁ := by
-  cases vec₁
-  cases vec₂
-  apply List.Vector.eq
-  simp_all
-
-lemma List.Vector.map_append (vec₁ : List.Vector α n₁) (vec₂ : List.Vector α n₂) (f : α → β) :
-    (vec₁.append vec₂).map f = (vec₁.map f).append (vec₂.map f) := by
-  cases vec₁
-  cases vec₂
-  simp [List.Vector.map, List.Vector.append]
-
-lemma upList {l₁ l₂ : List α} {len} (hl₁ : l₁.length = len) (hl₂ : l₂.length = len):
-  (Subtype.mk l₁ hl₁ : List.Vector α len) = (Subtype.mk l₂ hl₂ : List.Vector α len) → l₁ = l₂ := by
-  intro h
-  cases h
-  rfl
-
-lemma rightpad_taked_set_succ (a : α) (d N : Nat) (l : List α) (h : d < l.length) (h' : d < N) :
-  (l.takeD d a |>.rightpad N a |>.set d l[d]) = (l.takeD (d + 1) a |>.rightpad N a) := by
-  cases d with
-  | zero =>
-    simp
-    unfold List.replicate
-    split
-    · linarith
-    split
-    · simp
-      refine ⟨?_, by omega⟩
-      simp [List.head?, Option.getD]
-      aesop
-      contradiction
-    · simp_all
-      constructor
-      have : ∃(k : Nat), l.length = k.succ := by simp [h]
-      rcases this with ⟨k, hk⟩
-      have : l ≠ [] := by apply List.ne_nil_of_length_eq_add_one; simp [hk]; rfl
-      · simp [List.ne_nil_of_length_eq_add_one, List.head?_eq_head, this]
-        simp [List.head, List.getElem_zero]
-      · rfl
-  | succ d =>
-    have simp1 := List.takeD_eq_take a h
-    have : d < l.length := by omega
-    have simp2 := List.takeD_eq_take a this
-    simp only [simp1, simp2]
-    apply List.ext_getElem
-    · simp; omega
-    · intro n h1 h2
-      simp [List.getElem_append]
-      split; split
-      · rfl
-      · simp_all
-        linarith
-      · have : d + 1 ≤ l.length := by omega
-        simp [this]
-        simp [List.getElem_set]
-        split; split
-        · have : n = d + 1 := by omega
-          simp [this]
-        · simp_all
-          rename_i hh
-          have : d = n + 1 := by omega
-          rw [this] at hh
-          have c1 := hh (by omega)
-          linarith
-        · split
-          · rename_i h3 h4 h5 h6
-            simp_all
-            have : n ≠ d + 1 := by omega
-            have : n = d + 1 := by omega
-            contradiction
-          · rfl
+theorem List.takeD_eq_take_append : List.takeD n l pad = List.take n l ++ List.replicate (n - l.length) pad := by
+  induction n generalizing l with
+  | zero => simp
+  | succ n ih =>
+    cases l
+    · simp [replicate]
+    · simp [List.takeD, List.take, ih]
 
 theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.call [Tp.slice (Tp.u 8)] (Tp.array (Tp.u 8) 32) (FuncRef.decl "as_array" [] HList.nil) h![input])
     fun output => output = ⟨input, hi⟩ := by
@@ -523,237 +125,149 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.ca
   · decide
   · intros i hlo hhi
     steps
-    congr
-    simp_all [Access.modify]
-    have hisucc : (i.toNat + 1) % 4294967296 = i.toNat + 1 := by simp; omega
-    simp only [hisucc]
-    have := List.Vector.pad_eq_listpad (d := 32) (a := 0#8) ⟨List.takeD (BitVec.toNat i) input 0#8, List.takeD_length i.toNat _ _⟩ (by omega)
-    simp only [this]
-    have := List.Vector.pad_eq_listpad (d := 32) (a := 0#8) ⟨List.takeD (BitVec.toNat i + 1) input 0#8, List.takeD_length (i.toNat + 1) _ _⟩ (by omega)
-    rename_i h _
-    have len1 : (List.rightpad 32 (0#8) (List.takeD (BitVec.toNat i) input 0#8)).length = BitVec.toNat 32#32 := by
-      simp [h]
-      omega
-    have len2 : (List.rightpad 32 0#8 (⟨List.takeD (BitVec.toNat i + 1) input 0#8, List.takeD_length (i.toNat + 1) _ _⟩ : List.Vector (U 8) (i.toNat + 1)).val |>.length) = 32 := by
-      simp [h]
-      omega
-    convert_to List.Vector.set ⟨List.rightpad 32 (0#8) (List.takeD (BitVec.toNat i) input 0#8), len1⟩ ⟨BitVec.toNat i, hhi⟩ input[BitVec.toNat i] = ⟨List.rightpad 32 0#8 (⟨List.takeD (BitVec.toNat i + 1) input 0#8, List.takeD_length (i.toNat + 1) _ _⟩ : List.Vector (U 8) (i.toNat + 1)).val, len2⟩
-    convert this
-    unfold List.Vector.set
-    congr
-    simp only
-    have := rightpad_taked_set_succ 0#8 (i.toNat) 32 input (by omega) (by omega)
-    rw [this]
-  · steps []
-    simp_all
-    have : BitVec.toNat (n := 32) (IntCast.intCast 32) = 32 := by rfl
-    rw [this]
-    simp [List.take_self_eq_iff, List.takeD_eq_take, hi, List.Vector.pad_eq_self]
-    congr
-    have : input.head?.getD 0#8 = input[0] := by
-      simp [List.head?_eq_head, List.ne_nil_of_length_eq_add_one, hi, Option.getD_some, List.head_eq_getElem]
-    rw [this]
-    apply Eq.symm
-    apply upList hi rfl
-    rw [←List.Vector.ofFn_get (v:=⟨input, hi⟩)]
-    rfl
+    casesm* ∃_,_
+    subst_vars
+    simp [Access.modify]
+    congr 1
+    rcases i with ⟨i, _⟩
+    simp [IntCast.intCast, Int.cast, Fin.lt_def, OfNat.ofNat] at hhi
+    apply List.Vector.eq
+    simp only [List.Vector.toList_set, List.Vector.toList_pad, BitVec.toNat]
+    simp only [List.Vector.toList]
+    rw [Nat.mod_eq_of_lt (by linarith)]
+    simp only [List.takeD_eq_take_append]
+    have : i ≤ 32 := by linarith
+    have : i + 1 ≤ 32 := by linarith
+    simp [*, List.take_take]
+    rw [List.take_succ, List.append_assoc]
+    congr 1
+    generalize_proofs
+    have : 32 - i = (31 - i) + 1 := by omega
+    simp [getElem?, decidableGetElem?, *, List.replicate]
+  steps
+  subst_vars
+  apply List.Vector.eq
+  simp only [List.Vector.toList_pad]
+  simp only [List.Vector.toList]
+  conv => enter [1,2,1]; whnf
+  have : input.length ≤ input.length := by linarith
+  simp only [←hi, Int.cast, IntCast.intCast, BitVec.ofInt, List.takeD_eq_take, this, List.take_length]
 
+set_option maxHeartbeats 3000000000000
 theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
     fun output => output = Skyscraper.bar input := by
   simp only [bar]
   steps [to_le_bytes_intro]
 
-  loop_inv fun (i: U 32) _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
-  · decide
-  · intro i _ hlt
-    steps [sbox_intro]
+  enter_block_as
+    ([new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
+    (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Skyscraper.sbox⟩])
 
-    casesm* ∃_,_
-    subst_vars
-    simp [Builtin.CastTp.cast, Access.modify]
-    congr
-    have : (i.toNat + 1) % 4294967296 = i.toNat + 1 := by
-      set iNat := i.toNat
-      simp
-      have : iNat < 16 := by aesop
-      omega
-    rw [this]
-    have : i.toNat < 16 := by aesop
-    apply Eq.symm
-    convert take_succ_map_pad_eq ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ 0#8 Skyscraper.sbox i.toNat (by omega) this
+  · loop_inv fun i _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
+    · decide
+    · congr 1
+      apply List.Vector.eq
+      simp [-List.takeD_succ, List.takeD_eq_take_append, Int.cast, IntCast.intCast]
+    · intro i _ hlt
+      rename bytes = _ => bytes_def
+      clear bytes_def
+      steps [sbox_intro]
+      rcases i with ⟨i, hi⟩
+      rw [BitVec.lt_def] at hlt
+      conv at hlt => congr <;> whnf
+      have : i + 1 < 4294967296 := by
+        linarith
+      casesm* ∃_,_
+      subst_vars
+      congr 1
+      apply List.Vector.eq
+      simp [-List.takeD_zero, -List.takeD_succ, Access.modify, List.Vector.get, Fin.add_def, Nat.mod_eq_of_lt, this]
+      have i₁ : i ≤ 32 := by linarith
+      have i₂ : i + 1 ≤ 32 := by linarith
+      have i₃ : i ≤ 16 := by linarith
+      have i₄ : i + 1 ≤ 16 := by linarith
+      have i₅ : i < 32 := by linarith
+      simp [-List.takeD_zero, -List.takeD_succ,
+        List.takeD_eq_take_append,
+        List.take_take,
+        i₁, i₂, i₃, i₄]
+      simp only [List.take_succ, List.append_assoc]
+      have : (16 - i) = (15 - i) + 1 := by omega
+      simp [this, List.replicate_succ, getElem?, decidableGetElem?, i₅, List.Vector.toList]
 
   steps
 
-  loop_inv fun (i: U 32) _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
-  · decide
-  · intro i _ hlt
-    steps [sbox_intro]
-    casesm* ∃_,_
-    subst_vars
-    simp [Builtin.CastTp.cast, Access.modify]
-    congr
-    have : (BitVec.toNat i + 1) % 4294967296 = BitVec.toNat i + 1 := by
-      set iNat := BitVec.toNat i
-      simp
-      have : iNat < 16 := by aesop
-      omega
-    rw [this]
-    have weirdcast : BitVec.toNat (BitVec.instIntCast.intCast 16 : U 32) = 16 := by decide
-    have ilt : BitVec.toNat i < 16 := by aesop
-    have :
-    List.Vector.get ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ ⟨(16 + BitVec.toNat i) % 4294967296, by omega⟩ =
-    (List.Vector.drop 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ |>.get (BitVec.toNat i)) := by
-      have i16lt : (16 + i.toNat) % 4294967296 = 16 + i.toNat := by omega
-      simp [i16lt]
-      have asdf := drop_get ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩ 16 i.toNat (by omega)
-      convert asdf.symm
-      aesop
-    conv_lhs =>
-      congr
-      · skip
-      · skip
-      · congr
-        congr
-        · skip
-        · congr
-          congr
-          congr
-          · rw [weirdcast]
-    rw [this]
-    have asdf :=
-    take_succ_map_pad_eq (List.Vector.drop 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩) 0#8 Skyscraper.sbox (BitVec.toNat i) (by omega) ilt
-    convert asdf.symm
-    simp [ilt]
+  enter_block_as
+    ([new_right ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
+    (fun _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.map Skyscraper.sbox⟩])
 
-  steps []
-
-  loop_inv fun (i : U 32) _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  bytes.drop 16 |>.append (bytes.take 16) |>.map Skyscraper.sbox |>.take (16 + i.toNat) |>.toList⟩]
-  · decide
-  · congr
-    subst_vars
-    change (List.Vector.map Skyscraper.sbox (List.Vector.take 16 (List.Vector.drop 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩))).pad 16 0 = List.Vector.take (16) (List.Vector.map Skyscraper.sbox ((List.Vector.drop 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩).append (List.Vector.take 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩)))
-    rw [take_map_comm]
-    rw [take_pad_eq]
-    · simp
-      rw [List.Vector.map_append]
-      have := List.Vector.take_append (List.Vector.map Skyscraper.sbox ((List.Vector.drop 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩))) (List.Vector.map Skyscraper.sbox (List.Vector.take 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩))
-      simp at this
-      simp [this, List.Vector.take_eq_self_iff]
+  · loop_inv fun i _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Skyscraper.sbox |>.pad 16 (0:U 8)⟩]
     · decide
-  · intros i hilo hihi
-    steps
-    subst_vars
-    simp [Builtin.CastTp.cast, Access.modify]
-    congr
-    have : 16 + (BitVec.toNat i + 1) % 4294967296 = 16 + BitVec.toNat i + 1 := by
-      set iNat := BitVec.toNat i
-      have : iNat < 16 := by aesop
-      omega
-    rw [this]
-    apply List.ext_getElem
-    · simp
-      have : (padEnd 32 (toLeBytes input)).length = 32 := toLeBytesPadLen
-      rw [this]
-      rename_i hhi _ _ _
-      simp at hhi
-      have : i.toNat < 16 := by
-        change i.toNat < (16#32).toNat
-        aesop
-      omega
-    · intro n hn hn'
-      simp [List.getElem_append]
-      have : (padEnd 32 (toLeBytes input)).length = 32 := toLeBytesPadLen
-      simp [this]
-      match Nat.lt_trichotomy n 16 with
-      | .inl lt =>
-        simp_all [lt]
-        have : (n < 16 + i.toNat ∧ n < 32) := by
-          constructor
-          · omega
-          · omega
-        simp [this]
-      | .inr (.inl eq) =>
-        simp [eq]
-        match Nat.lt_trichotomy 0 i.toNat with
-        | .inl lt =>
-          simp_all [lt]
-        | .inr (.inl eq) =>
-          simp_all [eq]
-          conv_rhs =>
-            congr
-            congr
-            · skip
-            · rw [←eq]
-          casesm*∃_,_
-          simp_all
-          apply Eq.symm
-          convert_to Skyscraper.sbox (padEnd 32 (toLeBytes input))[0] = ((List.Vector.map Skyscraper.sbox (List.Vector.take 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩)).pad 16 0).get ⟨0, by aesop⟩
-          conv_lhs =>
-            congr
-            · congr
-              · skip
-              · rw [←eq]
-          congr
-          · simp [eq]
-          · simp [eq]
-          · rw [take_map_comm]
-            have := pad_get (N := 16) (List.Vector.take 16 (List.Vector.map Skyscraper.sbox ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩)) 0 0 (by omega) (by omega)
-            rw [this]
-            unfold List.Vector.take List.Vector.get
-            simp; split
-            rename_i heq
-            rcases heq
-            simp only [List.getElem_take, List.getElem_map]
-        | .inr (.inr gt) =>
-          simp_all [gt]
-      | .inr (.inr gt) =>
-        have : ¬(n < 16) := by omega
-        simp [this]
-        match Nat.lt_trichotomy n (16 + i.toNat) with
-        | .inl lt =>
-          simp_all
-          have : i.toNat < 16 := by
-            exact hihi
-          have : n < 32 := by
-            calc n < 16 + i.toNat := by assumption
-                 _ < 16 + 16 := by omega
-                 _ = 32 := by decide
-          simp [this]
-        | .inr (.inl eq) =>
-          casesm*∃_,_
-          simp_all [eq]
-          subst_vars
-          rw [take_map_comm]
-          change ((List.Vector.take 16 (List.Vector.map Skyscraper.sbox ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩)).pad 16 0#8).get ⟨BitVec.toNat i, hihi⟩ = Skyscraper.sbox (padEnd 32 (toLeBytes input))[BitVec.toNat i]
-          simp [take_pad_eq]
-          simp [List.Vector.get, List.Vector.map, List.Vector.take]
-        | .inr (.inr gt) =>
-          casesm*∃_,_
-          have : ¬(n < 16 + i.toNat) := by omega
-          simp only [this]
-          simp
-          subst_vars
-          simp [toLeBytesPadLen] at hn
-          have : n - 16 < (padEnd 32 (toLeBytes input)).length := by
-            rw [toLeBytesPadLen]
-            omega
-          change  ((List.Vector.map Skyscraper.sbox (List.Vector.take 16 ⟨padEnd 32 (toLeBytes input), toLeBytesPadLen⟩)).pad 16 0).get ⟨i.toNat, hihi⟩ = Skyscraper.sbox (padEnd 32 (toLeBytes input))[n - 16]
-          rw [take_map_comm]
-          sorry -- Is this even true? RHS doesn't have any `i` dependence...`
+    · congr 1
+      apply List.Vector.eq
+      simp [-List.takeD_succ, Int.cast, IntCast.intCast, List.takeD_eq_take_append, List.take_take]
+    · intro i _ hlt
+      rename bytes = _ => bytes_def
+      clear bytes_def
+      steps [sbox_intro]
+      casesm* ∃_,_
+      subst_vars
+      rcases i with ⟨i, hi⟩
+      rw [BitVec.lt_def] at hlt
+      conv at hlt => congr <;> whnf
+      simp [-List.takeD_zero, -List.takeD_succ, Builtin.CastTp.cast, Access.modify]
+      congr 1
+      apply List.Vector.eq
+      simp [-List.takeD_zero, -List.takeD_succ, -List.map_drop, List.Vector.get, Fin.add_def, Int.cast, IntCast.intCast, OfNat.ofNat]
+      have : 16 + i < 4294967296 := by linarith
+      have : i + 1 < 4294967296 := by linarith
+      simp only [Nat.mod_eq_of_lt, *, List.getElem_drop']
+      simp only [List.takeD_eq_take_append]
+      have i₁ : i ≤ 16 := by linarith
+      have i₂ : i + 1 ≤ 16 := by linarith
+      simp [i₁, i₂, List.take_take]
+      simp only [List.take_succ, List.append_assoc]
+      congr 1
+      have : (16 - i) = (15 - i) + 1 := by omega
+      simp [this, List.replicate_succ, getElem?, decidableGetElem?]
+      simp only [hlt, dite_true, Option.toList]
+      simp [List.cons_append, List.nil_append, List.Vector.toList]
 
-  steps [as_array_intro]
+  steps
+
+  rename' «#v_25» => v
+
+  enter_block_as =>
+    ([new_bytes ↦ ⟨(Tp.u 8).slice, v.toList⟩])
+    (fun _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ ζi0.toList⟩])
+  · loop_inv fun i _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ ζi0.toList.take i.toNat⟩]
+    · decide
+    · congr 1
+      simp [Int.cast, IntCast.intCast]
+    · congr 1
+      simp
+    · intro i _ hlt
+      rename bytes = _ => bytes_def
+      clear bytes_def
+      steps
+      simp
+      congr 1
+      rcases i with ⟨i, hi⟩
+      rw [BitVec.lt_def] at hlt
+      conv at hlt => congr <;> whnf
+      casesm* ∃_,_
+      subst «#v_30» elem
+      have : i + 1 < 4294967296 := by linarith
+      simp [Nat.mod_eq_of_lt, this, List.take_succ]
+      simp [getElem?, decidableGetElem?, hlt]
+      rfl
+
+  steps [as_array_intro, from_le_bytes_intro]
+  rotate_left
+  · subst «#v_35» v
+    simp
   · subst_vars
-    simp [toLeBytesPadLen]
-  · steps [from_le_bytes_intro]
-    unfold Skyscraper.bar
-    simp
-    subst_vars
-    congr 1
-    simp
-    have : (List.drop 16 (List.map Skyscraper.sbox (padEnd 32 (toLeBytes input))) ++ List.take 16 (List.map Skyscraper.sbox (padEnd 32 (toLeBytes input)))).length = 32 := by
-      simp [toLeBytesPadLen]
-    have := (List.take_eq_self_iff (n := 32) (List.drop 16 (List.map Skyscraper.sbox (padEnd 32 (toLeBytes input))) ++ List.take 16 (List.map Skyscraper.sbox (padEnd 32 (toLeBytes input)))) |>.mpr) (by omega)
-    apply this
+    rfl
 
 theorem bar_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field] Tp.field (FuncRef.decl "bar" [] HList.nil) h![input])
     fun output => output = Skyscraper.bar input := by
@@ -789,7 +303,6 @@ theorem square_intro : STHoare lp env (⟦⟧)
   subst_vars
   rfl
 
-set_option maxHeartbeats 50000000
 theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "permute" [] HList.nil) h![i])
     fun output => output = (Skyscraper.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Skyscraper.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
   enter_decl
