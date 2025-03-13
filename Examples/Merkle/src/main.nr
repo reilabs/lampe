@@ -172,7 +172,5 @@ where
 
 fn main(root: pub Field, proof: pub [Field; 4], item: pub Field, idx: [bool; 4]) {
     let calculated_root = mtree_recover::<Skyscraper, _>(idx, proof, item);
-    println(calculated_root);
-    println(root);
     assert(root == calculated_root);
 }
