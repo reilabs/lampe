@@ -1,6 +1,0 @@
-# Outputs from the testing script to avoid accidentally commiting
-test_fixture/src/Out.lean
-*.olean
-
-# Output from `nargo build`
-target/
