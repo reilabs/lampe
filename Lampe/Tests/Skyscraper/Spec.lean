@@ -85,10 +85,183 @@ theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRe
 
 opaque BitVec.bytesLE : BitVec n → List.Vector (U 8) n
 
-axiom toLeBytesPadLen {input : Lampe.Fp lp} : (padEnd 32 (Lampe.toLeBytes input)).length = 32
+-- axiom toLeBytesPadLen {input : Lampe.Fp lp} : (padEnd 32 (Lampe.toLeBytes input)).length = 32
 
 axiom to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.array (Tp.u 8) 32) (FuncRef.decl "to_le_bytes" [] HList.nil) h![input])
     fun output => output = ⟨List.takeD 32 (Lampe.toLeBytes input) 0, List.takeD_length _ _ _⟩
+
+def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
+| 0, _ => List.Vector.nil
+| d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
+| d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
+
+@[simp]
+theorem List.Vector.toList_pad {v : List.Vector α n} {pad} : (v.pad d pad).toList = v.toList.takeD d pad := by
+  rcases v with ⟨l, prop⟩
+  induction d generalizing l n with
+  | zero => simp
+  | succ d ih =>
+    cases n
+    · simp [List.Vector.pad, ih, List.replicate_succ]
+    · rcases (List.exists_of_length_succ _ prop) with ⟨h, t, ⟨rfl⟩⟩
+      simp at prop
+      simp [List.Vector.pad, List.Vector.head, List.Vector.tail, ih]
+
+theorem List.takeD_eq_take_append : List.takeD n l pad = List.take n l ++ List.replicate (n - l.length) pad := by
+  induction n generalizing l with
+  | zero => simp
+  | succ n ih =>
+    cases l
+    · simp [replicate]
+    · simp [List.takeD, List.take, ih]
+
+theorem ZMod.cast_self {p : Fp P} : (p.cast : Fp P) = p := by
+  unfold ZMod.cast
+  simp only [Prime.natVal]
+  apply natCast_zmod_val
+
+lemma ZMod.div2_on_vals {v : Fp lp} : v.val / 2 = match v.val % 2 with
+  | 0 => (v / 2).val
+  | _ => ((v - 1) / 2).val := by sorry
+
+lemma BitVec.ofNat_1_eq_mod :  BitVec.ofNat 1 (x % 2) = BitVec.ofNat 1 x := by
+  unfold BitVec.ofNat
+  apply congrArg
+  unfold Fin.ofNat'
+  simp
+
+lemma BitVec.ofNat_1_eq_0_iff : 0#1 = BitVec.ofNat 1 x ↔ x % 2 = 0 := by
+  apply Iff.intro
+  · unfold BitVec.ofNat
+    intro h
+    injection h with h
+    simp [Fin.ofNat'] at h
+    injection h with h
+    rw [←h]
+  · intro h
+    unfold BitVec.ofNat
+    apply BitVec.eq_of_toFin_eq
+    simp only
+    simp [Fin.ofNat', h]
+
+lemma BitVec.ofNat_1_eq_1_iff : 1#1 = BitVec.ofNat 1 x ↔ x % 2 = 1 := by
+  apply Iff.intro
+  · unfold BitVec.ofNat
+    intro h
+    injection h with h
+    simp [Fin.ofNat'] at h
+    injection h with h
+    rw [←h]
+  · intro h
+    unfold BitVec.ofNat
+    apply BitVec.eq_of_toFin_eq
+    simp only
+    simp [Fin.ofNat', h]
+
+lemma BitVec.one_eq_one_of_ne_zero {v : BitVec 1} : v ≠ 0#1 → v = 1#1 := by
+  intro h
+  rcases v with ⟨v⟩
+  fin_cases v <;> tauto
+
+instance : Fintype (BitVec 1) where
+  elems := ⟨[0#1, 1#1], by simp⟩
+  complete := by
+    intro v
+    rcases v with ⟨v⟩
+    fin_cases v <;> simp
+
+@[simp]
+lemma List.Vector.toList_snoc : (List.Vector.snoc vs v).toList = vs.toList ++ [v] := by
+  simp [snoc]
+
+set_option trace.Lampe.STHoare.Helpers true
+set_option trace.Lampe.SL true
+
+
+theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ (to_le_bits.call h![] h![input]) fun v => v = Fp.toBitsLE 256 input := by
+    enter_decl
+    simp only [to_le_bits]
+    steps
+
+    enter_block_as v =>
+      ([val ↦ ⟨.field, input⟩] ⋆ [bits ↦ v])
+      (fun _ => [val ↦ ⟨.field, 0⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE 256 input⟩])
+
+    loop_inv nat fun i _ _ => [val ↦ ⟨.field, ↑(input.val / 2^i)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
+
+    · decide
+    · simp [Int.cast, IntCast.intCast, ZMod.cast_self]
+    · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
+        cases input
+        conv => lhs; arg 1; whnf
+        simp [Nat.div_eq_zero_iff, *, lp, p] at *
+        linarith
+      congr 1
+      simp [Int.cast, IntCast.intCast]
+      rw [this]
+      rfl
+    · intro i _ hi
+      simp [IntCast.intCast, Int.cast] at hi
+      steps [sgn0_spec]
+      · let this : i % 4294967296 = i := by rw [Nat.mod_eq_of_lt]; linarith
+        simp [Access.modify, Nat.mod_eq_of_lt, this, hi]
+        rfl
+      enter_block_as v =>
+        ([val ↦ ⟨.field, v⟩])
+        (fun _ => [val ↦ ⟨.field, ↑(v.val / 2)⟩])
+      · simp only [ZMod.div2_on_vals]
+        have : i % 4294967296 = i := by
+          apply Nat.mod_eq_of_lt; linarith
+        fin_cases «#v_11»
+        · apply STHoare.iteTrue_intro
+          steps
+          casesm* ∃_,_
+          subst_vars
+          simp [ZMod.cast_self, this] at *
+          rename 0#1 = _ => h
+          rw [BitVec.ofNat_1_eq_0_iff] at h
+          rw [h]
+          simp [ZMod.cast_self]
+        · apply STHoare.iteFalse_intro
+          steps
+          casesm* ∃_,_
+          subst_vars
+          simp [ZMod.cast_self, this] at *
+          rename _ = BitVec.ofNat _ _ => h
+          rw [BitVec.ofNat_1_eq_1_iff] at h
+          simp [h, ZMod.cast_self]
+      steps
+      · simp only [pow_succ]
+        congr 2
+        rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
+        · simp [Nat.div_div_eq_div_mul]
+        · cases input
+          apply lt_of_le_of_lt (Nat.div_le_self _ _) (by assumption)
+      · congr 1
+        casesm* ∃_,_
+        subst_vars
+        apply List.Vector.eq
+        simp [-List.takeD_succ, Fp.toBitsLE, toBaseLE_succ_snoc, List.takeD_eq_take_append, hi, Nat.le_of_lt]
+        rw [List.take_of_length_le (by simp_all [Nat.le_of_lt]), List.take_of_length_le (by simp_all [Nat.le_of_lt_succ])]
+        have : (256 - i) = 255 - i + 1 := by omega
+        simp [this, List.replicate_succ]
+        simp [BitVec.ofNat_1_eq_mod, ZMod.val_natCast, ZMod.natCast_val]
+        congr
+        rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
+        apply lt_of_le_of_lt (Nat.div_le_self _ _)
+        simp [ZMod.val, lp, Prime.natVal]
+    · decide
+
+    steps
+    simp_all
+
+
+
+
+
+
+
+/---
 
 -- TODO: Do we want this as an axiom or not?
 axiom from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.array (Tp.u 8) 32] Tp.field (FuncRef.decl "from_le_bytes" [] HList.nil) h![input])
