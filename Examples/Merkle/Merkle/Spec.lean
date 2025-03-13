@@ -417,14 +417,14 @@ lemma SkyscraperHash_correct: STHoare lp env ⟦⟧ (Expr.call [Tp.field, Tp.fie
   subst_vars
   congr 1
 
-theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp lp) Ref.State.compress 4}:
+theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp lp) Ref.State.compress 32}:
     STHoare lp env
         ⟦⟧
         (main.call h![] h![tree.root, proof, item, index])
         (fun _ => item ∈ tree) := by
   enter_decl
   simp only
-  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=4) (hHash := SkyscraperHash_correct)]
+  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct)]
   use index.reverse
   rename ∃_, True => heq
   simp at heq

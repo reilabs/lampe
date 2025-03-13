@@ -170,7 +170,7 @@ where
     curr_h
 }
 
-fn main(root: pub Field, proof: pub [Field; 4], item: pub Field, idx: [bool; 4]) {
+fn main(root: pub Field, proof: pub [Field; 32], item: pub Field, idx: [bool; 32]) {
     let calculated_root = mtree_recover::<Skyscraper, _>(idx, proof, item);
     assert(root == calculated_root);
 }
