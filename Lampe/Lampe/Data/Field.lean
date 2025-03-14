@@ -2,6 +2,56 @@ import Mathlib.Algebra.Algebra.ZMod
 import Mathlib.Data.Vector.Snoc
 import Lampe.Data.Integers
 
+
+def List.chunksExact {n α} d (l : List α) (h : List.length l = n * d): List (List α) := match n with
+| 0 => []
+| n + 1 =>
+  l.take d :: List.chunksExact (n := n) d (l.drop d) (by simp [h, Nat.succ_mul])
+
+@[simp]
+lemma List.chunksExact_length {h : List.length l = k*d} : (List.chunksExact d l h).length = k := by
+  induction k generalizing l with
+  | zero => simp [chunksExact]
+  | succ k ih =>
+    simp [chunksExact, ih]
+
+lemma List.getElem_chunksExact {l : List α} {h : l.length = k*d} {hi}: (List.chunksExact d l h)[i]'hi = List.ofFn fun (j : Fin d) =>
+  l[d*i + j.val]'(by
+    simp [h];
+    simp at hi;
+    cases j;
+    simp;
+    apply lt_of_lt_of_le (Nat.add_lt_add_left (by assumption) _)
+    rw [←Nat.mul_succ, mul_comm]
+    apply Nat.mul_le_mul_right
+    linarith
+  ) := by
+  simp at hi
+  induction i generalizing l k with
+  | zero =>
+    have : k = k - 1 + 1 := by omega
+    unfold chunksExact
+    split
+    · contradiction
+    · apply List.ext_get
+      · simp
+        rename l.length = (_ + 1) * d => hl
+        rw [hl]
+        simp [Nat.succ_mul]
+      · intro n _ _
+        simp
+  | succ n ih =>
+    unfold chunksExact
+    · split
+      · contradiction
+      · simp
+        rw [ih]
+        simp [Nat.mul_succ]
+        ext
+        congr 1
+        ring
+        linarith
+
 namespace Lampe
 
 def Prime : Type := {P : ℕ // Nat.Prime (P+1)}
@@ -83,31 +133,14 @@ theorem ofBaseLE_toBaseLE: ofBaseLE B (toBaseLE B D N) = N % B^D := by
 theorem ofBaseLE_toBaseLE_of_lt (h : N < B^D): ofBaseLE B (toBaseLE B D N) = N := by
   rw [ofBaseLE_toBaseLE, Nat.mod_eq_of_lt h]
 
-def Fp.toBitsLE {P} n: ZMod P → List.Vector (U 1) n := fun x =>
+def Fp.toBitsLE {P} n: Fp P → List.Vector (U 1) n := fun x =>
   ⟨toBaseLE 2 n x.val |>.map (↑), by simp⟩
 
-def Fp.toBytesLE {P} n : ZMod P → List.Vector (U 8) n := fun x =>
+def Fp.toBytesLE {P} n : Fp P → List.Vector (U 8) n := fun x =>
   ⟨toBaseLE 256 n x.val |>.map (↑), by simp⟩
 
-def Fp.ofBytesLE {P} : List (U 8) → ZMod P := fun bytes =>
+def Fp.ofBytesLE {P} : List (U 8) → Fp P := fun bytes =>
   ofBaseLE 256 (bytes.map BitVec.toNat)
-
-def _root_.List.Vector.chunks {n} d : List.Vector α (n * d) → List.Vector (List.Vector α d) n := match n with
-| 0 => fun v => List.Vector.nil
-| n + 1 => fun v =>
-  have hh : min d ((n+1) * d) = d := by simp [Nat.succ_mul];
-  have ht : (n + 1) * d - d = n * d := by simp [Nat.succ_mul];
-  List.Vector.cons (hh ▸ v.take d) (List.Vector.chunks d (ht ▸ v.drop d))
-
-def _root_.List.chunksExact {n α} d (l : List α) (h : List.length l = n * d): List (List α) := match n with
-| 0 => []
-| n + 1 =>
-  l.take d :: List.chunksExact (n := n) d (l.drop d) (by simp [h, Nat.succ_mul])
-
-@[simp]
-theorem _root_.List.Vector.cast_toList {n m} (h : n = m) (v : List.Vector α n) : (h ▸ v).toList = v.toList := by
-  cases h
-  rfl
 
 theorem toBaseLE_pow {B D K N} : toBaseLE (B^D) K N = (toBaseLE B (K*D) N |>.chunksExact D (by simp; exact Or.inl rfl) |>.map (ofBaseLE B)) := by
   induction K generalizing N with
@@ -119,5 +152,36 @@ theorem toBaseLE_pow {B D K N} : toBaseLE (B^D) K N = (toBaseLE B (K*D) N |>.chu
     · simp [toBaseLE_take, ofBaseLE_toBaseLE]
     · congr
       simp [toBaseLE_drop]
+
+lemma toBaseLE_elem_lt {B n i j : Nat} [hnz:NeZero B] {h} : (toBaseLE B n i)[j]'h < B := by
+  induction n generalizing i j with
+  | zero =>
+    simp [toBaseLE]
+    contradiction
+  | succ n ih =>
+    simp [toBaseLE]
+    cases j
+    · simp
+      apply Nat.mod_lt
+      apply Nat.zero_lt_of_ne_zero
+      exact hnz.ne
+    · simp [ih]
+
+lemma ofBaseLE_append : ofBaseLE B (a ++ b) = ofBaseLE B a + B^a.length * ofBaseLE B b := by
+  induction a with
+  | nil => simp [ofBaseLE]
+  | cons h t ih =>
+    simp only [ofBaseLE] at ih
+    simp only [ofBaseLE, List.map, List.cons_append, List.foldr_cons, ih, List.length_cons, pow_succ]
+    ring
+
+theorem Fp.cast_self {P} {p : Fp P} : (p.cast : Fp P) = p := by
+  unfold ZMod.cast
+  simp only [Prime.natVal]
+  apply ZMod.natCast_zmod_val
+
+lemma Fp.eq_of_val_eq {P} {x y: Fp P}: x.val = y.val → x = y := by
+  simp [ZMod.val, Prime.natVal]
+  exact Fin.eq_of_val_eq
 
 end Lampe

@@ -1,3 +1,6 @@
+import Mathlib.Data.Fintype.Basic
+import Mathlib.Tactic.FinCases
+
 namespace Lampe
 
 abbrev U (n : Nat) := BitVec (n)
@@ -19,3 +22,44 @@ instance : Repr (I n) where
 abbrev bitsCanRepresent (w : Nat) (val : Int) := val < 2^(w-1) ∧ val ≥ -2^(w-1)
 
 end Lampe
+
+instance : Fintype (BitVec 1) where
+  elems := ⟨[0#1, 1#1], by simp⟩
+  complete := by
+    intro v
+    rcases v with ⟨v⟩
+    fin_cases v <;> simp
+
+lemma BitVec.ofNat_1_eq_mod :  BitVec.ofNat 1 (x % 2) = BitVec.ofNat 1 x := by
+  unfold BitVec.ofNat
+  apply congrArg
+  unfold Fin.ofNat'
+  simp
+
+lemma BitVec.ofNat_1_eq_0_iff : 0#1 = BitVec.ofNat 1 x ↔ x % 2 = 0 := by
+  apply Iff.intro
+  · unfold BitVec.ofNat
+    intro h
+    injection h with h
+    simp [Fin.ofNat'] at h
+    injection h with h
+    rw [←h]
+  · intro h
+    unfold BitVec.ofNat
+    apply BitVec.eq_of_toFin_eq
+    simp only
+    simp [Fin.ofNat', h]
+
+lemma BitVec.ofNat_1_eq_1_iff : 1#1 = BitVec.ofNat 1 x ↔ x % 2 = 1 := by
+  apply Iff.intro
+  · unfold BitVec.ofNat
+    intro h
+    injection h with h
+    simp [Fin.ofNat'] at h
+    injection h with h
+    rw [←h]
+  · intro h
+    unfold BitVec.ofNat
+    apply BitVec.eq_of_toFin_eq
+    simp only
+    simp [Fin.ofNat', h]
