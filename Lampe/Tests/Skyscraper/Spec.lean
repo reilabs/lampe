@@ -1,6 +1,8 @@
 import Tests.Skyscraper.Ref
 import Tests.Skyscraper.Extracted
 
+import Mathlib.Tactic.FieldSimp
+
 open Lampe Extracted
 
 -- set_option trace.Lampe.SL true
@@ -83,13 +85,6 @@ theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRe
   steps
   simp_all
 
-opaque BitVec.bytesLE : BitVec n → List.Vector (U 8) n
-
--- axiom toLeBytesPadLen {input : Lampe.Fp lp} : (padEnd 32 (Lampe.toLeBytes input)).length = 32
-
-axiom to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.array (Tp.u 8) 32) (FuncRef.decl "to_le_bytes" [] HList.nil) h![input])
-    fun output => output = ⟨List.takeD 32 (Lampe.toLeBytes input) 0, List.takeD_length _ _ _⟩
-
 def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
 | 0, _ => List.Vector.nil
 | d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
@@ -120,9 +115,12 @@ theorem ZMod.cast_self {p : Fp P} : (p.cast : Fp P) = p := by
   simp only [Prime.natVal]
   apply natCast_zmod_val
 
-lemma ZMod.div2_on_vals {v : Fp lp} : v.val / 2 = match v.val % 2 with
-  | 0 => (v / 2).val
-  | _ => ((v - 1) / 2).val := by sorry
+lemma Fp.eq_of_val_eq {p} {x y: Fp p}: x.val = y.val → x = y := by
+  simp [ZMod.val, Prime.natVal]
+  exact Fin.eq_of_val_eq
+
+
+/---
 
 lemma BitVec.ofNat_1_eq_mod :  BitVec.ofNat 1 (x % 2) = BitVec.ofNat 1 x := by
   unfold BitVec.ofNat
@@ -177,6 +175,9 @@ lemma List.Vector.toList_snoc : (List.Vector.snoc vs v).toList = vs.toList ++ [v
 set_option trace.Lampe.STHoare.Helpers true
 set_option trace.Lampe.SL true
 
+@[simp]
+lemma Int.castBitVec_ofNat {p} {n : Nat} : (Int.cast (OfNat.ofNat n) : Tp.denote p (Tp.u s)) = BitVec.ofNat s n := by
+  rfl
 
 theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ (to_le_bits.call h![] h![input]) fun v => v = Fp.toBitsLE 256 input := by
     enter_decl
@@ -255,20 +256,149 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ (to_le_bits.call h![] h
     steps
     simp_all
 
+@[simp]
+lemma List.chunksExact_length {h : List.length l = k*d} : (List.chunksExact d l h).length = k := by
+  induction k generalizing l with
+  | zero => simp [chunksExact]
+  | succ k ih =>
+    simp [chunksExact, ih]
 
+lemma List.getElem_chunksExact {l : List α} {h : l.length = k*d} {hi}: (List.chunksExact d l h)[i]'hi = List.ofFn fun (j : Fin d) =>
+  l[d*i + j.val]'(by
+    simp [h];
+    simp at hi;
+    cases j;
+    simp;
+    apply lt_of_lt_of_le (Nat.add_lt_add_left (by assumption) _)
+    rw [←Nat.mul_succ, mul_comm]
+    apply Nat.mul_le_mul_right
+    linarith
+  ) := by
+  simp at hi
+  induction i generalizing l k with
+  | zero =>
+    have : k = k - 1 + 1 := by omega
+    unfold chunksExact
+    split
+    · contradiction
+    · apply List.ext_get
+      · simp
+        rename l.length = (_ + 1) * d => hl
+        rw [hl]
+        simp [Nat.succ_mul]
+      · intro n _ _
+        simp
+  | succ n ih =>
+    unfold chunksExact
+    · split
+      · contradiction
+      · simp
+        rw [ih]
+        simp [Nat.mul_succ]
+        ext
+        congr 1
+        ring
+        linarith
 
+lemma toBaseLE_elem_lt {B n i j : Nat} [hnz:NeZero B] {h} : (toBaseLE B n i)[j]'h < B := by
+  induction n generalizing i j with
+  | zero =>
+    simp [toBaseLE]
+    contradiction
+  | succ n ih =>
+    simp [toBaseLE]
+    cases j
+    · simp
+      apply Nat.mod_lt
+      apply Nat.zero_lt_of_ne_zero
+      exact hnz.ne
+    · simp [ih]
 
+theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (to_le_bytes.call h![] h![input]) fun v => v = Fp.toBytesLE 32 input := by
+  enter_decl
+  simp only
+  steps [to_le_bits_intro]
+  enter_block_as =>
+    ([bytes ↦ ⟨(Tp.u 8).array 32, List.Vector.replicate 32 0⟩])
+    (fun _ => [bytes ↦ ⟨(Tp.u 8).array 32, Fp.toBytesLE 32 input⟩])
 
+  · loop_inv nat fun i _ _ => [bytes ↦ ⟨(Tp.u 8).array 32, (Fp.toBytesLE 32 input).take i |>.pad 32 0⟩]
+    · decide
+    · intro i _ hi
+      steps
+      rw [Int.castBitVec_ofNat] at *
+      simp at *
+      casesm* ∃_,_, _∧_
+      subst_vars
+      simp [Access.modify]
+      congr 1
+      apply List.Vector.eq
+      have : i ≤ 32 := by linarith
+      have : i + 1 ≤ 32 := by linarith
+      have : i % 4294967296 = i := by
+        apply Nat.mod_eq_of_lt; linarith
+      simp [-List.takeD_succ, List.takeD_eq_take_append, *, List.take_take]
+      rw [List.take_succ, List.append_assoc]
+      congr 1
+      have : (32 - i) = (31 - i) + 1 := by omega
+      simp [this, List.replicate_succ, getElem?, decidableGetElem?, hi]
+      simp [Fp.toBytesLE]
 
+      have : 256 = 2 ^ 8 := by rfl
+      simp_rw [this]
+      conv => rhs; arg 2; arg 1; rw [toBaseLE_pow (B:=2) (D:=8) (K:=32)]
+      simp [List.getElem_chunksExact, ofBaseLE, Fp.toBitsLE, List.Vector.get]
+      conv in (occs := *) ((8*i + _) % _) => all_goals rw [Nat.mod_eq_of_lt (by linarith)]
+      conv in (8 * i % _) => rw [Nat.mod_eq_of_lt (by linarith)]
+      ring_nf
+      simp [BitVec.add_def, Nat.mod_eq_of_lt, toBaseLE_elem_lt]
+      unfold BitVec.ofNat
+      congr 1
+      unfold Fin.ofNat'
+      congr 1
+      simp [mul_comm]
+    · decide
+  steps
+  simp_all
+
+lemma Fp.ofBaseLE_append : ofBaseLE B (a ++ b) = ofBaseLE B a + B^a.length * ofBaseLE B b := by
+  induction a with
+  | nil => simp [ofBaseLE]
+  | cons h t ih =>
+    simp only [ofBaseLE] at ih
+    simp only [ofBaseLE, List.map, List.cons_append, List.foldr_cons, ih, List.length_cons, pow_succ]
+    ring
+
+theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (from_le_bytes.call h![] h![input])
+    fun output => output = Lampe.Fp.ofBytesLE input.toList := by
+  enter_decl
+  simp only
+  steps
+
+  loop_inv nat fun i _ _ => [v ↦ ⟨.field, 256 ^ i⟩] ⋆ [result ↦ ⟨.field, Lampe.Fp.ofBytesLE $ input.toList.take i⟩]
+  · decide
+  · intro i _ hhi
+    steps
+    · simp_all [pow_succ]
+    · congr 1
+      casesm* ∃_,_
+      subst_vars
+      conv at hhi => rhs; whnf
+      simp [List.take_succ, getElem?, decidableGetElem?, List.Vector.toList_length]
+      simp only [hhi, Fp.ofBytesLE, List.map_append, Fp.ofBaseLE_append]
+      have : i ≤ 32 := by linarith
+      have : i % 4294967296 = i := by
+        apply Nat.mod_eq_of_lt; linarith
+      simp [*, List.Vector.get, ofBaseLE]
+      rw [mul_comm]
+      rfl
+  · decide
+  steps
+  simp_all
+  rw [List.take_of_length_le]
+  · simp; decide
 
 /---
-
--- TODO: Do we want this as an axiom or not?
-axiom from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.array (Tp.u 8) 32] Tp.field (FuncRef.decl "from_le_bytes" [] HList.nil) h![input])
-    fun output => output = Skyscraper.bnField.fromLeBytes input.toList -- := by
-  -- enter_decl
-  -- simp only [from_le_bytes]
-  -- steps
 
 def List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
 | 0, _ => List.Vector.nil

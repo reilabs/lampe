@@ -93,6 +93,7 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.uEq => return some (←``(genericTotalPureBuiltin_intro Builtin.uEq rfl), true)
 
         | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro), false)
+        | ``Lampe.Builtin.uMul => return some (←``(uMul_intro), false)
 
         | ``Lampe.Builtin.mkArray => return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray rfl), true)
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)

@@ -27,13 +27,13 @@ def sbox (v : U 8) : U 8 :=
   v ^^^ rotateLeft (rotateLeft v.not 1 &&& rotateLeft v 2 &&& rotateLeft v 3) 1
 
 def bar (a : bnField) : bnField :=
-  let bytes := a.toLeBytes
+  let bytes := Lampe.Fp.toBytesLE 256 a
   let left := bytes.take 16
   let right := bytes.drop 16
   let new_left := left.map sbox
   let new_right := right.map sbox
   let new_bytes := new_right.append new_left
-  bnField.fromLeBytes new_bytes
+  Lampe.Fp.ofBytesLE new_bytes.toList
 
 def square (a : bnField) : bnField :=
   a * a * SIGMA
@@ -60,7 +60,7 @@ def permute (s : State) : State :=
 namespace State
 
 def new (iv : List (U 8)) : State :=
-  let felt := bnField.fromLeBytes iv
+  let felt := Lampe.Fp.ofBytesLE iv
   { left := 0, right := felt }
 
 def permute (s : State) : State := Skyscraper.permute s

@@ -20,38 +20,43 @@ instance : NeZero (Prime.natVal P) := ⟨Nat.Prime.ne_zero P.prop⟩
 
 def numBits (P : ℕ) : ℕ := Nat.log2 P + 1
 
-def toBaseLE (B n v : Nat): List.Vector Nat n := match n with
-  | 0 => List.Vector.nil
-  | n+1 => List.Vector.cons (v % B) (toBaseLE B n (v / B))
+def toBaseLE (B n v : Nat): List Nat := match n with
+  | 0 => []
+  | n+1 => v % B :: toBaseLE B n (v / B)
 
-theorem toBaseLE_succ_snoc : toBaseLE B (n + 1) v = (toBaseLE B n v).snoc ((v / B^n) % B) := by
+@[simp]
+lemma toBaseLE_len : (toBaseLE B n v).length = n := by
+  induction n generalizing v with
+  | zero => rfl
+  | succ n ih =>
+    simp [toBaseLE, ih]
+
+theorem toBaseLE_succ_snoc : toBaseLE B (n + 1) v = toBaseLE B n v ++ [(v / B^n) % B] := by
   induction n generalizing v with
   | zero =>
     simp [toBaseLE]
   | succ n ih =>
     rw [toBaseLE, ih, toBaseLE]
     simp
-    congr 2
+    congr 1
     simp [Nat.pow_succ, Nat.div_div_eq_div_mul, Nat.mul_comm]
 
 theorem toBaseLE_take : (toBaseLE B n v).take m = toBaseLE B (min m n) v := by
-  induction m generalizing v with
+  induction m generalizing v n with
   | zero =>
-    apply List.Vector.eq
-    simp [Nat.zero_min]
+    simp [Nat.zero_min, toBaseLE]
+  | succ m ih =>
+    cases n
+    · simp [toBaseLE]
+    · simp [toBaseLE, Nat.succ_min_succ, ih]
 
 theorem toBaseLE_drop : (toBaseLE B n v).drop m = toBaseLE B (n - m) (v / B^m) := by
-  have : ∀B m₁ m₂ n, m₁ = m₂ → (toBaseLE B m₁ n).toList = (toBaseLE B m₂ n).toList := by
-    intros B m₁ m₂ n h
-    rw [h]
   by_cases h : m ≤ n
-  · apply List.Vector.eq
-    have : n = m + (n - m) := by simp [h]
+  · have : n = m + (n - m) := by simp [h]
     rw [this]
     generalize n - m = d
     clear this h n
     rw [add_comm]
-    rw [this _ _ _ _ (Nat.add_sub_cancel _ _)]
     induction m generalizing v with
     | zero =>
       simp
@@ -60,18 +65,11 @@ theorem toBaseLE_drop : (toBaseLE B n v).drop m = toBaseLE B (n - m) (v / B^m) :
       simp at ih
       simp [toBaseLE, ih, Nat.pow_succ, Nat.div_div_eq_div_mul, Nat.mul_comm]
   · have t₁ : n - m = 0 := by rw [Nat.sub_eq_zero_of_le]; linarith
-    apply List.Vector.eq
-    rw [this _ _ _ _ t₁]
-    simp
+    simp [t₁, toBaseLE]
     linarith
 
-def ofBaseLE {n} (B : Nat) (v : List.Vector Nat n) : Nat :=
-  v.toList.foldr (fun bit rest => bit + B * rest) 0
-
-@[simp]
-theorem ofBaseLE_cast (h : n₁ = n₂) (v : List.Vector Nat n₁) : ofBaseLE B (h ▸ v) = ofBaseLE B v  := by
-  cases h
-  rfl
+def ofBaseLE (B : Nat) (v : List Nat) : Nat :=
+  v.foldr (fun bit rest => bit + B * rest) 0
 
 theorem ofBaseLE_toBaseLE: ofBaseLE B (toBaseLE B D N) = N % B^D := by
   induction D generalizing N with
@@ -86,7 +84,13 @@ theorem ofBaseLE_toBaseLE_of_lt (h : N < B^D): ofBaseLE B (toBaseLE B D N) = N :
   rw [ofBaseLE_toBaseLE, Nat.mod_eq_of_lt h]
 
 def Fp.toBitsLE {P} n: ZMod P → List.Vector (U 1) n := fun x =>
-  toBaseLE 2 n x.val |>.map (↑)
+  ⟨toBaseLE 2 n x.val |>.map (↑), by simp⟩
+
+def Fp.toBytesLE {P} n : ZMod P → List.Vector (U 8) n := fun x =>
+  ⟨toBaseLE 256 n x.val |>.map (↑), by simp⟩
+
+def Fp.ofBytesLE {P} : List (U 8) → ZMod P := fun bytes =>
+  ofBaseLE 256 (bytes.map BitVec.toNat)
 
 def _root_.List.Vector.chunks {n} d : List.Vector α (n * d) → List.Vector (List.Vector α d) n := match n with
 | 0 => fun v => List.Vector.nil
@@ -95,34 +99,25 @@ def _root_.List.Vector.chunks {n} d : List.Vector α (n * d) → List.Vector (Li
   have ht : (n + 1) * d - d = n * d := by simp [Nat.succ_mul];
   List.Vector.cons (hh ▸ v.take d) (List.Vector.chunks d (ht ▸ v.drop d))
 
+def _root_.List.chunksExact {n α} d (l : List α) (h : List.length l = n * d): List (List α) := match n with
+| 0 => []
+| n + 1 =>
+  l.take d :: List.chunksExact (n := n) d (l.drop d) (by simp [h, Nat.succ_mul])
+
 @[simp]
 theorem _root_.List.Vector.cast_toList {n m} (h : n = m) (v : List.Vector α n) : (h ▸ v).toList = v.toList := by
   cases h
   rfl
 
-theorem toBaseLE_pow {B D K N} : toBaseLE (B^D) K N = (toBaseLE B (K*D) N |>.chunks D |>.map (ofBaseLE B)) := by
+theorem toBaseLE_pow {B D K N} : toBaseLE (B^D) K N = (toBaseLE B (K*D) N |>.chunksExact D (by simp; exact Or.inl rfl) |>.map (ofBaseLE B)) := by
   induction K generalizing N with
   | zero =>
-    simp [toBaseLE, List.Vector.chunks]
+    simp [toBaseLE, List.chunksExact]
   | succ K ih =>
-    simp only [toBaseLE, ih, List.Vector.chunks, List.Vector.map_cons]
+    simp only [toBaseLE, ih, List.Vector.map_cons, Nat.succ_mul]
     congr 1
-    · have : min D ((K+1)*D) = D := by simp [Nat.succ_mul]
-      rw [toBaseLE_take]
-      simp
-      rw [this, ofBaseLE_toBaseLE]
-    · rw [toBaseLE_drop]
-      congr
-      have : (K + 1) * D - D = K * D := by simp [Nat.succ_mul]
-      have congr: ∀B m₁ m₂ n, m₁ = m₂ → (toBaseLE B m₁ n).toList = (toBaseLE B m₂ n).toList := by
-        intros B m₁ m₂ n h
-        rw [h]
-      apply List.Vector.eq
-      simp [congr _ _ _ _ this]
-
-def toLeBytes {P} : ZMod P → List (U 8) := fun x => go P x.val where
-  go : ℕ → ℕ → List (U 8)
-  | 0, _ => []
-  | (k + 1), v => (v % 256) :: go ((k + 1) / 256) (v / 256)
+    · simp [toBaseLE_take, ofBaseLE_toBaseLE]
+    · congr
+      simp [toBaseLE_drop]
 
 end Lampe
