@@ -125,37 +125,23 @@ theorem recover_intro {H N idx proof item}
   congr
   all_goals simp
 
-def RC : List Int :=
-    [-4058822530962036113558957735524994411356374024839875405476791844324326516925,
-    5852100059362614845584985098022261541909346143980691326489891671321030921585,
-    -4840154698573742532565501789862255731956493498174317200418381990571919688651,
-    71577923540621522166602308362662170286605786204339342029375621502658138039,
-    1630526119629192105940988602003704216811347521589219909349181656165466494167,
-    7807402158218786806372091124904574238561123446618083586948014838053032654983,
-    -8558681900379240296346816806663462402801546068866479372657894196934284905006,
-    -4916733727805245440019875123169648108733681133486378553671899463457684353318]
-
-def SIGMA : Int :=
-    9915499612839321149637521777990102151350674507940716049588462388200839649614
-
 theorem rl_intro : STHoare lp env ⟦⟧
-  (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "rl" [] HList.nil) h![input])
+    (rl.call h![] h![input])
     fun output => output = Ref.rl input := by
   enter_decl
   steps
   subst_vars
   rfl
 
-theorem u8_ge_zero (u : U 8) : 0 ≤ u := by bv_decide
-
-theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h![] |>.body h![input, N])
-    fun output => output = Ref.rotateLeft input N := by
-  simp only [Extracted.rotate_left]
-
+theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
+      (rotate_left.call h![] h![input, N])
+      fun output => output = Ref.rotateLeft input N := by
+  enter_decl
+  simp only [rotate_left]
   steps
   loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Ref.rl i.toNat input⟩]
   change 0 ≤ N
-  exact u8_ge_zero N
+  · bv_decide
   · intros i hlo hhi
     steps [rl_intro]
     simp_all
@@ -169,33 +155,20 @@ theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h!
   · steps
     simp_all [Ref.rotateLeft]
 
-theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
-    (Expr.call [Tp.u 8, Tp.u 8] (Tp.u 8) (FuncRef.decl "rotate_left" [] HList.nil) h![input, N])
-      fun output => output = Ref.rotateLeft input N := by
-  enter_decl
-  apply STHoare.consequence (h_hoare := rotateLeft_spec)
-  simp_all [SLP.entails]
-  simp [SLP.star, SLP.top, SLP.entails]
-
-theorem sbox_spec : STHoare lp env ⟦⟧ (sbox.fn.body _ h![] |>.body h![input])
+theorem sbox_intro : STHoare lp env ⟦⟧ (sbox.call h![] h![input])
     fun output => output = Ref.sbox input := by
+  enter_decl
   simp only [Extracted.sbox]
   steps [rotate_left_intro]
   · subst_vars; rfl
   all_goals decide
 
-theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil) h![input])
-    fun output => output = Ref.sbox input := by
-  enter_decl
-  apply sbox_spec
-
-theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRef.decl "sgn0" [] HList.nil) h![input])
-    fun output => output = (input.val % 2) := by
+theorem sgn0_intro : STHoare lp env ⟦⟧ (sgn0.call h![] h![input])
+    fun (output: BitVec 1) => output = input.val % 2 := by
   enter_decl
   simp only [sgn0]
   steps
   simp_all
-
 
 lemma ZMod.div2_on_vals (v : Lampe.Fp lp) :
     v.val / 2 = match v.val % 2 with
@@ -230,7 +203,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ (to_le_bits.call h![] h
       rfl
     · intro i _ hi
       simp [IntCast.intCast, Int.cast] at hi
-      steps [sgn0_spec]
+      steps [sgn0_intro]
       · let this : i % 4294967296 = i := by rw [Nat.mod_eq_of_lt]; linarith
         simp [Access.modify, Nat.mod_eq_of_lt, this, hi]
         rfl
@@ -377,7 +350,8 @@ theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (from_le_bytes.call 
   rw [List.take_of_length_le]
   · simp
 
-theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.call [Tp.slice (Tp.u 8)] (Tp.array (Tp.u 8) 32) (FuncRef.decl "as_array" [] HList.nil) h![input])
+theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧
+    (as_array.call h![] h![input])
     fun output => output = ⟨input, hi⟩ := by
   enter_decl
   simp only [as_array]
@@ -415,8 +389,9 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.ca
   simp only [←hi, Int.cast, IntCast.intCast, BitVec.ofInt, List.takeD_eq_take, this, List.take_length]
 
 set_option maxHeartbeats 3000000000000
-theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
+theorem bar_intro : STHoare lp env ⟦⟧ (bar.call h![] h![input])
     fun output => output = Ref.bar input := by
+  enter_decl
   simp only [Extracted.bar]
   steps [to_le_bytes_intro]
 
@@ -530,13 +505,8 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
   · subst_vars
     rfl
 
-theorem bar_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field] Tp.field (FuncRef.decl "bar" [] HList.nil) h![input])
-    fun output => output = Ref.bar input := by
-  enter_decl
-  apply bar_spec
-
 theorem sigma_intro : STHoare lp env (⟦⟧)
-    (Expr.call [] Tp.field (FuncRef.decl "SIGMA" [] HList.nil) h![])
+    (Extracted.SIGMA.call h![] h![])
       fun output => output = Ref.SIGMA := by
   enter_decl
   simp only [Extracted.SIGMA]
@@ -588,6 +558,17 @@ lemma SkyscraperHash_correct: STHoare lp env ⟦⟧ (Expr.call [Tp.field, Tp.fie
   subst_vars
   congr 1
 
+lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ (weird_assert_eq.call h![] h![a, b]) (fun _ => a = b) := by
+  enter_decl
+  simp only
+  steps
+  enter_block_as (⟦⟧) (fun _ => ⟦⟧)
+  · enter_decl
+    simp only
+    steps
+  steps
+  simp_all
+
 theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp lp) Ref.State.compress 32}:
     STHoare lp env
         ⟦⟧
@@ -595,11 +576,9 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : Merk
         (fun _ => item ∈ tree) := by
   enter_decl
   simp only
-  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct)]
+  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
   use index.reverse
-  rename ∃_, True => heq
-  simp at heq
-  cases heq
+  subst_vars
   rename tree.root = _ => hroot
   rw [Eq.comm, MerkleTree.recover_eq_root_iff_proof_and_item_correct] at hroot
   exact hroot.2
