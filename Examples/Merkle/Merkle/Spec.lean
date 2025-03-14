@@ -173,7 +173,62 @@ theorem sgn0_intro : STHoare lp env ⟦⟧ (sgn0.call h![] h![input])
 lemma ZMod.div2_on_vals (v : Lampe.Fp lp) :
     v.val / 2 = match v.val % 2 with
     | 0 => (v / 2).val
-    | _ => ((v - 1) / 2).val := by sorry
+    | _ => ((v - 1) / 2).val := by
+  have two_unit := ZMod.inv_mul_of_unit 2 (ZMod.isUnit_iff_coprime 2 lp.natVal |>.mpr (by decide))
+  cases h : v.val % 2 with
+  | zero =>
+    simp only
+    have is_even : ∃ k, v.val = 2 * k := Nat.dvd_of_mod_eq_zero h
+    rcases is_even with ⟨k, hk⟩
+    rw [hk, Nat.mul_div_right]
+    · rw [← ZMod.cast_id _ v, ZMod.cast_eq_val, hk, Nat.cast_mul]
+      simp only [Nat.cast_ofNat]; ring_nf
+      rw [mul_assoc, two_unit]
+      have : v.val < lp.natVal := by simp [ZMod.val_lt]
+      have : k < lp.natVal := by omega
+      simp only [mul_one, ZMod.val_natCast, Nat.mod_eq_of_lt this]
+    · apply Nat.zero_lt_succ
+  | succ n =>
+    simp only
+    have is_odd : ∃ k, v.val = 2 * k + 1 := by
+      have : v.val.pred % 2 = 0 := by
+        have := Nat.mod_two_eq_zero_or_one v.val
+        cases this with
+        | inl hzero =>
+          rw [hzero] at h; simp at h
+        | inr hone =>
+          have sum_eq_one := Nat.mod_two_add_succ_mod_two v.val
+          rw [hone] at sum_eq_one; simp at sum_eq_one
+          have plus_two := Nat.add_mod_left 2 v.val.pred
+          nth_rewrite 1 [Nat.pred_eq_sub_one] at plus_two
+          have add_sub_assoc := Nat.add_sub_assoc (k := 1) (m := v.val) (by omega) 2
+          simp only [Nat.succ_add_sub_one] at add_sub_assoc
+          rw [←add_sub_assoc, add_comm] at plus_two
+          rw [←plus_two, sum_eq_one]
+      have := Nat.dvd_of_mod_eq_zero this
+      rcases this with ⟨k, hk⟩
+      use k
+      change v.val = (2 * k).succ
+      rw [←hk, Nat.succ_pred]
+      intro hzero; rw [hzero] at h; simp at h
+    rcases is_odd with ⟨k, hk⟩
+    rw [hk, Nat.add_div, Nat.mul_div_right]
+    simp
+    · rw [←ZMod.cast_id _ (v - 1), ZMod.cast_eq_val, ZMod.val_sub, hk, Nat.cast_sub, Nat.cast_add,
+    Nat.cast_mul]
+      · simp; ring_nf
+        rw [mul_assoc, two_unit, mul_one]
+        have : v.val < lp.natVal := by simp [ZMod.val_lt]
+        have : k < lp.natVal := by omega
+        simp only [mul_one, ZMod.val_natCast, Nat.mod_eq_of_lt this]
+      · change 1 ≤ 2 * k + 1
+        omega
+      · change 1 ≤ v.val
+        simp only [Nat.one_le_iff_ne_zero, ne_eq, ZMod.val_eq_zero]
+        intro h; rw [h] at hk; simp at hk
+    · decide
+    · decide
+
 
 @[simp]
 lemma Fp.cast_u {s P} {v : Fp P} : (v.cast : U s) = BitVec.ofNat s (v.val) := by rfl
