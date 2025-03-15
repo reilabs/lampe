@@ -13,6 +13,31 @@ namespace Spec
 
 def lp : Lampe.Prime := ⟨p, pPrime⟩
 
+def _root_.List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
+| 0, _ => List.Vector.nil
+| d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
+| d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
+
+@[simp]
+theorem List.Vector.toList_pad {v : List.Vector α n} {pad} : (v.pad d pad).toList = v.toList.takeD d pad := by
+  rcases v with ⟨l, prop⟩
+  induction d generalizing l n with
+  | zero => simp
+  | succ d ih =>
+    cases n
+    · simp [List.Vector.pad, ih, List.replicate_succ]
+    · rcases (List.exists_of_length_succ _ prop) with ⟨h, t, ⟨rfl⟩⟩
+      simp at prop
+      simp [List.Vector.pad, List.Vector.head, List.Vector.tail, ih]
+
+theorem List.takeD_eq_take_append : List.takeD n l pad = List.take n l ++ List.replicate (n - l.length) pad := by
+  induction n generalizing l with
+  | zero => simp
+  | succ n ih =>
+    cases l
+    · simp [List.replicate]
+    · simp [List.takeD, List.take, ih]
+
 theorem recover_zero (h : n = 0) : MerkleTree.recover (depth := n) H' idx proof item = item := by
   cases h
   rfl
@@ -100,37 +125,23 @@ theorem recover_intro {H N idx proof item}
   congr
   all_goals simp
 
-def RC : List Int :=
-    [-4058822530962036113558957735524994411356374024839875405476791844324326516925,
-    5852100059362614845584985098022261541909346143980691326489891671321030921585,
-    -4840154698573742532565501789862255731956493498174317200418381990571919688651,
-    71577923540621522166602308362662170286605786204339342029375621502658138039,
-    1630526119629192105940988602003704216811347521589219909349181656165466494167,
-    7807402158218786806372091124904574238561123446618083586948014838053032654983,
-    -8558681900379240296346816806663462402801546068866479372657894196934284905006,
-    -4916733727805245440019875123169648108733681133486378553671899463457684353318]
-
-def SIGMA : Int :=
-    9915499612839321149637521777990102151350674507940716049588462388200839649614
-
 theorem rl_intro : STHoare lp env ⟦⟧
-  (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "rl" [] HList.nil) h![input])
+    (rl.call h![] h![input])
     fun output => output = Ref.rl input := by
   enter_decl
   steps
   subst_vars
   rfl
 
-theorem u8_ge_zero (u : U 8) : 0 ≤ u := by bv_decide
-
-theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h![] |>.body h![input, N])
-    fun output => output = Ref.rotateLeft input N := by
-  simp only [Extracted.rotate_left]
-
+theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
+      (rotate_left.call h![] h![input, N])
+      fun output => output = Ref.rotateLeft input N := by
+  enter_decl
+  simp only [rotate_left]
   steps
   loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Ref.rl i.toNat input⟩]
   change 0 ≤ N
-  exact u8_ge_zero N
+  · bv_decide
   · intros i hlo hhi
     steps [rl_intro]
     simp_all
@@ -144,69 +155,228 @@ theorem rotateLeft_spec : STHoare lp env ⟦N < 254⟧ (rotate_left.fn.body _ h!
   · steps
     simp_all [Ref.rotateLeft]
 
-theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
-    (Expr.call [Tp.u 8, Tp.u 8] (Tp.u 8) (FuncRef.decl "rotate_left" [] HList.nil) h![input, N])
-      fun output => output = Ref.rotateLeft input N := by
-  enter_decl
-  apply STHoare.consequence (h_hoare := rotateLeft_spec)
-  simp_all [SLP.entails]
-  simp [SLP.star, SLP.top, SLP.entails]
-
-theorem sbox_spec : STHoare lp env ⟦⟧ (sbox.fn.body _ h![] |>.body h![input])
+theorem sbox_intro : STHoare lp env ⟦⟧ (sbox.call h![] h![input])
     fun output => output = Ref.sbox input := by
+  enter_decl
   simp only [Extracted.sbox]
   steps [rotate_left_intro]
   · subst_vars; rfl
   all_goals decide
 
-theorem sbox_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.u 8] (Tp.u 8) (FuncRef.decl "sbox" [] HList.nil) h![input])
-    fun output => output = Ref.sbox input := by
-  enter_decl
-  apply sbox_spec
-
-theorem sgn0_spec : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.u 1) (FuncRef.decl "sgn0" [] HList.nil) h![input])
-    fun output => output = (input.val % 2) := by
+theorem sgn0_intro : STHoare lp env ⟦⟧ (sgn0.call h![] h![input])
+    fun (output: BitVec 1) => output = input.val % 2 := by
   enter_decl
   simp only [sgn0]
   steps
   simp_all
 
-opaque BitVec.bytesLE : BitVec n → List.Vector (U 8) n
+lemma ZMod.div2_on_vals (v : Lampe.Fp lp) :
+    v.val / 2 = match v.val % 2 with
+    | 0 => (v / 2).val
+    | _ => ((v - 1) / 2).val := by
 
-axiom toLeBytesPadLen {input : Lampe.Fp lp} : (padEnd 32 (Lampe.toLeBytes input)).length = 32
+  have two_unit := ZMod.inv_mul_of_unit 2 (ZMod.isUnit_iff_coprime 2 lp.natVal |>.mpr (by decide))
+  have vVal_decomp := Nat.div_add_mod v.val 2
+  have v_decomp : v = 2 * ↑(v.val / 2) + ↑(v.val % 2) := by
+    apply Fp.eq_of_val_eq
+    rw [ZMod.val_add, ZMod.val_mul, ZMod.val_natCast, ZMod.val_natCast]
+    conv in v.val / 2 % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.div_le_self _ _) v.prop)]
+    conv in ZMod.val 2 => whnf
+    conv in 2 * _ % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.mul_div_le _ _) v.prop)]
+    conv in v.val % _ % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.mod_le _ _) v.prop)]
+    rw [vVal_decomp, Nat.mod_eq_of_lt]
+    exact v.prop
 
-axiom to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.field] (Tp.array (Tp.u 8) 32) (FuncRef.decl "to_le_bytes" [] HList.nil) h![input])
-    fun output => output = ⟨List.takeD 32 (Lampe.toLeBytes input) 0, List.takeD_length _ _ _⟩
-
-axiom from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (Expr.call [Tp.array (Tp.u 8) 32] Tp.field (FuncRef.decl "from_le_bytes" [] HList.nil) h![input])
-    fun output => output = Merkle.bnField.fromLeBytes input.toList
-
-def _root_.List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
-| 0, _ => List.Vector.nil
-| d+1, 0 => pad ::ᵥ List.Vector.pad v d pad
-| d+1, _+1 => v.head ::ᵥ List.Vector.pad v.tail d pad
+  split <;> {
+    rename_i h
+    try simp only [imp_false, Nat.mod_two_not_eq_zero] at h
+    rw [←vVal_decomp]
+    conv => rhs; rw [v_decomp]
+    rw [h]
+    ring_nf
+    rw [mul_assoc, two_unit]
+    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, mul_div_cancel_right₀, mul_one]
+    rewrite [ZMod.val_natCast, Nat.mod_eq_of_lt]
+    · omega
+    · simp only [ZMod.val, Prime.natVal]
+      omega
+  }
 
 @[simp]
-theorem List.Vector.toList_pad {v : List.Vector α n} {pad} : (v.pad d pad).toList = v.toList.takeD d pad := by
-  rcases v with ⟨l, prop⟩
-  induction d generalizing l n with
-  | zero => simp
-  | succ d ih =>
-    cases n
-    · simp [List.Vector.pad, ih, List.replicate_succ]
-    · rcases (List.exists_of_length_succ _ prop) with ⟨h, t, ⟨rfl⟩⟩
-      simp at prop
-      simp [List.Vector.pad, List.Vector.head, List.Vector.tail, ih]
+lemma Fp.cast_u {s P} {v : Fp P} : (v.cast : U s) = BitVec.ofNat s (v.val) := by rfl
 
-theorem List.takeD_eq_take_append : List.takeD n l pad = List.take n l ++ List.replicate (n - l.length) pad := by
-  induction n generalizing l with
-  | zero => simp
-  | succ n ih =>
-    cases l
-    · simp [List.replicate]
-    · simp [List.takeD, List.take, ih]
+set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
+theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ (to_le_bits.call h![] h![input]) fun v => v = Fp.toBitsLE 256 input := by
+    enter_decl
+    simp only [to_le_bits]
+    steps
 
-theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.call [Tp.slice (Tp.u 8)] (Tp.array (Tp.u 8) 32) (FuncRef.decl "as_array" [] HList.nil) h![input])
+    enter_block_as v =>
+      ([val ↦ ⟨.field, input⟩] ⋆ [bits ↦ v])
+      (fun _ => [val ↦ ⟨.field, 0⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE 256 input⟩])
+
+    loop_inv nat fun i _ _ => [val ↦ ⟨.field, ↑(input.val / 2^i)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
+    · decide
+    · simp [Int.cast, IntCast.intCast, Fp.cast_self]
+    · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
+        cases input
+        conv => lhs; arg 1; whnf
+        simp [Nat.div_eq_zero_iff, *, lp, p] at *
+        linarith
+      congr 1
+      simp [Int.cast, IntCast.intCast]
+      rw [this]
+      rfl
+    · intro i _ hi
+      simp [IntCast.intCast, Int.cast] at hi
+      steps [sgn0_intro]
+      · let this : i % 4294967296 = i := by rw [Nat.mod_eq_of_lt]; linarith
+        simp [Access.modify, Nat.mod_eq_of_lt, this, hi]
+        rfl
+      enter_block_as v =>
+        ([val ↦ ⟨.field, v⟩])
+        (fun _ => [val ↦ ⟨.field, ↑(v.val / 2)⟩])
+      · simp only [ZMod.div2_on_vals]
+        have : i % 4294967296 = i := by
+          apply Nat.mod_eq_of_lt; linarith
+        fin_cases «#v_11»
+        · apply STHoare.iteTrue_intro
+          steps
+          casesm* ∃_,_
+          subst_vars
+          rename 0#1 = _ => h
+          simp [*] at *
+          rw [BitVec.ofNat_1_eq_0_iff] at h
+          simp [Fp.cast_self, h]
+        · apply STHoare.iteFalse_intro
+          steps
+          casesm* ∃_,_
+          subst_vars
+          simp [Fp.cast_self, this] at *
+          rename _ = BitVec.ofNat _ _ => h
+          rw [BitVec.ofNat_1_eq_1_iff] at h
+          simp [h, Fp.cast_self]
+      steps
+      · simp only [pow_succ]
+        congr 2
+        rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
+        · simp [Nat.div_div_eq_div_mul]
+        · cases input
+          apply lt_of_le_of_lt (Nat.div_le_self _ _) (by assumption)
+      · congr 1
+        casesm* ∃_,_
+        subst_vars
+        apply List.Vector.eq
+        simp [-List.takeD_succ, Fp.toBitsLE, toBaseLE_succ_snoc, List.takeD_eq_take_append, hi, Nat.le_of_lt]
+        rw [List.take_of_length_le (by simp_all [Nat.le_of_lt]), List.take_of_length_le (by simp_all [Nat.le_of_lt_succ])]
+        have : (256 - i) = 255 - i + 1 := by omega
+        simp [this, List.replicate_succ]
+        simp [BitVec.ofNat_1_eq_mod, ZMod.val_natCast, ZMod.natCast_val]
+        congr
+        rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
+        apply lt_of_le_of_lt (Nat.div_le_self _ _)
+        simp [ZMod.val, lp, Prime.natVal]
+    · decide
+
+    steps
+    simp_all
+
+lemma Int.castBitVec_ofNat {p} {n : Nat} : (Int.cast (OfNat.ofNat n) : Tp.denote p (Tp.u s)) = BitVec.ofNat s n := by
+  rfl
+
+set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
+theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (to_le_bytes.call h![] h![input]) fun v => v = Fp.toBytesLE 32 input := by
+  enter_decl
+  simp only
+  steps [to_le_bits_intro]
+  enter_block_as =>
+    ([bytes ↦ ⟨(Tp.u 8).array 32, List.Vector.replicate 32 0⟩])
+    (fun _ => [bytes ↦ ⟨(Tp.u 8).array 32, Fp.toBytesLE 32 input⟩])
+
+  · loop_inv nat fun i _ _ => [bytes ↦ ⟨(Tp.u 8).array 32, (Fp.toBytesLE 32 input).take i |>.pad 32 0⟩]
+    · decide
+    · intro i _ hi
+      steps
+      casesm* ∃_,_, _∧_
+      rw [Int.castBitVec_ofNat] at *
+      simp only [BitVec.toNat_ofNat, Nat.reducePow, Nat.zero_mod, zero_le, Nat.reduceMod,
+        BitVec.natCast_eq_ofNat, BitVec.reduceToInt, Int.reducePow, exists_prop,
+        BitVec.ofNat_eq_ofNat, BitVec.reduceToNat, Builtin.instCastTpU, BitVec.ofNat_toNat,
+        BitVec.setWidth_eq, BitVec.toInt_setWidth, neg_mul, Lens.modify, Lens.get,
+        Option.bind_eq_bind, Option.some_bind, Option.bind_some] at *
+      subst_vars
+      simp only [Access.modify, BitVec.toNat_ofNat, Nat.reducePow, Nat.reduceMod,
+        BitVec.reduceToNat, BitVec.toNat_mul, Nat.mul_mod_mod, BitVec.toNat_add, Nat.one_mod,
+        Nat.mod_add_mod, Option.get_dite]
+      congr 1
+      apply List.Vector.eq
+      have : i ≤ 32 := by linarith
+      have : i + 1 ≤ 32 := by linarith
+      have : i % 4294967296 = i := by
+        apply Nat.mod_eq_of_lt; linarith
+      simp [-List.takeD_succ, List.takeD_eq_take_append, *, List.take_take]
+      rw [List.take_succ, List.append_assoc]
+      congr 1
+      have : (32 - i) = (31 - i) + 1 := by omega
+      simp [this, List.replicate_succ, getElem?, decidableGetElem?, hi]
+      simp [Fp.toBytesLE]
+
+      have : 256 = 2 ^ 8 := by rfl
+      simp_rw [this]
+      conv => rhs; arg 2; arg 1; rw [toBaseLE_pow (B:=2) (D:=8) (K:=32)]
+      simp only [List.Vector.get, Fp.toBitsLE, Fin.cast_eq_self, List.get_eq_getElem,
+        List.getElem_map, BitVec.natCast_eq_ofNat, Nat.reduceMul, ofBaseLE,
+        List.getElem_chunksExact, List.ofFn_succ, Fin.isValue, Fin.val_zero, add_zero, Fin.val_succ,
+        zero_add, Nat.reduceAdd, Fin.val_eq_zero, List.ofFn_zero, List.foldr_cons, List.foldr_nil,
+        mul_zero]
+      conv in (occs := *) ((8*i + _) % _) => all_goals rw [Nat.mod_eq_of_lt (by linarith)]
+      conv in (8 * i % _) => rw [Nat.mod_eq_of_lt (by linarith)]
+      ring_nf
+      simp [BitVec.add_def, Nat.mod_eq_of_lt, toBaseLE_elem_lt]
+      unfold BitVec.ofNat
+      congr 1
+      unfold Fin.ofNat'
+      congr 1
+      simp [mul_comm]
+    · decide
+  steps
+  simp_all
+
+set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
+theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (from_le_bytes.call h![] h![input])
+    fun output => output = Lampe.Fp.ofBytesLE input.toList := by
+  enter_decl
+  simp only
+  steps
+
+  loop_inv nat fun i _ _ => [v ↦ ⟨.field, 256 ^ i⟩] ⋆ [result ↦ ⟨.field, Lampe.Fp.ofBytesLE $ input.toList.take i⟩]
+  · decide
+  · intro i _ hhi
+    steps
+    · simp_all [pow_succ]
+    · congr 1
+      casesm* ∃_,_
+      subst_vars
+      conv at hhi => rhs; whnf
+      simp [List.take_succ, getElem?, decidableGetElem?, List.Vector.toList_length]
+      simp only [hhi, Fp.ofBytesLE, List.map_append, ofBaseLE_append]
+      have : i ≤ 32 := by linarith
+      have : i % 4294967296 = i := by
+        apply Nat.mod_eq_of_lt; linarith
+      simp [*, List.Vector.get, ofBaseLE]
+      rw [mul_comm]
+      rfl
+  · decide
+  steps
+  simp_all
+  rw [List.take_of_length_le]
+  · simp
+
+theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧
+    (as_array.call h![] h![input])
     fun output => output = ⟨input, hi⟩ := by
   enter_decl
   simp only [as_array]
@@ -244,8 +414,9 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧ (Expr.ca
   simp only [←hi, Int.cast, IntCast.intCast, BitVec.ofInt, List.takeD_eq_take, this, List.take_length]
 
 set_option maxHeartbeats 3000000000000
-theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
+theorem bar_intro : STHoare lp env ⟦⟧ (bar.call h![] h![input])
     fun output => output = Ref.bar input := by
+  enter_decl
   simp only [Extracted.bar]
   steps [to_le_bytes_intro]
 
@@ -359,13 +530,8 @@ theorem bar_spec : STHoare lp env ⟦⟧ (bar.fn.body _ h![] |>.body h![input])
   · subst_vars
     rfl
 
-theorem bar_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field] Tp.field (FuncRef.decl "bar" [] HList.nil) h![input])
-    fun output => output = Ref.bar input := by
-  enter_decl
-  apply bar_spec
-
 theorem sigma_intro : STHoare lp env (⟦⟧)
-    (Expr.call [] Tp.field (FuncRef.decl "SIGMA" [] HList.nil) h![])
+    (Extracted.SIGMA.call h![] h![])
       fun output => output = Ref.SIGMA := by
   enter_decl
   simp only [Extracted.SIGMA]
@@ -417,6 +583,17 @@ lemma SkyscraperHash_correct: STHoare lp env ⟦⟧ (Expr.call [Tp.field, Tp.fie
   subst_vars
   congr 1
 
+lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ (weird_assert_eq.call h![] h![a, b]) (fun _ => a = b) := by
+  enter_decl
+  simp only
+  steps
+  enter_block_as (⟦⟧) (fun _ => ⟦⟧)
+  · enter_decl
+    simp only
+    steps
+  steps
+  simp_all
+
 theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp lp) Ref.State.compress 32}:
     STHoare lp env
         ⟦⟧
@@ -424,11 +601,9 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : Merk
         (fun _ => item ∈ tree) := by
   enter_decl
   simp only
-  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct)]
+  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
   use index.reverse
-  rename ∃_, True => heq
-  simp at heq
-  cases heq
+  subst_vars
   rename tree.root = _ => hroot
   rw [Eq.comm, MerkleTree.recover_eq_root_iff_proof_and_item_correct] at hroot
   exact hroot.2

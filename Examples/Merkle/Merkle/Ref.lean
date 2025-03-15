@@ -1,9 +1,10 @@
 import Merkle.Field
+import Lampe.Data.Field
 
 open Merkle
 namespace Ref
 
-open Lampe (U)
+open Lampe (U Fp)
 
 def RC : Array bnField := #[
     17829420340877239108687448009732280677191990375576158938221412342251481978692,
@@ -28,13 +29,13 @@ def sbox (v : U 8) : U 8 :=
   v ^^^ rotateLeft (rotateLeft v.not 1 &&& rotateLeft v 2 &&& rotateLeft v 3) 1
 
 def bar (a : bnField) : bnField :=
-  let bytes := a.toLeBytes
+  let bytes := Fp.toBytesLE 32 a
   let left := bytes.take 16
   let right := bytes.drop 16
   let new_left := left.map sbox
   let new_right := right.map sbox
   let new_bytes := new_right.append new_left
-  bnField.fromLeBytes new_bytes
+  Fp.ofBytesLE new_bytes.toList
 
 def square (a : bnField) : bnField :=
   a * a * SIGMA

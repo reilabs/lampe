@@ -2,6 +2,7 @@ import Lampe.Ast
 import Lampe.Tp
 import Lampe.Semantics
 import Lampe.Hoare.Total
+import Lampe.Tactic.SL
 
 namespace Lampe
 
@@ -258,7 +259,7 @@ theorem loopNext_intro {lo hi : U s} :
   apply letIn_intro
   all_goals tauto
 
-lemma inv_congr  (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (State p)) {i j hlo hhi} (hEq : i = j):
+lemma inv_congr {h₁ h₂ : α → Prop} (Inv : (i : α) → h₁ i → h₂ i → SLP (State p)) {i j hlo hhi} (hEq : i = j):
     Inv i hlo hhi = Inv j (hEq ▸ hlo) (hEq ▸ hhi) := by
   cases hEq
   rfl
@@ -338,6 +339,52 @@ theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (S
           apply h
           simp [*]
 
+theorem SLP.entails_of_eq [LawfulHeap α] {P Q : SLP α} (h : P = Q) : P ⊢ Q := by
+  cases h
+  apply SLP.entails_self
+
+theorem loop_inv_intro' {lo hi : U s} (hi_lt_max : hi.toNat < 2^s - 1) (Inv : (i : Nat) → (lo.toNat ≤ i) → (i ≤ hi.toNat) → SLP (State p)) {body : U s → Expr (Tp.denote p) tp}:
+    (∀(i:Nat), (hlo: lo.toNat ≤ i) → (hhi: i < hi.toNat) → STHoare p Γ (Inv i hlo (by linarith)) (body i) (fun _ => Inv (i + 1) (by linarith) (by linarith))) →
+    STHoare p Γ (∃∃h, Inv lo.toNat BitVec.le_refl h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi.toNat h BitVec.le_refl) := by
+  intro hinv
+  apply STHoare.ramified_frame_top
+  apply loop_inv_intro fun i _ _ => Inv i.toNat (by rw [←BitVec.le_def]; assumption) (by rw [←BitVec.le_def]; assumption)
+  · intro i hlo hhi
+    have : i = ↑i.toNat := by simp
+    apply consequence
+
+    case h_hoare =>
+      rw [this]
+      apply hinv
+      · rw [←BitVec.le_def]; assumption
+      · rw [←BitVec.lt_def]; assumption
+    · apply SLP.entails_self
+    · intro
+      have : BitVec.toNat (i + 1) = i.toNat + 1 := by
+        simp
+        rw [Nat.mod_eq_of_lt]
+        simp [BitVec.lt_def] at hhi
+        apply Nat.lt_trans (m := hi.toNat + 1) (by linarith)
+        apply Nat.lt_of_lt_of_eq (m := 2^s - 1 + 1) (by linarith)
+        simp
+      apply SLP.star_mono
+      · apply SLP.entails_of_eq
+        apply inv_congr (Inv:=Inv)
+        rw [this]
+      · apply SLP.entails_self
+  · conv => lhs; rw [←SLP.star_true (H := SLP.exists' _)]
+    apply SLP.star_mono
+    · apply SLP.exists_intro_l
+      intro hp
+      apply SLP.exists_intro_r
+      apply SLP.entails_self
+      apply BitVec.le_def.mpr hp
+    · apply SLP.forall_right
+      intro _
+      apply SLP.wand_intro
+      simp
+      apply SLP.ent_star_top
+
 theorem iteTrue_intro :
     STHoare p Γ P mainBody Q →
     STHoare p Γ P (.ite true mainBody elseBody) Q := by
@@ -382,7 +429,7 @@ theorem skip_intro :
 
 theorem lam_intro :
   STHoare p Γ ⟦⟧ (.lam argTps outTp lambdaBody)
-    fun v => ∃∃ (h:v.isLambda), [λ(v.asLambda h) ↦ ⟨argTps, outTp, lambdaBody⟩] := by
+    fun v => ∃∃ (h:v.isLambda), [λ (v.asLambda h) ↦ ⟨argTps, outTp, lambdaBody⟩] := by
   unfold STHoare THoare
   intros H st h
   constructor
@@ -474,11 +521,11 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
 
 theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}
-    {h_fn : ⟨fnName, fn⟩ ∈ Γ.functions}
-    {hkc : fn.generics = kinds}
-    {htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps}
-    {htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp}
-    {h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q} :
+    {h_fn : ⟨fnName, func⟩ ∈ Γ.functions}
+    {hkc : func.generics = kinds}
+    {htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps}
+    {htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp}
+    {h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q} :
     STHoare p Γ H (Expr.call argTps outTp fnRef args) Q := by
   unfold STHoare THoare
   intros
@@ -491,11 +538,11 @@ theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
 theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
     (href : H ⊢  ⟦fnRef = (.trait (some selfTp) traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
-    (h_fn : (fnName, fn) ∈ impls)
-    (hkc : fn.generics = kinds)
-    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
-    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp)
-    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
+    (h_fn : (fnName, func) ∈ impls)
+    (hkc : func.generics = kinds)
+    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
+    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
+    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
     STHoare p Γ H
       (Expr.call argTps outTp fnRef args)
       Q := by
@@ -513,11 +560,11 @@ This is useful when the implementor type must be provided by the user during the
 theorem callTrait'_intro (selfTp : Tp) {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
     (href : H ⊢  ⟦fnRef = (.trait none traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
-    (h_fn : (fnName, fn) ∈ impls)
-    (hkc : fn.generics = kinds)
-    (htci : (fn.body _ (hkc ▸ generics) |>.argTps) = argTps)
-    (htco : (fn.body _ (hkc ▸ generics) |>.outTp) = outTp)
-    (h_hoare: STHoare p Γ H (htco ▸ (fn.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
+    (h_fn : (fnName, func) ∈ impls)
+    (hkc : func.generics = kinds)
+    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
+    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
+    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
     STHoare p Γ H
       (Expr.call argTps outTp fnRef args)
       Q := by

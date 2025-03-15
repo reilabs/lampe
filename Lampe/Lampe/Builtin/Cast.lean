@@ -12,16 +12,20 @@ namespace Lampe.Builtin
    cast := fun a => a
 
  @[simp]
- instance : CastTp (.u s) (.i s) where
-   cast := fun a => a
+ instance : CastTp (.u s₁) (.i s₂) where
+   cast := fun a => a.toNat
+
+ @[simp]
+ instance : CastTp (.i s₁) (.u s₂) where
+   cast := fun a => a.toNat
+
+ @[simp]
+ instance : CastTp (.u s₁) (.u s₂) where
+   cast := fun a => a.toNat
 
  @[simp]
  instance : CastTp (.u s) (.field) where
    cast := fun a => a.toNat
-
- @[simp]
- instance : CastTp (.i s) (.u s) where
-   cast := fun a => a
 
  @[simp]
  instance : CastTp (.i s) (.field) where
