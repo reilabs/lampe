@@ -174,61 +174,33 @@ lemma ZMod.div2_on_vals (v : Lampe.Fp lp) :
     v.val / 2 = match v.val % 2 with
     | 0 => (v / 2).val
     | _ => ((v - 1) / 2).val := by
-  have two_unit := ZMod.inv_mul_of_unit 2 (ZMod.isUnit_iff_coprime 2 lp.natVal |>.mpr (by decide))
-  cases h : v.val % 2 with
-  | zero =>
-    simp only
-    have is_even : ∃ k, v.val = 2 * k := Nat.dvd_of_mod_eq_zero h
-    rcases is_even with ⟨k, hk⟩
-    rw [hk, Nat.mul_div_right]
-    · rw [← ZMod.cast_id _ v, ZMod.cast_eq_val, hk, Nat.cast_mul]
-      simp only [Nat.cast_ofNat]; ring_nf
-      rw [mul_assoc, two_unit]
-      have : v.val < lp.natVal := by simp [ZMod.val_lt]
-      have : k < lp.natVal := by omega
-      simp only [mul_one, ZMod.val_natCast, Nat.mod_eq_of_lt this]
-    · apply Nat.zero_lt_succ
-  | succ n =>
-    simp only
-    have is_odd : ∃ k, v.val = 2 * k + 1 := by
-      have : v.val.pred % 2 = 0 := by
-        have := Nat.mod_two_eq_zero_or_one v.val
-        cases this with
-        | inl hzero =>
-          rw [hzero] at h; simp at h
-        | inr hone =>
-          have sum_eq_one := Nat.mod_two_add_succ_mod_two v.val
-          rw [hone] at sum_eq_one; simp at sum_eq_one
-          have plus_two := Nat.add_mod_left 2 v.val.pred
-          nth_rewrite 1 [Nat.pred_eq_sub_one] at plus_two
-          have add_sub_assoc := Nat.add_sub_assoc (k := 1) (m := v.val) (by omega) 2
-          simp only [Nat.succ_add_sub_one] at add_sub_assoc
-          rw [←add_sub_assoc, add_comm] at plus_two
-          rw [←plus_two, sum_eq_one]
-      have := Nat.dvd_of_mod_eq_zero this
-      rcases this with ⟨k, hk⟩
-      use k
-      change v.val = (2 * k).succ
-      rw [←hk, Nat.succ_pred]
-      intro hzero; rw [hzero] at h; simp at h
-    rcases is_odd with ⟨k, hk⟩
-    rw [hk, Nat.add_div, Nat.mul_div_right]
-    simp
-    · rw [←ZMod.cast_id _ (v - 1), ZMod.cast_eq_val, ZMod.val_sub, hk, Nat.cast_sub, Nat.cast_add,
-    Nat.cast_mul]
-      · simp; ring_nf
-        rw [mul_assoc, two_unit, mul_one]
-        have : v.val < lp.natVal := by simp [ZMod.val_lt]
-        have : k < lp.natVal := by omega
-        simp only [mul_one, ZMod.val_natCast, Nat.mod_eq_of_lt this]
-      · change 1 ≤ 2 * k + 1
-        omega
-      · change 1 ≤ v.val
-        simp only [Nat.one_le_iff_ne_zero, ne_eq, ZMod.val_eq_zero]
-        intro h; rw [h] at hk; simp at hk
-    · decide
-    · decide
 
+  have two_unit := ZMod.inv_mul_of_unit 2 (ZMod.isUnit_iff_coprime 2 lp.natVal |>.mpr (by decide))
+  have vVal_decomp := Nat.div_add_mod v.val 2
+  have v_decomp : v = 2 * ↑(v.val / 2) + ↑(v.val % 2) := by
+    apply Fp.eq_of_val_eq
+    rw [ZMod.val_add, ZMod.val_mul, ZMod.val_natCast, ZMod.val_natCast]
+    conv in v.val / 2 % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.div_le_self _ _) v.prop)]
+    conv in ZMod.val 2 => whnf
+    conv in 2 * _ % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.mul_div_le _ _) v.prop)]
+    conv in v.val % _ % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.mod_le _ _) v.prop)]
+    rw [vVal_decomp, Nat.mod_eq_of_lt]
+    exact v.prop
+
+  split <;> {
+    rename_i h
+    try simp only [imp_false, Nat.mod_two_not_eq_zero] at h
+    rw [←vVal_decomp]
+    conv => rhs; rw [v_decomp]
+    rw [h]
+    ring_nf
+    rw [mul_assoc, two_unit]
+    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, mul_div_cancel_right₀, mul_one]
+    rewrite [ZMod.val_natCast, Nat.mod_eq_of_lt]
+    · omega
+    · simp only [ZMod.val, Prime.natVal]
+      omega
+  }
 
 @[simp]
 lemma Fp.cast_u {s P} {v : Fp P} : (v.cast : U s) = BitVec.ofNat s (v.val) := by rfl
@@ -273,8 +245,6 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ (to_le_bits.call h![] h
           steps
           casesm* ∃_,_
           subst_vars
-
-          -- simp [this] at *
           rename 0#1 = _ => h
           simp [*] at *
           rw [BitVec.ofNat_1_eq_0_iff] at h
