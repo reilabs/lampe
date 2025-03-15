@@ -170,7 +170,18 @@ where
     curr_h
 }
 
+unconstrained fn weird_eq_witness(a : Field, b : Field) -> Field {
+    a
+}
+
+// This is pointless, but demonstrated how we can use unconstrained functions
+fn weird_assert_eq(a : Field, b : Field) {
+    let wit = unsafe { weird_eq_witness(a, b) };
+    assert(wit == a);
+    assert(wit == b);
+}
+
 fn main(root: pub Field, proof: pub [Field; 32], item: pub Field, idx: [bool; 32]) {
     let calculated_root = mtree_recover::<Skyscraper, _>(idx, proof, item);
-    assert(root == calculated_root);
+    weird_assert_eq(root, calculated_root);
 }

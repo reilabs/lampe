@@ -29,7 +29,7 @@ use noirc_frontend::{
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
-        function::{FuncMeta, Parameters},
+        function::Parameters,
         stmt::{HirLValue, HirPattern, HirStatement},
         traits::{NamedType, TraitImpl},
     },
@@ -47,7 +47,7 @@ use noirc_frontend::{
 
 use crate::{
     error::emit::{Error, Result},
-    lean::{builtin::BuiltinName, indent::Indenter, syntax::expr::format_builtin_call},
+    lean::{indent::Indenter, syntax::expr::format_builtin_call},
     noir::project::KnownFiles,
 };
 
@@ -926,7 +926,7 @@ impl LeanEmitter {
         let out_ty = self.id_bound_type(expr);
         let out_ty_str = self.emit_fully_qualified_type(&out_ty, ctx);
         let expression = match expr_data {
-            HirExpression::Block(block) => {
+            HirExpression::Block(block) | HirExpression::Unsafe(block) => {
                 let statements: Vec<String> = block
                     .statements
                     .iter()
@@ -1396,7 +1396,6 @@ impl LeanEmitter {
             HirExpression::Error => {
                 panic!("Encountered error expression where none should exist")
             }
-            HirExpression::Unsafe(..) => panic!("Unsafe expressions not supported yet"),
         };
 
         Ok(expression)

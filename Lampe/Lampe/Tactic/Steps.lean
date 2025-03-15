@@ -93,6 +93,7 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.uEq => return some (←``(genericTotalPureBuiltin_intro Builtin.uEq rfl), true)
 
         | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro), false)
+        | ``Lampe.Builtin.uMul => return some (←``(uMul_intro), false)
 
         | ``Lampe.Builtin.mkArray => return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray rfl), true)
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)
@@ -315,9 +316,9 @@ lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P �
   intro h
   simp_all [STHoare, THoare, SLP.pure_star_iff_and]
 
-syntax "loop_inv" term : tactic
-elab "loop_inv" inv:term : tactic => do
-  let goals ← steps (← getMainGoal) 1 [←``(loop_inv_intro $inv)]
+elab "loop_inv" p:optional("nat") inv:term : tactic => do
+  let solver ← if p.isSome then ``(loop_inv_intro' _ $inv) else ``(loop_inv_intro $inv)
+  let goals ← steps (← getMainGoal) 1 [solver]
   replaceMainGoal goals
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}

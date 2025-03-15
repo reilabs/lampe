@@ -82,7 +82,7 @@ def genericTotalPureBuiltin_intro {A : Type} {sgn : A → List Tp × Tp} {desc}
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
- theorem uMul_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
+ theorem uMul_intro : STHoarePureBuiltin p Γ Builtin.uMul (by tauto) h![a, b] := by
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 

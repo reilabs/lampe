@@ -364,6 +364,9 @@ partial def solveEntailment (goal : MVarId): TacticM SLGoals := withTraceNode `L
   | SLTerm.mvar _ =>
     let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_self)
     return SLGoals.mk [] impls
+  | SLTerm.top =>
+    let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_top)
+    return SLGoals.mk [] impls
   | SLTerm.star _ l r =>
     -- [TODO] left can be mvar – should be rotated back
     if r.isMVar then
