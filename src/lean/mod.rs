@@ -8,18 +8,14 @@ mod syntax;
 use std::{
     collections::{HashMap, HashSet},
     ops::Deref,
+    path::PathBuf,
 };
 
 use context::EmitterCtx;
 use fm::FileId;
 use itertools::Itertools;
 use noirc_frontend::{
-    Kind,
-    ResolvedGeneric,
-    StructField,
-    Type,
-    TypeBinding,
-    TypeBindings,
+    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
@@ -34,14 +30,7 @@ use noirc_frontend::{
         traits::{NamedType, TraitImpl},
     },
     node_interner::{
-        DefinitionKind,
-        ExprId,
-        FuncId,
-        GlobalId,
-        StmtId,
-        StructId,
-        TraitId,
-        TypeAliasId,
+        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
 };
 
@@ -98,7 +87,7 @@ impl ToString for EmitOutput {
 pub struct ModuleEntries {
     pub impl_refs: HashSet<String>,
     pub func_refs: HashSet<String>,
-    pub defs:      Vec<EmitOutput>,
+    pub defs: Vec<EmitOutput>,
 }
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
@@ -118,6 +107,11 @@ pub struct LeanEmitter {
 
     /// The identifier for the root crate in the Noir compilation context.
     root_crate: CrateId,
+}
+
+pub struct EmitResult {
+    pub file_path: PathBuf,
+    pub output: String,
 }
 
 impl LeanEmitter {
@@ -146,7 +140,7 @@ impl LeanEmitter {
     /// Checks if the emitter knows about the file with the given ID, returning
     /// `true` if it does and `false` otherwise.
     pub fn knows_file(&self, file: FileId) -> bool {
-        self.known_files.contains(&file)
+        self.known_files.iter().map(|(id, _path)| id).contains(&file)
     }
 
     /// Gets the identifier of the root crate for this compilation context.
@@ -155,7 +149,20 @@ impl LeanEmitter {
     }
 }
 
+fn make_emitted_path(path: PathBuf) -> PathBuf {
+    path.with_extension("lean") // TODO: Make this point to the right location
+}
+
 impl LeanEmitter {
+    pub fn emit_all(&self) -> Result<Vec<EmitResult>> {
+        let mut results = Vec::new();
+        for known_file in self.known_files.iter() {
+            results.push(self.emit_file(known_file)?);
+        }
+
+        Ok(results)
+    }
+
     /// Emits a set of Lean definitions that correspond to the Noir language
     /// definitions seen by this emitter.
     ///
@@ -167,7 +174,7 @@ impl LeanEmitter {
     ///
     /// When encountering a situation that would occur due to a bug in the Noir
     /// compiler, or due to programmer error.
-    pub fn emit(&self) -> Result<String> {
+    pub fn emit_file(&self, known_file: &(FileId, PathBuf)) -> Result<EmitResult> {
         let mut indenter = Indenter::default();
         let mut output = Vec::new();
         let mut all_impl_refs = HashSet::new();
@@ -180,6 +187,9 @@ impl LeanEmitter {
             .def_map(&self.root_crate())
             .expect("Root crate was missing in compilation context")
             .modules()
+            .iter()
+            .filter(|(_idx, m)| m.location.file == known_file.0)
+            .map(|(_idx, m)| m)
         {
             let ModuleEntries {
                 impl_refs,
@@ -209,14 +219,17 @@ impl LeanEmitter {
             .map(|d| d.to_string())
             .join("\n");
 
-        let env_funcs = all_func_refs
-            .into_iter()
-            .join(", ");
+        let env_funcs = all_func_refs.into_iter().join(", ");
         let env_traits = all_impl_refs.into_iter().join(", ");
         let env_def = format!("def env := Lampe.Env.mk [{env_funcs}] [{env_traits}]");
 
         // Smoosh the de-duplicated entries back together to yield a file.
-        Ok(format!("{module_defs}\n\n{env_def}"))
+        let file_output = format!("{module_defs}\n\n{env_def}");
+
+        Ok(EmitResult {
+            file_path: make_emitted_path(known_file.1.clone()),
+            output: file_output,
+        })
     }
 
     /// Emits the Lean source code corresponding to a Noir module based on the
@@ -270,7 +283,8 @@ impl LeanEmitter {
                 ModuleDefId::TypeId(id) => EmitOutput::Struct(self.emit_struct_def(ind, id, &ctx)?),
                 ModuleDefId::TypeAliasId(id) => EmitOutput::Alias(self.emit_alias(id, &ctx)?),
                 ModuleDefId::ModuleId(_) => {
-                    unimplemented!("It is unclear what actually generates these.")
+                    println!("something happened"); // TODO: Figure out if I have to deal with this
+                    continue;
                 }
                 // Skip the trait definitions.
                 ModuleDefId::TraitId(_) => continue,
@@ -889,12 +903,12 @@ impl LeanEmitter {
                         .iter()
                         .map(|t| self.substitute_bindings(t, bindings))
                         .collect(),
-                    named:   generics
+                    named: generics
                         .named
                         .iter()
                         .map(|t| NamedType {
                             name: t.name.clone(),
-                            typ:  self.substitute_bindings(&t.typ, bindings),
+                            typ: self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
                 })
@@ -1171,7 +1185,7 @@ impl LeanEmitter {
                                     _ => name.to_string(),
                                 };
                                 let func_module_id = ModuleId {
-                                    krate:    func_meta.source_crate,
+                                    krate: func_meta.source_crate,
                                     local_id: func_meta.source_module,
                                 };
                                 let fq_mod_name = self.fq_module_name_from_mod_id(func_module_id);
@@ -1340,25 +1354,24 @@ impl LeanEmitter {
                 // Divide the parameters into simple and complex parameters, where simple
                 // parameters are parameters that can be expressed as a single let or let mut
                 // binding.
-                let (simple_params, complex_params): (Vec<_>, Vec<_>) = lambda
-                    .parameters
-                    .iter()
-                    .enumerate()
-                    .partition_map(|(param_idx, (pat, param_typ))| {
-                        let rhs = self.emit_fully_qualified_type(param_typ, ctx);
-                        if let Some((_, lhs)) =
-                            pattern::try_format_simple_pattern(pat, "", self, ctx)
-                        {
-                            // If the parameter is simple, we can directly use the ident as the lhs.
-                            let lhs = self.context.def_interner.definition_name(lhs.id);
-                            itertools::Either::Left(format!("{lhs} : {rhs}"))
-                        } else {
-                            // If the parameter is complex, we need to generate a fresh binding for
-                            // it.
-                            let lhs = format!("π{param_idx}");
-                            itertools::Either::Right((pat.clone(), lhs, rhs))
-                        }
-                    });
+                let (simple_params, complex_params): (Vec<_>, Vec<_>) =
+                    lambda.parameters.iter().enumerate().partition_map(
+                        |(param_idx, (pat, param_typ))| {
+                            let rhs = self.emit_fully_qualified_type(param_typ, ctx);
+                            if let Some((_, lhs)) =
+                                pattern::try_format_simple_pattern(pat, "", self, ctx)
+                            {
+                                // If the parameter is simple, we can directly use the ident as the lhs.
+                                let lhs = self.context.def_interner.definition_name(lhs.id);
+                                itertools::Either::Left(format!("{lhs} : {rhs}"))
+                            } else {
+                                // If the parameter is complex, we need to generate a fresh binding for
+                                // it.
+                                let lhs = format!("π{param_idx}");
+                                itertools::Either::Right((pat.clone(), lhs, rhs))
+                            }
+                        },
+                    );
                 // Convert the parameters into strings.
                 let params_str = complex_params
                     .iter()

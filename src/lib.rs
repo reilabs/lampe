@@ -17,6 +17,8 @@ pub mod error;
 pub mod lean;
 pub mod noir;
 
+use lean::EmitResult;
+
 /// The result type for use with the library, exported here for easy access.
 pub use crate::error::Result;
 /// The project type for use with the library, exported here for easy access.
@@ -30,10 +32,10 @@ pub use crate::noir::source::Source;
 /// # Errors
 ///
 /// If the extraction process fails for any reason.
-pub fn noir_to_lean(project: Project) -> Result<noir::WithWarnings<String>> {
+pub fn noir_to_lean(project: Project) -> Result<noir::WithWarnings<Vec<EmitResult>>> {
     let lean_emitter = project.compile()?;
-    let source = lean_emitter.emit()?;
-    Ok(noir::WithWarnings::new(source, lean_emitter.warnings))
+    let sources = lean_emitter.emit_all()?;
+    Ok(noir::WithWarnings::new(sources, lean_emitter.warnings))
 }
 
 #[cfg(test)]
@@ -45,20 +47,21 @@ mod test {
         noir_to_lean,
     };
 
-    fn extract_str(source: &str) -> anyhow::Result<String> {
+    fn extract_str_one_file(source: &str) -> anyhow::Result<String> {
         // Set up our source code
         let file_name = Path::new("main.nr");
         let source = Source::new(file_name, source);
         // Create our project
         let project = Project::new(Path::new(""), source);
         // Execute the compilation step on our project.
-        let output = noir_to_lean(project)?.take();
+        let output = noir_to_lean(project)?.take()[0].output.clone();
+
         Ok(output)
     }
 
     /// Runs the extraction on `source` and prints the result to the std output.
     fn print_result(source: &str) -> anyhow::Result<()> {
-        let output = extract_str(source)?;
+        let output = extract_str_one_file(source)?;
         println!("{output}");
         Ok(())
     }
@@ -293,7 +296,7 @@ mod test {
                 fn hash(a: F, b: F) -> F;
             }
 
-            pub fn mtree_recover<H, let N : u32>(idx: [bool; N], p: [Field; N], item: Field) -> Field
+            pub fn mtree_recover<H, let N : u32>(idx: [bool; N], p: [Field; N], item: Field)
             where H: BinaryHasher<Field>
             {
                 let mut curr_h = item;

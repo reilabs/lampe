@@ -10,11 +10,14 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Errors for handling files when interacting with the Noir compiler driver.
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Could not read file at {_0:?}")]
+    #[error("File does not exist at at {_0:?}")]
     MissingFile(PathBuf),
 
     #[error("Could not write to file at {_0:?}")]
     WritingError(PathBuf),
+
+    #[error("Could not read from file at {_0:?}")]
+    ReadingError(PathBuf),
 
     #[error("File at {_0:?} already exists in the project")]
     DuplicateFile(PathBuf),

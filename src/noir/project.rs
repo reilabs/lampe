@@ -7,7 +7,7 @@ use std::{
 
 use fm::{FileId, FileManager};
 use nargo::parse_all;
-use noirc_driver::{check_crate, file_manager_with_stdlib, prepare_crate, CompileOptions};
+use noirc_driver::{CompileOptions, check_crate, file_manager_with_stdlib, prepare_crate};
 use noirc_frontend::hir::Context;
 
 use crate::{
@@ -16,11 +16,11 @@ use crate::{
         file::{Error as FileError, Result as FileResult},
     },
     lean::LeanEmitter,
-    noir::{source::Source, WithWarnings},
+    noir::{WithWarnings, source::Source},
 };
 
 /// A type for file identifiers that are known to the extraction process.
-pub type KnownFiles = HashSet<FileId>;
+pub type KnownFiles = HashSet<(FileId, PathBuf)>;
 
 /// A manager for source files for the Noir project that we intend to extract.
 #[derive(Clone, Debug)]
@@ -54,7 +54,7 @@ impl Project {
         let mut project = Self {
             manager,
             project_root,
-            root_file_name,
+            root_file_name: root_file_name.clone(),
             known_files: file_ids,
         };
 
@@ -73,12 +73,13 @@ impl Project {
     /// - [`FileError::DuplicateFile`] if the provided file already exists in
     ///   the project.
     pub fn add_source(&mut self, source: Source) -> FileResult<()> {
+        let file_path = source.name.clone();
         let file_id = self
             .manager
-            .add_file_with_source(source.name.as_path(), source.contents)
+            .add_file_with_source(file_path.as_path(), source.contents)
             .ok_or(FileError::DuplicateFile(source.name))?;
 
-        self.known_files.insert(file_id);
+        self.known_files.insert((file_id, file_path));
 
         Ok(())
     }
@@ -103,6 +104,10 @@ impl Project {
         self.root_file_name.as_path()
     }
 
+    pub fn project_root(&self) -> &Path {
+        self.project_root.as_path()
+    }
+
     /// Takes the project definition and performs compilation of that project to
     /// the Noir intermediate representation for further analysis and the
     /// emission of Lean code.
@@ -125,19 +130,16 @@ impl Project {
         // Then we build our compilation context
         let mut context = Context::new(manager, parsed_files);
         context.activate_lsp_mode();
+
         let root_crate = prepare_crate(&mut context, &self.project_root.join(root_path).as_path());
 
         // Perform compilation to check the code within it.
-        let ((), warnings) = check_crate(
-            &mut context,
-            root_crate,
-            &CompileOptions {
-                deny_warnings: false,
-                disable_macros: false,
-                debug_comptime_in_file: None,
-                ..Default::default()
-            },
-        )
+        let ((), warnings) = check_crate(&mut context, root_crate, &CompileOptions {
+            deny_warnings: false,
+            disable_macros: false,
+            debug_comptime_in_file: None,
+            ..Default::default()
+        })
         .map_err(|diagnostics| CompileError::CheckFailure { diagnostics })?;
 
         Ok(WithWarnings::new(
