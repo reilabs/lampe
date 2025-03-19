@@ -9,10 +9,10 @@
 
 #![warn(clippy::all, clippy::cargo, clippy::pedantic)]
 
-use std::{fs::OpenOptions, io::Write, path::PathBuf, process::ExitCode};
-
+use std::{fs, fs::OpenOptions, io::Write, panic, path::PathBuf, process::ExitCode};
 use clap::{Parser, arg};
 use lampe::{Project, Result, noir::source::Source, noir_to_lean};
+use lampe::error::Error;
 
 /// The default Noir project path for the CLI to extract from.
 const DEFAULT_NOIR_PROJECT_PATH: &str = "";
@@ -41,6 +41,10 @@ pub struct ProgramOptions {
     /// The file to output the generated Lean sources to.
     #[arg(long, value_name = "FILE", default_value = DEFAULT_OUT_FILE_NAME)]
     pub out_file: PathBuf,
+
+    /// Testing mode?
+    #[arg(long)]
+    pub test_mode: bool,
 }
 
 /// The main function for the CLI utility, responsible for parsing program
@@ -48,10 +52,50 @@ pub struct ProgramOptions {
 fn main() -> ExitCode {
     // Parse args and hand-off immediately.
     let args = ProgramOptions::parse();
-    run(&args).unwrap_or_else(|err| {
-        eprintln!("Error Encountered: {err}");
-        ExitCode::FAILURE
-    })
+    if args.test_mode {
+        run_test_mode(&args).unwrap_or_else(|err| {
+            eprintln!("Error Encountered: {err}");
+            ExitCode::FAILURE
+        })
+    } else {
+        run(&args).unwrap_or_else(|err| {
+            eprintln!("Error Encountered: {err}");
+            ExitCode::FAILURE
+        })
+    }
+}
+
+pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode> {
+    let list = fs::read_dir(&args.root).unwrap();
+    for entry in list {
+        let entry = entry.unwrap();
+        if !entry.metadata().unwrap().is_dir() {
+            continue;
+        }
+
+        let source = Source::read(entry.path(), "src/main.nr")?;
+        let project = Project::new(entry.path(), source);
+        let emit_result = panic::catch_unwind(|| noir_to_lean(project));
+
+        match emit_result {
+            Err(panic) => {
+                println!("🔴 Panic {}", entry.path().to_str().unwrap_or(""));
+            }
+            Ok(Err(Error::Emit(err))) => {
+                println!("🔴 Emit {} {:?}", entry.path().to_str().unwrap_or(""), err);
+            }
+            Ok(Err(Error::Compile(_))) => {
+                println!("🟡 Compile {}", entry.path().to_str().unwrap_or(""));
+            }
+            Ok(Err(Error::File(_))) => {
+                println!("🟡 File {}", entry.path().to_str().unwrap_or(""));
+            }
+            Ok(Ok(_)) => {
+                println!("🟢 {}", entry.path().to_str().unwrap_or(""));
+            }
+        }
+    }
+    Ok(ExitCode::SUCCESS)
 }
 
 /// The main execution of the CLI utility. Should be called directly from the

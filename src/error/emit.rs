@@ -16,4 +16,7 @@ pub enum Error {
 
     #[error("Global is not extracted as a let statement")]
     GlobalStatementNotLet,
+
+    #[error("Unsupported feature {_0}")]
+    UnsupportedFeature(String),
 }
