@@ -12,8 +12,6 @@ lemma List.replicate_cons (hl : x :: xs = List.replicate n a) : xs = List.replic
   unfold List.replicate at hl
   cases xs <;> aesop
 
-namespace Lampe
-
 @[reducible]
 def HList.toList (l : HList rep tps) (_ : tps = List.replicate n tp) : List (rep tp) := match l with
 | .nil => []
@@ -21,7 +19,17 @@ def HList.toList (l : HList rep tps) (_ : tps = List.replicate n tp) : List (rep
   | [] => []
   | _ :: _ => ((List.replicate_head (by tauto)) ▸ x) :: (HList.toList xs (List.replicate_cons (by tauto)))
 
-lemma HList.toList_cons :
+@[reducible, simp]
+def HList.head (l : HList rep (tp :: tps)) : rep tp := match l with
+| .cons x _ => x
+
+@[reducible, simp]
+def HList.tail (l : HList rep (tp :: tps)) : HList rep tps := match l with
+| .cons _ xs => xs
+
+namespace Lampe
+
+lemma HList.toList_cons {head}:
     HList.toList (n := n + 1) (HList.cons head rem) h₁ = head :: (HList.toList (n := n) rem h₂) := by
   rfl
 
@@ -45,51 +53,62 @@ def HList.toTuple (hList : HList (Tp.denote p) tps) (name : Option String) : Tp.
 | .nil => ()
 | .cons arg args => ⟨arg, HList.toTuple args name⟩
 
-abbrev Builtin.Omni := ∀(P:Prime),
+abbrev Builtin.Omni (argTps : List Tp) (outTp : Tp) := ∀(P:Prime),
     ValHeap P →
-    (argTps : List Tp) →
-    (outTp : Tp) →
     HList (Tp.denote P) argTps →
     (Option (ValHeap P × Tp.denote P outTp) → Prop) →
     Prop
 
-def Builtin.omni_conseq (omni : Builtin.Omni) : Prop :=
-  ∀ {P st argTps outTp args Q Q'},
-  omni P st argTps outTp args Q → (∀ r, Q r → Q' r) → omni P st argTps outTp args Q'
+def Builtin.omni_conseq {argTps outTp} (omni : Builtin.Omni argTps outTp) : Prop :=
+  ∀ {P st args Q Q'},
+  omni P st args Q → (∀ r, Q r → Q' r) → omni P st args Q'
 
-def Builtin.omni_frame (omni : Builtin.Omni) : Prop :=
-  ∀ {P st₁ st₂ argTps outTp args Q},
-  omni P st₁ argTps outTp args Q →
+def Builtin.omni_frame {argTps outTp} (omni : Builtin.Omni argTps outTp) : Prop :=
+  ∀ {P st₁ st₂ args Q},
+  omni P st₁ args Q →
   st₁.Disjoint st₂ →
-  omni P (st₁ ∪ st₂) argTps outTp args (fun r => match r with
+  omni P (st₁ ∪ st₂) args (fun r => match r with
     | some (st, v) => ((fun st => Q (some (st, v))) ⋆ (fun st => st = st₂)) st
     | none => Q none
   )
 
-structure Builtin where
-  omni : Builtin.Omni
+def ExecuteWithHints (argTps : List Tp) (outTp : Tp) : Type := ∀(P:Prime),
+    List (AnyValue P) →
+    ValHeap P →
+    HList (Tp.denote P) argTps →
+    Option (List (AnyValue P) × Option (ValHeap P × Tp.denote P outTp))
+
+def execution_reachable {argTps outTp} (omni : Builtin.Omni argTps outTp) (exe : ExecuteWithHints argTps outTp) : Prop :=
+  ∀ {P hints st args}, match exe P hints st args with
+    | some (_, st') => ¬omni P st args (fun r => r ≠ st')
+    | none => True
+
+structure Builtin (argTps : List Tp) (outTp : Tp) where
+  omni : Builtin.Omni argTps outTp
   conseq : Builtin.omni_conseq omni
   frame : Builtin.omni_frame omni
+  exe : ExecuteWithHints argTps outTp
+  reachable : execution_reachable omni exe
 
 end Lampe
 
 namespace Lampe.Builtin
 
-inductive genericPureOmni {A : Type}
-  (sgn : A → List Tp × Tp)
-  (desc : {p : Prime}
-    → (a : A)
-    → (args : HList (Tp.denote p) (sgn a).fst)
-    → (h : Prop) × (h → (Tp.denote p (sgn a).snd)))
-   : Omni where
-  | ok {p st a args Q}:
-    (h : (desc a args).fst)
-      → Q (some (st, (desc a args).snd h))
-      → (genericPureOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
-  | err {p st a args Q}:
-    ¬((desc a args).fst)
+inductive genericPureOmni
+  (argTps : List Tp)
+  (outTp : Tp)
+  (pred : {p : Prime} → HList (Tp.denote p) argTps → Prop)
+  (decidablePred : {p : Prime} → (as : HList (Tp.denote p) argTps) → Decidable (pred as))
+  (desc : {p : Prime} → (args : HList (Tp.denote p) argTps) → pred args → Tp.denote p outTp)
+   : Omni argTps outTp where
+  | ok {p st args Q}:
+    (h : pred args)
+      → Q (some (st, desc args h))
+      → (genericPureOmni argTps outTp pred decidablePred desc) p st args Q
+  | err {p st args Q}:
+    ¬(pred args)
       → Q none
-      → (genericPureOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
+      → (genericPureOmni argTps outTp pred decidablePred desc) p st args Q
 
 /--
 A generic pure deterministic `Builtin` definition.
@@ -102,13 +121,13 @@ and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote 
 If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc a args).snd`.
 Otherwise, it evaluates to `none`.
 -/
-def newGenericPureBuiltin {A : Type}
-  (sgn : A → List Tp × Tp)
-  (desc : {p : Prime}
-    → (a : A)
-    → (args : HList (Tp.denote p) (sgn a).fst)
-    → (h : Prop) × (h → (Tp.denote p (sgn a).snd))) : Builtin := {
-  omni := genericPureOmni sgn desc
+def newGenericPureBuiltin
+  (argTps : List Tp)
+  (outTp : Tp)
+  (pred : {p : Prime} → HList (Tp.denote p) argTps → Prop)
+  [decidablePred: ∀{p}, ∀(as : HList (Tp.denote p) argTps), Decidable (pred as)]
+  (desc : {p : Prime} → (args : HList (Tp.denote p) argTps) → pred args → Tp.denote p outTp) : Builtin argTps outTp := {
+  omni := genericPureOmni argTps outTp pred decidablePred desc
   conseq := by
     unfold omni_conseq
     intros
@@ -122,14 +141,30 @@ def newGenericPureBuiltin {A : Type}
     . constructor
       . constructor <;> tauto
     . apply genericPureOmni.err <;> assumption
+  exe := fun P hints st args => some $ match decidablePred args with
+    | isTrue h => (hints, st, desc args h)
+    | isFalse _ => (hints, none)
+
+  reachable := by
+    unfold execution_reachable
+    intro _ _ _ args
+    intro h
+    cases h
+    · rename_i hpred hok
+      have : decidablePred args = isTrue hpred := by
+        cases decidablePred args <;> tauto
+      simp_all
+    · rename_i hpred herr
+      have : decidablePred args = isFalse hpred := by
+        cases decidablePred args <;> tauto
+      simp_all
 }
 
-def newGenericTotalPureBuiltin {A : Type}
-  (sgn : A → List Tp × Tp)
-  (desc : {p : Prime}
-    → (a : A)
-    → (args : HList (Tp.denote p) (sgn a).fst)
-    → (Tp.denote p (sgn a).snd)) : Builtin := newGenericPureBuiltin sgn (fun a args => ⟨True, fun _ => desc a args⟩)
+def newGenericTotalPureBuiltin
+  (argTps : List Tp)
+  (outTp : Tp)
+  (desc : {p : Prime} → HList (Tp.denote p) argTps → Tp.denote p outTp) : Builtin argTps outTp :=
+  newGenericPureBuiltin argTps outTp (fun _ => True) (fun args _ => desc args)
 
 /--
 A pure deterministic `Builtin` definition.
@@ -142,42 +177,26 @@ and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote 
 If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc args).snd`.
 Otherwise, it evaluates to `none`.
 -/
-def newPureBuiltin
-  (sgn : List Tp × Tp)
-  (desc : {p : Prime}
-    → (args : HList (Tp.denote p) sgn.fst)
-    → (h : Prop) × (h → (Tp.denote p sgn.snd))) :=
-    newGenericPureBuiltin
-      (fun (_ : Unit) => sgn)
-      (fun _ args => desc args)
+def newPureBuiltin := newGenericPureBuiltin
 
-def newTotalPureBuiltin
-  (sgn : List Tp × Tp)
-  (desc : {p : Prime}
-    → (args : HList (Tp.denote p) sgn.fst)
-    → (Tp.denote p sgn.snd)) :=
-    newGenericTotalPureBuiltin
-      (fun (_ : Unit) => sgn)
-      (fun _ args => desc args)
+def newTotalPureBuiltin := newGenericTotalPureBuiltin
 
 /--
 Defines the assertion builtin that takes a boolean. We assume the following:
 - If `a == true`, it evaluates to `()`.
 - Else, an exception is thrown.
 -/
-def assert := newPureBuiltin
-  ⟨[.bool], .unit⟩
-  (fun h![a] => ⟨a == true,
-    fun _ => ()⟩)
+def assert := newPureBuiltin [.bool] .unit (fun h => h.head) (fun _ _ => ())
 
-inductive freshOmni : Omni where
-| mk {P st tp Q} : (∀ v, Q (some (st, v))) → freshOmni P st [] tp h![] Q
+
+inductive freshOmni (out : Tp) : Omni [] out where
+| mk {P st Q} : (∀ v, Q (some (st, v))) → freshOmni out P st h![] Q
 
 /--
 Corresponds to an unconstrained function call
 -/
-def fresh : Builtin := {
-  omni := freshOmni
+def fresh (out : Tp) : Builtin [] out := {
+  omni := freshOmni out
   conseq := by
     unfold omni_conseq
     intros
@@ -191,6 +210,22 @@ def fresh : Builtin := {
     intro
     repeat apply Exists.intro
     tauto
+  exe := fun P hints st args => match hints with
+  | [] => none
+  | (⟨tp, v⟩ :: hs) => if h:tp = out then some (hs, some (st, h▸v)) else none
+  reachable := by
+    simp [execution_reachable]
+    intro _ hints _ args
+    cases hints
+    · simp
+    · rename_i h _
+      cases h
+      simp only
+      split
+      · intro h
+        cases h
+        simp_all
+      · trivial
 }
 
 end Lampe.Builtin

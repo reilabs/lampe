@@ -9,10 +9,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of bit size `s`.
 -/
-def uAdd := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
-  (fun s h![a, b] => ⟨(a.toInt + b.toInt) < 2^s,
-    fun _ => a + b⟩)
+def uAdd s := newGenericPureBuiltin [.u s, .u s] (.u s)
+  (fun h![a, b] => a.toInt + b.toInt < 2^s)
+  (decidablePred := fun h![_, _] => inferInstance)
+  (fun h![a, b] _ => a + b)
 
 /--
 Defines the multiplication of two `s`-bit uints: `(a b : U s)`.
@@ -22,10 +22,10 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of bit size `s`.
 -/
-def uMul := newGenericPureBuiltin
-  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
-  (fun s h![a, b] => ⟨(a.toInt * b.toInt) < 2^s,
-    fun _ => a * b⟩)
+def uMul s := newGenericPureBuiltin [.u s, .u s] (.u s)
+  (fun h![a, b] => a.toInt * b.toInt < 2^s)
+  (decidablePred := fun h![_, _] => inferInstance)
+  (fun h![a, b] _ => a * b)
 
 /--
 Defines the subtraction of two `s`-bit uints: `(a b : U s)`.
