@@ -10,9 +10,15 @@
 #![warn(clippy::all, clippy::cargo, clippy::pedantic)]
 
 use std::{fs, fs::OpenOptions, io::Write, panic, path::PathBuf, process::ExitCode};
+
 use clap::{Parser, arg};
-use lampe::{Project, Result, noir::source::Source, noir_to_lean};
-use lampe::error::Error;
+use lampe::{
+    Project,
+    Result,
+    error::{Error, emit},
+    noir::source::Source,
+    noir_to_lean,
+};
 
 /// The default Noir project path for the CLI to extract from.
 const DEFAULT_NOIR_PROJECT_PATH: &str = "";
@@ -79,19 +85,40 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode> {
 
         match emit_result {
             Err(panic) => {
-                println!("🔴 Panic {}", entry.path().to_str().unwrap_or(""));
+                println!(
+                    "🔴 Panic         {}\t{}",
+                    entry.path().to_str().unwrap_or(""),
+                    panic
+                        .downcast::<String>()
+                        .unwrap_or(Box::new("<no info>".to_string()))
+                );
+            }
+            Ok(Err(Error::Emit(emit::Error::UnsupportedFeature(feature)))) => {
+                println!(
+                    "🟡 Unsupported   {}\t{}",
+                    entry.path().to_str().unwrap_or(""),
+                    feature
+                );
             }
             Ok(Err(Error::Emit(err))) => {
-                println!("🔴 Emit {} {:?}", entry.path().to_str().unwrap_or(""), err);
+                println!(
+                    "🔴 Emit Error    {}\t{:?}",
+                    entry.path().to_str().unwrap_or(""),
+                    err
+                );
             }
             Ok(Err(Error::Compile(_))) => {
-                println!("🟡 Compile {}", entry.path().to_str().unwrap_or(""));
+                println!("🟡 Compile Error {}", entry.path().to_str().unwrap_or(""));
             }
-            Ok(Err(Error::File(_))) => {
-                println!("🟡 File {}", entry.path().to_str().unwrap_or(""));
+            Ok(Err(Error::File(e))) => {
+                println!(
+                    "🟡 IO Error      {}\t{:?}",
+                    entry.path().to_str().unwrap_or(""),
+                    e
+                );
             }
             Ok(Ok(_)) => {
-                println!("🟢 {}", entry.path().to_str().unwrap_or(""));
+                println!("🟢 Pass          {}", entry.path().to_str().unwrap_or(""));
             }
         }
     }
