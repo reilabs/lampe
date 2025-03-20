@@ -2,7 +2,7 @@
 
 use itertools::Itertools;
 
-use crate::error::emit::{Error, Result};
+use crate::noir::error::emit::{Error, Result};
 
 /// The default string used for each indentation level.
 const DEFAULT_INDENT_STRING: &str = "    ";
@@ -89,7 +89,7 @@ impl Default for Indenter {
 
 #[cfg(test)]
 mod test {
-    use crate::{error::emit::Error, lean::indent::Indenter};
+    use crate::{lean::indent::Indenter, noir::error::emit::Error};
 
     #[test]
     fn can_modify_indent_level() -> anyhow::Result<()> {

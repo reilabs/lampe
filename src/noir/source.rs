@@ -2,7 +2,7 @@
 
 use std::{fs::File, io::Read, path::PathBuf};
 
-use crate::error::file::{Error, Result};
+use crate::noir::error::file::{Error, Result};
 
 /// An unparsed Noir source file.
 #[derive(Clone, Debug, PartialEq, PartialOrd)]

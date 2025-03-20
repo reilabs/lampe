@@ -1,5 +1,5 @@
 [package]
-name = "example1"
+name = "Merkle"
 type = "bin"
 authors = [""]
 

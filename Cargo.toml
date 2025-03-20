@@ -13,6 +13,7 @@ license = "MIT"
 [dependencies]
 fm = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
 nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
 noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
 noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
 noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }

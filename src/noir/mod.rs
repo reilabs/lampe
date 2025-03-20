@@ -12,8 +12,11 @@ use std::{
 use derivative::Derivative;
 use noirc_driver::Warnings;
 
+pub mod error;
 pub mod project;
 pub mod source;
+
+pub use project::{Project, parse_workspace};
 
 /// A container for attaching non-fatal compilation warnings to arbitrary data.
 ///

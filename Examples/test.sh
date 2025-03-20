@@ -13,17 +13,22 @@ readarray -t example_dirs < <(find "$EXAMPLES_DIR" -maxdepth 1 -type d -not -pat
 for dir in "${example_dirs[@]}"; do
 	cd $dir
 
-	lib_name=$(grep -A1 "^\[\[lean_lib\]\]" "lakefile.toml" | grep "name" | sed 's/name = "\(.*\)"/\1/')
-	extracted=$lib_name/"Extracted.lean"
-	extracted_temp=$extracted".temp"
-	mv $extracted $extracted_temp
+  lib_name=$(grep -A1 "^\[package\]" "Nargo.toml" | grep "name" | sed 's/name = "\(.*\)"/\1/')
 
-	$CLI --root $dir"/src" --out-file $extracted
+	if [[ "$lib_name" =~ Dependencies|LocalDependency ]]; then
+	  continue
+	fi
+
+	$CLI
+	if [[ "$lib_name" =~ Merkle ]]; then
+		echo "import Merkle.Field" >> lampe/Merkle/Merkle.lean
+		echo "import Merkle.Ref" >> lampe/Merkle/Merkle.lean
+		echo "import Merkle.Spec" >> lampe/Merkle/Merkle.lean
+	fi
+
+	cd lampe/$lib_name
 
 	lake exe cache get
 	lake build
-
-	rm $extracted
-	mv $extracted_temp $extracted
 done
 

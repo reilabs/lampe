@@ -67,14 +67,11 @@ pub(super) fn format_free_function_def(
 ) -> (String, String) {
     let func_ident = normalize_ident(func_ident);
     let escaped_func_ident = escape_ident(&func_ident);
-    (
-        func_ident.clone(),
-        formatdoc! {
-            r"nr_def {escaped_func_ident}<{def_generics}>({params}) -> {ret_type} {{
+    (func_ident.clone(), formatdoc! {
+        r"nr_def {escaped_func_ident}<{def_generics}>({params}) -> {ret_type} {{
             {body}
             }}"
-        },
-    )
+    })
 }
 
 #[inline]
@@ -325,7 +322,6 @@ pub(super) mod expr {
         let var = if var == "_" { "_?".to_string() } else { var };
         // The compiler seems to add intermediate variables with `$` prefix.
         // We have to replace these with valid Lean identifier characters.
-
         var.replace('$', "ζ")
     }
 
