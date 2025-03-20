@@ -96,7 +96,7 @@ instance : DecidableEq Tp := tpDecEq
 @[reducible]
 def Kind.denote : Kind → Type
 | .u w  => U w
-| .field => {p : Prime} → Fp p
+| .field => Int
 | .type => Tp
 
 inductive FuncRef (argTps : List Tp) (outTp : Tp) where
