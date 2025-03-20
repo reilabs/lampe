@@ -28,6 +28,7 @@ inductive Tp where
 
 inductive Kind where
 | u (size : Nat)
+| field
 | type
 
 mutual
@@ -95,6 +96,7 @@ instance : DecidableEq Tp := tpDecEq
 @[reducible]
 def Kind.denote : Kind → Type
 | .u w  => U w
+| .field => {p : Prime} → Fp p
 | .type => Tp
 
 inductive FuncRef (argTps : List Tp) (outTp : Tp) where

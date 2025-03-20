@@ -7,7 +7,7 @@ use std::{
 
 use fm::{FileId, FileManager};
 use nargo::parse_all;
-use noirc_driver::{check_crate, file_manager_with_stdlib, prepare_crate, CompileOptions};
+use noirc_driver::{CompileOptions, check_crate, file_manager_with_stdlib, prepare_crate};
 use noirc_frontend::hir::Context;
 
 use crate::{
@@ -16,7 +16,7 @@ use crate::{
         file::{Error as FileError, Result as FileResult},
     },
     lean::LeanEmitter,
-    noir::{source::Source, WithWarnings},
+    noir::{WithWarnings, source::Source},
 };
 
 /// A type for file identifiers that are known to the extraction process.
@@ -128,16 +128,12 @@ impl Project {
         let root_crate = prepare_crate(&mut context, &self.project_root.join(root_path).as_path());
 
         // Perform compilation to check the code within it.
-        let ((), warnings) = check_crate(
-            &mut context,
-            root_crate,
-            &CompileOptions {
-                deny_warnings: false,
-                disable_macros: false,
-                debug_comptime_in_file: None,
-                ..Default::default()
-            },
-        )
+        let ((), warnings) = check_crate(&mut context, root_crate, &CompileOptions {
+            deny_warnings: false,
+            disable_macros: false,
+            debug_comptime_in_file: None,
+            ..Default::default()
+        })
         .map_err(|diagnostics| CompileError::CheckFailure { diagnostics })?;
 
         Ok(WithWarnings::new(

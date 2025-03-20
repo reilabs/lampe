@@ -52,7 +52,7 @@ pub(super) fn format_trait_impl(
 ) -> String {
     formatdoc! {
         "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {trait_constraints} {{
-                {methods} 
+                {methods}
             }}"
     }
 }
@@ -67,14 +67,11 @@ pub(super) fn format_free_function_def(
 ) -> (String, String) {
     let func_ident = normalize_ident(func_ident);
     let escaped_func_ident = escape_ident(&func_ident);
-    (
-        func_ident.clone(),
-        formatdoc! {
-            r"nr_def {escaped_func_ident}<{def_generics}>({params}) -> {ret_type} {{
+    (func_ident.clone(), formatdoc! {
+        r"nr_def {escaped_func_ident}<{def_generics}>({params}) -> {ret_type} {{
             {body}
             }}"
-        },
-    )
+    })
 }
 
 #[inline]
@@ -95,9 +92,13 @@ pub(super) fn format_trait_function_def(
 }
 
 #[inline]
-pub(super) fn format_generic_def(name: &str, u_size: Option<u8>) -> String {
-    if let Some(w) = u_size {
-        format!("@{name} : {w}")
+pub(super) fn format_generic_def(name: &str, is_num: bool, u_size: Option<u8>) -> String {
+    if is_num {
+        if let Some(w) = u_size {
+            format!("@{name} : type_u {w}")
+        } else {
+            format!("@{name} : type_fp")
+        }
     } else {
         format!("{name}")
     }
@@ -111,11 +112,7 @@ pub(super) fn format_alias(alias_name: &str, generics: &str, typ: &str) -> Strin
 pub(super) mod literal {
     #[inline]
     pub fn format_bool(v: bool) -> String {
-        if v {
-            format!("true")
-        } else {
-            format!("false")
-        }
+        if v { format!("true") } else { format!("false") }
     }
 
     #[inline]
@@ -198,8 +195,13 @@ pub(super) mod r#type {
     }
 
     #[inline]
-    pub fn format_const(ident: &str, size: &str) -> String {
-        format!("{ident} : {size}")
+    pub fn format_uint_const(ident: &str, size: &str) -> String {
+        format!("{ident} : type_u {size}")
+    }
+
+    #[inline]
+    pub fn format_field_const(ident: &str) -> String {
+        format!("{ident} : type_fp")
     }
 }
 
@@ -317,9 +319,15 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_const(ident: &str) -> String {
+    pub fn format_uint_const(ident: &str) -> String {
         let var = normalize_ident(ident);
-        format!("@{var}")
+        format!("u@{var}")
+    }
+
+    #[inline]
+    pub fn format_field_const(ident: &str) -> String {
+        let var = normalize_ident(ident);
+        format!("f@{var}")
     }
 
     #[inline]

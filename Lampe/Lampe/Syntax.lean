@@ -44,10 +44,12 @@ syntax "λ(" nr_type,* ")" "→" nr_type : nr_type -- Function
 syntax "_" : nr_type -- Placeholder
 syntax "@" nr_ident "<" nr_generic,* ">" : nr_type -- Type alias
 
-syntax num ":" num : nr_generic
+syntax num ":" "type_u" num : nr_generic
+syntax num ":" "type_fp" : nr_generic
 syntax nr_type : nr_generic
 
-syntax "@" ident ":" num : nr_generic_def -- Kind.u
+syntax "@" ident ":" "type_u" num : nr_generic_def -- Kind.u
+syntax "@" ident ":" "type_fp" : nr_generic_def -- Kind.field
 syntax ident : nr_generic_def -- Kind.type
 
 syntax num : nr_const_num
@@ -63,7 +65,8 @@ syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
 syntax "${" term "}" : nr_expr
 syntax "$" ident : nr_expr
-syntax "@" ident : nr_expr -- Const
+syntax "u@" ident : nr_expr -- Const UInt
+syntax "f@" ident : nr_expr -- Const Field
 syntax "let" ident "=" nr_expr : nr_expr -- Let binding
 syntax "let" "mut" ident "=" nr_expr : nr_expr -- Mutable let binding
 syntax nr_expr "=" nr_expr : nr_expr -- Assignment
@@ -180,12 +183,14 @@ partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception 
   let kinds ← mkListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic| $_:nr_type) => `(Kind.type)
-    | `(nr_generic| $_:num : $w) => `(Kind.u $w)
+    | `(nr_generic| $_:num : type_u $w) => `(Kind.u $w)
+    | `(nr_generic| $_:num : type_fp) => `(Kind.field)
     | _ => throwUnsupportedSyntax)
   let vals ← mkHListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic| $t:nr_type) => (mkNrType t)
-    | `(nr_generic| $n:num : $w) => `(BitVec.ofNat $w $n)
+    | `(nr_generic| $n:num : type_u $w) => `(BitVec.ofNat $w $n)
+    | `(nr_generic| $n:num : type_fp) => `($n)
     | _ => throwUnsupportedSyntax)
   pure (kinds, vals)
 
@@ -196,12 +201,14 @@ def mkGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mona
   let kinds ← mkListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic_def| $_:ident) => `(Kind.type)
-    | `(nr_generic_def| @ $_:ident : $w) => `(Kind.u $w)
+    | `(nr_generic_def| @ $_:ident : type_u $w) => `(Kind.u $w)
+    | `(nr_generic_def| @ $_:ident : type_fp) => `(Kind.field)
     | _ => throwUnsupportedSyntax)
   let vals ← mkHListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic_def| $i:ident) => `($i)
-    | `(nr_generic_def| @ $i:ident : $_) => `($i)
+    | `(nr_generic_def| @ $i:ident : type_u $_) => `($i)
+    | `(nr_generic_def| @ $i:ident : type_fp) => `($i)
     | _ => throwUnsupportedSyntax)
   pure (kinds, vals)
 
@@ -515,8 +522,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
   let (paramTps, outTp) ← getFuncSignature t
   wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp (FuncRef.decl $fnName $callGenKinds $callGenVals))) vname k
-| `(nr_expr| @ $i:ident) => do
-  wrapSimple (←`(Expr.const $i)) vname k
+| `(nr_expr| u@ $i:ident) => do
+  wrapSimple (←`(Expr.constU $i)) vname k
+| `(nr_expr| f@ $i:ident) => do
+  wrapSimple (←`(Expr.constFp $i)) vname k
 | `(nr_expr| ( $selfTp as $traitName < $traitGens,* > ) :: $methodName < $callGens,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let (traitGenKinds, traitGenVals) ← mkGenericVals traitGens.getElems.toList

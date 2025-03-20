@@ -14,12 +14,7 @@ use context::EmitterCtx;
 use fm::FileId;
 use itertools::Itertools;
 use noirc_frontend::{
-    Kind,
-    ResolvedGeneric,
-    StructField,
-    Type,
-    TypeBinding,
-    TypeBindings,
+    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
@@ -34,14 +29,7 @@ use noirc_frontend::{
         traits::{NamedType, TraitImpl},
     },
     node_interner::{
-        DefinitionKind,
-        ExprId,
-        FuncId,
-        GlobalId,
-        StmtId,
-        StructId,
-        TraitId,
-        TypeAliasId,
+        DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
 };
 
@@ -98,7 +86,7 @@ impl ToString for EmitOutput {
 pub struct ModuleEntries {
     pub impl_refs: HashSet<String>,
     pub func_refs: HashSet<String>,
-    pub defs:      Vec<EmitOutput>,
+    pub defs: Vec<EmitOutput>,
 }
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
@@ -209,9 +197,7 @@ impl LeanEmitter {
             .map(|d| d.to_string())
             .join("\n");
 
-        let env_funcs = all_func_refs
-            .into_iter()
-            .join(", ");
+        let env_funcs = all_func_refs.into_iter().join(", ");
         let env_traits = all_impl_refs.into_iter().join(", ");
         let env_def = format!("def env := Lampe.Env.mk [{env_funcs}] [{env_traits}]");
 
@@ -483,14 +469,15 @@ impl LeanEmitter {
     /// Emits the Lean source code corresponding to a resolved generics occuring
     /// at generic declarations.
     pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
-        let u_size = match g.kind() {
+        let (is_num, u_size) = match g.kind() {
             Kind::Numeric(num_tp) => match num_tp.as_ref() {
-                Type::Integer(_, bit_size) => Some(bit_size.bit_size()),
-                _ => None,
+                Type::Integer(_, bit_size) => (true, Some(bit_size.bit_size())),
+                Type::FieldElement => (true, None),
+                _ => (true, None),
             },
-            _ => None,
+            _ => (false, None),
         };
-        syntax::format_generic_def(&g.name, u_size)
+        syntax::format_generic_def(&g.name, is_num, u_size)
     }
 
     /// Emits the Lean source code corresponding to a Noir structure at the
@@ -765,8 +752,9 @@ impl LeanEmitter {
             Type::Constant(num, Kind::Numeric(num_typ)) => match num_typ.as_ref() {
                 Type::Integer(_, bit_size) => {
                     let bit_size = bit_size.bit_size();
-                    syntax::r#type::format_const(&num.to_string(), &format!("{bit_size}"))
+                    syntax::r#type::format_uint_const(&num.to_string(), &format!("{bit_size}"))
                 }
+                Type::FieldElement => syntax::r#type::format_field_const(&num.to_string()),
                 _ => unimplemented!("unsupported numeric type {num_typ}"),
             },
             Type::TypeVariable(tv) => match tv.borrow().deref() {
@@ -889,12 +877,12 @@ impl LeanEmitter {
                         .iter()
                         .map(|t| self.substitute_bindings(t, bindings))
                         .collect(),
-                    named:   generics
+                    named: generics
                         .named
                         .iter()
                         .map(|t| NamedType {
                             name: t.name.clone(),
-                            typ:  self.substitute_bindings(&t.typ, bindings),
+                            typ: self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
                 })
@@ -1067,7 +1055,7 @@ impl LeanEmitter {
                 let ident_def = self.context.def_interner.definition(ident.id);
                 let bindings = self.context.def_interner.get_instantiation_bindings(expr);
 
-                match ident_def.kind {
+                match &ident_def.kind {
                     DefinitionKind::Function(func_id) => {
                         let func_meta = self.context.def_interner.function_meta(&func_id);
                         // Find the `impl` generic values.
@@ -1171,7 +1159,7 @@ impl LeanEmitter {
                                     _ => name.to_string(),
                                 };
                                 let func_module_id = ModuleId {
-                                    krate:    func_meta.source_crate,
+                                    krate: func_meta.source_crate,
                                     local_id: func_meta.source_module,
                                 };
                                 let fq_mod_name = self.fq_module_name_from_mod_id(func_module_id);
@@ -1193,7 +1181,7 @@ impl LeanEmitter {
                         }
                     }
                     DefinitionKind::Global(id) => {
-                        let global_info = self.context.def_interner.get_global(id);
+                        let global_info = self.context.def_interner.get_global(*id);
                         let let_stmt =
                             self.context.def_interner.statement(&global_info.let_statement);
 
@@ -1225,7 +1213,11 @@ impl LeanEmitter {
                         syntax::expr::format_call(&global_name, "", &global_type)
                     }
                     DefinitionKind::Local(..) => syntax::expr::format_var_ident(name),
-                    DefinitionKind::NumericGeneric(..) => syntax::expr::format_const(name),
+                    DefinitionKind::NumericGeneric(_, tt) => match *tt.clone() {
+                        Type::Integer(..) => syntax::expr::format_uint_const(name),
+                        Type::FieldElement => syntax::expr::format_field_const(name),
+                        _ => unimplemented!(),
+                    },
                 }
             }
             HirExpression::Index(index) => {
@@ -1340,25 +1332,24 @@ impl LeanEmitter {
                 // Divide the parameters into simple and complex parameters, where simple
                 // parameters are parameters that can be expressed as a single let or let mut
                 // binding.
-                let (simple_params, complex_params): (Vec<_>, Vec<_>) = lambda
-                    .parameters
-                    .iter()
-                    .enumerate()
-                    .partition_map(|(param_idx, (pat, param_typ))| {
-                        let rhs = self.emit_fully_qualified_type(param_typ, ctx);
-                        if let Some((_, lhs)) =
-                            pattern::try_format_simple_pattern(pat, "", self, ctx)
-                        {
-                            // If the parameter is simple, we can directly use the ident as the lhs.
-                            let lhs = self.context.def_interner.definition_name(lhs.id);
-                            itertools::Either::Left(format!("{lhs} : {rhs}"))
-                        } else {
-                            // If the parameter is complex, we need to generate a fresh binding for
-                            // it.
-                            let lhs = format!("π{param_idx}");
-                            itertools::Either::Right((pat.clone(), lhs, rhs))
-                        }
-                    });
+                let (simple_params, complex_params): (Vec<_>, Vec<_>) =
+                    lambda.parameters.iter().enumerate().partition_map(
+                        |(param_idx, (pat, param_typ))| {
+                            let rhs = self.emit_fully_qualified_type(param_typ, ctx);
+                            if let Some((_, lhs)) =
+                                pattern::try_format_simple_pattern(pat, "", self, ctx)
+                            {
+                                // If the parameter is simple, we can directly use the ident as the lhs.
+                                let lhs = self.context.def_interner.definition_name(lhs.id);
+                                itertools::Either::Left(format!("{lhs} : {rhs}"))
+                            } else {
+                                // If the parameter is complex, we need to generate a fresh binding for
+                                // it.
+                                let lhs = format!("π{param_idx}");
+                                itertools::Either::Right((pat.clone(), lhs, rhs))
+                            }
+                        },
+                    );
                 // Convert the parameters into strings.
                 let params_str = complex_params
                     .iter()
