@@ -1,5 +1,5 @@
 [package]
-name = "example1"
+name = "LocalDependency"
 type = "lib"
 authors = [""]
 

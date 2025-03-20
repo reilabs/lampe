@@ -6,7 +6,10 @@ use std::{
 };
 
 use fm::{FileId, FileManager};
-use nargo::parse_all;
+use nargo::package::{Dependency, Package};
+use nargo::{insert_all_files_for_workspace_into_file_manager, parse_all};
+use nargo::workspace::Workspace;
+use nargo_toml::PackageSelection::{All, DefaultOrAll};
 use noirc_driver::{check_crate, file_manager_with_stdlib, prepare_crate, CompileOptions};
 use noirc_frontend::hir::Context;
 
@@ -19,11 +22,13 @@ use crate::{
     noir::{source::Source, WithWarnings},
 };
 
+const DEFAULT_NARGO_PROGRAM_DIR: &str = "./Examples/Dependencies";
+
 /// A type for file identifiers that are known to the extraction process.
 pub type KnownFiles = HashSet<FileId>;
 
 /// A manager for source files for the Noir project that we intend to extract.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Project {
     /// The internal file manager for the Noir project.
     manager: FileManager,
@@ -40,6 +45,9 @@ pub struct Project {
     /// extraction tool execution, and not identifiers for files in the standard
     /// library and other implicit libraries.
     known_files: KnownFiles,
+
+    /// Nargo object keeping the workspace data
+    nargo_workspace: Workspace,
 }
 
 impl Project {
@@ -51,11 +59,57 @@ impl Project {
         let root_file_name = root_file.name.clone();
         let file_ids = KnownFiles::new();
 
+        // Workspace loading was done based on https://github.com/noir-lang/noir/blob/c3a43abf9be80c6f89560405b65f5241ed67a6b2/tooling/nargo_cli/src/cli/mod.rs#L180
+        // It can be replaced when integrated into nargo tool.
+        let toml_path = nargo_toml::get_package_manifest(DEFAULT_NARGO_PROGRAM_DIR.as_ref()).expect("to do [zzz]");
+
+        let nargo_workspace = nargo_toml::resolve_workspace_from_toml(
+            &toml_path,
+            All,
+            None
+        ).expect("to do [zzz]");
+
+        /// [zzz] DEBUG START
+        fn package_str(p: &Package) -> String {
+            format!("{}:{:?} ({}) -> {:?}/{:?}", p.name, p.version, p.package_type, p.root_dir, p.entry_path)
+        }
+
+        fn package_print(p: &Package, tab: &str) {
+            println!("[zzz]{} Package: {} (version:{:?}, type: {})", tab, p.name, p.version, p.package_type);
+            println!("[zzz]{}   root:        {:?}", tab, p.root_dir);
+            println!("[zzz]{}   entry_point: {:?}", tab, p.entry_path);
+
+            p.dependencies.iter().for_each(|d| {
+                match d.1 {
+                    Dependency::Local { package} => {
+                        println!("[zzz]{}   Dep(Local) | Create: {}", tab, d.0);
+                        package_print(package, &format!("  {}", tab));
+                    }
+                    Dependency::Remote { package } => {
+                        println!("[zzz]{}   Dep(Remote) | Create: {}", tab, d.0);
+                        package_print(package, &format!("  {}", tab));
+                    }
+                }
+            })
+        }
+        nargo_workspace.members.iter().for_each(|p| {
+            package_print(p, "")
+        });
+        /// [zzz] DEBUG END
+
+        let mut file_manager = nargo_workspace.new_file_manager();
+        insert_all_files_for_workspace_into_file_manager(&nargo_workspace, &mut file_manager);
+        let file_map = file_manager.as_file_map();
+        file_map.all_file_ids().for_each(|file_id| {
+            println!("[zzz] File id: {:?}, name: {:?}", file_id, file_map.get_name(*file_id).unwrap());
+        });
+
         let mut project = Self {
             manager,
             project_root,
             root_file_name,
             known_files: file_ids,
+            nargo_workspace
         };
 
         // The panic should be impossible.
