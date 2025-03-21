@@ -254,6 +254,9 @@ impl LeanEmitter {
                     if self.context.function_meta(&id).trait_impl.is_some() {
                         continue;
                     }
+                    if self.context.def_interner.function_modifiers(&id).is_comptime {
+                        continue;
+                    }
                     let (def_name, def) = self.emit_free_function_def(ind, id, &ctx)?;
                     // [TODO] fix
                     if def_name.starts_with("_") {
