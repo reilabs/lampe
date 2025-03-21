@@ -33,14 +33,7 @@ lemma foo_intro : STHoare p env ⟦⟧ (foo.call h![gen] h![]) fun output => out
 lemma test_intro : STHoare p env ⟦⟧ (test.call h![] h![]) fun output => output = (4294967297 : Fp p) := by
     enter_decl
     steps [A_intro, foo_intro]
-
-    apply STHoare.letIn_intro
-    enter_decl
-    steps
-
-    apply STHoare.var_intro
-    intros
-    steps
     subst_vars
     rfl
+
 

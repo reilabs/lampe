@@ -140,7 +140,7 @@ def tryApplySyntaxes (goal : MVarId) (lemmas : List (TSyntax `term)): TacticM (L
 | n::ns => do
   trace[Lampe.STHoare.Helpers] "trying {n}"
   try
-    evalTacticAt (←`(tactic|apply $n)) goal
+    evalTacticAt (←`(tactic|with_unfolding_all apply $n)) goal
   catch e =>
     trace[Lampe.STHoare.Helpers] "failed {n} with {e.toMessageData}"
     tryApplySyntaxes goal ns
