@@ -50,6 +50,7 @@ use crate::{
     lean::{indent::Indenter, syntax::expr::format_builtin_call},
     noir::project::KnownFiles,
 };
+use crate::error::emit::Error::UnsupportedFeature;
 
 #[derive(PartialEq, Eq, Clone, Hash)]
 pub enum EmitOutput {
@@ -270,7 +271,7 @@ impl LeanEmitter {
                 ModuleDefId::TypeId(id) => EmitOutput::Struct(self.emit_struct_def(ind, id, &ctx)?),
                 ModuleDefId::TypeAliasId(id) => EmitOutput::Alias(self.emit_alias(id, &ctx)?),
                 ModuleDefId::ModuleId(_) => {
-                    unimplemented!("It is unclear what actually generates these.")
+                   return Err(UnsupportedFeature("modules".to_string()));
                 }
                 // Skip the trait definitions.
                 ModuleDefId::TraitId(_) => continue,
