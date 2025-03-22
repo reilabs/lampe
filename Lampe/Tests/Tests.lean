@@ -438,7 +438,7 @@ nr_def fmtstr_test<>() -> Field {
   y
 }
 
-nr_def create_arr<@N : type_u 32>() -> [Field; N] {
+nr_def create_arr<@N : u32>() -> [Field; N] {
   [1 : Field ; N]
 }
 
@@ -448,9 +448,9 @@ example : STHoare p Γ ⟦⟧ (create_arr.fn.body _ h![3] |>.body h![])
   steps
   aesop
 
-nr_type_alias Array<T, @N : type_u 32> = [T; N]
+nr_type_alias Array<T, @N : u32> = [T; N]
 
-nr_def alias_test<>(x : @Array<Field, 3 : type_u 32>) -> Field {
+nr_def alias_test<>(x : @Array<Field, 3 : u32>) -> Field {
   x[1 : u32]
 }
 
@@ -460,7 +460,7 @@ example : STHoare p Γ ⟦⟧ (alias_test.fn.body _ h![] |>.body h![⟨[1, 2, 3]
   steps
   aesop
 
-nr_def const_test<@N : type_u 8>(x : Field) -> Field {
+nr_def const_test<@N : u8>(x : Field) -> Field {
   let mut res = x;
   for _? in 0 : u8 .. u@N {
     res = #fMul(res, 2 : Field) : Field;
