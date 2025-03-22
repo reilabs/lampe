@@ -43,7 +43,8 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
     match n with
     | ``Expr.skip => return some (←``(skip_intro), true)
     | ``Expr.var => return some (←``(var_intro), true)
-    | ``Lampe.Expr.const => return some (←``(const_intro), true)
+    | ``Lampe.Expr.constU => return some (←``(constU_intro), true)
+    | ``Lampe.Expr.constFp => return some (←``(constFp_intro), true)
     | ``Lampe.Expr.lam => return some (←``(lam_intro), false)
     | ``Expr.mkTuple => return some (←``(genericTotalPureBuiltin_intro (a := (_,_)) Builtin.mkTuple rfl), true)
     | ``Expr.mkArray =>
@@ -139,7 +140,7 @@ def tryApplySyntaxes (goal : MVarId) (lemmas : List (TSyntax `term)): TacticM (L
 | n::ns => do
   trace[Lampe.STHoare.Helpers] "trying {n}"
   try
-    evalTacticAt (←`(tactic|apply $n)) goal
+    evalTacticAt (←`(tactic|with_unfolding_all apply $n)) goal
   catch e =>
     trace[Lampe.STHoare.Helpers] "failed {n} with {e.toMessageData}"
     tryApplySyntaxes goal ns

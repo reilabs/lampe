@@ -354,4 +354,19 @@ mod test {
         "#,
         )
     }
+
+    #[test]
+    fn field_generics() -> anyhow::Result<()> {
+        print_result(
+            r#"
+            global A: Field = 4294967297;
+
+            fn foo<let A: Field>() -> Field { A }
+
+            fn main() {
+                let _ = foo::<A>();
+            }
+            "#,
+        )
+    }
 }

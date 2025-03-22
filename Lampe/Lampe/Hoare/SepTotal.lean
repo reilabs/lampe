@@ -407,7 +407,15 @@ theorem ite_intro {cnd : Bool}
   . apply iteTrue_intro
     tauto
 
-theorem const_intro: STHoare p Γ ⟦⟧ (.const c) fun v => v = c := by
+theorem constU_intro: STHoare p Γ ⟦⟧ (.constU c) fun v => v = c := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
+theorem constFp_intro: STHoare p Γ ⟦⟧ (.constFp c) fun v => v = c := by
   unfold STHoare THoare
   intro H st hp
   constructor

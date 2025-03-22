@@ -52,7 +52,7 @@ pub(super) fn format_trait_impl(
 ) -> String {
     formatdoc! {
         "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {trait_constraints} {{
-                {methods} 
+                {methods}
             }}"
     }
 }
@@ -95,9 +95,13 @@ pub(super) fn format_trait_function_def(
 }
 
 #[inline]
-pub(super) fn format_generic_def(name: &str, u_size: Option<u8>) -> String {
-    if let Some(w) = u_size {
-        format!("@{name} : {w}")
+pub(super) fn format_generic_def(name: &str, is_num: bool, u_size: Option<u8>) -> String {
+    if is_num {
+        if let Some(w) = u_size {
+            format!("@{name} : u{w}")
+        } else {
+            format!("@{name} : Field")
+        }
     } else {
         format!("{name}")
     }
@@ -198,8 +202,13 @@ pub(super) mod r#type {
     }
 
     #[inline]
-    pub fn format_const(ident: &str, size: &str) -> String {
-        format!("{ident} : {size}")
+    pub fn format_uint_const(ident: &str, size: &str) -> String {
+        format!("{ident} : u{size}")
+    }
+
+    #[inline]
+    pub fn format_field_const(ident: &str) -> String {
+        format!("{ident} : Field")
     }
 }
 
@@ -317,9 +326,15 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_const(ident: &str) -> String {
+    pub fn format_uint_const(ident: &str) -> String {
         let var = normalize_ident(ident);
-        format!("@{var}")
+        format!("u@{var}")
+    }
+
+    #[inline]
+    pub fn format_field_const(ident: &str) -> String {
+        let var = normalize_ident(ident);
+        format!("f@{var}")
     }
 
     #[inline]

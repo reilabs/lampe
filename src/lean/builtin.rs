@@ -1,9 +1,9 @@
 use std::ops::Deref;
 
 use noirc_frontend::{
+    Type, TypeBinding,
     ast::BinaryOpKind,
     ast::{IntegerBitSize, Signedness, UnaryOp},
-    Type, TypeBinding,
 };
 
 pub type BuiltinName = String;

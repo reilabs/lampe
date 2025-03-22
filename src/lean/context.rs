@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use noirc_frontend::{hir::def_map::ModuleData, node_interner::NodeInterner, Type};
+use noirc_frontend::{Type, hir::def_map::ModuleData, node_interner::NodeInterner};
 
 pub struct EmitterCtx {
     // Maps an impl parameter type to a type variable name.
