@@ -11,14 +11,7 @@ pub struct EmitterCtx {
 
 /// Returns true if and only if `typ` is an `impl` type.
 pub(super) fn is_impl(typ: &Type) -> bool {
-    match typ {
-        Type::TypeVariable(_) | Type::TraitAsType(_, _, _) | Type::NamedGeneric(_, _)
-            if typ.to_string().starts_with("impl") =>
-        {
-            true
-        }
-        _ => false,
-    }
+    matches!(typ, Type::TypeVariable(_) | Type::TraitAsType(_,_,_) | Type::NamedGeneric(_, _) if typ.to_string().starts_with("impl"))
 }
 
 impl EmitterCtx {
@@ -27,7 +20,7 @@ impl EmitterCtx {
         let mut impl_param_overrides = HashMap::new();
         let mut impl_ret_overrides = HashMap::new();
         // Get the function definitions from the module.
-        let module_fns = module.value_definitions().flat_map(|value_def| match value_def {
+        let module_fns = module.value_definitions().filter_map(|value_def| match value_def {
             noirc_frontend::hir::def_map::ModuleDefId::FunctionId(func_id) => Some(func_id),
             _ => None,
         });
@@ -65,7 +58,7 @@ impl EmitterCtx {
     }
 
     pub fn get_impl_param<'a>(&'a self, typ: &Type) -> Option<&'a str> {
-        self.impl_param_overrides.get(typ).map(|s| s.as_str())
+        self.impl_param_overrides.get(typ).map(std::string::String::as_str)
     }
 
     pub fn get_impl_return<'a>(&'a self, typ: &Type) -> Option<&'a Type> {

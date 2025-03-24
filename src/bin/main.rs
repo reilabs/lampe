@@ -13,7 +13,7 @@ use std::{fs, fs::OpenOptions, io::Write, panic, path::PathBuf, process::ExitCod
 
 use clap::{arg, Parser};
 use lampe::{
-    error::{emit, Error},
+    error::{emit, file, Error},
     noir::source::Source,
     noir_to_lean, Project, Result,
 };
@@ -69,11 +69,31 @@ fn main() -> ExitCode {
     }
 }
 
+/// A particular testing mode for the main function used to run through Noir frontend tests
+///
+/// # Errors
+///
+/// - [`Error`] If the source directory is not readable
 pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode> {
-    let list = fs::read_dir(&args.root).unwrap();
+    let list = fs::read_dir(&args.root).map_err(|_| {
+        file::Error::Other(format!(
+            "Unable to read directory {:?}",
+            args.root.as_os_str()
+        ))
+    })?;
     for entry in list {
-        let entry = entry.unwrap();
-        if !entry.metadata().unwrap().is_dir() {
+        let entry =
+            entry.map_err(|err| file::Error::Other(format!("Unable to read entry: {err:?}")))?;
+        if !entry
+            .metadata()
+            .map_err(|_| {
+                file::Error::Other(format!(
+                    "Unable to read metadata of {:?}",
+                    entry.file_name()
+                ))
+            })?
+            .is_dir()
+        {
             continue;
         }
 
