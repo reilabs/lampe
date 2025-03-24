@@ -58,6 +58,12 @@ jobs:
           run: |
             export RUST_MIN_STACK=16777216;  # 16 MB
             cargo test --all
+        - name: Format (rustfmt)
+          working-directory: lampe
+          run: cargo fmt --check
+        - name: Lint (clippy)
+          working-directory: lampe
+          run: RUSTFLAGS="-Dwarnings" cargo clippy
     end-to-end:
       needs: [build-lake, build-cargo]
       runs-on: ubuntu-latest
