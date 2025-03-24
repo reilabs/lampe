@@ -12,6 +12,9 @@
 #![allow(clippy::module_name_repetitions)]
 // These occur in our Noir dependencies and cannot be avoided.
 #![allow(clippy::multiple_crate_versions)]
+// This only occurs for keys of type `Type`. It may be worth checking if this is actually an issue
+// we should worry about
+#![allow(clippy::mutable_key_type)]
 
 pub mod error;
 pub mod lean;
