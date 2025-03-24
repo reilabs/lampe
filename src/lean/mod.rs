@@ -107,128 +107,6 @@ pub struct LeanEmitter {
     root_crate: CrateId,
 }
 
-/// Collects the named generics from a type recursively.
-#[must_use]
-pub fn collect_named_generics(typ: &Type) -> Vec<String> {
-    match typ {
-        Type::Array(inner_type, _)
-        | Type::Slice(inner_type)
-        | Type::MutableReference(inner_type) => collect_named_generics(inner_type),
-        Type::Tuple(elems) => elems.iter().flat_map(collect_named_generics).collect_vec(),
-        Type::Struct(_, generics)
-        | Type::TraitAsType(
-            _,
-            _,
-            TraitGenerics {
-                ordered: generics, ..
-            },
-        ) => generics.iter().flat_map(collect_named_generics).collect_vec(),
-        Type::Bool
-        | Type::Integer(..)
-        | Type::String(..)
-        | Type::FmtString(..)
-        | Type::Unit
-        | Type::FieldElement => Vec::new(),
-        Type::NamedGeneric(..) => Vec::from([format!("{typ}")]),
-        _ => unimplemented!("cannot collect named generics from {typ} (yet)"),
-    }
-}
-
-#[must_use]
-fn emit_numeric_type_const(typ: &Type) -> String {
-    match typ {
-        Type::TypeVariable(tv) => match &*tv.borrow() {
-            TypeBinding::Bound(b) => {
-                let b = b.follow_bindings();
-                emit_numeric_type_const(&b)
-            }
-            TypeBinding::Unbound(..) => format!("{typ}"),
-        },
-        Type::Constant(num, Kind::Numeric(_)) => format!("{num}"),
-
-        _ => format!("{typ}"),
-    }
-}
-///
-/// Given a type `T` and a `TypeBindings` map `m`, returns a new type where
-/// the type variables in `T` have been recursively substituted with the
-/// values in `m`.
-#[must_use]
-fn substitute_bindings(typ: &Type, bindings: &TypeBindings) -> Type {
-    match typ {
-        Type::TypeVariable(tv) | Type::NamedGeneric(tv, _) => bindings
-            .get(&tv.id())
-            .map(|(_, _, t)| t)
-            .cloned()
-            .unwrap_or(typ.clone()),
-        Type::Array(n, e) => Type::Array(
-            Box::new(substitute_bindings(n.as_ref(), bindings)),
-            Box::new(substitute_bindings(e.as_ref(), bindings)),
-        ),
-        Type::Slice(e) => Type::Slice(Box::new(substitute_bindings(e.as_ref(), bindings))),
-        Type::String(n) => Type::String(Box::new(substitute_bindings(n, bindings))),
-        Type::FmtString(n, vec) => Type::FmtString(
-            Box::new(substitute_bindings(n, bindings)),
-            Box::new(substitute_bindings(vec, bindings)),
-        ),
-        Type::Tuple(vec) => {
-            Type::Tuple(vec.iter().map(|t| substitute_bindings(t, bindings)).collect())
-        }
-        Type::Struct(def, generics) => Type::Struct(
-            def.clone(),
-            generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
-        ),
-        Type::Alias(def, generics) => Type::Alias(
-            def.clone(),
-            generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
-        ),
-        Type::Function(params, ret, env, unconstrained) => Type::Function(
-            params.iter().map(|t| substitute_bindings(t, bindings)).collect(),
-            Box::new(substitute_bindings(ret, bindings)),
-            Box::new(substitute_bindings(env, bindings)),
-            *unconstrained,
-        ),
-        Type::TraitAsType(id, name, generics) => Type::TraitAsType(
-            *id,
-            name.clone(),
-            TraitGenerics {
-                ordered: generics
-                    .ordered
-                    .iter()
-                    .map(|t| substitute_bindings(t, bindings))
-                    .collect(),
-                named: generics
-                    .named
-                    .iter()
-                    .map(|t| NamedType {
-                        name: t.name.clone(),
-                        typ: substitute_bindings(&t.typ, bindings),
-                    })
-                    .collect(),
-            },
-        ),
-        Type::MutableReference(t) => {
-            Type::MutableReference(Box::new(substitute_bindings(t, bindings)))
-        }
-        Type::Forall(tvs, t) => {
-            Type::Forall(tvs.clone(), Box::new(substitute_bindings(t, bindings)))
-        }
-        _ => typ.clone(),
-    }
-}
-///
-/// If `typ` is an alias, unfolds it until it is no longer an alias.
-#[must_use]
-fn unfold_alias(typ: Type) -> Type {
-    match typ {
-        Type::Alias(alias, generics) => {
-            let unfolded_typ = alias.borrow().get_type(&generics);
-            unfold_alias(unfolded_typ)
-        }
-        typ => typ,
-    }
-}
-
 impl LeanEmitter {
     /// Creates a new emitter for Lean source code.
     ///
@@ -1683,6 +1561,128 @@ impl LeanEmitter {
                 ctx,
             ),
         )
+    }
+}
+
+/// Collects the named generics from a type recursively.
+#[must_use]
+pub fn collect_named_generics(typ: &Type) -> Vec<String> {
+    match typ {
+        Type::Array(inner_type, _)
+        | Type::Slice(inner_type)
+        | Type::MutableReference(inner_type) => collect_named_generics(inner_type),
+        Type::Tuple(elems) => elems.iter().flat_map(collect_named_generics).collect_vec(),
+        Type::Struct(_, generics)
+        | Type::TraitAsType(
+            _,
+            _,
+            TraitGenerics {
+                ordered: generics, ..
+            },
+        ) => generics.iter().flat_map(collect_named_generics).collect_vec(),
+        Type::Bool
+        | Type::Integer(..)
+        | Type::String(..)
+        | Type::FmtString(..)
+        | Type::Unit
+        | Type::FieldElement => Vec::new(),
+        Type::NamedGeneric(..) => Vec::from([format!("{typ}")]),
+        _ => unimplemented!("cannot collect named generics from {typ} (yet)"),
+    }
+}
+
+#[must_use]
+fn emit_numeric_type_const(typ: &Type) -> String {
+    match typ {
+        Type::TypeVariable(tv) => match &*tv.borrow() {
+            TypeBinding::Bound(b) => {
+                let b = b.follow_bindings();
+                emit_numeric_type_const(&b)
+            }
+            TypeBinding::Unbound(..) => format!("{typ}"),
+        },
+        Type::Constant(num, Kind::Numeric(_)) => format!("{num}"),
+
+        _ => format!("{typ}"),
+    }
+}
+
+/// Given a type `T` and a `TypeBindings` map `m`, returns a new type where
+/// the type variables in `T` have been recursively substituted with the
+/// values in `m`.
+#[must_use]
+fn substitute_bindings(typ: &Type, bindings: &TypeBindings) -> Type {
+    match typ {
+        Type::TypeVariable(tv) | Type::NamedGeneric(tv, _) => bindings
+            .get(&tv.id())
+            .map(|(_, _, t)| t)
+            .cloned()
+            .unwrap_or(typ.clone()),
+        Type::Array(n, e) => Type::Array(
+            Box::new(substitute_bindings(n.as_ref(), bindings)),
+            Box::new(substitute_bindings(e.as_ref(), bindings)),
+        ),
+        Type::Slice(e) => Type::Slice(Box::new(substitute_bindings(e.as_ref(), bindings))),
+        Type::String(n) => Type::String(Box::new(substitute_bindings(n, bindings))),
+        Type::FmtString(n, vec) => Type::FmtString(
+            Box::new(substitute_bindings(n, bindings)),
+            Box::new(substitute_bindings(vec, bindings)),
+        ),
+        Type::Tuple(vec) => {
+            Type::Tuple(vec.iter().map(|t| substitute_bindings(t, bindings)).collect())
+        }
+        Type::Struct(def, generics) => Type::Struct(
+            def.clone(),
+            generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
+        ),
+        Type::Alias(def, generics) => Type::Alias(
+            def.clone(),
+            generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
+        ),
+        Type::Function(params, ret, env, unconstrained) => Type::Function(
+            params.iter().map(|t| substitute_bindings(t, bindings)).collect(),
+            Box::new(substitute_bindings(ret, bindings)),
+            Box::new(substitute_bindings(env, bindings)),
+            *unconstrained,
+        ),
+        Type::TraitAsType(id, name, generics) => Type::TraitAsType(
+            *id,
+            name.clone(),
+            TraitGenerics {
+                ordered: generics
+                    .ordered
+                    .iter()
+                    .map(|t| substitute_bindings(t, bindings))
+                    .collect(),
+                named: generics
+                    .named
+                    .iter()
+                    .map(|t| NamedType {
+                        name: t.name.clone(),
+                        typ: substitute_bindings(&t.typ, bindings),
+                    })
+                    .collect(),
+            },
+        ),
+        Type::MutableReference(t) => {
+            Type::MutableReference(Box::new(substitute_bindings(t, bindings)))
+        }
+        Type::Forall(tvs, t) => {
+            Type::Forall(tvs.clone(), Box::new(substitute_bindings(t, bindings)))
+        }
+        _ => typ.clone(),
+    }
+}
+
+/// If `typ` is an alias, unfolds it until it is no longer an alias.
+#[must_use]
+fn unfold_alias(typ: Type) -> Type {
+    match typ {
+        Type::Alias(alias, generics) => {
+            let unfolded_typ = alias.borrow().get_type(&generics);
+            unfold_alias(unfolded_typ)
+        }
+        typ => typ,
     }
 }
 
