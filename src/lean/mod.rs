@@ -11,12 +11,13 @@ use context::EmitterCtx;
 use fm::FileId;
 use itertools::Itertools;
 use noirc_frontend::{
+    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
+        Context,
         def_map::{ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
-        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -27,7 +28,6 @@ use noirc_frontend::{
     node_interner::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
-    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
 };
 
 use crate::error::{self, emit::Error::UnsupportedFeature};

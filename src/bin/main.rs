@@ -11,11 +11,12 @@
 
 use std::{fs, fs::OpenOptions, io::Write, panic, path::PathBuf, process::ExitCode};
 
-use clap::{arg, Parser};
+use clap::{Parser, arg};
 use lampe::{
-    error::{emit, file, Error},
+    Project, Result,
+    error::{Error, emit, file},
     noir::source::Source,
-    noir_to_lean, Project, Result,
+    noir_to_lean,
 };
 
 /// The default Noir project path for the CLI to extract from.
