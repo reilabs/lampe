@@ -1,10 +1,10 @@
 use noirc_frontend::{
-    Type,
     ast::Ident,
     hir_def::{expr::HirIdent, stmt::HirPattern},
+    Type,
 };
 
-use super::{LeanEmitter, context::EmitterCtx};
+use super::{context::EmitterCtx, LeanEmitter};
 
 #[derive(Clone, Debug)]
 enum PatType {

@@ -14,13 +14,12 @@ use context::EmitterCtx;
 use fm::FileId;
 use itertools::Itertools;
 use noirc_frontend::{
-    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
     graph::CrateId,
     hir::{
-        Context,
         def_map::{ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
+        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -31,14 +30,15 @@ use noirc_frontend::{
     node_interner::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
+    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
 };
 
+use crate::error::emit::Error::UnsupportedFeature;
 use crate::{
     error::emit::{Error, Result},
     lean::{indent::Indenter, syntax::expr::format_builtin_call},
     noir::project::KnownFiles,
 };
-use crate::error::emit::Error::UnsupportedFeature;
 
 #[derive(PartialEq, Eq, Clone, Hash)]
 pub enum EmitOutput {
@@ -257,7 +257,7 @@ impl LeanEmitter {
                 ModuleDefId::TypeId(id) => EmitOutput::Struct(self.emit_struct_def(ind, id, &ctx)?),
                 ModuleDefId::TypeAliasId(id) => EmitOutput::Alias(self.emit_alias(id, &ctx)?),
                 ModuleDefId::ModuleId(_) => {
-                   return Err(UnsupportedFeature("modules".to_string()));
+                    return Err(UnsupportedFeature("modules".to_string()));
                 }
                 // Skip the trait definitions.
                 ModuleDefId::TraitId(_) => continue,
@@ -871,8 +871,10 @@ impl LeanEmitter {
                 Box::new(self.substitute_bindings(env, bindings)),
                 *unconstrained,
             ),
-            Type::TraitAsType(id, name, generics) => {
-                Type::TraitAsType(id.clone(), name.clone(), TraitGenerics {
+            Type::TraitAsType(id, name, generics) => Type::TraitAsType(
+                id.clone(),
+                name.clone(),
+                TraitGenerics {
                     ordered: generics
                         .ordered
                         .iter()
@@ -886,8 +888,8 @@ impl LeanEmitter {
                             typ: self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
-                })
-            }
+                },
+            ),
             Type::MutableReference(t) => {
                 Type::MutableReference(Box::new(self.substitute_bindings(t, bindings)))
             }
