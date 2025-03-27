@@ -29,16 +29,20 @@ pub fn lampe_project(
         fs::create_dir(&lampe_root_dir)?;
     }
 
-    generate_package_structure(&lampe_root_dir, package)?;
-
-    lean::generate_lean_files(&lampe_root_dir, package, extracted_files)?;
+    generate_package_structure(&lampe_root_dir, package, extracted_files)?;
 
     Ok(())
 }
 
-fn generate_package_structure(lampe_root_dir: &Path, package: &Package) -> Result<()> {
+fn generate_package_structure(
+    lampe_root_dir: &Path,
+    package: &Package,
+    extracted_files: &HashMap<LeanFileName, LeanFileContent>,
+) -> Result<()> {
     lake::generate_lakefile_toml(lampe_root_dir, package, false)?;
     lean_toolchain::generate_lean_toolchain(lampe_root_dir, false)?;
+
+    lean::generate_lean_files(lampe_root_dir, package, extracted_files)?;
 
     Ok(())
 }

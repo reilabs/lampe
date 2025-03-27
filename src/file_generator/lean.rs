@@ -14,22 +14,27 @@ pub fn generate_lean_files(
 ) -> Result<(), Error> {
     let lib_name = &package.name.to_string();
 
-    generate_lib_lean(lampe_root_dir, lib_name, false)?;
+    let lib_dir = lampe_root_dir.join(lib_name);
+    if !lib_dir.exists() {
+        fs::create_dir(&lib_dir)?;
+    }
 
-    let extracted_dir = lampe_root_dir.join(EXTRACTED_LIB_NAME);
-    if !extracted_dir.exists() {
-        fs::create_dir(&extracted_dir)?;
+    generate_lib_file(lampe_root_dir, lib_name, false)?;
+
+    let extracted_lib_dir = lib_dir.join(EXTRACTED_LIB_NAME);
+    if !extracted_lib_dir.exists() {
+        fs::create_dir(&extracted_lib_dir)?;
     }
 
     for (file_name, extracted_lean) in extracted_files {
-        write_extracted_file(lampe_root_dir, file_name, extracted_lean, true)?;
+        generate_extracted_file(&extracted_lib_dir, file_name, extracted_lean, true)?;
     }
-    generate_extracted(lampe_root_dir, &extracted_files.keys().collect(), true)?;
+    generate_extracted_lib_file(lib_name, &lib_dir, &extracted_files.keys().collect(), true)?;
 
     Ok(())
 }
 
-fn generate_lib_lean(
+fn generate_lib_file(
     lampe_root_dir: &Path,
     lib_name: &String,
     overwrite: bool,
@@ -44,12 +49,13 @@ fn generate_lib_lean(
     Ok(())
 }
 
-fn generate_extracted(
-    lampe_root_dir: &Path,
+fn generate_extracted_lib_file(
+    lib_name: &String,
+    lib_dir: &Path,
     file_names: &HashSet<&String>,
     overwrite: bool,
 ) -> Result<(), Error> {
-    let output_file = lampe_root_dir.join(format!("{EXTRACTED_LIB_NAME}.lean"));
+    let output_file = lib_dir.join(format!("{EXTRACTED_LIB_NAME}.lean"));
     if output_file.exists() && !overwrite {
         return Ok(());
     }
@@ -58,7 +64,7 @@ fn generate_extracted(
 
     write!(result, "-- {LAMPE_GENERATED_COMMENT}\n\n")?;
     for file_name in file_names {
-        writeln!(result, "import {EXTRACTED_LIB_NAME}.{file_name}")?;
+        writeln!(result, "import {lib_name}.{EXTRACTED_LIB_NAME}.{file_name}")?;
     }
 
     fs::write(output_file, result)?;
@@ -66,15 +72,13 @@ fn generate_extracted(
     Ok(())
 }
 
-fn write_extracted_file(
-    lampe_root_dir: &Path,
+fn generate_extracted_file(
+    extracted_lib_dir: &Path,
     file_name: &LeanFileName,
     extracted_lean: &LeanFileContent,
     overwrite: bool,
 ) -> Result<(), Error> {
-    let output_file = lampe_root_dir
-        .join(EXTRACTED_LIB_NAME)
-        .join(format!("{file_name}.lean"));
+    let output_file = extracted_lib_dir.join(format!("{file_name}.lean"));
     if output_file.exists() && !overwrite {
         return Ok(());
     }
