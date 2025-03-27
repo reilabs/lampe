@@ -2,7 +2,7 @@
 
 use itertools::Itertools;
 
-use crate::error::emit::{Error, Result};
+use crate::noir::error::emit::{Error, Result};
 
 /// The default string used for each indentation level.
 const DEFAULT_INDENT_STRING: &str = "    ";
@@ -35,18 +35,6 @@ impl Indenter {
             line_separator,
             current_level,
         }
-    }
-
-    /// Returns the line separator in use.
-    #[must_use]
-    pub fn sep(&self) -> &str {
-        &self.line_separator
-    }
-
-    /// Gets the current indentation level.
-    #[must_use]
-    pub fn level(&self) -> usize {
-        self.current_level
     }
 
     /// Increases the current indentation level by one.
@@ -89,17 +77,17 @@ impl Default for Indenter {
 
 #[cfg(test)]
 mod test {
-    use crate::{error::emit::Error, lean::indent::Indenter};
+    use crate::{lean::indent::Indenter, noir::error::emit::Error};
 
     #[test]
     fn can_modify_indent_level() -> anyhow::Result<()> {
         let mut indenter = Indenter::default();
 
-        assert_eq!(indenter.level(), 0);
+        assert_eq!(indenter.current_level, 0);
         indenter.indent();
-        assert_eq!(indenter.level(), 1);
+        assert_eq!(indenter.current_level, 1);
         indenter.dedent()?;
-        assert_eq!(indenter.level(), 0);
+        assert_eq!(indenter.current_level, 0);
 
         Ok(())
     }

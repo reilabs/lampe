@@ -5,10 +5,8 @@ pub mod indent;
 mod pattern;
 mod syntax;
 
-use std::collections::{HashMap, HashSet};
-
 use context::EmitterCtx;
-use fm::FileId;
+use fm::{FileId, PathString};
 use itertools::Itertools;
 use noirc_frontend::{
     Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
@@ -29,12 +27,12 @@ use noirc_frontend::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
 };
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 
-use crate::error::{self, emit::Error::UnsupportedFeature};
 use crate::{
-    error::emit::{Error, Result},
     lean::{indent::Indenter, syntax::expr::format_builtin_call},
-    noir::project::KnownFiles,
+    noir::error::emit::{Error, Result},
 };
 
 #[derive(PartialEq, Eq, Clone, Hash)]
@@ -90,59 +88,45 @@ pub struct ModuleEntries {
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
 /// intermediate representation.
-pub struct LeanEmitter {
+pub struct LeanEmitter<'file_manager, 'parsed_files> {
     /// The compilation context of the Noir project.
-    pub context: Context<'static, 'static>,
-
-    /// The files that were explicitly added to the compilation context.
-    ///
-    /// This will contain the file IDs for files added manually during
-    /// extraction tool execution, and not identifiers for files in the standard
-    /// library and other implicit libraries. These are used for filtering to
-    /// prevent emission of definitions for the standard library that are
-    /// already carefully manually defined in Lean.
-    known_files: KnownFiles,
+    pub context: Context<'file_manager, 'parsed_files>,
 
     /// The identifier for the root crate in the Noir compilation context.
     root_crate: CrateId,
 }
 
-impl LeanEmitter {
+impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     /// Creates a new emitter for Lean source code.
     ///
     /// The emitter wraps the current noir compilation `context`, and also has
     /// knowledge of the `known_files` that were added explicitly to the
     /// extraction process by the user.
-    pub fn new(
-        context: Context<'static, 'static>,
-        known_files: KnownFiles,
-        root_crate: CrateId,
-    ) -> Self {
+    pub fn new(context: Context<'file_manager, 'parsed_files>, root_crate: CrateId) -> Self {
         Self {
             context,
-            known_files,
             root_crate,
         }
-    }
-
-    /// Enables reference tracking in the internal context.
-    pub fn track_references(&mut self) {
-        self.context.activate_lsp_mode();
     }
 
     /// Checks if the emitter knows about the file with the given ID, returning
     /// `true` if it does and `false` otherwise.
     pub fn knows_file(&self, file: FileId) -> bool {
-        self.known_files.contains(&file)
+        // self.context.file_manager.as_file_map().get_file(file).is_some()
+        // TODO: fix handling known files
+        self.context
+            .file_manager
+            .as_file_map()
+            .get_name(file)
+            .map(|v| v == PathString::from(PathBuf::from("src/main.nr")))
+            .unwrap_or(false)
     }
 
     /// Gets the identifier of the root crate for this compilation context.
     pub fn root_crate(&self) -> CrateId {
         self.root_crate
     }
-}
 
-impl LeanEmitter {
     /// Emits a set of Lean definitions that correspond to the Noir language
     /// definitions seen by this emitter.
     ///
@@ -258,7 +242,7 @@ impl LeanEmitter {
                 ModuleDefId::TypeId(id) => EmitOutput::Struct(self.emit_struct_def(ind, id, &ctx)?),
                 ModuleDefId::TypeAliasId(id) => EmitOutput::Alias(self.emit_alias(id, &ctx)?),
                 ModuleDefId::ModuleId(_) => {
-                    return Err(UnsupportedFeature("modules".to_string()));
+                    return Err(Error::UnsupportedFeature("modules".to_string()));
                 }
                 // Skip the trait definitions.
                 ModuleDefId::TraitId(_) => continue,
@@ -379,6 +363,7 @@ impl LeanEmitter {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
+    #[allow(clippy::unnecessary_wraps)]
     pub fn emit_alias(&self, alias: TypeAliasId, ctx: &EmitterCtx) -> Result<String> {
         let alias_data = self.context.def_interner.get_type_alias(alias);
         let alias_data = alias_data.borrow();
@@ -435,6 +420,7 @@ impl LeanEmitter {
 
     /// Emits the Lean source code corresponding to a resolved generics occuring
     /// at generic declarations.
+    #[allow(clippy::unused_self)]
     pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
         let (is_num, u_size) = match g.kind() {
             Kind::Numeric(num_tp) => match num_tp.as_ref() {
@@ -1410,7 +1396,7 @@ impl LeanEmitter {
                             &field_name.to_string(),
                         ))
                     }
-                    _ => Err(error::emit::Error::UnexpectedType(
+                    _ => Err(Error::UnexpectedType(
                         lhs_lval_str,
                         "tuple or struct".to_string(),
                     )),
@@ -1436,7 +1422,7 @@ impl LeanEmitter {
                     Type::Slice(..) => {
                         Ok(syntax::lval::format_slice_access(&lhs_lval_str, &idx_expr))
                     }
-                    _ => Err(error::emit::Error::UnexpectedType(
+                    _ => Err(Error::UnexpectedType(
                         lhs_lval_str,
                         "array or slice".to_string(),
                     )),
@@ -1699,12 +1685,6 @@ pub fn expect_identifier(pattern: &HirPattern) -> Result<&HirIdent> {
     match pattern {
         HirPattern::Identifier(ident) => Ok(ident),
         _ => Err(Error::MissingIdentifier(format!("{pattern:?}"))),
-    }
-}
-
-impl From<LeanEmitter> for Context<'static, 'static> {
-    fn from(value: LeanEmitter) -> Self {
-        value.context
     }
 }
 

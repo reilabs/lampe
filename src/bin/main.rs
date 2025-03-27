@@ -9,27 +9,14 @@
 
 #![warn(clippy::all, clippy::cargo, clippy::pedantic)]
 
-use std::{fs, fs::OpenOptions, io::Write, panic, path::PathBuf, process::ExitCode};
+use std::{fs, panic, path::PathBuf, process::ExitCode};
 
 use clap::{Parser, arg};
-use lampe::{
-    Project, Result,
-    error::{Error, emit, file},
-    noir::source::Source,
-    noir_to_lean,
-};
+use lampe::noir_error::file;
+use lampe::{Error, Project, noir_error};
 
 /// The default Noir project path for the CLI to extract from.
-const DEFAULT_NOIR_PROJECT_PATH: &str = "";
-
-/// The default Noir filename for the CLI to extract from.
-const DEFAULT_NOIR_FILE_NAME: &str = "main.nr";
-
-/// The default output file for the generated definitions.
-const DEFAULT_OUT_FILE_NAME: &str = "Main.lean";
-
-/// The
-const LEAN_HEADER: &str = "import Lampe\n\nopen Lampe\n\nnamespace Extracted\n\n";
+const DEFAULT_NOIR_PROJECT_PATH: &str = "./";
 
 /// A utility to extract Noir code to Lean in order to enable the formal
 /// verification of Noir programs.
@@ -38,14 +25,6 @@ pub struct ProgramOptions {
     /// The root of the Noir project to extract.
     #[arg(long, value_name = "PATH", default_value = DEFAULT_NOIR_PROJECT_PATH)]
     pub root: PathBuf,
-
-    /// The specific file in the Noir project to extract.
-    #[arg(long, value_name = "FILE", default_value = DEFAULT_NOIR_FILE_NAME)]
-    pub file: PathBuf,
-
-    /// The file to output the generated Lean sources to.
-    #[arg(long, value_name = "FILE", default_value = DEFAULT_OUT_FILE_NAME)]
-    pub out_file: PathBuf,
 
     /// Testing mode?
     #[arg(long)]
@@ -75,13 +54,14 @@ fn main() -> ExitCode {
 /// # Errors
 ///
 /// - [`Error`] If the source directory is not readable
-pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode> {
+pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
     let list = fs::read_dir(&args.root).map_err(|_| {
         file::Error::Other(format!(
             "Unable to read directory {:?}",
             args.root.as_os_str()
         ))
     })?;
+
     for entry in list {
         let entry =
             entry.map_err(|err| file::Error::Other(format!("Unable to read entry: {err:?}")))?;
@@ -98,46 +78,64 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode> {
             continue;
         }
 
-        let source = Source::read(entry.path(), "src/main.nr")?;
-        let project = Project::new(entry.path(), source);
-        let emit_result = panic::catch_unwind(|| noir_to_lean(project));
+        let result = panic::catch_unwind(|| Project::new(entry.path())?.extract());
 
-        match emit_result {
+        match result {
             Err(panic) => {
                 println!(
-                    "🔴 Panic         {}\t{}",
+                    "🔴 Panic                 {}\t{}",
                     entry.path().to_str().unwrap_or(""),
                     panic
                         .downcast::<String>()
                         .unwrap_or(Box::new("<no info>".to_string()))
                 );
             }
-            Ok(Err(Error::Emit(emit::Error::UnsupportedFeature(feature)))) => {
+            Ok(Err(Error::EmitError(noir_error::emit::Error::UnsupportedFeature(feature)))) => {
                 println!(
-                    "🟡 Unsupported   {}\t{}",
+                    "🟡 Unsupported           {}\t{}",
                     entry.path().to_str().unwrap_or(""),
                     feature
                 );
             }
-            Ok(Err(Error::Emit(err))) => {
+            Ok(Err(Error::EmitError(err))) => {
                 println!(
-                    "🔴 Emit Error    {}\t{:?}",
+                    "🔴 Emit Error            {}\t{:?}",
                     entry.path().to_str().unwrap_or(""),
                     err
                 );
             }
-            Ok(Err(Error::Compile(_))) => {
-                println!("🟡 Compile Error {}", entry.path().to_str().unwrap_or(""));
-            }
-            Ok(Err(Error::File(e))) => {
+            Ok(Err(Error::CompilationError(_))) => {
                 println!(
-                    "🟡 IO Error      {}\t{:?}",
+                    "🟡 Compile Error         {}",
+                    entry.path().to_str().unwrap_or("")
+                );
+            }
+            Ok(Err(Error::FileError(err))) => {
+                println!(
+                    "🟡 IO Error              {}\t{:?}",
                     entry.path().to_str().unwrap_or(""),
-                    e
+                    err
+                );
+            }
+            Ok(Err(Error::FileGenerationError(err))) => {
+                println!(
+                    "🟡 File generating error {}\t{:?}",
+                    entry.path().to_str().unwrap_or(""),
+                    err
+                );
+            }
+            Ok(Err(Error::NoirProjectError(err))) => {
+                println!(
+                    "🟡 Noir project error    {}\t{:?}",
+                    entry.path().to_str().unwrap_or(""),
+                    err
                 );
             }
             Ok(Ok(_)) => {
-                println!("🟢 Pass          {}", entry.path().to_str().unwrap_or(""));
+                println!(
+                    "🟢 Pass                  {}",
+                    entry.path().to_str().unwrap_or("")
+                );
             }
         }
     }
@@ -150,30 +148,16 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode> {
 /// # Errors
 ///
 /// - [`Error`] if the extraction process fails for any reason.
-pub fn run(args: &ProgramOptions) -> Result<ExitCode> {
-    let source = Source::read(&args.root, &args.file)?;
-    let project = Project::new(&args.root, source);
+pub fn run(args: &ProgramOptions) -> Result<ExitCode, Error> {
+    let project = Project::new(args.root.clone())?;
 
-    let emit_result = noir_to_lean(project)?;
-    if emit_result.has_warnings() {
-        for warning in &emit_result.warnings {
-            println!("{warning:?}");
+    let result = project.extract()?;
+
+    if result.has_warnings() {
+        for warning in &result.warnings {
+            eprintln!("{warning:?}");
         }
     }
-
-    let mut lean_source = LEAN_HEADER.to_owned();
-    lean_source.push_str(&emit_result.take());
-
-    let mut out_file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(&args.out_file)
-        .map_err(|_| lampe::error::file::Error::MissingFile(args.out_file.clone()))?;
-
-    out_file
-        .write(lean_source.as_bytes())
-        .map_err(|_| lampe::error::file::Error::WritingError(args.out_file.clone()))?;
 
     Ok(ExitCode::SUCCESS)
 }

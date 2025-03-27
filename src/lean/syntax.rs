@@ -325,7 +325,6 @@ pub(super) mod expr {
         let var = if var == "_" { "_?".to_string() } else { var };
         // The compiler seems to add intermediate variables with `$` prefix.
         // We have to replace these with valid Lean identifier characters.
-
         var.replace('$', "ζ")
     }
 

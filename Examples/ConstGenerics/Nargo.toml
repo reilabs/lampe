@@ -1,0 +1,5 @@
+[package]
+name = "ConstGenerics"
+type = "bin"
+authors = [""]
+
