@@ -16,7 +16,7 @@
    "name": "Lampe",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
-   "dir": "././../../../../Lampe",
+   "dir": "././../../../Lampe",
    "configFile": "lakefile.lean"},
   {"url": "https://github.com/leanprover-community/mathlib4.git",
    "type": "git",

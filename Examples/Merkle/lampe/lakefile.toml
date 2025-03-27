@@ -20,7 +20,7 @@ name = "Spec"
 
 [[require]]
 name = "Lampe"
-path = "./../../../../Lampe"
+path = "./../../../Lampe"
 
 [[require]]
 name = "proven-zk"

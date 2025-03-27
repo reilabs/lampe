@@ -1,0 +1,6 @@
+[package]
+name = "Merkle"
+type = "bin"
+authors = [""]
+
+[dependencies]

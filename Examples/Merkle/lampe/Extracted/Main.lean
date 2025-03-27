@@ -25,6 +25,89 @@ nr_trait_impl[impl_405] <> BinaryHasher<Field> for Skyscraper<> where  {
 }
 }
 
+nr_def «to_le_bits»<>(self : Field) -> [u1; 256] {
+    let mut val = self;
+    let mut bits = [0 : u1 ; 256];
+    for i in 0 : u32 .. 256 : u32 {
+            bits[#cast(i) : u32] = (@sgn0<> as λ(Field) → u1)(val);
+        if #uEq(#arrayIndex(bits, #cast(i) : u32) : u1, 0 : u1) : bool {
+                val = #fDiv(val, 2 : Field) : Field;
+        } else {
+                val = #fDiv(#fSub(val, 1 : Field) : Field, 2 : Field) : Field;
+        };
+    };
+    bits;
+}
+
+nr_def «from_le_bytes»<>(bytes : [u8; 32]) -> Field {
+    let mut v = 1 : Field;
+    let mut result = 0 : Field;
+    for i in 0 : u32 .. 32 : u32 {
+            result = #fAdd(result, #fMul(#cast(#arrayIndex(bytes, #cast(i) : u32) : u8) : Field, v) : Field) : Field;
+        v = #fMul(v, 256 : Field) : Field;
+    };
+    result;
+}
+
+nr_def «as_array»<>(self : [u8]) -> [u8; 32] {
+    let mut array = [0 : u8 ; 32];
+    for i in 0 : u32 .. 32 : u32 {
+            array[#cast(i) : u32] = #sliceIndex(self, #cast(i) : u32) : u8;
+    };
+    array;
+}
+
+nr_def «weird_assert_eq»<>(a : Field, b : Field) -> Unit {
+    let wit =     (@weird_eq_witness<> as λ(Field, Field) → Field)(a, b);
+    #assert(#fEq(wit, a) : bool) : Unit;
+    #assert(#fEq(wit, b) : bool) : Unit;
+}
+
+nr_def «sbox»<>(v : u8) -> u8 {
+    let x1 = #uNot(v) : u8;
+    let x2 = (@rotate_left<> as λ(u8, u8) → u8)(x1, 1 : u8);
+    let x3 = (@rotate_left<> as λ(u8, u8) → u8)(v, 2 : u8);
+    let x4 = (@rotate_left<> as λ(u8, u8) → u8)(v, 3 : u8);
+    let x5 = #uAnd(#uAnd(x2, x3) : u8, x4) : u8;
+    let x6 = (@rotate_left<> as λ(u8, u8) → u8)(x5, 1 : u8);
+    #uXor(v, x6) : u8;
+}
+
+nr_def «rl»<>(u : u8) -> u8 {
+    let top_bit = #uShr(u, 7 : u8) : u8;
+    #uOr(#uShl(u, 1 : u8) : u8, top_bit) : u8;
+}
+
+nr_def «mtree_recover»<H, @N : u32>(idx : [bool; N], p : [Field; N], item : Field) -> Field {
+    let mut curr_h = item;
+    for i in 0 : u32 .. u@N {
+            let dir = #arrayIndex(idx, #cast(i) : u32) : bool;
+        let sibling_root = #arrayIndex(p, #cast(i) : u32) : Field;
+        if dir {
+                curr_h = ((H as BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(sibling_root, curr_h);
+        } else {
+                curr_h = ((H as BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(curr_h, sibling_root);
+        };
+    };
+    curr_h;
+}
+
+nr_def «sgn0»<>(self : Field) -> u1 {
+    #cast(self) : u1;
+}
+
+nr_def «square»<>(a : Field) -> Field {
+    #fMul(#fMul(a, a) : Field, (@SIGMA<> as λ() → Field)()) : Field;
+}
+
+nr_def «rotate_left»<>(u : u8, N : u8) -> u8 {
+    let mut result = u;
+    for _? in 0 : u8 .. N {
+            result = (@rl<> as λ(u8) → u8)(result);
+    };
+    result;
+}
+
 nr_def «bar»<>(a : Field) -> Field {
     let bytes = (@to_le_bytes<> as λ(Field) → [u8; 32])(a);
     let mut new_left = [0 : u8 ; 16];
@@ -45,95 +128,9 @@ nr_def «bar»<>(a : Field) -> Field {
     (@from_le_bytes<> as λ([u8; 32]) → Field)(new_bytes_array);
 }
 
-nr_def «weird_assert_eq»<>(a : Field, b : Field) -> Unit {
-    let wit =     (@weird_eq_witness<> as λ(Field, Field) → Field)(a, b);
-    #assert(#fEq(wit, a) : bool) : Unit;
-    #assert(#fEq(wit, b) : bool) : Unit;
-}
-
-nr_def «to_le_bits»<>(self : Field) -> [u1; 256] {
-    let mut val = self;
-    let mut bits = [0 : u1 ; 256];
-    for i in 0 : u32 .. 256 : u32 {
-            bits[#cast(i) : u32] = (@sgn0<> as λ(Field) → u1)(val);
-        if #uEq(#arrayIndex(bits, #cast(i) : u32) : u1, 0 : u1) : bool {
-                val = #fDiv(val, 2 : Field) : Field;
-        } else {
-                val = #fDiv(#fSub(val, 1 : Field) : Field, 2 : Field) : Field;
-        };
-    };
-    bits;
-}
-
-nr_def «rl»<>(u : u8) -> u8 {
-    let top_bit = #uShr(u, 7 : u8) : u8;
-    #uOr(#uShl(u, 1 : u8) : u8, top_bit) : u8;
-}
-
-nr_def «from_le_bytes»<>(bytes : [u8; 32]) -> Field {
-    let mut v = 1 : Field;
-    let mut result = 0 : Field;
-    for i in 0 : u32 .. 32 : u32 {
-            result = #fAdd(result, #fMul(#cast(#arrayIndex(bytes, #cast(i) : u32) : u8) : Field, v) : Field) : Field;
-        v = #fMul(v, 256 : Field) : Field;
-    };
-    result;
-}
-
-nr_def «weird_eq_witness»<>(a : Field, b : Field) -> Field {
-    #fresh() : Field
-}
-
-nr_def «as_array»<>(self : [u8]) -> [u8; 32] {
-    let mut array = [0 : u8 ; 32];
-    for i in 0 : u32 .. 32 : u32 {
-            array[#cast(i) : u32] = #sliceIndex(self, #cast(i) : u32) : u8;
-    };
-    array;
-}
-
-nr_def «square»<>(a : Field) -> Field {
-    #fMul(#fMul(a, a) : Field, (@SIGMA<> as λ() → Field)()) : Field;
-}
-
-nr_def «rotate_left»<>(u : u8, N : u8) -> u8 {
-    let mut result = u;
-    for _? in 0 : u8 .. N {
-            result = (@rl<> as λ(u8) → u8)(result);
-    };
-    result;
-}
-
-nr_def «to_le_bytes»<>(self : Field) -> [u8; 32] {
-    let bits = (@to_le_bits<> as λ(Field) → [u1; 256])(self);
-    let mut bytes = [0 : u8 ; 32];
-    for i in 0 : u32 .. 32 : u32 {
-            bytes[#cast(i) : u32] = #uAdd(#uAdd(#uAdd(#uAdd(#uAdd(#uAdd(#uAdd(#cast(#arrayIndex(bits, #cast(#uMul(8 : u32, i) : u32) : u32) : u1) : u8, #uMul(2 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 1 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(4 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 2 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(8 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 3 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(16 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 4 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(32 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 5 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(64 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 6 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(128 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 7 : u32) : u32) : u32) : u1) : u8) : u8) : u8;
-    };
-    bytes;
-}
-
 nr_def «main»<>(root : Field, proof : [Field; 32], item : Field, idx : [bool; 32]) -> Unit {
     let calculated_root = (@mtree_recover<Skyscraper<>, 32 : u32> as λ([bool; 32], [Field; 32], Field) → Field)(idx, proof, item);
     (@weird_assert_eq<> as λ(Field, Field) → Unit)(root, calculated_root);
-}
-
-nr_def «mtree_recover»<H, @N : u32>(idx : [bool; N], p : [Field; N], item : Field) -> Field {
-    let mut curr_h = item;
-    for i in 0 : u32 .. u@N {
-            let dir = #arrayIndex(idx, #cast(i) : u32) : bool;
-        let sibling_root = #arrayIndex(p, #cast(i) : u32) : Field;
-        if dir {
-                curr_h = ((H as BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(sibling_root, curr_h);
-        } else {
-                curr_h = ((H as BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(curr_h, sibling_root);
-        };
-    };
-    curr_h;
-}
-
-nr_def «sgn0»<>(self : Field) -> u1 {
-    #cast(self) : u1;
 }
 
 nr_def «permute»<>(s : [Field; 2]) -> [Field; 2] {
@@ -173,15 +170,18 @@ nr_def «permute»<>(s : [Field; 2]) -> [Field; 2] {
     [l, r];
 }
 
-nr_def «sbox»<>(v : u8) -> u8 {
-    let x1 = #uNot(v) : u8;
-    let x2 = (@rotate_left<> as λ(u8, u8) → u8)(x1, 1 : u8);
-    let x3 = (@rotate_left<> as λ(u8, u8) → u8)(v, 2 : u8);
-    let x4 = (@rotate_left<> as λ(u8, u8) → u8)(v, 3 : u8);
-    let x5 = #uAnd(#uAnd(x2, x3) : u8, x4) : u8;
-    let x6 = (@rotate_left<> as λ(u8, u8) → u8)(x5, 1 : u8);
-    #uXor(v, x6) : u8;
+nr_def «to_le_bytes»<>(self : Field) -> [u8; 32] {
+    let bits = (@to_le_bits<> as λ(Field) → [u1; 256])(self);
+    let mut bytes = [0 : u8 ; 32];
+    for i in 0 : u32 .. 32 : u32 {
+            bytes[#cast(i) : u32] = #uAdd(#uAdd(#uAdd(#uAdd(#uAdd(#uAdd(#uAdd(#cast(#arrayIndex(bits, #cast(#uMul(8 : u32, i) : u32) : u32) : u1) : u8, #uMul(2 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 1 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(4 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 2 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(8 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 3 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(16 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 4 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(32 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 5 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(64 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 6 : u32) : u32) : u32) : u1) : u8) : u8) : u8, #uMul(128 : u8, #cast(#arrayIndex(bits, #cast(#uAdd(#uMul(8 : u32, i) : u32, 7 : u32) : u32) : u32) : u1) : u8) : u8) : u8;
+    };
+    bytes;
+}
+
+nr_def «weird_eq_witness»<>(a : Field, b : Field) -> Field {
+    #fresh() : Field
 }
 
 
-def env := Lampe.Env.mk [«bar», «rl», «main», «SIGMA», «from_le_bytes», «sbox», «weird_eq_witness», «mtree_recover», «weird_assert_eq», «to_le_bits», «as_array», «to_le_bytes», «rotate_left», «square», «sgn0», «RC», «permute»] [impl_405]
+def env := Lampe.Env.mk [«permute», «weird_eq_witness», «to_le_bits», «rotate_left», «RC», «bar», «rl», «from_le_bytes», «weird_assert_eq», «main», «square», «sgn0», «to_le_bytes», «SIGMA», «as_array», «sbox», «mtree_recover»] [impl_405]

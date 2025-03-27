@@ -1,7 +1,7 @@
 use crate::file_generator::lake::dependency::{
     LeanDependency, LeanDependencyGit, LeanDependencyPath,
 };
-use crate::file_generator::{Error, LAMPE_GENERATED_COMMENT};
+use crate::file_generator::{Error, EXTRACTED_LIB_NAME, LAMPE_GENERATED_COMMENT};
 use nargo::package::Package;
 use std::fmt::Write;
 use std::fs;
@@ -14,7 +14,7 @@ fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
     vec![
         Box::new(
             LeanDependencyPath::builder("Lampe")
-                .path("./../../../../Lampe")
+                .path("./../../../Lampe")
                 .build(),
         ),
         // TODO: In a real setup, require Lample like this:
@@ -32,7 +32,12 @@ fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
     ]
 }
 
-pub fn generate_lakefile_toml(lampe_root_dir: &Path, package: &Package) -> Result<(), Error> {
+pub fn generate_lakefile_toml(lampe_root_dir: &Path, package: &Package, overwrite: bool) -> Result<(), Error> {
+    let output_file = lampe_root_dir.join("lakefile.toml");
+    if output_file.exists() && !overwrite {
+        return Ok(());
+    }
+
     let name = &package.name.to_string();
     let version = &package.version.clone().unwrap_or("0.0.0".to_string());
 
@@ -45,13 +50,16 @@ pub fn generate_lakefile_toml(lampe_root_dir: &Path, package: &Package) -> Resul
     result.push_str("[[lean_lib]]\n");
     writeln!(result, "name = \"{name}\"")?;
     result.push('\n');
+    result.push_str("[[lean_lib]]\n");
+    writeln!(result, "name = \"{EXTRACTED_LIB_NAME}\"")?;
+    result.push('\n');
 
     for dependency in default_lean_dependencies() {
         result.push_str(&dependency.generate()?);
         result.push('\n');
     }
 
-    fs::write(lampe_root_dir.join("lakefile.toml"), result)?;
+    fs::write(output_file, result)?;
 
     Ok(())
 }

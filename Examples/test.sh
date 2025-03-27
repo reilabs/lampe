@@ -4,29 +4,39 @@ set -euxo pipefail
 EXAMPLES_DIR=$(dirname $(readlink -f "$0"))
 PROJECT_ROOT=$(dirname $EXAMPLES_DIR)
 
+SELECTED_TEST="${1:-}"
+
 (cd $PROJECT_ROOT && cargo build --release)
 
 CLI=$PROJECT_ROOT"/target/release/cli"
 
-readarray -t example_dirs < <(find "$EXAMPLES_DIR" -maxdepth 1 -type d -not -path '*/\.*' -not -path "$EXAMPLES_DIR")
+if [[ "$SELECTED_TEST" == "" ]]; then
+	readarray -t example_dirs < <(find "$EXAMPLES_DIR" -maxdepth 1 -type d -not -path '*/\.*' -not -path "$EXAMPLES_DIR")
+else
+	example_dirs=( "$EXAMPLES_DIR/$SELECTED_TEST" )
+fi
 
 for dir in "${example_dirs[@]}"; do
 	cd $dir
+	dir_name=$(basename $dir)
 
-  lib_name=$(grep -A1 "^\[package\]" "Nargo.toml" | grep "name" | sed 's/name = "\(.*\)"/\1/')
-
-	if [[ "$lib_name" =~ Dependencies|LocalDependency ]]; then
+  # Tests to skip
+	if [[ "$dir_name" =~ Dependencies|LocalDependency ]]; then
 	  continue
 	fi
 
-	$CLI
-	if [[ "$lib_name" =~ Merkle ]]; then
-		echo "import Merkle.Field" >> lampe/Merkle/Merkle.lean
-		echo "import Merkle.Ref" >> lampe/Merkle/Merkle.lean
-		echo "import Merkle.Spec" >> lampe/Merkle/Merkle.lean
+	if [[ -f "$dir/clean.sh" ]]; then
+		"$dir/clean.sh"
 	fi
 
-	cd lampe/$lib_name
+	# Run Lampe generation
+	$CLI
+
+	if [[ -f "$dir/user_actions.sh" ]]; then
+		"$dir/user_actions.sh"
+	fi
+
+	cd lampe
 
 	lake exe cache get
 	lake build
