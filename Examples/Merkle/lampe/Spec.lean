@@ -1,6 +1,6 @@
-import Merkle.Extracted.Main
-import Merkle.Field
-import Merkle.Ref
+import Extracted
+import Field
+import Ref
 import Lampe
 
 import ProvenZk

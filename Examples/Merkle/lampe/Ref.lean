@@ -1,7 +1,8 @@
-import Merkle.Field
 import Lampe.Data.Field
 
-open Merkle
+import Field
+
+open Field
 namespace Ref
 
 open Lampe (U Fp)

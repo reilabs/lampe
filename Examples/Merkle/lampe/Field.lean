@@ -6,7 +6,7 @@ def p := 21888242871839275222246405745257275088548364400416034343698204186575808
 
 axiom pPrime : Nat.Prime (p + 1)
 
-namespace Merkle
+namespace Field
 
 abbrev bnField := Fp ⟨p, pPrime⟩
 
@@ -16,4 +16,4 @@ instance : ToString bnField where
 instance : Repr bnField where
   reprPrec b _ := toString b
 
-end Merkle
+end Field

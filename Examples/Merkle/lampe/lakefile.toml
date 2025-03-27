@@ -6,6 +6,18 @@ defaultTargets = ["Merkle"]
 [[lean_lib]]
 name = "Merkle"
 
+[[lean_lib]]
+name = "Extracted"
+
+[[lean_lib]]
+name = "Field"
+
+[[lean_lib]]
+name = "Ref"
+
+[[lean_lib]]
+name = "Spec"
+
 [[require]]
 name = "Lampe"
 path = "./../../../../Lampe"
