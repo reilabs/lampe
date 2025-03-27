@@ -1,7 +1,7 @@
 use crate::file_generator::lake::dependency::{
     LeanDependency, LeanDependencyGit, LeanDependencyPath,
 };
-use crate::file_generator::{Error, EXTRACTED_LIB_NAME, LAMPE_GENERATED_COMMENT};
+use crate::file_generator::{EXTRACTED_LIB_NAME, Error, LAMPE_GENERATED_COMMENT};
 use nargo::package::Package;
 use std::fmt::Write;
 use std::fs;
@@ -12,11 +12,7 @@ mod dependency;
 
 fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
     vec![
-        Box::new(
-            LeanDependencyPath::builder("Lampe")
-                .path("./../../../Lampe")
-                .build(),
-        ),
+        Box::new(LeanDependencyPath::builder("Lampe").path("./../../../Lampe").build()),
         // TODO: In a real setup, require Lample like this:
         // Box::new(LeanDependencyGit::builder("Lampe")
         //     .git("https://github.com/reilabs/lampe")
@@ -32,7 +28,11 @@ fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
     ]
 }
 
-pub fn generate_lakefile_toml(lampe_root_dir: &Path, package: &Package, overwrite: bool) -> Result<(), Error> {
+pub fn generate_lakefile_toml(
+    lampe_root_dir: &Path,
+    package: &Package,
+    overwrite: bool,
+) -> Result<(), Error> {
     let output_file = lampe_root_dir.join("lakefile.toml");
     if output_file.exists() && !overwrite {
         return Ok(());

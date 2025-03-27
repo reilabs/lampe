@@ -22,14 +22,18 @@ pub fn generate_lean_files(
     }
 
     for (file_name, extracted_lean) in extracted_files {
-        write_extracted_file(&lampe_root_dir, file_name, extracted_lean, true)?;
+        write_extracted_file(lampe_root_dir, file_name, extracted_lean, true)?;
     }
-    generate_extracted(&lampe_root_dir, &extracted_files.keys().collect(), true)?;
+    generate_extracted(lampe_root_dir, &extracted_files.keys().collect(), true)?;
 
     Ok(())
 }
 
-fn generate_lib_lean(lampe_root_dir: &Path, lib_name: &String, overwrite: bool) -> Result<(), Error> {
+fn generate_lib_lean(
+    lampe_root_dir: &Path,
+    lib_name: &String,
+    overwrite: bool,
+) -> Result<(), Error> {
     let output_file = lampe_root_dir.join(format!("{lib_name}.lean"));
     if output_file.exists() && !overwrite {
         return Ok(());
@@ -68,7 +72,9 @@ fn write_extracted_file(
     extracted_lean: &LeanFileContent,
     overwrite: bool,
 ) -> Result<(), Error> {
-    let output_file =  lampe_root_dir.join(EXTRACTED_LIB_NAME).join(format!("{file_name}.lean"));
+    let output_file = lampe_root_dir
+        .join(EXTRACTED_LIB_NAME)
+        .join(format!("{file_name}.lean"));
     if output_file.exists() && !overwrite {
         return Ok(());
     }
