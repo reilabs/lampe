@@ -4,7 +4,31 @@ set -euxo pipefail
 EXAMPLES_DIR=$(dirname $(readlink -f "$0"))
 PROJECT_ROOT=$(dirname $EXAMPLES_DIR)
 
-SELECTED_TEST="${1:-}"
+usage(){
+>&2 cat << EOF
+Usage: $0
+   [ -t | --test ] Name of directory with test to run
+   [ --ci        ] Flag to indicate that test run in CI (on GitHub we need to clean after each test as we run out of disk space)
+EOF
+exit 1
+}
+
+while :
+do
+	if [[ $# -eq 0 ]]; then
+		break
+	fi
+  case $1 in
+    -t | --test) PARAM_TEST=$2    ; shift 2 ;;
+    --ci)        PARAM_CI=true    ; shift   ;;
+    -h | --help) usage            ; shift   ;;
+    *) >&2 echo Unsupported option: $1
+       usage ;;
+  esac
+done
+
+SELECTED_TEST="${PARAM_TEST:-}"
+CI_RUN="${PARAM_CI:-false}"
 
 (cd $PROJECT_ROOT && cargo build --release)
 
@@ -40,5 +64,11 @@ for dir in "${example_dirs[@]}"; do
 
 	lake exe cache get
 	lake build
+
+	# We need to cleanup some space in GitHub as we run out of disk space when running tests
+	if [[ "$CI_RUN" == "true" ]]; then
+		cd $EXAMPLES_DIR
+		rm -rf ./$dir_name
+	fi
 done
 
