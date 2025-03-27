@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use noirc_frontend::{
     Type, TypeBinding,
     ast::BinaryOpKind,
@@ -49,9 +47,9 @@ impl TryInto<BuiltinType> for Type {
             Type::Array(_, _) => Ok(BuiltinType::Array),
             Type::Slice(_) => Ok(BuiltinType::Slice),
             Type::String(_) => Ok(BuiltinType::String),
-            Type::TypeVariable(tv) => match tv.borrow().deref() {
+            Type::TypeVariable(tv) => match &*tv.borrow() {
                 TypeBinding::Bound(ty) => TryInto::<BuiltinType>::try_into(ty.clone()),
-                _ => Err(format!("unbound type variable `{tv:?}`")),
+                TypeBinding::Unbound(..) => Err(format!("unbound type variable `{tv:?}`")),
             },
             _ => Err(format!("unknown builtin type `{self:?}`")),
         }
@@ -59,41 +57,35 @@ impl TryInto<BuiltinType> for Type {
 }
 
 impl BuiltinType {
-    fn is_arithmetic(&self) -> bool {
-        match self {
-            BuiltinType::Field
-            | BuiltinType::Uint(_)
-            | BuiltinType::Int(_)
-            | BuiltinType::BigInt => true,
-            _ => false,
-        }
+    fn is_arithmetic(self) -> bool {
+        matches!(
+            self,
+            BuiltinType::Field | BuiltinType::Uint(_) | BuiltinType::Int(_) | BuiltinType::BigInt
+        )
     }
 
-    fn is_bitwise(&self) -> bool {
-        match self {
-            BuiltinType::Bool | BuiltinType::Uint(_) | BuiltinType::Int(_) => true,
-            _ => false,
-        }
+    fn is_bitwise(self) -> bool {
+        matches!(
+            self,
+            BuiltinType::Bool | BuiltinType::Uint(_) | BuiltinType::Int(_)
+        )
     }
 
-    fn is_collection(&self) -> bool {
-        match self {
-            BuiltinType::Array | BuiltinType::Slice => true,
-            _ => false,
-        }
+    fn is_collection(self) -> bool {
+        matches!(self, BuiltinType::Array | BuiltinType::Slice)
     }
 
-    fn name_prefix(&self) -> String {
+    fn name_prefix(self) -> String {
         match self {
-            BuiltinType::Field => format!("f"),
-            BuiltinType::Uint(_) => format!("u"),
-            BuiltinType::Int(_) => format!("i"),
-            BuiltinType::BigInt => format!("bigInt"),
-            BuiltinType::Bool => format!("b"),
-            BuiltinType::Unit => format!("unit"),
-            BuiltinType::Array => format!("array"),
-            BuiltinType::Slice => format!("slice"),
-            BuiltinType::String => format!("str"),
+            BuiltinType::Field => "f".to_string(),
+            BuiltinType::Uint(_) => "u".to_string(),
+            BuiltinType::Int(_) => "i".to_string(),
+            BuiltinType::BigInt => "bigInt".to_string(),
+            BuiltinType::Bool => "b".to_string(),
+            BuiltinType::Unit => "unit".to_string(),
+            BuiltinType::Array => "array".to_string(),
+            BuiltinType::Slice => "slice".to_string(),
+            BuiltinType::String => "str".to_string(),
         }
     }
 }
@@ -120,7 +112,7 @@ pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
 pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     if coll_type.is_collection() {
         let ty_name = coll_type.name_prefix();
-        Some(format!("{}Index", ty_name))
+        Some(format!("{ty_name}Index"))
     } else {
         None
     }
@@ -134,13 +126,13 @@ pub fn try_prefix_into_builtin_name(
     let rhs_ty_prefix = rhs_type.map(|ty| (ty, ty.name_prefix()));
     match (op, rhs_ty_prefix) {
         (UnaryOp::Minus, Some((rhs_type, prefix))) if rhs_type.is_arithmetic() => {
-            Some(format!("{}Neg", prefix))
+            Some(format!("{prefix}Neg"))
         }
         (UnaryOp::Not, Some((rhs_type, prefix))) if rhs_type.is_bitwise() => {
-            Some(format!("{}Not", prefix))
+            Some(format!("{prefix}Not"))
         }
-        (UnaryOp::MutableReference, _) => Some(format!("ref")),
-        (UnaryOp::Dereference { .. }, _) => Some(format!("readRef")),
+        (UnaryOp::MutableReference, _) => Some("ref".to_string()),
+        (UnaryOp::Dereference { .. }, _) => Some("readRef".to_string()),
         _ => None,
     }
 }
@@ -153,24 +145,24 @@ pub fn try_infix_into_builtin_name(
     let ty_name = lhs_type.name_prefix();
     match op {
         // Arithmetic
-        BinaryOpKind::Add if lhs_type.is_arithmetic() => Some(format!("{}Add", ty_name)),
-        BinaryOpKind::Subtract if lhs_type.is_arithmetic() => Some(format!("{}Sub", ty_name)),
-        BinaryOpKind::Divide if lhs_type.is_arithmetic() => Some(format!("{}Div", ty_name)),
-        BinaryOpKind::Multiply if lhs_type.is_arithmetic() => Some(format!("{}Mul", ty_name)),
-        BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(format!("{}Rem", ty_name)),
+        BinaryOpKind::Add if lhs_type.is_arithmetic() => Some(format!("{ty_name}Add")),
+        BinaryOpKind::Subtract if lhs_type.is_arithmetic() => Some(format!("{ty_name}Sub")),
+        BinaryOpKind::Divide if lhs_type.is_arithmetic() => Some(format!("{ty_name}Div")),
+        BinaryOpKind::Multiply if lhs_type.is_arithmetic() => Some(format!("{ty_name}Mul")),
+        BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(format!("{ty_name}Rem")),
         // Cmp
-        BinaryOpKind::Equal => Some(format!("{}Eq", ty_name)),
-        BinaryOpKind::NotEqual => Some(format!("{}Neq", ty_name)),
-        BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(format!("{}Gt", ty_name)),
-        BinaryOpKind::GreaterEqual if lhs_type.is_arithmetic() => Some(format!("{}Geq", ty_name)),
-        BinaryOpKind::Less if lhs_type.is_arithmetic() => Some(format!("{}Lt", ty_name)),
-        BinaryOpKind::LessEqual if lhs_type.is_arithmetic() => Some(format!("{}Leq", ty_name)),
+        BinaryOpKind::Equal => Some(format!("{ty_name}Eq")),
+        BinaryOpKind::NotEqual => Some(format!("{ty_name}Neq")),
+        BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(format!("{ty_name}Gt")),
+        BinaryOpKind::GreaterEqual if lhs_type.is_arithmetic() => Some(format!("{ty_name}Geq")),
+        BinaryOpKind::Less if lhs_type.is_arithmetic() => Some(format!("{ty_name}Lt")),
+        BinaryOpKind::LessEqual if lhs_type.is_arithmetic() => Some(format!("{ty_name}Leq")),
         // Bit
-        BinaryOpKind::And if lhs_type.is_bitwise() => Some(format!("{}And", ty_name)),
-        BinaryOpKind::Or if lhs_type.is_bitwise() => Some(format!("{}Or", ty_name)),
-        BinaryOpKind::Xor if lhs_type.is_bitwise() => Some(format!("{}Xor", ty_name)),
-        BinaryOpKind::ShiftLeft if lhs_type.is_bitwise() => Some(format!("{}Shl", ty_name)),
-        BinaryOpKind::ShiftRight if lhs_type.is_bitwise() => Some(format!("{}Shr", ty_name)),
+        BinaryOpKind::And if lhs_type.is_bitwise() => Some(format!("{ty_name}And")),
+        BinaryOpKind::Or if lhs_type.is_bitwise() => Some(format!("{ty_name}Or")),
+        BinaryOpKind::Xor if lhs_type.is_bitwise() => Some(format!("{ty_name}Xor")),
+        BinaryOpKind::ShiftLeft if lhs_type.is_bitwise() => Some(format!("{ty_name}Shl")),
+        BinaryOpKind::ShiftRight if lhs_type.is_bitwise() => Some(format!("{ty_name}Shr")),
         _ => None,
     }
 }

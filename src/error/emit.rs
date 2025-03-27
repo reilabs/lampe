@@ -19,4 +19,7 @@ pub enum Error {
 
     #[error("Unsupported feature {_0}")]
     UnsupportedFeature(String),
+
+    #[error("Unexpected type: type of {_0} must be {_1}")]
+    UnexpectedType(String, String),
 }

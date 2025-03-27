@@ -14,19 +14,10 @@ enum PatType {
 
 /// The context of a pattern which contains all the necessary information to convert a nested `HirPattern::Identifier` pattern into a let (mut) binding.
 /// This means, it contains the stack of tuple and struct patterns that the identifier is nested in, and whether the identifier is mutable.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 struct PatCtx {
     stack: Vec<PatType>,
     is_mut: bool,
-}
-
-impl Default for PatCtx {
-    fn default() -> Self {
-        Self {
-            stack: Vec::new(),
-            is_mut: false,
-        }
-    }
 }
 
 impl PatCtx {
@@ -70,7 +61,7 @@ fn parse_pattern(pat: &HirPattern, ctx: &mut PatCtx) -> Vec<PatRes> {
         }
         HirPattern::Struct(struct_type, sub_pats, ..) => {
             let mut res = Vec::new();
-            for (ident, pat) in sub_pats.iter() {
+            for (ident, pat) in sub_pats {
                 ctx.push(PatType::Struct {
                     struct_type: struct_type.clone(),
                     field: ident.clone(),
@@ -126,7 +117,7 @@ pub(super) fn format_pattern(
             for pat_type in ctx.stack {
                 match pat_type {
                     PatType::Tuple(i) => {
-                        rhs = super::syntax::expr::format_tuple_access(&rhs, &format!("{}", i));
+                        rhs = super::syntax::expr::format_tuple_access(&rhs, &format!("{i}"));
                     }
                     PatType::Struct { struct_type, field } => {
                         let struct_name =

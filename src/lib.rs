@@ -12,6 +12,9 @@
 #![allow(clippy::module_name_repetitions)]
 // These occur in our Noir dependencies and cannot be avoided.
 #![allow(clippy::multiple_crate_versions)]
+// This only occurs for keys of type `Type`. It may be worth checking if this is actually an issue
+// we should worry about
+#![allow(clippy::mutable_key_type)]
 
 pub mod error;
 pub mod lean;
@@ -238,7 +241,7 @@ mod test {
     #[test]
     fn patterns() -> anyhow::Result<()> {
         print_result(
-            r#"
+            r"
             struct Option2<T> {
                 _is_some: bool,
                 _value: T,
@@ -259,14 +262,14 @@ mod test {
                     x
                 };
             }
-        "#,
+        ",
         )
     }
 
     #[test]
     fn const_generics() -> anyhow::Result<()> {
         print_result(
-            r#"
+            r"
             fn nat_generic_test<let N: u32>() -> [Field; N] {
                 for i in 0..N {
                     i;
@@ -281,14 +284,14 @@ mod test {
                 }
                 res
             }
-        "#,
+        ",
         )
     }
 
     #[test]
     fn trait_generics() -> anyhow::Result<()> {
         print_result(
-            r#"
+            r"
             trait BinaryHasher<F> {
                 fn hash(a: F, b: F) -> F;
             }
@@ -308,14 +311,14 @@ mod test {
                 }
                 curr_h
             }
-        "#,
+        ",
         )
     }
 
     #[test]
     fn globals() -> anyhow::Result<()> {
         print_result(
-            r#"
+            r"
             global FOOS: [Field; 2] = [FOO, FOO + 1];
 
             global FOO: Field  = 42;
@@ -323,26 +326,26 @@ mod test {
             fn main() -> pub Field {
                 FOOS[1]
             }
-        "#,
+        ",
         )
     }
 
     #[test]
     fn unconstrained() -> anyhow::Result<()> {
         print_result(
-            r#"
+            r"
             unconstrained fn fun() -> Field{
                 let x = 5;
                 x
             }
-        "#,
+        ",
         )
     }
 
     #[test]
     fn arrays() -> anyhow::Result<()> {
         print_result(
-            r#"
+            r"
             pub fn mtree_recover<let N : u32>(idx: [bool; N], p: [Field; N], item: Field) -> Field
             {
                 item
@@ -351,14 +354,14 @@ mod test {
             fn main(root: pub Field, proof : pub [Field; 32], idx : pub [bool; 32], item : pub Field) {
                 assert(root == mtree_recover(idx, proof, item));
             }
-        "#,
+        ",
         )
     }
 
     #[test]
     fn field_generics() -> anyhow::Result<()> {
         print_result(
-            r#"
+            r"
             global A: Field = 4294967297;
 
             fn foo<let A: Field>() -> Field { A }
@@ -366,7 +369,7 @@ mod test {
             fn main() {
                 let _ = foo::<A>();
             }
-            "#,
+            ",
         )
     }
 }

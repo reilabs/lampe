@@ -125,15 +125,19 @@ impl Project {
         // Then we build our compilation context
         let mut context = Context::new(manager, parsed_files);
         context.activate_lsp_mode();
-        let root_crate = prepare_crate(&mut context, &self.project_root.join(root_path).as_path());
+        let root_crate = prepare_crate(&mut context, self.project_root.join(root_path).as_path());
 
         // Perform compilation to check the code within it.
-        let ((), warnings) = check_crate(&mut context, root_crate, &CompileOptions {
-            deny_warnings: false,
-            disable_macros: false,
-            debug_comptime_in_file: None,
-            ..Default::default()
-        })
+        let ((), warnings) = check_crate(
+            &mut context,
+            root_crate,
+            &CompileOptions {
+                deny_warnings: false,
+                disable_macros: false,
+                debug_comptime_in_file: None,
+                ..Default::default()
+            },
+        )
         .map_err(|diagnostics| CompileError::CheckFailure { diagnostics })?;
 
         Ok(WithWarnings::new(

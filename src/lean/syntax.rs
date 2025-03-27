@@ -10,19 +10,19 @@ fn without_generic_args(ty_str: &str) -> String {
     let Some(right_bracket_idx) = ty_str.rfind('>') else {
         return ty_str;
     };
-    ty_str.replace_range(left_bracket_idx..(right_bracket_idx + 1), "");
+    ty_str.replace_range(left_bracket_idx..=right_bracket_idx, "");
     ty_str
 }
 
 /// Returns true if the given type string (extracted by `format_type`) is a slice or array type, e.g., `[T]`.
 fn is_slice_or_array(ty_str: &str) -> bool {
-    ty_str.starts_with("[") && ty_str.ends_with("]")
+    ty_str.starts_with('[') && ty_str.ends_with(']')
 }
 
 fn normalize_ident(ident: &str) -> String {
     ident
         .split("::")
-        .map(|p| without_generic_args(p))
+        .map(without_generic_args)
         .filter(|p| !is_slice_or_array(p))
         .join("::")
 }
@@ -103,7 +103,7 @@ pub(super) fn format_generic_def(name: &str, is_num: bool, u_size: Option<u8>) -
             format!("@{name} : Field")
         }
     } else {
-        format!("{name}")
+        name.to_string()
     }
 }
 
@@ -116,20 +116,20 @@ pub(super) mod literal {
     #[inline]
     pub fn format_bool(v: bool) -> String {
         if v {
-            format!("true")
+            "true".to_string()
         } else {
-            format!("false")
+            "false".to_string()
         }
     }
 
     #[inline]
-    pub fn format_array(elems: Vec<String>) -> String {
+    pub fn format_array(elems: &[String]) -> String {
         let elems_str = elems.join(", ");
         format!("[{elems_str}]")
     }
 
     #[inline]
-    pub fn format_slice(elems: Vec<String>) -> String {
+    pub fn format_slice(elems: &[String]) -> String {
         let array_lit = format_array(elems);
         format!("&{array_lit}")
     }
@@ -151,14 +151,14 @@ pub(super) mod literal {
     }
 
     pub fn format_unit() -> String {
-        format!("#unit")
+        "#unit".to_string()
     }
 }
 
 pub(super) mod r#type {
     #[inline]
     pub fn format_unit() -> String {
-        format!("Unit")
+        "Unit".to_string()
     }
 
     #[inline]
@@ -198,7 +198,7 @@ pub(super) mod r#type {
 
     #[inline]
     pub fn format_placeholder() -> String {
-        format!("_")
+        "_".to_string()
     }
 
     #[inline]
@@ -213,7 +213,7 @@ pub(super) mod r#type {
 }
 
 pub(super) mod lval {
-    use super::*;
+    use super::expr;
 
     #[inline]
     pub fn format_member_access(struct_name: &str, lhs_lval: &str, member: &str) -> String {
@@ -244,7 +244,7 @@ pub(super) mod lval {
 pub(super) mod expr {
     use crate::lean::builtin::BuiltinName;
 
-    use super::*;
+    use super::{formatdoc, normalize_ident};
 
     #[inline]
     pub fn format_constructor(
@@ -261,7 +261,11 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_builtin_call(builtin_name: BuiltinName, func_args: &str, out_ty: &str) -> String {
+    pub fn format_builtin_call(
+        builtin_name: &BuiltinName,
+        func_args: &str,
+        out_ty: &str,
+    ) -> String {
         format!("#{builtin_name}({func_args}) : {out_ty}")
     }
 
@@ -321,8 +325,8 @@ pub(super) mod expr {
         let var = if var == "_" { "_?".to_string() } else { var };
         // The compiler seems to add intermediate variables with `$` prefix.
         // We have to replace these with valid Lean identifier characters.
-        let var = var.replace("$", "ζ");
-        var
+
+        var.replace('$', "ζ")
     }
 
     #[inline]
@@ -363,7 +367,7 @@ pub(super) mod expr {
 
 pub(super) mod stmt {
 
-    use super::*;
+    use super::formatdoc;
 
     #[inline]
     pub fn format_let_in(lhs: &str, rhs: &str) -> String {
