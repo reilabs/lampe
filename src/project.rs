@@ -2,6 +2,7 @@ use crate::error::Error;
 use crate::noir::WithWarnings;
 use crate::{file_generator, noir};
 use fm::FileManager;
+use itertools::Itertools;
 use nargo::package::{Dependency, Package};
 use nargo::workspace::Workspace;
 use nargo_toml::PackageSelection::All;
@@ -9,7 +10,6 @@ use noirc_frontend::hir::ParsedFiles;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
-use itertools::Itertools;
 
 pub struct Project {
     /// The root directory of the project
@@ -26,30 +26,35 @@ pub struct Project {
 }
 
 impl Project {
-    #[must_use] pub fn new(project_root: PathBuf) -> Self {
+    /// Creates new Lampe project by reading Noir project.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Error` if something goes wrong witch reading Noir project.
+    pub fn new(project_root: PathBuf) -> Result<Self, Error> {
         // Workspace loading was done based on https://github.com/noir-lang/noir/blob/c3a43abf9be80c6f89560405b65f5241ed67a6b2/tooling/nargo_cli/src/cli/mod.rs#L180
         // It can be replaced when integrated into nargo tool.
-        let toml_path = nargo_toml::get_package_manifest(&project_root).expect("TODO: [zzz]");
+        let toml_path = nargo_toml::get_package_manifest(&project_root)?;
 
-        let nargo_workspace =
-            nargo_toml::resolve_workspace_from_toml(&toml_path, All, None).expect("TODO: [zzz]");
+        let nargo_workspace = nargo_toml::resolve_workspace_from_toml(&toml_path, All, None)?;
 
         let (nargo_file_manager, nargo_parsed_files) = noir::parse_workspace(&nargo_workspace);
 
-        Self {
+        Ok(Self {
             project_root,
             nargo_workspace,
             nargo_file_manager,
             nargo_parsed_files,
-        }
+        })
     }
 
+    /// Extracts Noir code as Lean creating Lampe project structure in Noir project.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Error` if something goes wrong witch compiling, extracting or generating files.
     pub fn extract(&self) -> Result<WithWarnings<()>, Error> {
-        let noir_project = noir::Project::new(
-            &self.nargo_workspace,
-            &self.nargo_file_manager,
-            &self.nargo_parsed_files,
-        );
+        let noir_project = noir::Project::new(&self.nargo_file_manager, &self.nargo_parsed_files);
 
         let mut warnings = vec![];
         for package in &self.nargo_workspace.members {
@@ -74,7 +79,7 @@ impl Project {
         () = file_generator::lampe_project(
             &self.nargo_workspace.root_dir,
             package,
-            HashMap::from([("Main".to_string(), generated_source)]),
+            &HashMap::from([("Main".to_string(), generated_source)]),
         )?;
 
         Ok(WithWarnings::new((), warnings))
@@ -117,10 +122,15 @@ impl Debug for Project {
         for p in &self.nargo_workspace.members {
             package_fmt(f, p, "    ")?;
         }
-        write!(f, "  loaded_files:\n")?;
+        writeln!(f, "  loaded_files:")?;
         let file_map = self.nargo_file_manager.as_file_map();
         for file_id in file_map.all_file_ids().sorted() {
-            write!(f, "    file_id: {:?}, name: {:?}\n", file_id, file_map.get_name(*file_id).unwrap())?;
+            writeln!(
+                f,
+                "    file_id: {:?}, name: {:?}",
+                file_id,
+                file_map.get_name(*file_id).unwrap()
+            )?;
         }
         writeln!(f, ")")?;
 

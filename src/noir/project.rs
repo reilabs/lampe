@@ -15,10 +15,7 @@ use crate::{
 
 /// A manager for source files for the Noir project that we intend to extract.
 #[derive(Clone)]
-pub struct Project<'workspace, 'file_manager, 'parsed_files> {
-    /// Nargo object keeping the workspace data
-    pub nargo_workspace: &'workspace Workspace,
-
+pub struct Project<'file_manager, 'parsed_files> {
     /// Nargo object keeping loaded files
     nargo_file_manager: &'file_manager FileManager,
 
@@ -26,16 +23,14 @@ pub struct Project<'workspace, 'file_manager, 'parsed_files> {
     nargo_parsed_files: &'parsed_files ParsedFiles,
 }
 
-impl<'workspace, 'file_manager, 'parsed_files> Project<'workspace, 'file_manager, 'parsed_files> {
+impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
     /// Creates a new project with the provided root.
     #[allow(clippy::missing_panics_doc)]
     pub fn new(
-        nargo_workspace: &'workspace Workspace,
         nargo_file_manager: &'file_manager FileManager,
         nargo_parsed_files: &'parsed_files ParsedFiles,
     ) -> Self {
         Self {
-            nargo_workspace,
             nargo_file_manager,
             nargo_parsed_files,
         }
@@ -58,12 +53,16 @@ impl<'workspace, 'file_manager, 'parsed_files> Project<'workspace, 'file_manager
         context.activate_lsp_mode(); //
 
         // Perform compilation to check the code within it.
-        let ((), warnings) = check_crate(&mut context, crate_id, &CompileOptions {
-            deny_warnings: false,
-            disable_macros: false,
-            debug_comptime_in_file: None,
-            ..Default::default()
-        })
+        let ((), warnings) = check_crate(
+            &mut context,
+            crate_id,
+            &CompileOptions {
+                deny_warnings: false,
+                disable_macros: false,
+                debug_comptime_in_file: None,
+                ..Default::default()
+            },
+        )
         .map_err(|diagnostics| CompileError::CheckFailure { diagnostics })?;
 
         Ok(WithWarnings::new(

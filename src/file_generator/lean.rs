@@ -5,10 +5,10 @@ use nargo::package::Package;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub fn generate_lean_files(
-    lampe_root_dir: &PathBuf,
+    lampe_root_dir: &Path,
     package: &Package,
     extracted_files: &HashMap<LeanFileName, LeanFileContent>,
 ) -> Result<(), Error> {
@@ -33,7 +33,7 @@ pub fn generate_lean_files(
     Ok(())
 }
 
-fn generate_lib_lean(lib_dir: &PathBuf, package: &Package) -> Result<(), Error> {
+fn generate_lib_lean(lib_dir: &Path, package: &Package) -> Result<(), Error> {
     let name = &package.name.to_string();
 
     let mut result = String::new();
@@ -45,7 +45,7 @@ fn generate_lib_lean(lib_dir: &PathBuf, package: &Package) -> Result<(), Error> 
 }
 
 fn generate_extracted(
-    lib_dir: &PathBuf,
+    lib_dir: &Path,
     package: &Package,
     file_names: &HashSet<&String>,
 ) -> Result<(), Error> {
@@ -64,7 +64,7 @@ fn generate_extracted(
 }
 
 fn write_extracted_file(
-    lib_dir: &PathBuf,
+    lib_dir: &Path,
     file_name: &LeanFileName,
     extracted_lean: &LeanFileContent,
 ) -> Result<(), Error> {

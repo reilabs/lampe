@@ -26,8 +26,8 @@ pub mod project;
 pub use error::Error;
 pub use project::Project;
 
-pub use noir::error as noir_error;
 pub use file_generator::error as file_generator_error;
+pub use noir::error as noir_error;
 
 // #[cfg(test)]
 // mod test {

@@ -27,11 +27,10 @@ use noirc_frontend::{
         DefinitionKind, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId, TypeAliasId,
     },
 };
-use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 
 use crate::{
-    error,
     lean::{indent::Indenter, syntax::expr::format_builtin_call},
     noir::error::emit::{Error, Result},
 };
@@ -243,7 +242,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 ModuleDefId::TypeId(id) => EmitOutput::Struct(self.emit_struct_def(ind, id, &ctx)?),
                 ModuleDefId::TypeAliasId(id) => EmitOutput::Alias(self.emit_alias(id, &ctx)?),
                 ModuleDefId::ModuleId(_) => {
-                   return Err(Error::UnsupportedFeature("modules".to_string()));
+                    return Err(Error::UnsupportedFeature("modules".to_string()));
                 }
                 // Skip the trait definitions.
                 ModuleDefId::TraitId(_) => continue,
@@ -364,6 +363,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
+    #[allow(clippy::unnecessary_wraps)]
     pub fn emit_alias(&self, alias: TypeAliasId, ctx: &EmitterCtx) -> Result<String> {
         let alias_data = self.context.def_interner.get_type_alias(alias);
         let alias_data = alias_data.borrow();
@@ -420,6 +420,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
     /// Emits the Lean source code corresponding to a resolved generics occuring
     /// at generic declarations.
+    #[allow(clippy::unused_self)]
     pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
         let (is_num, u_size) = match g.kind() {
             Kind::Numeric(num_tp) => match num_tp.as_ref() {

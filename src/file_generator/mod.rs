@@ -2,10 +2,9 @@
 
 use crate::file_generator::error::{Error, Result};
 use nargo::package::Package;
-use noirc_driver::Warnings;
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub mod error;
 mod lake;
@@ -20,9 +19,9 @@ type LeanFileName = String;
 type LeanFileContent = String;
 
 pub fn lampe_project(
-    noir_root_dir: &PathBuf,
+    noir_root_dir: &Path,
     package: &Package,
-    extracted_files: HashMap<LeanFileName, LeanFileContent>,
+    extracted_files: &HashMap<LeanFileName, LeanFileContent>,
 ) -> Result<()> {
     let lampe_root_dir = noir_root_dir.join(LAMPE_DIR_NAME);
 
@@ -38,12 +37,12 @@ pub fn lampe_project(
 
     generate_package_structure(&lampe_root_dir, package)?;
 
-    lean::generate_lean_files(&lampe_root_dir, package, &extracted_files)?;
+    lean::generate_lean_files(&lampe_root_dir, package, extracted_files)?;
 
     Ok(())
 }
 
-fn generate_package_structure(lampe_root_dir: &PathBuf, package: &Package) -> Result<()> {
+fn generate_package_structure(lampe_root_dir: &Path, package: &Package) -> Result<()> {
     lake::generate_lakefile_toml(lampe_root_dir, package)?;
     lean_toolchain::generate_lean_toolchain(lampe_root_dir)?;
 

@@ -37,18 +37,6 @@ impl Indenter {
         }
     }
 
-    /// Returns the line separator in use.
-    #[must_use]
-    pub fn sep(&self) -> &str {
-        &self.line_separator
-    }
-
-    /// Gets the current indentation level.
-    #[must_use]
-    pub fn level(&self) -> usize {
-        self.current_level
-    }
-
     /// Increases the current indentation level by one.
     pub fn indent(&mut self) {
         self.current_level += 1;
@@ -95,11 +83,11 @@ mod test {
     fn can_modify_indent_level() -> anyhow::Result<()> {
         let mut indenter = Indenter::default();
 
-        assert_eq!(indenter.level(), 0);
+        assert_eq!(indenter.current_level, 0);
         indenter.indent();
-        assert_eq!(indenter.level(), 1);
+        assert_eq!(indenter.current_level, 1);
         indenter.dedent()?;
-        assert_eq!(indenter.level(), 0);
+        assert_eq!(indenter.current_level, 0);
 
         Ok(())
     }

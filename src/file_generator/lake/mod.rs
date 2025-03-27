@@ -5,7 +5,7 @@ use crate::file_generator::{Error, LAMPE_GENERATED_COMMENT};
 use nargo::package::Package;
 use std::fmt::Write;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 use std::string::ToString;
 
 mod dependency;
@@ -32,7 +32,7 @@ fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
     ]
 }
 
-pub fn generate_lakefile_toml(lampe_root_dir: &PathBuf, package: &Package) -> Result<(), Error> {
+pub fn generate_lakefile_toml(lampe_root_dir: &Path, package: &Package) -> Result<(), Error> {
     let name = &package.name.to_string();
     let version = &package.version.clone().unwrap_or("0.0.0".to_string());
 

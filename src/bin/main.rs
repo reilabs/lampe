@@ -12,8 +12,8 @@
 use std::{fs, panic, path::PathBuf, process::ExitCode};
 
 use clap::{Parser, arg};
-use lampe::{noir_error, Error, Project};
 use lampe::noir_error::file;
+use lampe::{Error, Project, noir_error};
 
 /// The default Noir project path for the CLI to extract from.
 const DEFAULT_NOIR_PROJECT_PATH: &str = "./";
@@ -78,8 +78,7 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
             continue;
         }
 
-        let project = Project::new(entry.path());
-        let result = panic::catch_unwind(|| project.extract());
+        let result = panic::catch_unwind(|| Project::new(entry.path())?.extract());
 
         match result {
             Err(panic) => {
@@ -106,7 +105,10 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
                 );
             }
             Ok(Err(Error::CompilationError(_))) => {
-                println!("🟡 Compile Error         {}", entry.path().to_str().unwrap_or(""));
+                println!(
+                    "🟡 Compile Error         {}",
+                    entry.path().to_str().unwrap_or("")
+                );
             }
             Ok(Err(Error::FileError(err))) => {
                 println!(
@@ -122,8 +124,18 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
                     err
                 );
             }
+            Ok(Err(Error::NoirProjectError(err))) => {
+                println!(
+                    "🟡 Noir project error    {}\t{:?}",
+                    entry.path().to_str().unwrap_or(""),
+                    err
+                );
+            }
             Ok(Ok(_)) => {
-                println!("🟢 Pass                  {}", entry.path().to_str().unwrap_or(""));
+                println!(
+                    "🟢 Pass                  {}",
+                    entry.path().to_str().unwrap_or("")
+                );
             }
         }
     }
@@ -137,7 +149,7 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
 ///
 /// - [`Error`] if the extraction process fails for any reason.
 pub fn run(args: &ProgramOptions) -> Result<ExitCode, Error> {
-    let project = Project::new(args.root.clone());
+    let project = Project::new(args.root.clone())?;
 
     let result = project.extract()?;
 
