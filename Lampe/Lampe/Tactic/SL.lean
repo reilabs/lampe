@@ -224,6 +224,12 @@ lemma solve_compose [LawfulHeap α] {P Q R S : SLP α} (h₁ : P ⊢ Q ⋆ R) (h
   apply SLP.star_mono_l
   assumption
 
+theorem solve_pure_ent_pure [LawfulHeap α] {P Q : Prop} :
+  (P → Q) → ((⟦P⟧ : SLP α) ⊢ ⟦Q⟧) := by
+  unfold SLP.lift
+  unfold SLP.entails
+  simp only [and_imp, forall_eq_apply_imp_iff, and_true, imp_self]
+
 end Internal
 
 structure SLGoals where
@@ -346,6 +352,17 @@ partial def solveEntailment (goal : MVarId): TacticM SLGoals := withTraceNode `L
 
   trace[Lampe.SL] "Current goal: {pre.printShape} ⊢ {post.printShape}"
   trace[Lampe.SL] (←Lean.PrettyPrinter.ppExpr target)
+
+  match pre, post with
+  | SLTerm.lift _, SLTerm.lift _ => do
+    let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_pure_ent_pure) | throwError "unexpected goals in solve_pure_ent_pure"
+    let (_, g) ← g.intro1
+    let gs ← evalTacticAt (←`(tactic|tauto)) g
+    if gs.isEmpty then
+      return SLGoals.mk [] impls
+    else
+      return SLGoals.mk [g] impls
+  | _, _ => pure ()
 
   match pre with
   | SLTerm.exi _ => do
