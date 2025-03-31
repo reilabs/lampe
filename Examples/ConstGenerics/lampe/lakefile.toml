@@ -6,9 +6,6 @@ defaultTargets = ["ConstGenerics"]
 [[lean_lib]]
 name = "ConstGenerics"
 
-[[lean_lib]]
-name = "Extracted"
-
 [[require]]
 name = "Lampe"
 path = "./../../../Lampe"

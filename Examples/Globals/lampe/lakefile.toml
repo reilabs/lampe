@@ -6,9 +6,6 @@ defaultTargets = ["Globals"]
 [[lean_lib]]
 name = "Globals"
 
-[[lean_lib]]
-name = "Extracted"
-
 [[require]]
 name = "Lampe"
 path = "./../../../Lampe"

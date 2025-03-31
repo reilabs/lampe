@@ -6,9 +6,6 @@ defaultTargets = ["Experiments"]
 [[lean_lib]]
 name = "Experiments"
 
-[[lean_lib]]
-name = "Extracted"
-
 [[require]]
 name = "Lampe"
 path = "./../../../Lampe"

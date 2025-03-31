@@ -6,9 +6,6 @@ defaultTargets = ["FieldGenerics"]
 [[lean_lib]]
 name = "FieldGenerics"
 
-[[lean_lib]]
-name = "Extracted"
-
 [[require]]
 name = "Lampe"
 path = "./../../../Lampe"

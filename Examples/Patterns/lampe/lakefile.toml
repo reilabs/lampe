@@ -6,9 +6,6 @@ defaultTargets = ["Patterns"]
 [[lean_lib]]
 name = "Patterns"
 
-[[lean_lib]]
-name = "Extracted"
-
 [[require]]
 name = "Lampe"
 path = "./../../../Lampe"

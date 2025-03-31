@@ -42,9 +42,6 @@ pub fn generate_lakefile_toml(
     result.push_str("[[lean_lib]]\n");
     writeln!(result, "name = \"{name}\"")?;
     result.push('\n');
-    result.push_str("[[lean_lib]]\n");
-    writeln!(result, "name = \"{EXTRACTED_LIB_NAME}\"")?;
-    result.push('\n');
 
     for dependency in default_lean_dependencies() {
         result.push_str(&dependency.generate()?);
