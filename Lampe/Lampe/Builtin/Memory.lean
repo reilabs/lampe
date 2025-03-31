@@ -94,4 +94,8 @@ def writeRef : Builtin := {
       assumption
 }
 
+def zeroed := newGenericTotalPureBuiltin
+  (fun (a : Tp) => ⟨[], a⟩)
+  (fun {p} a _ => Tp.zero p a)
+
 end Lampe.Builtin
