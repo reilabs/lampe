@@ -209,4 +209,14 @@ def fNeg := newTotalPureBuiltin
   ⟨[(.field)], .field⟩
   (fun h![a] => -a)
 
+/--
+Defines the negation of equality for field elements `a b : Fp p`
+This is assumed to evaluate to `a != b : Bool`.
+
+In Noir, this builtin corresponds to `a != b` for a field elements `a`, `b`.
+-/
+def fNeq := newTotalPureBuiltin
+  ⟨[.field, .field], .bool⟩
+  (fun h![a, b] => a != b)
+
 end Lampe.Builtin
