@@ -437,8 +437,10 @@ partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSynta
   | e => do
   mkExpr e none fun _ => mkBlock (n :: rest) k
 | [e] => match e with
-  | `(nr_expr | let $_ = $e)
-  | `(nr_expr | let mut $_ = $e)
+  | `(nr_expr | let $v = $e)
+  | `(nr_expr | let mut $v = $e) => do
+    mkExpr e (some v) fun eVal => do
+      `(Lampe.Expr.letIn (Expr.ref $eVal) fun $v => Lampe.Expr.skip)
   | `(nr_expr | $e) => mkExpr e none k
 | _ => do wrapSimple (←`(Lampe.Expr.skip)) none k
 
