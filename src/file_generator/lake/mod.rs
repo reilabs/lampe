@@ -1,5 +1,5 @@
 use crate::file_generator::lake::dependency::{LeanDependency, LeanDependencyPath};
-use crate::file_generator::{EXTRACTED_LIB_NAME, Error, LAMPE_GENERATED_COMMENT};
+use crate::file_generator::{Error, LAMPE_GENERATED_COMMENT};
 use nargo::package::Package;
 use std::fmt::Write;
 use std::fs;

@@ -8,6 +8,8 @@
 //! to support full Noir projects. The stdlib functions properly at this stage.
 
 #![warn(clippy::all, clippy::cargo, clippy::pedantic)]
+// These occur in our Noir dependencies and cannot be avoided.
+#![allow(clippy::multiple_crate_versions)]
 
 use std::{fs, panic, path::PathBuf, process::ExitCode};
 

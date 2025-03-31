@@ -29,5 +29,5 @@ thiserror = "1.0.63"
 anyhow = "1.0.87"
 
 [[bin]]
-name = "cli"
+name = "lampe"
 path = "src/bin/main.rs"

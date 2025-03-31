@@ -32,7 +32,7 @@ CI_RUN="${PARAM_CI:-false}"
 
 (cd $PROJECT_ROOT && cargo build --release)
 
-CLI=$PROJECT_ROOT"/target/release/cli"
+CLI=$PROJECT_ROOT"/target/release/lampe"
 
 if [[ "$SELECTED_TEST" == "" ]]; then
 	readarray -t example_dirs < <(find "$EXAMPLES_DIR" -maxdepth 1 -type d -not -path '*/\.*' -not -path "$EXAMPLES_DIR")
