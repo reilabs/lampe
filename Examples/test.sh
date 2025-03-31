@@ -62,17 +62,12 @@ for dir in "${example_dirs[@]}"; do
 
 	cd lampe
 
+	# Point to a fixed mathlib checkout to avoid many copies
 	if [[ -f "lake-manifest.json" ]]; then
 		jq --slurpfile mathlib ../../mathlib-manifest.json '.packages |= map(if .name == "mathlib" then $mathlib[0] else . end)' lake-manifest.json > temp.json
 		mv temp.json lake-manifest.json
 	fi
 	lake exe cache get
 	lake build
-
-	# We need to cleanup some space in GitHub as we run out of disk space when running tests
-	if [[ "$CI_RUN" == "true" ]]; then
-		cd $EXAMPLES_DIR
-		rm -rf ./$dir_name
-	fi
 done
 
