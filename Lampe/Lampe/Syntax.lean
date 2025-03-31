@@ -148,8 +148,6 @@ def matchGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] : 
 | `(ident| u64) => `(Kind.u 64)
 | _ => throwUnsupportedSyntax
 
-#check BitVec.ofNat
-
 def mkGenericNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] (n : TSyntax `num) :
     TSyntax `ident → m (TSyntax `term)
 | `(ident| Field) => `($n)
