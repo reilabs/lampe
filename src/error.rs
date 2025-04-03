@@ -3,6 +3,7 @@ use crate::error::Error::{CompilationError, EmitError};
 use crate::{file_generator, noir};
 use std::fmt::Display;
 
+#[derive(Debug)]
 pub enum Error {
     CompilationError(noir::error::compilation::Error),
     EmitError(noir::error::emit::Error),
