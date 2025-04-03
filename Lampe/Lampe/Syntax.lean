@@ -59,6 +59,7 @@ syntax ("-" noWs)? num ":" nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
 syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
+syntax "skip" : nr_expr -- alias for `#unit`
 syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
 syntax "${" term "}" : nr_expr
@@ -532,6 +533,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs args.getElems.toList fun argVals => do
     let argTps <- argVals.mapM fun arg => `(typeOf $arg)
     wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) (Unit.unit))) vname k
+| `(nr_expr| #unit) | `(nr_expr| skip) => `(Expr.skip)
 | `(nr_expr| @ $fnName:nr_ident < $callGens:nr_generic,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)

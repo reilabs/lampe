@@ -782,7 +782,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let out_ty_str = self.emit_fully_qualified_type(&out_ty, ctx);
         let expression = match expr_data {
             HirExpression::Block(block) | HirExpression::Unsafe(block) => {
-                let statements: Vec<String> = block
+                let mut statements: Vec<String> = block
                     .statements
                     .iter()
                     .map(|stmt| {
@@ -790,6 +790,17 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                         Ok(ind.run(stmt_line))
                     })
                     .try_collect()?;
+
+                if let Some(last_stmt_id) = block.statements.iter().last() {
+                    let last_stmt = self.context.def_interner.statement(last_stmt_id);
+                    if matches!(
+                        last_stmt,
+                        HirStatement::Constrain(_) | HirStatement::Assign(_)
+                    ) {
+                        statements.push(ind.run("skip;"));
+                    }
+                }
+
                 statements.join("\n")
             }
             HirExpression::Prefix(prefix) => {
