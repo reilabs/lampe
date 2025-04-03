@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::error::Error;
 use crate::noir::WithWarnings;
 use crate::{file_generator, noir};
@@ -7,9 +8,13 @@ use nargo::package::{Dependency, Package};
 use nargo::workspace::Workspace;
 use nargo_toml::PackageSelection::All;
 use noirc_frontend::hir::ParsedFiles;
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
+use nargo_toml::Config;
+use crate::file_generator::{NoirPackageIdentifier, LeanFile};
+use crate::file_generator::lake::dependency::LeanDependency;
+
+const NONE_DEPENDENCY_VERSION: &str = "0.0.0";
 
 pub struct Project {
     /// The root directory of the project
@@ -62,6 +67,13 @@ impl Project {
             if with_warnings.has_warnings() {
                 warnings.extend(with_warnings.warnings);
             }
+
+            let root_package_name = package.name.to_string();
+
+            let with_warnings = self.extract_dependencies_without_lampe(&noir_project, &root_package_name, package)?;
+            if with_warnings.has_warnings() {
+                warnings.extend(with_warnings.warnings);
+            }
         }
         Ok(WithWarnings::new((), warnings))
     }
@@ -71,18 +83,128 @@ impl Project {
         noir_project: &noir::Project,
         package: &Package,
     ) -> Result<WithWarnings<()>, Error> {
+        let package_name = &package.name.to_string();
+        let package_version = &package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string());
+
+        let mut warnings = vec![];
+
+        let res = self.compile_package(noir_project, package)?;
+        warnings.extend(res.warnings);
+        let extracted_code = res.data;
+
+        let additional_dependencies = self.get_dependencies_with_lampe(package)?;
+
+        let res = self.extract_dependencies_without_lampe(noir_project, &package_name, package)?;
+        warnings.extend(res.warnings);
+        let extracted_dependencies = res.data;
+
+        file_generator::lampe_project(
+            &self.nargo_workspace.root_dir,
+            &NoirPackageIdentifier{
+                name: package_name.clone(),
+                version: package_version.clone(),
+            },
+            &additional_dependencies,
+            &extracted_code,
+            &extracted_dependencies,
+        )?;
+
+        Ok(WithWarnings::new((), warnings))
+    }
+
+    fn get_dependencies_with_lampe(&self, package: &Package) -> Result<Vec<Box<dyn LeanDependency>>, Error> {
+        let mut result = vec![];
+
+        let toml_path = nargo_toml::get_package_manifest(&package.root_dir)?;
+        let nargo_toml = nargo_toml::read_toml(&toml_path)?;
+        let package_config = match nargo_toml.config {
+            Config::Package { package_config } => package_config,
+            Config::Workspace { .. } => Err(nargo_toml::ManifestError::UnexpectedWorkspace(nargo_toml.root_dir))?
+        };
+
+        for (crate_name, dependency) in &package.dependencies {
+            let dependency_name = &crate_name.to_string();
+            let dependency_config = package_config.dependencies.get(dependency_name).ok_or(Error::MissingDependencyError {
+                package_name: package.name.to_string().clone(),
+                package_version: package.version.clone(),
+                dependency_name: dependency_name.clone(),
+            })?;
+
+            let package = match dependency {
+                Dependency::Local { package } => package,
+                Dependency::Remote { package } => package,
+            };
+
+            if !file_generator::has_lampe(package) {
+                continue;
+            }
+
+            let lean_dependency_name = file_generator::read_lampe_package_name(package)?;
+
+            result.push(file_generator::get_lean_dependency(&lean_dependency_name, dependency_config)?);
+        }
+
+        Ok(result)
+    }
+
+    fn extract_dependencies_without_lampe(
+        &self, noir_project: &noir::Project, root_package_name: &String, package: &Package,
+    ) -> Result<WithWarnings<HashMap<NoirPackageIdentifier, LeanFile>>, Error> {
+        let mut warnings = vec![];
+        let mut result = HashMap::new();
+
+        let res = self.do_extract_dependencies_without_lampe(noir_project, root_package_name, &package, &mut result)?;
+        warnings.extend(res.warnings);
+
+        Ok(WithWarnings::new(result, warnings))
+    }
+
+    fn do_extract_dependencies_without_lampe(
+        &self, noir_project: &noir::Project,
+        root_package_name: &String,
+        package: &Package,
+        extracted_dependencies: &mut HashMap<NoirPackageIdentifier, LeanFile>
+    ) -> Result<WithWarnings<()>, Error> {
+        let mut warnings = vec![];
+
+        for (_, dependency) in &package.dependencies {
+            let package = match dependency {
+                Dependency::Local { package } => package,
+                Dependency::Remote { package } => package,
+            };
+
+            if file_generator::has_lampe(package) {
+                continue;
+            }
+
+            let package_identitifer = NoirPackageIdentifier {
+                name: package.name.to_string(),
+                version: package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+            };
+
+            if extracted_dependencies.contains_key(&package_identitifer) {
+                continue;
+            }
+
+            let res = self.compile_package(noir_project, package)?;
+            warnings.extend(res.warnings);
+
+            extracted_dependencies.insert(package_identitifer, res.data);
+
+            let res = self.do_extract_dependencies_without_lampe(noir_project, root_package_name, package, extracted_dependencies)?;
+            warnings.extend(res.warnings);
+        }
+
+        Ok(WithWarnings::new((), warnings))
+    }
+
+    fn compile_package(&self, noir_project: &noir::Project, package: &Package) -> Result<WithWarnings<LeanFile>, Error> {
         let compile_result = noir_project.compile_package(package)?;
         let warnings = compile_result.warnings.clone();
         let lean_emitter = compile_result.take();
         let generated_source = lean_emitter.emit()?;
 
-        file_generator::lampe_project(
-            &self.nargo_workspace.root_dir,
-            package,
-            &HashMap::from([("Main".to_string(), generated_source)]),
-        )?;
-
-        Ok(WithWarnings::new((), warnings))
+        Ok(WithWarnings::new(LeanFile{content: generated_source}, warnings))
     }
 }
 

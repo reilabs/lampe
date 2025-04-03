@@ -5,7 +5,10 @@ mod path;
 mod reservoir;
 mod reservoir_git;
 
+pub use git::LeanDependencyGit;
 pub use path::LeanDependencyPath;
+pub use reservoir::LeanDependencyReservoir;
+pub use reservoir_git::LeanDependencyReservoirGit;
 
 pub trait LeanDependency {
     fn generate(&self) -> Result<String, fmt::Error>;

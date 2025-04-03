@@ -5,7 +5,6 @@ version = 4
 [[package]]
 name = "acir"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acir_field",
  "base64 0.21.7",
@@ -22,7 +21,6 @@ dependencies = [
 [[package]]
 name = "acir_field"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "ark-bn254",
  "ark-ff",
@@ -35,7 +33,6 @@ dependencies = [
 [[package]]
 name = "acvm"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -50,7 +47,6 @@ dependencies = [
 [[package]]
 name = "acvm_blackbox_solver"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acir",
  "blake2",
@@ -390,7 +386,6 @@ dependencies = [
 [[package]]
 name = "bn254_blackbox_solver"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -406,7 +401,6 @@ dependencies = [
 [[package]]
 name = "brillig"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acir_field",
  "serde",
@@ -415,7 +409,6 @@ dependencies = [
 [[package]]
 name = "brillig_vm"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -821,7 +814,6 @@ dependencies = [
 [[package]]
 name = "fm"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "codespan-reporting",
  "iter-extended",
@@ -901,9 +893,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.14.5"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
+checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
 
 [[package]]
 name = "heck"
@@ -1128,12 +1120,12 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.2.6"
+version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "168fb715dda47215e360912c096649d23d58bf392ac62f73919e831745e40f26"
+checksum = "cea70ddb795996207ad57735b50c5982d8844f38ba9ee5f1aedcfb708a2aa11e"
 dependencies = [
  "equivalent",
- "hashbrown 0.14.5",
+ "hashbrown 0.15.2",
  "serde",
 ]
 
@@ -1152,7 +1144,6 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 [[package]]
 name = "iter-extended"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 
 [[package]]
 name = "itertools"
@@ -1236,8 +1227,11 @@ dependencies = [
  "noirc_driver",
  "noirc_errors",
  "noirc_frontend",
+ "serde",
  "tempfile",
  "thiserror",
+ "toml 0.8.20",
+ "url",
 ]
 
 [[package]]
@@ -1315,7 +1309,6 @@ dependencies = [
 [[package]]
 name = "nargo"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "fm",
@@ -1339,7 +1332,6 @@ dependencies = [
 [[package]]
 name = "nargo_toml"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "dirs",
  "fm",
@@ -1349,14 +1341,13 @@ dependencies = [
  "semver",
  "serde",
  "thiserror",
- "toml",
+ "toml 0.7.8",
  "url",
 ]
 
 [[package]]
 name = "noir_fuzzer"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "noirc_abi",
@@ -1380,7 +1371,6 @@ dependencies = [
 [[package]]
 name = "noirc_abi"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "iter-extended",
@@ -1390,18 +1380,16 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "toml",
+ "toml 0.7.8",
 ]
 
 [[package]]
 name = "noirc_arena"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 
 [[package]]
 name = "noirc_artifacts"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "codespan-reporting",
@@ -1416,7 +1404,6 @@ dependencies = [
 [[package]]
 name = "noirc_driver"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "build-data",
@@ -1436,7 +1423,6 @@ dependencies = [
 [[package]]
 name = "noirc_errors"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "base64 0.21.7",
@@ -1454,7 +1440,6 @@ dependencies = [
 [[package]]
 name = "noirc_evaluator"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "bn254_blackbox_solver",
@@ -1478,7 +1463,6 @@ dependencies = [
 [[package]]
 name = "noirc_frontend"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "bn254_blackbox_solver",
@@ -1507,7 +1491,6 @@ dependencies = [
 [[package]]
 name = "noirc_printable_type"
 version = "1.0.0-beta.1"
-source = "git+https://github.com/reilabs/noir?branch=lampe-v1.0.0-beta.1#57702df05e54a36d5b690335a08fa31d80475aa8"
 dependencies = [
  "acvm",
  "iter-extended",
@@ -1587,7 +1570,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset",
- "indexmap 2.2.6",
+ "indexmap 2.9.0",
 ]
 
 [[package]]
@@ -1974,9 +1957,9 @@ dependencies = [
 
 [[package]]
 name = "serde_spanned"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb5b1b31579f3811bf615c144393417496f152e12ac8b7663bf664f4a815306d"
+checksum = "87607cb1398ed59d48732e575a4c28a7a8ebf2454b964fe3f224f2afc07909e1"
 dependencies = [
  "serde",
 ]
@@ -1991,7 +1974,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.2.6",
+ "indexmap 2.9.0",
  "serde",
  "serde_derive",
  "serde_json",
@@ -2241,14 +2224,26 @@ dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "toml_edit",
+ "toml_edit 0.19.15",
+]
+
+[[package]]
+name = "toml"
+version = "0.8.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd87a5cdd6ffab733b2f74bc4fd7ee5fff6634124999ac278c35fc78c6120148"
+dependencies = [
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit 0.22.24",
 ]
 
 [[package]]
 name = "toml_datetime"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8fb9f64314842840f1d940ac544da178732128f1c78c21772e876579e0da1db"
+checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
 dependencies = [
  "serde",
 ]
@@ -2259,11 +2254,24 @@ version = "0.19.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
- "indexmap 2.2.6",
+ "indexmap 2.9.0",
  "serde",
  "serde_spanned",
  "toml_datetime",
- "winnow",
+ "winnow 0.5.40",
+]
+
+[[package]]
+name = "toml_edit"
+version = "0.22.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17b4795ff5edd201c7cd6dca065ae59972ce77d1b80fa0a84d94950ece7d1474"
+dependencies = [
+ "indexmap 2.9.0",
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "winnow 0.7.6",
 ]
 
 [[package]]
@@ -2562,6 +2570,15 @@ name = "winnow"
 version = "0.5.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
+name = "winnow"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63d3fcd9bba44b03821e7d699eeee959f3126dcc4aa8e4ae18ec617c2a5cea10"
 dependencies = [
  "memchr",
 ]

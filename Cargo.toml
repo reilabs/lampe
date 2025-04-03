@@ -11,12 +11,19 @@ repository = "https://github.com/reilabs/lampe"
 license = "MIT"
 
 [dependencies]
-fm = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+# fm = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+# nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+# nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+# noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+# noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+# noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+
+fm = { path = "/home/piotr/Workspace/Reilabs/noir/compiler/fm" }
+nargo = { path = "/home/piotr/Workspace/Reilabs/noir/tooling/nargo" }
+nargo_toml = { path = "/home/piotr/Workspace/Reilabs/noir/tooling/nargo_toml" }
+noirc_driver = { path = "/home/piotr/Workspace/Reilabs/noir/compiler/noirc_driver" }
+noirc_errors = { path = "/home/piotr/Workspace/Reilabs/noir/compiler/noirc_errors" }
+noirc_frontend = { path = "/home/piotr/Workspace/Reilabs/noir/compiler/noirc_frontend" }
 
 clap = { version = "4.5.17", features = ["unstable-v5"] }
 derivative = "2.2.0"
@@ -24,6 +31,9 @@ indoc = "2.0.5"
 itertools = "0.13.0"
 log = "0.4.22"
 thiserror = "1.0.63"
+url = "2.5.4"
+serde = { version = "1.0.204", features = ["derive"] }
+toml = { version = "0.8.20" }
 
 [dev-dependencies]
 anyhow = "1.0.87"

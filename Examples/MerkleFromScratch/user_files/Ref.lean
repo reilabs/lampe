@@ -2,8 +2,11 @@ import Lampe.Data.Field
 
 import Merkle.Field
 
-open Field
+namespace Merkle
+namespace «1.0.0»
 namespace Ref
+
+open Merkle.«1.0.0».Field
 
 open Lampe (U Fp)
 
@@ -69,3 +72,5 @@ def compress (v : List.Vector bnField 2) : bnField :=
 end State
 
 end Ref
+end «1.0.0»
+end Merkle

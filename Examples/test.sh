@@ -44,11 +44,6 @@ for dir in "${example_dirs[@]}"; do
 	cd $dir
 	dir_name=$(basename $dir)
 
-  # Tests to skip
-	if [[ "$dir_name" =~ Dependencies|LocalDependency ]]; then
-	  continue
-	fi
-
 	if [[ -f "$dir/clean.sh" ]]; then
 		"$dir/clean.sh"
 	fi

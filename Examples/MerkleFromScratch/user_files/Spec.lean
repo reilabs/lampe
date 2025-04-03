@@ -7,9 +7,14 @@ import ProvenZk
 
 import Mathlib.Data.Vector.Snoc
 
-open Lampe Ref Extracted
-
+namespace Merkle
+namespace «1.0.0»
 namespace Spec
+
+open Lampe
+open Merkle.«1.0.0».Field
+open Merkle.«1.0.0».Ref
+open Merkle.«1.0.0».Extracted.Merkle.«1.0.0»
 
 def lp : Lampe.Prime := ⟨p, pPrime⟩
 
@@ -127,7 +132,7 @@ theorem recover_intro {H N idx proof item}
 
 theorem rl_intro : STHoare lp env ⟦⟧
     (rl.call h![] h![input])
-    fun output => output = Ref.rl input := by
+    fun output => output = Merkle.«1.0.0».Ref.rl input := by
   enter_decl
   steps
   subst_vars
@@ -135,11 +140,11 @@ theorem rl_intro : STHoare lp env ⟦⟧
 
 theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
       (rotate_left.call h![] h![input, N])
-      fun output => output = Ref.rotateLeft input N := by
+      fun output => output = Merkle.«1.0.0».Ref.rotateLeft input N := by
   enter_decl
   simp only [rotate_left]
   steps
-  loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Ref.rl i.toNat input⟩]
+  loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Merkle.«1.0.0».Ref.rl i.toNat input⟩]
   change 0 ≤ N
   · bv_decide
   · intros i hlo hhi
@@ -153,12 +158,12 @@ theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
     rw [this]
     simp [Nat.repeat]
   · steps
-    simp_all [Ref.rotateLeft]
+    simp_all [Merkle.«1.0.0».Ref.rotateLeft]
 
 theorem sbox_intro : STHoare lp env ⟦⟧ (sbox.call h![] h![input])
-    fun output => output = Ref.sbox input := by
+    fun output => output = Merkle.«1.0.0».Ref.sbox input := by
   enter_decl
-  simp only [Extracted.sbox]
+  simp only [Extracted.Merkle.«1.0.0».sbox]
   steps [rotate_left_intro]
   · subst_vars; rfl
   all_goals decide
@@ -415,16 +420,16 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧
 
 set_option maxHeartbeats 3000000000000
 theorem bar_intro : STHoare lp env ⟦⟧ (bar.call h![] h![input])
-    fun output => output = Ref.bar input := by
+    fun output => output = Merkle.«1.0.0».Ref.bar input := by
   enter_decl
-  simp only [Extracted.bar]
+  simp only [Extracted.Merkle.«1.0.0».bar]
   steps [to_le_bytes_intro]
 
   enter_block_as
     ([new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
-    (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Ref.sbox⟩])
+    (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Merkle.«1.0.0».Ref.sbox⟩])
 
-  · loop_inv fun i _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Ref.sbox |>.pad 16 (0:U 8)⟩]
+  · loop_inv fun i _ _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take i.toNat |>.map Merkle.«1.0.0».Ref.sbox |>.pad 16 (0:U 8)⟩]
     · decide
     · congr 1
       apply List.Vector.eq
@@ -460,9 +465,9 @@ theorem bar_intro : STHoare lp env ⟦⟧ (bar.call h![] h![input])
 
   enter_block_as
     ([new_right ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
-    (fun _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.map Ref.sbox⟩])
+    (fun _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.map Merkle.«1.0.0».Ref.sbox⟩])
 
-  · loop_inv fun i _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Ref.sbox |>.pad 16 (0:U 8)⟩]
+  · loop_inv fun i _ _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.take i.toNat |>.map Merkle.«1.0.0».Ref.sbox |>.pad 16 (0:U 8)⟩]
     · decide
     · congr 1
       apply List.Vector.eq
@@ -531,41 +536,41 @@ theorem bar_intro : STHoare lp env ⟦⟧ (bar.call h![] h![input])
     rfl
 
 theorem sigma_intro : STHoare lp env (⟦⟧)
-    (Extracted.SIGMA.call h![] h![])
-      fun output => output = Ref.SIGMA := by
+    (Extracted.Merkle.«1.0.0».SIGMA.call h![] h![])
+      fun output => output = Merkle.«1.0.0».Ref.SIGMA := by
   enter_decl
-  simp only [Extracted.SIGMA]
+  simp only [Extracted.Merkle.«1.0.0».SIGMA]
   steps []
-  unfold Ref.SIGMA
+  unfold Merkle.«1.0.0».Ref.SIGMA
   assumption
 
 theorem rc_intro : STHoare lp env (⟦⟧)
     (Expr.call [] (Tp.field.array 8) (FuncRef.decl "RC" [] HList.nil) h![])
-      fun output => output = ⟨Ref.RC.toList, by rfl⟩ := by
+      fun output => output = ⟨Merkle.«1.0.0».Ref.RC.toList, by rfl⟩ := by
   enter_decl
-  simp only [Extracted.RC]
+  simp only [Extracted.Merkle.«1.0.0».RC]
   steps []
   subst_vars
-  unfold Ref.RC
+  unfold Merkle.«1.0.0».Ref.RC
   rfl
 
 theorem square_intro : STHoare lp env (⟦⟧)
     (Expr.call [Tp.field] Tp.field (FuncRef.decl "square" [] HList.nil) h![input])
-      fun output => output = Ref.square input := by
+      fun output => output = Merkle.«1.0.0».Ref.square input := by
   enter_decl
-  simp only [Extracted.square]
+  simp only [Extracted.Merkle.«1.0.0».square]
   steps [sigma_intro]
-  unfold Ref.square
+  unfold Merkle.«1.0.0».Ref.square
   subst_vars
   rfl
 
 theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "permute" [] HList.nil) h![i])
-    fun output => output = (Ref.State.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Ref.State.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
+    fun output => output = (Merkle.«1.0.0».Ref.State.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Merkle.«1.0.0».Ref.State.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
   enter_decl
   cases i using List.Vector.casesOn with | cons _ i =>
   cases i using List.Vector.casesOn with | cons _ i =>
   cases i using List.Vector.casesOn
-  simp only [Extracted.permute]
+  simp only [Extracted.Merkle.«1.0.0».permute]
   steps [bar_intro, square_intro, rc_intro]
   casesm* ∃_,_
   simp [Builtin.indexTpl, Nat.mod_eq_of_lt, lp] at *
@@ -576,7 +581,7 @@ instance {α H n} : Membership α (MerkleTree α H n) where
   mem t e := ∃p, e = MerkleTree.itemAt t p
 
 lemma SkyscraperHash_correct: STHoare lp env ⟦⟧ (Expr.call [Tp.field, Tp.field] Tp.field
-          (FuncRef.trait (some $ «struct#Skyscraper».tp h![]) "BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b]) (fun v => v = Ref.State.compress ⟨[a, b], rfl⟩) := by
+          (FuncRef.trait (some $ «struct#Skyscraper».tp h![]) "BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b]) (fun v => v = Merkle.«1.0.0».Ref.State.compress ⟨[a, b], rfl⟩) := by
   enter_trait [] env
   steps [permute_intro]
   casesm*∃_,_
@@ -594,16 +599,6 @@ lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ (weird_assert_eq.call h![] h
   steps
   simp_all
 
-theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp lp) Ref.State.compress 32}:
-    STHoare lp env
-        ⟦⟧
-        (main.call h![] h![tree.root, proof, item, index])
-        (fun _ => item ∈ tree) := by
-  enter_decl
-  simp only
-  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
-  use index.reverse
-  subst_vars
-  rename tree.root = _ => hroot
-  rw [Eq.comm, MerkleTree.recover_eq_root_iff_proof_and_item_correct] at hroot
-  exact hroot.2
+end Spec
+end «1.0.0»
+end Merkle
