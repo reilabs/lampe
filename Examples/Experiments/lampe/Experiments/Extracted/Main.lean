@@ -13,12 +13,6 @@ nr_struct_def Option2<T> {
 
 nr_type_alias AliasedOpt<T> = Option2<T>
 
-nr_trait_impl[impl_407] <T> MyTrait<> for `(T, bool) where T : MyTrait<> {
-    fn «foo»<> (self : `(T, bool)) -> `(T, bool) {
-        self;
-}
-}
-
 nr_trait_impl[impl_406] <T> MyTrait<> for Option2<T> where  {
     fn «foo»<> (self : Option2<T>) -> Option2<T> {
         self;
@@ -31,16 +25,57 @@ nr_trait_impl[impl_405] <T> std::default::Default<> for Option2<T> where  {
 }
 }
 
+nr_trait_impl[impl_407] <T> MyTrait<> for `(T, bool) where T : MyTrait<> {
+    fn «foo»<> (self : `(T, bool)) -> `(T, bool) {
+        self;
+}
+}
+
+nr_def «my_func3»<>(a : u8) -> u8 {
+    (@my_func<> as λ(u8) → u8)(a);
+}
+
+nr_def «fmtstr_test»<>(x : Field, y : Field) -> Field {
+    #assert(#fNeq(x, y) : bool) : Unit;
+    let _a = #format("this is first:{x}  this is second:{y}", x, y);
+    #fAdd(x, y) : Field;
+}
+
+nr_def «tuple_test»<>(a : u8) -> `(u8, u8) {
+    let b = |c : u8| -> u8 #uAdd(#uAdd(c, a) : u8, 10 : u8) : u8;
+    `(a, a);
+}
+
+nr_def «cast_test»<>(a : u8) -> u64 {
+    if #uEq(a, 0 : u8) : bool {
+            0 : u64;
+    } else {
+            #cast(a) : u64;
+    };
+}
+
+nr_def «my_func»<>(a : u8) -> u8 {
+    #uAdd(a, 1 : u8) : u8;
+}
+
 nr_def «Option2»::«some»<T>(_value : T) -> Option2<T> {
     Option2<T> { true, _value };
 }
 
-nr_def «Option2»::«none»<T>() -> Option2<T> {
-    Option2<T> { false, #zeroed() : T };
+nr_def «get_unchecked»<T>(a : Option2<T>) -> T {
+    (a as Option2<T>)._value;
 }
 
 nr_def «Option2»::«is_none»<T>(self : Option2<T>) -> bool {
     #bNot((@Option2::is_some<T> as λ(Option2<T>) → bool)(self)) : bool;
+}
+
+nr_def «my_fn»<>() -> u8 {
+    #uAdd(1 : u8, 1 : u8) : u8;
+}
+
+nr_def «Option2»::«is_some»<T>(self : Option2<T>) -> bool {
+    (self as Option2<T>)._is_some;
 }
 
 nr_def «is_alias_some»<T>(x : @AliasedOpt<T>) -> bool {
@@ -64,74 +99,18 @@ nr_def «main»<>() -> Unit {
     (op1 as Option2<Field>)._is_some = false;
     let mut tpl = `(1 : Field, true);
     tpl.0 = 2 : Field;
-    let impl_res = (@impl_test<μ0, μ1> as λ(Option2<Field>, Field) → bool)(op1, 0 : Field);
-    let aliased_opt = (@Option2::none<_> as λ() → Option2<_>)();
-    (@is_alias_some<_> as λ(@AliasedOpt<_>) → bool)(aliased_opt);
-}
-
-nr_def «string_test»<>() -> str<5> {
-    let x = "Hello";
-    x;
-}
-
-nr_def «my_func3»<>(a : u8) -> u8 {
-    (@my_func<> as λ(u8) → u8)(a);
-}
-
-nr_def «assigns»<>(x : u8) -> Unit {
-    let mut y = 3 : u8;
-    y = #uAdd(y, x) : u8;
-    let mut foo = (@Option2::none<_> as λ() → Option2<_>)();
-    (foo as Option2<_>)._is_some = false;
-    let mut arr = [1 : Field, 2 : Field];
-    arr[#cast(0 : Field) : u32] = 10 : Field;
-}
-
-nr_def «cast_test»<>(a : u8) -> u64 {
-    if #uEq(a, 0 : u8) : bool {
-            0 : u64;
-    } else {
-            #cast(a) : u64;
-    };
-}
-
-nr_def «tuple_test»<>(a : u8) -> `(u8, u8) {
-    let b = |c : u8| -> u8 #uAdd(#uAdd(c, a) : u8, 10 : u8) : u8;
-    `(a, a);
-}
-
-nr_def «my_func»<>(a : u8) -> u8 {
-    #uAdd(a, 1 : u8) : u8;
-}
-
-nr_def «get_unchecked»<T>(a : Option2<T>) -> T {
-    (a as Option2<T>)._value;
 }
 
 nr_def «my_func2»<>(arr : [u8; 8], b : u8) -> u8 {
     #arrayIndex(arr, #cast(b) : u32) : u8;
 }
 
-nr_def «Option2»::«is_some»<T>(self : Option2<T>) -> bool {
-    (self as Option2<T>)._is_some;
+nr_def «Option2»::«none»<T>() -> Option2<T> {
+    Option2<T> { false, #zeroed() : T };
 }
 
-nr_def «fmtstr_test»<>(x : Field, y : Field) -> Field {
-    #assert(#fNeq(x, y) : bool) : Unit;
-    let _a = #format("this is first:{x}  this is second:{y}", x, y);
-    #fAdd(x, y) : Field;
-}
-
-nr_def «impl_test»<μ0, μ1>(x : μ0, y : μ1) -> bool {
-    false;
-}
-
-nr_def «my_fn»<>() -> u8 {
-    #uAdd(1 : u8, 1 : u8) : u8;
-}
-
-nr_def «check»<>(x : u8) -> Unit {
-    #assert(#uEq(x, 5 : u8) : bool) : Unit;
+nr_def «uncons»<>(x : u8) -> Unit {
+    #fresh() : Unit
 }
 
 nr_def «literal_test»<>() -> Unit {
@@ -141,8 +120,25 @@ nr_def «literal_test»<>() -> Unit {
     let d = [1 : Field ; 5];
     let e = &[1 : Field ; 5];
     let f = [1 : Field, 2 : Field, 3 : Field];
-    let g = &[];
+    let h = "asdf";
+    let i = #format("${b}", b);
+}
+
+nr_def «check»<>(x : u8) -> Unit {
+    #assert(#uEq(x, 5 : u8) : bool) : Unit;
+}
+
+nr_def «string_test»<>() -> str<5> {
+    let x = "Hello";
+    x;
+}
+
+nr_def «assigns»<>(x : u8) -> Unit {
+    let mut y = 3 : u8;
+    y = #uAdd(y, x) : u8;
+    let mut arr = [1 : Field, 2 : Field];
+    arr[#cast(0 : Field) : u32] = 10 : Field;
 }
 
 
-def env := Lampe.Env.mk [«my_func3», «fmtstr_test», «Option2::some», «tuple_test», «Option2::none», «Option2::is_none», «impl_test», «main», «my_func», «is_alias_some», «string_test», «my_fn», «Option2::is_some», «get_unchecked», «assigns», «check», «my_func2», «cast_test», «literal_test»] [impl_405, impl_407, impl_406]
+def env := Lampe.Env.mk [«my_func3», «get_unchecked», «check», «my_fn», «main», «uncons», «literal_test», «Option2::some», «fmtstr_test», «assigns», «is_alias_some», «tuple_test», «my_func2», «Option2::none», «cast_test», «string_test», «my_func», «Option2::is_some», «Option2::is_none»] [impl_407, impl_406, impl_405]
