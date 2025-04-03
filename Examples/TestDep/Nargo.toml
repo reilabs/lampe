@@ -1,0 +1,23 @@
+[package]
+name = "TestDep"
+type = "bin"
+authors = [""]
+
+[dependencies]
+local_dependency = { path = "./testing/Dep" }
+local_dependency2 = { path = "./testing/Dep" }
+local_dependency_v1 = { path = "./testing/DepV1" }
+local_dependency_v2 = { path = "./testing/DepV2" }
+local_dependency_with_lampe = { path = "./testing/DepWithLampe" }
+local_dependency_with_lampe2 = { path = "./testing/DepWithLampe" }
+local_dependency_with_lampe_v1 = { path = "./testing/DepWithLampeV1" }
+local_dependency_with_lampe_v2 = { path = "./testing/DepWithLampeV2" }
+git_dependency = { tag = "piohei/dependencies", git = "https://github.com/reilabs/lampe", directory = "Examples/TestDep/testing/Dep" }
+git_dependency2 = { tag = "piohei/dependencies", git = "https://github.com/reilabs/lampe", directory = "Examples/TestDep/testing/Dep" }
+git_dependency_v1 = { tag = "piohei/dependencies", git = "https://github.com/reilabs/lampe", directory = "Examples/TestDep/testing/DepV1" }
+git_dependency_v2 = { tag = "piohei/dependencies", git = "https://github.com/reilabs/lampe", directory = "Examples/TestDep/testing/DepV2" }
+git_dependency_with_lampe = { tag = "piohei/dependencies", git = "https://github.com/reilabs/lampe", directory = "Examples/TestDep/testing/DepWithLampe" }
+git_dependency_with_lampe2 = { tag = "piohei/dependencies", git = "https://github.com/reilabs/lampe", directory = "Examples/TestDep/testing/DepWithLampe" }
+git_dependency_with_lampe_v1 = { tag = "piohei/dependencies", git = "https://github.com/reilabs/lampe", directory = "Examples/TestDep/testing/DepWithLampeV1" }
+git_dependency_with_lampe_v2 = { tag = "piohei/dependencies", git = "https://github.com/reilabs/lampe", directory = "Examples/TestDep/testing/DepWithLampeV2" }
+

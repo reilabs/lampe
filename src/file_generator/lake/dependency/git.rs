@@ -7,7 +7,7 @@ pub struct LeanDependencyGit {
     name: String,
     git: Option<String>,
     rev: Option<String>,
-    subdir: Option<String>,
+    sub_dir: Option<String>,
 }
 
 pub struct LeanDependencyGitBuilder {
@@ -22,7 +22,7 @@ impl LeanDependencyGitBuilder {
                 name: name.to_string(),
                 git: None,
                 rev: None,
-                subdir: None,
+                sub_dir: None,
             },
         }
     }
@@ -38,7 +38,7 @@ impl LeanDependencyGitBuilder {
     }
 
     pub fn subdir(mut self, subdir: &str) -> Self {
-        self.dependency.subdir = Some(subdir.to_string());
+        self.dependency.sub_dir = Some(subdir.to_string());
         self
     }
 
@@ -66,8 +66,8 @@ impl LeanDependency for LeanDependencyGit {
         if let Some(rev) = &self.rev {
             writeln!(result, "rev = \"{rev}\"")?;
         }
-        if let Some(subdir) = &self.subdir {
-            writeln!(result, "subdir = \"{subdir}\"")?;
+        if let Some(subdir) = &self.sub_dir {
+            writeln!(result, "subDir = \"{subdir}\"")?;
         }
 
         Ok(result)

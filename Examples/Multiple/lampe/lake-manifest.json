@@ -117,6 +117,6 @@
       "configFile": "lakefile.toml"
     }
   ],
-  "name": "Multiple",
+  "name": "«Multiple-0.0.0»",
   "lakeDir": ".lake"
 }

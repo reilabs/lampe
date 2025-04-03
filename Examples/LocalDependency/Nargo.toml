@@ -1,6 +1,0 @@
-[package]
-name = "LocalDependency"
-type = "lib"
-authors = [""]
-
-[dependencies]

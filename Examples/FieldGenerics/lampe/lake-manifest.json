@@ -3,18 +3,6 @@
   "packagesDir": ".lake/packages",
   "packages": [
     {
-      "url": "https://github.com/reilabs/proven-zk",
-      "type": "git",
-      "subDir": null,
-      "scope": "",
-      "rev": "5c483bde5177b560c9095e5babc05d3dbed6951e",
-      "name": "«proven-zk»",
-      "manifestFile": "lake-manifest.json",
-      "inputRev": "4.15",
-      "inherited": false,
-      "configFile": "lakefile.lean"
-    },
-    {
       "type": "path",
       "scope": "",
       "name": "Lampe",
@@ -129,6 +117,6 @@
       "configFile": "lakefile.toml"
     }
   ],
-  "name": "FieldGenerics",
+  "name": "«FieldGenerics-0.0.0»",
   "lakeDir": ".lake"
 }
