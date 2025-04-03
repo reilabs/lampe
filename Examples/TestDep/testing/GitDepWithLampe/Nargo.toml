@@ -1,0 +1,6 @@
+[package]
+name = "GitDepWithLampe"
+type = "lib"
+authors = [""]
+
+[dependencies]

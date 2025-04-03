@@ -45,7 +45,7 @@ fn main() -> ExitCode {
         })
     } else {
         run(&args).unwrap_or_else(|err| {
-            eprintln!("Error Encountered: {err}");
+            eprintln!("Error Encountered: {err:?}");
             ExitCode::FAILURE
         })
     }
@@ -132,6 +132,9 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
                     entry.path().to_str().unwrap_or(""),
                     err
                 );
+            }
+            Ok(Err(err)) => {
+                println!("🟡 Error                 {err:?}");
             }
             Ok(Ok(_)) => {
                 println!(

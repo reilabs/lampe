@@ -1,3 +1,4 @@
+use crate::file_generator::lean;
 use crate::noir;
 use std::{fmt, io};
 use thiserror::Error;
@@ -8,29 +9,20 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("IO Error: {_0}")]
-    IOError(io::Error),
+    IOError(#[from] io::Error),
 
     #[error("Formatting Error: {_0}")]
-    FmtError(fmt::Error),
+    FmtError(#[from] fmt::Error),
 
     #[error("Noir Error: {_0}")]
-    Noir(noir::error::Error),
-}
+    Noir(#[from] noir::error::Error),
 
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        Error::IOError(err)
-    }
-}
+    #[error("Error generating require block for Lake: {_0}")]
+    LakeRequireGeneration(String),
 
-impl From<fmt::Error> for Error {
-    fn from(err: fmt::Error) -> Error {
-        Error::FmtError(err)
-    }
-}
+    #[error("Error deserializing toml file: {_0}")]
+    TomlDeserializationError(#[from] toml::de::Error),
 
-impl From<noir::error::Error> for Error {
-    fn from(err: noir::error::Error) -> Error {
-        Error::Noir(err)
-    }
+    #[error(transparent)]
+    LeanError(#[from] lean::error::Error),
 }

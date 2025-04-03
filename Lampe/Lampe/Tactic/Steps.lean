@@ -126,6 +126,7 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | 1 => return some (←``(litTrue_intro), true)
         | _ => return none
       | _ => return none
+    | ``Lampe.Expr.litStr => return some (←``(litStr_intro), false)
     | _ => return none
 
   | _ => pure none

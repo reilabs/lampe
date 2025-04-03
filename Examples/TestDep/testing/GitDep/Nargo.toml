@@ -1,0 +1,6 @@
+[package]
+name = "GitDep"
+type = "lib"
+authors = [""]
+
+[dependencies]

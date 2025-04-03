@@ -29,6 +29,11 @@ done
 
 SELECTED_TEST="${PARAM_TEST:-}"
 CI_RUN="${PARAM_CI:-false}"
+LAKE_DIR="${EXAMPLES_DIR}/.lake"
+
+if [ ! -d ${LAKE_DIR} ]; then
+	mkdir -p "${LAKE_DIR}"
+fi
 
 (cd $PROJECT_ROOT && cargo build --release)
 
@@ -44,9 +49,8 @@ for dir in "${example_dirs[@]}"; do
 	cd $dir
 	dir_name=$(basename $dir)
 
-  # Tests to skip
-	if [[ "$dir_name" =~ Dependencies|LocalDependency ]]; then
-	  continue
+	if [[ $dir_name =~ ^_.* ]]; then
+		continue
 	fi
 
 	if [[ -f "$dir/clean.sh" ]]; then
@@ -56,17 +60,22 @@ for dir in "${example_dirs[@]}"; do
 	# Run Lampe generation
 	$CLI
 
+	# Overwrite Lampe to local path
+	LAMPE_LAKEFILE_LINE_START=$(cat lampe/lakefile.toml | grep -hn "name = \"Lampe\"" | awk -F ':' '{ print $1 }')
+	sed -i -e "$(( ${LAMPE_LAKEFILE_LINE_START} + 1 )) c\\" -e "path = \"../../../Lampe\"" lampe/lakefile.toml
+	sed -i -e "$(( ${LAMPE_LAKEFILE_LINE_START} + 2 )) c\\" -e "" lampe/lakefile.toml
+	sed -i -e "$(( ${LAMPE_LAKEFILE_LINE_START} + 3 )) c\\" -e "" lampe/lakefile.toml
+
 	if [[ -f "$dir/user_actions.sh" ]]; then
 		"$dir/user_actions.sh"
 	fi
 
 	cd lampe
 
-	# Point to a fixed mathlib checkout to avoid many copies
-	if [[ -f "lake-manifest.json" ]]; then
-		jq --slurpfile mathlib ../../mathlib-manifest.json '.packages |= map(if .name == "mathlib" then $mathlib[0] else . end)' lake-manifest.json > temp.json
-		mv temp.json lake-manifest.json
+	if [[ ! -d .lake ]]; then
+	  ln -s ${LAKE_DIR} .lake
 	fi
+
 	lake exe cache get
 	lake build
 done
