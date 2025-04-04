@@ -1,4 +1,5 @@
 use crate::error::Error;
+use crate::file_generator::LeanFilePath;
 use crate::noir::WithWarnings;
 use crate::{file_generator, noir};
 use fm::FileManager;
@@ -76,11 +77,24 @@ impl Project {
         let lean_emitter = compile_result.take();
         let generated_source = lean_emitter.emit()?;
 
-        file_generator::lampe_project(
-            &self.nargo_workspace.root_dir,
-            package,
-            &HashMap::from([("Main".to_string(), generated_source)]),
-        )?;
+        let type_file = LeanFilePath::type_path();
+
+        let mut lean_files = generated_source
+            .decl_contents
+            .iter()
+            .map(|(id, content)| -> Result<(LeanFilePath, String), Error> {
+                Ok((
+                    LeanFilePath::from_noir_path(noir_project.file_manager().path(*id).ok_or(
+                        noir::error::file::Error::Other(format!("Unknown file ID:{id:?}")),
+                    )?),
+                    content.clone(),
+                ))
+            })
+            .collect::<Result<HashMap<_, _>, Error>>()?;
+
+        lean_files.insert(type_file, generated_source.type_content);
+
+        file_generator::lampe_project(&self.nargo_workspace.root_dir, package, &lean_files)?;
 
         Ok(WithWarnings::new((), warnings))
     }

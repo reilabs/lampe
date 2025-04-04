@@ -36,6 +36,10 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
         }
     }
 
+    pub fn file_manager(&self) -> &'file_manager FileManager {
+        self.nargo_file_manager
+    }
+
     /// Takes the project definition and performs compilation of that project to
     /// the Noir intermediate representation for further analysis and the
     /// emission of Lean code.
