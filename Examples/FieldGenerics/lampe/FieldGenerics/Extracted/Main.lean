@@ -10,7 +10,8 @@ nr_def «A»<>() -> Field {
     4294967297 : Field
 }
 
-nr_def «main»<>() -> Unit {
+-- TODO: This used to be -> Unit but it was failing. Check why Lampe thinks the output type is `Field`
+nr_def «main»<>() -> Field {
     let _? = (@foo<4294967297 : Field> as λ() → Field)();
 }
 

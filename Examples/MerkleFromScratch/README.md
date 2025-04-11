@@ -5,5 +5,4 @@ Lampe.
 
 Make sure to run `lake exe cache get` before `lake build`ing to avoid manually re-compiling Mathlib.
 
-First run run `/path/to/lampe/cli --root src --out-file Example1/Extracted.lean` from the root
-directory of this project (where this `README` is located) to extract.
+First run run `/path/to/lampe` from the root directory of this project (where this `README` is located) to extract.

@@ -144,4 +144,31 @@ def Tp.denote : Tp → Type
 
 end
 
+@[reducible]
+def HList.toTuple (hList : HList (Tp.denote p) tps) (name : Option String) : Tp.denote p <| .tuple name tps := match hList with
+| .nil => ()
+| .cons arg args => ⟨arg, HList.toTuple args name⟩
+
+mutual
+
+def Tp.zeroArgs (args : List Tp) : HList (Tp.denote p) args :=
+  match args with
+  | [] => h![]
+  | a :: b => .cons a.zero (Tp.zeroArgs b)
+
+def Tp.zero (tp : Tp) : Tp.denote p tp :=
+match tp with
+| .u _ | .i _ | .bi | .field => 0
+| .bool => False
+| .unit => ()
+| .str n => List.Vector.replicate n.toNat '\x00'
+| .fmtStr _ _ => ()
+| .slice _ => []
+| .array tp n => List.Vector.replicate n.toNat tp.zero
+| .ref _ => ⟨0⟩
+| .tuple name fields => HList.toTuple p (Tp.zeroArgs fields) name
+| .fn _ _ => .lambda ⟨0⟩
+
+end
+
 end Lampe

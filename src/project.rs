@@ -76,7 +76,7 @@ impl Project {
         let lean_emitter = compile_result.take();
         let generated_source = lean_emitter.emit()?;
 
-        () = file_generator::lampe_project(
+        file_generator::lampe_project(
             &self.nargo_workspace.root_dir,
             package,
             &HashMap::from([("Main".to_string(), generated_source)]),

@@ -6,15 +6,7 @@ defaultTargets = ["Unconstrained"]
 [[lean_lib]]
 name = "Unconstrained"
 
-[[lean_lib]]
-name = "Extracted"
-
 [[require]]
 name = "Lampe"
 path = "./../../../Lampe"
-
-[[require]]
-name = "proven-zk"
-git = "https://github.com/reilabs/proven-zk"
-rev = "4.15"
 

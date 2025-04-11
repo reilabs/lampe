@@ -44,7 +44,12 @@ fn generate_lib_file(
         return Ok(());
     }
 
-    fs::write(output_file, "")?;
+    let mut result = String::new();
+
+    write!(result, "-- {LAMPE_GENERATED_COMMENT}\n\n")?;
+    writeln!(result, "import {lib_name}.{EXTRACTED_LIB_NAME}")?;
+
+    fs::write(output_file, result)?;
 
     Ok(())
 }

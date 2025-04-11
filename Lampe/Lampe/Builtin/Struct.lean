@@ -40,7 +40,7 @@ Defines the builtin tuple constructor.
 -/
 def mkTuple := newGenericTotalPureBuiltin
   (fun (name, fieldTps) => ⟨fieldTps, (.tuple name fieldTps)⟩)
-  (fun (name, _) fieldExprs => HList.toTuple fieldExprs name)
+  (fun {p} (name, _) fieldExprs => HList.toTuple p fieldExprs name)
 
 /--
 Defines the indexing/projection of a tuple with a `Member`.

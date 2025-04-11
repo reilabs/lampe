@@ -8,10 +8,9 @@ pub fn generate_lean_toolchain(lampe_root_dir: &Path, overwrite: bool) -> Result
         return Ok(());
     }
 
-    let mut result = String::new();
-    result.push_str("leanprover/lean4:v4.15.0\n");
+    let toolchain_string = include_str!("../../Lampe/lean-toolchain");
 
-    fs::write(output_file, result)?;
+    fs::write(output_file, toolchain_string)?;
 
     Ok(())
 }

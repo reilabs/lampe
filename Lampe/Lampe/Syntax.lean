@@ -59,6 +59,7 @@ syntax ("-" noWs)? num ":" nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
 syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
+syntax "skip" : nr_expr -- alias for `#unit`
 syntax ident : nr_expr
 syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
 syntax "${" term "}" : nr_expr
@@ -147,8 +148,6 @@ def matchGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] : 
 | `(ident| u32) => `(Kind.u 32)
 | `(ident| u64) => `(Kind.u 64)
 | _ => throwUnsupportedSyntax
-
-#check BitVec.ofNat
 
 def mkGenericNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] (n : TSyntax `num) :
     TSyntax `ident → m (TSyntax `term)
@@ -439,8 +438,10 @@ partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSynta
   | e => do
   mkExpr e none fun _ => mkBlock (n :: rest) k
 | [e] => match e with
-  | `(nr_expr | let $_ = $e)
-  | `(nr_expr | let mut $_ = $e)
+  | `(nr_expr | let $v = $e)
+  | `(nr_expr | let mut $v = $e) => do
+    mkExpr e (some v) fun eVal => do
+      `(Lampe.Expr.letIn (Expr.ref $eVal) fun $v => Lampe.Expr.skip)
   | `(nr_expr | $e) => mkExpr e none k
 | _ => do wrapSimple (←`(Lampe.Expr.skip)) none k
 
@@ -532,6 +533,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs args.getElems.toList fun argVals => do
     let argTps <- argVals.mapM fun arg => `(typeOf $arg)
     wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) (Unit.unit))) vname k
+| `(nr_expr| #unit) | `(nr_expr| skip) => `(Expr.skip)
 | `(nr_expr| @ $fnName:nr_ident < $callGens:nr_generic,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)

@@ -40,11 +40,6 @@ lemma HList.toList_length_is_n (h_same : tps = List.replicate n tp) :
 def HList.toVec (l : HList rep tps) (h_same : tps = List.replicate n tp) : List.Vector (rep tp) n :=
   ⟨HList.toList l h_same, by apply HList.toList_length_is_n⟩
 
-@[reducible]
-def HList.toTuple (hList : HList (Tp.denote p) tps) (name : Option String) : Tp.denote p $ .tuple name tps  := match hList with
-| .nil => ()
-| .cons arg args => ⟨arg, HList.toTuple args name⟩
-
 abbrev Builtin.Omni := ∀(P:Prime),
     ValHeap P →
     (argTps : List Tp) →

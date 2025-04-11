@@ -27,7 +27,8 @@ thiserror = "1.0.63"
 
 [dev-dependencies]
 anyhow = "1.0.87"
+tempfile = "3.8.1"
 
 [[bin]]
-name = "cli"
+name = "lampe"
 path = "src/bin/main.rs"

@@ -1,7 +1,5 @@
-use crate::file_generator::lake::dependency::{
-    LeanDependency, LeanDependencyGit, LeanDependencyPath,
-};
-use crate::file_generator::{EXTRACTED_LIB_NAME, Error, LAMPE_GENERATED_COMMENT};
+use crate::file_generator::lake::dependency::{LeanDependency, LeanDependencyPath};
+use crate::file_generator::{Error, LAMPE_GENERATED_COMMENT};
 use nargo::package::Package;
 use std::fmt::Write;
 use std::fs;
@@ -19,12 +17,6 @@ fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
         //     .rev("main")
         //     .subdir("Lampe")
         //     .build()),
-        Box::new(
-            LeanDependencyGit::builder("proven-zk")
-                .git("https://github.com/reilabs/proven-zk")
-                .rev("4.15")
-                .build(),
-        ),
     ]
 }
 
@@ -49,9 +41,6 @@ pub fn generate_lakefile_toml(
     result.push('\n');
     result.push_str("[[lean_lib]]\n");
     writeln!(result, "name = \"{name}\"")?;
-    result.push('\n');
-    result.push_str("[[lean_lib]]\n");
-    writeln!(result, "name = \"{EXTRACTED_LIB_NAME}\"")?;
     result.push('\n');
 
     for dependency in default_lean_dependencies() {

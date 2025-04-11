@@ -28,3 +28,70 @@ pub use project::Project;
 
 pub use file_generator::error as file_generator_error;
 pub use noir::error as noir_error;
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use tempfile::tempdir;
+
+    use crate::Project;
+
+    fn test_extractor_on(main_source: &str) -> std::io::Result<(Vec<String>, String)> {
+        let temp_dir = tempdir().expect("creating temp_dir");
+
+        let nargo_toml = r#"
+[package]
+name = "MockProject"
+type = "lib"
+authors = [""]
+
+[dependencies]
+"#;
+
+        fs::write(temp_dir.path().join("Nargo.toml"), nargo_toml)?;
+        fs::create_dir(temp_dir.path().join("src"))?;
+        fs::write(temp_dir.path().join("src").join("lib.nr"), main_source)?;
+
+        let mock_project =
+            Project::new(temp_dir.path().to_path_buf()).expect("creating mock project");
+        let warnings = mock_project
+            .extract()
+            .expect("getting warnings")
+            .warnings
+            .iter()
+            .map(|warning| format!("{warning:?}"))
+            .collect();
+
+        let extracted_file = fs::read_to_string(
+            temp_dir
+                .path()
+                .join("lampe")
+                .join("MockProject")
+                .join("Extracted")
+                .join("Main")
+                .with_extension("lean"),
+        )
+        .expect("reading file");
+
+        Ok((warnings, extracted_file))
+    }
+
+    #[test]
+    fn test_unbound() {
+        let type_source = r#"
+struct Bad<T> {
+    x: Field,
+}
+
+fn mkBad<T>() -> Bad<T> {
+    Bad { x: 3 }
+}
+
+fn main() -> pub Field {
+    let f = mkBad();
+    f.x
+}
+"#;
+        assert!(test_extractor_on(type_source).is_ok());
+    }
+}
