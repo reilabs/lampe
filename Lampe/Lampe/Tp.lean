@@ -156,7 +156,6 @@ def Tp.zeroArgs (args : List Tp) : HList (Tp.denote p) args :=
   | [] => h![]
   | a :: b => .cons a.zero (Tp.zeroArgs b)
 
--- TODO: Check if this is the right bit pattern for zeroes
 def Tp.zero (tp : Tp) : Tp.denote p tp :=
 match tp with
 | .u _ | .i _ | .bi | .field => 0
