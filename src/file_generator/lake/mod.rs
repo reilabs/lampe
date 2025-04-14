@@ -1,12 +1,9 @@
-use crate::file_generator::lake::dependency::{
-    LeanDependency, LeanDependencyPath,
-};
-use crate::file_generator::{EXTRACTED_MODULE_NAME, Error, LAMPE_GENERATED_COMMENT, NoirPackageIdentifier};
+use crate::file_generator::lake::dependency::{LeanDependency, LeanDependencyPath};
+use crate::file_generator::{Error, LAMPE_GENERATED_COMMENT, NoirPackageIdentifier};
+use serde::Deserialize;
 use std::fmt::Write;
 use std::fs;
 use std::path::Path;
-use std::string::ToString;
-use serde::Deserialize;
 
 pub mod dependency;
 
@@ -35,9 +32,17 @@ pub fn generate_lakefile_toml(
 
     let mut result = String::new();
     writeln!(result, "# {LAMPE_GENERATED_COMMENT}")?;
-    writeln!(result, "name = \"{}-{}\"", noir_package_identifier.name, noir_package_identifier.version)?;
+    writeln!(
+        result,
+        "name = \"{}-{}\"",
+        noir_package_identifier.name, noir_package_identifier.version
+    )?;
     writeln!(result, "version = \"{}\"", noir_package_identifier.version)?;
-    writeln!(result, "defaultTargets = [\"{}\"]", noir_package_identifier.name)?;
+    writeln!(
+        result,
+        "defaultTargets = [\"{}\"]",
+        noir_package_identifier.name
+    )?;
     result.push('\n');
     result.push_str("[[lean_lib]]\n");
     writeln!(result, "name = \"{}\"", noir_package_identifier.name)?;
@@ -58,15 +63,12 @@ pub fn generate_lakefile_toml(
     Ok(())
 }
 
-
 #[derive(Deserialize)]
 struct LakefileConfig {
     name: String,
 }
 
-pub fn read_package_name(
-    lampe_root_dir: &Path,
-) -> Result<String, Error> {
+pub fn read_package_name(lampe_root_dir: &Path) -> Result<String, Error> {
     let lakefile_path = lampe_root_dir.join("lakefile.toml");
     let content = fs::read_to_string(lakefile_path)?;
 

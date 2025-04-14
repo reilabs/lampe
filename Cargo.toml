@@ -11,19 +11,12 @@ repository = "https://github.com/reilabs/lampe"
 license = "MIT"
 
 [dependencies]
-# fm = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-# nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-# nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-# noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-# noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-# noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-
-fm = { path = "/home/piotr/Workspace/Reilabs/noir/compiler/fm" }
-nargo = { path = "/home/piotr/Workspace/Reilabs/noir/tooling/nargo" }
-nargo_toml = { path = "/home/piotr/Workspace/Reilabs/noir/tooling/nargo_toml" }
-noirc_driver = { path = "/home/piotr/Workspace/Reilabs/noir/compiler/noirc_driver" }
-noirc_errors = { path = "/home/piotr/Workspace/Reilabs/noir/compiler/noirc_errors" }
-noirc_frontend = { path = "/home/piotr/Workspace/Reilabs/noir/compiler/noirc_frontend" }
+fm = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
 
 clap = { version = "4.5.17", features = ["unstable-v5"] }
 derivative = "2.2.0"

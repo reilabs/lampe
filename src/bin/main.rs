@@ -134,10 +134,7 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
                 );
             }
             Ok(Err(err)) => {
-                println!(
-                    "🟡 Error                 {:?}",
-                    err
-                );
+                println!("🟡 Error                 {err:?}");
             }
             Ok(Ok(_)) => {
                 println!(
@@ -159,7 +156,7 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
 pub fn run(args: &ProgramOptions) -> Result<ExitCode, Error> {
     let project = Project::new(args.root.clone())?;
 
-    println!("[zzz] {:?}", project);
+    println!("[zzz] {project:?}");
 
     let result = project.extract()?;
 
