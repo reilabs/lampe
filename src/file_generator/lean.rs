@@ -28,7 +28,19 @@ pub fn generate_lean_files(
     }
 
     for (file_path, extracted_lean) in extracted_files {
-        generate_extracted_file(&extracted_lib_dir, file_path, extracted_lean, true)?;
+        let lib_name = if file_path.is_type_path() {
+            None
+        } else {
+            Some(lib_name.as_str())
+        };
+
+        generate_extracted_file(
+            lib_name,
+            &extracted_lib_dir,
+            file_path,
+            extracted_lean,
+            true,
+        )?;
     }
     generate_extracted_lib_file(
         lib_name,
@@ -94,6 +106,7 @@ fn generate_extracted_lib_file(
 }
 
 fn generate_extracted_file(
+    lib_name: Option<&str>,
     extracted_lib_dir: &Path,
     file_path: &LeanFilePath,
     extracted_lean: &LeanFileContent,
@@ -111,6 +124,11 @@ fn generate_extracted_file(
     let mut result = String::new();
 
     write!(result, "-- {LAMPE_GENERATED_COMMENT}\n\n")?;
+
+    if let Some(lib_name) = lib_name {
+        write!(result, "import {lib_name}.{EXTRACTED_LIB_NAME}.Types\n")?;
+    }
+
     result.push_str("import Lampe\n\n");
     result.push_str("open Lampe\n\n");
     write!(result, "namespace {EXTRACTED_LIB_NAME}\n\n")?;

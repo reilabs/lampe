@@ -45,6 +45,10 @@ impl LeanFilePath {
         }
     }
 
+    pub fn is_type_path(&self) -> bool {
+        self.noir_segments[0] == "types"
+    }
+
     pub fn to_lean_path(&self) -> PathBuf {
         self.noir_segments
             .iter()
