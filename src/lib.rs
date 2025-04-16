@@ -68,8 +68,8 @@ authors = [""]
                 .join("lampe")
                 .join("MockProject")
                 .join("Extracted")
-                .join("Main")
-                .with_extension("lean"),
+                .join("MockProject")
+                .join("0.0.0.lean"),
         )
         .expect("reading file");
 
