@@ -7,7 +7,9 @@ open Lampe
 namespace Extracted
 
 nr_type_alias Asdf<> = Field
+
 nr_struct_def bar::Asdf2<> {
     asdf : @Asdf<>
 }
+
 nr_type_alias Asdf3<> = bar::Asdf2<>

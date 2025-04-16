@@ -8,7 +8,6 @@ mod syntax;
 use context::EmitterCtx;
 use fm::FileId;
 use itertools::Itertools;
-use noirc_errors::Location;
 use noirc_frontend::{
     Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
@@ -29,12 +28,7 @@ use noirc_frontend::{
         TypeAliasId,
     },
 };
-use petgraph::graph::NodeIndex;
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Index,
-    usize,
-};
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     file_generator::LeanFilePath,

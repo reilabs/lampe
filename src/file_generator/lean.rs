@@ -126,7 +126,7 @@ fn generate_extracted_file(
     write!(result, "-- {LAMPE_GENERATED_COMMENT}\n\n")?;
 
     if let Some(lib_name) = lib_name {
-        write!(result, "import {lib_name}.{EXTRACTED_LIB_NAME}.Types\n")?;
+        writeln!(result, "import {lib_name}.{EXTRACTED_LIB_NAME}.Types")?;
     }
 
     result.push_str("import Lampe\n\n");
