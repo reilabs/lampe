@@ -23,7 +23,6 @@ inductive SLTerm where
 | exi : Expr → SLTerm
 | wand : SLTerm → SLTerm → SLTerm
 | unrecognized : Expr → SLTerm
-deriving BEq
 
 def SLTerm.toString : SLTerm → String
 | top => "⊤"
