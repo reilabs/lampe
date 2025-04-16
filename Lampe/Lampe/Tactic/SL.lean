@@ -330,14 +330,14 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM SLGoals := w
 /--
 Solves goals of the form `⟦P⟧ ⊢ ⟦Q⟧` by transforming it to a goal of the form `P → Q` and trying
 -/
-def solvePureEntailMV (goal : MVarId) (pre : SLTerm) : TacticM SLGoals := withTraceNode `Lampe.SL (fun e => return f!"solvePureEntailMV {Lean.exceptEmoji e}") do
+def solvePureEntailMV (goal : MVarId) (preExpr : Lean.Expr) : TacticM SLGoals := withTraceNode `Lampe.SL (fun e => return f!"solvePureEntailMV {Lean.exceptEmoji e}") do
   let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_pure_ent_pure) | throwError "unexpected goals in solve_pure_ent_pure"
   let gs ← evalTacticAt (←`(tactic|try tauto)) g
   if gs.isEmpty then
     return SLGoals.mk [] impls
   else
     -- If we are left in a `True → P` goal state then replace this with `P`
-    if pre == .lift (mkConst ``True) then
+    if preExpr.isAppOf ``True then
       let mut (trueVar, g) ← g.intro1
       g ← g.clear trueVar
       return SLGoals.mk [g] impls
@@ -381,9 +381,9 @@ partial def solveEntailment (goal : MVarId): TacticM SLGoals := withTraceNode `L
   | SLTerm.top => do
     let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_top)
     return SLGoals.mk [] impls
-  | SLTerm.lift _ => do
+  | SLTerm.lift expr => do
     if let SLTerm.lift _ := post then
-      return ← solvePureEntailMV goal pre
+      return ← solvePureEntailMV goal expr
   | _ => pure ()
 
   match post with
