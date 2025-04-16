@@ -15,6 +15,12 @@ pub enum Error {
 
     #[error("Noir Error: {_0}")]
     Noir(noir::error::Error),
+
+    #[error("Error generating require block for Lake: {_0}")]
+    LakeRequireGeneration(String),
+
+    #[error("Error deserializing toml file: {_0}")]
+    TomlDeserializationError(toml::de::Error),
 }
 
 impl From<io::Error> for Error {
@@ -32,5 +38,11 @@ impl From<fmt::Error> for Error {
 impl From<noir::error::Error> for Error {
     fn from(err: noir::error::Error) -> Error {
         Error::Noir(err)
+    }
+}
+
+impl From<toml::de::Error> for Error {
+    fn from(value: toml::de::Error) -> Self {
+        Error::TomlDeserializationError(value)
     }
 }

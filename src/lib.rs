@@ -68,8 +68,8 @@ authors = [""]
                 .join("lampe")
                 .join("MockProject")
                 .join("Extracted")
-                .join("Main")
-                .with_extension("lean"),
+                .join("MockProject")
+                .join("0.0.0.lean"),
         )
         .expect("reading file");
 
@@ -78,7 +78,7 @@ authors = [""]
 
     #[test]
     fn test_unbound() {
-        let type_source = r#"
+        let type_source = r"
 struct Bad<T> {
     x: Field,
 }
@@ -91,7 +91,7 @@ fn main() -> pub Field {
     let f = mkBad();
     f.x
 }
-"#;
+";
         assert!(test_extractor_on(type_source).is_ok());
     }
 }
