@@ -29,7 +29,12 @@ use noirc_frontend::{
         TypeAliasId,
     },
 };
-use std::collections::{HashMap, HashSet};
+use petgraph::graph::NodeIndex;
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Index,
+    usize,
+};
 
 use crate::{
     file_generator::LeanFilePath,
@@ -133,10 +138,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         }
     }
 
-    pub fn knows_location(&self, loc: Location) -> bool {
-        self.known_files.contains(&loc.file)
-    }
-
     /// Gets the identifier of the root crate for this compilation context.
     pub fn root_crate(&self) -> CrateId {
         self.root_crate
@@ -173,13 +174,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
     pub fn emit_types(&self) -> Result<String> {
         let mut indenter = Indenter::default();
-        let mut outputs = Vec::new();
-
-        let modules = self
-            .context
-            .def_map(&self.root_crate())
-            .expect("Root crate was missing in compilation context")
-            .modules();
+        let mut outputs = HashSet::new();
 
         let mut dep_graph = self.context.def_interner.dependency_graph.clone();
 
@@ -191,69 +186,55 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             }
         });
 
-        let structs = self
-            .context
-            .def_interner
-            .structs
-            .iter()
-            .map(|(id, struct_type)| (id, struct_type.to_owned().borrow().location))
-            .collect::<HashMap<_, _>>();
-
-        let aliases = self.context.def_interner.type_aliases.clone();
-
-        let mut alias_locs = HashMap::new();
-
-        for alias in aliases {
-            alias_locs.insert(
-                alias.clone().unwrap_or_clone().id,
-                alias.unwrap_or_clone().location,
-            );
-        }
-
         let sorted_dep_graph = petgraph::algo::toposort(&dep_graph, None)
-            // TODO: Make this error more helpful
             .map_err(|err| noir::error::emit::Error::CycleDetected(format!("{err:?}")))?;
 
-        for node_id in sorted_dep_graph {
-            if let Some(dep_id) = dep_graph.node_weight(node_id) {
-                let output = match dep_id {
-                    DependencyId::Alias(id) => {
-                        // TODO : This may not work
-                        let (_, module_data) = modules.iter().next().ok_or(
-                            Error::MissingIdentifier("Unable to access root module".to_string()),
-                        )?;
-                        if self.knows_location(*alias_locs.get(id).ok_or(
-                            Error::MissingIdentifier(format!(
-                                "Unable to find location of id:{id:?}"
-                            )),
-                        )?) {
-                            let ctx =
-                                EmitterCtx::from_module(module_data, &self.context.def_interner);
-                            let output = self.emit_alias(*id, &ctx)?;
-                            EmitOutput::Alias(output)
-                        } else {
-                            continue;
-                        }
+        let sorted_dep_weights = sorted_dep_graph
+            .iter()
+            .map(|id| dep_graph.node_weight(*id).unwrap())
+            .collect::<Vec<_>>();
+
+        for module in self
+            .context
+            .def_map(&self.root_crate())
+            .expect("Root crate was missing in compilation context")
+            .modules()
+        {
+            let ctx = EmitterCtx::from_module(module, &self.context.def_interner);
+            for module_def_id in module.type_definitions().chain(module.value_definitions()) {
+                let emit_output: (Option<usize>, EmitOutput) = match module_def_id {
+                    ModuleDefId::TypeId(id) => {
+                        let def_order = sorted_dep_weights
+                            .clone()
+                            .into_iter()
+                            .position(|item| *item == DependencyId::Struct(id));
+
+                        (
+                            def_order,
+                            EmitOutput::Struct(self.emit_struct_def(&mut indenter, id, &ctx)?),
+                        )
                     }
-                    DependencyId::Struct(id) => {
-                        if self.knows_location(*structs.get(id).ok_or(Error::MissingIdentifier(
-                            format!("Unable to find location of id:{id:?}"),
-                        ))?) {
-                            let module = id.to_owned().module_id().module(&self.context.def_maps);
-                            let ctx = EmitterCtx::from_module(module, &self.context.def_interner);
-                            let output = self.emit_struct_def(&mut indenter, *id, &ctx)?;
-                            EmitOutput::Struct(output)
-                        } else {
-                            continue;
-                        }
+                    ModuleDefId::TypeAliasId(id) => {
+                        let def_order = sorted_dep_weights
+                            .clone()
+                            .into_iter()
+                            .position(|item| *item == DependencyId::Alias(id));
+
+                        (def_order, EmitOutput::Alias(self.emit_alias(id, &ctx)?))
                     }
                     _ => continue,
                 };
-                outputs.push(output);
+
+                outputs.insert(emit_output);
             }
         }
 
-        let type_defs = outputs.into_iter().rev().map(|d| d.to_string()).join("\n\n");
+        let type_defs = outputs
+            .into_iter()
+            .sorted_by_key(|(order, _)| order.unwrap_or(usize::MAX))
+            .rev()
+            .map(|(_, output)| output.to_string())
+            .join("\n\n");
 
         Ok(type_defs)
     }
