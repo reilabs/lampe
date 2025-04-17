@@ -224,6 +224,12 @@ lemma solve_compose [LawfulHeap α] {P Q R S : SLP α} (h₁ : P ⊢ Q ⋆ R) (h
   apply SLP.star_mono_l
   assumption
 
+theorem solve_pure_ent_pure [LawfulHeap α] {P Q : Prop} :
+  (P → Q) → ((⟦P⟧ : SLP α) ⊢ ⟦Q⟧) := by
+  unfold SLP.lift
+  unfold SLP.entails
+  simp only [and_imp, forall_eq_apply_imp_iff, and_true, imp_self]
+
 end Internal
 
 structure SLGoals where
@@ -238,6 +244,7 @@ instance : Append SLGoals where
 def Lean.MVarId.apply' (m: MVarId) (e: Expr): TacticM (List MVarId) := do
   trace[Lampe.SL] "Applying {e}"
   m.apply e
+
 /--
 Solves goals of the form `P ⊢ [r ↦ v] ⋆ ?_`, trying to copy as much evidence as possible to the MVar on the right
 -/
@@ -319,6 +326,22 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM SLGoals := w
       pure $ SLGoals.mk [final] impl
   | _ => throwError "Unrecognized shape in solvePureStarMV"
 
+/--
+Solves goals of the form `⟦P⟧ ⊢ ⟦Q⟧` by transforming it to a goal of the form `P → Q` and trying
+-/
+def solvePureEntailMV (goal : MVarId) (preExpr : Lean.Expr) : TacticM SLGoals := withTraceNode `Lampe.SL (fun e => return f!"solvePureEntailMV {Lean.exceptEmoji e}") do
+  let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_pure_ent_pure) | throwError "unexpected goals in solve_pure_ent_pure"
+  let gs ← evalTacticAt (←`(tactic|try tauto)) g
+  if gs.isEmpty then
+    return SLGoals.mk [] impls
+  else
+    -- If we are left in a `True → P` goal state then replace this with `P`
+    if preExpr.isAppOf ``True then
+      let mut (trueVar, g) ← g.intro1
+      g ← g.clear trueVar
+      return SLGoals.mk [g] impls
+    return SLGoals.mk [g] impls
+
 mutual
 
 /--
@@ -349,7 +372,6 @@ partial def solveEntailment (goal : MVarId): TacticM SLGoals := withTraceNode `L
 
   match pre with
   | SLTerm.exi _ => do
-
   -- solve_exi_prop_l
     let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_exi_prop_l) | throwError "unexpected goals in solve_exi_prop_l"
     let (_, g) ← g.intro1
@@ -358,6 +380,9 @@ partial def solveEntailment (goal : MVarId): TacticM SLGoals := withTraceNode `L
   | SLTerm.top => do
     let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_top)
     return SLGoals.mk [] impls
+  | SLTerm.lift expr => do
+    if let SLTerm.lift _ := post then
+      return ← solvePureEntailMV goal expr
   | _ => pure ()
 
   match post with
