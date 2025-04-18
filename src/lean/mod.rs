@@ -323,7 +323,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             let location = trait_impl
                 .borrow()
                 .methods
-                .get(0)
+                .first()
                 .map(|t| self.context.def_interner.function_modifiers(t).name_location);
 
             let emitted_trait_impl =
