@@ -200,15 +200,26 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         {
             let ctx = EmitterCtx::from_module(module, &self.context.def_interner);
             for module_def_id in module.type_definitions().chain(module.value_definitions()) {
-                let emit_output: (Option<usize>, EmitOutput) = match module_def_id {
+                let emit_output: (Option<usize>, String, EmitOutput) = match module_def_id {
                     ModuleDefId::TypeId(id) => {
                         let def_order = sorted_dep_weights
                             .clone()
                             .into_iter()
                             .position(|item| *item == DependencyId::Struct(id));
 
+                        let name = self
+                            .context
+                            .def_interner
+                            .get_struct(id)
+                            .borrow()
+                            .name
+                            .0
+                            .contents
+                            .clone();
+
                         (
                             def_order,
+                            name,
                             EmitOutput::Struct(self.emit_struct_def(&mut indenter, id, &ctx)?),
                         )
                     }
@@ -218,7 +229,21 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             .into_iter()
                             .position(|item| *item == DependencyId::Alias(id));
 
-                        (def_order, EmitOutput::Alias(self.emit_alias(id, &ctx)?))
+                        let name = self
+                            .context
+                            .def_interner
+                            .get_type_alias(id)
+                            .borrow()
+                            .name
+                            .0
+                            .contents
+                            .clone();
+
+                        (
+                            def_order,
+                            name,
+                            EmitOutput::Alias(self.emit_alias(id, &ctx)?),
+                        )
                     }
                     _ => continue,
                 };
@@ -229,9 +254,14 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
         let type_defs = outputs
             .into_iter()
-            .sorted_by_key(|(order, _)| order.unwrap_or(usize::MAX))
+            .sorted_by(|(ord1, name1, _), (ord2, name2, _)| match (ord1, ord2) {
+                (Some(ord1), Some(ord2)) => ord1.cmp(ord2),
+                (None, Some(_)) => Ordering::Greater,
+                (Some(_), None) => Ordering::Less,
+                (None, None) => name2.cmp(name1),
+            })
             .rev()
-            .map(|(_, output)| output.to_string())
+            .map(|(_, _, output)| output.to_string())
             .join("\n\n");
 
         Ok(type_defs)
