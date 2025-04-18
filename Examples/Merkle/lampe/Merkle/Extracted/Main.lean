@@ -193,4 +193,4 @@ nr_def «main»<>(root : Field, proof : [Field; 32], item : Field, idx : [bool; 
 }
 
 
-def Main.env := Lampe.Env.mk [«weird_assert_eq», «square», «to_le_bits», «sbox», «sgn0», «permute», «bar», «to_le_bytes», «rotate_left», «from_le_bytes», «rl», «weird_eq_witness», «as_array», «SIGMA», «mtree_recover», «main», «RC»] [impl_405]
+def Main.env := Lampe.Env.mk [«RC», «SIGMA», «as_array», «bar», «from_le_bytes», «main», «mtree_recover», «permute», «rl», «rotate_left», «sbox», «sgn0», «square», «to_le_bits», «to_le_bytes», «weird_assert_eq», «weird_eq_witness»] [impl_405]

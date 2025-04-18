@@ -278,8 +278,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .map(|(_, d)| d.to_string())
             .join("\n");
 
-        let env_funcs = all_func_refs.into_iter().join(", ");
-        let env_traits = all_impl_refs.into_iter().join(", ");
+        let env_funcs = all_func_refs.into_iter().sorted().join(", ");
+        let env_traits = all_impl_refs.into_iter().sorted().join(", ");
 
         let lean_file_path = LeanFilePath::from_noir_path(
             self.context

@@ -138,4 +138,4 @@ nr_def «main»<>() -> Unit {
 }
 
 
-def Main.env := Lampe.Env.mk [«get_unchecked», «cast_test», «is_alias_some», «check», «fmtstr_test», «Option2::none», «tuple_test», «assigns», «my_func», «my_func2», «Option2::is_none», «Option2::some», «uncons», «my_fn», «string_test», «Option2::is_some», «main», «my_func3», «literal_test»] [impl_405, impl_406, impl_407]
+def Main.env := Lampe.Env.mk [«Option2::is_none», «Option2::is_some», «Option2::none», «Option2::some», «assigns», «cast_test», «check», «fmtstr_test», «get_unchecked», «is_alias_some», «literal_test», «main», «my_fn», «my_func2», «my_func3», «my_func», «string_test», «tuple_test», «uncons»] [impl_405, impl_406, impl_407]

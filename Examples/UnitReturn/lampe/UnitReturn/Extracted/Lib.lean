@@ -23,4 +23,4 @@ nr_def «baz»<>() -> Unit {
 }
 
 
-def Lib.env := Lampe.Env.mk [«foo», «baz», «bar»] []
+def Lib.env := Lampe.Env.mk [«bar», «baz», «foo»] []

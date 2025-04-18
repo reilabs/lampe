@@ -86,7 +86,7 @@ fn generate_extracted_lib_file(
     let mut result = String::new();
 
     write!(result, "-- {LAMPE_GENERATED_COMMENT}\n\n")?;
-    for file_name in file_names {
+    for file_name in file_names.iter().sorted() {
         writeln!(result, "import {lib_name}.{EXTRACTED_LIB_NAME}.{file_name}")?;
     }
 
@@ -95,6 +95,7 @@ fn generate_extracted_lib_file(
     let environment_string = file_names
         .iter()
         .filter(|name| *name != "GeneratedTypes")
+        .sorted()
         .map(|name| format!("{EXTRACTED_LIB_NAME}.") + name + ".env")
         .join(" ++ ");
 

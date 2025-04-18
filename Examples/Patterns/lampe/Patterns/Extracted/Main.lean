@@ -30,4 +30,4 @@ nr_def «pattern_test»<>() -> Unit {
 }
 
 
-def Main.env := Lampe.Env.mk [«pattern_test», «Option2::some»] []
+def Main.env := Lampe.Env.mk [«Option2::some», «pattern_test»] []

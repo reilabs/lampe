@@ -20,4 +20,4 @@ nr_def «main»<>() -> Unit {
 }
 
 
-def Main.env := Lampe.Env.mk [«main», «foo», «A»] []
+def Main.env := Lampe.Env.mk [«A», «foo», «main»] []
