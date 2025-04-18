@@ -94,7 +94,7 @@ fn generate_extracted_lib_file(
 
     let environment_string = file_names
         .iter()
-        .filter(|name| *name != "Types")
+        .filter(|name| *name != "GeneratedTypes")
         .map(|name| format!("{EXTRACTED_LIB_NAME}.") + name + ".env")
         .join(" ++ ");
 
@@ -126,7 +126,10 @@ fn generate_extracted_file(
     write!(result, "-- {LAMPE_GENERATED_COMMENT}\n\n")?;
 
     if let Some(lib_name) = lib_name {
-        writeln!(result, "import {lib_name}.{EXTRACTED_LIB_NAME}.Types")?;
+        writeln!(
+            result,
+            "import {lib_name}.{EXTRACTED_LIB_NAME}.GeneratedTypes"
+        )?;
     }
 
     result.push_str("import Lampe\n\n");

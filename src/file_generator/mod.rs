@@ -41,12 +41,12 @@ impl LeanFilePath {
 
     pub fn type_path() -> Self {
         Self {
-            noir_segments: vec!["types".to_string()],
+            noir_segments: vec!["generated_types".to_string()],
         }
     }
 
     pub fn is_type_path(&self) -> bool {
-        self.noir_segments[0] == "types"
+        self.noir_segments.len() == 1 && self.noir_segments[0] == "generated_types"
     }
 
     pub fn to_lean_path(&self) -> PathBuf {

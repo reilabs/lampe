@@ -85,14 +85,22 @@ impl Project {
             .map(|(id, content)| -> Result<(LeanFilePath, String), Error> {
                 Ok((
                     LeanFilePath::from_noir_path(noir_project.file_manager().path(*id).ok_or(
-                        noir::error::file::Error::Other(format!("Unknown file ID:{id:?}")),
+                        noir::error::file::Error::Other(format!("Unknown file ID: {id:?}")),
                     )?),
                     content.clone(),
                 ))
             })
-            .collect::<Result<HashMap<_, _>, Error>>()?;
+            .collect::<Result<HashMap<_, _>, _>>()?;
 
-        lean_files.insert(type_file, generated_source.type_content);
+        let type_file_path = type_file.to_lean_path();
+        let type_exists = lean_files.insert(type_file, generated_source.type_content);
+
+        // Return an error if `GeneratedTypes` is extracted twice.
+        if type_exists.is_some() {
+            return Err(Error::FileError(noir::error::file::Error::DuplicateFile(
+                type_file_path,
+            )));
+        }
 
         file_generator::lampe_project(&self.nargo_workspace.root_dir, package, &lean_files)?;
 
