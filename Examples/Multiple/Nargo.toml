@@ -1,0 +1,6 @@
+[package]
+name = "Multiple"
+type = "bin"
+authors = [""]
+
+[dependencies]

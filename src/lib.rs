@@ -33,6 +33,7 @@ pub use noir::error as noir_error;
 mod tests {
     use std::fs;
     use tempfile::tempdir;
+    use walkdir::WalkDir;
 
     use crate::Project;
 
@@ -62,18 +63,24 @@ authors = [""]
             .map(|warning| format!("{warning:?}"))
             .collect();
 
-        let extracted_file = fs::read_to_string(
-            temp_dir
-                .path()
-                .join("lampe")
-                .join("MockProject")
-                .join("Extracted")
-                .join("Main")
-                .with_extension("lean"),
-        )
-        .expect("reading file");
+        let mut extracted_files = String::new();
 
-        Ok((warnings, extracted_file))
+        for entry_result in WalkDir::new(temp_dir.path()) {
+            let entry = match entry_result {
+                Ok(entry) => entry,
+                Err(err) => panic!("unable to acecss entry: {}", err),
+            };
+
+            if entry.file_type().is_file() {
+                extracted_files.push_str("----------------------\n");
+                extracted_files.push_str(&format!("{entry:?}\n"));
+                extracted_files.push_str("----------------------\n");
+                extracted_files.push_str(&fs::read_to_string(&entry.path()).unwrap());
+                extracted_files.push('\n');
+            }
+        }
+
+        Ok((warnings, extracted_files))
     }
 
     #[test]
@@ -93,5 +100,28 @@ fn main() -> pub Field {
 }
 "#;
         assert!(test_extractor_on(type_source).is_ok());
+    }
+
+    #[test]
+    fn test_order() {
+        let type_source = r#"
+struct FooStruct2 {
+    x: FooStruct
+}
+
+struct FooStruct {
+    x: FooType,
+}
+
+type FooType = Field;
+
+struct BarStruct {
+    y: Field
+}
+
+type BarType = BarStruct;
+"#;
+        let result = test_extractor_on(type_source);
+        assert!(result.is_ok());
     }
 }

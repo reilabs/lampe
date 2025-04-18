@@ -12,6 +12,9 @@ structure Env where
   functions : List FunctionDecl
   traits : List (Ident × TraitImpl)
 
+instance : Append Env where
+  append env₁ env₂ := ⟨env₁.functions ++ env₂.functions, env₁.traits ++ env₂.traits⟩
+
 inductive TraitResolvable (Γ : Env) : TraitImplRef → Prop where
 | ok {ref impl} :
   (ref.trait.name, impl) ∈ Γ.traits →
