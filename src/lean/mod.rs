@@ -8,6 +8,7 @@ mod syntax;
 use context::EmitterCtx;
 use fm::FileId;
 use itertools::Itertools;
+use noirc_errors::Location;
 use noirc_frontend::{
     Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{IntegerBitSize, Signedness},
@@ -28,7 +29,10 @@ use noirc_frontend::{
         TypeAliasId,
     },
 };
-use std::collections::{HashMap, HashSet};
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+};
 
 use crate::{
     file_generator::LeanFilePath,
@@ -93,7 +97,7 @@ impl std::fmt::Display for EmitOutput {
 pub struct ModuleEntries {
     pub impl_refs: HashSet<String>,
     pub func_refs: HashSet<String>,
-    pub defs: Vec<EmitOutput>,
+    pub defs: Vec<(Option<Location>, EmitOutput)>,
 }
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
@@ -261,9 +265,18 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
         // Remove all entries that are duplicated as we do not necessarily have the
         // means to prevent emission of duplicates in all cases
-        let mut set: HashSet<EmitOutput> = HashSet::new();
+        let mut set: HashSet<_> = HashSet::new();
         set.extend(output);
-        let module_defs = set.into_iter().map(|d| d.to_string()).join("\n");
+        let module_defs = set
+            .into_iter()
+            .sorted_by(|(loc1, _), (loc2, _)| match (loc1, loc2) {
+                (Some(loc1), Some(loc2)) => loc1.span.cmp(&loc2.span),
+                (None, Some(_)) => Ordering::Greater,
+                (Some(_), None) => Ordering::Less,
+                (None, None) => Ordering::Equal,
+            })
+            .map(|(_, d)| d.to_string())
+            .join("\n");
 
         let env_funcs = all_func_refs.into_iter().join(", ");
         let env_traits = all_impl_refs.into_iter().join(", ");
@@ -293,7 +306,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         ind: &mut Indenter,
         module: &ModuleData,
     ) -> Result<ModuleEntries> {
-        let mut accumulator = Vec::new();
+        let mut accumulator: Vec<(Option<Location>, EmitOutput)> = Vec::new();
         let ctx = EmitterCtx::from_module(module, &self.context.def_interner);
 
         // We start by emitting the trait implementations.
@@ -306,8 +319,16 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .filter(|(_, t)| t.borrow().file == module.location.file)
         {
             let impl_id = format!("impl_{}", id.0);
-            let trait_impl = self.emit_trait_impl(ind, &trait_impl.borrow(), &impl_id, &ctx)?;
-            accumulator.push(EmitOutput::TraitImpl(trait_impl));
+
+            let location = trait_impl
+                .borrow()
+                .methods
+                .get(0)
+                .map(|t| self.context.def_interner.function_modifiers(t).name_location);
+
+            let emitted_trait_impl =
+                self.emit_trait_impl(ind, &trait_impl.borrow(), &impl_id, &ctx)?;
+            accumulator.push((location, EmitOutput::TraitImpl(emitted_trait_impl)));
             impl_refs.insert(impl_id);
         }
 
@@ -329,13 +350,19 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                         continue;
                     }
                     func_refs.insert(format!("«{def_name}»"));
-                    EmitOutput::Function(def)
+
+                    let location = self.context.def_interner.function_modifiers(&id).name_location;
+
+                    (Some(location), EmitOutput::Function(def))
                 }
                 ModuleDefId::GlobalId(id) => {
                     let (global_name, global_string) = self.emit_global(ind, id, &ctx)?;
 
                     func_refs.insert(format!("«{global_name}»"));
-                    EmitOutput::Global(global_string)
+
+                    let location = self.context.def_interner.get_global(id).location;
+
+                    (Some(location), EmitOutput::Global(global_string))
                 }
                 // Structs and Type aliases are emitted in a separate file.
                 // Modules and trait definitions are skipped
@@ -347,10 +374,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
         let defs = accumulator
             .into_iter()
-            .filter(|d| !d.is_empty())
-            .map(|mut d| {
+            .filter(|(_, d)| !d.is_empty())
+            .map(|(loc, mut d)| {
                 d.push_str("\n");
-                d
+                (loc, d)
             })
             .collect();
 

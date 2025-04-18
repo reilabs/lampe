@@ -11,12 +11,12 @@ repository = "https://github.com/reilabs/lampe"
 license = "MIT"
 
 [dependencies]
-fm = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+fm = { git = "https://github.com/reilabs/noir", branch = "mp/location_order" }
+nargo = { git = "https://github.com/reilabs/noir", branch = "mp/location_order" }
+nargo_toml = { git = "https://github.com/reilabs/noir", branch = "mp/location_order" }
+noirc_driver = { git = "https://github.com/reilabs/noir", branch = "mp/location_order" }
+noirc_errors = { git = "https://github.com/reilabs/noir", branch = "mp/location_order" }
+noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "mp/location_order" }
 
 clap = { version = "4.5.17", features = ["unstable-v5"] }
 derivative = "2.2.0"
