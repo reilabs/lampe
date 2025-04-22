@@ -22,4 +22,9 @@ pub enum Error {
 
     #[error("Unexpected type: type of {_0} must be {_1}")]
     UnexpectedType(String, String),
+
+    // NOTE: This error should not occur, as cycle detection is performed by Noir. We include it
+    // anyway just in case.
+    #[error("Found cycle in type declarations {_0}")]
+    CycleDetected(String),
 }

@@ -24,10 +24,14 @@ indoc = "2.0.5"
 itertools = "0.13.0"
 log = "0.4.22"
 thiserror = "1.0.63"
+tempfile = "3.19.1"
+petgraph = "0.6.5"
+convert_case = "0.8.0"
 
 [dev-dependencies]
 anyhow = "1.0.87"
 tempfile = "3.8.1"
+walkdir = "2.5.0"
 
 [[bin]]
 name = "lampe"
