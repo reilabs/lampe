@@ -348,7 +348,7 @@ theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
     rfl
 
 syntax "enter_decl" : tactic
-macro_rules | `(tactic|enter_decl) => `(tactic|apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl))
+macro_rules | `(tactic|enter_decl) => `(tactic|apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl); simp only)
 
 theorem callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
