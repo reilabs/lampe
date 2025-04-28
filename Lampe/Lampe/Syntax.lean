@@ -55,7 +55,7 @@ syntax ident : nr_const_num
 
 syntax ident ":" nr_type : nr_param_decl
 
-syntax ("-" noWs)? num ":" nr_type : nr_expr -- Numeric literal
+syntax ("-" noWs)? num ppSpace ":" ppSpace nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
 syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
