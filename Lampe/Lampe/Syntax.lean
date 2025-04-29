@@ -21,9 +21,7 @@ open Lean Elab Meta Qq
 declare_syntax_cat nr_ident
 declare_syntax_cat nr_type
 declare_syntax_cat nr_expr
-declare_syntax_cat nr_block_contents
 declare_syntax_cat nr_param_decl
-declare_syntax_cat nr_fmtstr_part
 declare_syntax_cat nr_generic
 declare_syntax_cat nr_generic_def
 declare_syntax_cat nr_const_num
@@ -61,13 +59,11 @@ syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
 syntax "skip" : nr_expr -- alias for `#unit`
 syntax ident : nr_expr
-syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
-syntax "${" term "}" : nr_expr
-syntax "$" ident : nr_expr
+syntax "{" sepBy(ppLine nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
 syntax "u@" ident : nr_expr -- Const UInt
 syntax "f@" ident : nr_expr -- Const Field
-syntax "let" ident "=" nr_expr : nr_expr -- Let binding
-syntax "let" "mut" ident "=" nr_expr : nr_expr -- Mutable let binding
+syntax "let" ppSpace ident ppSpace "=" ppSpace nr_expr : nr_expr -- Let binding
+syntax "let" "mut" ident ppSpace "=" ppSpace nr_expr : nr_expr -- Mutable let binding
 syntax nr_expr "=" nr_expr : nr_expr -- Assignment
 syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
 syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
@@ -87,10 +83,10 @@ syntax nr_expr "." num : nr_expr -- Tuple access
 syntax nr_expr "[" nr_expr "]" : nr_expr -- Array access
 syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
 
-syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
+syntax "#" nr_ident "(" nr_expr,* ")" ppSpace ":" ppSpace nr_type : nr_expr -- Builtin call
 
 syntax "(" nr_type "as" nr_ident "<" nr_generic,* ">" ")" "::" nr_ident "<" nr_generic,* ">" "as" nr_type : nr_expr -- Trait func ident
-syntax "@" nr_ident "<" nr_generic,* ">" "as" nr_type : nr_expr -- Decl func ident
+syntax "@" nr_ident "<" nr_generic,* ">" ppSpace "as" ppSpace nr_type : nr_expr -- Decl func ident
 
 syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
 
@@ -532,7 +528,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| #format($s:str, $args,*) ) => do
   mkArgs args.getElems.toList fun argVals => do
     let argTps <- argVals.mapM fun arg => `(typeOf $arg)
-    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) (Unit.unit))) vname k
+    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) $s)) vname k
 | `(nr_expr| #unit) | `(nr_expr| skip) => `(Expr.skip)
 | `(nr_expr| @ $fnName:nr_ident < $callGens:nr_generic,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
