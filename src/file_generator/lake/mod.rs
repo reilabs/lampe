@@ -1,4 +1,4 @@
-use crate::file_generator::lake::dependency::{LeanDependency, LeanDependencyPath};
+use crate::file_generator::lake::dependency::{LeanDependency, LeanDependencyGit};
 use crate::file_generator::{Error, LAMPE_GENERATED_COMMENT};
 use nargo::package::Package;
 use std::fmt::Write;
@@ -9,15 +9,13 @@ use std::string::ToString;
 mod dependency;
 
 fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
-    vec![
-        Box::new(LeanDependencyPath::builder("Lampe").path("./../../../Lampe").build()),
-        // TODO: In a real setup, require Lample like this:
-        // Box::new(LeanDependencyGit::builder("Lampe")
-        //     .git("https://github.com/reilabs/lampe")
-        //     .rev("main")
-        //     .subdir("Lampe")
-        //     .build()),
-    ]
+    vec![Box::new(
+        LeanDependencyGit::builder("Lampe")
+            .git("https://github.com/reilabs/lampe")
+            .rev("main")
+            .subdir("Lampe")
+            .build(),
+    )]
 }
 
 pub fn generate_lakefile_toml(
