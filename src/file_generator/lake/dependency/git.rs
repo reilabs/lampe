@@ -67,7 +67,7 @@ impl LeanDependency for LeanDependencyGit {
             writeln!(result, "rev = \"{rev}\"")?;
         }
         if let Some(subdir) = &self.subdir {
-            writeln!(result, "subdir = \"{subdir}\"")?;
+            writeln!(result, "subDir = \"{subdir}\"")?;
         }
 
         Ok(result)
