@@ -21,6 +21,7 @@ open Lean Elab Meta Qq
 declare_syntax_cat nr_ident
 declare_syntax_cat nr_type
 declare_syntax_cat nr_expr
+declare_syntax_cat nr_funcref
 declare_syntax_cat nr_param_decl
 declare_syntax_cat nr_generic
 declare_syntax_cat nr_generic_def
@@ -59,16 +60,17 @@ syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
 syntax "skip" : nr_expr -- alias for `#unit`
 syntax ident : nr_expr
-syntax "{" sepBy(ppLine nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
+syntax "{" sepBy(ppLine nr_expr, ";", ";", allowTrailingSep) ppLine ppDedent("}") : nr_expr
+syntax "${" term "}" : nr_expr -- Raw "anti-quotations"
 syntax "u@" ident : nr_expr -- Const UInt
 syntax "f@" ident : nr_expr -- Const Field
 syntax "let" ppSpace ident ppSpace "=" ppSpace nr_expr : nr_expr -- Let binding
 syntax "let" "mut" ident ppSpace "=" ppSpace nr_expr : nr_expr -- Mutable let binding
-syntax nr_expr "=" nr_expr : nr_expr -- Assignment
-syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
-syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
+syntax nr_expr ppSpace "=" ppSpace nr_expr : nr_expr -- Assignment
+syntax "if" ppSpace nr_expr ppSpace nr_expr (ppSpace "else" ppSpace nr_expr)? : nr_expr -- If then else
+syntax "for" ppSpace ident ppSpace "in" ppSpace nr_expr ppSpace ".." ppSpace nr_expr ppLine nr_expr : nr_expr -- For loop
 syntax "(" nr_expr ")" : nr_expr
-syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda
+syntax "|" nr_param_decl,* "|" ppSpace "->" ppSpace nr_type ppSpace nr_expr : nr_expr -- Lambda
 syntax "*(" nr_expr ")" : nr_expr -- Deref
 
 syntax nr_ident "<" nr_generic,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
@@ -86,7 +88,9 @@ syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
 syntax "#" nr_ident "(" nr_expr,* ")" ppSpace ":" ppSpace nr_type : nr_expr -- Builtin call
 
 syntax "(" nr_type "as" nr_ident "<" nr_generic,* ">" ")" "::" nr_ident "<" nr_generic,* ">" "as" nr_type : nr_expr -- Trait func ident
-syntax "@" nr_ident "<" nr_generic,* ">" ppSpace "as" ppSpace nr_type : nr_expr -- Decl func ident
+
+syntax "@" nr_ident "<" nr_generic,* ">" : nr_funcref -- Decl func ident
+syntax nr_funcref ppSpace "as" ppSpace nr_type : nr_expr -- Decl func ident
 
 syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
 
@@ -539,6 +543,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   wrapSimple (←`(Expr.constU $i)) vname k
 | `(nr_expr| f@ $i:ident) => do
   wrapSimple (←`(Expr.constFp $i)) vname k
+| `(nr_expr| ${ $e:term }) =>
+  return e
 | `(nr_expr| ( $selfTp as $traitName < $traitGens,* > ) :: $methodName < $callGens,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let (traitGenKinds, traitGenVals) ← mkGenericVals traitGens.getElems.toList
