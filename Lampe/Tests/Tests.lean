@@ -373,11 +373,6 @@ nr_def slice_lens<>() -> Field {
   p .0 [[1 : u32]]
 }
 
-@[simp]
-lemma BitVec.toNat_one {n : Nat} {h : n > 0} : BitVec.toNat (n := n) (1 : Int) = 1 := by
-  change BitVec.toNat 1 = 1
-  simp [h]
-
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [slice_lens]
@@ -400,6 +395,8 @@ example : STHoare p Γ ⟦⟧ (deref_lens.fn.body _ h![] |>.body h![])
   simp only [deref_lens]
   steps
   simp_all
+  subst_vars
+  rfl
 
 nr_def call<>(f : λ() → Field) -> Field {
   f()
