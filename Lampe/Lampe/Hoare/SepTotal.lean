@@ -327,7 +327,7 @@ theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (S
         rw [inv_congr Inv this]
         simp_rw [this]
         have : BitVec.ofFin (Fin.mk (lo + (d + 1)) (by assumption)) = BitVec.ofFin (Fin.mk ((lo + 1) + d) (by linarith)) := by
-          simp_arith
+          simp +arith +decide
         rw [inv_congr Inv this]
         simp_rw [this]
         apply ih (lo := lo + 1) (Inv := fun i hlo hhi =>

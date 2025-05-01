@@ -42,8 +42,7 @@ lemma BitVec.ofNat_1_eq_0_iff : 0#1 = BitVec.ofNat 1 x ↔ x % 2 = 0 := by
     intro h
     injection h with h
     simp [Fin.ofNat'] at h
-    injection h with h
-    rw [←h]
+    assumption
   · intro h
     unfold BitVec.ofNat
     apply BitVec.eq_of_toFin_eq
@@ -56,8 +55,7 @@ lemma BitVec.ofNat_1_eq_1_iff : 1#1 = BitVec.ofNat 1 x ↔ x % 2 = 1 := by
     intro h
     injection h with h
     simp [Fin.ofNat'] at h
-    injection h with h
-    rw [←h]
+    assumption
   · intro h
     unfold BitVec.ofNat
     apply BitVec.eq_of_toFin_eq

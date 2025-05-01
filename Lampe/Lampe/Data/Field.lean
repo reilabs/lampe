@@ -1,5 +1,8 @@
 import Mathlib.Algebra.Algebra.ZMod
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Vector.Snoc
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
 import Lampe.Data.Integers
 
 
