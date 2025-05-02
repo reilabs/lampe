@@ -87,10 +87,9 @@ syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
 
 syntax "#" nr_ident "(" nr_expr,* ")" ppSpace ":" ppSpace nr_type : nr_expr -- Builtin call
 
-syntax "(" nr_type "as" nr_ident "<" nr_generic,* ">" ")" "::" nr_ident "<" nr_generic,* ">" "as" nr_type : nr_expr -- Trait func ident
-
-syntax "@" nr_ident "<" nr_generic,* ">" : nr_funcref -- Decl func ident
-syntax nr_funcref ppSpace "as" ppSpace nr_type : nr_expr -- Decl func ident
+syntax "(" nr_type "as" nr_ident "<" nr_generic,* ">" ")" "::" nr_ident "<" nr_generic,* ">" : nr_funcref -- Trait func ident
+syntax "@" nr_ident ("<" nr_generic,* ">")? : nr_funcref -- Lambda and Decl func ident
+syntax nr_funcref ppSpace "as" ppSpace nr_type : nr_expr -- funcref ident
 
 syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
 
@@ -534,6 +533,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     let argTps <- argVals.mapM fun arg => `(typeOf $arg)
     wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) $s)) vname k
 | `(nr_expr| #unit) | `(nr_expr| skip) => `(Expr.skip)
+| `(nr_expr| @ $fnName:nr_ident as $t:nr_type) => do
+  let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
+  let (paramTps, outTp) ← getFuncSignature t
+  wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp (FuncRef.lambda $fnName))) vname k
 | `(nr_expr| @ $fnName:nr_ident < $callGens:nr_generic,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)

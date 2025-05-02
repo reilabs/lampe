@@ -150,15 +150,32 @@ def delabLampeGeneric (kind gen : TSyntax `term)  : DelabM <| TSyntax `nr_generi
 -- TODO: Finish this
 def delabLampeFuncRef (stx : Syntax) : DelabM <| TSyntax `nr_funcref := do
   match stx with
-    | `(FuncRef.lambda $ref) => failure
+    | `(FuncRef.lambda $ref) => `(nr_funcref|@ $(⟨ref⟩))
     | `(FuncRef.decl $s:str [$kinds,*] h![$gens,*]) =>
       let generics ← kinds.getElems.zip gens.getElems |>.mapM delabLampeGeneric.uncurry
       let funcName := mkIdent <| .mkSimple s.getString
       let funcName : TSyntax `nr_ident := ⟨funcName⟩
       let generics := ⟨generics⟩
       return ←`(nr_funcref|@ $funcName <$generics,*>)
-    | `(FuncRef.trait $selfTp $traitName $traitKinds $traitGenerics $fnName $fnKinds $fnGenerics) =>
-      failure
+    | `(FuncRef.trait $selfTp
+      $traitName:str [$traitKinds,*] h![$traitGenerics,*]
+        $fnName:str [$fnKinds,*] h![$fnGenerics,*]) =>
+      let selfTp ← match selfTp with
+      | `(none) => `(nr_type|_)
+      | `(some $selfTp) => ppLampeTp selfTp
+      | _ => unreachable!
+
+      let traitName := mkIdent <| .mkSimple traitName.getString
+      let traitGenerics ← traitKinds.getElems.zip traitGenerics.getElems |>.mapM
+        delabLampeGeneric.uncurry
+      let traitGenerics := ⟨traitGenerics⟩
+
+      let fnName := mkIdent <| .mkSimple fnName.getString
+      let fnGenerics ← fnKinds.getElems.zip fnGenerics.getElems |>.mapM
+        delabLampeGeneric.uncurry
+      let fnGenerics := ⟨fnGenerics⟩
+
+      return ←`(nr_funcref|($selfTp:nr_type as $(⟨traitName⟩) <$traitGenerics,*>):: $(⟨fnName⟩) <$fnGenerics,*>)
     | `($v) => return ←`(nr_funcref|$(⟨v⟩)) -- Is this how we should handle already declared refs?
 
 @[app_delab Lampe.Expr.fn]
@@ -219,6 +236,15 @@ def delabLampeBuiltinCall : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let callExpr ← `(nr_expr| # $(⟨builtinName⟩)($args,*) : $(← ppLampeTp (← delab outTp)) )
     return ←`(⸨$callExpr⸩)
 
+def ppLampeBool (stx : Syntax) : DelabM <| TSyntax `nr_expr := do
+  match stx with
+    | `(decide True) =>
+      return ←`(nr_expr| $(⟨mkIdentFrom stx `true⟩))
+    | `(decide False) =>
+      return ←`(nr_expr| $(⟨mkIdentFrom stx `false⟩))
+    | `($v) =>
+      return ←`(nr_expr|$(⟨v⟩))
+
 @[app_delab Lampe.Expr.ite]
 def delabLampeIte : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
@@ -227,7 +253,7 @@ def delabLampeIte : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let elseBranch ← delab <| expr.getArg! 4
 
     let ite ← `(nr_expr|
-      if $(extractInnerLampeExpr cond) $(← ensureOneBracket <| extractInnerLampeExpr thenBranch)
+      if $(← ppLampeBool cond) $(← ensureOneBracket <| extractInnerLampeExpr thenBranch)
         else $(← ensureOneBracket <| extractInnerLampeExpr elseBranch))
 
     return ←`(⸨$ite⸩)
@@ -254,30 +280,42 @@ def delabLampeLoop : Delab := whenDelabExprOption getExpr >>= fun expr =>
           $(extractInnerLampeExpr body))
     return ←`(⸨$loop⸩)
 
+def delabLambda : DelabM <| TSyntax `nr_expr := do
+  whenDelabExprOption getExpr >>= fun expr =>
+    whenFullyApplied expr do
+      let argTps ← delab <| expr.getArg! 1
+      let outTp ← delab <| expr.getArg! 2
+      let body := expr.getArg! 3
+      let argTps ← match argTps with
+        | `([$tps,*]) =>
+          tps.getElems.mapM fun tp => ppLampeTp tp
+        | _ => pure #[]
+      let outTp ← ppLampeTp outTp
+
+      let body ← Meta.lambdaTelescope body fun _ body => pure body
+
+      -- TODO: No way this is the right way to do this
+      let (args, body) ← match ← delab body with
+        | `(match $_:term with | h![$args,*] => $body) =>
+          pure (args.getElems, body)
+        | _ => failure
+
+      let params ← args.zip argTps |>.mapM fun (arg, tp) => do
+        return ←`(nr_param_decl|$(⟨arg⟩):ident : $tp)
+
+      `(nr_expr||$params,*|-> $outTp $(← ensureOneBracket <| extractInnerLampeExpr body))
+
 @[app_delab Lampe.Expr.lam]
-def delabLampeLam : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let argTps ← delab <| expr.getArg! 1
-    let outTp ← delab <| expr.getArg! 2
-    let body := expr.getArg! 3
-    let argTps ← match argTps with
-      | `([$tps,*]) =>
-        tps.getElems.mapM fun tp => ppLampeTp tp
-      | _ => pure #[]
-    let outTp ← ppLampeTp outTp
+def delabLampeLam : Delab := delabLambda >>= fun lambda =>
+    return ←`(⸨$lambda⸩)
 
-    let body ← Meta.lambdaTelescope body fun _ body => pure body
+@[app_delab Lampe.FuncRef.asLambda]
+def delabFuncRefAsLambda : Delab := whenDelabExprOption getExpr >>= fun expr => do
+  let ref ← delab <| expr.getArg! 2
+  return ←`($ref)
 
-    -- TODO: No way this is the right way to do this
-    let (args, body) ← match ← delab body with
-      | `(match $_:term with | h![$args,*] => $body) =>
-        pure (args.getElems, body)
-      | _ => failure
-
-    let params ← args.zip argTps |>.mapM fun (arg, tp) => do
-       return ←`(nr_param_decl|$(⟨arg⟩):ident : $tp)
-
-    let lambda ← `(nr_expr||$params,*|-> $outTp $(← ensureOneBracket <| extractInnerLampeExpr body))
+@[app_delab Lampe.Lambda.mk]
+def delabLampeLambdaMk : Delab := delabLambda >>= fun lambda =>
     return ←`(⸨$lambda⸩)
 
 @[app_delab Lampe.Expr.letIn]
@@ -295,6 +333,7 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let body := extractInnerLampeExpr body
     let morebody := extractBlock? body
 
+    -- TODO: Should split this into separate functions
     let letBinding ←
       if val.isAppOf ``Lampe.Expr.ref then
         whenFullyApplied val do
@@ -305,6 +344,18 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
           let modifiedVal ← delab <| val.getArg! 3
           let newVal ← delab <| val.getArg! 4
           `(nr_expr|$(⟨modifiedVal⟩) = $(⟨newVal⟩))
+      else if val.isAppOf ``Lampe.Expr.getLens then
+        whenFullyApplied val do
+          let lens := val.getArg! 4
+          -- TODO: This is incredibly cursed, but it works for struct access
+          let fieldAccessor := (← delab <| val.getArg! 4).raw[1][0][1][0][0].getId.toString
+          let fieldAccessor := fieldAccessor.stripPrefix "«"
+                                          |>.stripSuffix "»"
+                                          |>.split (fun c => c == '#')
+          let fieldName := mkIdent <| .mkSimple fieldAccessor[2]!
+          let tupleName := mkIdent <| .mkSimple fieldAccessor[1]!
+          let val ← delab <| val.getArg! 3
+          `(nr_expr|let $(⟨var⟩) = ($(extractInnerLampeExpr val) as $(⟨tupleName⟩)<_>).$fieldName)
       else if val.isAppOf ``Lampe.Expr.readRef then
         whenFullyApplied val do
           let val := val.getArg! 3
@@ -326,6 +377,23 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     else
       `(nr_expr| {$letBinding; $body})
     `(⸨$wholeBlock⸩)
+
+@[app_delab Lampe.Expr.mkTuple]
+def delabLampeMkTuple : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let name? ← delab <| expr.getArg! 2
+    let args ← delab <| expr.getArg! 3
+    let args ← match args with
+      | `(h![$args,*]) => args.getElems.mapM fun arg => do
+        return ←`(nr_expr|$(⟨arg⟩))
+      | _ => failure
+
+    match name? with
+      | `(some $name:str) =>
+        let name := mkIdent <| .mkSimple name.getString
+        return ←`(⸨$name:ident <_> { $args,* }⸩ ) -- Don't have information to fill in generics
+      | `(none) => `(⸨`($args,*)⸩)
+      | _ => failure
 
 section STHoare
 
@@ -358,88 +426,15 @@ end STHoare
 
 -- open Lampe
 
--- nr_def simple_lambda<>(x : Field, y : Field) -> Field {
---   let add = |a : Field, b : Field| -> Field { #fAdd(a, b) : Field };
---   add(x, y);
+-- nr_def simple_tuple<>() -> Field {
+--   let t = `(1 : Field, true, 3 : Field);
+--   t.2
 -- }
 
--- example {p Γ} {x y : Tp.denote p Tp.field} :
---     STHoare p Γ ⟦⟧ (simple_lambda.fn.body _ h![] |>.body h![x, y])
---     fun v => v = x + y := by
---   simp only [simple_lambda]
+-- example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![])
+--     fun (v : Tp.denote p .field) => v = 3 := by
+--   simp only [simple_tuple]
 --   steps
-
---   apply STHoare.letIn_intro (Q := fun v => v = x + y)
---   . apply STHoare.ramified_frame_top (H₁ := (∃∃h, [λadd.asLambda h ↦ _]) ⋆ ⟦⟧) (Q₁ := fun v => (∃∃h, [λadd.asLambda h ↦ _]) ⋆ v = x + y)
---     apply STHoare.callLambda_intro
---     case h_ent =>
---       sl_norm
---       rw [←SLP.exists_star]
---       apply SLP.exists_intro_l
---       intro hp
---       apply SLP.exists_intro_r
---       rw [SLP.star_comm]
---       apply SLP.star_mono_l'
---       apply SLP.forall_right
---       intro
---       apply SLP.wand_intro
---       sl_norm
---       apply SLP.star_mono_l
---       apply SLP.entails_top
---     steps
---     assumption
---   · intro
---     steps
---     simp_all
-
--- set_option trace.Meta.debug true
-
--- nr_def simple_muts<>(x : Field) -> Field {
---   let mut y = x;
---   let mut z = x;
---   z = 2 : Field;
---   y = 3 : Field;
---   y
--- }
-
--- example : STHoare p Γ ⟦⟧ (simple_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
---   simp only [simple_muts]
---   steps
---   simp_all
-
--- nr_def fmttest<>(x : Field, y : str<5>) -> fmtstr<12, (Field, u8)> {
---   let x = 3 : u8;
---   let y = -4 : Field;
-
---   let z = #format("hi {} bye {}", y, x);
---   z
--- }
-
--- nr_def testing<>(x : Field) -> Field {
---   let x = 3 : u8;
---   let y = "fun";
-
---   let s = (@fmttest<> as λ(Field, str<5>) → fmtstr<12, (Field, u8)>)(1 : Field, "abcde");
-
---   5 : Field
--- }
-
--- nr_def const_test<@N : u8>(x : Field) -> Field {
---   let mut res = x;
---   for _? in 0 : u8 .. u@N {
---     res = #fMul(res, 2 : Field) : Field;
---   };
---   res;
--- }
-
--- nr_def simple<>() -> Field {
---   let x = -13 : Field;
---   #fAdd(x, 1 : Field) : Field
--- }
-
--- example : STHoare p Γ ⟦⟧ (testing.fn.body _ h![] |>.body h![x]) fun v => v = x := by
---   simp only [testing]
---   steps
---   simp_all
+--   aesop
 
 -- end testing

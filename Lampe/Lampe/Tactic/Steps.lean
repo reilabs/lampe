@@ -371,7 +371,7 @@ theorem callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
   · assumption
 
 syntax "enter_trait" "[" term,* "]" term  : tactic
-macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn) (by rfl) (by rfl) (by rfl) (by rfl))
+macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn) (by rfl) (by rfl) (by rfl) (by rfl); simp only)
 
 theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
   apply hp v
