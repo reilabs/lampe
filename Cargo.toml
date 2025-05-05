@@ -27,9 +27,6 @@ thiserror = "1.0.63"
 tempfile = "3.19.1"
 petgraph = "0.6.5"
 convert_case = "0.8.0"
-url = "2.5.4"
-serde = { version = "1.0.204", features = ["derive"] }
-toml = { version = "0.8.20" }
 
 [dev-dependencies]
 anyhow = "1.0.87"

@@ -34,8 +34,8 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use crate::file_generator::to_import_from_noir_path;
 use crate::{
+    file_generator::LeanFilePath,
     lean::{indent::Indenter, syntax::expr::format_builtin_call},
     noir::{
         self,
@@ -311,12 +311,13 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let env_funcs = all_func_refs.into_iter().sorted().join(", ");
         let env_traits = all_impl_refs.into_iter().sorted().join(", ");
 
-        let import_name = to_import_from_noir_path(
+        let lean_file_path = LeanFilePath::from_noir_path(
             self.context
                 .file_manager
                 .path(file)
                 .ok_or(Error::MissingIdentifier(format!("{file:?}")))?,
         );
+        let import_name = lean_file_path.to_lean_import();
 
         let env_def = format!("def {import_name}.env := Lampe.Env.mk [{env_funcs}] [{env_traits}]");
 
