@@ -15,10 +15,26 @@ nr_def «not_equal»<>(x : Field, y : Field) -> bool {
     #fNeq(x, y) : bool;
 }
 
+nr_def «not_equal_2»<>(x : Field, y : Field) -> bool {
+    #fNeq(x, y) : bool;
+}
+
+nr_def «test»<>() -> str<3> {
+    "abc"
+}
+
+nr_def «hello»<>() -> str<9> {
+    "hello-dep"
+}
+
+nr_def «hello_dep»<>() -> str<9> {
+    "hello-dep"
+}
+
 nr_def «test_not_equal»<>() -> Unit {
     #assert((@not_equal<> as λ(Field, Field) → bool)(1 : Field, 2 : Field)) : Unit;
     skip;
 }
 
 
-def Lib.env := Lampe.Env.mk [«not_equal», «test_not_equal»] []
+def Lib.env := Lampe.Env.mk [«hello_dep», «hello», «not_equal_2», «not_equal», «test_not_equal», «test»] []
