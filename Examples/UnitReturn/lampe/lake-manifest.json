@@ -117,6 +117,6 @@
       "configFile": "lakefile.toml"
     }
   ],
-  "name": "«UnitReturn-0.0.0»",
+  "name": "UnitReturn",
   "lakeDir": ".lake"
 }

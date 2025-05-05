@@ -1,6 +1,5 @@
 [package]
 name = "Merkle"
-version = "1.0.0"
 type = "bin"
 authors = [""]
 

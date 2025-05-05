@@ -68,14 +68,14 @@ authors = [""]
         for entry_result in WalkDir::new(temp_dir.path()) {
             let entry = match entry_result {
                 Ok(entry) => entry,
-                Err(err) => panic!("unable to acecss entry: {err}"),
+                Err(err) => panic!("unable to acecss entry: {}", err),
             };
 
             if entry.file_type().is_file() {
                 extracted_files.push_str("----------------------\n");
                 extracted_files.push_str(&format!("{entry:?}\n"));
                 extracted_files.push_str("----------------------\n");
-                extracted_files.push_str(&fs::read_to_string(entry.path()).unwrap());
+                extracted_files.push_str(&fs::read_to_string(&entry.path()).unwrap());
                 extracted_files.push('\n');
             }
         }
@@ -85,7 +85,7 @@ authors = [""]
 
     #[test]
     fn test_unbound() {
-        let type_source = r"
+        let type_source = r#"
 struct Bad<T> {
     x: Field,
 }
@@ -98,13 +98,13 @@ fn main() -> pub Field {
     let f = mkBad();
     f.x
 }
-";
+"#;
         assert!(test_extractor_on(type_source).is_ok());
     }
 
     #[test]
     fn test_order() {
-        let type_source = r"
+        let type_source = r#"
 struct FooStruct2 {
     x: FooStruct
 }
@@ -120,7 +120,7 @@ struct BarStruct {
 }
 
 type BarType = BarStruct;
-";
+"#;
         let result = test_extractor_on(type_source);
         assert!(result.is_ok());
     }

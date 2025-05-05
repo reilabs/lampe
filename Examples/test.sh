@@ -44,8 +44,9 @@ for dir in "${example_dirs[@]}"; do
 	cd $dir
 	dir_name=$(basename $dir)
 
-	if [[ $dir_name =~ ^_.* ]]; then
-		continue
+  # Tests to skip
+	if [[ "$dir_name" =~ Dependencies|LocalDependency ]]; then
+	  continue
 	fi
 
 	if [[ -f "$dir/clean.sh" ]]; then
