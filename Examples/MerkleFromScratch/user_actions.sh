@@ -2,15 +2,21 @@
 set -euxo pipefail
 
 cp ./user_files/Field.lean ./lampe/Merkle
-echo "import Merkle.Field" >> ./lampe/Merkle.lean
+LAST_IMPORT="$(cat lampe/Merkle.lean | grep "^import" | tail -n 1)"
+sed -i -e "s/$LAST_IMPORT/$LAST_IMPORT\nimport Merkle.Field/g" lampe/Merkle.lean
 
 cp ./user_files/Ref.lean ./lampe/Merkle
-echo "import Merkle.Ref" >> ./lampe/Merkle.lean
+LAST_IMPORT="$(cat lampe/Merkle.lean | grep "^import" | tail -n 1)"
+sed -i -e "s/$LAST_IMPORT/$LAST_IMPORT\nimport Merkle.Ref/g" lampe/Merkle.lean
 
 cp ./user_files/Spec.lean ./lampe/Merkle
-echo "import Merkle.Spec" >> ./lampe/Merkle.lean
+LAST_IMPORT="$(cat lampe/Merkle.lean | grep "^import" | tail -n 1)"
+sed -i -e "s/$LAST_IMPORT/$LAST_IMPORT\nimport Merkle.Spec/g" lampe/Merkle.lean
 
-echo '[[require]]
+cat ./user_files/append_to_Merkle.lean >> ./lampe/Merkle.lean
+
+echo '
+[[require]]
 name = "proven-zk"
 git = "https://github.com/reilabs/proven-zk"
 rev = "4.15"
