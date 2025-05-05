@@ -2,10 +2,13 @@ import Lampe.Data.Field
 
 import Merkle.Field
 
-open Field
+namespace Merkle
+namespace «1.0.0»
 namespace Ref
 
 open Lampe (U Fp)
+
+open Merkle.«1.0.0».Field
 
 def RC : Array bnField := #[
     17829420340877239108687448009732280677191990375576158938221412342251481978692,
@@ -69,3 +72,5 @@ def compress (v : List.Vector bnField 2) : bnField :=
 end State
 
 end Ref
+end «1.0.0»
+end Merkle
