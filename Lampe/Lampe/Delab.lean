@@ -71,7 +71,7 @@ partial def ppLampeTp (stx : Syntax) : DelabM <| TSyntax `nr_type := do
     | `(Tp.unit) => return ⟨mkIdentFrom stx `Unit⟩
     | `(Tp.slice $tp) => return ←`(nr_type|[$(←ppLampeTp tp)])
     | `(Tp.array $tp $n) => return ←`(nr_type|[$(←ppLampeTp tp); $(← delabNrConstNum n)])
-    | `(Tp.tuple $name [$fields,*]) =>
+    | `(Tp.tuple $_name [$fields,*]) =>
       let fields ← fields.getElems.mapM fun tp => ppLampeTp tp
       return ←`(nr_type|`($fields,*))
     | `(Tp.ref $tp) => `(nr_type| & $(←ppLampeTp tp))
@@ -87,7 +87,7 @@ def ppLampeNumericKind (stx : Syntax) : DelabM <| TSyntax `ident := do
       let n := n.getNat
       return mkIdentFrom stx <| .mkSimple s!"u{n}"
     | `(Kind.field) => return mkIdentFrom stx `Field
-    | _ => unreachable!
+    | _ => failure
 
 def mkNrParamDecl (id : Syntax) (tp : TSyntax `nr_type): DelabM <| TSyntax `nr_param_decl := do
   let id := ⟨id⟩
@@ -102,8 +102,10 @@ def delabLampeLitNum : Delab := whenDelabExprOption getExpr >>= fun expr =>
     match num with
       | `(-$n:num) =>
         return ←`(⸨-$n:num : $(⟨← ppLampeTp tp⟩):nr_type⸩)
-      | `($n) =>
+      | `($n:num) =>
         return ←`(⸨$(⟨n⟩):num : $(⟨← ppLampeTp tp⟩):nr_type⸩)
+      | `($n) =>
+        return ←`(⸨$(⟨n⟩)⸩)
 
 @[app_delab Lampe.Expr.litStr]
 def delabLampeLitStr : Delab := whenDelabExprOption getExpr >>= fun expr =>
@@ -118,18 +120,30 @@ def delabLampeLitStr : Delab := whenDelabExprOption getExpr >>= fun expr =>
 @[app_delab Lampe.Expr.constFp]
 def delabLampeConstFp : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let constName := expr.getArg! 2
-    let delabedConstName ← delab constName
-    let const ← `(nr_expr|f@$(⟨delabedConstName⟩))
-    return ←`(⸨$const⸩)
+    let const ← delab <| expr.getArg! 2
+    if let some num := Syntax.isNatLit? const then
+      let const ← `(nr_expr|$(⟨.mkNatLit num⟩):num : Field)
+      return ←`(⸨$const⸩)
+    else
+      let constName := expr.getArg! 2
+      let delabedConstName ← delab constName
+      let const ← `(nr_expr|u@$(⟨delabedConstName⟩))
+      return ←`(⸨$const⸩)
 
 @[app_delab Lampe.Expr.constU]
 def delabLampeConstU : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let constName := expr.getArg! 2
-    let delabedConstName ← delab constName
-    let const ← `(nr_expr|u@$(⟨delabedConstName⟩))
-    return ←`(⸨$const⸩)
+    let const ← delab <| expr.getArg! 2
+    if let some num := Syntax.isNatLit? const then
+      let width := Syntax.isNatLit? (← delab <| expr.getArg! 1) |>.get!
+      let width := mkIdent <| .mkSimple s!"u{width}"
+      let const ← `(nr_expr|$(⟨.mkNatLit num⟩):num : $(width):ident)
+      return ←`(⸨$const⸩)
+    else
+      let constName := expr.getArg! 2
+      let delabedConstName ← delab constName
+      let const ← `(nr_expr|u@$(⟨delabedConstName⟩))
+      return ←`(⸨$const⸩)
 
 @[app_delab Lampe.Expr.fmtStr]
 def delabLampeFmtStr : Delab := whenDelabExprOption getExpr >>= fun expr =>
@@ -163,7 +177,7 @@ def delabLampeFuncRef (stx : Syntax) : DelabM <| TSyntax `nr_funcref := do
       let selfTp ← match selfTp with
       | `(none) => `(nr_type|_)
       | `(some $selfTp) => ppLampeTp selfTp
-      | _ => unreachable!
+      | _ => failure
 
       let traitName := mkIdent <| .mkSimple traitName.getString
       let traitGenerics ← traitKinds.getElems.zip traitGenerics.getElems |>.mapM
@@ -269,14 +283,14 @@ def delabLampeLoop : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let lowerBound ← delab <| expr.getArg! 3
     let upperBound ← delab <| expr.getArg! 4
 
-    let (var, body) := match (← delab <| expr.getArg! 5) with
+    let (var, body) ← match (← delab <| expr.getArg! 5) with
       | `(fun $var => $body) =>
-        (var, body)
-      | _ => unreachable!
+        pure (var, body)
+      | _ => failure
 
     let loop
       ← `(nr_expr| for $(⟨var⟩) in
-        $(extractInnerLampeExpr lowerBound) .. $(extractInnerLampeExpr upperBound)
+        $(extractInnerLampeExpr lowerBound) .. $(⟨upperBound⟩)
           $(extractInnerLampeExpr body))
     return ←`(⸨$loop⸩)
 
@@ -318,6 +332,17 @@ def delabFuncRefAsLambda : Delab := whenDelabExprOption getExpr >>= fun expr => 
 def delabLampeLambdaMk : Delab := delabLambda >>= fun lambda =>
     return ←`(⸨$lambda⸩)
 
+partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat := do
+  let headIdent := mkIdent `Builtin.Member.head
+  let tailIdent := mkIdent `tail
+  if stx[2] == tailIdent then
+    return ← getProjNum stx[0] (acc + 1)
+  else if stx == headIdent then
+    return some acc
+  else
+    return none
+
+-- TODO: Need to handle patterns in the let binding
 @[app_delab Lampe.Expr.letIn]
 def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
@@ -325,10 +350,10 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let val := expr.getArg! 3
     let binding := expr.getArg! 4
 
-    let (var, body) := match (← delab binding) with
+    let (var, body) ← match (← delab binding) with
       | `(fun $var => $body) =>
-        (var, body)
-      | _ => unreachable!
+        pure (var, body)
+      | _ => failure
 
     let body := extractInnerLampeExpr body
     let morebody := extractBlock? body
@@ -344,18 +369,42 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
           let modifiedVal ← delab <| val.getArg! 3
           let newVal ← delab <| val.getArg! 4
           `(nr_expr|$(⟨modifiedVal⟩) = $(⟨newVal⟩))
+      -- TODO: This whole section is cursed
       else if val.isAppOf ``Lampe.Expr.getLens then
         whenFullyApplied val do
-          let lens := val.getArg! 4
-          -- TODO: This is incredibly cursed, but it works for struct access
-          let fieldAccessor := (← delab <| val.getArg! 4).raw[1][0][1][0][0].getId.toString
-          let fieldAccessor := fieldAccessor.stripPrefix "«"
-                                          |>.stripSuffix "»"
-                                          |>.split (fun c => c == '#')
-          let fieldName := mkIdent <| .mkSimple fieldAccessor[2]!
-          let tupleName := mkIdent <| .mkSimple fieldAccessor[1]!
-          let val ← delab <| val.getArg! 3
-          `(nr_expr|let $(⟨var⟩) = ($(extractInnerLampeExpr val) as $(⟨tupleName⟩)<_>).$fieldName)
+          let getType := (← delab <| val.getArg! 1).raw[0]
+          match getType with
+            | `(Tp.tuple) =>
+              let name := (←delab <| val.getArg! 1).raw[1][0]
+              let noneIdent := mkIdent `none
+              if name == noneIdent then
+                let accessData := (← delab <| val.getArg! 4).raw[1][0][1][0]
+                let projNum ← getProjNum accessData
+                let val ← delab <| val.getArg! 3
+                if let some projNum := projNum then
+                  `(nr_expr| let $(⟨var⟩) = $(⟨val⟩) . $(⟨Syntax.mkNatLit projNum⟩))
+                else
+                  failure -- TODO: Handle this case, I think it's a nested accessor case?
+              else
+                let fieldAccessor := (← delab <| val.getArg! 4).raw[1][0][1][0][0].getId.toString
+                let fieldAccessor := fieldAccessor.stripPrefix "«"
+                                                |>.stripSuffix "»"
+                                                |>.split (fun c => c == '#')
+                let fieldName := mkIdent <| .mkSimple fieldAccessor[2]!
+                let tupleName := mkIdent <| .mkSimple fieldAccessor[1]!
+                let val ← delab <| val.getArg! 3
+                `(nr_expr|let $(⟨var⟩) = ($(extractInnerLampeExpr val) as $(⟨tupleName⟩)<_>).$fieldName)
+            | _ =>
+              let accessType := (← delab <| val.getArg! 4).raw[1][0][0]
+              let accessNum := (← delab <| val.getArg! 4).raw[1][0][1]
+              match accessType with
+                | `(Access.array) =>
+                  let val ← delab <| val.getArg! 3
+                  `(nr_expr|let $(⟨var⟩) = $(⟨val⟩)[$(⟨accessNum[0]⟩)])
+                | `(Access.slice) =>
+                  let val ← delab <| val.getArg! 3
+                  `(nr_expr|let $(⟨var⟩) = $(⟨val⟩)[[$(⟨accessNum[0]⟩)]])
+                | _ => failure
       else if val.isAppOf ``Lampe.Expr.readRef then
         whenFullyApplied val do
           let val := val.getArg! 3
@@ -377,6 +426,40 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     else
       `(nr_expr| {$letBinding; $body})
     `(⸨$wholeBlock⸩)
+
+@[app_delab Lampe.Expr.mkArray]
+def delabLampeMkArray : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    match ← delab <| expr.getArg! 3 with
+      | `(h![$vals,*]) =>
+        let vals ← vals.getElems.mapM fun val => do
+          return ←`(nr_expr|$(⟨val⟩))
+        `(⸨[$vals,*]⸩)
+      | _ => failure
+
+@[app_delab Lampe.Expr.mkRepArray]
+def delabLampeMkRepArray : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let repNum ← delab <| expr.getArg! 2
+    let repVal ← delab <| expr.getArg! 4
+    `(⸨[$(⟨repVal⟩);$(⟨repNum⟩)]⸩)
+
+@[app_delab Lampe.Expr.mkSlice]
+def delabLampeMkSlice : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    match ← delab <| expr.getArg! 3 with
+      | `(h![$vals,*]) =>
+        let vals ← vals.getElems.mapM fun val => do
+          return ←`(nr_expr|$(⟨val⟩))
+        `(⸨&[$vals,*]⸩)
+      | _ => failure
+
+@[app_delab Lampe.Expr.mkRepSlice]
+def delabLampeMkRepSlice : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let repNum ← delab <| expr.getArg! 2
+    let repVal ← delab <| expr.getArg! 4
+    `(⸨&[$(⟨repVal⟩);$(⟨repNum⟩)]⸩)
 
 @[app_delab Lampe.Expr.mkTuple]
 def delabLampeMkTuple : Delab := whenDelabExprOption getExpr >>= fun expr =>
@@ -421,20 +504,3 @@ def delabSTHoare : Delab := whenDelabSTHoareOption getExpr >>= fun expr =>
     return ←`(⦃$preCondition⦄ $lampeExpr ⦃$postCondition⦄)
 
 end STHoare
-
--- section testing
-
--- open Lampe
-
--- nr_def simple_tuple<>() -> Field {
---   let t = `(1 : Field, true, 3 : Field);
---   t.2
--- }
-
--- example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![])
---     fun (v : Tp.denote p .field) => v = 3 := by
---   simp only [simple_tuple]
---   steps
---   aesop
-
--- end testing

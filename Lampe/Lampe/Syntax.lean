@@ -228,9 +228,12 @@ def mkGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mona
 def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
    `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
 
-def mkTupleMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
-| .zero => `(Builtin.Member.head)
-| .succ n' => do `(Builtin.Member.tail $(←mkTupleMember n'))
+def mkTupleMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) :=
+  let headIdent := mkIdent ``Lampe.Builtin.Member.head
+  let tailIdent := mkIdent ``Lampe.Builtin.Member.tail
+  match i with
+    | .zero => `($headIdent)
+    | .succ n' => do `($tailIdent $(←mkTupleMember n'))
 
 def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
     (structName : TSyntax `nr_ident) (gs : TSyntax `term) (field : TSyntax `ident) :
