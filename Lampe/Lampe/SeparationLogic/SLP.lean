@@ -42,8 +42,22 @@ infix:10 " ⊢ " => entails
 open Lean.TSyntax.Compat in
 macro "∃∃" xs:Lean.explicitBinders ", " b:term : term => Lean.expandExplicitBinders ``exists' xs b
 
+-- taken from the Lean exists unexpander
+@[app_unexpander exists'] def unexpandExists' : Lean.PrettyPrinter.Unexpander
+  | `($(_) fun $x:ident => ∃ $xs:binderIdent*, $b) => `(∃∃  $x:ident $xs:binderIdent*, $b)
+  | `($(_) fun $x:ident => $b)                     => `(∃∃ $x:ident, $b)
+  | `($(_) fun ($x:ident : $t) => $b)              => `(∃∃ ($x:ident : $t), $b)
+  | _                                              => throw ()
+
 open Lean.TSyntax.Compat in
 macro "∀∀" xs:Lean.explicitBinders ", " b:term : term => Lean.expandExplicitBinders ``forall' xs b
+
+-- taken from the Lean exists unexpander
+@[app_unexpander forall'] def unexpandForAll' : Lean.PrettyPrinter.Unexpander
+  | `($(_) fun $x:ident => ∃ $xs:binderIdent*, $b) => `(∀∀  $x:ident $xs:binderIdent*, $b)
+  | `($(_) fun $x:ident => $b)                     => `(∀∀ $x:ident, $b)
+  | `($(_) fun ($x:ident : $t) => $b)              => `(∀∀ ($x:ident : $t), $b)
+  | _                                              => throw ()
 
 theorem entails_trans [LawfulHeap α] {P Q R : SLP α}: (P ⊢ Q) → (Q ⊢ R) → (P ⊢ R) := by tauto
 
