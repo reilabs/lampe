@@ -662,9 +662,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         ctx: &EmitterCtx,
     ) -> Result<(String, String)> {
         let func_meta = self.context.function_meta(&func);
-        let fq_path = self
-            .context
-            .fully_qualified_function_name(&func_meta.source_crate, &func);
         // The parameters whose type must be replaced by a type variable should be
         // appended to the list of generics.
         let impl_generics = func_meta
@@ -696,15 +693,25 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         };
         ind.dedent()?;
 
-        let self_type_str = match &func_meta.self_type {
+        // For struct methods that have a self-type, we add a flag that tells the extractor to
+        // circumvent the usual namespace resolution and use the type's namespace instead
+        let (has_path_already, self_type_str) = match &func_meta.self_type {
             Some(ty) => {
                 let fq_type = self.emit_fully_qualified_type(ty, ctx);
-                format!("{fq_type}::")
+                (true, format!("{fq_type}::"))
             }
-            _ => String::new(),
+            _ => (false, String::new()),
         };
 
-        let fn_ident = format!("{self_type_str}{fq_path}");
+        let fn_ident = if has_path_already {
+            let fn_name = self.context.function_name(&func);
+            format!("{self_type_str}{fn_name}")
+        } else {
+            let fq_path = self
+                .context
+                .fully_qualified_function_name(&func_meta.source_crate, &func);
+            fq_path
+        };
 
         // [TODO] discard the dummy trait methods
 
@@ -1191,21 +1198,21 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                 )
                             }
                             _ => {
-                                let fn_name = match &func_meta.self_type {
+                                let (has_path_already, fn_name) = match &func_meta.self_type {
                                     Some(self_type) => {
                                         let self_type_str =
                                             self.emit_fully_qualified_type(self_type, ctx);
-                                        format!("{self_type_str}::{name}")
+                                        (true, format!("{self_type_str}::{name}"))
                                     }
-                                    _ => name.to_string(),
+                                    _ => (false, name.to_string()),
                                 };
                                 let func_module_id = ModuleId {
                                     krate: func_meta.source_crate,
                                     local_id: func_meta.source_module,
                                 };
                                 let fq_mod_name = self.fq_module_name_from_mod_id(func_module_id);
-                                let fq_func_name = if fq_mod_name.is_empty() {
-                                    fn_name
+                                let fq_func_name = if fq_mod_name.is_empty() || has_path_already {
+                                    fn_name.clone()
                                 } else {
                                     format!("{fq_mod_name}::{fn_name}")
                                 };
@@ -1281,7 +1288,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             HirExpression::Constructor(constructor) => {
                 let struct_def = constructor.r#type;
                 let struct_def = struct_def.borrow();
-                let name = &struct_def.name;
+                let crate_id = &self.root_crate();
+                let name = self.context.fully_qualified_struct_path(crate_id, struct_def.id);
                 let fields = constructor.fields;
                 // Map a field name to its order.
                 let field_orders: HashMap<_, usize> = (0..struct_def.num_fields())
