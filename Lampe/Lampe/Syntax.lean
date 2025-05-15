@@ -633,7 +633,7 @@ def mkStructDef [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadE
 def mkStructProjector [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (structName : TSyntax `nr_ident) : Syntax → m (List $ TSyntax `command)
 | `(nr_struct_def| < $generics,* > { $params,* }) => do
   let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
-  params.getElems.toList.enum.mapM fun (idx, paramSyn) => match paramSyn with
+  params.getElems.toList.zipIdx.mapM fun (paramSyn, idx) => match paramSyn with
     | `(nr_param_decl| $paramName:ident : $paramType:nr_type) => do
       let paramDefTy ← `(match generics with
         | $genericDefs => Builtin.Member $(←mkNrType paramType) (Struct.fieldTypes $(mkStructDefIdent (←mkNrIdent structName)) generics))

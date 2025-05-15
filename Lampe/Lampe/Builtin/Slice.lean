@@ -4,7 +4,7 @@ namespace Lampe.Builtin
 
 @[reducible]
 def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Fin s.length) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
-  List.modify (fun _ => v) i s
+  List.modify s i (fun _ => v)
 
 @[simp]
 theorem replaceSlice_length_eq_length :
@@ -14,7 +14,7 @@ theorem replaceSlice_length_eq_length :
 @[simp]
 theorem index_replaced_slice :
     (replaceSlice' s idx v).get ⟨idx.val, h⟩ = v := by
-  simp_all [List.modify_eq_set_get?, List.getElem_eq_iff]
+  simp_all [List.modify_eq_set_getElem?, List.getElem_eq_iff]
 
 /--
 Defines the builtin slice constructor.
