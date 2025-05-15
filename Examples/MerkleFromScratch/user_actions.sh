@@ -23,7 +23,7 @@ rev = "4.19"
 ' >> ./lampe/lakefile.toml
 
 echo '[[require]]
-name = "lampe"
+name = "Lampe"
 git = "https://github.com/reilabs/lampe"
 subDir = "Lampe"
 rev = "mp/bump"
