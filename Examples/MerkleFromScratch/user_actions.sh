@@ -21,3 +21,10 @@ name = "proven-zk"
 git = "https://github.com/reilabs/proven-zk"
 rev = "4.19"
 ' >> ./lampe/lakefile.toml
+
+echo '[[require]]
+name = "lampe"
+git = "https://github.com/reilabs/lampe"
+subDir = "Lampe"
+rev = "mp/bump"
+' >> ./lampe/lakefile.toml
