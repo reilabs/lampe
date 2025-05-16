@@ -191,7 +191,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // Noir compiler would complain already by this point.
         dep_graph.retain_edges(|g, e| {
             if let Some((start, end)) = g.edge_endpoints(e) {
-                !(start == end)
+                start != end
             } else {
                 false
             }
