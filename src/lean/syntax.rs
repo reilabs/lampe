@@ -15,7 +15,7 @@ fn without_generic_args(ty_str: &str) -> String {
 }
 
 /// Returns true if the given type string (extracted by `format_type`) is a slice or array type, e.g., `[T]`.
-fn is_slice_or_array(ty_str: &str) -> bool {
+pub fn is_slice_or_array(ty_str: &str) -> bool {
     ty_str.starts_with('[') && ty_str.ends_with(']')
 }
 
