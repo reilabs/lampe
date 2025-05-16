@@ -1188,7 +1188,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     Some(self_type) => {
                                         let self_type_str =
                                             self.emit_fully_qualified_type(self_type, ctx);
-                                        (true, format!("{self_type_str}::{name}"))
+
+                                        if syntax::is_slice_or_array(&self_type_str) {
+                                            (false, name.to_string())
+                                        } else {
+                                            (true, format!("{self_type_str}::{name}"))
+                                        }
                                     }
                                     _ => (false, name.to_string()),
                                 };
