@@ -44,7 +44,7 @@ jobs:
           - name: Set up Rust
             uses: actions-rs/toolchain@v1
             with:
-              toolchain: stable
+              toolchain: 1.85
           - name: Build (cargo)
             working-directory: lampe
             run: cargo build --release
@@ -59,7 +59,7 @@ jobs:
         - name: Set up Rust
           uses: actions-rs/toolchain@v1
           with:
-            toolchain: stable
+            toolchain: 1.85
         - name: Test (cargo)
           working-directory: lampe
           run: |
@@ -82,7 +82,7 @@ jobs:
         - name: Set up Rust
           uses: actions-rs/toolchain@v1
           with:
-            toolchain: stable
+            toolchain: 1.85
         - name: Set up Lean 4
           uses: leanprover/lean-action@v1
           with:
