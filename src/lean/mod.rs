@@ -212,6 +212,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .modules()
         {
             let ctx = EmitterCtx::from_module(module, &self.context.def_interner);
+
+            println!("{:?}", module);
+            println!("--------------------------------------------------------");
             for module_def_id in module.type_definitions().chain(module.value_definitions()) {
                 let emit_output: (Option<usize>, String, EmitOutput) = match module_def_id {
                     ModuleDefId::TypeId(id) => {
