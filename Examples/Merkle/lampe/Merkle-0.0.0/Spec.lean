@@ -1,13 +1,13 @@
-import Merkle.Extracted
-import Merkle.Field
-import Merkle.Ref
+import «Merkle-0.0.0».Extracted
+import «Merkle-0.0.0».Field
+import «Merkle-0.0.0».Ref
 import Lampe
 
 import ProvenZk
 
 import Mathlib.Data.Vector.Snoc
 
-open Lampe Ref Extracted
+open Lampe «Merkle-0.0.0».Ref «Merkle-0.0.0».Extracted «Merkle-0.0.0».Field
 
 namespace Spec
 
