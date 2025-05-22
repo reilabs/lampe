@@ -1,4 +1,5 @@
-//! This module contains functionality for interacting with the Lampe output.
+//! This module contains functionality for generating files by Lampe tool. It is using content
+//! extracted out of Noir project.
 
 use crate::file_generator::error::{Error, Result};
 use crate::file_generator::lake::dependency::{
@@ -29,6 +30,7 @@ pub struct NoirPackageIdentifier {
     pub version: String,
 }
 
+/// This function generates whole `lampe` directory with Lampe's structure.
 pub fn lampe_project(
     noir_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
@@ -42,33 +44,15 @@ pub fn lampe_project(
         fs::create_dir(&lampe_root_dir)?;
     }
 
-    generate_package_structure(
-        &lampe_root_dir,
-        noir_package_identifier,
-        additional_dependencies,
-        extracted_code,
-        extracted_dependencies,
-    )?;
-
-    Ok(())
-}
-
-fn generate_package_structure(
-    lampe_root_dir: &Path,
-    noir_package_identifier: &NoirPackageIdentifier,
-    additional_dependencies: &[Box<dyn LeanDependency>],
-    extracted_code: &[LeanFile],
-    extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
-) -> Result<()> {
     lake::generate_lakefile_toml(
-        lampe_root_dir,
+        &lampe_root_dir,
         noir_package_identifier,
         additional_dependencies,
         false,
     )?;
-    lean_toolchain::generate_lean_toolchain(lampe_root_dir, false)?;
+    lean_toolchain::generate_lean_toolchain(&lampe_root_dir, false)?;
     lean::generate_lean_files(
-        lampe_root_dir,
+        &lampe_root_dir,
         noir_package_identifier,
         extracted_code,
         extracted_dependencies,
@@ -77,6 +61,7 @@ fn generate_package_structure(
     Ok(())
 }
 
+/// Convert passed Noir's dependency into Lean's dependency
 pub fn get_lean_dependency(
     dependency_name: &str,
     dependency_config: &DependencyConfig,
@@ -121,11 +106,13 @@ pub fn get_lean_dependency(
     }
 }
 
+/// Checks if Noir's package is also Lampe's project.
 pub fn has_lampe(package: &Package) -> bool {
     let package_lampe_dir = package.root_dir.join(LAMPE_DIR_NAME);
     package_lampe_dir.exists() && package_lampe_dir.is_dir()
 }
 
+/// Returns name of the generated Lean's package in Lampe's project.
 pub fn read_lampe_package_name(package: &Package) -> Result<String> {
     let package_lampe_dir = package.root_dir.join(LAMPE_DIR_NAME);
     lake::read_package_name(&package_lampe_dir)

@@ -2,6 +2,7 @@ use crate::file_generator::lake::dependency::LeanDependency;
 use std::fmt;
 use std::fmt::Write;
 
+/// This is Lean's dependency from Reservoir (Lean's package manager) with git rev.
 #[derive(Debug, Clone)]
 pub struct LeanDependencyReservoirGit {
     name: String,
