@@ -7,7 +7,7 @@ import ProvenZk
 
 import Mathlib.Data.Vector.Snoc
 
-open Lampe «Merkle-0.0.0».Ref «Merkle-0.0.0».Extracted «Merkle-0.0.0».Field
+open Lampe «Merkle-0.0.0» «Merkle-0.0.0».Extracted «Merkle-0.0.0».Field
 
 namespace Spec
 
