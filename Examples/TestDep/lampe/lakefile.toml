@@ -15,19 +15,19 @@ path = "../../../Lampe"
 [[require]]
 name = "GitDepWithLampe-0.0.0"
 git = "https://github.com/reilabs/lampe"
-rev = "piohei/dependencies"
+rev = "main"
 subDir = "Examples/TestDep/testing/GitDepWithLampe/lampe"
 
 [[require]]
 name = "GitDepWithLampe-1.0.0"
 git = "https://github.com/reilabs/lampe"
-rev = "piohei/dependencies"
+rev = "main"
 subDir = "Examples/TestDep/testing/GitDepWithLampeV1/lampe"
 
 [[require]]
 name = "GitDepWithLampe-2.0.0"
 git = "https://github.com/reilabs/lampe"
-rev = "piohei/dependencies"
+rev = "main"
 subDir = "Examples/TestDep/testing/GitDepWithLampeV2/lampe"
 
 [[require]]
