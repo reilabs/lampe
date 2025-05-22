@@ -707,10 +707,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             let fn_name = self.context.function_name(&func);
             format!("{self_type_str}{fn_name}")
         } else {
-            let fq_path = self
-                .context
-                .fully_qualified_function_name(&func_meta.source_crate, &func);
-            fq_path
+            self.context
+                .fully_qualified_function_name(&func_meta.source_crate, &func)
         };
 
         // [TODO] discard the dummy trait methods
