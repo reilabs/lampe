@@ -176,9 +176,22 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
         let mut dep_graph = self.context.def_interner.dependency_graph.clone();
 
+        // Only consider nnodes in the dependency graph that could cause issues with the extracted
+        // Lean code. This will only happen with extracted structs and type aliases.
         dep_graph.retain_nodes(|g, node_idx| {
             if let Some(dep_id) = g.node_weight(node_idx) {
                 matches!(dep_id, DependencyId::Struct(_) | DependencyId::Alias(_))
+            } else {
+                false
+            }
+        });
+
+        // Allow for cases where a node may depend on itself. This occurs in cases for trait
+        // implementations for structs. If the recursive definition was truly an issue, then the
+        // Noir compiler would complain already by this point.
+        dep_graph.retain_edges(|g, e| {
+            if let Some((start, end)) = g.edge_endpoints(e) {
+                start != end
             } else {
                 false
             }
@@ -480,12 +493,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .map(|g| self.emit_fully_qualified_type(g, ctx))
             .collect_vec();
 
-        let mut impl_generic_decls = Vec::new();
+        let mut impl_generic_decls = HashSet::new();
         // Extend with the generics for the trait.
         impl_generic_decls.extend(trait_generic_vars.iter().cloned());
         // Extend with the generics for the implementor.
         impl_generic_decls.extend(collect_named_generics(&trait_impl.typ));
-        let impl_generic_decls_str = impl_generic_decls.join(", ");
+        let impl_generic_decls_str = impl_generic_decls.iter().join(", ");
 
         // Emit the implemented functions.
         ind.indent();
