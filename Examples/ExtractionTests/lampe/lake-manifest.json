@@ -98,5 +98,5 @@
    "inputRev": "main",
    "inherited": true,
    "configFile": "lakefile.toml"}],
- "name": "«ConstGenerics-0.0.0»",
+ "name": "«ExtractionTests-0.0.0»",
  "lakeDir": ".lake"}

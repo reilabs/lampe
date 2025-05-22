@@ -7,7 +7,3 @@ open Lampe
 namespace «Globals-0.0.0»
 namespace Extracted
 
-nr_struct_def multiple_generics::Pair<I> {
-    a : I,
-    b : I
-}
