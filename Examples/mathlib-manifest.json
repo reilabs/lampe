@@ -1,9 +1,0 @@
-{
-  "type": "path",
-  "scope": "",
-  "name": "mathlib",
-  "manifestFile": "lake-manifest.json",
-  "inherited": true,
-  "dir": "././../../../Lampe/.lake/packages/mathlib",
-  "configFile": "lakefile.lean"
-}

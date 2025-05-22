@@ -1,0 +1,6 @@
+[package]
+name = "LocalDepWithLampe"
+type = "lib"
+authors = [""]
+
+[dependencies]
