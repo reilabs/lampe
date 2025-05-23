@@ -11,3 +11,7 @@ nr_struct_def multiple_generics::Pair<I> {
     a : I,
     b : I
 }
+
+nr_struct_def struct_namespaces::test::Foo<> {
+    i : Field
+}
