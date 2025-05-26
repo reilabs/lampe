@@ -4,10 +4,11 @@ set -e
 usage(){
 >&2 cat << EOF
 Usage: $0
-   [ --noir-path ] Path to noir repository
-   [ --lampe-cmd ] Lampe command (default: lampe)
-   [ --lake-cmd  ] Lake command (default: lake)
-   [ --log-dir   ] Path where to put logs (default: current directory)
+   [ --noir-path  ] Path to noir repository
+   [ --lampe-cmd  ] Lampe command (default: lampe)
+   [ --lake-cmd   ] Lake command (default: lake)
+   [ --log-dir    ] Path where to put logs (default: current directory)
+   [ --log-stdout ] Define if logs should go to file or stdout - pass true (default: false)
 EOF
 exit 1
 }
@@ -22,6 +23,7 @@ do
     --lampe-cmd)          PARAM_LAMPE_CMD=$2     ; shift 2 ;;
     --lake-cmd)           PARAM_LAKE_CMD=$2      ; shift 2 ;;
     --log-dir)            PARAM_LOG_DIR=$2       ; shift 2 ;;
+    --log-stdout)         PARAM_LOG_STDOUT=$2    ; shift 2 ;;
     -h | --help)          usage                  ; shift   ;;
     *) >&2 echo Unsupported option: $1
        usage ;;
@@ -43,6 +45,7 @@ fi
 LAMPE_CMD="${PARAM_LAMPE_CMD:-lampe}"
 LAKE_CMD="${PARAM_LAKE_CMD:-lake}"
 LOG_DIR="${PARAM_LOG_DIR:-$(pwd)}"
+LOG_STDOUT="${PARAM_LOG_STDOUT:-false}"
 LOG_FILE="${LOG_DIR}/running.log"
 LAKE_DIR="$(pwd)/.lake"
 
@@ -60,7 +63,7 @@ readarray -t test_dirs_7 < <(find "$TEST_PROGRAMS_PATH/test_libraries" -mindepth
 
 test_dirs=( "${test_dirs_1[@]}" "${test_dirs_2[@]}" "${test_dirs_3[@]}" "${test_dirs_4[@]}" "${test_dirs_5[@]}" "${test_dirs_6[@]}" "${test_dirs_7[@]}" )
 
-process_test() {
+do_process_test() {
     local dir=$1
     local lake_dir=$2
     local log_file=$3
@@ -68,47 +71,55 @@ process_test() {
     local lake_cmd="$5"
     local dirname=$(basename "$dir")
 
-    {
-        echo "[0xa1c] Processing $dir"
-				cd $dir
+		echo "[0xa1c] Processing $dir"
+		cd $dir
 
-				if ! ${lampe_cmd}; then
-					echo "[0xa1c] failed $dir"
-					return 0
-				fi
+		if ! ${lampe_cmd}; then
+			echo "[0xa1c] failed $dir"
+			return 0
+		fi
 
-				cd lampe
+		cd lampe
 
-				ln -s ${lake_dir} .lake
-				if ! ${lake_cmd} exe cache get; then
-					echo "[0xa1c] failed $dir"
-					return 0
-				fi
-				if ! ${lake_cmd} build; then
-					echo "[0xa1c] failed $dir "
-					return 0
-				fi
+		ln -s ${lake_dir} .lake
+		if ! ${lake_cmd} exe cache get; then
+			echo "[0xa1c] failed $dir"
+			return 0
+		fi
+		if ! ${lake_cmd} build; then
+			echo "[0xa1c] failed $dir "
+			return 0
+		fi
 
-        echo "[0xa1c] succeeded $dir "
-    } >> "$log_file" 2>&1
+		echo "[0xa1c] succeeded $dir "
+}
+
+process_test() {
+    local log_file=$3
+
+		if [ "${LOG_STDOUT}" == "true" ]; then
+			do_process_test "$@" 2>&1 | tee -a "$log_file"
+    else
+			do_process_test "$@" 2>&1 >> "$log_file"
+    fi
 }
 
 rm -f "$LOG_FILE"
-len=${#test_dirs[@]}
-for (( i=0; i<$len; i++ )); do
-	echo "$i/$len"
+num_test_cases=${#test_dirs[@]}
+for (( i=0; i<$num_test_cases; i++ )); do
+	echo "$(( i + 1))/$num_test_cases"
 	process_test "${test_dirs[$i]}" "${LAKE_DIR}" "${LOG_FILE}" "${LAMPE_CMD}" "${LAKE_CMD}"
 done
 
 if [ -f "$LOG_FILE" ]; then
-    failed_dirs=($(grep -a '\[0xa1c\] failed' "$LOG_FILE" | awk '{print $2}'))
+    failed_dirs=($(grep -a '\[0xa1c\] failed' "$LOG_FILE" | awk '{print $3}'))
 else
     echo "$LOG_FILE not found or empty. Check for errors." >&2
     exit 1
 fi
 
 if [ ${#failed_dirs[@]} -ne 0 ]; then
-    echo "Test failures for the following directories:"
+    echo "Test failures (${#failed_dirs[@]}/${num_test_cases}) for the following directories:"
     for dir in "${failed_dirs[@]}"; do
         echo "- $dir"
     done
