@@ -6,7 +6,7 @@ import Lampe.Tactic.Steps -- TODO: remove this import after done testing
 open Lean PrettyPrinter Delaborator SubExpr
 
 register_option Lampe.pp.Expr : Bool := {
-  defValue := true
+  defValue := false
   descr := "Pretty print Lampe.Expr using the Lampe syntax"
 }
 
@@ -487,7 +487,7 @@ syntax "⦃" term "⦄" : slp_cond
 syntax slp_cond ppLine ppLine term ppLine ppLine slp_cond : term
 
 register_option Lampe.pp.STHoare : Bool := {
-  defValue := true
+  defValue := false
   descr := "Pretty print Lampe.STHoare using the Lampe syntax"
 }
 
