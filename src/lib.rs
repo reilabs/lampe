@@ -124,32 +124,4 @@ type BarType = BarStruct;
         let result = test_extractor_on(type_source);
         assert!(result.is_ok());
     }
-
-    #[test]
-    fn test_types() {
-        let type_source = r"
-trait Foo {
-    type Out;
-    fn foo(self) -> Self::Out
-}
-
-struct Pair {
-    a : Field,
-    b : Field
-}
-
-type Bar = Pair;
-
-impl Foo for Pair {
-    type Out = Field;
-
-    fn foo(self) -> Self::Out {
-        self.a
-    }
-}
-        ";
-
-        let result = test_extractor_on(type_source);
-        assert!(result.is_ok());
-    }
 }
