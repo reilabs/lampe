@@ -21,9 +21,8 @@ open Lean Elab Meta Qq
 declare_syntax_cat nr_ident
 declare_syntax_cat nr_type
 declare_syntax_cat nr_expr
-declare_syntax_cat nr_block_contents
+declare_syntax_cat nr_funcref
 declare_syntax_cat nr_param_decl
-declare_syntax_cat nr_fmtstr_part
 declare_syntax_cat nr_generic
 declare_syntax_cat nr_generic_def
 declare_syntax_cat nr_const_num
@@ -55,24 +54,23 @@ syntax ident : nr_const_num
 
 syntax ident ":" nr_type : nr_param_decl
 
-syntax ("-" noWs)? num ":" nr_type : nr_expr -- Numeric literal
+syntax ("-" noWs)? num ppSpace ":" ppSpace nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
 syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
 syntax "skip" : nr_expr -- alias for `#unit`
 syntax ident : nr_expr
-syntax "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}" : nr_expr
-syntax "${" term "}" : nr_expr
-syntax "$" ident : nr_expr
+syntax "{" sepBy(ppLine nr_expr, ";", ";", allowTrailingSep) ppLine ppDedent("}") : nr_expr
+syntax "${" term "}" : nr_expr -- Raw "anti-quotations"
 syntax "u@" ident : nr_expr -- Const UInt
 syntax "f@" ident : nr_expr -- Const Field
-syntax "let" ident "=" nr_expr : nr_expr -- Let binding
-syntax "let" "mut" ident "=" nr_expr : nr_expr -- Mutable let binding
-syntax nr_expr "=" nr_expr : nr_expr -- Assignment
-syntax "if" nr_expr nr_expr ("else" nr_expr)? : nr_expr -- If then else
-syntax "for" ident "in" nr_expr ".." nr_expr nr_expr : nr_expr -- For loop
+syntax "let" ppSpace ident ppSpace "=" ppSpace nr_expr : nr_expr -- Let binding
+syntax "let" "mut" ident ppSpace "=" ppSpace nr_expr : nr_expr -- Mutable let binding
+syntax nr_expr ppSpace "=" ppSpace nr_expr : nr_expr -- Assignment
+syntax "if" ppSpace nr_expr ppSpace nr_expr (ppSpace "else" ppSpace nr_expr)? : nr_expr -- If then else
+syntax "for" ppSpace ident ppSpace "in" ppSpace nr_expr ppSpace ".." ppSpace nr_expr ppLine nr_expr : nr_expr -- For loop
 syntax "(" nr_expr ")" : nr_expr
-syntax "|" nr_param_decl,* "|" "->" nr_type nr_expr : nr_expr -- Lambda
+syntax "|" nr_param_decl,* "|" ppSpace "->" ppSpace nr_type ppSpace nr_expr : nr_expr -- Lambda
 syntax "*(" nr_expr ")" : nr_expr -- Deref
 
 syntax nr_ident "<" nr_generic,* ">" "{" nr_expr,* "}" : nr_expr -- Struct constructor
@@ -87,10 +85,11 @@ syntax nr_expr "." num : nr_expr -- Tuple access
 syntax nr_expr "[" nr_expr "]" : nr_expr -- Array access
 syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
 
-syntax "#" nr_ident "(" nr_expr,* ")" ":" nr_type : nr_expr -- Builtin call
+syntax "#" nr_ident "(" nr_expr,* ")" ppSpace ":" ppSpace nr_type : nr_expr -- Builtin call
 
-syntax "(" nr_type "as" nr_ident "<" nr_generic,* ">" ")" "::" nr_ident "<" nr_generic,* ">" "as" nr_type : nr_expr -- Trait func ident
-syntax "@" nr_ident "<" nr_generic,* ">" "as" nr_type : nr_expr -- Decl func ident
+syntax "(" nr_type "as" nr_ident "<" nr_generic,* ">" ")" "::" nr_ident "<" nr_generic,* ">" : nr_funcref -- Trait func ident
+syntax "@" nr_ident ("<" nr_generic,* ">")? : nr_funcref -- Lambda and Decl func ident
+syntax nr_funcref ppSpace "as" ppSpace nr_type : nr_expr -- funcref ident
 
 syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
 
@@ -229,9 +228,12 @@ def mkGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [Mona
 def mkBuiltin [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : String) : m (TSyntax `term) :=
    `($(mkIdent $ (Name.mkSimple "Builtin") ++ (Name.mkSimple i)))
 
-def mkTupleMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) := match i with
-| .zero => `(Builtin.Member.head)
-| .succ n' => do `(Builtin.Member.tail $(←mkTupleMember n'))
+def mkTupleMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (i : Nat) : m (TSyntax `term) :=
+  let headIdent := mkIdent ``Lampe.Builtin.Member.head
+  let tailIdent := mkIdent ``Lampe.Builtin.Member.tail
+  match i with
+    | .zero => `($headIdent)
+    | .succ n' => do `($tailIdent $(←mkTupleMember n'))
 
 def mkStructMember [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
     (structName : TSyntax `nr_ident) (gs : TSyntax `term) (field : TSyntax `ident) :
@@ -532,8 +534,12 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| #format($s:str, $args,*) ) => do
   mkArgs args.getElems.toList fun argVals => do
     let argTps <- argVals.mapM fun arg => `(typeOf $arg)
-    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) (Unit.unit))) vname k
+    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) $s)) vname k
 | `(nr_expr| #unit) | `(nr_expr| skip) => `(Expr.skip)
+| `(nr_expr| @ $fnName:nr_ident as $t:nr_type) => do
+  let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
+  let (paramTps, outTp) ← getFuncSignature t
+  wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp (FuncRef.lambda $fnName))) vname k
 | `(nr_expr| @ $fnName:nr_ident < $callGens:nr_generic,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
@@ -543,6 +549,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   wrapSimple (←`(Expr.constU $i)) vname k
 | `(nr_expr| f@ $i:ident) => do
   wrapSimple (←`(Expr.constFp $i)) vname k
+| `(nr_expr| ${ $e:term }) =>
+  return e
 | `(nr_expr| ( $selfTp as $traitName < $traitGens,* > ) :: $methodName < $callGens,* > as $t:nr_type) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let (traitGenKinds, traitGenVals) ← mkGenericVals traitGens.getElems.toList

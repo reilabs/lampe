@@ -117,7 +117,7 @@ def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Ref :=
   | FuncRef.trait _ _ _ _ _ _ _ => by cases h
 
 /-- TODO: Actually implement this at some point -/
-def FormatString (_len : U 32) (_argTps : List Tp) := Unit
+def FormatString (_len : U 32) (_argTps : List Tp) := String
 
 mutual
 
@@ -162,7 +162,7 @@ match tp with
 | .bool => False
 | .unit => ()
 | .str n => List.Vector.replicate n.toNat '\x00'
-| .fmtStr _ _ => ()
+| .fmtStr _ _ => ""
 | .slice _ => []
 | .array tp n => List.Vector.replicate n.toNat tp.zero
 | .ref _ => ⟨0⟩
