@@ -212,6 +212,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .modules()
         {
             let ctx = EmitterCtx::from_module(module, &self.context.def_interner);
+
             for module_def_id in module.type_definitions().chain(module.value_definitions()) {
                 let emit_output: (Option<usize>, String, EmitOutput) = match module_def_id {
                     ModuleDefId::TypeId(id) => {
@@ -237,6 +238,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                         )
                     }
                     ModuleDefId::TypeAliasId(id) => {
+                        // Check if this is a dummy ID corresponding to an associated type
+                        // TODO: [#112] Is this the right way to handle this?
+                        if id.0 == usize::MAX {
+                            continue;
+                        }
+
                         let def_order = sorted_dep_weights
                             .clone()
                             .into_iter()

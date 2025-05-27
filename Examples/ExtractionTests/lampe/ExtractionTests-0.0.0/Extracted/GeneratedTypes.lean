@@ -12,6 +12,13 @@ nr_struct_def multiple_generics::Pair<I> {
     b : I
 }
 
+nr_struct_def associated_type::Pair<> {
+    a : Field,
+    b : Field
+}
+
+nr_type_alias Bar<> = associated_type::Pair<>
+
 nr_struct_def struct_namespaces::test::Foo<> {
     i : Field
 }

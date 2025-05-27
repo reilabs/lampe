@@ -8,11 +8,11 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_405] <I> multiple_generics::Foo<I> for multiple_generics::Pair<I> where  {
+nr_trait_impl[impl_406] <I> multiple_generics::Foo<I> for multiple_generics::Pair<I> where  {
     fn «multiple_generics»::«foo»<> (self : multiple_generics::Pair<I>) -> I {
         (self as multiple_generics::Pair<I>).a;
 }
 }
 
 
-def MultipleGenerics.env := Lampe.Env.mk [] [impl_405]
+def MultipleGenerics.env := Lampe.Env.mk [] [impl_406]
