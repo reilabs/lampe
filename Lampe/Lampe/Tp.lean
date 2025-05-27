@@ -1,7 +1,9 @@
+import Lean
 import Lampe.Data.Integers
 import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.Data.Strings
+import Lampe.Data.Meta
 
 namespace Lampe
 
@@ -143,6 +145,20 @@ def Tp.denote : Tp → Type
 | .fn argTps outTp => FuncRef argTps outTp
 
 end
+
+section Delab
+
+open Lean PrettyPrinter Delaborator SubExpr
+
+@[app_delab Lampe.Tp.denote]
+def delabTpDenote : Delab := getExpr >>= fun expr => whenFullyApplied expr do
+  let reducedExpr ← Meta.reduceAll expr
+  if reducedExpr.isAppOf `Lampe.Tp.denote then
+    failure
+  else
+    return ←delab reducedExpr
+
+end Delab
 
 @[reducible]
 def HList.toTuple (hList : HList (Tp.denote p) tps) (name : Option String) : Tp.denote p <| .tuple name tps := match hList with
