@@ -348,7 +348,7 @@ theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
     rfl
 
 syntax "enter_decl" : tactic
-macro_rules | `(tactic|enter_decl) => `(tactic|apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl); simp only)
+macro_rules | `(tactic|enter_decl) => `(tactic|apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl))
 
 theorem callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
@@ -371,7 +371,7 @@ theorem callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
   · assumption
 
 syntax "enter_trait" "[" term,* "]" term  : tactic
-macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn) (by rfl) (by rfl) (by rfl) (by rfl); simp only)
+macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn) (by rfl) (by rfl) (by rfl) (by rfl))
 
 theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
   apply hp v

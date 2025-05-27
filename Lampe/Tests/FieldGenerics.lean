@@ -35,3 +35,5 @@ lemma test_intro : STHoare p env ⟦⟧ (test.call h![] h![]) fun output => outp
     steps [A_intro, foo_intro]
     subst_vars
     rfl
+
+
