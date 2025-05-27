@@ -1,7 +1,7 @@
 import Lean
 import Lampe.Syntax
 import Lampe.Hoare.SepTotal
-import Lampe.Tactic.Steps -- TODO: remove this import after done testing
+import Lampe.Tactic.Steps
 
 open Lean PrettyPrinter Delaborator SubExpr
 
@@ -44,12 +44,12 @@ def extractBlock? (stx : TSyntax `nr_expr) : Option <| TSyntaxArray `nr_expr :=
   | `(nr_expr|{ $e;* }) => some e
   | _ => none
 
--- TODO: This isn't right
+-- TODO: [#99] This isn't right
 def delabNrConstNum (stx : Syntax) : DelabM <| TSyntax `nr_const_num := do
   match stx.getKind with
     | `num => return ←`(nr_const_num|$(⟨stx⟩))
     | `ident => return ←`(nr_const_num|$(⟨stx⟩))
-    -- TODO: Need to deal with BitVec applications
+    -- TODO: [#99] Need to deal with BitVec applications
     | _ => return ←`(nr_const_num|$(⟨stx⟩))
 
 partial def ppLampeTp (stx : Syntax) : DelabM <| TSyntax `nr_type := do
@@ -79,7 +79,7 @@ partial def ppLampeTp (stx : Syntax) : DelabM <| TSyntax `nr_type := do
       let argTps ← argTps.getElems.mapM fun tp => ppLampeTp tp
       `(nr_type|λ($argTps,*) → $(←ppLampeTp outTp))
     | `($id:ident) => `(nr_type|$(⟨id⟩)) -- Type variables?
-    | _ => `(nr_type|$(⟨stx⟩)) -- TODO: Catch all for other types
+    | _ => `(nr_type|$(⟨stx⟩)) -- TODO: [#99] Catch all for other types
 
 def ppLampeNumericKind (stx : Syntax) : DelabM <| TSyntax `ident := do
   match stx with
@@ -161,7 +161,7 @@ def delabLampeGeneric (kind gen : TSyntax `term)  : DelabM <| TSyntax `nr_generi
       let kind ← ppLampeNumericKind kind
       return ←`(nr_generic|$(⟨gen⟩):num : $(⟨kind⟩))
 
--- TODO: Finish this
+-- TODO: [#99] Finish this
 def delabLampeFuncRef (stx : Syntax) : DelabM <| TSyntax `nr_funcref := do
   match stx with
     | `(FuncRef.lambda $ref) => `(nr_funcref|@ $(⟨ref⟩))
@@ -206,7 +206,7 @@ def delabLampeFn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let outTp ← ppLampeTp (← delab outTp)
 
     let funcType ← `(nr_type|λ($argTps,*) → $outTp)
-    -- TODO: This needs to be expanded, probably in its own function
+    -- TODO: [#99] This needs to be expanded, probably in its own function
     let funcRef ← delabLampeFuncRef (← delab funcRef)
 
     return ←`(⸨$funcRef:nr_funcref as $funcType:nr_type⸩)
@@ -308,7 +308,7 @@ def delabLambda : DelabM <| TSyntax `nr_expr := do
 
       let body ← Meta.lambdaTelescope body fun _ body => pure body
 
-      -- TODO: No way this is the right way to do this
+      -- TODO: [#99] No way this is the right way to do this
       let (args, body) ← match ← delab body with
         | `(match $_:term with | h![$args,*] => $body) =>
           pure (args.getElems, body)
@@ -342,7 +342,7 @@ partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat :=
   else
     return none
 
--- TODO: Need to handle patterns in the let binding
+-- TODO: [#99] Need to handle patterns in the let binding
 @[app_delab Lampe.Expr.letIn]
 def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
@@ -358,7 +358,7 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let body := extractInnerLampeExpr body
     let morebody := extractBlock? body
 
-    -- TODO: Should split this into separate functions
+    -- TODO: [#99] Should split this into separate functions
     let letBinding ←
       if val.isAppOf ``Lampe.Expr.ref then
         whenFullyApplied val do
@@ -369,7 +369,7 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
           let modifiedVal ← delab <| val.getArg! 3
           let newVal ← delab <| val.getArg! 4
           `(nr_expr|$(⟨modifiedVal⟩) = $(⟨newVal⟩))
-      -- TODO: This whole section is cursed
+      -- TODO: [#99] This whole section is cursed
       else if val.isAppOf ``Lampe.Expr.getLens then
         whenFullyApplied val do
           let getType := (← delab <| val.getArg! 1).raw[0]
@@ -384,7 +384,7 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
                 if let some projNum := projNum then
                   `(nr_expr| let $(⟨var⟩) = $(⟨val⟩) . $(⟨Syntax.mkNatLit projNum⟩))
                 else
-                  failure -- TODO: Handle this case, I think it's a nested accessor case?
+                  failure -- TODO: [#99] Handle this case, I think it's a nested accessor case?
               else
                 let fieldAccessor := (← delab <| val.getArg! 4).raw[1][0][1][0][0].getId.toString
                 let fieldAccessor := fieldAccessor.stripPrefix "«"
