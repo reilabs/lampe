@@ -296,6 +296,14 @@ theorem iFromField_intro : STHoarePureBuiltin p Γ Builtin.iFromField (by tauto)
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
+theorem uAsField_intro {p Γ s f} : STHoarePureBuiltin p Γ Builtin.uAsField (by tauto) h![f] (a := s) := by
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
+theorem iAsField_intro {p Γ s f} : STHoarePureBuiltin p Γ Builtin.iAsField (by tauto) h![f] (a := s) := by
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
 -- Slice
 
 theorem sliceLen_intro : STHoarePureBuiltin p Γ Builtin.sliceLen (by tauto) h![s] := by

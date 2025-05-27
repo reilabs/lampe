@@ -30,83 +30,101 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit r
 
 In Noir, this builtin corresponds to `fn modulus_le_bits() -> [u1]` implemented for `Field`.
 -/
-def fModLeBits := newPureBuiltin
+def fModLeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
-  (@fun p h![_] => ⟨True,
-    fun _ => decomposeToRadix 2 p.val (by tauto)⟩)
+  (@fun p h![_] => decomposeToRadix 2 p.val (by tauto))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
 
 In Noir, this builtin corresponds to `fn modulus_be_bits() -> [u1]` implemented for `Field`.
 -/
-def fModBeBits := newPureBuiltin
+def fModBeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
-  (@fun p h![_] => ⟨True,
-    fun _ => .reverse (decomposeToRadix 2 p.val (by tauto))⟩)
+  (@fun p h![_] => .reverse (decomposeToRadix 2 p.val (by tauto)))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the byte representation of `p` in little-endian format.
 
 In Noir, this builtin corresponds to `fn modulus_le_bytes() -> [u8]` implemented for `Field`.
 -/
-def fModLeBytes := newPureBuiltin
+def fModLeBytes := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 8))⟩
-  (@fun p h![_] => ⟨True,
-    fun _ => decomposeToRadix 256 p.val (by linarith)⟩)
+  (@fun p h![_] => decomposeToRadix 256 p.val (by linarith))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
 
 In Noir, this builtin corresponds to `fn modulus_be_bytes() -> [u8]` implemented for `Field`.
 -/
-def fModBeBytes := newPureBuiltin
+def fModBeBytes := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 8))⟩
-  (@fun p h![_] => ⟨True,
-    fun _ => .reverse (decomposeToRadix 256 p.val (by linarith))⟩)
+  (@fun p h![_] => .reverse (decomposeToRadix 256 p.val (by linarith)))
 
 /--
 Represents the builtin that converts a field element to an unsigned integer.
-We assume that this conversion is done by truncating the field element when necessary.
 
-In Noir, this builtin corresponds to `fn from_field(a: Field) -> T` implemented for uints of bit size `s`.
+Assume a B-bit integer. Noir's semantics for this conversion take the field element and truncate it
+to its least-significant B bits. This value is then interpreted as the unsigned integer element. In
+Noir, this builtin corresponds to `fn from_field(a: Field) -> T` implemented for uints of bit size
+`s`.
  -/
-def uFromField := newGenericPureBuiltin
+def uFromField := newGenericTotalPureBuiltin
   (fun s => ⟨[.field], (.u s)⟩)
-  (fun s h![f] => ⟨True,
-    fun _ => BitVec.ofNat s f.val⟩)
-
-example : (BitVec.ofNat 8 200).toInt = -56 := by rfl
+  (fun s h![f] => BitVec.ofNat s f.val)
 
 /--
 Represents the builtin that converts a field element to an integer.
-We assume that this conversion is done by truncating the field element when necessary.
 
-In Noir, this builtin corresponds to `fn from_field(a: Field) -> T` implemented for ints of bit size `s`.
+Assume a B-bit integer. Noir's semantics for this conversion take the field element and truncate it
+to its least-significant B bits. This value is then interpreted as the signed integer element. In
+Noir, this builtin corresponds to `fn from_field(a: Field) -> T` implemented for ints of bit size
+`s`.
 -/
-def iFromField := newGenericPureBuiltin
+def iFromField := newGenericTotalPureBuiltin
   (fun s => ⟨[.field], (.i s)⟩)
-  (fun s h![f] => ⟨True,
-    fun _ => BitVec.ofNat s f.val⟩)
+  (fun s h![f] => BitVec.ofNat s f.val)
 
 /--
-Specs are not clear.
-- What happens when P < 2^s for u-s while converting (Fp p) to (U s)?
+Represents the builtin that converts an unsigned integer into a field element.
 
-In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for uints of bit size `s`.
+Noir's semantics for this conversion take the unsigned integer and zero-extend it up to the size of
+the field. We do this by taking our unsigned int as an arbitrary `i ∈ ℤ` and then convert this to a
+field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field` 
+implemented for uints of bit size `s`.
+
+Integers are also internally represented as field elements with an additional restriction that all
+integer widths `X` are defined such that `iX::MAX < p`, the field prime. This means that we can
+unconditionally perform this conversion without care for larger values. To ensure totality, we wrap
+when converting, as that case should never be encountered.
 -/
-def uAsField := newGenericPureBuiltin
+def uAsField := newGenericTotalPureBuiltin
   (fun s => ⟨[.u s], (.field)⟩)
-  (fun s h![a] => sorry)
+  -- Here we rely on the fact that casting our BitVec to a Nat 'implicitly' performs sign extension.
+  -- It is not truly sign-extending as that has no semantic meaning in ℕ, but we get the correct
+  -- semantics for our operation by doing so. We then rely on a coercion from ℕ to our field, the
+  -- source of which can be viewed with `set_option trace.Meta.synthInstance`.
+  (fun _ h![a] => a.toNat)
 
 /--
-Specs are not clear.
-- What happens when P < 2^s for i-s while (Fp p) to (I s)?
+Represents the builtin that converts a signed integer into a field element.
 
-In Noir, this builtin corresponds to `fn as_field(self) -> Field` implemented for ints of bit size `s`.
+Noir's semantics for this conversion take the signed integer and zero-extend it up to the size of
+the field. We do this by taking our signed int as an arbitrary `i ∈ ℤ` and then convert this to a
+field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field` 
+implemented for uints of bit size `s`.
+
+Integers are also internally represented as field elements with an additional restriction that all
+integer widths `X` are defined such that `iX::MAX < p`, the field prime. This means that we can
+unconditionally perform this conversion without care for larger values. To ensure totality, we wrap
+when converting, as that case should never be encountered.
 -/
-def iAsField := newGenericPureBuiltin
+def iAsField := newGenericTotalPureBuiltin
   (fun s => ⟨[.i s], (.field)⟩)
-  (fun s h![a] => sorry)
+  -- Here we rely on the fact that casting our BitVec to a Nat 'implicitly' performs sign extension.
+  -- It is not truly sign-extending as that has no semantic meaning in ℕ, but we get the correct
+  -- semantics for our operation by doing so. We then rely on a coercion from ℕ to our field, the
+  -- source of which can be viewed with `set_option trace.Meta.synthInstance`.
+  (fun _ h![a] => a.toNat)
 
 end Lampe.Builtin
