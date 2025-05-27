@@ -239,7 +239,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     }
                     ModuleDefId::TypeAliasId(id) => {
                         // Check if this is a dummy ID corresponding to an associated type
-                        // TODO: Is this the right way to handle this?
+                        // TODO: [#112] Is this the right way to handle this?
                         if id.0 == usize::MAX {
                             continue;
                         }
