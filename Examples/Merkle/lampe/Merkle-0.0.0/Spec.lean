@@ -289,7 +289,6 @@ set_option maxRecDepth 10000 in
 set_option maxHeartbeats 2000000 in
 theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (to_le_bytes.call h![] h![input]) fun v => v = Fp.toBytesLE 32 input := by
   enter_decl
-  simp only
   steps [to_le_bits_intro]
   enter_block_as =>
     ([bytes ↦ ⟨(Tp.u 8).array 32, List.Vector.replicate 32 0⟩])
@@ -364,7 +363,6 @@ set_option maxHeartbeats 2000000 in
 theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (from_le_bytes.call h![] h![input])
     fun output => output = Lampe.Fp.ofBytesLE input.toList := by
   enter_decl
-  simp only
   steps
 
   loop_inv nat fun i _ _ => [v ↦ ⟨.field, 256 ^ i⟩] ⋆ [result ↦ ⟨.field, Lampe.Fp.ofBytesLE $ input.toList.take i⟩]
@@ -594,7 +592,6 @@ theorem rc_intro : STHoare lp env (⟦⟧)
     (Expr.call [] (Tp.field.array 8) (FuncRef.decl "RC" [] HList.nil) h![])
       fun output => output = ⟨Ref.RC.toList, by rfl⟩ := by
   enter_decl
-  simp only [Extracted.RC]
   steps []
   subst_vars
   unfold Ref.RC
@@ -604,7 +601,6 @@ theorem square_intro : STHoare lp env (⟦⟧)
     (Expr.call [Tp.field] Tp.field (FuncRef.decl "square" [] HList.nil) h![input])
       fun output => output = Ref.square input := by
   enter_decl
-  simp only [Extracted.square]
   steps [sigma_intro]
   unfold Ref.square
   subst_vars
@@ -616,7 +612,6 @@ theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.
   cases i using List.Vector.casesOn with | cons _ i =>
   cases i using List.Vector.casesOn with | cons _ i =>
   cases i using List.Vector.casesOn
-  simp only [Extracted.permute]
   steps [bar_intro, square_intro, rc_intro]
   casesm* ∃_,_
   simp [Builtin.indexTpl, Nat.mod_eq_of_lt, lp] at *
@@ -636,11 +631,9 @@ lemma SkyscraperHash_correct: STHoare lp env ⟦⟧ (Expr.call [Tp.field, Tp.fie
 
 lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ (weird_assert_eq.call h![] h![a, b]) (fun _ => a = b) := by
   enter_decl
-  simp only
   steps
   enter_block_as (⟦⟧) (fun _ => ⟦⟧)
   · enter_decl
-    simp only
     steps
   steps
   simp_all
@@ -651,7 +644,6 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : Merk
         (main.call h![] h![tree.root, proof, item, index])
         (fun _ => item ∈ tree) := by
   enter_decl
-  simp only
   steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
   use index.reverse
   subst_vars
