@@ -19,7 +19,6 @@ example : STHoare p env ⟦⟧ (zero?.fn.body _ h![] |>.body h![])
 
   enter_block_as (⟦⟧) (fun v => v = -1)
   · enter_decl
-    simp only [NEGONE]
     steps
     simp_all
 
