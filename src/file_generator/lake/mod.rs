@@ -20,7 +20,8 @@ fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
     )]
 }
 
-/// Generates main lake file (lakefile.toml).
+/// Generates main lake file.
+/// Path: $(project)/lampe/lakefile.toml
 pub fn generate_lakefile_toml(
     lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
