@@ -150,8 +150,15 @@ section Delab
 
 open Lean PrettyPrinter Delaborator SubExpr
 
+register_option pp.Tp : Bool := {
+  defValue := true
+  descr := "Pretty print applications of `Tp.denote`"
+}
+
+abbrev whenDelabTp : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.Tp
+
 @[app_delab Lampe.Tp.denote]
-def delabTpDenote : Delab := getExpr >>= fun expr => whenFullyApplied expr do
+def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplied expr do
   let reducedExpr := (← Meta.unfold expr `Lampe.Tp.denote).expr
   if reducedExpr.isAppOf `Lampe.Tp.denote then
     failure
