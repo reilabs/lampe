@@ -152,11 +152,11 @@ open Lean PrettyPrinter Delaborator SubExpr
 
 @[app_delab Lampe.Tp.denote]
 def delabTpDenote : Delab := getExpr >>= fun expr => whenFullyApplied expr do
-  let reducedExpr ← Meta.reduceAll expr
+  let reducedExpr := (← Meta.unfold expr `Lampe.Tp.denote).expr
   if reducedExpr.isAppOf `Lampe.Tp.denote then
     failure
   else
-    return ←delab reducedExpr
+    return ← delab reducedExpr
 
 end Delab
 
