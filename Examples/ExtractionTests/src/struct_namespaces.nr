@@ -16,7 +16,7 @@ mod test {
 
 use test::Foo;
 
-fn baz(a: Foo) -> Field {
+pub fn baz(a: Foo) -> Field {
     let x = Foo::bar2();
     let y = a.bar();
     x + y

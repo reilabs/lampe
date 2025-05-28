@@ -154,7 +154,7 @@ nr_def «permute»<>(s : [Field; 2]) -> [Field; 2] {
     [l, r];
 }
 
-nr_trait_impl[impl_405] <> BinaryHasher<Field> for Skyscraper<> where  {
+nr_trait_impl[impl_428] <> BinaryHasher<Field> for Skyscraper<> where  {
     fn «hash»<> (a : Field, b : Field) -> Field {
         let x = (@permute<> as λ([Field; 2]) → [Field; 2])([a, b]);
         #fAdd(#arrayIndex(x, #cast(0 : Field) : u32) : Field, a) : Field;
@@ -177,7 +177,7 @@ nr_def «mtree_recover»<H, @N : u32>(idx : [bool; N], p : [Field; N], item : Fi
     curr_h;
 }
 
-nr_def «weird_eq_witness»<>(a : Field, b : Field) -> Field {
+nr_def «weird_eq_witness»<>(a : Field, _b : Field) -> Field {
     #fresh() : Field
 }
 
@@ -185,7 +185,6 @@ nr_def «weird_assert_eq»<>(a : Field, b : Field) -> Unit {
     let wit =     (@weird_eq_witness<> as λ(Field, Field) → Field)(a, b);
     #assert(#fEq(wit, a) : bool) : Unit;
     #assert(#fEq(wit, b) : bool) : Unit;
-    skip;
 }
 
 nr_def «main»<>(root : Field, proof : [Field; 32], item : Field, idx : [bool; 32]) -> Unit {
@@ -194,4 +193,4 @@ nr_def «main»<>(root : Field, proof : [Field; 32], item : Field, idx : [bool; 
 }
 
 
-def Main.env := Lampe.Env.mk [«RC», «SIGMA», «as_array», «bar», «from_le_bytes», «main», «mtree_recover», «permute», «rl», «rotate_left», «sbox», «sgn0», «square», «to_le_bits», «to_le_bytes», «weird_assert_eq», «weird_eq_witness»] [impl_405]
+def Main.env := Lampe.Env.mk [«RC», «SIGMA», «as_array», «bar», «from_le_bytes», «main», «mtree_recover», «permute», «rl», «rotate_left», «sbox», «sgn0», «square», «to_le_bits», «to_le_bytes», «weird_assert_eq», «weird_eq_witness»] [impl_428]

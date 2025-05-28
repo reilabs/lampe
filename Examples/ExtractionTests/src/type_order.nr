@@ -1,11 +1,11 @@
-type FooType = Field;
+pub type FooType = Field;
 
-struct FooStruct {
+pub struct FooStruct {
     x: FooType,
 }
 
-struct BarStruct {
+pub struct BarStruct {
     y: Field
 }
 
-type BarType = BarStruct;
+pub type BarType = BarStruct;

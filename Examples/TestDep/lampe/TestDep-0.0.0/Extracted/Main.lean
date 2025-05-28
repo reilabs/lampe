@@ -10,7 +10,6 @@ namespace Extracted
 
 nr_def «main»<>(x : Field, y : Field) -> Unit {
     #assert(#fNeq(x, y) : bool) : Unit;
-    skip;
 }
 
 nr_def «test_main»<>() -> Unit {

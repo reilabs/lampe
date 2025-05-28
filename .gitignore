@@ -1,4 +1,6 @@
 **/.lake
+**/Prover.toml
+**/*.lean_checkedout
 
 /target
 .idea

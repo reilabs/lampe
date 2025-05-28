@@ -10,7 +10,7 @@ namespace Extracted
 
 nr_def «const_generics»::«nat_generic_test»<@N : u32>() -> [Field; N] {
     for i in 0 : u32 .. u@N {
-            i;
+            let _? = i;
     };
     [1 : Field ; N];
 }

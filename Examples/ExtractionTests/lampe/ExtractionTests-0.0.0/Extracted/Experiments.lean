@@ -16,7 +16,7 @@ nr_def «experiments»::«my_func»<>(a : u8) -> u8 {
     #uAdd(a, 1 : u8) : u8;
 }
 
-nr_def «experiments»::«my_func2»<>(arr : [u8; 8], b : u8) -> u8 {
+nr_def «experiments»::«my_func2»<>(arr : [u8; 8], b : u32) -> u8 {
     #arrayIndex(arr, #cast(b) : u32) : u8;
 }
 
@@ -37,19 +37,19 @@ nr_def «experiments»::«cast_test»<>(a : u8) -> u64 {
 }
 
 nr_def «experiments»::«tuple_test»<>(a : u8) -> `(u8, u8) {
-    let b = |c : u8| -> u8 #uAdd(#uAdd(c, a) : u8, 10 : u8) : u8;
+    let _b = |c : u8| -> u8 #uAdd(#uAdd(c, a) : u8, 10 : u8) : u8;
     `(a, a);
 }
 
 nr_def «experiments»::«literal_test»<>() -> Unit {
-    let a = 1 : Field;
+    let _a = 1 : Field;
     let b = true;
-    let c = false;
-    let d = [1 : Field ; 5];
-    let e = &[1 : Field ; 5];
-    let f = [1 : Field, 2 : Field, 3 : Field];
-    let h = "asdf";
-    let i = #format("${b}", b);
+    let _c = false;
+    let _d = [1 : Field ; 5];
+    let _e = &[1 : Field ; 5];
+    let _f = [1 : Field, 2 : Field, 3 : Field];
+    let _h = "asdf";
+    let _i = #format("${b}", b);
 }
 
 nr_def «experiments»::«assigns»<>(x : u8) -> Unit {
@@ -66,10 +66,9 @@ nr_def «experiments»::«uncons»<>(x : u8) -> Unit {
 
 nr_def «experiments»::«check»<>(x : u8) -> Unit {
     #assert(#uEq(x, 5 : u8) : bool) : Unit;
-    skip;
 }
 
-nr_trait_impl[impl_406] <T> std::default::Default<> for experiments::Option2<T> where  {
+nr_trait_impl[impl_429] <T> std::default::Default<> for experiments::Option2<T> where  {
     fn «experiments»::«default»<> () -> experiments::Option2<T> {
         (@experiments::Option2::none<T> as λ() → experiments::Option2<T>)();
 }
@@ -91,13 +90,13 @@ nr_def «experiments»::«Option2»::«is_some»<T>(self : experiments::Option2<
     (self as experiments::Option2<T>)._is_some;
 }
 
-nr_trait_impl[impl_407] <T> experiments::MyTrait<> for experiments::Option2<T> where  {
+nr_trait_impl[impl_430] <T> experiments::MyTrait<> for experiments::Option2<T> where  {
     fn «experiments»::«foo»<> (self : experiments::Option2<T>) -> experiments::Option2<T> {
         self;
 }
 }
 
-nr_trait_impl[impl_408] <T> experiments::MyTrait<> for `(T, bool) where T : MyTrait<> {
+nr_trait_impl[impl_431] <T> experiments::MyTrait<> for `(T, bool) where T : MyTrait<> {
     fn «experiments»::«foo»<> (self : `(T, bool)) -> `(T, bool) {
         self;
 }
@@ -121,16 +120,16 @@ nr_def «experiments»::«is_alias_some»<T>(x : @AliasedOpt<T>) -> bool {
 nr_def «experiments»::«main»<>() -> Unit {
     let mut op1 = (@experiments::Option2::some<Field> as λ(Field) → experiments::Option2<Field>)(5 : Field);
     let op2 = ((experiments::Option2<Field> as Default<>)::default<> as λ() → experiments::Option2<Field>)();
-    let op3 = ((experiments::Option2<Field> as MyTrait<>)::foo<> as λ(experiments::Option2<Field>) → experiments::Option2<Field>)(if true {
+    let _op3 = ((experiments::Option2<Field> as MyTrait<>)::foo<> as λ(experiments::Option2<Field>) → experiments::Option2<Field>)(if true {
             op1;
     } else {
             op2;
     });
-    (@experiments::Option2::is_some<Field> as λ(experiments::Option2<Field>) → bool)(op1);
+    let _? = (@experiments::Option2::is_some<Field> as λ(experiments::Option2<Field>) → bool)(op1);
     let mut l = [1 : Field, 2 : Field, 3 : Field];
-    #arrayIndex(l, #cast(0 : Field) : u32) : Field;
+    let _? = #arrayIndex(l, #cast(0 : Field) : u32) : Field;
     let t = `(1 : Field, true, 3 : Field);
-    t.2;
+    let _? = t.2;
     l[#cast(1 : Field) : u32] = 4 : Field;
     (op1 as experiments::Option2<Field>)._is_some = false;
     let mut tpl = `(1 : Field, true);
@@ -139,4 +138,4 @@ nr_def «experiments»::«main»<>() -> Unit {
 }
 
 
-def Experiments.env := Lampe.Env.mk [«experiments::Option2::is_none», «experiments::Option2::is_some», «experiments::Option2::none», «experiments::Option2::some», «experiments::assigns», «experiments::cast_test», «experiments::check», «experiments::fmtstr_test», «experiments::get_unchecked», «experiments::is_alias_some», «experiments::literal_test», «experiments::main», «experiments::my_fn», «experiments::my_func2», «experiments::my_func3», «experiments::my_func», «experiments::string_test», «experiments::tuple_test», «experiments::uncons»] [impl_406, impl_407, impl_408]
+def Experiments.env := Lampe.Env.mk [«experiments::Option2::is_none», «experiments::Option2::is_some», «experiments::Option2::none», «experiments::Option2::some», «experiments::assigns», «experiments::cast_test», «experiments::check», «experiments::fmtstr_test», «experiments::get_unchecked», «experiments::is_alias_some», «experiments::literal_test», «experiments::main», «experiments::my_fn», «experiments::my_func2», «experiments::my_func3», «experiments::my_func», «experiments::string_test», «experiments::tuple_test», «experiments::uncons»] [impl_429, impl_430, impl_431]

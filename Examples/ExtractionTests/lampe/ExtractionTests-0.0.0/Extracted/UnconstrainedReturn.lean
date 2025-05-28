@@ -12,5 +12,9 @@ nr_def «unconstrained_return»::«fun»<>() -> Field {
     #fresh() : Field
 }
 
+nr_def «unconstrained_return»::«main»<>() -> Unit {
 
-def UnconstrainedReturn.env := Lampe.Env.mk [«unconstrained_return::fun»] []
+}
+
+
+def UnconstrainedReturn.env := Lampe.Env.mk [«unconstrained_return::fun», «unconstrained_return::main»] []

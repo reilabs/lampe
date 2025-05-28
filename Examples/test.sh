@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -euxo pipefail
 
 EXAMPLES_DIR=$(dirname $(readlink -f "$0"))
@@ -54,7 +54,7 @@ for dir in "${example_dirs[@]}"; do
 	fi
 
 	if [[ -f "$dir/clean.sh" ]]; then
-		"$dir/clean.sh"
+		/usr/bin/env bash "$dir/clean.sh"
 	fi
 
 	# run the CLI and check that the generated files match the checked out files
@@ -106,7 +106,7 @@ for dir in "${example_dirs[@]}"; do
 	sed -i -e "$(( ${LAMPE_LAKEFILE_LINE_START} + 3 )) c\\" -e "" lampe/lakefile.toml
 
 	if [[ -f "$dir/user_actions.sh" ]]; then
-		"$dir/user_actions.sh"
+		/usr/bin/env bash "$dir/user_actions.sh"
 	fi
 
 	cd lampe

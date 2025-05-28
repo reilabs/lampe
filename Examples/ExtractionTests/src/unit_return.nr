@@ -1,13 +1,13 @@
-fn foo() {
-    let x = 3;
+pub fn foo() {
+    let _x = 3;
 }
 
-fn bar() {
+pub fn bar() {
     let mut x = 3;
     x = 4;
 }
 
-fn baz() {
-    let x = 3;
+pub fn baz() {
+    let _x = 3;
     bar();
 }

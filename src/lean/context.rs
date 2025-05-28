@@ -11,7 +11,7 @@ pub struct EmitterCtx {
 
 /// Returns true if and only if `typ` is an `impl` type.
 pub(super) fn is_impl(typ: &Type) -> bool {
-    matches!(typ, Type::TypeVariable(_) | Type::TraitAsType(_,_,_) | Type::NamedGeneric(_, _) if typ.to_string().starts_with("impl"))
+    matches!(typ, Type::TypeVariable(_) | Type::TraitAsType(_,_,_) | Type::NamedGeneric(_) if typ.to_string().starts_with("impl"))
 }
 
 impl EmitterCtx {
@@ -24,7 +24,7 @@ impl EmitterCtx {
             noirc_frontend::hir::def_map::ModuleDefId::FunctionId(func_id) => Some(func_id),
             _ => None,
         });
-        // Iterate over the the functions in the module.
+        // Iterate over the functions in the module.
         for fn_id in module_fns {
             let fn_meta = interner.function_meta(&fn_id);
             // Override the parameters.

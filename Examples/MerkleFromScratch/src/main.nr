@@ -170,12 +170,13 @@ where
     curr_h
 }
 
-unconstrained fn weird_eq_witness(a : Field, b : Field) -> Field {
+unconstrained fn weird_eq_witness(a : Field, _b : Field) -> Field {
     a
 }
 
 // This is pointless, but demonstrated how we can use unconstrained functions
 fn weird_assert_eq(a : Field, b : Field) {
+    // Safety: Purely for test purposes
     let wit = unsafe { weird_eq_witness(a, b) };
     assert(wit == a);
     assert(wit == b);

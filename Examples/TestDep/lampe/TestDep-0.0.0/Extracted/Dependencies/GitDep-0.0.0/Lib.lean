@@ -24,7 +24,6 @@ nr_def «hello_git_dep»<>() -> str<13> {
 
 nr_def «test_not_equal»<>() -> Unit {
     #assert((@not_equal<> as λ(Field, Field) → bool)(1 : Field, 2 : Field)) : Unit;
-    skip;
 }
 
 
