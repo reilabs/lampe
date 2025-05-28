@@ -1,3 +1,5 @@
+//! This module contains functionality for generating lake's (lean's project manager).
+
 use crate::file_generator::lake::dependency::{LeanDependency, LeanDependencyGit};
 use crate::file_generator::{Error, LAMPE_GENERATED_COMMENT, NoirPackageIdentifier};
 use serde::Deserialize;
@@ -7,6 +9,7 @@ use std::path::Path;
 
 pub mod dependency;
 
+/// This is list of dependencies added by default to all Lampe's projects.
 fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
     vec![Box::new(
         LeanDependencyGit::builder("Lampe")
@@ -17,6 +20,8 @@ fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
     )]
 }
 
+/// Generates main lake file.
+/// Path: $(project)/lampe/lakefile.toml
 pub fn generate_lakefile_toml(
     lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
@@ -65,11 +70,13 @@ pub fn generate_lakefile_toml(
     Ok(())
 }
 
+/// This struct is used to read lakefile.toml file.
 #[derive(Deserialize, Debug)]
 struct LakefileConfig {
     name: String,
 }
 
+/// Returns name extracted out of Lampe's project's lakefile.toml.
 pub fn read_package_name(lampe_root_dir: &Path) -> Result<String, Error> {
     let lakefile_path = lampe_root_dir.join("lakefile.toml");
     let content = fs::read_to_string(lakefile_path)?;

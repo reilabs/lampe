@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Write;
 
+/// This is Lean's dependency from Reservoir (Lean's package manager).
 #[derive(Debug, Clone)]
 pub struct LeanDependencyReservoir {
     name: String,

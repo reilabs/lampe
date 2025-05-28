@@ -4,6 +4,8 @@ use convert_case::{Case, Casing};
 use itertools::Itertools;
 use std::path::{Path, PathBuf};
 
+/// This structure represents relative path of project's file to easily generate imports and file
+/// paths.
 #[derive(Debug, Eq, Hash, PartialEq)]
 pub struct LeanFilePath {
     segments: Vec<String>,
@@ -46,8 +48,10 @@ impl LeanFilePath {
     }
 }
 
+/// This structure represents lean file content.
 type LeanFileContent = String;
 
+/// This structure represents lean file = lean file path + line file content.
 #[derive(Debug)]
 pub struct LeanFile {
     pub file_path: LeanFilePath,

@@ -1,3 +1,5 @@
+//! This module contains lean's dependencies' structs and logic.
+
 use std::fmt;
 
 mod git;
