@@ -1,4 +1,5 @@
 import Lean
+import Lampe.Data.Meta
 import Lampe.Syntax
 import Lampe.Hoare.SepTotal
 import Lampe.Tactic.Steps
@@ -10,15 +11,7 @@ register_option Lampe.pp.Expr : Bool := {
   descr := "Pretty print Lampe.Expr using the Lampe syntax"
 }
 
-def whenDelabExprOption (f : DelabM α) : DelabM α := do
-  if (← getOptions).getBool `Lampe.pp.Expr true then f else failure
-
-def whenFullyApplied (expr : Expr) (f : DelabM α) : DelabM α := do
-  let numArgs := expr.getAppNumArgs
-  let fType ← Meta.inferType expr.getAppFn
-  let arity := fType.getNumHeadForalls
-  let arity2 := fType.getNumHeadLambdas
-  if numArgs == arity + arity2 then f else failure
+abbrev whenDelabExprOption : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.Expr
 
 syntax "⸨" nr_expr "⸩" : term
 
@@ -491,8 +484,7 @@ register_option Lampe.pp.STHoare : Bool := {
   descr := "Pretty print Lampe.STHoare using the Lampe syntax"
 }
 
-def whenDelabSTHoareOption (f : DelabM α) : DelabM α := do
-  if (← getOptions).getBool `Lampe.pp.STHoare true then f else failure
+abbrev whenDelabSTHoareOption : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.STHoare
 
 @[app_delab Lampe.STHoare]
 def delabSTHoare : Delab := whenDelabSTHoareOption getExpr >>= fun expr =>

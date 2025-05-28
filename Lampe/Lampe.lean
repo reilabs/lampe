@@ -16,6 +16,7 @@ import Lampe.Builtin.Struct
 import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.Data.Integers
+import Lampe.Data.Meta
 import Lampe.Data.Strings
 import Lampe.Delab
 import Lampe.Hoare.Builtins
