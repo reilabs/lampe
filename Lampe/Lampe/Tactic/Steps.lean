@@ -107,6 +107,17 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro), false)
         | ``Lampe.Builtin.ref => return some (←``(ref_intro), false)
 
+        | ``Lampe.Builtin.fApplyRangeConstraint => return some (←``(fApplyRangeConstraint_intro), false)
+        | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits), true)
+        | ``Lampe.Builtin.fModBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBytes), true)
+        | ``Lampe.Builtin.fModLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBits), true)
+        | ``Lampe.Builtin.fModLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBytes), true)
+        | ``Lampe.Builtin.fModNumBits => return some (←``(fModNumBits_intro), false)
+        | ``Lampe.Builtin.iAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.iAsField), true)
+        | ``Lampe.Builtin.iFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.iFromField), true)
+        | ``Lampe.Builtin.uAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.uAsField), true)
+        | ``Lampe.Builtin.uFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.uFromField), true)
+
         | _ => return none
       | _ => return none
     | ``Lampe.Expr.ref => return some (←``(ref_intro), false)
