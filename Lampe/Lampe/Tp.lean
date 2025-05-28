@@ -157,6 +157,8 @@ register_option pp.Tp : Bool := {
 
 abbrev whenDelabTp : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.Tp
 
+/-- Delaborate `Tp.denote` to its defeq concrete Lean type. This improves the readability of goal
+states involving `Tp.denote` -/
 @[app_delab Lampe.Tp.denote]
 def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplied expr do
   let reducedExpr := (← Meta.unfold expr `Lampe.Tp.denote).expr
