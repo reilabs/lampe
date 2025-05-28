@@ -11,7 +11,7 @@ pub struct EmitterCtx {
 
 /// Returns true if and only if `typ` is an `impl` type.
 pub(super) fn is_impl(typ: &Type) -> bool {
-    matches!(typ, Type::TypeVariable(_) | Type::TraitAsType(_,_,_) | Type::NamedGeneric(_, _) if typ.to_string().starts_with("impl"))
+    matches!(typ, Type::TypeVariable(_) | Type::TraitAsType(_,_,_) | Type::NamedGeneric(_) if typ.to_string().starts_with("impl"))
 }
 
 impl EmitterCtx {
