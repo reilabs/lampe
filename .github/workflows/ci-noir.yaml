@@ -53,5 +53,5 @@ jobs:
               use-mathlib-cache: true
               lake-package-directory: lampe/Lampe
           - name: Run Lampe on each test_program
-            working-directory: lampe/noir_testing
+            working-directory: lampe/testing_noir
             run: ./test.sh --noir-path ${{ github.workspace }}/noir --log-stdout true
