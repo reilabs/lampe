@@ -57,8 +57,46 @@ for dir in "${example_dirs[@]}"; do
 		"$dir/clean.sh"
 	fi
 
-	# Run Lampe generation
-	$CLI
+	# run the CLI and check that the generated files match the checked out files
+	if [[ $dir_name == "MerkleFromScratch" || $dir_name == "TestDep" ]]; then
+		$CLI
+	else
+		# rename checked out lean files
+		EXTRACTED_DIR=$(find . -type d -name "Extracted")
+		if [[ -n $EXTRACTED_DIR ]]; then
+			find $EXTRACTED_DIR -name "*.lean" -exec sh -c 'cp "$1" "${1%.lean}.lean_checkedout"' _ {} \;
+		fi
+
+		# run the CLI
+		$CLI
+
+		# check if the extracted files have changed
+		for checkedout_file in $(find $EXTRACTED_DIR -name "*.lean_checkedout"); do
+			generated_file="${checkedout_file%.lean_checkedout}.lean"
+
+			if [[ -f "$generated_file" ]]; then
+				if ! diff -q "$checkedout_file" "$generated_file" > /dev/null; then
+					echo "MISMATCH: $generated_file differs from checked-out version"
+					exit 1
+				fi
+			else
+				echo "MISSING: $generated_file was not generated"
+				exit 1
+			fi
+		done
+
+		# check for newly generated files not in checked-out version
+		for generated_file in $(find $EXTRACTED_DIR -name "*.lean"); do
+			checkedout_file="${generated_file%.lean}.lean_checkedout"
+			if [[ ! -f "$checkedout_file" ]]; then
+				echo "NEW FILE: $generated_file is newly generated"
+				exit 1
+			fi
+		done
+
+		# delete renamed files
+		find $EXTRACTED_DIR -name "*.lean_checkedout" -delete
+	fi
 
 	# Overwrite Lampe to local path
 	LAMPE_LAKEFILE_LINE_START=$(cat lampe/lakefile.toml | grep -hn "name = \"Lampe\"" | awk -F ':' '{ print $1 }')
