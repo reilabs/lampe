@@ -1,4 +1,10 @@
 mod associated_type;
 mod const_generics;
+mod experiments;
+mod field_generics;
 mod multiple_generics;
+mod patterns;
 mod struct_namespaces;
+mod type_order;
+mod unconstrained_return;
+mod unit_return;
