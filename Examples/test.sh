@@ -58,11 +58,12 @@ for dir in "${example_dirs[@]}"; do
 	fi
 
 	# run the CLI and check that the generated files match the checked out files
-	if [[ $dir_name == "MerkleFromScratch" || $dir_name == "TestDep" ]]; then
+	if [[ $dir_name == "MerkleFromScratch" ]]; then
 		$CLI
 	else
-		# rename checked out lean files
 		EXTRACTED_DIR=$(find . -type d -name "Extracted")
+
+		# rename checked out lean files
 		if [[ -n $EXTRACTED_DIR ]]; then
 			find $EXTRACTED_DIR -name "*.lean" -exec sh -c 'cp "$1" "${1%.lean}.lean_checkedout"' _ {} \;
 		fi
