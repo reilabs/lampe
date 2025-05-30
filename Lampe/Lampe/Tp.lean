@@ -155,17 +155,22 @@ register_option pp.Tp : Bool := {
   descr := "Pretty print applications of `Tp.denote`"
 }
 
-abbrev whenDelabTp : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.Tp
+abbrev whenDelabTp : DelabM α → DelabM α := whenDelabOptionSet ``Lampe.pp.Tp
 
 /-- Delaborate `Tp.denote` to its defeq concrete Lean type. This improves the readability of goal
 states involving `Tp.denote` -/
-@[app_delab Lampe.Tp.denote]
-def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplied expr do
+partial def delabTpDenoteAux (expr : Lean.Expr) (depth maxDepth : Nat) : DelabM Term := do
   let reducedExpr := (← Meta.unfold expr `Lampe.Tp.denote).expr
   if reducedExpr.isAppOf `Lampe.Tp.denote then
     failure
+  else if maxDepth ≤ depth then
+    return (← delab (← Meta.reduceAll reducedExpr))
   else
-    return ← delab reducedExpr
+    return ←delabTpDenoteAux reducedExpr depth.succ maxDepth
+
+@[app_delab Lampe.Tp.denote]
+def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr =>
+  whenFullyApplied expr <| delabTpDenoteAux expr 0 10
 
 end Delab
 
