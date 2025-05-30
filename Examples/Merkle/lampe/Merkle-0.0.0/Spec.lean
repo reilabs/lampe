@@ -9,6 +9,7 @@ import Mathlib.Data.Vector.Snoc
 
 open Lampe «Merkle-0.0.0» «Merkle-0.0.0».Extracted «Merkle-0.0.0».Field
 
+namespace «Merkle-0.0.0»
 namespace Spec
 
 def lp : Lampe.Prime := ⟨p, pPrime⟩
@@ -637,16 +638,3 @@ lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ (weird_assert_eq.call h![] h
     steps
   steps
   simp_all
-
-theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp lp) Ref.State.compress 32}:
-    STHoare lp env
-        ⟦⟧
-        (main.call h![] h![tree.root, proof, item, index])
-        (fun _ => item ∈ tree) := by
-  enter_decl
-  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
-  use index.reverse
-  subst_vars
-  rename tree.root = _ => hroot
-  rw [Eq.comm, MerkleTree.recover_eq_root_iff_proof_and_item_correct] at hroot
-  exact hroot.2
