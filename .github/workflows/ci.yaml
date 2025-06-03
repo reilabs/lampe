@@ -2,102 +2,123 @@ name: CI
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
     branches:
-    - main
+      - main
   workflow_dispatch:
 jobs:
-    build-lake:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout current branch (sparse)
-              uses: actions/checkout@v4
-              with:
-                sparse-checkout: |
-                  Lampe
-            - name: Set up Lean 4
-              uses: leanprover/lean-action@v1
-              with:
-                auto-config: false
-                build: false
-                test: false
-                lint: false
-                use-mathlib-cache: true
-                lake-package-directory: Lampe
-            - name: mk_all (lake)
-              working-directory: Lampe
-              run: lake exe mk_all --check --lib Lampe
-            - name: Build (lake)
-              working-directory: Lampe
-              run: lake build
-            - name: Test (lake)
-              working-directory: Lampe
-              run: lake test
-    build-cargo:
-      runs-on: ubuntu-latest
-      steps:
-          - name: Checkout current branch
-            uses: actions/checkout@v4
-            with:
-              path: lampe
-          - name: Set up Rust
-            uses: actions-rs/toolchain@v1
-            with:
-              toolchain: 1.85.1
-              default: true
-              components: rustfmt, clippy
-          - name: Build (cargo)
-            working-directory: lampe
-            run: cargo build --release
-    test-cargo:
-      needs: build-cargo
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout current branch
-          uses: actions/checkout@v4
-          with:
-            path: lampe
-        - name: Set up Rust
-          uses: actions-rs/toolchain@v1
-          with:
-            toolchain: 1.85.1
-            default: true
-            components: rustfmt, clippy
-        - name: Test (cargo)
-          working-directory: lampe
-          run: |
-            export RUST_MIN_STACK=16777216;  # 16 MB
-            cargo test --all
-        - name: Format (rustfmt)
-          working-directory: lampe
-          run: cargo fmt --check
-        - name: Lint (clippy)
-          working-directory: lampe
-          run: RUSTFLAGS="-Dwarnings" cargo clippy
-    end-to-end:
-      needs: [build-lake, build-cargo]
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout current branch
-          uses: actions/checkout@v4
-          with:
-            path: lampe
-        - name: Set up Rust
-          uses: actions-rs/toolchain@v1
-          with:
-              toolchain: 1.85.1
-              default: true
-              components: rustfmt, clippy
-        - name: Set up Lean 4
-          uses: leanprover/lean-action@v1
-          with:
-            auto-config: false
-            build: false
-            test: false
-            lint: false
-            use-mathlib-cache: true
-            lake-package-directory: lampe/Lampe
-        - name: Run test script
-          working-directory: lampe
-          run: ./Examples/test.sh --ci
+  build-lake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            Lampe
+      - name: Set up Lean 4
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-mathlib-cache: true
+          lake-package-directory: Lampe
+      - name: mk_all (lake)
+        working-directory: Lampe
+        run: lake exe mk_all --check --lib Lampe
+      - name: Build (lake)
+        working-directory: Lampe
+        run: lake build
+      - name: Test (lake)
+        working-directory: Lampe
+        run: lake test
+
+  build-cargo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          path: lampe
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.85.1
+          default: true
+          components: rustfmt, clippy
+      - name: Build (cargo)
+        working-directory: lampe
+        run: cargo build --release
+
+  check-rust-formatting:
+    name: "Check Rust Formatting"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+          components: rustfmt
+      - name: Check Formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  test-cargo:
+    needs: build-cargo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          path: lampe
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.85.1
+          default: true
+          components: rustfmt, clippy
+      - name: Test (cargo)
+        working-directory: lampe
+        run: |
+          export RUST_MIN_STACK=16777216;  # 16 MB
+          cargo test --all
+      - name: Lint (clippy)
+        working-directory: lampe
+        run: RUSTFLAGS="-Dwarnings" cargo clippy
+
+  end-to-end:
+    needs: [ build-lake, build-cargo ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          path: lampe
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.85.1
+          default: true
+          components: rustfmt, clippy
+      - name: Set up Lean 4
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-mathlib-cache: true
+          lake-package-directory: lampe/Lampe
+      - name: Run test script
+        working-directory: lampe
+        run: ./Examples/test.sh --ci

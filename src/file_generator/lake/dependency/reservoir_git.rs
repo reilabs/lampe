@@ -1,13 +1,14 @@
-use crate::file_generator::lake::dependency::LeanDependency;
-use std::fmt;
-use std::fmt::Write;
+use std::{fmt, fmt::Write};
 
-/// This is Lean's dependency from Reservoir (Lean's package manager) with git rev.
+use crate::file_generator::lake::dependency::LeanDependency;
+
+/// This is Lean's dependency from Reservoir (Lean's package manager) with git
+/// rev.
 #[derive(Debug, Clone)]
 pub struct LeanDependencyReservoirGit {
-    name: String,
+    name:  String,
     scope: Option<String>,
-    rev: Option<String>,
+    rev:   Option<String>,
 }
 
 pub struct LeanDependencyReservoirGitBuilder {
@@ -19,9 +20,9 @@ impl LeanDependencyReservoirGitBuilder {
     fn new(name: &str) -> Self {
         Self {
             dependency: LeanDependencyReservoirGit {
-                name: name.to_string(),
+                name:  name.to_string(),
                 scope: None,
-                rev: None,
+                rev:   None,
             },
         }
     }

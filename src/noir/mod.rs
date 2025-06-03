@@ -14,7 +14,7 @@ use noirc_driver::Warnings;
 
 pub mod error;
 pub mod project;
-pub use project::{Project, parse_workspace};
+pub use project::{parse_workspace, Project};
 
 /// A container for attaching non-fatal compilation warnings to arbitrary data.
 ///

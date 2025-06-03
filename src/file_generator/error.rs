@@ -1,7 +1,8 @@
-use crate::file_generator::lean;
-use crate::noir;
 use std::{fmt, io};
+
 use thiserror::Error;
+
+use crate::{file_generator::lean, noir};
 
 /// The result type for dealing with file generation related errors.
 pub type Result<T> = std::result::Result<T, Error>;

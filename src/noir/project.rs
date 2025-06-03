@@ -2,17 +2,20 @@
 
 use fm::FileManager;
 use nargo::{
-    insert_all_files_for_workspace_into_file_manager, package::Package, parse_all, prepare_package,
+    insert_all_files_for_workspace_into_file_manager,
+    package::Package,
+    parse_all,
+    prepare_package,
     workspace::Workspace,
 };
-use noirc_driver::{CompileOptions, check_crate};
+use noirc_driver::{check_crate, CompileOptions};
 use noirc_frontend::hir::ParsedFiles;
 
 use crate::{
     lean::LeanEmitter,
     noir::{
-        WithWarnings,
         error::compilation::{Error as CompileError, Result as CompileResult},
+        WithWarnings,
     },
 };
 
