@@ -58,7 +58,7 @@ for dir in "${example_dirs[@]}"; do
 	fi
 
 	# run the CLI and check that the generated files match the checked out files
-	if [[ $dir_name == "MerkleFromScratch" ]]; then
+	if [[ ! -d $(find "$dir" -type d -name "Extracted") ]]; then
 		$CLI
 	else
 		EXTRACTED_DIR=$(find . -type d -name "Extracted")
