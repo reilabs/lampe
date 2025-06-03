@@ -1,6 +1,9 @@
-name: CI on Noir test programs
+name: CI - Check on Noir test programs
 on:
+  schedule:
+    - cron: '0 2 * * *'
   workflow_dispatch:
+
 jobs:
     run-tests:
       runs-on: ubuntu-latest
@@ -9,15 +12,19 @@ jobs:
             uses: actions/checkout@v4
             with:
               repository: noir-lang/noir
+              ref: v1.0.0-beta.3
               path: noir
           - name: Set up Rust
-            uses: actions-rs/toolchain@v1
+            uses: actions-rust-lang/setup-rust-toolchain@v1
+            with:
+              toolchain: 1.85.1
+              components: rustfmt, clippy
           - name: Build (cargo)
             working-directory: noir
-            run: cargo build --release
-          - name: Install (cargo)
+            run: cargo build --package nargo_cli --release
+          - name: Install nargo CLI
             working-directory: noir
-            run: cargo install --path .
+            run: cp ./target/release/nargo /usr/local/bin/
           - name: Ensure test programs up-to-date
             working-directory: noir/test_programs
             run: ./rebuild.sh
@@ -26,12 +33,15 @@ jobs:
             with:
               path: lampe
           - name: Set up Rust
-            uses: actions-rs/toolchain@v1
+            uses: actions-rust-lang/setup-rust-toolchain@v1
+            with:
+              toolchain: 1.85.0
+              components: rustfmt, clippy
           - name: Build (cargo)
             working-directory: lampe
             run: cargo build --release
           - name: Install (cargo)
-            working-directory: noir
+            working-directory: lampe
             run: cargo install --path .
           - name: Set up Lean 4
             uses: leanprover/lean-action@v1
@@ -43,5 +53,5 @@ jobs:
               use-mathlib-cache: true
               lake-package-directory: lampe/Lampe
           - name: Run Lampe on each test_program
-            working-directory: lampe/noir_testing
-            run: ./test.sh --noir-path ${{ github.workspace }}
+            working-directory: lampe/testing_noir
+            run: ./test.sh --noir-path ${{ github.workspace }}/noir --log-stdout true
