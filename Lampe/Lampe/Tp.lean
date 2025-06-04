@@ -5,6 +5,7 @@ import Lampe.Data.HList
 import Lampe.Data.Strings
 import Lampe.Data.Meta
 
+-- Note: This option needs to be defined outside of any namespace for it to register correctly
 register_option Lampe.pp.Tp : Bool := {
   defValue := true
   descr := "Pretty print applications of `Tp.denote`"
@@ -158,6 +159,7 @@ open Meta (mkAppM)
 
 abbrev whenDelabTp : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.Tp
 
+/-- convert `[A, B, C, ...]` to the product `A.denote × B.denote × C.denote × ... -/
 def delabDenoteArgsAux (p : Expr) (tps : List Expr) : MetaM Expr := do
   let rec loop (acc : Expr) : List Expr → MetaM Expr
   | [] => return acc
@@ -167,6 +169,8 @@ def delabDenoteArgsAux (p : Expr) (tps : List Expr) : MetaM Expr := do
   let base ← mkAppM `Unit #[]
   loop base tps
 
+/-- Delaborate `Tp.denote` to its defeq concrete Lean type. This improves the readability of goal
+states involving `Tp.denote` -/
 @[app_delab Lampe.Tp.denote]
 def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplied expr do
   let_expr Tp.denote p tpExpr := expr | failure

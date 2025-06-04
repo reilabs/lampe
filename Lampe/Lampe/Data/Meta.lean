@@ -3,7 +3,7 @@ import Lean
 open Lean PrettyPrinter Delaborator
 
 /-- Disable a delaborator unless an option is set to true. Used in Lampe to disable pretty printers
-until they are stabalized. -/
+until they are stabilized. -/
 def whenDelabOptionSet (name : Name) (f : DelabM α) : DelabM α := do
   if (← getOptions).getBool name then f else failure
 
