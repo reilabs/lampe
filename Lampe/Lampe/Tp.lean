@@ -5,6 +5,11 @@ import Lampe.Data.HList
 import Lampe.Data.Strings
 import Lampe.Data.Meta
 
+register_option Lampe.pp.Tp : Bool := {
+  defValue := true
+  descr := "Pretty print applications of `Tp.denote`"
+}
+
 namespace Lampe
 
 structure Ref where
@@ -149,28 +154,45 @@ end
 section Delab
 
 open Lean PrettyPrinter Delaborator SubExpr
+open Meta (mkAppM)
 
-register_option pp.Tp : Bool := {
-  defValue := true
-  descr := "Pretty print applications of `Tp.denote`"
-}
+abbrev whenDelabTp : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.Tp
 
-abbrev whenDelabTp : DelabM α → DelabM α := whenDelabOptionSet ``Lampe.pp.Tp
-
-/-- Delaborate `Tp.denote` to its defeq concrete Lean type. This improves the readability of goal
-states involving `Tp.denote` -/
-partial def delabTpDenoteAux (expr : Lean.Expr) (depth maxDepth : Nat) : DelabM Term := do
-  let reducedExpr := (← Meta.unfold expr `Lampe.Tp.denote).expr
-  if reducedExpr.isAppOf `Lampe.Tp.denote then
-    failure
-  else if maxDepth ≤ depth then
-    return (← delab (← Meta.reduceAll reducedExpr))
-  else
-    return ←delabTpDenoteAux reducedExpr depth.succ maxDepth
+def delabDenoteArgsAux (p : Expr) (tps : List Expr) : MetaM Expr := do
+  let rec loop (acc : Expr) : List Expr → MetaM Expr
+  | [] => return acc
+  | tp :: tps => do
+    let tp ← mkAppM `Lampe.Tp.denote #[p, tp]
+    loop (← mkAppM `Prod #[tp, acc]) tps
+  let base ← mkAppM `Unit #[]
+  loop base tps
 
 @[app_delab Lampe.Tp.denote]
-def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr =>
-  whenFullyApplied expr <| delabTpDenoteAux expr 0 10
+def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplied expr do
+  let_expr Tp.denote p tpExpr := expr | failure
+  let tpExpr ← match_expr tpExpr with
+  | Tp.field => mkAppM `Lampe.Fp #[p]
+  | Tp.u n => mkAppM `Lampe.U #[n]
+  | Tp.i n => mkAppM `Lampe.I #[n]
+  | Tp.bi => mkAppM `Int #[]
+  | Tp.bool => mkAppM `Bool #[]
+  | Tp.unit => mkAppM `Unit #[]
+  | Tp.str n =>
+    let len ← mkAppM `BitVec.toNat #[n]
+    mkAppM `FixedLenStr #[len]
+  | Tp.fmtStr n tps => mkAppM `Lampe.FormatString #[n, tps]
+  | Tp.slice tp => mkAppM `List #[← mkAppM `Lampe.Tp.denote #[p, tp]]
+  | Tp.array tp n =>
+    let len ← mkAppM `BitVec.toNat #[n]
+    mkAppM `List.Vector #[← mkAppM `Lampe.Tp.denote #[p, tp], len]
+  | Tp.ref _ => mkAppM `Lampe.Ref #[]
+  | Tp.tuple _ fields =>
+    let (_, tps) ← liftOption fields.listLit?
+    delabDenoteArgsAux p tps
+  | Tp.fn argTps outTp =>
+    mkAppM `Lampe.FuncRef #[argTps, outTp]
+  | _ => failure
+  return ← delab tpExpr
 
 end Delab
 
