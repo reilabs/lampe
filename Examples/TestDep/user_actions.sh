@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -euxo pipefail
 
 LAST_IMPORT="$(cat lampe/TestDep-0.0.0.lean | grep "^import" | tail -n 1)"

@@ -1,14 +1,14 @@
-trait Foo {
+pub trait Foo {
     type Out;
-    fn foo(self) -> Self::Out
+    fn foo(self) -> Self::Out;
 }
 
-struct Pair {
+pub struct Pair {
     a : Field,
     b : Field
 }
 
-type Bar = Pair;
+pub type Bar = Pair;
 
 impl Foo for Pair {
     type Out = Field;

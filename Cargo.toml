@@ -11,23 +11,21 @@ repository = "https://github.com/reilabs/lampe"
 license = "MIT"
 
 [dependencies]
-fm = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
-noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-v1.0.0-beta.1" }
+fm = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
+nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
+nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
+noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
+noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
+noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
 
 clap = { version = "4.5.17", features = ["unstable-v5"] }
 derivative = "2.2.0"
 indoc = "2.0.5"
-itertools = "0.13.0"
-log = "0.4.22"
-thiserror = "1.0.63"
+itertools = "0.14.0"
+thiserror = "2.0.12"
 tempfile = "3.19.1"
-petgraph = "0.6.5"
+petgraph = "0.6.5" # Cannot bump as it is currently required to be this version by a dependency
 convert_case = "0.8.0"
-url = "2.5.4"
 serde = { version = "1.0.204", features = ["derive"] }
 toml = { version = "0.8.20" }
 
@@ -39,3 +37,6 @@ walkdir = "2.5.0"
 [[bin]]
 name = "lampe"
 path = "src/bin/main.rs"
+
+[profile.release]
+debug = true

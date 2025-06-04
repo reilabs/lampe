@@ -5,17 +5,22 @@ pub mod indent;
 mod pattern;
 mod syntax;
 
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+};
+
 use context::EmitterCtx;
 use fm::FileId;
 use itertools::Itertools;
 use noirc_errors::Location;
 use noirc_frontend::{
-    Kind, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
-    ast::{IntegerBitSize, Signedness},
+    Kind, NamedGeneric, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
+    ast::{FunctionKind, IntegerBitSize},
     graph::CrateId,
     hir::{
         Context,
-        def_map::{ModuleData, ModuleDefId, ModuleId},
+        def_map::{LocalModuleId, ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
     },
     hir_def::{
@@ -25,18 +30,15 @@ use noirc_frontend::{
         traits::{NamedType, TraitImpl},
     },
     node_interner::{
-        DefinitionKind, DependencyId, ExprId, FuncId, GlobalId, StmtId, StructId, TraitId,
-        TypeAliasId,
+        DefinitionKind, DependencyId, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId,
+        TypeId,
     },
-};
-use std::{
-    cmp::Ordering,
-    collections::{HashMap, HashSet},
+    shared::Signedness,
 };
 
-use crate::file_generator::to_import_from_noir_path;
 use crate::{
-    lean::{indent::Indenter, syntax::expr::format_builtin_call},
+    file_generator::to_import_from_noir_path,
+    lean::indent::Indenter,
     noir::{
         self,
         error::emit::{Error, Result},
@@ -109,8 +111,8 @@ pub struct LeanEmitter<'file_manager, 'parsed_files> {
     /// The identifier for the root crate in the Noir compilation context.
     root_crate: CrateId,
 
-    /// The files contained in the root crate. Used to filter `std` and other crate files from the
-    /// `file_manager` during emission and generation.
+    /// The files contained in the root crate. Used to filter `std` and other
+    /// crate files from the `file_manager` during emission and generation.
     known_files: HashSet<FileId>,
 }
 
@@ -174,10 +176,11 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let mut indenter = Indenter::default();
         let mut outputs = HashSet::new();
 
-        let mut dep_graph = self.context.def_interner.dependency_graph.clone();
+        let mut dep_graph = self.context.def_interner.dependency_graph().clone();
 
-        // Only consider nnodes in the dependency graph that could cause issues with the extracted
-        // Lean code. This will only happen with extracted structs and type aliases.
+        // Only consider nnodes in the dependency graph that could cause issues with the
+        // extracted Lean code. This will only happen with extracted structs and
+        // type aliases.
         dep_graph.retain_nodes(|g, node_idx| {
             if let Some(dep_id) = g.node_weight(node_idx) {
                 matches!(dep_id, DependencyId::Struct(_) | DependencyId::Alias(_))
@@ -186,9 +189,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             }
         });
 
-        // Allow for cases where a node may depend on itself. This occurs in cases for trait
-        // implementations for structs. If the recursive definition was truly an issue, then the
-        // Noir compiler would complain already by this point.
+        // Allow for cases where a node may depend on itself. This occurs in cases for
+        // trait implementations for structs. If the recursive definition was
+        // truly an issue, then the Noir compiler would complain already by this
+        // point.
         dep_graph.retain_edges(|g, e| {
             if let Some((start, end)) = g.edge_endpoints(e) {
                 start != end
@@ -221,21 +225,13 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             .into_iter()
                             .position(|item| *item == DependencyId::Struct(id));
 
-                        let name = self
-                            .context
-                            .def_interner
-                            .get_struct(id)
-                            .borrow()
-                            .name
-                            .0
-                            .contents
-                            .clone();
+                        let typ = self.context.def_interner.get_type(id);
+                        let typ = typ.borrow();
+                        let name = typ.name.identifier().to_string();
+                        let output =
+                            EmitOutput::Struct(self.emit_struct_def(&mut indenter, id, &ctx)?);
 
-                        (
-                            def_order,
-                            name,
-                            EmitOutput::Struct(self.emit_struct_def(&mut indenter, id, &ctx)?),
-                        )
+                        (def_order, name, output)
                     }
                     ModuleDefId::TypeAliasId(id) => {
                         // Check if this is a dummy ID corresponding to an associated type
@@ -255,15 +251,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             .get_type_alias(id)
                             .borrow()
                             .name
-                            .0
-                            .contents
-                            .clone();
+                            .identifier()
+                            .to_string();
 
-                        (
-                            def_order,
-                            name,
-                            EmitOutput::Alias(self.emit_alias(id, &ctx)?),
-                        )
+                        let output = EmitOutput::Alias(self.emit_alias(id, &ctx)?);
+
+                        (def_order, name, output)
                     }
                     _ => continue,
                 };
@@ -363,7 +356,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         for (id, trait_impl) in self
             .context
             .def_interner
-            .trait_implementations
+            .trait_implementations()
             .iter()
             .filter(|(_, t)| t.borrow().file == module.location.file)
         {
@@ -386,14 +379,27 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         for typedef in module.type_definitions().chain(module.value_definitions()) {
             let emit_output = match typedef {
                 ModuleDefId::FunctionId(id) => {
-                    // Skip the trait methods, as these are already handled by `emit_trait_impl`.
-                    if self.context.function_meta(&id).trait_impl.is_some() {
+                    let func_meta = self.context.function_meta(&id);
+
+                    // Skip trait functions in the module scope that do not have bodies.
+                    if func_meta.kind == FunctionKind::TraitFunctionWithoutBody {
                         continue;
                     }
+
+                    // Skip the trait methods, as these are already handled by `emit_trait_impl`.
+                    if func_meta.trait_impl.is_some() {
+                        continue;
+                    }
+
+                    // We cannot handle comptime functions at the moment, and they should be gone by
+                    // this point anyway.
                     if self.context.def_interner.function_modifiers(&id).is_comptime {
                         continue;
                     }
+
+                    // We then emit the function definition itself.
                     let (def_name, def) = self.emit_free_function_def(ind, id, &ctx)?;
+
                     // [TODO] fix
                     if def_name.starts_with('_') {
                         continue;
@@ -588,7 +594,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         }
     }
 
-    /// Emits the Lean source code corresponding to a resolved generics occuring
+    /// Emits the Lean source code corresponding to a resolved generics occurring
     /// at generic declarations.
     #[allow(clippy::unused_self)]
     pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
@@ -611,17 +617,17 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     pub fn emit_struct_def(
         &self,
         ind: &mut Indenter,
-        s: StructId,
+        s: TypeId,
         ctx: &EmitterCtx,
     ) -> Result<String> {
-        let struct_data = self.context.def_interner.get_struct(s);
+        let struct_data = self.context.def_interner.get_type(s);
         let struct_data = struct_data.borrow();
         let fq_path = self
             .context
             .fully_qualified_struct_path(&struct_data.id.module_id().krate, s);
         let generics = &struct_data.generics;
         let generics_str = generics.iter().map(|g| self.emit_resolved_generic(g, ctx)).join(", ");
-        let fields = struct_data.get_fields_as_written();
+        let fields = struct_data.get_fields_as_written().unwrap_or_default();
 
         // We generate the fields under a higher indentation level to make it look nice
         ind.indent();
@@ -690,8 +696,17 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // Generate the function body ready for insertion
         ind.indent();
         let body = if is_unconstrained {
-            ind.run(format_builtin_call(&"fresh".into(), "", &ret_type))
+            ind.run(syntax::expr::format_builtin_call(
+                &"fresh".into(),
+                "",
+                &ret_type,
+            ))
         } else {
+            println!(
+                "{}",
+                self.context
+                    .fully_qualified_function_name(&func_meta.source_crate, &func)
+            );
             self.emit_expr(
                 ind,
                 self.context.def_interner.function(&func).as_expr(),
@@ -700,8 +715,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         };
         ind.dedent()?;
 
-        // For struct methods that have a self-type, we add a flag that tells the extractor to
-        // circumvent the usual namespace resolution and use the type's namespace instead
+        // For struct methods that have a self-type, we add a flag that tells the
+        // extractor to circumvent the usual namespace resolution and use the
+        // type's namespace instead
         let (has_path_already, self_type_str) = match &func_meta.self_type {
             Some(ty) => {
                 let fq_type = self.emit_fully_qualified_type(ty, ctx);
@@ -826,12 +842,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 let elems_str = elem_types.join(", ");
                 syntax::r#type::format_tuple(&elems_str)
             }
-            Type::Struct(struct_type, generics) => {
-                let struct_type = struct_type.borrow();
-                let module_id = struct_type.id.module_id();
+            Type::DataType(struct_type, generics) => {
+                let type_def = struct_type.borrow();
+                let module_id = type_def.id.module_id();
                 let name = self
                     .context
-                    .fully_qualified_struct_path(&module_id.krate, struct_type.id);
+                    .fully_qualified_struct_path(&module_id.krate, type_def.id);
                 let generics_resolved = generics
                     .iter()
                     .map(|g| self.emit_fully_qualified_type(g, ctx))
@@ -848,9 +864,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 let ret_str = self.emit_fully_qualified_type(ret, ctx);
                 syntax::r#type::format_function(&arg_types_str, &ret_str)
             }
-            Type::MutableReference(typ) => {
+            Type::Reference(typ, _) => {
                 let typ_str = self.emit_fully_qualified_type(typ, ctx);
-                syntax::r#type::format_mut_ref(&typ_str)
+                syntax::r#type::format_ref(&typ_str)
             }
             Type::Alias(alias, generics) => {
                 let generics_resolved = generics
@@ -876,9 +892,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 }
                 TypeBinding::Unbound(..) => format!("{typ}"),
             },
-            // _ if context::is_impl(typ) => {
-            //     panic!("impl types must be replaced with type variables or concrete types")
-            // }
             // In all the other cases we can use the default printing as internal type vars are
             // non-existent, constrained to be types we don't care about customizing, or are
             // non-existent in the phase the emitter runs after.
@@ -900,9 +913,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let (ix, data) = krate
             .modules()
             .iter()
-            .find(|(i, _)| *i == id.local_id.0)
+            .find(|(i, _)| *i == id.local_id.into())
             .expect("Module should exist in context");
-        let module_path = krate.get_module_path_with_separator(ix, data.parent, "::");
+        let module_path =
+            krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");
 
         if id.krate.is_stdlib() {
             format!("std::{module_path}")
@@ -930,7 +944,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 })
             })
             .expect("Should work");
-        let module_path = krate.get_module_path_with_separator(ix, data.parent, "::");
+        let module_path =
+            krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");
 
         if id.is_stdlib() {
             format!("std::{module_path}")
@@ -968,10 +983,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
                 if let Some(last_stmt_id) = block.statements.iter().last() {
                     let last_stmt = self.context.def_interner.statement(last_stmt_id);
-                    if matches!(
-                        last_stmt,
-                        HirStatement::Constrain(_) | HirStatement::Assign(_)
-                    ) {
+                    if matches!(last_stmt, HirStatement::Assign(_)) {
                         statements.push(ind.run("skip;"));
                     }
                 }
@@ -1279,8 +1291,11 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     DefinitionKind::NumericGeneric(_, tt) => match *tt.clone() {
                         Type::Integer(..) => syntax::expr::format_uint_const(name),
                         Type::FieldElement => syntax::expr::format_field_const(name),
-                        _ => unimplemented!(),
+                        _ => panic!("Invalid type encountered as a numeric generic"),
                     },
+                    DefinitionKind::AssociatedConstant(..) => {
+                        unimplemented!("Associated constant definitions")
+                    }
                 }
             }
             HirExpression::Index(index) => {
@@ -1307,7 +1322,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 let name = self.context.fully_qualified_struct_path(crate_id, struct_def.id);
                 let fields = constructor.fields;
                 // Map a field name to its order.
-                let field_orders: HashMap<_, usize> = (0..struct_def.num_fields())
+                let field_orders: HashMap<_, usize> = (0..fields.len())
                     .map(|i| {
                         let StructField { name, .. } = struct_def.field_at(i);
                         (name.clone(), i)
@@ -1341,7 +1356,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 let target_expr_str = self.emit_expr(ind, member.lhs, ctx)?;
                 let member_iden = member.rhs;
                 match unfold_alias(lhs_expr_ty.clone()) {
-                    Type::Struct(..) => {
+                    Type::DataType(..) => {
                         let struct_ty_str = self.emit_fully_qualified_type(&lhs_expr_ty, ctx);
                         syntax::expr::format_member_access(
                             &struct_ty_str,
@@ -1432,12 +1447,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
                 syntax::expr::format_lambda(&params_str, &body, &ret_type)
             }
-            HirExpression::MethodCall(..) => {
-                panic!("Method call expressions should not exist after type checking")
-            }
-            HirExpression::Comptime(..) => {
-                panic!("Comptime expressions should not exist after compilation is done")
-            }
             HirExpression::Quote(..) => {
                 panic!("Quote expressions should not exist after macro resolution")
             }
@@ -1447,6 +1456,16 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             HirExpression::Error => {
                 panic!("Encountered error expression where none should exist")
             }
+            HirExpression::Constrain(constraint) => {
+                let constraint_expr = self.emit_expr(ind, constraint.0, ctx)?;
+                syntax::expr::format_builtin_call(
+                    &builtin::ASSERT_BUILTIN_NAME.into(),
+                    &constraint_expr,
+                    &self.emit_fully_qualified_type(&Type::Unit, ctx),
+                )
+            }
+            HirExpression::EnumConstructor(_) => unimplemented!("Enum constructor expressions"),
+            HirExpression::Match(_) => unimplemented!("Match expressions"),
         };
 
         Ok(expression)
@@ -1511,15 +1530,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     stmts.join(";\n")
                 }
             }
-            HirStatement::Constrain(constraint) => {
-                let constraint_expr = self.emit_expr(ind, constraint.0, ctx)?;
-
-                syntax::expr::format_builtin_call(
-                    &builtin::ASSERT_BUILTIN_NAME.into(),
-                    &constraint_expr,
-                    &self.emit_fully_qualified_type(&Type::Unit, ctx),
-                )
-            }
             HirStatement::Assign(assign) => {
                 let rhs_expr = self.emit_expr(ind, assign.expression, ctx)?;
                 let lval = self.emit_l_value(ind, &assign.lvalue, ctx)?;
@@ -1540,6 +1550,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 panic!("Comptime statements should not exist after compilation")
             }
             HirStatement::Error => panic!("Encountered error statement where none should exist"),
+            HirStatement::Loop(_) => unimplemented!("Loop statements"),
+            HirStatement::While(..) => unimplemented!("While statements"),
         };
         // Append a semicolon to the statement if it doesn't already end with one.
         // We emit some statements already with a semicolon, so we don't want to add
@@ -1585,7 +1597,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                         &lhs_lval_str,
                         &field_name.to_string(),
                     )),
-                    Type::Struct(..) => {
+                    Type::DataType(..) => {
                         let struct_ty_str = self.emit_fully_qualified_type(lhs_ty, ctx);
                         Ok(syntax::lval::format_member_access(
                             &struct_ty_str,
@@ -1677,10 +1689,14 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 }
             },
             HirLiteral::Bool(bool) => syntax::literal::format_bool(*bool),
-            HirLiteral::Integer(felt, neg) => {
+            HirLiteral::Integer(signed_field) => {
                 let typ = self.id_bound_type(expr).to_string();
+                let felt = signed_field.absolute_value();
                 syntax::literal::format_num(
-                    &format!("{minus}{felt}", minus = if *neg { "-" } else { "" }),
+                    &format!(
+                        "{minus}{felt}",
+                        minus = if signed_field.is_negative() { "-" } else { "" }
+                    ),
                     &typ,
                 )
             }
@@ -1754,11 +1770,11 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 #[must_use]
 pub fn collect_named_generics(typ: &Type) -> Vec<String> {
     match typ {
-        Type::Array(inner_type, _)
-        | Type::Slice(inner_type)
-        | Type::MutableReference(inner_type) => collect_named_generics(inner_type),
+        Type::Array(inner_type, _) | Type::Slice(inner_type) | Type::Reference(inner_type, _) => {
+            collect_named_generics(inner_type)
+        }
         Type::Tuple(elems) => elems.iter().flat_map(collect_named_generics).collect_vec(),
-        Type::Struct(_, generics)
+        Type::DataType(_, generics)
         | Type::TraitAsType(
             _,
             _,
@@ -1799,7 +1815,7 @@ fn emit_numeric_type_const(typ: &Type) -> String {
 #[must_use]
 fn substitute_bindings(typ: &Type, bindings: &TypeBindings) -> Type {
     match typ {
-        Type::TypeVariable(tv) | Type::NamedGeneric(tv, _) => bindings
+        Type::TypeVariable(tv) | Type::NamedGeneric(NamedGeneric { type_var: tv, .. }) => bindings
             .get(&tv.id())
             .map(|(_, _, t)| t)
             .cloned()
@@ -1817,8 +1833,8 @@ fn substitute_bindings(typ: &Type, bindings: &TypeBindings) -> Type {
         Type::Tuple(vec) => {
             Type::Tuple(vec.iter().map(|t| substitute_bindings(t, bindings)).collect())
         }
-        Type::Struct(def, generics) => Type::Struct(
-            def.clone(),
+        Type::DataType(definition, generics) => Type::DataType(
+            definition.clone(),
             generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
         ),
         Type::Alias(def, generics) => Type::Alias(
@@ -1850,8 +1866,8 @@ fn substitute_bindings(typ: &Type, bindings: &TypeBindings) -> Type {
                     .collect(),
             },
         ),
-        Type::MutableReference(t) => {
-            Type::MutableReference(Box::new(substitute_bindings(t, bindings)))
+        Type::Reference(t, is_const) => {
+            Type::Reference(Box::new(substitute_bindings(t, bindings)), *is_const)
         }
         Type::Forall(tvs, t) => {
             Type::Forall(tvs.clone(), Box::new(substitute_bindings(t, bindings)))

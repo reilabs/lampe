@@ -1,9 +1,9 @@
-struct Option1<T> {
+pub struct Option1<T> {
     is_some: bool,
     value: T,
 }
 
-struct Option2<T> {
+pub struct Option2<T> {
     is_some: bool,
     value: T,
 }
@@ -15,9 +15,9 @@ impl<T> Option2<T> {
     }
 }
 
-fn pattern_test() {
+pub fn pattern_test() {
     let opt = Option2::some(true);
     let t = (1, opt, 3);
-    let (x, mut Option2 { is_some, value }, mut z) = t;
-    let lam = |(x, mut y, z): (bool, bool, bool), k: Field| -> bool { x };
+    let (_x, mut Option2 { is_some: _, value: _ }, mut _z) = t;
+    let _lam = |(x, mut _y, _z): (bool, bool, bool), _k: Field| -> bool { x };
 }

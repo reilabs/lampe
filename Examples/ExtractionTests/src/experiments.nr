@@ -1,26 +1,26 @@
 use std::default::Default;
 
-fn my_func3(a: u8) -> u8 {
+pub fn my_func3(a: u8) -> u8 {
     my_func(a)
 }
 
-fn my_func(a: u8) -> u8 {
+pub fn my_func(a: u8) -> u8 {
     a + 1
 }
 
-fn my_func2(arr: [u8; 8], b: u8) -> u8 {
+pub fn my_func2(arr: [u8; 8], b: u32) -> u8 {
     arr[b]
 }
 
-fn get_unchecked<T>(a: Option2<T>) -> T {
+pub fn get_unchecked<T>(a: Option2<T>) -> T {
     a._value
 }
 
-fn my_fn() -> u8 {
+pub fn my_fn() -> u8 {
     1 + 1
 }
 
-fn cast_test(a: u8) -> u64 {
+pub fn cast_test(a: u8) -> u64 {
     if a == 0 {
         0
     } else {
@@ -28,23 +28,23 @@ fn cast_test(a: u8) -> u64 {
     }
 }
 
-fn tuple_test(a: u8) -> (u8, u8) {
-    let b = |c| c + a + 10;
+pub fn tuple_test(a: u8) -> (u8, u8) {
+    let _b = |c| c + a + 10;
     (a, a)
 }
 
-fn literal_test() -> () {
-    let a = 1;
+pub fn literal_test() -> () {
+    let _a = 1;
     let b = true;
-    let c = false;
-    let d = [1; 5];
-    let e = &[1; 5];
-    let f = [1, 2, 3];
-    let h = "asdf";
-    let i = f"${b}";
+    let _c = false;
+    let _d = [1; 5];
+    let _e = &[1; 5];
+    let _f = [1, 2, 3];
+    let _h = "asdf";
+    let _i = f"${b}";
 }
 
-fn assigns(x: u8) {
+pub fn assigns(x: u8) {
     let mut y = 3;
     y += x;
 
@@ -52,7 +52,7 @@ fn assigns(x: u8) {
     arr[0] = 10;
 }
 
-unconstrained fn uncons(x: u8) {
+pub unconstrained fn uncons(x: u8) {
     for i in 0..x {
         if i == 2 {
             continue;
@@ -64,11 +64,11 @@ unconstrained fn uncons(x: u8) {
     }
 }
 
-fn check(x: u8) {
+pub fn check(x: u8) {
     assert(x == 5);
 }
 
-struct Option2<T> {
+pub struct Option2<T> {
     _is_some: bool,
     _value: T,
 }
@@ -101,7 +101,7 @@ impl<T> Option2<T> {
     }
 }
 
-trait MyTrait {
+pub trait MyTrait {
     fn foo(self) -> Self {
         self
     }
@@ -122,32 +122,32 @@ where
     }
 }
 
-fn string_test() -> str<5> {
+pub fn string_test() -> str<5> {
     let x: str<5> = "Hello";
     x
 }
 
-fn fmtstr_test(x: Field, y: Field) -> Field {
+pub fn fmtstr_test(x: Field, y: Field) -> Field {
     assert(x != y);
     let _a: fmtstr<37, (Field, Field)> = f"this is first:{x}  this is second:{y}";
     x + y
 }
 
-type AliasedOpt<T> = Option2<T>;
+pub type AliasedOpt<T> = Option2<T>;
 
-fn is_alias_some<T>(x: AliasedOpt<T>) -> bool {
+pub fn is_alias_some<T>(x: AliasedOpt<T>) -> bool {
     x.is_some()
 }
 
-fn main() {
+pub fn main() {
     let mut op1 = Option2::some(5);
     let op2 = Option2::default();
-    let op3 = if true { op1 } else { op2 }.foo();
-    op1.is_some();
+    let _op3 = if true { op1 } else { op2 }.foo();
+    let _ = op1.is_some();
     let mut l = [1, 2, 3];
-    l[0];
+    let _ = l[0];
     let t = (1, true, 3);
-    t.2;
+    let _ = t.2;
     l[1] = 4;
     op1._is_some = false;
     let mut tpl = (1, true);

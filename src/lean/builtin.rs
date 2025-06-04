@@ -1,7 +1,7 @@
 use noirc_frontend::{
     Type, TypeBinding,
-    ast::BinaryOpKind,
-    ast::{IntegerBitSize, Signedness, UnaryOp},
+    ast::{BinaryOpKind, IntegerBitSize, UnaryOp},
+    shared::Signedness,
 };
 
 pub type BuiltinName = String;
@@ -29,6 +29,7 @@ const fn integer_bit_size_to_u8(s: IntegerBitSize) -> u8 {
         IntegerBitSize::Sixteen => 16,
         IntegerBitSize::ThirtyTwo => 32,
         IntegerBitSize::SixtyFour => 64,
+        IntegerBitSize::HundredTwentyEight => 128,
     }
 }
 
@@ -44,7 +45,7 @@ impl TryInto<BuiltinType> for Type {
             Type::Integer(Signedness::Unsigned, s) => {
                 Ok(BuiltinType::Uint(integer_bit_size_to_u8(s)))
             }
-            Type::Array(_, _) => Ok(BuiltinType::Array),
+            Type::Array(..) => Ok(BuiltinType::Array),
             Type::Slice(_) => Ok(BuiltinType::Slice),
             Type::String(_) => Ok(BuiltinType::String),
             Type::TypeVariable(tv) => match &*tv.borrow() {
@@ -131,7 +132,7 @@ pub fn try_prefix_into_builtin_name(
         (UnaryOp::Not, Some((rhs_type, prefix))) if rhs_type.is_bitwise() => {
             Some(format!("{prefix}Not"))
         }
-        (UnaryOp::MutableReference, _) => Some("ref".to_string()),
+        (UnaryOp::Reference { .. }, _) => Some("ref".to_string()),
         (UnaryOp::Dereference { .. }, _) => Some("readRef".to_string()),
         _ => None,
     }

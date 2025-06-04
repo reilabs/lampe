@@ -9,7 +9,7 @@ namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
 nr_def «unit_return»::«foo»<>() -> Unit {
-    let x = 3 : Field;
+    let _x = 3 : Field;
 }
 
 nr_def «unit_return»::«bar»<>() -> Unit {
@@ -19,7 +19,7 @@ nr_def «unit_return»::«bar»<>() -> Unit {
 }
 
 nr_def «unit_return»::«baz»<>() -> Unit {
-    let x = 3 : Field;
+    let _x = 3 : Field;
     (@unit_return::bar<> as λ() → Unit)();
 }
 

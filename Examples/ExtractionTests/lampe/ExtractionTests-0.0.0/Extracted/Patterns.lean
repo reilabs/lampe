@@ -16,14 +16,14 @@ nr_def «patterns»::«pattern_test»<>() -> Unit {
     let opt = (@patterns::Option2::some<bool> as λ(bool) → patterns::Option2<bool>)(true);
     let t = `(1 : Field, opt, 3 : Field);
     let π0 = t;
-    let x = π0.0;
-    let mut is_some = (π0.1 as patterns::Option2<bool>).is_some;
-    let mut value = (π0.1 as patterns::Option2<bool>).value;
-    let mut z = π0.2;
-    let lam = |π0 : `(bool, bool, bool), k : Field| -> bool     {
+    let _x = π0.0;
+    let mut _? = (π0.1 as patterns::Option2<bool>).is_some;
+    let mut _? = (π0.1 as patterns::Option2<bool>).value;
+    let mut _z = π0.2;
+    let _lam = |π0 : `(bool, bool, bool), _k : Field| -> bool     {
         let x = π0.0;
-        let mut y = π0.1;
-        let z = π0.2;
+        let mut _y = π0.1;
+        let _z = π0.2;
         {
             x;
         }

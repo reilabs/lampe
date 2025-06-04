@@ -1,8 +1,8 @@
-trait Foo<I> {
-    fn foo(self) -> I
+pub trait Foo<I> {
+    fn foo(self) -> I;
 }
 
-struct Pair<I> {
+pub struct Pair<I> {
     a : I,
     b : I,
 }

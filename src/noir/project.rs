@@ -1,16 +1,19 @@
 //! Functionality for working with projects of Noir sources.
 
 use fm::FileManager;
-use nargo::package::Package;
-use nargo::workspace::Workspace;
-use nargo::{insert_all_files_for_workspace_into_file_manager, parse_all, prepare_package};
+use nargo::{
+    insert_all_files_for_workspace_into_file_manager, package::Package, parse_all, prepare_package,
+    workspace::Workspace,
+};
 use noirc_driver::{CompileOptions, check_crate};
 use noirc_frontend::hir::ParsedFiles;
 
 use crate::{
     lean::LeanEmitter,
-    noir::WithWarnings,
-    noir::error::compilation::{Error as CompileError, Result as CompileResult},
+    noir::{
+        WithWarnings,
+        error::compilation::{Error as CompileError, Result as CompileResult},
+    },
 };
 
 /// A manager for source files for the Noir project that we intend to extract.
@@ -62,7 +65,6 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
             crate_id,
             &CompileOptions {
                 deny_warnings: false,
-                disable_macros: false,
                 debug_comptime_in_file: None,
                 ..Default::default()
             },
