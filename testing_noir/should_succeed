@@ -176,6 +176,7 @@ execution_success/merkle_insert
 execution_success/brillig_nested_arrays
 execution_success/simple_radix
 execution_success/brillig_block_parameter_liveness
+execution_success/struct_inputs
 noir_test_success/regression_4080
 noir_test_success/brillig_overflow_checks
 noir_test_success/ignored_oracle

@@ -89,7 +89,6 @@ execution_success/fold_numeric_generic_poseidon
 execution_success/higher_order_functions
 execution_success/array_if_cond_simple
 execution_success/bit_shifts_comptime
-execution_success/struct_inputs
 execution_success/array_len
 execution_success/conditional_regression_underflow
 execution_success/to_be_bytes
