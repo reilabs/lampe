@@ -1,18 +1,21 @@
-use crate::error::Error;
-use crate::file_generator::lake::dependency::LeanDependency;
-use crate::file_generator::{LeanFile, NoirPackageIdentifier};
-use crate::noir::WithWarnings;
-use crate::{file_generator, noir};
+use std::{collections::HashMap, fmt::Debug, path::PathBuf};
+
 use fm::FileManager;
 use itertools::Itertools;
-use nargo::package::{Dependency, Package};
-use nargo::workspace::Workspace;
-use nargo_toml::Config;
-use nargo_toml::PackageSelection::All;
+use nargo::{
+    package::{Dependency, Package},
+    workspace::Workspace,
+};
+use nargo_toml::{Config, PackageSelection::All};
 use noirc_frontend::hir::ParsedFiles;
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::path::PathBuf;
+
+use crate::{
+    error::Error,
+    file_generator,
+    file_generator::{lake::dependency::LeanDependency, LeanFile, NoirPackageIdentifier},
+    noir,
+    noir::WithWarnings,
+};
 
 const NONE_DEPENDENCY_VERSION: &str = "0.0.0";
 
@@ -53,11 +56,13 @@ impl Project {
         })
     }
 
-    /// Extracts Noir code as Lean creating Lampe project structure in Noir project.
+    /// Extracts Noir code as Lean creating Lampe project structure in Noir
+    /// project.
     ///
     /// # Errors
     ///
-    /// Will return `Error` if something goes wrong witch compiling, extracting or generating files.
+    /// Will return `Error` if something goes wrong witch compiling, extracting
+    /// or generating files.
     pub fn extract(&self) -> Result<WithWarnings<()>, Error> {
         let noir_project = noir::Project::new(&self.nargo_file_manager, &self.nargo_parsed_files);
 
@@ -100,7 +105,7 @@ impl Project {
         file_generator::lampe_project(
             &self.nargo_workspace.root_dir,
             &NoirPackageIdentifier {
-                name: package_name.clone(),
+                name:    package_name.clone(),
                 version: package_version.clone(),
             },
             &additional_dependencies,
@@ -129,7 +134,7 @@ impl Project {
             let dependency_name = &crate_name.to_string();
             let dependency_config = package_config.dependencies.get(dependency_name).ok_or(
                 Error::MissingDependencyError {
-                    package_name: package.name.to_string().clone(),
+                    package_name:    package.name.to_string().clone(),
                     package_version: package.version.clone(),
                     dependency_name: dependency_name.clone(),
                 },
@@ -184,7 +189,7 @@ impl Project {
             }
 
             let package_identitifer = NoirPackageIdentifier {
-                name: package.name.to_string(),
+                name:    package.name.to_string(),
                 version: package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
             };
 

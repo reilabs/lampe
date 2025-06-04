@@ -1,13 +1,12 @@
+use std::{collections::HashMap, fmt, fmt::Write};
+
 use crate::file_generator::lake::dependency::LeanDependency;
-use std::collections::HashMap;
-use std::fmt;
-use std::fmt::Write;
 
 /// This is Lean's dependency from Reservoir (Lean's package manager).
 #[derive(Debug, Clone)]
 pub struct LeanDependencyReservoir {
-    name: String,
-    scope: Option<String>,
+    name:    String,
+    scope:   Option<String>,
     version: Option<String>,
     options: Option<HashMap<String, String>>,
 }
@@ -21,8 +20,8 @@ impl LeanDependencyReservoirBuilder {
     fn new(name: &str) -> Self {
         Self {
             dependency: LeanDependencyReservoir {
-                name: name.to_string(),
-                scope: None,
+                name:    name.to_string(),
+                scope:   None,
                 version: None,
                 options: None,
             },

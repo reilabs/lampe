@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use noirc_frontend::{Type, hir::def_map::ModuleData, node_interner::NodeInterner};
+use noirc_frontend::{hir::def_map::ModuleData, node_interner::NodeInterner, Type};
 
 pub struct EmitterCtx {
     // Maps an impl parameter type to a type variable name.
     impl_param_overrides: HashMap<Type, String>,
     // Maps an impl return type to the concrete type of the function body.
-    impl_ret_overrides: HashMap<Type, Type>,
+    impl_ret_overrides:   HashMap<Type, Type>,
 }
 
 /// Returns true if and only if `typ` is an `impl` type.

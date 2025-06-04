@@ -5,7 +5,7 @@
 
 # High-level configuration, telling rustfmt which featureset to use.
 edition = "2021"
-version = "Two"
+style_edition = "2021"
 
 # Configuration controlling general code style.
 brace_style = "SameLineWhere"

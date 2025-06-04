@@ -1,10 +1,10 @@
 use noirc_frontend::{
-    Type,
     ast::Ident,
     hir_def::{expr::HirIdent, stmt::HirPattern},
+    Type,
 };
 
-use super::{LeanEmitter, context::EmitterCtx};
+use super::{context::EmitterCtx, LeanEmitter};
 
 #[derive(Clone, Debug)]
 enum PatType {
@@ -12,11 +12,13 @@ enum PatType {
     Struct { struct_type: Type, field: Ident },
 }
 
-/// The context of a pattern which contains all the necessary information to convert a nested `HirPattern::Identifier` pattern into a let (mut) binding.
-/// This means, it contains the stack of tuple and struct patterns that the identifier is nested in, and whether the identifier is mutable.
+/// The context of a pattern which contains all the necessary information to
+/// convert a nested `HirPattern::Identifier` pattern into a let (mut) binding.
+/// This means, it contains the stack of tuple and struct patterns that the
+/// identifier is nested in, and whether the identifier is mutable.
 #[derive(Clone, Debug, Default)]
 struct PatCtx {
-    stack: Vec<PatType>,
+    stack:  Vec<PatType>,
     is_mut: bool,
 }
 
@@ -35,7 +37,12 @@ impl PatCtx {
 }
 
 #[derive(Clone, Debug)]
-struct PatRes(/** lhs **/ HirIdent, /** rhs **/ PatCtx);
+struct PatRes(
+    /// lhs *
+    HirIdent,
+    /// rhs *
+    PatCtx,
+);
 
 fn parse_pattern(pat: &HirPattern, ctx: &mut PatCtx) -> Vec<PatRes> {
     match pat {
@@ -64,7 +71,7 @@ fn parse_pattern(pat: &HirPattern, ctx: &mut PatCtx) -> Vec<PatRes> {
             for (ident, pat) in sub_pats {
                 ctx.push(PatType::Struct {
                     struct_type: struct_type.clone(),
-                    field: ident.clone(),
+                    field:       ident.clone(),
                 });
                 res.extend(parse_pattern(pat, ctx));
                 ctx.pop();
@@ -74,8 +81,10 @@ fn parse_pattern(pat: &HirPattern, ctx: &mut PatCtx) -> Vec<PatRes> {
     }
 }
 
-/// Emits the Lean code corresponding to a Noir pattern as a single `let` or `let mut` binding, along with the `HirIdent` at the lhs of the pattern.
-/// Returns `None` if the pattern is not simple enough to be expressed as a single binding.
+/// Emits the Lean code corresponding to a Noir pattern as a single `let` or
+/// `let mut` binding, along with the `HirIdent` at the lhs of the pattern.
+/// Returns `None` if the pattern is not simple enough to be expressed as a
+/// single binding.
 pub(super) fn try_format_simple_pattern(
     pat: &HirPattern,
     pat_rhs: &str,
@@ -99,7 +108,8 @@ pub(super) fn try_format_simple_pattern(
     }
 }
 
-/// Emits the Lean code corresponding to a Noir pattern as a series of `let` or `let mut` bindings.
+/// Emits the Lean code corresponding to a Noir pattern as a series of `let` or
+/// `let mut` bindings.
 pub(super) fn format_pattern(
     pat: &HirPattern,
     pat_rhs: &str,

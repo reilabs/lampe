@@ -1,11 +1,12 @@
-use crate::file_generator::lean::error::Error::DuplicateWithGeneratedFile;
-use crate::file_generator::lean::error::Result;
-use convert_case::{Case, Casing};
-use itertools::Itertools;
 use std::path::{Path, PathBuf};
 
-/// This structure represents relative path of project's file to easily generate imports and file
-/// paths.
+use convert_case::{Case, Casing};
+use itertools::Itertools;
+
+use crate::file_generator::lean::error::{Error::DuplicateWithGeneratedFile, Result};
+
+/// This structure represents relative path of project's file to easily generate
+/// imports and file paths.
 #[derive(Debug, Eq, Hash, PartialEq)]
 pub struct LeanFilePath {
     segments: Vec<String>,
@@ -55,7 +56,7 @@ type LeanFileContent = String;
 #[derive(Debug)]
 pub struct LeanFile {
     pub file_path: LeanFilePath,
-    pub content: LeanFileContent,
+    pub content:   LeanFileContent,
 }
 
 impl LeanFile {
