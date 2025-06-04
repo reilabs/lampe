@@ -588,7 +588,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         }
     }
 
-    /// Emits the Lean source code corresponding to a resolved generics occuring
+    /// Emits the Lean source code corresponding to a resolved generics occurring
     /// at generic declarations.
     #[allow(clippy::unused_self)]
     pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
