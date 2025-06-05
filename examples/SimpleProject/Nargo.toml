@@ -1,0 +1,4 @@
+[package]
+name = "SimpleProject"
+type = "lib"
+authors = [""]
