@@ -7,6 +7,6 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
-nr_struct_def Skyscraper<> {
+nr_struct_def skyscraper::Skyscraper<> {
 
 }

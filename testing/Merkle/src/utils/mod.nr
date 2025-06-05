@@ -1,15 +1,14 @@
-mod bits;
-mod bytes;
+pub mod bits;
+pub mod bytes;
 
 use crate::globals;
-use crate::globals::RC;
 
-fn rl(u: u8) -> u8 {
+pub fn rl(u: u8) -> u8 {
     let top_bit = u >> 7;
     (u << 1) | top_bit
 }
 
-fn rotate_left(u: u8, N: u8) -> u8 {
+pub fn rotate_left(u: u8, N: u8) -> u8 {
     let mut result = u;
     for _ in 0..N {
         result = rl(result);
@@ -17,7 +16,7 @@ fn rotate_left(u: u8, N: u8) -> u8 {
     result
 }
 
-fn sbox(v: u8) -> u8 {
+pub fn sbox(v: u8) -> u8 {
     let x1 = !v;
     let x2 = rotate_left(x1, 1);
     let x3 = rotate_left(v, 2);
@@ -33,7 +32,7 @@ pub fn sgn0(self: Field) -> u1 {
 }
 
 // NOTE: adapted from stdlib
-fn as_array(self: [u8]) -> [u8; 32] {
+pub fn as_array(self: [u8]) -> [u8; 32] {
     let mut array = [0; 32];
     for i in 0..32 {
         array[i] = self[i];
@@ -41,6 +40,6 @@ fn as_array(self: [u8]) -> [u8; 32] {
     array
 }
 
-fn square(a: Field) -> Field {
+pub fn square(a: Field) -> Field {
     a * a * globals::SIGMA
 }

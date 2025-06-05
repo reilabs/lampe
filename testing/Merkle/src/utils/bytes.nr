@@ -1,7 +1,7 @@
 use crate::utils::bits::to_le_bits;
 
 // NOTE: hacky workaround
-fn to_le_bytes(self: Field) -> [u8; 32] {
+pub fn to_le_bytes(self: Field) -> [u8; 32] {
     let bits = to_le_bits(self);
     let mut bytes: [u8; 32] = [0; 32];
 
@@ -20,7 +20,7 @@ fn to_le_bytes(self: Field) -> [u8; 32] {
 }
 
 // NOTE: adapted from stdlib
-fn from_le_bytes(bytes: [u8; 32]) -> Field {
+pub fn from_le_bytes(bytes: [u8; 32]) -> Field {
     let mut v = 1;
     let mut result = 0;
 

@@ -12,7 +12,6 @@ nr_def «witness»::«weird_assert_eq»<>(a : Field, b : Field) -> Unit {
     let wit =     (@witness::uncons::weird_eq_witness<> as λ(Field, Field) → Field)(a, b);
     #assert(#fEq(wit, a) : bool) : Unit;
     #assert(#fEq(wit, b) : bool) : Unit;
-    skip;
 }
 
 
