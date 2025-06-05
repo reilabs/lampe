@@ -11,12 +11,20 @@ repository = "https://github.com/reilabs/lampe"
 license = "MIT"
 
 [dependencies]
-fm = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
-nargo = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
-nargo_toml = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
-noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
-noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
-noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
+fm = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
+nargo = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
+nargo_toml = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
+noirc_driver = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
+noirc_errors = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
+noirc_frontend = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
+
+# Left behind to enable easier local development when needed
+# fm = { path = "../noir/compiler/fm" }
+# nargo = { path = "../noir/tooling/nargo" }
+# nargo_toml = { path = "../noir/tooling/nargo_toml" }
+# noirc_driver = { path = "../noir/compiler/noirc_driver" }
+# noirc_errors = { path = "../noir/compiler/noirc_errors" }
+# noirc_frontend = { path = "../noir/compiler/noirc_frontend" }
 
 clap = { version = "4.5.17", features = ["unstable-v5"] }
 derivative = "2.2.0"

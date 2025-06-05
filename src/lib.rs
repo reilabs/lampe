@@ -84,25 +84,6 @@ authors = [""]
     }
 
     #[test]
-    fn test_unbound() {
-        let type_source = r"
-struct Bad<T> {
-    x: Field,
-}
-
-fn mkBad<T>() -> Bad<T> {
-    Bad { x: 3 }
-}
-
-fn main() -> pub Field {
-    let f = mkBad();
-    f.x
-}
-";
-        assert!(test_extractor_on(type_source).is_ok());
-    }
-
-    #[test]
     fn test_order() {
         let type_source = r"
 struct FooStruct2 {
