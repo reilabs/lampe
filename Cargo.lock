@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "acir"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acir_field",
  "base64 0.21.7",
@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "acir_field"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "ark-bn254",
  "ark-ff",
@@ -43,7 +43,7 @@ dependencies = [
 [[package]]
 name = "acvm"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -58,7 +58,7 @@ dependencies = [
 [[package]]
 name = "acvm_blackbox_solver"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acir",
  "blake2",
@@ -468,7 +468,7 @@ dependencies = [
 [[package]]
 name = "bn254_blackbox_solver"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -493,7 +493,7 @@ dependencies = [
 [[package]]
 name = "brillig"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acir_field",
  "serde",
@@ -502,7 +502,7 @@ dependencies = [
 [[package]]
 name = "brillig_vm"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -1005,7 +1005,7 @@ dependencies = [
 [[package]]
 name = "fm"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "codespan-reporting",
  "iter-extended",
@@ -1385,7 +1385,7 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 [[package]]
 name = "iter-extended"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 
 [[package]]
 name = "itertools"
@@ -1578,7 +1578,7 @@ checksum = "1d87ecb2933e8aeadb3e3a02b828fed80a7528047e68b4f424523a0981a3a084"
 [[package]]
 name = "nargo"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "fm",
@@ -1602,7 +1602,7 @@ dependencies = [
 [[package]]
 name = "nargo_toml"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "dirs",
  "fm",
@@ -1621,7 +1621,7 @@ dependencies = [
 [[package]]
 name = "noir_greybox_fuzzer"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "build-data",
@@ -1641,7 +1641,7 @@ dependencies = [
 [[package]]
 name = "noir_protobuf"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "color-eyre",
  "prost",
@@ -1650,7 +1650,7 @@ dependencies = [
 [[package]]
 name = "noirc_abi"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "iter-extended",
@@ -1666,12 +1666,12 @@ dependencies = [
 [[package]]
 name = "noirc_arena"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 
 [[package]]
 name = "noirc_artifacts"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "codespan-reporting",
@@ -1686,7 +1686,7 @@ dependencies = [
 [[package]]
 name = "noirc_driver"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "build-data",
@@ -1706,7 +1706,7 @@ dependencies = [
 [[package]]
 name = "noirc_errors"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "base64 0.21.7",
@@ -1724,7 +1724,7 @@ dependencies = [
 [[package]]
 name = "noirc_evaluator"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "bn254_blackbox_solver",
@@ -1753,7 +1753,7 @@ dependencies = [
 [[package]]
 name = "noirc_frontend"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "bn254_blackbox_solver",
@@ -1783,7 +1783,7 @@ dependencies = [
 [[package]]
 name = "noirc_printable_type"
 version = "1.0.0-beta.6"
-source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#ca3d945a121743a639aaa7bcd1219e32b49fc416"
+source = "git+https://github.com/reilabs/noir?branch=lampe-upstream#45803c8b39ed81c2875e46e162498f7297538a9b"
 dependencies = [
  "acvm",
  "iter-extended",

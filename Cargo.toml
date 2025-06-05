@@ -18,6 +18,14 @@ noirc_driver = { git = "https://github.com/reilabs/noir", branch = "lampe-upstre
 noirc_errors = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
 noirc_frontend = { git = "https://github.com/reilabs/noir", branch = "lampe-upstream" }
 
+# Left behind to enable easier local development when needed
+# fm = { path = "../noir/compiler/fm" }
+# nargo = { path = "../noir/tooling/nargo" }
+# nargo_toml = { path = "../noir/tooling/nargo_toml" }
+# noirc_driver = { path = "../noir/compiler/noirc_driver" }
+# noirc_errors = { path = "../noir/compiler/noirc_errors" }
+# noirc_frontend = { path = "../noir/compiler/noirc_frontend" }
+
 clap = { version = "4.5.17", features = ["unstable-v5"] }
 derivative = "2.2.0"
 indoc = "2.0.5"
