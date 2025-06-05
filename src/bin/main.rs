@@ -13,9 +13,8 @@
 
 use std::{fs, panic, path::PathBuf, process::ExitCode};
 
-use clap::{Parser, arg};
-use lampe::noir_error::file;
-use lampe::{Error, Project, noir_error};
+use clap::{arg, Parser};
+use lampe::{noir_error, noir_error::file, Error, Project};
 
 /// The default Noir project path for the CLI to extract from.
 const DEFAULT_NOIR_PROJECT_PATH: &str = "./";
@@ -51,7 +50,8 @@ fn main() -> ExitCode {
     }
 }
 
-/// A particular testing mode for the main function used to run through Noir frontend tests
+/// A particular testing mode for the main function used to run through Noir
+/// frontend tests
 ///
 /// # Errors
 ///

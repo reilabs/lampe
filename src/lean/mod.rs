@@ -15,13 +15,12 @@ use fm::FileId;
 use itertools::Itertools;
 use noirc_errors::Location;
 use noirc_frontend::{
-    Kind, NamedGeneric, ResolvedGeneric, StructField, Type, TypeBinding, TypeBindings,
     ast::{FunctionKind, IntegerBitSize},
     graph::CrateId,
     hir::{
-        Context,
         def_map::{LocalModuleId, ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
+        Context,
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
@@ -30,10 +29,24 @@ use noirc_frontend::{
         traits::{NamedType, TraitImpl},
     },
     node_interner::{
-        DefinitionKind, DependencyId, ExprId, FuncId, GlobalId, StmtId, TraitId, TypeAliasId,
+        DefinitionKind,
+        DependencyId,
+        ExprId,
+        FuncId,
+        GlobalId,
+        StmtId,
+        TraitId,
+        TypeAliasId,
         TypeId,
     },
     shared::Signedness,
+    Kind,
+    NamedGeneric,
+    ResolvedGeneric,
+    StructField,
+    Type,
+    TypeBinding,
+    TypeBindings,
 };
 
 use crate::{
@@ -56,7 +69,7 @@ pub enum EmitOutput {
 
 #[derive(Debug)]
 pub struct TotalEmitOutput {
-    pub type_content: String,
+    pub type_content:  String,
     pub decl_contents: HashMap<FileId, String>,
 }
 
@@ -99,7 +112,7 @@ impl std::fmt::Display for EmitOutput {
 pub struct ModuleEntries {
     pub impl_refs: HashSet<String>,
     pub func_refs: HashSet<String>,
-    pub defs: Vec<(Option<Location>, EmitOutput)>,
+    pub defs:      Vec<(Option<Location>, EmitOutput)>,
 }
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
@@ -594,8 +607,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         }
     }
 
-    /// Emits the Lean source code corresponding to a resolved generics occurring
-    /// at generic declarations.
+    /// Emits the Lean source code corresponding to a resolved generics
+    /// occurring at generic declarations.
     #[allow(clippy::unused_self)]
     pub fn emit_resolved_generic(&self, g: &ResolvedGeneric, _ctx: &EmitterCtx) -> String {
         let (is_num, u_size) = match g.kind() {
@@ -1234,7 +1247,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     _ => (false, name.to_string()),
                                 };
                                 let func_module_id = ModuleId {
-                                    krate: func_meta.source_crate,
+                                    krate:    func_meta.source_crate,
                                     local_id: func_meta.source_module,
                                 };
                                 let fq_mod_name = self.fq_module_name_from_mod_id(func_module_id);
@@ -1407,24 +1420,25 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 // Divide the parameters into simple and complex parameters, where simple
                 // parameters are parameters that can be expressed as a single let or let mut
                 // binding.
-                let (simple_params, complex_params): (Vec<_>, Vec<_>) =
-                    lambda.parameters.iter().enumerate().partition_map(
-                        |(param_idx, (pat, param_typ))| {
-                            let rhs = self.emit_fully_qualified_type(param_typ, ctx);
-                            if let Some((_, lhs)) =
-                                pattern::try_format_simple_pattern(pat, "", self, ctx)
-                            {
-                                // If the parameter is simple, we can directly use the ident as the lhs.
-                                let lhs = self.context.def_interner.definition_name(lhs.id);
-                                itertools::Either::Left(format!("{lhs} : {rhs}"))
-                            } else {
-                                // If the parameter is complex, we need to generate a fresh binding for
-                                // it.
-                                let lhs = format!("π{param_idx}");
-                                itertools::Either::Right((pat.clone(), lhs, rhs))
-                            }
-                        },
-                    );
+                let (simple_params, complex_params): (Vec<_>, Vec<_>) = lambda
+                    .parameters
+                    .iter()
+                    .enumerate()
+                    .partition_map(|(param_idx, (pat, param_typ))| {
+                        let rhs = self.emit_fully_qualified_type(param_typ, ctx);
+                        if let Some((_, lhs)) =
+                            pattern::try_format_simple_pattern(pat, "", self, ctx)
+                        {
+                            // If the parameter is simple, we can directly use the ident as the lhs.
+                            let lhs = self.context.def_interner.definition_name(lhs.id);
+                            itertools::Either::Left(format!("{lhs} : {rhs}"))
+                        } else {
+                            // If the parameter is complex, we need to generate a fresh binding for
+                            // it.
+                            let lhs = format!("π{param_idx}");
+                            itertools::Either::Right((pat.clone(), lhs, rhs))
+                        }
+                    });
                 // Convert the parameters into strings.
                 let params_str = complex_params
                     .iter()
@@ -1856,12 +1870,12 @@ fn substitute_bindings(typ: &Type, bindings: &TypeBindings) -> Type {
                     .iter()
                     .map(|t| substitute_bindings(t, bindings))
                     .collect(),
-                named: generics
+                named:   generics
                     .named
                     .iter()
                     .map(|t| NamedType {
                         name: t.name.clone(),
-                        typ: substitute_bindings(&t.typ, bindings),
+                        typ:  substitute_bindings(&t.typ, bindings),
                     })
                     .collect(),
             },

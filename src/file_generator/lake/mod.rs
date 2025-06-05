@@ -1,11 +1,16 @@
-//! This module contains functionality for generating lake's (lean's project manager).
+//! This module contains functionality for generating lake's (lean's project
+//! manager).
 
-use crate::file_generator::lake::dependency::{LeanDependency, LeanDependencyGit};
-use crate::file_generator::{Error, LAMPE_GENERATED_COMMENT, NoirPackageIdentifier};
+use std::{fmt::Write, fs, path::Path};
+
 use serde::Deserialize;
-use std::fmt::Write;
-use std::fs;
-use std::path::Path;
+
+use crate::file_generator::{
+    lake::dependency::{LeanDependency, LeanDependencyGit},
+    Error,
+    NoirPackageIdentifier,
+    LAMPE_GENERATED_COMMENT,
+};
 
 pub mod dependency;
 

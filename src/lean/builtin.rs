@@ -1,7 +1,8 @@
 use noirc_frontend::{
-    Type, TypeBinding,
     ast::{BinaryOpKind, IntegerBitSize, UnaryOp},
     shared::Signedness,
+    Type,
+    TypeBinding,
 };
 
 pub type BuiltinName = String;
