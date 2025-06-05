@@ -126,7 +126,7 @@ theorem recover_intro {H N idx proof item}
   all_goals simp
 
 theorem rl_intro : STHoare lp env ⟦⟧
-    (rl.call h![] h![input])
+    («utils::rl».call h![] h![input])
     fun output => output = Ref.rl input := by
   enter_decl
   steps
@@ -134,10 +134,9 @@ theorem rl_intro : STHoare lp env ⟦⟧
   rfl
 
 theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
-      (rotate_left.call h![] h![input, N])
+      («utils::rotate_left».call h![] h![input, N])
       fun output => output = Ref.rotateLeft input N := by
   enter_decl
-  simp only [rotate_left]
   steps
   loop_inv fun i _ _ => [result ↦ ⟨Tp.u 8, Nat.repeat Ref.rl i.toNat input⟩]
   change 0 ≤ N
@@ -155,18 +154,16 @@ theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
   · steps
     simp_all [Ref.rotateLeft]
 
-theorem sbox_intro : STHoare lp env ⟦⟧ (sbox.call h![] h![input])
+theorem sbox_intro : STHoare lp env ⟦⟧ («utils::sbox».call h![] h![input])
     fun output => output = Ref.sbox input := by
   enter_decl
-  simp only [Extracted.sbox]
   steps [rotate_left_intro]
   · subst_vars; rfl
   all_goals decide
 
-theorem sgn0_intro : STHoare lp env ⟦⟧ (sgn0.call h![] h![input])
+theorem sgn0_intro : STHoare lp env ⟦⟧ («utils::sgn0».call h![] h![input])
     fun (output: BitVec 1) => output = input.val % 2 := by
   enter_decl
-  simp only [sgn0]
   steps
   simp_all
 
@@ -207,9 +204,8 @@ lemma Fp.cast_u {s P} {v : Fp P} : (v.cast : U s) = BitVec.ofNat s (v.val) := by
 
 set_option maxRecDepth 10000 in
 set_option maxHeartbeats 2000000 in
-theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ (to_le_bits.call h![] h![input]) fun v => v = Fp.toBitsLE 256 input := by
+theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_bits».call h![] h![input]) fun v => v = Fp.toBitsLE 256 input := by
     enter_decl
-    simp only [to_le_bits]
     steps
 
     enter_block_as v =>
@@ -287,7 +283,7 @@ lemma Int.castBitVec_ofNat {p} {n : Nat} : (Int.cast (OfNat.ofNat n) : Tp.denote
 
 set_option maxRecDepth 10000 in
 set_option maxHeartbeats 2000000 in
-theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (to_le_bytes.call h![] h![input]) fun v => v = Fp.toBytesLE 32 input := by
+theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::to_le_bytes».call h![] h![input]) fun v => v = Fp.toBytesLE 32 input := by
   enter_decl
   steps [to_le_bits_intro]
   enter_block_as =>
@@ -360,7 +356,7 @@ theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ (to_le_bytes.call h![]
 
 set_option maxRecDepth 10000 in
 set_option maxHeartbeats 2000000 in
-theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (from_le_bytes.call h![] h![input])
+theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::from_le_bytes».call h![] h![input])
     fun output => output = Lampe.Fp.ofBytesLE input.toList := by
   enter_decl
   steps
@@ -391,10 +387,9 @@ theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ (from_le_bytes.call 
   · simp
 
 theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧
-    (as_array.call h![] h![input])
+    («utils::as_array».call h![] h![input])
     fun output => output = ⟨input, hi⟩ := by
   enter_decl
-  simp only [as_array]
   steps
   loop_inv fun i _ _ => [array ↦ ⟨Tp.array (Tp.u 8) 32, List.Vector.pad ⟨input.takeD i.toNat 0#8, List.takeD_length i.toNat _ _⟩ 32 0#8⟩]
   · decide
@@ -436,10 +431,9 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧
   simp only [←hi, Int.cast, IntCast.intCast, BitVec.ofInt, List.takeD_eq_take, this, List.take_length]
 
 set_option maxHeartbeats 3000000000000
-theorem bar_intro : STHoare lp env ⟦⟧ (bar.call h![] h![input])
+theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
     fun output => output = Ref.bar input := by
   enter_decl
-  simp only [Extracted.bar]
   steps [to_le_bytes_intro]
 
   enter_block_as
@@ -598,7 +592,7 @@ theorem rc_intro : STHoare lp env (⟦⟧)
   rfl
 
 theorem square_intro : STHoare lp env (⟦⟧)
-    (Expr.call [Tp.field] Tp.field (FuncRef.decl "square" [] HList.nil) h![input])
+    (Expr.call [Tp.field] Tp.field (FuncRef.decl "utils::square" [] HList.nil) h![input])
       fun output => output = Ref.square input := by
   enter_decl
   steps [sigma_intro]
@@ -606,7 +600,8 @@ theorem square_intro : STHoare lp env (⟦⟧)
   subst_vars
   rfl
 
-theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "permute" [] HList.nil) h![i])
+theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2)
+  (FuncRef.decl "permute::permute" [] HList.nil) h![i])
     fun output => output = (Ref.State.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Ref.State.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
   enter_decl
   cases i using List.Vector.casesOn with | cons _ i =>
@@ -622,14 +617,15 @@ instance {α H n} : Membership α (MerkleTree α H n) where
   mem t e := ∃p, e = MerkleTree.itemAt t p
 
 lemma SkyscraperHash_correct: STHoare lp env ⟦⟧ (Expr.call [Tp.field, Tp.field] Tp.field
-          (FuncRef.trait (some $ «struct#Skyscraper».tp h![]) "BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b]) (fun v => v = Ref.State.compress ⟨[a, b], rfl⟩) := by
+          (FuncRef.trait (some $ «struct#skyscraper::Skyscraper».tp h![]) "BinaryHasher"
+          [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b]) (fun v => v = Ref.State.compress ⟨[a, b], rfl⟩) := by
   enter_trait [] env
   steps [permute_intro]
   casesm*∃_,_
   subst_vars
   congr 1
 
-lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ (weird_assert_eq.call h![] h![a, b]) (fun _ => a = b) := by
+lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ («witness::weird_assert_eq».call h![] h![a, b]) (fun _ => a = b) := by
   enter_decl
   steps
   enter_block_as (⟦⟧) (fun _ => ⟦⟧)
@@ -644,7 +640,7 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : Merk
         (main.call h![] h![tree.root, proof, item, index])
         (fun _ => item ∈ tree) := by
   enter_decl
-  steps [recover_intro (H:= «struct#Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
+  steps [recover_intro (H:= «struct#skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
   use index.reverse
   subst_vars
   rename tree.root = _ => hroot
