@@ -2,7 +2,7 @@ use crate::bar::bar;
 use crate::globals::RC;
 use crate::utils::square;
 
-fn permute(s: [Field; 2]) -> [Field; 2] {
+pub fn permute(s: [Field; 2]) -> [Field; 2] {
     let (l, r) = (s[0], s[1]);
     let (l, r) = (r + square(l), l);
     let (l, r) = (r + square(l) + RC[0], l);

@@ -8,7 +8,7 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
-nr_def «witness»::«uncons»::«weird_eq_witness»<>(a : Field, b : Field) -> Field {
+nr_def «witness»::«uncons»::«weird_eq_witness»<>(a : Field, _b : Field) -> Field {
     #fresh() : Field
 }
 

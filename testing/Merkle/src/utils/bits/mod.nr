@@ -1,7 +1,7 @@
 use super::sgn0;
 
 // NOTE: hacky workaround
-fn to_le_bits(self: Field) -> [u1; 256] {
+pub fn to_le_bits(self: Field) -> [u1; 256] {
     let mut val = self;
     let mut bits: [u1; 256] = [0; 256];
 
