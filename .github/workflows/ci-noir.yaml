@@ -6,6 +6,7 @@ on:
 
 jobs:
     run-tests:
+      name: "Test Noir"
       runs-on: ubuntu-latest
       steps:
           - name: Checkout Noir repo
