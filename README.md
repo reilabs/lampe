@@ -9,42 +9,51 @@ Noir.
 
 ## Installation
 
-Lampe is being installed by cloning repository and compiling its code. For that rust is required to be present on the
-machine. To do so follow instructions on official rust website to install `rustup` tool [link](https://www.rust-lang.org/tools/install).
+At the current time, Lampe can be installed by cloning this repository and building its code. In
+order to do so you will need:
 
-To install `lampe` cli standard `cargo install` command is used ([doc](https://doc.rust-lang.org/cargo/commands/cargo-install.html)). Then you can install specific rust version
-used by lampe with command `rustup install`. Next steps are to download repository and install lampe with standard
-`cargo install` command. To do so:
+- **Rust:** Best installed via [rustup](https://www.rust-lang.org/tools/install) using the official
+  instructions.
+- **Lean:** Best installed via [elan](https://github.com/leanprover/elan) by following the
+  instructions in the repository.
 
-```bash
-git clone https://github.com/reilabs/lampe
-cd lampe
-rustup install
-cargo install
-```
+To install and test the `lampe` tool, please ensure that you have both Rust's `cargo` and Lean's
+`lake` available on your path, and then perform the following steps.
 
-Now you should be able to call `lampe`. Next step is to install Lean to be able to run proofs. To do so follow
-instructions on official Lean website [link](https://lean-lang.org/documentation/setup/). After that you are ready
-to play with Lampe!
+1. **Clone the Repository:** You can clone the repository onto your local machine as follows. Use an
+   HTTPS URL by default, but if you intend to contribute we recommend using an SSH remote instead.
+
+   ```bash
+   git clone https://github.com/reilabs/lampe lampe
+   ```
+
+2. **Set Up the Rust Version:** Enter the directory using `cd lampe` and run `rustup install` to set
+   up the correct rust toolchain.
+
+3. **Build the Lampe CLI:** Run `cargo install` to build the CLI and make it available on your path.
+
+4. **Build the Lean Project:** While not strictly necessary at this stage, this will ensure that you
+   have all the necessary dependencies and the correct lean toolchain. Please be aware that this
+   build can take _a long time_ as the library and its dependencies are very complex.
+
+   ```bash
+   cd Lampe
+   lake build
+   ```
 
 ## Usage
 
-Just go to your noir's project directory and then run `lampe` command.
+At this stage you should be able to execute the `lampe` CLI, with the `lampe` command available on
+your path.
 
-Command help:
+1. **Find Your Project:** Start by entering the directory containing your Noir project. It should
+   contain a `Nargo.toml` file and the standard project structure.
+2. **Extract the Project:** You can run the `lampe` CLI with no arguments to extract a project in
+   the current directory. For more detailed usage information of the CLI, run `lampe --help`.
 
-```bash
-A utility to extract Noir code to Lean in order to enable the formal verification of Noir programs
-
-Usage: lampe [OPTIONS]
-
-Options:
-      --root <PATH>  The root of the Noir project to extract [default: ./]
-      --test-mode    Testing mode?
-  -h, --help         Print help
-```
-
-It will generate `lampe` directory inside with generated code. The generated structure is:
+Running this command will create a `lampe` directory in the same directory as your project,
+containing the Lean code generated from extracting your Noir project. The generated code will follow
+a structure similar to the below.
 
 ```
 +- <package-name>-<package-version>-
@@ -66,33 +75,33 @@ It will generate `lampe` directory inside with generated code. The generated str
 +-- lean-toolchain
 ```
 
-For now, we do not yet defined flow for rerunning extraction on the project. The simplest option is to remove Extracted
-directory as well as `lakefile.toml` and run `lampe` command again.
+At the current time the `lampe` tool does not support re-running project extraction. If you want to
+do so, please remove the `./lampe/Extracted` directory and re-run the `lampe` command.
 
-### Creating simple proof
+### Creating a Simple Proof
 
-Very simple example can be found in `examples/SimpleProject` directory. It defines very small Noir project with a small
-`return_one` function that as name suggests returns `1`. In the project there is already generated Lampe project in
-`lampe` directory. Main `SimpleProject-0.0.0.lean` file contains added (not generated) single proof that checks
-if `return_one` function actually returns `1`.
+Creating a proof of Noir code using Lampe involves using the theorem proving capabilities of the
+[Lean](https://lean-lang.org) language. From a very high level, it involves stating _theorems_ about
+the behavior of the Lean code, and then using _tactics_ to prove that these theorems actually do
+hold. Teaching Lean is beyond the scope of this guide, but we recommend looking at
+[Functional Programming in Lean](https://lean-lang.org/functional_programming_in_lean/) and
+[Theorem Proving in Lean](https://lean-lang.org/theorem_proving_in_lean4/) as introductions to doing
+such tasks.
 
-```lean4
--- Passing proper env is very important as the struct contains inside
--- all extracted definitions from Noir project. Using wrong env may
--- result in errors that particular name cannot be found.
-theorem t {lp}: STHoare lp «SimpleProject-0.0.0».Extracted.env (⟦⟧)
-    («SimpleProject-0.0.0».Extracted.return_one.call h![] h![])
-      fun output => output = (1 : Fp lp) := by -- here we define what we want to proof
-  enter_decl
-  simp only [«SimpleProject-0.0.0».Extracted.return_one]
-  steps []
-  subst_vars
-  rfl
-```
+A very simple example can be found in the `Examples/SimpleProject` directory of this repository. It
+defines a very small Noir project with a single function called `return_one` which does exactly what
+its name suggests. In this project we have committed a pre-extracted Lampe project, which can be
+found in the `lampe` subdirectory as described above.
+
+By way of demonstration, we have included a small proof of a theorem that states that `return_one`
+does indeed return the value `1`. You can view this proof in
+[`SimpleProject-0.0.0.lean`](./Examples/SimpleProject/lampe/SimpleProject-0.0.0.lean), which is
+commented to describe what it does.
 
 ## Contributing
 
-If you want to contribute code or documentation (non-code contributions are always welcome) to this
-project, please take a look at our [contributing](./docs/CONTRIBUTING.md) documentation. It provides
-an overview of how to get up and running, as well as what the contribution process looks like for
-this repository.
+If you would like to contribute code or documentation (non-code contributions are _always_ welcome)
+to this repository, please take a look at our [contributing](./docs/CONTRIBUTING.md) documentation.
+It provides an overview of how to get up and running, as well as what the contribution process looks
+like for this repository.
+

@@ -7,14 +7,42 @@ namespace «SimpleProject-0.0.0»
 
 open Lampe
 
--- Passing proper env is very important as the struct contains inside
--- all extracted definitions from Noir project. Using wrong env may
--- result in errors that particular name cannot be found.
-theorem t {lp}: STHoare lp «SimpleProject-0.0.0».Extracted.env (⟦⟧)
+-- This theorem definition states that the process of calling our function 
+-- `return_one` will unconditionally return the value `1`. We can break down
+-- the statement of this theorem as follows:
+-- 
+-- - `{lp}` defines the field under which we are operating in terms of the prime
+--   for that field.
+-- - `STHoare lp Γ P e Q` is what is known as a "hoare triple" over the prime
+--   `lp`. This says that if we have the environment `Γ` where the program state
+--   satisfies some precondition `P`, then the expression `e` is evaluated and
+--   terminates such that the post-condition `Q` holds.
+-- - We define our `Γ` as the environment extracted from the Noir code, which is
+--   hence the correct environment for calling our `return_one` function.
+-- - Here we have an empty precondition `P = ⟦⟧`, as we want to prove something
+--   about _any_ usage of the `return_one` function.
+-- - We define our expression `e = <snip>.return_one.call h![] h![]`, namely the
+--   act of calling the function `return_one` with no generics and no arguments.
+-- - Finally, we say `Q = fun output => output = (1 : Fp lp)`: that the function
+--   _always_ returns 1, no matter where or how it is called.
+--
+-- At this point, we have clearly stated the behavior that we expect from out
+-- `return_one` function, but that alone is not enough. We have to convince Lean
+-- that the extracted definition truly _does_ satisfy this property.
+--
+-- This is done using _tactics_, a set of interactive steps that help move Lean
+-- toward the goal of proving it. We start the proof using the `by` keyword, and
+-- call a variety of tactics (as you can see below) to prove the theorem.
+--
+-- Once we are done, the theorem proves successfully with _all goals_ completed,
+-- and hence we know that our `return_one` function behaves as we have specified
+-- in our theorem.
+theorem return_one_returns_one {lp}: STHoare lp «SimpleProject-0.0.0».Extracted.env (⟦⟧)
     («SimpleProject-0.0.0».Extracted.return_one.call h![] h![])
-      fun output => output = (1 : Fp lp) := by -- here we define what we want to proof
+      fun output => output = (1 : Fp lp) := by
   enter_decl
   simp only [«SimpleProject-0.0.0».Extracted.return_one]
   steps []
   subst_vars
   rfl
+
