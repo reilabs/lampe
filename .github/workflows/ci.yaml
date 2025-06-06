@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 jobs:
   build-lake:
+    name: "Build Lean"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch (sparse)
@@ -36,6 +37,7 @@ jobs:
         run: lake test
 
   build-cargo:
+    name: "Build Rust"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
@@ -74,6 +76,7 @@ jobs:
           args: --all -- --check
 
   test-cargo:
+    name: "Test Rust"
     needs: build-cargo
     runs-on: ubuntu-latest
     steps:
@@ -97,6 +100,7 @@ jobs:
         run: RUSTFLAGS="-Dwarnings" cargo clippy
 
   end-to-end:
+    name: "E2E Tests"
     needs: [ build-lake, build-cargo ]
     runs-on: ubuntu-latest
     steps:
