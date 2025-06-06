@@ -69,7 +69,7 @@ nr_def «experiments»::«check»<>(x : u8) -> Unit {
 }
 
 nr_trait_impl[impl_429] <T> std::default::Default<> for experiments::Option2<T> where  {
-    fn «experiments»::«default»<> () -> experiments::Option2<T> {
+    fn «default»<> () -> experiments::Option2<T> {
         (@experiments::Option2::none<T> as λ() → experiments::Option2<T>)();
 }
 }
@@ -91,13 +91,13 @@ nr_def «experiments»::«Option2»::«is_some»<T>(self : experiments::Option2<
 }
 
 nr_trait_impl[impl_430] <T> experiments::MyTrait<> for experiments::Option2<T> where  {
-    fn «experiments»::«foo»<> (self : experiments::Option2<T>) -> experiments::Option2<T> {
+    fn «foo»<> (self : experiments::Option2<T>) -> experiments::Option2<T> {
         self;
 }
 }
 
 nr_trait_impl[impl_431] <T> experiments::MyTrait<> for `(T, bool) where T : MyTrait<> {
-    fn «experiments»::«foo»<> (self : `(T, bool)) -> `(T, bool) {
+    fn «foo»<> (self : `(T, bool)) -> `(T, bool) {
         self;
 }
 }
