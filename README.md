@@ -95,7 +95,7 @@ found in the `lampe` subdirectory as described above.
 
 By way of demonstration, we have included a small proof of a theorem that states that `return_one`
 does indeed return the value `1`. You can view this proof in
-[`SimpleProject-0.0.0.lean`](./Examples/SimpleProject/lampe/SimpleProject-0.0.0.lean), which is
+[`SimpleProject-0.0.0.lean`](./testing/SimpleProject/lampe/SimpleProject-0.0.0.lean), which is
 commented to describe what it does.
 
 ## Contributing
