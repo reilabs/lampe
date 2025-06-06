@@ -771,12 +771,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         func: FuncId,
         ctx: &EmitterCtx,
     ) -> Result<String> {
-        // [TODO] signature generation should be moved to a separate function that is
-        // also called from `emit_free_function_def`.
+        // This signature generation is explicitly DIFFERENT to the one used for
+        // free functions. We never want to qualify the name of the trait function
+        // here.
         let func_meta = self.context.function_meta(&func);
-        let fq_path = self
-            .context
-            .fully_qualified_function_name(&func_meta.source_crate, &func);
+        let fq_path = self.context.function_name(&func);
+
         // The parameters whose type must be replaced by a type variable should be
         // appended to the list of generics.
         let impl_generics = func_meta
@@ -803,7 +803,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         ind.dedent()?;
 
         Ok(syntax::format_trait_function_def(
-            &fq_path,
+            fq_path,
             &generics_string,
             &parameters,
             &ret_type,
