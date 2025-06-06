@@ -49,13 +49,13 @@ RUST_MIN_STACK=16777216 cargo test
 
 ### End to End Tests
 
-Otherwise known as the "extraction tests", these tests consist of a [set](../Examples/) of Noir
+Otherwise known as the "extraction tests", these tests consist of a [set](../testing/) of Noir
 projects that contain constructs that we want to ensure should work. Each of these tests takes the
 Noir project and extracts it to Lean code, and then this code is compiled to ensure that it does not
 produce errors and that it has the correct output. Some of these E2E tests (such as the
-[Merkle](../Examples/Merkle/) one) feature theorems that have been proven about the Noir code.
+[Merkle](../testing/Merkle/) one) feature theorems that have been proven about the Noir code.
 
-These tests can be executed by using the `./Examples/test.sh` script. See `./Examples/test.sh -h`
+These tests can be executed by using the `./testing/test.sh` script. See `./testing/test.sh -h`
 for usage examples, but running the script without arguments will execute all of the tests. The
 test script ensures that the extraction matches the committed extraction, to ensure that we are
 not running into correct extractions that have nevertheless changed without our knowledge.

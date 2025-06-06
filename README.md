@@ -88,7 +88,7 @@ hold. Teaching Lean is beyond the scope of this guide, but we recommend looking 
 [Theorem Proving in Lean](https://lean-lang.org/theorem_proving_in_lean4/) as introductions to doing
 such tasks.
 
-A very simple example can be found in the `Examples/SimpleProject` directory of this repository. It
+A very simple example can be found in the `examples/SimpleProject` directory of this repository. It
 defines a very small Noir project with a single function called `return_one` which does exactly what
 its name suggests. In this project we have committed a pre-extracted Lampe project, which can be
 found in the `lampe` subdirectory as described above.
