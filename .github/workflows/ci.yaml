@@ -121,4 +121,4 @@ jobs:
           lake-package-directory: lampe/Lampe
       - name: Run test script
         working-directory: lampe
-        run: ./Examples/test.sh --ci
+        run: ./testing/test.sh --ci
