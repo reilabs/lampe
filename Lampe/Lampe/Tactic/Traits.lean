@@ -8,7 +8,7 @@ open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 def applyImpl (goal : MVarId) (impl : TSyntax `term) (generics : List $ TSyntax `term) : TacticM $ List MVarId := do
   let generics ← Lampe.mkHListLit generics
   let newGoals ← evalTacticAt (←`(tactic|
-    apply Lampe.TraitResolution.ok (impl := $impl) (implGenerics := $generics) (h_mem := by tauto) <;> (first | rfl | tauto)
+    apply Lampe.TraitResolution.ok (impl := $impl) (implGenerics := $generics) (h_mem := by try tauto) <;> (first | rfl | tauto)
   )) goal
   pure newGoals
 
@@ -41,7 +41,29 @@ partial def extractImpls (expr : Lean.Expr) : TacticM $ List (TSyntax `term) := 
     let implSyn ← extractImpl implExpr
     pure (implSyn :: (← extractImpls rem))
   | .app (.const `List.nil _) _ => pure []
-  | _ => throwError s!"failed to match with {expr}"
+  | _ => throwError s!"failed to match with {expr} in trait extraction"
+
+def extractAllImpls (envExprs : List Expr) : TacticM $ List (TSyntax `term) :=
+  envExprs.foldlM (init := [])
+    fun acc envExpr => extractImpls envExpr >>= fun impls => pure (acc ++ impls)
+
+partial def extractEnvs (expr : Expr) : TacticM $ List Expr := do
+  if expr.isAppOf `HAppend.hAppend then
+    let args := expr.getAppArgs
+    let env₁ := args[4]!
+    let env₂ := args[5]!
+    return (← extractEnvs env₁) ++ (← extractEnvs env₂)
+
+  let reducedExpr ← unfoldDefinition expr
+  if reducedExpr.isAppOf `Lampe.Env.mk then
+    return [expr]
+  else if reducedExpr.isAppOf `HAppend.hAppend then
+    let args := reducedExpr.getAppArgs
+    let env₁ := args[4]!
+    let env₂ := args[5]!
+    return (← extractEnvs env₁) ++ (← extractEnvs env₂)
+  else
+    throwError s!"Failed to match with {reducedExpr} in env extraction"
 
 syntax "apply_impl" "[" term,* "]" term : tactic
 syntax "try_impls" "[" term,* "]" "[" term,* "]" : tactic
@@ -84,5 +106,6 @@ try_impls_all [Tp.field] env -- tries `t1` and `t2` with impl generics instantia
 -/
 elab "try_impls_all" "[" generics:term,* "]" envSyn:term : tactic => do
   let envExpr ← elabTerm envSyn none
-  let impls ← extractImpls envExpr
+  let envs ← extractEnvs envExpr
+  let impls ← extractAllImpls envs
   tryImpls impls generics.getElems.toList
