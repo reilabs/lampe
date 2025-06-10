@@ -387,6 +387,187 @@ macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|
   apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn)
                                (by rfl) (by rfl) (by rfl) (by rfl); simp only)
 
+#check TraitResolution.ok
+#check TraitImpl.impl
+#check callTrait_direct_intro
+
+def getAllFuncs (env : Env) (generics: HList Kind.denote h) : List (Lampe.Ident × Function) :=
+  let traits := env.traits
+  env.traits.flatMap fun (_, traitImpl) =>
+    if theyMatch : traitImpl.implGenericKinds = h then traitImpl.impl (theyMatch ▸ generics) else []
+
+elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
+  let envExpr ← elabTerm env none
+  let impls ← extractImpls envExpr
+
+  let generics ← Lampe.mkHListLit generics.getElems.toList
+
+  let oldState ← saveState
+  let mainGoal ← getMainGoal
+  for impl in impls do
+    let implExpr ← elabTerm impl none
+    let implExprImpls ← whnf (← mkAppM `Lampe.TraitImpl.impl #[implExpr])
+    let funcList ← whnf (implExprImpls.app (← elabTerm generics none))
+    let (_, funcs) ← liftOption funcList.listLit?
+
+    for func in funcs do
+      let funcArgs := func.getAppArgs
+      let funcFunc := funcArgs.reverse[0]!
+      dbg_trace funcArgs
+      dbg_trace func
+      dbg_trace funcFunc
+
+      let asdf ← mkListLit impls
+
+      let callDirectGoals ← evalTacticAt (←`(tactic|
+        apply callTrait_direct_intro (func := $(←funcFunc.toSyntax)) (impls := $asdf)
+      )) mainGoal
+      let traitResGoal := callDirectGoals[0]!
+
+      pushGoals callDirectGoals
+      -- for goal in callDirectGoals.drop 1 do
+      --   let newGoals ← evalTacticAt (← `(tactic| first | try tauto | try with_unfolding_all rfl)) goal
+      --   pushGoals newGoals
+
+      -- let traitResGoals ← evalTacticAt (←`(tactic|
+      --   apply Lampe.TraitResolution.ok (impl := $impl) (implGenerics := $generics) (h_mem := by tauto)
+      --     <;> (first | try tauto | try with_unfolding_all rfl)
+      -- )) traitResGoal
+
+      -- pushGoals traitResGoals
+
+    -- let traitResGoals ← traitResGoal.applyConst `Lampe.TraitResolution.ok
+    -- pushGoals traitResGoals
+
+    -- for goal in traitResGoals do
+    --   let goals ← evalTacticAt (←`(tactic| first | try tauto | with_unfolding_all rfl)) goal
+    --   pure ()
+
+
+    -- pushGoals newGoals
+
+    -- let x ← elabTerm impl none
+    -- let traitImplMVar ← mkFreshExprMVar
+    -- pushGoal traitImplMVar
+
+  -- match impls with
+  -- | impl :: impls => do
+  --   let x ← instantiateMVars (← elabTerm impl none)
+  --   dbg_trace x
+  -- | [] => throwError "no impl applies"
+
+  -- let oldState ← saveState
+
+#check MVarId.applySymm
+
+def testLambda {rep} : Lambda rep where
+  argTps := [Tp.field]
+  outTp := Tp.field
+  body _gens := .litNum Tp.field 3
+
+def testFunction : Function := {
+  generics := []
+  body rep gens := testLambda
+}
+
+def testImpl : TraitImpl := {
+  traitGenericKinds := []
+  implGenericKinds := []
+  traitGenerics := fun _h => h![]
+  constraints := fun _h => []
+  self := fun _h => Tp.field
+  impl := fun _h => [("function", testFunction)]
+}
+
+def testEnv : Env := {
+  functions := [],
+  traits := [("Trait", testImpl)]
+}
+example : STHoare p testEnv ⟦⟧
+    (Expr.call (rep := Tp.denote p) [Tp.field] Tp.field
+      (FuncRef.trait (some Tp.field) "Trait" [] h![] "function" [] h![])
+    h![3])
+      fun v => v = (2 : Fp p):= by
+  try_all_traits [] testEnv
+
+
+example : STHoare p testEnv ⟦⟧
+    (Expr.call (rep := Tp.denote p) [Tp.field] Tp.field
+      (FuncRef.trait (some Tp.field) "Trait" [] h![] "function" [] h![])
+    h![3])
+      fun v => v = (2 : Fp p):= by
+  fapply callTrait_direct_intro
+
+  -- This is where we need to find/input the function
+  · have := (testEnv.traits[0].snd.impl h![])[0].snd
+    exact this
+
+  -- This is where we need to find/input the env
+  · have := (testEnv.traits[0].snd.impl h![])
+    exact this
+
+  -- This is creating the `TraitResolution` term
+  · fapply TraitResolution.ok
+    · tauto
+    · with_unfolding_all rfl
+    · with_unfolding_all rfl
+    · with_unfolding_all rfl
+    -- This is where we do some constraint stuff...
+    · tauto
+
+  -- This is where we verify all the properties of the function
+  · with_unfolding_all rfl
+  · with_unfolding_all rfl
+  · with_unfolding_all rfl
+  · with_unfolding_all rfl
+
+  -- and here we continue
+  · simp only
+    sorry
+
+-- example : STHoare p testEnv ⟦⟧
+--     (Expr.call (rep := Tp.denote p) [Tp.field] Tp.field
+--       (FuncRef.trait (some Tp.field) "Trait" [] h![] "function" [] h![])
+--     h![3])
+--       fun v => v = (2 : Fp p):= by
+--     fapply STHoare.callTrait_intro
+--     -- These can all be unified from the funcref call
+--     · exact Tp.field
+--     · exact "Trait"
+--     · exact []
+--     · exact h![]
+--     · exact "function"
+--     · exact []
+--     · exact h![]
+
+--     -- This is where we need to get the function from the env
+--     · have := (testEnv.traits[0].snd.impl h![])[0].snd
+--       exact this
+--     · have := (testEnv.traits[0].snd.impl h![])
+--       exact this
+
+--     -- dispatch this with sl
+--     · sl
+
+--     -- this is where we need to build up a `TraitResolution` term
+--     · apply TraitResolution.ok
+--       · sorry
+--       · sorry
+--       · sorry
+--       · sorry
+--       · sorry
+
+--     -- This is where we show the function is in the environment
+--     · tauto
+--     -- This is where we check the function in the required signature
+--     · with_unfolding_all rfl
+--     · with_unfolding_all rfl
+--     · with_unfolding_all rfl
+
+--     -- and here we continue
+--     · simp only
+--       sorry
+
 theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
   apply hp v
 theorem enter_block H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
