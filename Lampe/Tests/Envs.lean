@@ -51,16 +51,16 @@ def emptyEnv : Env := ⟨[], []⟩
 def finalEnv : Env := ⟨[both_trait_call], [trait1u8]⟩
 
 def compoundEnv : Env := funcEnv ++ traitEnv ++ emptyEnv ++ traitEnv2 ++ finalEnv
-def simpleEnv : Env := ⟨[foo, both_trait_call], [trait1Field]⟩
+def simpleEnv : Env := ⟨[foo, both_trait_call], [trait1Field, trait2u8, trait1u8]⟩
 
 example {p} {arg : Tp.denote p Tp.field} :
-    STHoare p simpleEnv ⟦⟧ (simple_trait_call.fn.body _ h![.field] |>.body h![arg])
+    STHoare p compoundEnv ⟦⟧ (simple_trait_call.fn.body _ h![.field] |>.body h![arg])
     fun v => v = 2 * arg := by
   simp only [simple_trait_call]
   steps
 
   enter_block_as (⟦⟧) (fun v => v = 2 * arg)
-  · try_all_traits [] simpleEnv -- enter_trait [] simpleEnv
+  · try_all_traits [] compoundEnv -- enter_trait [] simpleEnv
     steps
     subst_vars
     ring
@@ -78,12 +78,12 @@ example {p} {arg : Tp.denote p Tp.field} :
   rfl
 
 example {p} :
-    STHoare p simpleEnv ⟦⟧ (other_trait_call.fn.body _ h![] |>.body h![arg])
+    STHoare p compoundEnv ⟦⟧ (other_trait_call.fn.body _ h![] |>.body h![arg])
     fun v => v = (3 : U 8) := by
   simp only [other_trait_call]
   steps
   enter_block_as (⟦⟧) (fun v => v = (3 : U 8))
-  · enter_trait [] simpleEnv
+  · try_all_traits [] compoundEnv -- enter_trait [] simpleEnv
     steps
     subst_vars; rfl
 
@@ -100,14 +100,18 @@ example {p} :
   rfl
 
 example {p} {fieldArg : Fp p}:
-    STHoare p simpleEnv ⟦⟧ (both_trait_call.fn.body _ h![] |>.body h![fieldArg, u8Arg])
+    STHoare p compoundEnv ⟦⟧ (both_trait_call.fn.body _ h![] |>.body h![fieldArg, u8Arg])
     fun v => v = 2 * fieldArg := by
   simp only [both_trait_call]
   steps
   enter_block_as (⟦⟧) (fun v => v = 2 * u8Arg)
-  · enter_trait [] simpleEnv
+  · try_all_traits [] compoundEnv -- enter_trait [] simpleEnv
+    simp only
     steps
-    subst_vars; rfl
+    subst_vars
+    rename_i a
+    cases a
+    subst_vars; bv_decide
 
   steps
   enter_block_as (⟦z = 2 * u8Arg⟧) (fun v => v = 2 * u8Arg)
@@ -120,7 +124,7 @@ example {p} {fieldArg : Fp p}:
   steps
   enter_block_as (⟦z = 2 * u8Arg⟧) (fun v => v = 2 * fieldArg)
   · assumption
-  · enter_trait [] simplEnv
+  · try_all_traits [] compoundEnv -- enter_trait [] simpleEnv
     steps
     subst_vars
     ring
