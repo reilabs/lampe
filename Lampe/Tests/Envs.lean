@@ -60,7 +60,7 @@ example {p} {arg : Tp.denote p Tp.field} :
   steps
 
   enter_block_as (⟦⟧) (fun v => v = 2 * arg)
-  · enter_trait [] simpleEnv
+  · try_all_traits [] simpleEnv -- enter_trait [] simpleEnv
     steps
     subst_vars
     ring
