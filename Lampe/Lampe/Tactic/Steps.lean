@@ -387,78 +387,54 @@ macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|
   apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn)
                                (by rfl) (by rfl) (by rfl) (by rfl); simp only)
 
-#check TraitResolution.ok
-#check TraitImpl.impl
-#check callTrait_direct_intro
-
-def getAllFuncs (env : Env) (generics: HList Kind.denote h) : List (Lampe.Ident × Function) :=
-  let traits := env.traits
-  env.traits.flatMap fun (_, traitImpl) =>
-    if theyMatch : traitImpl.implGenericKinds = h then traitImpl.impl (theyMatch ▸ generics) else []
-
 elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
   let envExpr ← elabTerm env none
   let impls ← extractImpls envExpr
-
   let generics ← Lampe.mkHListLit generics.getElems.toList
-
   let oldState ← saveState
   let mainGoal ← getMainGoal
+
+
   for impl in impls do
     let implExpr ← elabTerm impl none
     let implExprImpls ← whnf (← mkAppM `Lampe.TraitImpl.impl #[implExpr])
-    let funcList ← whnf (implExprImpls.app (← elabTerm generics none))
+    let funcList ← whnf (mkApp implExprImpls (← elabTerm generics none))
     let (_, funcs) ← liftOption funcList.listLit?
 
     for func in funcs do
+      let attemptState ← saveState
+
+
       let funcArgs := func.getAppArgs
       let funcFunc := funcArgs.reverse[0]!
-      dbg_trace funcArgs
-      dbg_trace func
-      dbg_trace funcFunc
 
-      let asdf ← mkListLit impls
+      try
+        let callDirectGoals ← evalTacticAt (←`(tactic|
+          apply callTrait_direct_intro (func := $(←funcFunc.toSyntax))
+        )) mainGoal
 
-      let callDirectGoals ← evalTacticAt (←`(tactic|
-        apply callTrait_direct_intro (func := $(←funcFunc.toSyntax)) (impls := $asdf)
-      )) mainGoal
-      let traitResGoal := callDirectGoals[0]!
+        let traitResGoal := callDirectGoals[0]!
+        let traitResGoals ← evalTacticAt (←`(tactic|
+          apply Lampe.TraitResolution.ok (impl := $impl) (implGenerics := $generics) (h_mem := by tauto)
+        )) traitResGoal
 
-      pushGoals callDirectGoals
-      -- for goal in callDirectGoals.drop 1 do
-      --   let newGoals ← evalTacticAt (← `(tactic| first | try tauto | try with_unfolding_all rfl)) goal
-      --   pushGoals newGoals
+        for goal in callDirectGoals.drop 1 do
+          let newGoals ← evalTacticAt (← `(tactic|
+            first | try tauto | try with_unfolding_all rfl
+          )) goal
+          pushGoals newGoals
 
-      -- let traitResGoals ← evalTacticAt (←`(tactic|
-      --   apply Lampe.TraitResolution.ok (impl := $impl) (implGenerics := $generics) (h_mem := by tauto)
-      --     <;> (first | try tauto | try with_unfolding_all rfl)
-      -- )) traitResGoal
+        for goal in traitResGoals do
+          let goals ← evalTacticAt (←`(tactic| first | try tauto | with_unfolding_all rfl)) goal
+          pushGoals goals
 
-      -- pushGoals traitResGoals
+        if (← getUnsolvedGoals).length == 1 then
+          return
+      catch _ =>
+        attemptState.restore
 
-    -- let traitResGoals ← traitResGoal.applyConst `Lampe.TraitResolution.ok
-    -- pushGoals traitResGoals
-
-    -- for goal in traitResGoals do
-    --   let goals ← evalTacticAt (←`(tactic| first | try tauto | with_unfolding_all rfl)) goal
-    --   pure ()
-
-
-    -- pushGoals newGoals
-
-    -- let x ← elabTerm impl none
-    -- let traitImplMVar ← mkFreshExprMVar
-    -- pushGoal traitImplMVar
-
-  -- match impls with
-  -- | impl :: impls => do
-  --   let x ← instantiateMVars (← elabTerm impl none)
-  --   dbg_trace x
-  -- | [] => throwError "no impl applies"
-
-  -- let oldState ← saveState
-
-#check MVarId.applySymm
+  oldState.restore
+  throwError "No trait implementation could be applied successfully"
 
 def testLambda {rep} : Lambda rep where
   argTps := [Tp.field]
@@ -473,10 +449,10 @@ def testFunction : Function := {
 def testImpl : TraitImpl := {
   traitGenericKinds := []
   implGenericKinds := []
-  traitGenerics := fun _h => h![]
-  constraints := fun _h => []
-  self := fun _h => Tp.field
-  impl := fun _h => [("function", testFunction)]
+  traitGenerics := fun gs => match gs with | h![] => h![]
+  constraints := fun gs => match gs with | h![] => []
+  self := fun gs => match gs with | h![] => Tp.field
+  impl := fun gs => match gs with | h![] => [("function", testFunction)]
 }
 
 def testEnv : Env := {
