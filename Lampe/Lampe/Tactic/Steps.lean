@@ -398,60 +398,62 @@ testImpl.match_1.{2}
 (fun (_ : Unit) => List.cons.{1} (Prod.{0, 1} Lampe.Ident Lampe.Function) (Prod.mk.{0, 1} Lampe.Ident Lampe.Function "function" testFunction) (List.nil.{1} (Prod.{0, 1} Lampe.Ident Lampe.Function)))
 -/
 
+
 elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
   let envExpr ← elabTerm env none
-  let impls ← extractImpls envExpr
+  let envs ← extractEnvs envExpr
+  let impls ← extractAllImpls envs
   let generics ← Lampe.mkHListLit generics.getElems.toList
   let oldState ← saveState
   let mainGoal ← getMainGoal
 
-
   for impl in impls do
     let implExpr ← elabTerm impl none
     let implExprImpls ← whnf (← mkAppM `Lampe.TraitImpl.impl #[implExpr])
-    let funcList ← whnf (mkApp implExprImpls (← elabTerm generics none))
-
-    -- dbg_trace (← instantiateExprMVars funcList)
-    -- match ←funcList.toSyntax with
-    -- | `(mat)
-
-    let listBody := funcList.getArg! 2
-
-    dbg_trace listBody
+    let funcList ← (withAtLeastTransparency .all (whnf (mkApp implExprImpls (← elabTerm generics
+    none))))
 
     let (_, funcs) ← liftOption funcList.listLit?
+    dbg_trace "trying impl"
 
     for func in funcs do
-      let attemptState ← saveState
-
-
+      dbg_trace "trying func"
       let funcArgs := func.getAppArgs
       let funcFunc := funcArgs.reverse[0]!
 
       try
+        dbg_trace "1: {(← getUnsolvedGoals).length}"
         let callDirectGoals ← evalTacticAt (←`(tactic|
           apply callTrait_direct_intro (func := $(←funcFunc.toSyntax))
         )) mainGoal
 
+        dbg_trace "2: {(← getUnsolvedGoals).length}"
         let traitResGoal := callDirectGoals[0]!
         let traitResGoals ← evalTacticAt (←`(tactic|
           apply Lampe.TraitResolution.ok (impl := $impl) (implGenerics := $generics) (h_mem := by tauto)
         )) traitResGoal
 
+        dbg_trace "3: {(← getUnsolvedGoals).length}"
         for goal in callDirectGoals.drop 1 do
           let newGoals ← evalTacticAt (← `(tactic|
             first | try tauto | try with_unfolding_all rfl
           )) goal
           pushGoals newGoals
 
+        dbg_trace "4: {(← getUnsolvedGoals).length}"
         for goal in traitResGoals do
           let goals ← evalTacticAt (←`(tactic| first | try tauto | with_unfolding_all rfl)) goal
           pushGoals goals
 
+        dbg_trace "5: {(← getUnsolvedGoals).length}"
         if (← getUnsolvedGoals).length == 1 then
+          dbg_trace "Success!"
           return
+        else
+          oldState.restore
+          dbg_trace "unsolved: {(← getUnsolvedGoals).length}"
       catch _ =>
-        attemptState.restore
+        oldState.restore
 
   oldState.restore
   throwError "No trait implementation could be applied successfully"
@@ -475,9 +477,28 @@ def testImpl : TraitImpl := {
   impl := fun gs => match gs with | h![] => [("function", testFunction)]
 }
 
+def testLambda2 {rep} : Lambda rep where
+  argTps := [Tp.u 8]
+  outTp := Tp.u 8
+  body _gens := .litNum (Tp.u 8) 3
+
+def testFunction2 : Function := {
+  generics := []
+  body rep gens := testLambda2
+}
+
+def testImpl2 : TraitImpl := {
+  traitGenericKinds := []
+  implGenericKinds := []
+  traitGenerics := fun gs => match gs with | h![] => h![]
+  constraints := fun gs => match gs with | h![] => []
+  self := fun gs => match gs with | h![] => Tp.field
+  impl := fun gs => match gs with | h![] => [("function2", testFunction2)]
+}
+
 def testEnv : Env := {
   functions := [],
-  traits := [("Trait", testImpl)]
+  traits := [("Trait2", testImpl2), ("Trait", testImpl)]
 }
 
 example : STHoare p testEnv ⟦⟧
@@ -486,6 +507,7 @@ example : STHoare p testEnv ⟦⟧
     h![3])
       fun v => v = (2 : Fp p):= by
   try_all_traits [] testEnv
+  sorry
 
 
 example : STHoare p testEnv ⟦⟧
@@ -496,11 +518,11 @@ example : STHoare p testEnv ⟦⟧
   fapply callTrait_direct_intro
 
   -- This is where we need to find/input the function
-  · have := (testEnv.traits[0].snd.impl h![])[0].snd
+  · have := (testEnv.traits[1].snd.impl h![])[0].snd
     exact this
 
   -- This is where we need to find/input the env
-  · have := (testEnv.traits[0].snd.impl h![])
+  · have := (testEnv.traits[1].snd.impl h![])
     exact this
 
   -- This is creating the `TraitResolution` term
