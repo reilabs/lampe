@@ -52,6 +52,7 @@ def finalEnv : Env := ⟨[both_trait_call], [trait1u8]⟩
 
 def compoundEnv : Env := funcEnv ++ traitEnv ++ emptyEnv ++ traitEnv2 ++ finalEnv
 def simpleEnv : Env := ⟨[foo, both_trait_call], [trait1Field, trait2u8, trait1u8]⟩
+def newEnv := simpleEnv
 
 example {p} {arg : Tp.denote p Tp.field} :
     STHoare p compoundEnv ⟦⟧ (simple_trait_call.fn.body _ h![.field] |>.body h![arg])
@@ -60,7 +61,7 @@ example {p} {arg : Tp.denote p Tp.field} :
   steps
 
   enter_block_as (⟦⟧) (fun v => v = 2 * arg)
-  · try_all_traits [] compoundEnv -- enter_trait [] simpleEnv
+  · try_all_traits [] simpleEnv -- enter_trait [] simpleEnv
     steps
     subst_vars
     ring
