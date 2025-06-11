@@ -926,7 +926,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let (ix, data) = krate
             .modules()
             .iter()
-            .find(|(i, _)| *i == id.local_id.into())
+            .find(|(i, _)| *i == id.local_id.as_index())
             .expect("Module should exist in context");
         let module_path =
             krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");

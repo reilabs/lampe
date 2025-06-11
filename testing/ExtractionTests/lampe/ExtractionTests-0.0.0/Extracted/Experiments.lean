@@ -56,7 +56,7 @@ nr_def «experiments»::«assigns»<>(x : u8) -> Unit {
     let mut y = 3 : u8;
     y = #uAdd(y, x) : u8;
     let mut arr = [1 : Field, 2 : Field];
-    arr[#cast(0 : Field) : u32] = 10 : Field;
+    arr[#cast(0 : u32) : u32] = 10 : Field;
     skip;
 }
 
@@ -127,10 +127,10 @@ nr_def «experiments»::«main»<>() -> Unit {
     });
     let _? = (@experiments::Option2::is_some<Field> as λ(experiments::Option2<Field>) → bool)(op1);
     let mut l = [1 : Field, 2 : Field, 3 : Field];
-    let _? = #arrayIndex(l, #cast(0 : Field) : u32) : Field;
+    let _? = #arrayIndex(l, #cast(0 : u32) : u32) : Field;
     let t = `(1 : Field, true, 3 : Field);
     let _? = t.2;
-    l[#cast(1 : Field) : u32] = 4 : Field;
+    l[#cast(1 : u32) : u32] = 4 : Field;
     (op1 as experiments::Option2<Field>)._is_some = false;
     let mut tpl = `(1 : Field, true);
     tpl.0 = 2 : Field;
