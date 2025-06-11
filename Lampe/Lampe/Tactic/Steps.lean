@@ -387,6 +387,17 @@ macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|
   apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn)
                                (by rfl) (by rfl) (by rfl) (by rfl); simp only)
 
+#check getFVarIds
+#check Meta.withReplaceFVarId
+#check FunctionDecl
+
+/-
+testImpl.match_1.{2}
+(fun (gs._@.Lampe.Tactic.Steps._hyg.15001 : HList.{0, 0} Lampe.Kind Lampe.Kind.denote (List.nil.{0} Lampe.Kind)) => List.{1} (Prod.{0, 1} Lampe.Ident Lampe.Function))
+(HList.nil.{?_uniq.86379, ?_uniq.86378} ?_uniq.86380 ?_uniq.86381)
+(fun (_ : Unit) => List.cons.{1} (Prod.{0, 1} Lampe.Ident Lampe.Function) (Prod.mk.{0, 1} Lampe.Ident Lampe.Function "function" testFunction) (List.nil.{1} (Prod.{0, 1} Lampe.Ident Lampe.Function)))
+-/
+
 elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
   let envExpr ← elabTerm env none
   let impls ← extractImpls envExpr
@@ -399,6 +410,15 @@ elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
     let implExpr ← elabTerm impl none
     let implExprImpls ← whnf (← mkAppM `Lampe.TraitImpl.impl #[implExpr])
     let funcList ← whnf (mkApp implExprImpls (← elabTerm generics none))
+
+    -- dbg_trace (← instantiateExprMVars funcList)
+    -- match ←funcList.toSyntax with
+    -- | `(mat)
+
+    let listBody := funcList.getArg! 2
+
+    dbg_trace listBody
+
     let (_, funcs) ← liftOption funcList.listLit?
 
     for func in funcs do
@@ -459,6 +479,7 @@ def testEnv : Env := {
   functions := [],
   traits := [("Trait", testImpl)]
 }
+
 example : STHoare p testEnv ⟦⟧
     (Expr.call (rep := Tp.denote p) [Tp.field] Tp.field
       (FuncRef.trait (some Tp.field) "Trait" [] h![] "function" [] h![])
