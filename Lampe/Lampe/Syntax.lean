@@ -521,7 +521,7 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     | `(nr_param_decl|$i:ident : $_) => `($i)
     | _ => throwUnsupportedSyntax)
   let body ← mkExpr lambdaBody none fun x => `(Expr.var $x)
-  wrapSimple (←`(Expr.lam $argTps $outTp (fun $args => $body))) vname k
+  wrapSimple (←`(Expr.lam $argTps $outTp (fun args => match args with | $args => $body))) vname k
 | `(nr_expr| $structName:nr_ident < $structGens,* > { $args,* }) => do
     let (_structGenKinds, structGenVals) ← mkGenericVals structGens.getElems.toList
     let structName ← mkNrIdent structName
