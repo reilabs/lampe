@@ -54,6 +54,8 @@ def compoundEnv : Env := funcEnv ++ traitEnv ++ emptyEnv ++ traitEnv2 ++ finalEn
 def simpleEnv : Env := ⟨[foo, both_trait_call], [trait1Field, trait2u8, trait1u8]⟩
 def newEnv := simpleEnv
 
+set_option trace.Lampe.Traits true
+
 example {p} {arg : Tp.denote p Tp.field} :
     STHoare p compoundEnv ⟦⟧ (simple_trait_call.fn.body _ h![.field] |>.body h![arg])
     fun v => v = 2 * arg := by
@@ -107,7 +109,6 @@ example {p} {fieldArg : Fp p}:
   steps
   enter_block_as (⟦⟧) (fun v => v = 2 * u8Arg)
   · try_all_traits [] compoundEnv -- enter_trait [] simpleEnv
-    simp only
     steps
     subst_vars
     rename_i a
