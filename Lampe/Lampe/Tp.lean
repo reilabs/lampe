@@ -33,11 +33,13 @@ inductive Tp where
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
 | fn (argTps : List Tp) (outTp : Tp)
+deriving BEq
 
 inductive Kind where
 | u (size : Nat)
 | field
 | type
+deriving BEq
 
 mutual
 
@@ -106,6 +108,26 @@ def Kind.denote : Kind → Type
 | .u w  => U w
 | .field => Int
 | .type => Tp
+
+def kindDecEq (a b : Kind) : Decidable (a = b) := by
+  cases a <;> cases b
+  all_goals try {right; rfl}
+  all_goals try {left; simp_all}
+  simp only [Kind.u.injEq]
+  exact inferInstance
+
+def kindsDecEq (a b : List Kind) : Decidable (a = b) := match a, b with
+| [], [] => isTrue rfl
+| [], _ :: _
+| _ :: _, [] => isFalse (by simp only [List.nil_eq, reduceCtorEq, not_false_eq_true])
+| a :: as, b :: bs => match kindDecEq a b, kindsDecEq as bs with
+  | isTrue h, isTrue hs => isTrue (by simp only [h, hs])
+  | isFalse h, _ => isFalse (by simp [h])
+  | _, isFalse h => isFalse (by simp [h])
+
+instance : DecidableEq Kind := kindDecEq
+
+instance : DecidableEq $ List Kind := kindsDecEq
 
 inductive FuncRef (argTps : List Tp) (outTp : Tp) where
 | lambda (r : Ref)

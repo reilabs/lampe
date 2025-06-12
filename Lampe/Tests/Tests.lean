@@ -173,7 +173,7 @@ example {p} {arg : Tp.denote p Tp.field} :
   steps
 
   enter_block_as (⟦⟧) (fun v => v = 2 * arg)
-  · enter_trait [] simpleTraitEnv
+  · try_all_traits [] simpleTraitEnv
     steps
     subst_vars
     ring
@@ -203,7 +203,7 @@ example {p} {x : Tp.denote p Tp.field} :
   simp only [generic_trait_call]
   steps
   enter_block_as (⟦⟧) (fun v => v = x)
-  · enter_trait [Tp.field] genericTraitEnv
+  · try_all_traits [Tp.field] genericTraitEnv
     steps
     assumption
 

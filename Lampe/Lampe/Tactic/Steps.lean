@@ -362,31 +362,6 @@ syntax "enter_decl" : tactic
 macro_rules | `(tactic|enter_decl) => `(tactic|
   apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl); simp only)
 
-theorem callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
-    (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
-    (h_fn : impls.find? (fun (n, _) => n = fnName) = some (fnName, func))
-    (hkc : func.generics = kinds)
-    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
-    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
-    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
-    STHoare p Γ H (Expr.call argTps outTp (.trait (some selfTp) traitName traitKinds traitGenerics fnName kinds generics) args) Q := by
-  apply STHoare.callTrait_intro (selfTp := selfTp) (traitName := traitName) (traitKinds := traitKinds) (traitGenerics := traitGenerics) (fnName := fnName) (outTp := outTp) (generics := generics)
-  · simp [SLP.entails_top]
-  · exact h_trait
-  · simp only [Option.eq_some_iff_get_eq] at h_fn
-    cases h_fn
-    rename_i h
-    rw [←h]
-    simp [List.get_find?_mem]
-  · assumption
-  · assumption
-  · assumption
-
-syntax "enter_trait" "[" term,* "]" term  : tactic
-macro_rules | `(tactic|enter_trait [$generics,*] $envSyn) => `(tactic|
-  apply callTrait_direct_intro (by try_impls_all [$generics,*] $envSyn)
-                               (by rfl) (by rfl) (by rfl) (by rfl); simp only)
-
 theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
   apply hp v
 theorem enter_block H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
