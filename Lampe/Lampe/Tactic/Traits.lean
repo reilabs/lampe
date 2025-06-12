@@ -63,18 +63,23 @@ partial def extractAllImpls (envExpr : Lean.Expr) : TacticM $ List (Lean.Expr ×
 
   go reducedTraitsListExpr
 
+/-- Make a list literal of type `List Kind` from a list of generic kinds -/
 def mkListExpr (elems : List Lean.Expr) : MetaM Lean.Expr :=
   match elems with
   | [] => return ← mkAppOptM `List.nil #[← mkAppM `Lampe.Kind #[] ]
   | head :: tail => return ← mkAppM `List.cons #[head, ← mkListExpr tail]
 
+/-- Make an HList of of type `Hlist {rep : Kind → Type} Kind`. This is used to construct the HList
+of generics to match on in the `TraitImpl`.
+-/
 def mkHListExpr (repExpr : Lean.Expr) (elems listExprs : List Lean.Expr) : MetaM Lean.Expr := do
   match elems with
   | [] =>
     return ← mkAppOptM `HList.nil #[(← mkAppM `Lampe.Kind #[]), some repExpr]
   | head :: tail =>
     return ← mkAppOptM `HList.cons
-      #[(← mkAppM `Lampe.Kind #[]), repExpr, listExprs.head!, ← mkListExpr listExprs.tail, head, ← mkHListExpr repExpr tail listExprs.tail]
+      #[← mkAppM `Lampe.Kind #[], repExpr, listExprs.head!, ← mkListExpr listExprs.tail, head,
+        ← mkHListExpr repExpr tail listExprs.tail]
 
 /--
 Tactic to make progress on goals of the form `Expr.call (FuncRef.trait ...)` by trying all of the
@@ -84,6 +89,8 @@ Usage: `try_all_traits <generics> <environment>`
 * generics: A list of values to instantiate the generic type parameters
 * environment: The environment to search the trait implementation
 -/
+-- NOTE: The order that all these metavariables get instantiated needs to happen in a fairly precise
+-- sequence for unification to work, that is why this function looks somewhat complicated
 elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
   let envExpr ← elabTerm env none
   let impls ← extractAllImpls envExpr
@@ -96,13 +103,11 @@ elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
 
     let implExprImpls ← mkAppM `Lampe.TraitImpl.impl #[impl]
 
+    -- Need to construct the HList of generic bindings from scratch with no metavariables
     let repExpr ← mkAppM `Lampe.Kind.denote #[]
-
     let listExpr ← whnf (← mkAppM `Lampe.TraitImpl.implGenericKinds #[impl])
     let some (_, listExprs) := listExpr.listLit? | failure
-
     let elems ← generics.getElems.toList.mapM (elabTerm · none)
-
     let hlistExpr ← mkHListExpr repExpr elems listExprs
 
     let funcList ← (withAtLeastTransparency .all (whnf (.app implExprImpls hlistExpr)))
