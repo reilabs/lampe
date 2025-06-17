@@ -58,13 +58,13 @@ if [ ! -d ${LAKE_DIR} ]; then
 fi
 
 if [[ "$SELECTED_TEST" == "" ]]; then
-	readarray -t test_dirs_1 < <(find "$TEST_PROGRAMS_PATH/compile_success_contract" -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*')
-	readarray -t test_dirs_2 < <(find "$TEST_PROGRAMS_PATH/compile_success_empty" -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*')
-	readarray -t test_dirs_3 < <(find "$TEST_PROGRAMS_PATH/compile_success_no_bug" -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*')
-	readarray -t test_dirs_4 < <(find "$TEST_PROGRAMS_PATH/compile_success_with_bug" -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*')
-	readarray -t test_dirs_5 < <(find "$TEST_PROGRAMS_PATH/execution_success" -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*')
-	readarray -t test_dirs_6 < <(find "$TEST_PROGRAMS_PATH/noir_test_success" -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*')
-	readarray -t test_dirs_7 < <(find "$TEST_PROGRAMS_PATH/test_libraries" -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*')
+	readarray -t test_dirs_1 < <(find "$TEST_PROGRAMS_PATH/compile_success_contract" -mindepth 1 -maxdepth 1 -type d -not -path '\*/\\\.\*')
+	readarray -t test_dirs_2 < <(find "$TEST_PROGRAMS_PATH/compile_success_empty" -mindepth 1 -maxdepth 1 -type d -not -path '\*/\\\.\*')
+	readarray -t test_dirs_3 < <(find "$TEST_PROGRAMS_PATH/compile_success_no_bug" -mindepth 1 -maxdepth 1 -type d -not -path '\*/\\\.\*')
+	readarray -t test_dirs_4 < <(find "$TEST_PROGRAMS_PATH/compile_success_with_bug" -mindepth 1 -maxdepth 1 -type d -not -path '\*/\\\.\*')
+	readarray -t test_dirs_5 < <(find "$TEST_PROGRAMS_PATH/execution_success" -mindepth 1 -maxdepth 1 -type d -not -path '\*/\\\.\*')
+	readarray -t test_dirs_6 < <(find "$TEST_PROGRAMS_PATH/noir_test_success" -mindepth 1 -maxdepth 1 -type d -not -path '\*/\\\.\*')
+	readarray -t test_dirs_7 < <(find "$TEST_PROGRAMS_PATH/test_libraries" -mindepth 1 -maxdepth 1 -type d -not -path '\*/\\\.\*')
 
 	test_dirs=( "${test_dirs_1[@]}" "${test_dirs_2[@]}" "${test_dirs_3[@]}" "${test_dirs_4[@]}" "${test_dirs_5[@]}" "${test_dirs_6[@]}" "${test_dirs_7[@]}" )
 
