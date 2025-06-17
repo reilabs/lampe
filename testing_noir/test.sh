@@ -67,6 +67,11 @@ if [[ "$SELECTED_TEST" == "" ]]; then
 	readarray -t test_dirs_7 < <(find "$TEST_PROGRAMS_PATH/test_libraries" -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*')
 
 	test_dirs=( "${test_dirs_1[@]}" "${test_dirs_2[@]}" "${test_dirs_3[@]}" "${test_dirs_4[@]}" "${test_dirs_5[@]}" "${test_dirs_6[@]}" "${test_dirs_7[@]}" )
+
+	if [ ${#test_dirs[@]} -eq 0 ]; then
+		echo "No tests to run. Was looking into ${TEST_PROGRAMS_PATH}".
+		exit 1
+	fi
 else
 	test_dirs=( "$SELECTED_TEST" )
 fi
