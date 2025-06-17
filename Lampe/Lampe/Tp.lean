@@ -103,6 +103,8 @@ end
 
 instance : DecidableEq Tp := tpDecEq
 
+instance : DecidableEq $ List Tp := tpsDecEq
+
 @[reducible]
 def Kind.denote : Kind → Type
 | .u w  => U w

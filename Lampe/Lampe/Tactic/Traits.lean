@@ -12,17 +12,17 @@ namespace Lampe
 
 theorem STHoare.callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
-    (h_fn : impls.find? (fun (n, _) => n = fnName) = some (fnName, func))
-    (hkc : func.generics = kinds)
-    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
-    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
-    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
+    (h_find_fn : impls.find? (fun (n, _) => n = fnName) = some (fnName, func))
+    (h_kinds_eq : func.generics = kinds)
+    (h_args_eq : (func.body _ (h_kinds_eq ▸ generics) |>.argTps) = argTps)
+    (h_out_eq : (func.body _ (h_kinds_eq ▸ generics) |>.outTp) = outTp)
+    (h_pre_hoare: STHoare p Γ H (h_out_eq ▸ (func.body _ (h_kinds_eq ▸ generics) |>.body (h_args_eq ▸ args))) Q) :
     STHoare p Γ H (Expr.call argTps outTp (.trait (some selfTp) traitName traitKinds traitGenerics fnName kinds generics) args) Q := by
   apply STHoare.callTrait_intro (selfTp := selfTp) (traitName := traitName) (traitKinds := traitKinds) (traitGenerics := traitGenerics) (fnName := fnName) (outTp := outTp) (generics := generics)
   · simp [SLP.entails_top]
   · exact h_trait
-  · simp only [Option.eq_some_iff_get_eq] at h_fn
-    cases h_fn
+  · simp only [Option.eq_some_iff_get_eq] at h_find_fn
+    cases h_find_fn
     rename_i h
     rw [←h]
     simp [List.get_find?_mem]
@@ -88,6 +88,16 @@ trait implementations in a given environment
 Usage: `try_all_traits <generics> <environment>`
 * generics: A list of values to instantiate the generic type parameters
 * environment: The environment to search the trait implementation
+
+Implementation: The tactic tries to apply the lemma `STHoare.callTrait_direct_intro` with every
+trait in the environment until the first trait that matches the requirement. The order of the traits
+is determined by the order they are defined in the environment.
+
+The trait resolution will succeed when:
+    * The trait has the right name
+    * The trait function has the right name
+    * The trait function has the right generic kinds
+    * The trait function has the right type
 -/
 -- NOTE: The order that all these metavariables get instantiated needs to happen in a fairly precise
 -- sequence for unification to work, that is why this function looks somewhat complicated
@@ -124,6 +134,8 @@ elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
       -- In order for the metavariables to unify in the right way, we need to run these
       -- tactics in this order as otherwise `tauto` is overly eager to fill in data
       -- incorrectly
+      -- In particular: `tauto` is happy to fill in a goal of type `List α` with `[]` when
+      -- this particular goal needs to be filled in by hand.
       try
         -- `callTrait_direct_intro` on the main goal
         let callDirectGoals ← evalTacticAt (←`(tactic|
