@@ -12,8 +12,8 @@ jobs:
           - name: Checkout Noir repo
             uses: actions/checkout@v4
             with:
-              repository: noir-lang/noir
-              ref: v1.0.0-beta.3
+              repository: reilabs/noir
+              ref: lampe-upstream
               path: noir
           - name: Set up Rust
             uses: actions-rust-lang/setup-rust-toolchain@v1
