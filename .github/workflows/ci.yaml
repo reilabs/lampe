@@ -68,7 +68,7 @@ jobs:
           toolchain: nightly
           profile: minimal
           override: true
-          components: rustfmt
+          components: rustfmt, clippy
       - name: Check Formatting
         uses: actions-rs/cargo@v1
         with:
