@@ -5,84 +5,170 @@ import Lampe.Syntax
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
-def applyImpl (goal : MVarId) (impl : TSyntax `term) (generics : List $ TSyntax `term) : TacticM $ List MVarId := do
-  let generics ← Lampe.mkHListLit generics
-  let newGoals ← evalTacticAt (←`(tactic|
-    apply Lampe.TraitResolution.ok (impl := $impl) (implGenerics := $generics) (h_mem := by tauto) <;> (first | rfl | tauto)
-  )) goal
-  pure newGoals
+initialize
+  registerTraceClass `Lampe.Traits
 
-def tryImpls (allImpls : List $ TSyntax `term) (generics : List $ TSyntax `term) : TacticM Unit := do
+namespace Lampe
+
+theorem STHoare.callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
+    (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
+    (h_find_fn : impls.find? (fun (n, _) => n = fnName) = some (fnName, func))
+    (h_kinds_eq : func.generics = kinds)
+    (h_args_eq : (func.body _ (h_kinds_eq ▸ generics) |>.argTps) = argTps)
+    (h_out_eq : (func.body _ (h_kinds_eq ▸ generics) |>.outTp) = outTp)
+    (h_pre_hoare: STHoare p Γ H (h_out_eq ▸ (func.body _ (h_kinds_eq ▸ generics) |>.body (h_args_eq ▸ args))) Q) :
+    STHoare p Γ H (Expr.call argTps outTp (.trait (some selfTp) traitName traitKinds traitGenerics fnName kinds generics) args) Q := by
+  apply STHoare.callTrait_intro (selfTp := selfTp) (traitName := traitName) (traitKinds := traitKinds) (traitGenerics := traitGenerics) (fnName := fnName) (outTp := outTp) (generics := generics)
+  · simp [SLP.entails_top]
+  · exact h_trait
+  · simp only [Option.eq_some_iff_get_eq] at h_find_fn
+    cases h_find_fn
+    rename_i h
+    rw [←h]
+    simp [List.get_find?_mem]
+  · assumption
+  · assumption
+  · assumption
+
+/-- Extract all the `TraitImpl`s from a `Lampe.Env` -/
+partial def extractAllImpls (envExpr : Lean.Expr) : TacticM $ List (Lean.Expr × Lean.Expr) := do
+  let traitsListExpr ← mkAppM `Lampe.Env.traits #[envExpr]
+  let reducedTraitsListExpr ← withAtLeastTransparency .all (whnf traitsListExpr)
+
+  let rec go (listExpr : Lean.Expr) : TacticM $ List (Lean.Expr × Lean.Expr) := do
+    let currentExpr ← withAtLeastTransparency .all <| whnf listExpr
+
+    if currentExpr.isAppOfArity ``List.cons 3 then
+      let args := currentExpr.getAppArgs
+      let headExpr ← whnf args[1]!
+      let tailExpr := args[2]!
+      let_expr Prod.mk _ _ name impl := headExpr
+        | throwError m!"unable to extract {← ppExpr headExpr} from environment {← ppExpr envExpr}"
+      let restImpls ← go tailExpr
+      return (name, impl) :: restImpls
+
+    else if currentExpr.isAppOfArity ``List.nil 1 then
+      return []
+
+    else if currentExpr.isAppOfArity ``List.append 3 then
+      let args := currentExpr.getAppArgs
+      let list1Expr := args[1]!
+      let list2Expr := args[2]!
+      let impls1 ← go list1Expr
+      let impls2 ← go list2Expr
+      return impls1 ++ impls2
+
+    else
+      throwError m!"unable to match on {← ppExpr currentExpr} in environment {← ppExpr envExpr}"
+
+  go reducedTraitsListExpr
+
+/-- Make a list literal of type `List Kind` from a list of generic kinds -/
+def mkListExpr (elems : List Lean.Expr) : MetaM Lean.Expr :=
+  match elems with
+  | [] => return ← mkAppOptM `List.nil #[← mkAppM `Lampe.Kind #[] ]
+  | head :: tail => return ← mkAppM `List.cons #[head, ← mkListExpr tail]
+
+/-- Make an HList of of type `Hlist {rep : Kind → Type} Kind`. This is used to construct the HList
+of generics to match on in the `TraitImpl`.
+-/
+def mkHListExpr (repExpr : Lean.Expr) (elems listExprs : List Lean.Expr) : MetaM Lean.Expr := do
+  match elems with
+  | [] =>
+    return ← mkAppOptM `HList.nil #[(← mkAppM `Lampe.Kind #[]), some repExpr]
+  | head :: tail =>
+    return ← mkAppOptM `HList.cons
+      #[← mkAppM `Lampe.Kind #[], repExpr, listExprs.head!, ← mkListExpr listExprs.tail, head,
+        ← mkHListExpr repExpr tail listExprs.tail]
+
+/--
+Tactic to make progress on goals of the form `Expr.call (FuncRef.trait ...)` by trying all of the
+trait implementations in a given environment
+
+Usage: `try_all_traits <generics> <environment>`
+* generics: A list of values to instantiate the generic type parameters
+* environment: The environment to search the trait implementation
+
+Implementation: The tactic tries to apply the lemma `STHoare.callTrait_direct_intro` with every
+trait in the environment until the first trait that matches the requirement. The order of the traits
+is determined by the order they are defined in the environment.
+
+The trait resolution will succeed when:
+    * The trait has the right name
+    * The trait function has the right name
+    * The trait function has the right generic kinds
+    * The trait function has the right type
+-/
+-- NOTE: The order that all these metavariables get instantiated needs to happen in a fairly precise
+-- sequence for unification to work, that is why this function looks somewhat complicated
+elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
+  let envExpr ← elabTerm env none
+  let impls ← extractAllImpls envExpr
+  let genericsHList ← Lampe.mkHListLit generics.getElems.toList
   let oldState ← saveState
   let mainGoal ← getMainGoal
-  match allImpls with
-  | impl :: impls => do
-    let subGoals ← applyImpl mainGoal impl generics
-    if subGoals.length > 0 then
-      oldState.restore
-      tryImpls impls generics
-    else
-      replaceMainGoal subGoals
-      return ()
-  | [] => throwError "no impl applies"
 
-partial def extractImpl (expr : Lean.Expr) : TacticM $ TSyntax `term := match expr with
-| .const name us => do extractImpl (← whnf (.const name us))
-| .app (.app (.app (.const `Prod.snd _) _) _) implPairExpr => extractImpl implPairExpr
-| .app (.app (.app (.app (.const `Prod.mk _) _) _) _) implExpr => extractImpl implExpr
-| .app (.app (.app (.app (.app (.app (.const `Lampe.TraitImpl.mk _) _) _) _) _) _) _ => do `($(← expr.toSyntax))
-| _ => throwError s!"failed to match with {expr} in impl extraction"
+  for (name, impl) in impls do
+    trace[Lampe.Traits] m!"attempting trait {← ppExpr name}"
 
-partial def extractImpls (expr : Lean.Expr) : TacticM $ List (TSyntax `term) := match expr with
-  | .const name us => do extractImpls (← whnf (.const name us))
-  | .app (.const `Lampe.Env.traits _) envExpr => extractImpls envExpr
-  | .app (.app (.const `Lampe.Env.mk _) _) implsExpr => extractImpls implsExpr
-  | .app (.app (.app (.const `List.cons _) _) implExpr) rem => do
-    let implSyn ← extractImpl implExpr
-    pure (implSyn :: (← extractImpls rem))
-  | .app (.const `List.nil _) _ => pure []
-  | _ => throwError s!"failed to match with {expr}"
+    let implExprImpls ← mkAppM `Lampe.TraitImpl.impl #[impl]
 
-syntax "apply_impl" "[" term,* "]" term : tactic
-syntax "try_impls" "[" term,* "]" "[" term,* "]" : tactic
-syntax "try_impls_all" "[" term,* "]" term : tactic
+    -- Need to construct the HList of generic bindings from scratch with no metavariables
+    let repExpr ← mkAppM `Lampe.Kind.denote #[]
+    let listExpr ← whnf (← mkAppM `Lampe.TraitImpl.implGenericKinds #[impl])
+    let some (_, listExprs) := listExpr.listLit? | failure
+    let elems ← generics.getElems.toList.mapM (elabTerm · none)
+    let hlistExpr ← mkHListExpr repExpr elems listExprs
 
-/--
-`apply_impl` applies a given trait implementation `TraitImpl` to the main goal, which must be a `TraitResolution`.
+    let funcList ← (withAtLeastTransparency .all (whnf (.app implExprImpls hlistExpr)))
 
-Example:
-```
-apply_impl [Tp.field] t1 -- applies `t1` with impl generics instantiated to `h![Tp.field]`
-```
--/
-elab "apply_impl" "[" generics:term,* "]" impl:term : tactic => do
-  let mainGoal ← getMainGoal
-  let newGoals ← applyImpl mainGoal impl generics.getElems.toList
-  replaceMainGoal newGoals
+    let some (_, funcs) := funcList.listLit? |
+      throwError m!"unable to match on {← ppExpr funcList} in trait implementation {← ppExpr impl}"
 
-/--
-`try_impls` takes a comma separated sequence of `TraitImpl`s in square brackets,
-and it tries them one by one by calling `apply_impl` until one of them succeeds.
+    for func in funcs do
+      let funcArgs := func.getAppArgs
+      let funcFunc := funcArgs.reverse[0]!
+      let funcName := funcArgs.reverse[1]!
 
-Example:
-```
-try_impls [Tp.field] [t1, t2] -- tries `t1` and `t2` with impl generics instantiated to `h![Tp.field]`
-```
--/
-elab "try_impls" "[" generics:term,* "]" "[" impls:term,* "]" : tactic => do
-  tryImpls impls.getElems.toList generics.getElems.toList
+      trace[Lampe.Traits] m!"  attempting function {← ppExpr funcName}"
+      -- In order for the metavariables to unify in the right way, we need to run these
+      -- tactics in this order as otherwise `tauto` is overly eager to fill in data
+      -- incorrectly
+      -- In particular: `tauto` is happy to fill in a goal of type `List α` with `[]` when
+      -- this particular goal needs to be filled in by hand.
+      try
+        -- `callTrait_direct_intro` on the main goal
+        let callDirectGoals ← evalTacticAt (←`(tactic|
+          apply Lampe.STHoare.callTrait_direct_intro (func := $(←funcFunc.toSyntax))
+        )) mainGoal
 
-/--
-`try_impls_all` takes an `Lampe.Env`, and tries all the trait impls one by one to solve the main `TraitResolution` goal.
+        let traitResGoal := callDirectGoals[0]!
+         -- start filling in the `TraitResolution` goal
+        let traitResGoals ← evalTacticAt (←`(tactic|
+          apply Lampe.TraitResolution.ok (impl := $(← impl.toSyntax)) (implGenerics := $genericsHList) (h_mem := by tauto)
+        )) traitResGoal
 
-Example:
-```
-def env : Lampe.Env := ⟨[], [⟨"TraitName", t1⟩, ⟨"TraitName", t2⟩]⟩
+        -- solve the `callTrait_direct_intro` goals first
+        for goal in callDirectGoals.drop 1 do
+          let newGoals ← evalTacticAt (← `(tactic|
+            first | try tauto | try with_unfolding_all rfl
+          )) goal
+          pushGoals newGoals
 
-try_impls_all [Tp.field] env -- tries `t1` and `t2` with impl generics instantiated to `h![Tp.field]`
-```
--/
-elab "try_impls_all" "[" generics:term,* "]" envSyn:term : tactic => do
-  let envExpr ← elabTerm envSyn none
-  let impls ← extractImpls envExpr
-  tryImpls impls generics.getElems.toList
+        -- finally solve the `TraitResolution` goals
+        for goal in traitResGoals do
+          let goals ← evalTacticAt (←`(tactic| first | try tauto | with_unfolding_all rfl)) goal
+          pushGoals goals
+
+        if (← getUnsolvedGoals).length == 1 then
+          -- one last `simp only` call to clean up the goal state
+          evalTactic (← `(tactic| simp only))
+          return
+        else
+          oldState.restore
+      catch _ =>
+        oldState.restore
+
+  oldState.restore
+  throwError m!"no matching trait implementation found in environment {← ppExpr envExpr}"
+

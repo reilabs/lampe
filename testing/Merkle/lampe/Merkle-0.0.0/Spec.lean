@@ -623,7 +623,7 @@ instance {α H n} : Membership α (MerkleTree α H n) where
 
 lemma SkyscraperHash_correct: STHoare lp env ⟦⟧ (Expr.call [Tp.field, Tp.field] Tp.field
           (FuncRef.trait (some $ «struct#Skyscraper».tp h![]) "BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b]) (fun v => v = Ref.State.compress ⟨[a, b], rfl⟩) := by
-  enter_trait [] env
+  try_all_traits [] env
   steps [permute_intro]
   casesm*∃_,_
   subst_vars

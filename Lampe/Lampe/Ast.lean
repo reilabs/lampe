@@ -16,10 +16,6 @@ structure TraitImplRef where
   trait : TraitRef
   self : Tp
 
-structure TraitMethodImplRef where
-  trait : TraitImplRef
-  method : Ident
-
 inductive Expr (rep : Tp → Type) : Tp → Type where
 | litNum : (tp : Tp) → Int → Expr rep tp
 | litStr : (len : U 32) → FixedLenStr len.toNat → Expr rep (.str len)
@@ -65,9 +61,6 @@ def FunctionDecl.call {lp} (f : FunctionDecl)
         (f.fn.body (Tp.denote lp) gs).outTp
         (FuncRef.decl f.name f.fn.generics gs)
         args)
-
-structure Module where
-  decls : List FunctionDecl
 
 structure Struct where
   name : String
