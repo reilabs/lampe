@@ -83,7 +83,7 @@ theorem recover_intro {H N idx proof item}
     (hHash : ∀ {a b}, STHoare lp env
         ⟦True⟧
         (Expr.call [Tp.field, Tp.field] Tp.field
-          (FuncRef.trait (some H) "BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b])
+          (FuncRef.trait (some H) "hasher::BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b])
         (fun v => v = H' (a ::ᵥ b ::ᵥ .nil))):
     STHoare lp env ⟦True⟧ (mtree_recover.call h![H, N] h![idx, proof, item]) (fun v => v = MerkleTree.recover H' idx.reverse proof.reverse item) := by
   enter_decl
@@ -620,9 +620,6 @@ theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.
 
 instance {α H n} : Membership α (MerkleTree α H n) where
   mem t e := ∃p, e = MerkleTree.itemAt t p
-
-#eval (env.traits.get (0 : Fin 1)).fst
-#eval (env.traits.get (0 : Fin 1)).snd
 
 lemma SkyscraperHash_correct: STHoare lp env ⟦⟧ (Expr.call [Tp.field, Tp.field] Tp.field
           (FuncRef.trait (some $ «struct#skyscraper::Skyscraper».tp h![]) "hasher::BinaryHasher" [Kind.type] (HList.cons Tp.field HList.nil) "hash" [] HList.nil) h![a,b]) (fun v => v = Ref.State.compress ⟨[a, b], rfl⟩) := by

@@ -11,6 +11,8 @@ repository = "https://github.com/reilabs/lampe"
 license = "MIT"
 
 [dependencies]
+# When update noir version used in here please remember about changing
+# also CI job `.github/workflows/ci-noir.yaml` to match used noir repo.
 fm = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
 nargo = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
 nargo_toml = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }

@@ -9,9 +9,9 @@ namespace «Merkle-0.0.0»
 namespace Extracted
 
 nr_trait_impl[impl_428] <> hasher::BinaryHasher<Field> for skyscraper::Skyscraper<> where  {
-    fn «skyscraper»::«hash»<> (a : Field, b : Field) -> Field {
+    fn «hash»<> (a : Field, b : Field) -> Field {
         let x = (@permute::permute<> as λ([Field; 2]) → [Field; 2])([a, b]);
-        #fAdd(#arrayIndex(x, #cast(0 : Field) : u32) : Field, a) : Field;
+        #fAdd(#arrayIndex(x, #cast(0 : u32) : u32) : Field, a) : Field;
 }
 }
 

@@ -9,34 +9,34 @@ namespace «Merkle-0.0.0»
 namespace Extracted
 
 nr_def «permute»::«permute»<>(s : [Field; 2]) -> [Field; 2] {
-    let π0 = `(#arrayIndex(s, #cast(0 : Field) : u32) : Field, #arrayIndex(s, #cast(1 : Field) : u32) : Field);
+    let π0 = `(#arrayIndex(s, #cast(0 : u32) : u32) : Field, #arrayIndex(s, #cast(1 : u32) : u32) : Field);
     let l = π0.0;
     let r = π0.1;
     let π0 = `(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, l);
     let l = π0.0;
     let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(0 : Field) : u32) : Field) : Field, l);
+    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(0 : u32) : u32) : Field) : Field, l);
     let l = π0.0;
     let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(1 : Field) : u32) : Field) : Field, l);
+    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(1 : u32) : u32) : Field) : Field, l);
     let l = π0.0;
     let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(2 : Field) : u32) : Field) : Field, l);
+    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(2 : u32) : u32) : Field) : Field, l);
     let l = π0.0;
     let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(3 : Field) : u32) : Field) : Field, l);
+    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(3 : u32) : u32) : Field) : Field, l);
     let l = π0.0;
     let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(4 : Field) : u32) : Field) : Field, l);
+    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(4 : u32) : u32) : Field) : Field, l);
     let l = π0.0;
     let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(5 : Field) : u32) : Field) : Field, l);
+    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(5 : u32) : u32) : Field) : Field, l);
     let l = π0.0;
     let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(6 : Field) : u32) : Field) : Field, l);
+    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(6 : u32) : u32) : Field) : Field, l);
     let l = π0.0;
     let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(7 : Field) : u32) : Field) : Field, l);
+    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(7 : u32) : u32) : Field) : Field, l);
     let l = π0.0;
     let r = π0.1;
     let π0 = `(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, l);
