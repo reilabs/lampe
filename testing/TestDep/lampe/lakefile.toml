@@ -16,19 +16,19 @@ path = "../../../Lampe"
 name = "GitDepWithLampe-0.0.0"
 git = "https://github.com/reilabs/lampe"
 rev = "main"
-subDir = "Examples/TestDep/testing/GitDepWithLampe/lampe"
+subDir = "testing/TestDep/testing/GitDepWithLampe/lampe"
 
 [[require]]
 name = "GitDepWithLampe-1.0.0"
 git = "https://github.com/reilabs/lampe"
 rev = "main"
-subDir = "Examples/TestDep/testing/GitDepWithLampeV1/lampe"
+subDir = "testing/TestDep/testing/GitDepWithLampeV1/lampe"
 
 [[require]]
 name = "GitDepWithLampe-2.0.0"
 git = "https://github.com/reilabs/lampe"
 rev = "main"
-subDir = "Examples/TestDep/testing/GitDepWithLampeV2/lampe"
+subDir = "testing/TestDep/testing/GitDepWithLampeV2/lampe"
 
 [[require]]
 name = "LocalDepWithLampe-0.0.0"

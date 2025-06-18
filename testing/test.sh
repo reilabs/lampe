@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-EXAMPLES_DIR=$(dirname $(readlink -f "$0"))
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+EXAMPLES_DIR="${SCRIPT_DIR}"
 PROJECT_ROOT=$(dirname $EXAMPLES_DIR)
 
 usage(){
 >&2 cat << EOF
 Usage: $0
    [ -t | --test ] Name of directory with test to run
-   [ --ci        ] Flag to indicate that test run in CI (on GitHub we need to clean after each test as we run out of disk space)
 EOF
 exit 1
 }
@@ -20,7 +20,6 @@ do
 	fi
   case $1 in
     -t | --test) PARAM_TEST=$2    ; shift 2 ;;
-    --ci)        PARAM_CI=true    ; shift   ;;
     -h | --help) usage            ; shift   ;;
     *) >&2 echo Unsupported option: $1
        usage ;;
@@ -28,7 +27,6 @@ do
 done
 
 SELECTED_TEST="${PARAM_TEST:-}"
-CI_RUN="${PARAM_CI:-false}"
 LAKE_DIR="${EXAMPLES_DIR}/.lake"
 
 if [ ! -d ${LAKE_DIR} ]; then

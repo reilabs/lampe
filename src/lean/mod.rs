@@ -26,7 +26,7 @@ use noirc_frontend::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
         function::Parameters,
         stmt::{HirLValue, HirPattern, HirStatement},
-        traits::{NamedType, TraitImpl},
+        traits::{NamedType, Trait, TraitImpl},
     },
     node_interner::{
         DefinitionKind,
@@ -476,7 +476,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     ) -> Result<String> {
         let trait_def_id = trait_impl.trait_id;
         let trait_data = self.context.def_interner.get_trait(trait_def_id);
-        let fq_crate_name = self.fq_trait_name_from_crate_id(trait_data.crate_id, trait_def_id);
+        let fq_crate_name = self.fq_trait_path_from_crate_id(trait_data.crate_id, trait_def_id);
         let name = &trait_impl.ident;
         let full_name = if fq_crate_name.is_empty() {
             name.to_string()
@@ -715,11 +715,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 &ret_type,
             ))
         } else {
-            println!(
-                "{}",
-                self.context
-                    .fully_qualified_function_name(&func_meta.source_crate, &func)
-            );
             self.emit_expr(
                 ind,
                 self.context.def_interner.function(&func).as_expr(),
@@ -938,32 +933,75 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         }
     }
 
+    /// Emits a fully-qualified name for a trait where this is relevant.
+    ///
+    /// The correct operation of this function relies on type resolution having
+    /// been conducted properly by the Noir compiler. Absent that, it may return
+    /// nonsensical results.
+    ///
+    /// # Panics
+    ///
+    /// When encountering situations that would indicate a bug in the Noir
+    /// compiler.
+    pub fn emit_fully_qualified_trait_name_from_impl(&self, trait_impl: &TraitImpl) -> String {
+        let trait_id = trait_impl.trait_id;
+        let crate_id = trait_impl.crate_id;
+        let fq_path = self.fq_trait_path_from_crate_id(crate_id, trait_id);
+        let trait_name = trait_impl.ident.to_string();
+        if fq_path.is_empty() {
+            trait_name
+        } else {
+            format!("{fq_path}::{trait_name}")
+        }
+    }
+
+    /// Emits a fully-qualified name for a trait where this is relevant.
+    ///
+    /// The correct operation of this function relies on type resolution having
+    /// been conducted properly by the Noir compiler. Absent that, it may return
+    /// nonsensical results.
+    ///
+    /// # Panics
+    ///
+    /// When encountering situations that would indicate a bug in the Noir
+    /// compiler.
+    pub fn emit_fully_qualified_trait_name_from_def(&self, trait_def: &Trait) -> String {
+        let trait_id = trait_def.id;
+        let crate_id = trait_def.crate_id;
+        let fq_path = self.fq_trait_path_from_crate_id(crate_id, trait_id);
+        let trait_name = trait_def.name.to_string();
+        if fq_path.is_empty() {
+            trait_name
+        } else {
+            format!("{fq_path}::{trait_name}")
+        }
+    }
+
     /// Generates a fully-qualified module name from a crate id.
     ///
     /// # Panics
     ///
     /// When encountering a situation that would occur due to a bug in the Noir
     /// compiler.
-    pub fn fq_trait_name_from_crate_id(&self, id: CrateId, trait_id: TraitId) -> String {
+    pub fn fq_trait_path_from_crate_id(&self, id: CrateId, trait_id: TraitId) -> String {
         let krate = self.context.def_map(&id).expect("Module should exist in context");
-        let (ix, data) = krate
-            .modules()
-            .iter()
-            .find(|(_, m)| {
-                let mut type_defs = m.type_definitions();
-                type_defs.any(|item| match item {
-                    ModuleDefId::TraitId(trait_id_inner) => trait_id == trait_id_inner,
-                    _ => false,
-                })
+        if let Some((ix, data)) = krate.modules().iter().find(|(_, m)| {
+            let mut type_defs = m.type_definitions();
+            type_defs.any(|item| match item {
+                ModuleDefId::TraitId(trait_id_inner) => trait_id == trait_id_inner,
+                _ => false,
             })
-            .expect("Should work");
-        let module_path =
-            krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");
+        }) {
+            let module_path =
+                krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");
 
-        if id.is_stdlib() {
-            format!("std::{module_path}")
+            if id.is_stdlib() {
+                format!("std::{module_path}")
+            } else {
+                module_path
+            }
         } else {
-            module_path
+            String::default()
         }
     }
 
@@ -1172,7 +1210,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                          must have a self type",
                                     );
                                 let self_type_str = self.emit_fully_qualified_type(&self_type, ctx);
-                                let trait_name = trait_impl.ident.to_string();
+                                let trait_name =
+                                    self.emit_fully_qualified_trait_name_from_impl(&trait_impl);
                                 let trait_generics = trait_impl
                                     .trait_generics
                                     .iter()
@@ -1198,7 +1237,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             // type, i.e., the concrete type is unknown.
                             (None, Some(trait_id)) => {
                                 let trt = self.context.def_interner.get_trait(trait_id);
-                                let trait_name = trt.name.to_string();
+                                let trait_name = self.emit_fully_qualified_trait_name_from_def(trt);
                                 let trait_generics = trt
                                     .generics
                                     .iter()

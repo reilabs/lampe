@@ -120,7 +120,7 @@ nr_def «experiments»::«is_alias_some»<T>(x : @AliasedOpt<T>) -> bool {
 nr_def «experiments»::«main»<>() -> Unit {
     let mut op1 = (@experiments::Option2::some<Field> as λ(Field) → experiments::Option2<Field>)(5 : Field);
     let op2 = ((experiments::Option2<Field> as Default<>)::default<> as λ() → experiments::Option2<Field>)();
-    let _op3 = ((experiments::Option2<Field> as MyTrait<>)::foo<> as λ(experiments::Option2<Field>) → experiments::Option2<Field>)(if true {
+    let _op3 = ((experiments::Option2<Field> as experiments::MyTrait<>)::foo<> as λ(experiments::Option2<Field>) → experiments::Option2<Field>)(if true {
             op1;
     } else {
             op2;

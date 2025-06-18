@@ -75,6 +75,25 @@ jobs:
           command: fmt
           args: --all -- --check
 
+  lint-rust:
+    name: "Lint Rust"
+    needs: build-cargo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          path: lampe
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.85.1
+          default: true
+          components: rustfmt, clippy
+      - name: Lint (clippy)
+        working-directory: lampe
+        run: RUSTFLAGS="-Dwarnings" cargo clippy
+
   test-cargo:
     name: "Test Rust"
     needs: build-cargo
@@ -95,9 +114,6 @@ jobs:
         run: |
           export RUST_MIN_STACK=16777216;  # 16 MB
           cargo test --all
-      - name: Lint (clippy)
-        working-directory: lampe
-        run: RUSTFLAGS="-Dwarnings" cargo clippy
 
   end-to-end:
     name: "E2E Tests"
@@ -125,4 +141,4 @@ jobs:
           lake-package-directory: lampe/Lampe
       - name: Run test script
         working-directory: lampe
-        run: ./testing/test.sh --ci
+        run: ./testing/test.sh
