@@ -24,7 +24,7 @@ const DEFAULT_NOIR_PROJECT_PATH: &str = "./";
 #[derive(Clone, Debug, Parser)]
 pub struct ProgramOptions {
     /// The root of the Noir project to extract.
-    #[arg(long, value_name = "PATH", default_value = DEFAULT_NOIR_PROJECT_PATH)]
+    #[arg(long, value_name = "PATH", default_value = DEFAULT_NOIR_PROJECT_PATH, value_parser = parse_path)]
     pub root: PathBuf,
 
     /// Testing mode?
@@ -165,4 +165,16 @@ pub fn run(args: &ProgramOptions) -> Result<ExitCode, Error> {
     }
 
     Ok(ExitCode::SUCCESS)
+}
+
+// Copied from: https://github.com/noir-lang/noir/blob/5071093f9b51e111a49a5f78d827774ef8e80c74/tooling/nargo_cli/src/cli/mod.rs#L301
+/// Parses a path and turns it into an absolute one by joining to the current
+/// directory.
+fn parse_path(path: &str) -> Result<PathBuf, String> {
+    use fm::NormalizePath;
+    let mut path: PathBuf = path.parse().map_err(|e| format!("failed to parse path: {e}"))?;
+    if !path.is_absolute() {
+        path = std::env::current_dir().unwrap().join(path).normalize();
+    }
+    Ok(path)
 }
