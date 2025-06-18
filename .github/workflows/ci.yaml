@@ -68,14 +68,12 @@ jobs:
           toolchain: nightly
           profile: minimal
           override: true
-          components: rustfmt, clippy
+          components: rustfmt
       - name: Check Formatting
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
-      - name: Lint (clippy)
-        run: RUSTFLAGS="-Dwarnings" cargo clippy
 
   test-cargo:
     name: "Test Rust"
@@ -92,6 +90,8 @@ jobs:
           toolchain: 1.85.1
           default: true
           components: rustfmt, clippy
+      - name: Lint (clippy)
+        run: RUSTFLAGS="-Dwarnings" cargo clippy
       - name: Test (cargo)
         working-directory: lampe
         run: |
