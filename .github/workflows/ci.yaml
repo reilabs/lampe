@@ -91,6 +91,7 @@ jobs:
           default: true
           components: rustfmt, clippy
       - name: Lint (clippy)
+        working-directory: lampe
         run: RUSTFLAGS="-Dwarnings" cargo clippy
       - name: Test (cargo)
         working-directory: lampe
