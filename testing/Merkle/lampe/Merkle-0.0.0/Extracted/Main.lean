@@ -14,10 +14,10 @@ nr_def «mtree_recover»<H, @N : u32>(idx : [bool; N], p : [Field; N], item : Fi
             let dir = #arrayIndex(idx, #cast(i) : u32) : bool;
         let sibling_root = #arrayIndex(p, #cast(i) : u32) : Field;
         if dir {
-                curr_h = ((H as BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(sibling_root, curr_h);
+                curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(sibling_root, curr_h);
             skip;
         } else {
-                curr_h = ((H as BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(curr_h, sibling_root);
+                curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(curr_h, sibling_root);
             skip;
         };
     };

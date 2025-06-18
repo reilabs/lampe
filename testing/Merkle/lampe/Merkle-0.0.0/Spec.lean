@@ -104,6 +104,7 @@ theorem recover_intro {H N idx proof item}
       steps [hHash]
       simp_all
     }
+
     steps
     have : (i + 1).toNat = i.toNat + 1 := by
       rcases N with ⟨N, lt⟩
