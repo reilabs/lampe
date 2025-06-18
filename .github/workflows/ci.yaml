@@ -75,8 +75,8 @@ jobs:
           command: fmt
           args: --all -- --check
 
-  test-cargo:
-    name: "Test Rust"
+  lint-rust:
+    name: "Lint Rust"
     needs: build-cargo
     runs-on: ubuntu-latest
     steps:
@@ -93,6 +93,22 @@ jobs:
       - name: Lint (clippy)
         working-directory: lampe
         run: RUSTFLAGS="-Dwarnings" cargo clippy
+
+  test-cargo:
+    name: "Test Rust"
+    needs: build-cargo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          path: lampe
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.85.1
+          default: true
+          components: rustfmt, clippy
       - name: Test (cargo)
         working-directory: lampe
         run: |
