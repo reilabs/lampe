@@ -74,6 +74,9 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+      - name: Lint (clippy)
+        working-directory: lampe
+        run: RUSTFLAGS="-Dwarnings" cargo clippy
 
   test-cargo:
     name: "Test Rust"
@@ -95,9 +98,6 @@ jobs:
         run: |
           export RUST_MIN_STACK=16777216;  # 16 MB
           cargo test --all
-      - name: Lint (clippy)
-        working-directory: lampe
-        run: RUSTFLAGS="-Dwarnings" cargo clippy
 
   end-to-end:
     name: "E2E Tests"
@@ -125,4 +125,4 @@ jobs:
           lake-package-directory: lampe/Lampe
       - name: Run test script
         working-directory: lampe
-        run: ./testing/test.sh --ci
+        run: ./testing/test.sh

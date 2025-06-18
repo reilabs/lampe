@@ -1238,7 +1238,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             (None, Some(trait_id)) => {
                                 let trt = self.context.def_interner.get_trait(trait_id);
                                 let trait_name =
-                                    self.emit_fully_qualified_trait_name_from_def(&trt);
+                                    self.emit_fully_qualified_trait_name_from_def(trt);
                                 let trait_generics = trt
                                     .generics
                                     .iter()
