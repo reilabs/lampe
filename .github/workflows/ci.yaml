@@ -75,7 +75,6 @@ jobs:
           command: fmt
           args: --all -- --check
       - name: Lint (clippy)
-        working-directory: lampe
         run: RUSTFLAGS="-Dwarnings" cargo clippy
 
   test-cargo:
