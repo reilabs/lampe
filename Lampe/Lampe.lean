@@ -24,6 +24,8 @@ import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Total
 import Lampe.Lens
 import Lampe.Semantics
+import Lampe.Semantics.Env
+import Lampe.Semantics.Trait
 import Lampe.SeparationLogic.LawfulHeap
 import Lampe.SeparationLogic.SLP
 import Lampe.SeparationLogic.State

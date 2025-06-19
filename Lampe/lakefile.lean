@@ -7,6 +7,7 @@ package Lampe where
   ]
   testDriver := "Tests"
 
+require "leanprover-community" / "batteries" @ git "v4.19.0"
 require "leanprover-community" / "mathlib" @ git "v4.19.0"
 
 @[default_target]
