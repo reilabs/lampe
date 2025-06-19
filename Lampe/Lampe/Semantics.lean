@@ -12,8 +12,19 @@ structure Env where
   functions : List FunctionDecl
   traits : List (Ident × TraitImpl)
 
+namespace Env
+
+-- True if the contents of Γᵢ all exist within Γₒ.
+def contains (Γₒ : Env) (Γᵢ : Env) : Prop := 
+  (Γᵢ.functions ⊆ Γₒ.functions) ∧ (Γᵢ.traits ⊆ Γₒ.traits)
+
+end Env
+
 instance : Append Env where
   append env₁ env₂ := ⟨env₁.functions ++ env₂.functions, env₁.traits ++ env₂.traits⟩
+
+instance : HasSubset Env where
+  Subset left right := right.contains left
 
 inductive TraitResolvable (Γ : Env) : TraitImplRef → Prop where
 | ok {ref impl} :
