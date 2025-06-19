@@ -8,12 +8,32 @@ namespace Lampe
 
 variable (p : Prime)
 
+-- Represents the code (functions and traits) that are in scope in our representation of the Noir
+-- program.
+--
+-- Note that we rely on the **Noir compiler** for the well-formedness of envs, as it will not admit
+-- any ambiguity here.
 structure Env where
   functions : List FunctionDecl
   traits : List (Ident × TraitImpl)
 
+namespace Env
+
+-- True if the contents of Γᵢ all exist within Γₒ.
+def contains (Γₒ : Env) (Γᵢ : Env) : Prop :=
+  (Γᵢ.functions ⊆ Γₒ.functions) ∧ (Γᵢ.traits ⊆ Γₒ.traits)
+
+-- Appends the contents of Γₗ and Γᵣ.
+def append (Γₗ : Env) (Γᵣ : Env) : Env :=
+  ⟨Γₗ.functions ++ Γᵣ.functions, Γₗ.traits ++ Γᵣ.traits⟩
+
+end Env
+
 instance : Append Env where
-  append env₁ env₂ := ⟨env₁.functions ++ env₂.functions, env₁.traits ++ env₂.traits⟩
+  append := Env.append
+
+instance : HasSubset Env where
+  Subset left right := right.contains left
 
 inductive TraitResolvable (Γ : Env) : TraitImplRef → Prop where
 | ok {ref impl} :
