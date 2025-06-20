@@ -557,13 +557,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let methodName := Syntax.mkStrLit (←mkNrIdent methodName)
   let traitName := Syntax.mkStrLit (←mkNrIdent traitName)
   let (paramTps, outTp) ← getFuncSignature t
-  /-
-  If `selfTp` is the placeholder type, then the concrete implementor must be provided during the verification.
-  Accordingly, we must construct a trait function reference with `selfTp` set to `none`.
-   -/
   let selfTp ← match selfTp with
-    | `(nr_type| _) => `(none)
-    | `(nr_type| $t) => `(some $(←mkNrType t))
+    | `(nr_type| $t) => mkNrType t
   wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp
     (FuncRef.trait $selfTp $traitName $traitGenKinds $traitGenVals $methodName $callGenKinds $callGenVals))) vname k
 | `(nr_expr| $fnExpr:nr_expr ( $args:nr_expr,* )) => do

@@ -544,7 +544,7 @@ theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
 
 
 theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
-    (href : H ⊢  ⟦fnRef = (.trait (some selfTp) traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
+    (href : H ⊢  ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
     (h_fn : (fnName, func) ∈ impls)
     (hkc : func.generics = kinds)
@@ -560,28 +560,6 @@ theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p 
     rename_i h'
     apply SLP.extract_prop at h' <;> tauto
   apply Omni.callTrait <;> tauto
-
-/--
-The variant of `callTrait` introduction rule that is parametrized over `selfTp`.
-This is useful when the implementor type must be provided by the user during the verification time.
--/
-theorem callTrait'_intro (selfTp : Tp) {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
-    (href : H ⊢  ⟦fnRef = (.trait none traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
-    (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
-    (h_fn : (fnName, func) ∈ impls)
-    (hkc : func.generics = kinds)
-    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
-    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
-    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
-    STHoare p Γ H
-      (Expr.call argTps outTp fnRef args)
-      Q := by
-  unfold STHoare THoare
-  intros
-  have _ : fnRef = (.trait none traitName traitKinds traitGenerics fnName kinds generics) := by
-    rename_i h'
-    apply SLP.extract_prop at h' <;> tauto
-  apply Omni.callTrait' <;> tauto
 
 theorem fn_intro : STHoare p Γ ⟦⟧ (.fn argTps outTp r) fun v => v = r := by
   unfold STHoare THoare
