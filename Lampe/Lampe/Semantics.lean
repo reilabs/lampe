@@ -20,7 +20,7 @@ structure Env where
 namespace Env
 
 -- True if the contents of Γᵢ all exist within Γₒ.
-def contains (Γₒ : Env) (Γᵢ : Env) : Prop := 
+def contains (Γₒ : Env) (Γᵢ : Env) : Prop :=
   (Γᵢ.functions ⊆ Γₒ.functions) ∧ (Γᵢ.traits ⊆ Γₒ.traits)
 
 -- Appends the contents of Γₗ and Γᵣ.
@@ -30,7 +30,7 @@ def append (Γₗ : Env) (Γᵣ : Env) : Env :=
 end Env
 
 instance : Append Env where
-  append := Env.append 
+  append := Env.append
 
 instance : HasSubset Env where
   Subset left right := right.contains left

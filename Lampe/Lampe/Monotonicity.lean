@@ -4,6 +4,7 @@ import Lampe.Hoare.Total
 import Lampe.Semantics
 import Lampe.Tactic.SL
 import Lampe.Tp
+import Batteries
 
 namespace Lampe
 
@@ -35,22 +36,22 @@ lemma subset_append_right {Γₗ Γᵣ : Env} : Γᵣ ⊆ Γₗ ++ Γᵣ := by
   . simp [Env.append]
 
 lemma subset_append_of_subset_left {Γᵢ Γₗ Γᵣ : Env} : Γᵢ ⊆ Γₗ → Γᵢ ⊆ Γₗ ++ Γᵣ := by
-  rintro ⟨h₁, h₂⟩ 
+  rintro ⟨h₁, h₂⟩
   constructor
   . simp [Env.append, h₁]
-  . simp [Env.append, h₂] 
+  . simp [Env.append, h₂]
 
 lemma subset_append_of_subset_right {Γᵢ Γₗ Γᵣ : Env} : Γᵢ ⊆ Γᵣ → Γᵢ ⊆ Γₗ ++ Γᵣ := by
-  rintro ⟨h₁, h₂⟩ 
+  rintro ⟨h₁, h₂⟩
   constructor
   . simp [Env.append, h₁]
-  . simp [Env.append, h₂] 
+  . simp [Env.append, h₂]
 
 lemma append_subset {Γ₁ Γ₂ Γ₃ : Env} : Γ₁ ++ Γ₂ ⊆ Γ₃ ↔ Γ₁ ⊆ Γ₃ ∧ Γ₂ ⊆ Γ₃ := by
   constructor
   . intro h
     constructor
-    . have := @subset_append_left Γ₁ Γ₂ 
+    . have := @subset_append_left Γ₁ Γ₂
       apply subset_transitive this h
     . have := @subset_append_right Γ₁ Γ₂
       apply subset_transitive this h
@@ -58,13 +59,13 @@ lemma append_subset {Γ₁ Γ₂ Γ₃ : Env} : Γ₁ ++ Γ₂ ⊆ Γ₃ ↔ Γ�
     simp [Env.append]
     constructor
     . simp_all
-    . simp_all 
+    . simp_all
 
 lemma subset_left_subset_of_append {Γᵢ Γₗ Γᵣ : Env} : Γᵢ ⊆ Γₗ → Γᵢ ++ Γᵣ ⊆ Γₗ ++ Γᵣ := by
-  intro h 
-  apply append_subset.mpr 
+  intro h
+  apply append_subset.mpr
   constructor
-  . have := @subset_append_left Γₗ Γᵣ 
+  . have := @subset_append_left Γₗ Γᵣ
     apply subset_transitive h this
   . apply subset_append_right
 
@@ -79,6 +80,27 @@ lemma subset_right_subset_of_append {Γᵢ Γₗ Γᵣ : Env} : Γᵢ ⊆ Γᵣ 
 end Env
 
 namespace Omni
+
+theorem TraitResolvable.env_mono {Γ₁ Γ₂ : Env} (h_sub: Γ₁ ⊆ Γ₂) :
+    TraitResolvable Γ₁ t → TraitResolvable Γ₂ t := by
+  intro h
+  induction h
+  constructor
+  · apply h_sub.2
+    assumption
+  all_goals assumption
+
+theorem TraitResolution.env_mono {Γ₁ Γ₂ : Env} (h_sub: Γ₁ ⊆ Γ₂) :
+    TraitResolution Γ₁ t impl → TraitResolution Γ₂ t impl := by
+  intro h
+  induction h
+  constructor
+  · apply h_sub.2
+    assumption
+  any_goals assumption
+  · intros
+    apply TraitResolvable.env_mono h_sub
+    tauto
 
 -- States that our any theorem over our Omnisemantics that is valid for any environment Γ₂ that
 -- contains the environment Γ₁ for which the theorem was originally proven.
@@ -103,13 +125,33 @@ theorem is_monotonic
     {st : State p}
     {expr : Expr (Tp.denote p) tp}
     {Q : Option (State p × Tp.denote p tp) → Prop}
-    {innerSubOuter : Γ₁ ⊆ Γ₂}
+    (inner_sub_outer : Γ₁ ⊆ Γ₂)
   : Omni p Γ₁ st expr Q → Omni p Γ₂ st expr Q := by
   intro h
-  -- induction h
-  -- . 
-  
-  sorry
+  induction h
+
+  any_goals (constructor; (repeat (first | intro _ | apply_assumption)); done)
+
+  case callLambda =>
+    apply Omni.callLambda <;> repeat apply_assumption
+
+  case loopNext =>
+    apply Omni.loopNext <;> repeat apply_assumption
+
+  case callDecl =>
+    apply Omni.callDecl
+
+    case _ : _ ∈ _ =>
+      apply inner_sub_outer.1
+      assumption
+
+    all_goals repeat apply_assumption
+
+  case callTrait =>
+    apply Omni.callTrait
+    assumption
+    apply TraitResolution.env_mono inner_sub_outer
+    any_goals repeat apply_assumption
 
 end Omni
 
@@ -131,17 +173,19 @@ namespace STHoare
 --   end up if `expr` evaluates.
 --
 -- See the documentation for `STHoare` for more detail.
-theorem is_monotonic 
-    {p : Prime} 
+theorem is_monotonic
+    {p : Prime}
     {Γ₁ Γ₂ : Env}
     {pre : SLP (State p)}
     {expr : Expr (Tp.denote p) tp}
     {post : Tp.denote p tp → SLP (State p)}
     {innerSubOuter : Γ₁ ⊆ Γ₂}
   : STHoare p Γ₁ pre expr post → STHoare p Γ₂ pre expr post := by
-  -- Obviously this is by induction over Omni, but HOW
+  unfold STHoare THoare
   intro h
-  sorry
+  intros
+  apply Omni.is_monotonic <;> repeat apply_assumption
+
 
 end STHoare
 
