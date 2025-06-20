@@ -17,7 +17,7 @@ theorem STHoare.callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
     (h_args_eq : (func.body _ (h_kinds_eq ▸ generics) |>.argTps) = argTps)
     (h_out_eq : (func.body _ (h_kinds_eq ▸ generics) |>.outTp) = outTp)
     (h_pre_hoare: STHoare p Γ H (h_out_eq ▸ (func.body _ (h_kinds_eq ▸ generics) |>.body (h_args_eq ▸ args))) Q) :
-    STHoare p Γ H (Expr.call argTps outTp (.trait (some selfTp) traitName traitKinds traitGenerics fnName kinds generics) args) Q := by
+    STHoare p Γ H (Expr.call argTps outTp (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics) args) Q := by
   apply STHoare.callTrait_intro (selfTp := selfTp) (traitName := traitName) (traitKinds := traitKinds) (traitGenerics := traitGenerics) (fnName := fnName) (outTp := outTp) (generics := generics)
   · simp [SLP.entails_top]
   · exact h_trait
