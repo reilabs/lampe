@@ -237,7 +237,6 @@ execution_success/databus_two_calldata
 execution_success/databus_two_calldata_simple
 execution_success/debug_logs
 execution_success/derive
-execution_success/diamond_deps_0
 execution_success/double_neg_cond_global_var
 execution_success/embedded_curve_ops
 execution_success/encrypted_log_regression
@@ -383,5 +382,3 @@ noir_test_success/ski_calculus
 noir_test_success/u128_type
 test_libraries/bad_impl
 test_libraries/bad_name
-test_libraries/diamond_deps_1
-test_libraries/reexporting_lib

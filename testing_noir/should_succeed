@@ -247,6 +247,7 @@ execution_success/cast_bool
 execution_success/cast_to_u64_regression_7776
 execution_success/cast_to_u8_regression_7776
 execution_success/custom_entry
+execution_success/diamond_deps_0
 execution_success/dont_deduplicate_call
 execution_success/double_neg_cond_bool_input
 execution_success/ecdsa_secp256k1
@@ -328,5 +329,7 @@ noir_test_success/ignored_oracle
 noir_test_success/out_of_bounds_alignment
 noir_test_success/regression_4080
 test_libraries/bin_dep
+test_libraries/diamond_deps_1
 test_libraries/diamond_deps_2
 test_libraries/exporting_lib
+test_libraries/reexporting_lib
