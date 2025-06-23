@@ -101,6 +101,14 @@ using the `--test` flag, similarly to the [E2E](#end-to-end-tests) test script.
 For more usage information, run `./testing_noir/test.sh -h` to get an idea of what additional flags
 it supports.
 
+## Extracting Noir's stdlib
+
+There is a script available to run lampe tool to extract Noir's stdlib.
+
+```bash
+./noir_stdlib/extract_stdlib.xsh
+```
+
 ## New to Rust
 
 If you are new to working with Rust, a great place to start is the official

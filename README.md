@@ -41,6 +41,10 @@ To install and test the `lampe` tool, please ensure that you have both Rust's `c
    lake build
    ```
 
+5. **Setup Xonsh shell:** While not strictly necessary at this stage, this is required to run some
+   scripts in the repository. Check [Xonsh website](https://xon.sh/contents.html) for installation
+   instruction.
+
 ## Usage
 
 At this stage you should be able to execute the `lampe` CLI, with the `lampe` command available on
