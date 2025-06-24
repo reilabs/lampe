@@ -14,7 +14,6 @@ nr_def «return_one»<>() -> Field {
 
 nr_def «test_equal_one»<>() -> Unit {
     #assert(#fEq(1 : Field, (@return_one<> as λ() → Field)()) : bool) : Unit;
-    skip;
 }
 
 
