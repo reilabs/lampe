@@ -65,6 +65,7 @@ pub enum EmitOutput {
     TraitImpl(String),
     Alias(String),
     Global(String),
+    TraitDef(String),
 }
 
 #[derive(Debug)]
@@ -81,6 +82,7 @@ impl EmitOutput {
             | EmitOutput::Function(s)
             | EmitOutput::Global(s)
             | EmitOutput::TraitImpl(s)
+            | EmitOutput::TraitDef(s)
             | EmitOutput::Alias(s) => s.is_empty(),
         }
     }
@@ -91,6 +93,7 @@ impl EmitOutput {
             | EmitOutput::Function(s)
             | EmitOutput::Global(s)
             | EmitOutput::TraitImpl(s)
+            | EmitOutput::TraitDef(s)
             | EmitOutput::Alias(s) => s.push_str(string),
         }
     }
@@ -103,6 +106,7 @@ impl std::fmt::Display for EmitOutput {
             | EmitOutput::Function(s)
             | EmitOutput::Global(s)
             | EmitOutput::TraitImpl(s)
+            | EmitOutput::TraitDef(s)
             | EmitOutput::Alias(s) => write!(f, "{s}"),
         }
     }
@@ -269,6 +273,17 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
                         let output = EmitOutput::Alias(self.emit_alias(id, &ctx)?);
 
+                        (def_order, name, output)
+                    }
+                    ModuleDefId::TraitId(id) => {
+                        let name =
+                            self.context.def_interner.get_trait(id).name.identifier().to_string();
+                        let def_order = sorted_dep_weights
+                            .clone()
+                            .into_iter()
+                            .position(|item| *item == DependencyId::Trait(id));
+                        let output =
+                            EmitOutput::TraitDef(self.emit_trait_def(&mut indenter, id, &ctx)?);
                         (def_order, name, output)
                     }
                     _ => continue,
@@ -564,6 +579,25 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .join(", ");
         let typ = self.emit_fully_qualified_type(&alias_data.typ, ctx);
         Ok(syntax::format_alias(&alias_name, &generics, &typ))
+    }
+
+    fn emit_trait_def(
+        &self,
+        indenter: &mut Indenter,
+        trait_id: TraitId,
+        ctx: &EmitterCtx,
+    ) -> Result<String> {
+        let trait_def = self.context.def_interner.get_trait(trait_id);
+        let name = &trait_def.name.to_string();
+        let generics = trait_def
+            .generics
+            .iter()
+            .map(|g| self.emit_resolved_generic(g, ctx))
+            .join(", ");
+        for method in &trait_def.methods {
+
+        }
+        Ok(syntax::format_trait_def(&name, &generics))
     }
 
     /// Emits the Lean code corresponding to a Noir global definition.

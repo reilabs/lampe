@@ -7,6 +7,8 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
+nr_trait_def BinaryHasher<F>
+
 nr_struct_def skyscraper::Skyscraper<> {
 
 }
