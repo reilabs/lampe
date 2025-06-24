@@ -101,6 +101,10 @@ syntax nr_trait_impl := "<" nr_generic_def,* ">" nr_ident "<" nr_generic,* ">" "
 syntax nr_struct_def := "<" nr_generic_def,* ">" "{" sepBy(nr_param_decl, ",", ",", allowTrailingSep) "}"
 syntax nr_type_alias := nr_ident "<" nr_generic_def,* ">" "=" nr_type
 
+syntax nr_trait_fn_decl := "fn" nr_ident "<" nr_generic_def,* ">" "(" nr_type,* ")" "->" nr_type
+syntax nr_trait_def := nr_ident "<" nr_generic_def,* ">"
+  "{" sepBy(nr_trait_fn_decl, ";", ";", allowTrailingSep) "}"
+
 abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
 
 partial def mkConstNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_const_num → m (TSyntax `term)
@@ -687,5 +691,93 @@ elab "nr_type_alias" typeAlias:nr_type_alias : command => do
   let (defName, al) ← mkTypeAlias typeAlias
   let decl ← `(@[reducible] def $defName := $al)
   Elab.Command.elabCommand decl
+
+def mkTraitDefGenericKindsIdent (traitName : String) : Lean.Ident :=
+  mkIdent $ Name.mkStr2 traitName "#genericKinds"
+
+def mkTraitFunDefGenericKindsIdent (traitName fnName : String) : Lean.Ident :=
+  mkIdent $ Name.mkStr3 traitName fnName "#genericKinds"
+
+def mkTraitFunDefInputsIdent (traitName fnName : String) : Lean.Ident :=
+  mkIdent $ Name.mkStr3 traitName fnName "#inputs"
+
+def mkTraitFunDefOutputIdent (traitName fnName : String) : Lean.Ident :=
+  mkIdent $ Name.mkStr3 traitName fnName "#output"
+
+  def mkTraitFunDefIdent (traitName fnName : String) : Lean.Ident :=
+  mkIdent $ Name.mkStr2 traitName fnName
+
+elab "nr_trait_def" decl:nr_trait_def : command => do
+  match decl with
+  | `(nr_trait_def| $traitName:nr_ident < $generics,* > { $functions;* }) => do
+    let name ← mkNrIdent traitName
+    let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
+    let genericKindsDecl ← `(abbrev $(mkTraitDefGenericKindsIdent name) : List Kind := $genericKinds)
+    Elab.Command.elabCommand genericKindsDecl
+
+    for func in functions.getElems.toList do
+      match func with
+      | `(nr_trait_fn_decl| fn $fnName:nr_ident < $fnGenerics,* > ( $params,* ) -> $outTp) => do
+        let fnName ← mkNrIdent fnName
+        let (fnGenericKinds, fnGenericDefs) ← mkGenericDefs fnGenerics.getElems.toList
+        let genericsDecl ← `(abbrev $(mkTraitFunDefGenericKindsIdent name fnName) : List Kind := $fnGenericKinds)
+        Elab.Command.elabCommand genericsDecl
+
+        let params ← params.getElems.toList.mapM fun p => match p with
+          | `(nr_type| $tp:nr_type) => mkNrType tp
+        let inTypesDecl ← `(def $(mkTraitFunDefInputsIdent name fnName) :
+          HList Kind.denote $(mkTraitDefGenericKindsIdent name) -> Tp -> HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName) -> List Tp :=
+            fun generics $(mkIdent $ Name.mkSimple "Self") fnGenerics => match generics with
+              | $genericDefs => match fnGenerics with
+                | $fnGenericDefs => $(←mkListLit params)
+        )
+        Elab.Command.elabCommand inTypesDecl
+
+        let outTp ← mkNrType outTp
+        let outTypeDecl ← `(def $(mkTraitFunDefOutputIdent name fnName) :
+          HList Kind.denote $(mkTraitDefGenericKindsIdent name) -> Tp -> HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName) -> Tp :=
+            fun generics $(mkIdent $ Name.mkSimple "Self") fnGenerics => match generics with
+              | $genericDefs => match fnGenerics with
+                | $fnGenericDefs => $outTp
+        )
+        Elab.Command.elabCommand outTypeDecl
+
+        let callDecl ← `(def $(mkTraitFunDefIdent name fnName) {p} (generics : HList Kind.denote $(mkTraitDefGenericKindsIdent name)) (Self: Tp) (fnGenerics: HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName)) (args : HList (Tp.denote p) ($(mkTraitFunDefInputsIdent name fnName) generics Self fnGenerics)) : Expr (Tp.denote p) ($(mkTraitFunDefOutputIdent name fnName) generics Self fnGenerics) :=
+          Expr.call
+            ($(mkTraitFunDefInputsIdent name fnName) generics Self fnGenerics)
+            ($(mkTraitFunDefOutputIdent name fnName) generics Self fnGenerics)
+            (FuncRef.trait Self $(Syntax.mkStrLit name) $(mkTraitDefGenericKindsIdent name) generics $(Syntax.mkStrLit fnName) $(mkTraitFunDefGenericKindsIdent name fnName) fnGenerics)
+            args
+        )
+        Elab.Command.elabCommand callDecl
+
+      | _ => throwUnsupportedSyntax
+  | _ => throwUnsupportedSyntax
+
+-- nr_trait_def hasher::BinaryHasher<F> {
+--     fn hash<>(F, F) -> F;
+-- }
+
+-- #print «hasher::BinaryHasher».«#genericKinds»
+-- #print «hasher::BinaryHasher».hash.«#genericKinds»
+
+-- #print «hasher::BinaryHasher».hash
+
+-- #reduce  «hasher::BinaryHasher».hash.«#output» (h![.field]) .field h![]
+
+-- def Lampe.«hasher::BinaryHasher».hash2 : {p : Prime} →
+--   (generics : HList Kind.denote «hasher::BinaryHasher».«#genericKinds») →
+--     (Self : Tp) →
+--       (fnGenerics : HList Kind.denote «hasher::BinaryHasher».hash.«#genericKinds») →
+--         HList (Tp.denote p) («hasher::BinaryHasher».hash.«#inputs» generics Self fnGenerics) →
+--           Expr (Tp.denote p) («hasher::BinaryHasher».hash.«#output» generics Self fnGenerics) :=
+-- fun {p} generics Self fnGenerics args ↦
+--   Expr.call («hasher::BinaryHasher».hash.«#inputs» generics Self fnGenerics)
+--     («hasher::BinaryHasher».hash.«#output» generics Self fnGenerics)
+--     (FuncRef.trait Self "hasher::BinaryHasher" «hasher::BinaryHasher».«#genericKinds» generics "hash"
+--       «hasher::BinaryHasher».hash.«#genericKinds» fnGenerics)
+--     args
+
+-- #print «hasher::BinaryHasher».hash
 
 end Lampe

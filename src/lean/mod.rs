@@ -590,6 +590,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     ) -> Result<String> {
         let trait_def = self.context.def_interner.get_trait(trait_id);
         let name = &trait_def.name.to_string();
+        let fq_crate_name = self.fq_trait_path_from_crate_id(trait_def.crate_id, trait_id);
+        let name = if fq_crate_name.is_empty() {
+            name.to_string()
+        } else {
+            format!("{fq_crate_name}::{name}")
+        };
         let generics = trait_def
             .generics
             .iter()
@@ -613,7 +619,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     .join(", ");
                 let out_type = self.emit_fully_qualified_type(&method.return_type(), ctx);
                 indenter.run(format!(
-                    "fn {method_name}<{generics}>({parameters}) -> {out_type}"
+                    "fn {method_name}<{generics}>({parameters}) -> {out_type};"
                 ))
             })
             .join("\n");
