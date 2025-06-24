@@ -47,6 +47,7 @@ use noirc_frontend::{
     Type,
     TypeBinding,
     TypeBindings,
+    TypeVariable,
 };
 
 use crate::{
@@ -594,10 +595,29 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .iter()
             .map(|g| self.emit_resolved_generic(g, ctx))
             .join(", ");
-        for method in &trait_def.methods {
-
-        }
-        Ok(syntax::format_trait_def(&name, &generics))
+        indenter.indent();
+        let methods = &trait_def
+            .methods
+            .iter()
+            .map(|method| {
+                let generics = method
+                    .direct_generics
+                    .iter()
+                    .map(|g| self.emit_resolved_generic(g, ctx))
+                    .join(", ");
+                let method_name = method.name.to_string();
+                let parameters = method
+                    .arguments()
+                    .iter()
+                    .map(|tp| self.emit_fully_qualified_type(tp, ctx))
+                    .join(", ");
+                let out_type = self.emit_fully_qualified_type(&method.return_type(), ctx);
+                indenter.run(format!(
+                    "fn {method_name}<{generics}>({parameters}) -> {out_type}"
+                ))
+            })
+            .join("\n");
+        Ok(syntax::format_trait_def(&name, &generics, methods))
     }
 
     /// Emits the Lean code corresponding to a Noir global definition.
