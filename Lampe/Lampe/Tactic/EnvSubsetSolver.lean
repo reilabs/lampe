@@ -16,9 +16,9 @@ initialize
 namespace Lampe.Env.SubsetSolver
 
 inductive EnvDef where
-| Const (name : Lean.Name)
-| Other
-| Concat (l r : EnvDef)
+| Const (name : Lean.Name) -- the Env is a simple constant
+| Other                    -- we don't parse this env any further, doesn't seem usable for solving the goal
+| Concat (l r : EnvDef).   -- the Env is a concatenation of two other envs (++)
 
 def toMsgDataEnv :  EnvDef → MessageData
   | .Const n => m!"{n}"
@@ -116,7 +116,7 @@ partial def solve (l r : EnvDef) (tgt: MVarId): TacticM Unit := withTraceNode `L
     | .some path =>
       applySolution path tgt
     | .none => do
-      trace[Lampe.Env.SubsetSolver] "Not solvable, unfolding names"
+      trace[Lampe.Env.SubsetSolver] "Can't find LHS in the RHS, unfolding one layer of constant names"
       let r ← unfoldNames r
       match r with
       | .some r' => solve l r' tgt
@@ -129,8 +129,8 @@ partial def solveSubset (goal : MVarId): TacticM Unit := withTraceNode `Lampe.En
 
 end Lampe.Env.SubsetSolver
 
-syntax "env_subset_solver" : tactic
-elab "env_subset_solver" : tactic => do
+syntax "solve_env_subset" : tactic
+elab "solve_env_subset" : tactic => do
   let target ← getMainGoal
   Lampe.Env.SubsetSolver.solveSubset target
   replaceMainGoal []

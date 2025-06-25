@@ -150,6 +150,11 @@ def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bo
 
 structure AddLemma where
   term : TSyntax `term
+  /--
+  Controls whether the environment is generalized before applying the lemma.
+  If `true`, the theorem will be applied with `apply Lampe.STHoare.is_mono` first.
+  Set to `false` for lemmas that are env-agnostic.
+  -/
   generalizeEnv : Bool := false
 
 def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVarId) := match lemmas with
@@ -160,7 +165,7 @@ def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVa
     let (subset, goal, others) ← if n.generalizeEnv
       then
         let subset :: main :: others ← evalTacticAt (←`(tactic|apply Lampe.STHoare.is_mono)) goal
-          | throwError "apply Lampe.Omni.is_mono gave unexpected result"
+          | throwError "apply Lampe.STHoare.is_mono gave unexpected result"
         pure ([subset], main, others)
       else pure ([], goal, [])
     let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $(n.term))) goal
