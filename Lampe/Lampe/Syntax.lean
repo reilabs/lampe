@@ -704,7 +704,7 @@ def mkTraitFunDefInputsIdent (traitName fnName : String) : Lean.Ident :=
 def mkTraitFunDefOutputIdent (traitName fnName : String) : Lean.Ident :=
   mkIdent $ Name.mkStr3 traitName fnName "#output"
 
-  def mkTraitFunDefIdent (traitName fnName : String) : Lean.Ident :=
+def mkTraitFunDefIdent (traitName fnName : String) : Lean.Ident :=
   mkIdent $ Name.mkStr2 traitName fnName
 
 elab "nr_trait_def" decl:nr_trait_def : command => do
