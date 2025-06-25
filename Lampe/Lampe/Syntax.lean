@@ -754,30 +754,4 @@ elab "nr_trait_def" decl:nr_trait_def : command => do
       | _ => throwUnsupportedSyntax
   | _ => throwUnsupportedSyntax
 
--- nr_trait_def hasher::BinaryHasher<F> {
---     fn hash<>(F, F) -> F;
--- }
-
--- #print «hasher::BinaryHasher».«#genericKinds»
--- #print «hasher::BinaryHasher».hash.«#genericKinds»
-
--- #print «hasher::BinaryHasher».hash
-
--- #reduce  «hasher::BinaryHasher».hash.«#output» (h![.field]) .field h![]
-
--- def Lampe.«hasher::BinaryHasher».hash2 : {p : Prime} →
---   (generics : HList Kind.denote «hasher::BinaryHasher».«#genericKinds») →
---     (Self : Tp) →
---       (fnGenerics : HList Kind.denote «hasher::BinaryHasher».hash.«#genericKinds») →
---         HList (Tp.denote p) («hasher::BinaryHasher».hash.«#inputs» generics Self fnGenerics) →
---           Expr (Tp.denote p) («hasher::BinaryHasher».hash.«#output» generics Self fnGenerics) :=
--- fun {p} generics Self fnGenerics args ↦
---   Expr.call («hasher::BinaryHasher».hash.«#inputs» generics Self fnGenerics)
---     («hasher::BinaryHasher».hash.«#output» generics Self fnGenerics)
---     (FuncRef.trait Self "hasher::BinaryHasher" «hasher::BinaryHasher».«#genericKinds» generics "hash"
---       «hasher::BinaryHasher».hash.«#genericKinds» fnGenerics)
---     args
-
--- #print «hasher::BinaryHasher».hash
-
 end Lampe

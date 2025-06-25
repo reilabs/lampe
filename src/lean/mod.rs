@@ -47,7 +47,6 @@ use noirc_frontend::{
     Type,
     TypeBinding,
     TypeBindings,
-    TypeVariable,
 };
 
 use crate::{
