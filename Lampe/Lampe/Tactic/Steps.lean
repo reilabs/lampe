@@ -5,6 +5,7 @@ import Lampe.Syntax
 import Lampe.Tactic.SLNorm
 import Lampe.Tactic.Traits
 import Lampe.Tactic.SL
+import Lampe.Tactic.EnvSubsetSolver
 
 import Lean.Meta.Tactic.Simp.Main
 
@@ -150,16 +151,23 @@ def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bo
 structure AddLemma where
   term : TSyntax `term
   generalizeEnv : Bool := false
-deriving ToMessageData
 
 def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
 | n::ns => do
   trace[Lampe.STHoare.Helpers] "trying {n.term} with generalizeEnv: {n.generalizeEnv}"
   try
-    let subset :: main :: others ← evalTacticAt (←`(tactic|apply Lampe.STHoare.is_mono)) goal |  throwError "apply Lampe.Omni.is_mono gave unexpected result"
-    let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $n)) main
-    pure $ main ++ subset :: others
+    let (subset, goal, others) ← if n.generalizeEnv
+      then
+        let subset :: main :: others ← evalTacticAt (←`(tactic|apply Lampe.STHoare.is_mono)) goal
+          | throwError "apply Lampe.Omni.is_mono gave unexpected result"
+        pure ([subset], main, others)
+      else pure ([], goal, [])
+    let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $(n.term))) goal
+    for s in subset do
+      trace[Lampe.STHoare.Helpers] "Solving env subset goal {s}"
+      Env.SubsetSolver.solveSubset s
+    pure $ main ++ others
   catch e =>
     trace[Lampe.STHoare.Helpers] "failed {n.term} with {e.toMessageData}"
     tryApplySyntaxes goal ns
@@ -260,7 +268,7 @@ If the goal is not a `letIn` it will try to close it with a closing theorem.
 This takes care of solving any entailments as well.
 Throws an exception if it cannot make progress or close any subsequent SL goals.
 -/
-partial def step (mvar : MVarId) (addLemmas : List $ TSyntax `term) : TacticM TripleGoals := do
+partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoals := do
   let target ← mvar.instantiateMVarsInType
   let some (_, body, _) ← parseTriple target | throwError "not a triple"
   if isLetIn body then
@@ -302,7 +310,7 @@ partial def step (mvar : MVarId) (addLemmas : List $ TSyntax `term) : TacticM Tr
 /--
 Takes `limit` obvious steps. Behaves like `repeat step` – never throws exceptions.
 -/
-partial def stepsLoop (goals : TripleGoals) (addLemmas : List $ TSyntax `term) (limit : Nat) : TacticM TripleGoals := do
+partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) : TacticM TripleGoals := do
   let goals ← normalizeGoals goals
   if limit == 0 then return goals
 
@@ -316,7 +324,7 @@ partial def stepsLoop (goals : TripleGoals) (addLemmas : List $ TSyntax `term) (
     | none => return goals
   | none => return goals
 
-partial def steps (mvar : MVarId) (limit : Nat) (addLemmas : List $ TSyntax `term) : TacticM (List MVarId) := do
+partial def steps (mvar : MVarId) (limit : Nat) (addLemmas : List AddLemma) : TacticM (List MVarId) := do
   let goals ← stepsLoop (TripleGoals.mk mvar [] []) addLemmas limit
   return goals.flatten
 
@@ -325,7 +333,7 @@ syntax "steps" (num)? ("[" term,* "]")?: tactic
 elab "steps" limit:optional(num) "[" ts:term,*  "]" : tactic => do
   let limit := limit.map (fun n => n.getNat) |>.getD 10000
   let addLemmas := ts.getElems.toList
-  let newGoals ← steps (← getMainGoal) limit addLemmas
+  let newGoals ← steps (← getMainGoal) limit ((AddLemma.mk (generalizeEnv := true)) <$> addLemmas)
   replaceMainGoal newGoals
 elab "steps" limit:optional(num) : tactic => do
   let limit := limit.map (fun n => n.getNat) |>.getD 10000
@@ -338,7 +346,7 @@ lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P �
 
 elab "loop_inv" p:optional("nat") inv:term : tactic => do
   let solver ← if p.isSome then ``(loop_inv_intro' _ $inv) else ``(loop_inv_intro $inv)
-  let goals ← steps (← getMainGoal) 1 [solver]
+  let goals ← steps (← getMainGoal) 1 [AddLemma.mk solver (generalizeEnv := false)]
   replaceMainGoal goals
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
@@ -379,5 +387,5 @@ elab "enter_block_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term "
   let enterer ← match n with
   | some n => ``(bindVar (fun $n => enter_block $pre $post))
   | none => ``(enter_block $pre $post)
-  let newGoals ← steps goal 1 [enterer]
+  let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)]
   replaceMainGoal newGoals
