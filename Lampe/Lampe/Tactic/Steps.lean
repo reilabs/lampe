@@ -147,14 +147,21 @@ def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bo
   let some val := args[3]? | throwError "malformed letIn"
   getClosingTerm val
 
-def tryApplySyntaxes (goal : MVarId) (lemmas : List (TSyntax `term)): TacticM (List MVarId) := match lemmas with
+structure AddLemma where
+  term : TSyntax `term
+  generalizeEnv : Bool := false
+deriving ToMessageData
+
+def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
 | n::ns => do
-  trace[Lampe.STHoare.Helpers] "trying {n}"
+  trace[Lampe.STHoare.Helpers] "trying {n.term} with generalizeEnv: {n.generalizeEnv}"
   try
-    evalTacticAt (←`(tactic|with_unfolding_all apply $n)) goal
+    let subset :: main :: others ← evalTacticAt (←`(tactic|apply Lampe.STHoare.is_mono)) goal |  throwError "apply Lampe.Omni.is_mono gave unexpected result"
+    let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $n)) main
+    pure $ main ++ subset :: others
   catch e =>
-    trace[Lampe.STHoare.Helpers] "failed {n} with {e.toMessageData}"
+    trace[Lampe.STHoare.Helpers] "failed {n.term} with {e.toMessageData}"
     tryApplySyntaxes goal ns
 
 lemma STHoare.pure_left_star {p tp} {E : Expr (Tp.denote p) tp} {Γ P₁ P₂ Q} : (P₁ → STHoare  p Γ P₂ E Q) → STHoare p Γ (⟦P₁⟧ ⋆ P₂) E Q := by

@@ -262,6 +262,8 @@ def EverythingEnv : Env := ⟨[combining_everything], []⟩
                         ++ FieldTraitEnvWithCall
                         ++ ComposedEnvConcat
 
+set_option trace.Lampe.STHoare.Helpers true
+
 -- Finally we show that this function works as expected in that environment.
 theorem combining_everything_correct
     {p : Prime}
@@ -273,28 +275,11 @@ theorem combining_everything_correct
       (combining_everything.call h![] h![n])
       fun out => out = (n + 4) + (n + 42) := by
   enter_decl
-  steps
-
-  apply STHoare.letIn_intro
-  apply STHoare.is_mono
-  rotate_left
-  apply add_one_to_three_and_n_correct_in_concat_env
-
-  intro
-  steps
-  apply STHoare.letIn_intro
-  apply STHoare.is_mono
-  rotate_left
-  apply STHoare.consequence_frame_left
-  apply call_trait_impls_and_add_correct
-
-  sl
-  intro
-  steps
-  subst_vars
-  . conv =>
-      lhs
-      rw [add_assoc n 3 1]
-      norm_num
+  steps [
+    add_one_to_three_and_n_correct_in_concat_env,
+    call_trait_impls_and_add_correct
+  ]
+  . subst_vars
+    ring_nf
 
   all_goals simp [EverythingEnv]
