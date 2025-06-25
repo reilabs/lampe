@@ -156,7 +156,7 @@ theorem add_one_to_three_and_n_correct_in_concat_env
 -- Let's also define a trait, with implementations on `Field` and `u8`, to check whether trait impl
 -- search interacts properly with monotonicity.
 
-nr_trait_def Default<> {
+nr_trait_def Default<>[] {
   fn default<>() -> Self;
 }
 
@@ -184,7 +184,7 @@ theorem default_field_correct
       p
       TraitsEnv
       (⟦⟧)
-      (Default.default h![] .field h![] h![])
+      (Default.default h![] .field h![] h![] h![])
       fun out => out = (42 : Fp p) := by
   try_all_traits [] TraitsEnv
   steps
@@ -197,7 +197,7 @@ theorem default_u8_correct
       p
       TraitsEnv
       (⟦⟧)
-      (Default.default h![] (.u 8) h![] h![])
+      (Default.default h![] (.u 8) h![] h![] h![])
       fun out => out = (255 : BitVec 8) := by
   try_all_traits [] TraitsEnv
   steps

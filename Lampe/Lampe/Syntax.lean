@@ -102,7 +102,7 @@ syntax nr_struct_def := "<" nr_generic_def,* ">" "{" sepBy(nr_param_decl, ",", "
 syntax nr_type_alias := nr_ident "<" nr_generic_def,* ">" "=" nr_type
 
 syntax nr_trait_fn_decl := "fn" nr_ident "<" nr_generic_def,* ">" "(" nr_type,* ")" "->" nr_type
-syntax nr_trait_def := nr_ident "<" nr_generic_def,* ">"
+syntax nr_trait_def := nr_ident "<" nr_generic_def,* ">" "[" nr_generic_def,* "]"
   "{" sepBy(nr_trait_fn_decl, ";", ";", allowTrailingSep) "}"
 
 abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
@@ -695,6 +695,9 @@ elab "nr_type_alias" typeAlias:nr_type_alias : command => do
 def mkTraitDefGenericKindsIdent (traitName : String) : Lean.Ident :=
   mkIdent $ Name.mkStr2 traitName "#genericKinds"
 
+def mkTraitDefAssociatedTypesKindsIdent (traitName : String) : Lean.Ident :=
+  mkIdent $ Name.mkStr2 traitName "#associatedTypesKinds"
+
 def mkTraitFunDefGenericKindsIdent (traitName fnName : String) : Lean.Ident :=
   mkIdent $ Name.mkStr3 traitName fnName "#genericKinds"
 
@@ -709,11 +712,14 @@ def mkTraitFunDefIdent (traitName fnName : String) : Lean.Ident :=
 
 elab "nr_trait_def" decl:nr_trait_def : command => do
   match decl with
-  | `(nr_trait_def| $traitName:nr_ident < $generics,* > { $functions;* }) => do
+  | `(nr_trait_def| $traitName:nr_ident < $generics,* > [$associatedTypes,*] { $functions;* }) => do
     let name ← mkNrIdent traitName
     let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
     let genericKindsDecl ← `(abbrev $(mkTraitDefGenericKindsIdent name) : List Kind := $genericKinds)
     Elab.Command.elabCommand genericKindsDecl
+    let (associatedTypesKinds, associatedTypesDefs) ← mkGenericDefs associatedTypes.getElems.toList
+    let associatedTypesKindsDecl ← `(abbrev $(mkTraitDefAssociatedTypesKindsIdent name) : List Kind := $associatedTypesKinds)
+    Elab.Command.elabCommand associatedTypesKindsDecl
 
     for func in functions.getElems.toList do
       match func with
@@ -726,26 +732,42 @@ elab "nr_trait_def" decl:nr_trait_def : command => do
         let params ← params.getElems.toList.mapM fun p => match p with
           | `(nr_type| $tp:nr_type) => mkNrType tp
         let inTypesDecl ← `(def $(mkTraitFunDefInputsIdent name fnName) :
-          HList Kind.denote $(mkTraitDefGenericKindsIdent name) -> Tp -> HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName) -> List Tp :=
-            fun generics $(mkIdent $ Name.mkSimple "Self") fnGenerics => match generics with
+          HList Kind.denote $(mkTraitDefGenericKindsIdent name) ->
+          Tp ->
+          HList Kind.denote $(mkTraitDefAssociatedTypesKindsIdent name) ->
+          HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName) ->
+          List Tp :=
+            fun generics $(mkIdent $ Name.mkSimple "Self") assocTypes fnGenerics => match generics with
               | $genericDefs => match fnGenerics with
-                | $fnGenericDefs => $(←mkListLit params)
+                | $fnGenericDefs => match assocTypes with
+                  | $associatedTypesDefs => $(←mkListLit params)
         )
         Elab.Command.elabCommand inTypesDecl
 
         let outTp ← mkNrType outTp
         let outTypeDecl ← `(def $(mkTraitFunDefOutputIdent name fnName) :
-          HList Kind.denote $(mkTraitDefGenericKindsIdent name) -> Tp -> HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName) -> Tp :=
-            fun generics $(mkIdent $ Name.mkSimple "Self") fnGenerics => match generics with
+          HList Kind.denote $(mkTraitDefGenericKindsIdent name) ->
+          Tp ->
+          HList Kind.denote $(mkTraitDefAssociatedTypesKindsIdent name) ->
+          HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName) ->
+          Tp :=
+            fun generics $(mkIdent $ Name.mkSimple "Self") assocTypes fnGenerics => match generics with
               | $genericDefs => match fnGenerics with
-                | $fnGenericDefs => $outTp
+                | $fnGenericDefs => match assocTypes with
+                  | $associatedTypesDefs => $outTp
         )
         Elab.Command.elabCommand outTypeDecl
 
-        let callDecl ← `(def $(mkTraitFunDefIdent name fnName) {p} (generics : HList Kind.denote $(mkTraitDefGenericKindsIdent name)) (Self: Tp) (fnGenerics: HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName)) (args : HList (Tp.denote p) ($(mkTraitFunDefInputsIdent name fnName) generics Self fnGenerics)) : Expr (Tp.denote p) ($(mkTraitFunDefOutputIdent name fnName) generics Self fnGenerics) :=
+        let callDecl ← `(def $(mkTraitFunDefIdent name fnName) {p}
+          (generics : HList Kind.denote $(mkTraitDefGenericKindsIdent name))
+          (Self: Tp)
+          (associatedTypes : HList Kind.denote $(mkTraitDefAssociatedTypesKindsIdent name))
+          (fnGenerics: HList Kind.denote $(mkTraitFunDefGenericKindsIdent name fnName))
+          (args : HList (Tp.denote p) ($(mkTraitFunDefInputsIdent name fnName) generics Self associatedTypes fnGenerics))
+          : Expr (Tp.denote p) ($(mkTraitFunDefOutputIdent name fnName) generics Self associatedTypes fnGenerics) :=
           Expr.call
-            ($(mkTraitFunDefInputsIdent name fnName) generics Self fnGenerics)
-            ($(mkTraitFunDefOutputIdent name fnName) generics Self fnGenerics)
+            ($(mkTraitFunDefInputsIdent name fnName) generics Self associatedTypes fnGenerics)
+            ($(mkTraitFunDefOutputIdent name fnName) generics Self associatedTypes fnGenerics)
             (FuncRef.trait Self $(Syntax.mkStrLit name) $(mkTraitDefGenericKindsIdent name) generics $(Syntax.mkStrLit fnName) $(mkTraitFunDefGenericKindsIdent name fnName) fnGenerics)
             args
         )

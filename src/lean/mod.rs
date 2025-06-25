@@ -600,6 +600,11 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .iter()
             .map(|g| self.emit_resolved_generic(g, ctx))
             .join(", ");
+        let associated_types = trait_def
+            .associated_types
+            .iter()
+            .map(|tp| self.emit_resolved_generic(tp, ctx))
+            .join(", ");
         indenter.indent();
         let methods = &trait_def
             .methods
@@ -623,7 +628,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             })
             .join("\n");
         indenter.dedent()?;
-        Ok(syntax::format_trait_def(&name, &generics, methods))
+        Ok(syntax::format_trait_def(&name, &generics, &associated_types, methods))
     }
 
     /// Emits the Lean code corresponding to a Noir global definition.

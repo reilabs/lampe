@@ -7,6 +7,18 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
+nr_trait_def associated_type::Foo<>[Out] {
+    fn foo<>(Self) -> Out;
+}
+
+nr_trait_def multiple_generics::Foo<I>[] {
+    fn foo<>(Self) -> I;
+}
+
+nr_trait_def experiments::MyTrait<>[] {
+    fn foo<>(Self) -> Self;
+}
+
 nr_struct_def patterns::Option1<T> {
     is_some : bool,
     value : T
