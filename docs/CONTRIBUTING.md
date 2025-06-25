@@ -101,6 +101,16 @@ using the `--test` flag, similarly to the [E2E](#end-to-end-tests) test script.
 For more usage information, run `./testing_noir/test.sh -h` to get an idea of what additional flags
 it supports.
 
+## Extracting Noir's Standard Library
+
+The standard library is intended to be kept up to date with the version of Noir that we depend on,
+and this is enforced on CI. We have a script available that uses the `lampe` CLI to extract the
+standard library which can be run as follows.
+
+```bash
+./stdlib/extract.xsh
+```
+
 ## New to Rust
 
 If you are new to working with Rust, a great place to start is the official
