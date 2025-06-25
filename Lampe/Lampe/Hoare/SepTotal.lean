@@ -353,7 +353,7 @@ theorem SLP.entails_of_eq [LawfulHeap α] {P Q : SLP α} (h : P = Q) : P ⊢ Q :
   cases h
   apply SLP.entails_self
 
-theorem loop_inv_intro' {lo hi : U s} (hi_lt_max : hi.toNat < 2^s - 1) (Inv : (i : Nat) → (lo.toNat ≤ i) → (i ≤ hi.toNat) → SLP (State p)) {body : U s → Expr (Tp.denote p) tp}:
+theorem loop_inv_intro' {lo hi : U s} (Inv : (i : Nat) → (lo.toNat ≤ i) → (i ≤ hi.toNat) → SLP (State p)) {body : U s → Expr (Tp.denote p) tp}:
     (∀(i:Nat), (hlo: lo.toNat ≤ i) → (hhi: i < hi.toNat) → STHoare p Γ (Inv i hlo (by linarith)) (body i) (fun _ => Inv (i + 1) (by linarith) (by linarith))) →
     STHoare p Γ (∃∃h, Inv lo.toNat BitVec.le_refl h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi.toNat h BitVec.le_refl) := by
   intro hinv
@@ -371,11 +371,12 @@ theorem loop_inv_intro' {lo hi : U s} (hi_lt_max : hi.toNat < 2^s - 1) (Inv : (i
     · apply SLP.entails_self
     · intro
       have : BitVec.toNat (i + 1) = i.toNat + 1 := by
-        simp
+        simp only [BitVec.ofNat_eq_ofNat, BitVec.toNat_add, BitVec.toNat_ofNat, Nat.add_mod_mod]
         rw [Nat.mod_eq_of_lt]
-        simp [BitVec.lt_def] at hhi
-        apply Nat.lt_trans (m := hi.toNat + 1) (by linarith)
-        apply Nat.lt_of_lt_of_eq (m := 2^s - 1 + 1) (by linarith)
+        simp only [BitVec.lt_def] at hhi
+        apply Nat.lt_of_lt_of_le (m := hi.toNat + 1) (by linarith)
+        apply Nat.succ_le_of_lt
+        cases hi
         simp
       apply SLP.star_mono
       · apply SLP.entails_of_eq
