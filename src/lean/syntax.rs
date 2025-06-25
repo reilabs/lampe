@@ -114,6 +114,15 @@ pub(super) fn format_alias(alias_name: &str, generics: &str, typ: &str) -> Strin
     format!("nr_type_alias {alias_name}<{generics}> = {typ}")
 }
 
+pub(super) fn format_trait_def(
+    name: &str,
+    generics: &str,
+    associated_types: &str,
+    methods: &str,
+) -> String {
+    format!("nr_trait_def {name}<{generics}>[{associated_types}] {{\n{methods}\n}}")
+}
+
 pub(super) mod literal {
     #[inline]
     pub fn format_bool(v: bool) -> String {
