@@ -616,7 +616,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     .iter()
                     .map(|tp| self.emit_fully_qualified_type(tp, ctx))
                     .join(", ");
-                let out_type = self.emit_fully_qualified_type(&method.return_type(), ctx);
+                let out_type = self.emit_fully_qualified_type(method.return_type(), ctx);
                 indenter.run(format!(
                     "fn {method_name}<{generics}>({parameters}) -> {out_type};"
                 ))
