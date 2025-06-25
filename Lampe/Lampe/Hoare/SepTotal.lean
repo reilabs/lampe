@@ -1,27 +1,37 @@
 import Lampe.Ast
-import Lampe.Tp
-import Lampe.Semantics
 import Lampe.Hoare.Total
+import Lampe.Semantics
 import Lampe.Tactic.SL
+import Lampe.Tp
 
 namespace Lampe
 
 /--
-A Hoare triple `{P} e {λv ↦ Q v}` has the following meaning:
-if the state of the program satisfies the pre-condition `P`,
-then the expression `e` terminates and evaluates to `v` such that the post-condition `Q v` holds.
+A Hoare triple where the states must be valid under separation logic.
 
-Note that even if `e` terminates, it may evaluate to an error, e.g., division-by-zero.
-Accordingly, we interpret `{P} e {λv ↦ Q v}` as follows:
-if `P` holds, then `e` terminates and it either (1) fails or (2) *successfully* evaluates to `v` such that `Q v` holds.
-This is logically equivalent to saying that if `P` holds, then `e` terminates and (`Q v` holds if `e` succeeds and evaluates to `v`).
+A Hoare triple `{Γ} {P} e {λv ↦ Q v}` means that if the state of the program satisfies the
+pre-condition `P`, then the expression `e` terminates and evaluates to `v` in the environment `Γ`
+such that the postcondition `Q v` holds.
 
-Hence, the triples are *partial* with respect to failure and *total* with respect to termination.
+Note that the evaluation of `e` to an error is still termination. Consequently, we interpret
+`{P} e {λv ↦ Q v}` to mean that if `P` holds, then `e` terminates and either:
 
-An intuitive way of looking at this is thinking in terms of "knowledge discovery".
-For example, if the operation `a + b` succeeds, then we know that it evaluates to `v = a + b` **and** `a + b < 2^32`, i.e., no overflow has happened.
-Then, we would define the post-condition such that `Q = λv ↦ (v = a + b) ∧ (a + b < 2^32)`.
- -/
+1. Fails
+2. Successfully evaluates to `v` such that `Q v` holds.
+
+This is logically equivalent to stating that if `P` holds, then `e` terminates, and that `Q v` holds
+if `e` **succeeds** and evaluates to `v`. This means that our triples are _partial_ with respect to
+failure, and _total_ with respect to termination of the program.
+
+A reasonable intuition for how this works is the lens of "knowledge discovery". For example, if the
+operation `a + b` on `u32` succeeds, then we know that it evaluates to `v = a + b` **and** that
+`a + b < 2^32` (that no overflow has happened). Under such circumstances, we would define the
+postcondition such that `Q = λv ↦ (v = a + b) ∧ (a + b < 2^32)`.
+
+Note that we have the `⋆ ⊤` term in our postcondition here. This term is able to subsume evidence
+that goes unused, thereby turning the separation logic from linear to affine. This is necessary to
+model programs that do not have explicit deallocation semantics, like lean.
+-/
 def STHoare p Γ P e (Q : Tp.denote p tp → SLP (State p))
   := ∀H, THoare p Γ (P ⋆ H) e (fun v => ((Q v) ⋆ H) ⋆ ⊤)
 
@@ -568,5 +578,36 @@ theorem fn_intro : STHoare p Γ ⟦⟧ (.fn argTps outTp r) fun v => v = r := by
   simp only
   apply SLP.ent_star_top
   assumption
+
+/--
+A given theorem on a Hoare Triple is valid for any environment Γ₂ that contains the environment Γ₁
+for which the theorem was originally proven.
+
+In detail:
+
+- `p` is the value of the field prime under which the proof should hold.
+- `Γ₁` is the "inner" environment, namely the one for which a proof of the Hoare triple already
+  exists, while `Γ₂` is the "outer" environment, the one for which we want our existing proof to
+  hold.
+- `pre` is the precondition for our Hoare triples, namely the state in which our program is before
+  executing `expr`.
+- `expr` is the program expression to be "executed" in both cases.
+- `post` is the postcondition for our Hoare triples, namely the state in which our program will end
+  up if `expr` evaluates.
+
+See the documentation for `STHoare` for more detail.
+-/
+theorem is_mono
+    {p : Prime}
+    {Γ₁ Γ₂ : Env}
+    {pre : SLP (State p)}
+    {expr : Expr (Tp.denote p) tp}
+    {post : Tp.denote p tp → SLP (State p)}
+    (inner_sub_outer : Γ₁ ⊆ Γ₂)
+  : STHoare p Γ₁ pre expr post → STHoare p Γ₂ pre expr post := by
+  unfold STHoare THoare
+  intros
+  apply Omni.is_mono inner_sub_outer
+  repeat apply_assumption
 
 end Lampe.STHoare

@@ -1,41 +1,33 @@
+import Batteries
 import Lampe.Ast
-import Lampe.Tp
 import Lampe.Data.Field
-import Lampe.Tactic.IntroCases
+import Lampe.Semantics.Env
+import Lampe.Semantics.Trait
 import Lampe.SeparationLogic.State
+import Lampe.Tactic.IntroCases
+import Lampe.Tp
 
 namespace Lampe
 
+-- The value of the field prime under which the semantics are operating.
 variable (p : Prime)
 
-structure Env where
-  functions : List FunctionDecl
-  traits : List (Ident × TraitImpl)
+/-- 
+Omni provides our implementation of the program semantics for Noir, demonstrating how state
+transitions can occur within the program.
 
-instance : Append Env where
-  append env₁ env₂ := ⟨env₁.functions ++ env₂.functions, env₁.traits ++ env₂.traits⟩
+It effectively says that if the program with the environment `Γ` begins in state `st`, and the
+program fragment `expr` is executed, then execution succeeds and the postcondition `Q` holds, or
+execution has failed.
 
-inductive TraitResolvable (Γ : Env) : TraitImplRef → Prop where
-| ok {ref impl} :
-  (ref.trait.name, impl) ∈ Γ.traits →
-  (ktc : ref.trait.traitGenericKinds = impl.traitGenericKinds) →
-  (implGenerics : HList Kind.denote impl.implGenericKinds) →
-  (ktc ▸ ref.trait.traitGenerics = impl.traitGenerics implGenerics) →
-  ref.self = impl.self implGenerics →
-  (∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) →
-  TraitResolvable Γ ref
-
-inductive TraitResolution (Γ : Env) : TraitImplRef → List (Ident × Function) → Prop where
-| ok {ref impl}
-  (h_mem : (ref.trait.name, impl) ∈ Γ.traits)
-  (ktc : ref.trait.traitGenericKinds = impl.traitGenericKinds)
-  (implGenerics : HList Kind.denote impl.implGenericKinds)
-  (_ : ktc ▸ ref.trait.traitGenerics = impl.traitGenerics implGenerics)
-  (_ : ref.self = impl.self implGenerics)
-  (_ : ∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) :
-  TraitResolution Γ ref (impl.impl implGenerics)
-
-inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p × Tp.denote p tp) → Prop) → Prop where
+Noir as a language exhibits explicitly nondeterministic behavior, which we want to capture in our 
+semantics explicitly. The type of `Q` represents this through making the postcondition into a _set_,
+modeled explicitly as a selector function. This is wrapped in an `Option`, where a value of `some`
+implies a successful execution, while `none` suggests a failure. The interpretation is that, if
+execution succeeds, we end up with our postcondition `Q` holding no matter who controls the
+nondeterminism in the program.
+-/
+inductive Omni : (Γ : Env) → (st : State p) → (expr : Expr (Tp.denote p) tp) → (Q : Option (State p × Tp.denote p tp) → Prop) → Prop where
 | litField {Q} : Q (some (st, n)) → Omni Γ st (.litNum .field n) Q
 | litStr {Q} : Q (some (st, ns)) → Omni Γ st (.litStr u ns) Q
 | fmtStr {Q} : Q (some (st, ns)) → Omni Γ st (.fmtStr _ _ ns) Q
@@ -95,7 +87,9 @@ inductive Omni : Env → State p → Expr (Tp.denote p) tp → (Option (State p 
   Omni Γ st (.letIn (body lo) (fun _ => .loop (lo + 1) hi body)) Q →
   Omni Γ st (.loop lo hi body) Q
 
-theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'} :
+namespace Omni
+
+theorem consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'} :
     Omni p Γ st e Q →
     (∀ v, Q v → Q' v) →
     Omni p Γ st e Q' := by
@@ -124,8 +118,7 @@ theorem Omni.consequence {p Γ st tp} {e : Expr (Tp.denote p) tp} {Q Q'} :
     constructor
     all_goals tauto
 
-
-theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} :
+theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} :
     Omni p Γ st₁ e Q →
     LawfulHeap.disjoint st₁ st₂ →
     Omni p Γ (st₁ ∪ st₂) e (fun stv => match stv with
@@ -266,5 +259,58 @@ theorem Omni.frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp}
       simp only [Finmap.insert_eq_singleton_union] at hQ
       rw [Finmap.union_comm_of_disjoint hd₁]
       tauto
+
+/-- 
+Any theorem over our Omnisemantics that is proved for an environment Γ₁ is also valid for Γ₂, where
+Γ₁ ⊆ Γ₂.
+
+In detail:
+
+- `p` is the value of the field prime under which the proof should hold.
+- `Γ₁` is the "inner" environment, namely the one for which a proof of the Hoare triple already
+  exists, while `Γ₂` is the "outer" environment, the one for which we want our existing proof to
+  hold.
+- `st` is the state of the program before execution of the provided `expr`.
+- `expr` is the program expression to be "executed" in both cases.
+- `Q` represents the postcondition for execution, where it is `some` after successful execution and
+  `none` otherwise.
+
+See the documentation for `Omni` for more detail.
+-/
+theorem is_mono
+    {p : Prime}
+    {Γ₁ Γ₂ : Env}
+    {st : State p}
+    {expr : Expr (Tp.denote p) tp}
+    {Q : Option (State p × Tp.denote p tp) → Prop}
+    (inner_sub_outer : Γ₁ ⊆ Γ₂)
+  : Omni p Γ₁ st expr Q → Omni p Γ₂ st expr Q := by
+  intro h
+  induction h
+
+  any_goals
+    constructor
+    repeat first
+      | intro _
+      | apply_assumption
+    done
+
+  case callLambda => apply Omni.callLambda <;> repeat apply_assumption
+  case loopNext => apply Omni.loopNext <;> repeat apply_assumption
+
+  case callDecl =>
+    apply Omni.callDecl
+    case _ : _ ∈ _ =>
+      apply inner_sub_outer.1
+      assumption
+    all_goals repeat apply_assumption
+
+  case callTrait =>
+    apply Omni.callTrait
+    assumption
+    apply TraitResolution.env_mono inner_sub_outer
+    any_goals repeat apply_assumption
+
+end Omni
 
 end Lampe
