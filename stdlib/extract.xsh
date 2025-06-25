@@ -14,6 +14,6 @@ project_root = get_project_root()
 
 lampe_cmd = project_root / 'target' / 'release' / 'lampe'
 
-cd @(project_root / 'noir_stdlib')
+cd @(project_root / 'stdlib')
 
 $(@(lampe_cmd))
