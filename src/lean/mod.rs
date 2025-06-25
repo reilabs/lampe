@@ -628,7 +628,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             })
             .join("\n");
         indenter.dedent()?;
-        Ok(syntax::format_trait_def(&name, &generics, &associated_types, methods))
+        Ok(syntax::format_trait_def(
+            &name,
+            &generics,
+            &associated_types,
+            methods,
+        ))
     }
 
     /// Emits the Lean code corresponding to a Noir global definition.
