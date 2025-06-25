@@ -108,7 +108,7 @@ and this is enforced on CI. We have a script available that uses the `lampe` CLI
 standard library which can be run as follows.
 
 ```bash
-./noir_stdlib/extract_stdlib.xsh
+./stdlib/extract.xsh
 ```
 
 ## New to Rust
