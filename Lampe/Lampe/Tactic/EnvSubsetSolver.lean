@@ -18,7 +18,7 @@ namespace Lampe.Env.SubsetSolver
 inductive EnvDef where
 | Const (name : Lean.Name) -- the Env is a simple constant
 | Other                    -- we don't parse this env any further, doesn't seem usable for solving the goal
-| Concat (l r : EnvDef).   -- the Env is a concatenation of two other envs (++)
+| Concat (l r : EnvDef)    -- the Env is a concatenation of two other envs (++)
 
 def toMsgDataEnv :  EnvDef → MessageData
   | .Const n => m!"{n}"
