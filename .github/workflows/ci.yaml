@@ -146,7 +146,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install xonsh
-        run: pip install xonsh[full]
+        run: sudo apt install -y xonsh
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
