@@ -124,7 +124,7 @@ def main():
 
         user_actions_script = dir_path / "user_actions.xsh"
         if user_actions_script.exists():
-            /usr/bin/env xonsh @(user_actions_script)
+            /usr/bin/env bash @(user_actions_script)
 
         if not update_mode:
             lampe_dir = dir_path / "lampe"

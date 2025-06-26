@@ -141,10 +141,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: lampe
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
       - name: Install xonsh
         run: sudo apt install -y xonsh
       - name: Set up Rust
@@ -167,4 +163,4 @@ jobs:
         run: xonsh ./testing/test.xsh
       - name: Run test script on examples
         working-directory: lampe
-        run: ./examples/test.sh
+        run: ./examples/test.xsh
