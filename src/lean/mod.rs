@@ -200,7 +200,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // type aliases.
         dep_graph.retain_nodes(|g, node_idx| {
             if let Some(dep_id) = g.node_weight(node_idx) {
-                matches!(dep_id, DependencyId::Struct(_) | DependencyId::Alias(_))
+                matches!(
+                    dep_id,
+                    DependencyId::Struct(_) | DependencyId::Alias(_) | DependencyId::Trait(_)
+                )
             } else {
                 false
             }
@@ -285,11 +288,25 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
         let type_defs = outputs
             .into_iter()
-            .sorted_by(|(ord1, name1, _), (ord2, name2, _)| match (ord1, ord2) {
-                (Some(ord1), Some(ord2)) => ord1.cmp(ord2),
-                (None, Some(_)) => Ordering::Greater,
-                (Some(_), None) => Ordering::Less,
-                (None, None) => name2.cmp(name1),
+            .sorted_by(|(ord1, name1, tp1), (ord2, name2, tp2)| match (tp1, tp2) {
+                // We push traits towards the end of the file by force, because they are not
+                // correctly tracked in the dependency graph, and we know there are no structs
+                // and aliases depending on traits.
+                (EmitOutput::Alias(_) | EmitOutput::Struct(_), EmitOutput::TraitDef(_)) => {
+                    Ordering::Greater
+                }
+                (EmitOutput::TraitDef(_), EmitOutput::Struct(_) | EmitOutput::Alias(_)) => {
+                    Ordering::Less
+                }
+                _ => match (ord1, ord2) {
+                    (Some(ord1), Some(ord2)) => ord1.cmp(ord2),
+                    // If one of the definitions is not ordered, we push it towards the end,
+                    // to increase the probability of it working in the absence of dependency
+                    // info.
+                    (None, Some(_)) => Ordering::Less,
+                    (Some(_), None) => Ordering::Greater,
+                    (None, None) => name2.cmp(name1),
+                },
             })
             .rev()
             .map(|(_, _, output)| output.to_string())
