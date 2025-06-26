@@ -7,6 +7,10 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
+nr_struct_def skyscraper::Skyscraper<> {
+
+}
+
 nr_trait_def hasher::BinaryHasher<F>[] {
     fn hash<>(F, F) -> F;
 }
@@ -14,8 +18,4 @@ nr_trait_def hasher::BinaryHasher<F>[] {
 nr_trait_def hasher::Hasher<>[] {
     fn finish<>(Self) -> Field;
     fn write<>(&Self, Field) -> Unit;
-}
-
-nr_struct_def skyscraper::Skyscraper<> {
-
 }
