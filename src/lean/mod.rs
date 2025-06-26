@@ -292,10 +292,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 // We push traits towards the end of the file by force, because they are not
                 // correctly tracked in the dependency graph, and we know there are no structs
                 // and aliases depending on traits.
-                (EmitOutput::TraitDef(_), EmitOutput::Struct(_)) => Ordering::Less,
-                (EmitOutput::Struct(_), EmitOutput::TraitDef(_)) => Ordering::Greater,
-                (EmitOutput::TraitDef(_), EmitOutput::Alias(_)) => Ordering::Less,
-                (EmitOutput::Alias(_), EmitOutput::TraitDef(_)) => Ordering::Greater,
+                (EmitOutput::Alias(_) | EmitOutput::Struct(_), EmitOutput::TraitDef(_)) => {
+                    Ordering::Greater
+                }
+                (EmitOutput::TraitDef(_), EmitOutput::Struct(_) | EmitOutput::Alias(_)) => {
+                    Ordering::Less
+                }
                 _ => match (ord1, ord2) {
                     (Some(ord1), Some(ord2)) => ord1.cmp(ord2),
                     // If one of the definitions is not ordered, we push it towards the end,
