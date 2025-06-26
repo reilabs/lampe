@@ -242,11 +242,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             .into_iter()
                             .position(|item| *item == DependencyId::Struct(id));
 
-                        let typ = self.context.def_interner.get_type(id);
-                        let typ = typ.borrow();
-                        let name = typ.name.identifier().to_string();
-                        let output =
-                            EmitOutput::Struct(self.emit_struct_def(&mut indenter, id, &ctx)?);
+                        let EmitTypeOutput { name, content } =
+                            self.emit_struct_def(&mut indenter, id, &ctx)?;
+                        let output = EmitOutput::Struct(content);
 
                         (def_order, name, output)
                     }
@@ -262,28 +260,20 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             .into_iter()
                             .position(|item| *item == DependencyId::Alias(id));
 
-                        let name = self
-                            .context
-                            .def_interner
-                            .get_type_alias(id)
-                            .borrow()
-                            .name
-                            .identifier()
-                            .to_string();
-
-                        let output = EmitOutput::Alias(self.emit_alias(id, &ctx)?);
+                        let EmitTypeOutput { name, content } = self.emit_alias(id, &ctx)?;
+                        let output = EmitOutput::Alias(content);
 
                         (def_order, name, output)
                     }
                     ModuleDefId::TraitId(id) => {
-                        let name =
-                            self.context.def_interner.get_trait(id).name.identifier().to_string();
                         let def_order = sorted_dep_weights
                             .clone()
                             .into_iter()
                             .position(|item| *item == DependencyId::Trait(id));
-                        let output =
-                            EmitOutput::TraitDef(self.emit_trait_def(&mut indenter, id, &ctx)?);
+                        let EmitTypeOutput { name, content } =
+                            self.emit_trait_def(&mut indenter, id, &ctx)?;
+                        let output = EmitOutput::TraitDef(content);
+
                         (def_order, name, output)
                     }
                     _ => continue,
@@ -568,7 +558,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     ///
     /// - [`Error`] if the extraction process fails for any reason.
     #[allow(clippy::unnecessary_wraps)]
-    pub fn emit_alias(&self, alias: TypeAliasId, ctx: &EmitterCtx) -> Result<String> {
+    pub fn emit_alias(&self, alias: TypeAliasId, ctx: &EmitterCtx) -> Result<EmitTypeOutput> {
         let alias_data = self.context.def_interner.get_type_alias(alias);
         let alias_data = alias_data.borrow();
         let alias_name = alias_data.name.to_string();
@@ -577,8 +567,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .iter()
             .map(|g| self.emit_resolved_generic(g, ctx))
             .join(", ");
-        let typ = self.emit_fully_qualified_type(&alias_data.typ, ctx);
-        Ok(syntax::format_alias(&alias_name, &generics, &typ))
+        let type_name = self.emit_fully_qualified_type(&alias_data.typ, ctx);
+        let formatted = syntax::format_alias(&alias_name, &generics, &type_name);
+        Ok(EmitTypeOutput {
+            name:    alias_name,
+            content: formatted,
+        })
     }
 
     fn emit_trait_def(
@@ -586,7 +580,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         indenter: &mut Indenter,
         trait_id: TraitId,
         ctx: &EmitterCtx,
-    ) -> Result<String> {
+    ) -> Result<EmitTypeOutput> {
         let trait_def = self.context.def_interner.get_trait(trait_id);
         let name = &trait_def.name.to_string();
         let fq_crate_name = self.fq_trait_path_from_crate_id(trait_def.crate_id, trait_id);
@@ -628,12 +622,11 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             })
             .join("\n");
         indenter.dedent()?;
-        Ok(syntax::format_trait_def(
-            &name,
-            &generics,
-            &associated_types,
-            methods,
-        ))
+        let formatted = syntax::format_trait_def(&name, &generics, &associated_types, methods);
+        Ok(EmitTypeOutput {
+            name,
+            content: formatted,
+        })
     }
 
     /// Emits the Lean code corresponding to a Noir global definition.
@@ -702,7 +695,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         ind: &mut Indenter,
         s: TypeId,
         ctx: &EmitterCtx,
-    ) -> Result<String> {
+    ) -> Result<EmitTypeOutput> {
         let struct_data = self.context.def_interner.get_type(s);
         let struct_data = struct_data.borrow();
         let fq_path = self
@@ -728,12 +721,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         ind.dedent()?;
 
         let fields_string = field_strings.join(",\n");
+        let content = syntax::format_struct_def(&fq_path, &generics_str, &fields_string);
 
-        Ok(syntax::format_struct_def(
-            &fq_path,
-            &generics_str,
-            &fields_string,
-        ))
+        Ok(EmitTypeOutput {
+            name: fq_path,
+            content,
+        })
     }
 
     fn is_func_unconstrained(tp: &Type) -> bool {
@@ -2022,6 +2015,16 @@ pub fn expect_identifier(pattern: &HirPattern) -> Result<&HirIdent> {
         HirPattern::Identifier(ident) => Ok(ident),
         _ => Err(Error::MissingIdentifier(format!("{pattern:?}"))),
     }
+}
+
+/// A structure representing the output from an emit phase.
+#[derive(Debug, Eq, PartialEq)]
+pub struct EmitTypeOutput {
+    /// The name of the output, uses for sorting to ensure consistent ordering.
+    name: String,
+
+    /// The result of the output phase for the item.
+    content: String,
 }
 
 // TODO Proper emit tests

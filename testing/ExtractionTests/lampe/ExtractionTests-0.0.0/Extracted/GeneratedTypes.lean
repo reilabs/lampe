@@ -11,12 +11,17 @@ nr_trait_def associated_type::Foo<>[Out] {
     fn foo<>(Self) -> Out;
 }
 
+nr_trait_def experiments::MyTrait<>[] {
+    fn foo<>(Self) -> Self;
+}
+
 nr_trait_def multiple_generics::Foo<I>[] {
     fn foo<>(Self) -> I;
 }
 
-nr_trait_def experiments::MyTrait<>[] {
-    fn foo<>(Self) -> Self;
+nr_struct_def multiple_generics::Pair<I> {
+    a : I,
+    b : I
 }
 
 nr_struct_def patterns::Option1<T> {
@@ -27,11 +32,6 @@ nr_struct_def patterns::Option1<T> {
 nr_struct_def patterns::Option2<T> {
     is_some : bool,
     value : T
-}
-
-nr_struct_def multiple_generics::Pair<I> {
-    a : I,
-    b : I
 }
 
 nr_struct_def associated_type::Pair<> {
