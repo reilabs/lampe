@@ -124,8 +124,12 @@ partial def solve (l r : EnvDef) (tgt: MVarId): TacticM Unit := withTraceNode `L
   | _ => throwError "Cannot solve LHS: {l}"
 
 partial def solveSubset (goal : MVarId): TacticM Unit := withTraceNode `Lampe.Env.SubsetSolver (tag := "solveSubset") (fun e => return f!"solveSubset {Lean.exceptEmoji e}") do
-  let (l, r, _, _) ← parseGoal goal
-  solve l r goal
+  try do
+    _ ← goal.apply (mkConst ``subset_refl)
+    return ()
+  catch _ =>
+    let (l, r, _, _) ← parseGoal goal
+    solve l r goal
 
 end Lampe.Env.SubsetSolver
 
