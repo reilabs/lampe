@@ -13,20 +13,14 @@ def get_script_dir():
 def get_project_root(script_dir):
     return script_dir.parent
 
-def usage():
-    print(f"""Usage: {sys.argv[0]}
-   [ -t | --test ] Name of directory with test to run
-   [ -u | --update ] Update checked-in files instead of comparing them""", file=sys.stderr)
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Lampe tests')
     parser.add_argument('-t', '--test', dest='test', help='Name of directory with test to run')
-    parser.add_argument('-u', '--update', action='store_true', help='Update checked-in files instead of comparing them')
+    parser.add_argument('-u', '--update', action='store_true', help='Update checked-in files using the new extraction instead of comparing with them')
     return parser.parse_args()
 
 def main():
     args = parse_args()
-
     script_dir = get_script_dir()
     examples_dir = script_dir
     project_root = get_project_root(examples_dir)
@@ -36,7 +30,7 @@ def main():
     lake_dir = examples_dir / ".lake"
 
     if not lake_dir.exists():
-        lake_dir.mkdir(parents=True)
+        lake_dir.mkdir()
 
     cd @(project_root)
     cargo build --release
