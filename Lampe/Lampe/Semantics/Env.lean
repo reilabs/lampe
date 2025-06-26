@@ -60,6 +60,10 @@ lemma subset_trans {Γ₁ Γ₂ Γ₃ : Env} : Γ₁ ⊆ Γ₂ → Γ₂ ⊆ Γ�
     repeat assumption
 
 @[simp]
+lemma subset_refl {Γ : Env} : Γ ⊆ Γ := by
+  constructor <;> simp
+
+@[simp]
 lemma subset_append_left {Γₗ Γᵣ : Env} : Γₗ ⊆ Γₗ ++ Γᵣ := by
   constructor <;> simp
 

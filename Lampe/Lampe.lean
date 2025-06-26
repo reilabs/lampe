@@ -31,6 +31,7 @@ import Lampe.SeparationLogic.SLP
 import Lampe.SeparationLogic.State
 import Lampe.SeparationLogic.ValHeap
 import Lampe.Syntax
+import Lampe.Tactic.EnvSubsetSolver
 import Lampe.Tactic.IntroCases
 import Lampe.Tactic.SL
 import Lampe.Tactic.SLNorm
