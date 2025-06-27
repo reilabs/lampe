@@ -34,6 +34,6 @@ with tempfile.TemporaryDirectory() as tmpdirname:
     download_noir_stdlib_to_dir(noir_version, tmpdirname)
 
     stdlib_path = Path(tmpdirname) / 'noir' / 'noir_stdlib'
-    project_stdlib_path = get_project_root() / 'stdlib'
+    project_stdlib_path = get_project_root() / 'stdlib' / 'noir'
 
     diff -r @(stdlib_path) @(project_stdlib_path)
