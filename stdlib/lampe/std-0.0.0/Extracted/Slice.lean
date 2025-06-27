@@ -9,32 +9,32 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «slice»::«test»::«map_empty»<>() -> Unit {
-    #assert(#sliceEq((@std::slice::map<Field, Field, Unit> as λ([Field], λ(Field) → Field) → [Field])(&[], |x : Field| -> Field #fAdd(x, 1 : Field) : Field), &[]) : bool) : Unit;
+    #assert(#sliceEq((@std::slice::map< Field, Field, Unit > as λ([Field], λ(Field) → Field) → [Field])(&[], |x : Field| -> Field #fAdd(x, 1 : Field) : Field), &[]) : bool) : Unit;
 }
 
 nr_def «slice»::«test»::«mapi_empty»<>() -> Unit {
-    #assert(#sliceEq((@std::slice::mapi<u32, u32, Unit> as λ([u32], λ(u32, u32) → u32) → [u32])(&[], |i : u32, x : u32| -> u32 #uAdd(#uMul(i, x) : u32, 1 : u32) : u32), &[]) : bool) : Unit;
+    #assert(#sliceEq((@std::slice::mapi< u32, u32, Unit > as λ([u32], λ(u32, u32) → u32) → [u32])(&[], |i : u32, x : u32| -> u32 #uAdd(#uMul(i, x) : u32, 1 : u32) : u32), &[]) : bool) : Unit;
 }
 
 nr_def «slice»::«test»::«for_each_empty»<>() -> Unit {
     let empty_slice = &[];
-    (@std::slice::for_each<Field, Unit> as λ([Field], λ(Field) → Unit) → Unit)(empty_slice, |_x : Field| -> Unit #assert(false) : Unit);
+    (@std::slice::for_each< Field, Unit > as λ([Field], λ(Field) → Unit) → Unit)(empty_slice, |_x : Field| -> Unit #assert(false) : Unit);
 }
 
 nr_def «slice»::«test»::«for_eachi_empty»<>() -> Unit {
     let empty_slice = &[];
-    (@std::slice::for_eachi<Field, Unit> as λ([Field], λ(u32, Field) → Unit) → Unit)(empty_slice, |_i : u32, _x : Field| -> Unit #assert(false) : Unit);
+    (@std::slice::for_eachi< Field, Unit > as λ([Field], λ(u32, Field) → Unit) → Unit)(empty_slice, |_i : u32, _x : Field| -> Unit #assert(false) : Unit);
 }
 
 nr_def «slice»::«test»::«map_example»<>() -> Unit {
     let a = &[1 : Field, 2 : Field, 3 : Field];
-    let b = (@std::slice::map<Field, Field, Unit> as λ([Field], λ(Field) → Field) → [Field])(a, |a : Field| -> Field #fMul(a, 2 : Field) : Field);
+    let b = (@std::slice::map< Field, Field, Unit > as λ([Field], λ(Field) → Field) → [Field])(a, |a : Field| -> Field #fMul(a, 2 : Field) : Field);
     #assert(#sliceEq(b, &[2 : Field, 4 : Field, 6 : Field]) : bool) : Unit;
 }
 
 nr_def «slice»::«test»::«mapi_example»<>() -> Unit {
     let a = &[1 : u32, 2 : u32, 3 : u32];
-    let b = (@std::slice::mapi<u32, u32, Unit> as λ([u32], λ(u32, u32) → u32) → [u32])(a, |i : u32, a : u32| -> u32 #uAdd(i, #uMul(a, 2 : u32) : u32) : u32);
+    let b = (@std::slice::mapi< u32, u32, Unit > as λ([u32], λ(u32, u32) → u32) → [u32])(a, |i : u32, a : u32| -> u32 #uAdd(i, #uMul(a, 2 : u32) : u32) : u32);
     #assert(#sliceEq(b, &[2 : u32, 5 : u32, 8 : u32]) : bool) : Unit;
 }
 
@@ -42,7 +42,7 @@ nr_def «slice»::«test»::«for_each_example»<>() -> Unit {
     let a = &[1 : Field, 2 : Field, 3 : Field];
     let mut b = &[];
     let b_ref = #ref(b) : &[Field];
-    (@std::slice::for_each<Field, `(&[Field])> as λ([Field], λ(Field) → Unit) → Unit)(a, |a : Field| -> Unit     *(b_ref) = #slicePushBack(#readRef(b_ref) : [Field], #fMul(a, 2 : Field) : Field) : [Field];
+    (@std::slice::for_each< Field, `(&[Field]) > as λ([Field], λ(Field) → Unit) → Unit)(a, |a : Field| -> Unit     *(b_ref) = #slicePushBack(#readRef(b_ref) : [Field], #fMul(a, 2 : Field) : Field) : [Field];
         skip;);
     #assert(#sliceEq(b, &[2 : Field, 4 : Field, 6 : Field]) : bool) : Unit;
 }
@@ -51,7 +51,7 @@ nr_def «slice»::«test»::«for_eachi_example»<>() -> Unit {
     let a = &[1 : u32, 2 : u32, 3 : u32];
     let mut b = &[];
     let b_ref = #ref(b) : &[u32];
-    (@std::slice::for_eachi<u32, `(&[u32])> as λ([u32], λ(u32, u32) → Unit) → Unit)(a, |i : u32, a : u32| -> Unit     *(b_ref) = #slicePushBack(#readRef(b_ref) : [u32], #uAdd(i, #uMul(a, 2 : u32) : u32) : u32) : [u32];
+    (@std::slice::for_eachi< u32, `(&[u32]) > as λ([u32], λ(u32, u32) → Unit) → Unit)(a, |i : u32, a : u32| -> Unit     *(b_ref) = #slicePushBack(#readRef(b_ref) : [u32], #uAdd(i, #uMul(a, 2 : u32) : u32) : u32) : [u32];
         skip;);
     #assert(#sliceEq(b, &[2 : u32, 5 : u32, 8 : u32]) : bool) : Unit;
 }

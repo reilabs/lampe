@@ -34,7 +34,7 @@ syntax ident "::" nr_ident : nr_ident
 syntax ident : nr_type
 syntax "${" term "}" : nr_type
 syntax "str<" nr_const_num ">" : nr_type -- Strings
-syntax "fmtstr<" nr_const_num "," "(" nr_type,* ")" ">" : nr_type -- Format strings
+syntax "fmtstr<" nr_const_num "," nr_type  ">" : nr_type -- Format strings
 syntax nr_ident "<" nr_generic,* ">" : nr_type -- Struct
 syntax "[" nr_type "]" : nr_type -- Slice
 syntax "[" nr_type ";" nr_const_num "]" : nr_type -- Array
@@ -187,9 +187,8 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| Quoted)
 | `(nr_type| CtString) => `(Tp.unit)
 | `(nr_type| str<$n:nr_const_num>) => do `(Tp.str $(←mkConstNum n))
-| `(nr_type| fmtstr<$n:nr_const_num, ($tps,*)>) => do
-  let tps ← tps.getElems.toList.mapM mkNrType
-  `(Tp.fmtStr $(←mkConstNum n) $(←mkListLit tps))
+| `(nr_type| fmtstr<$n:nr_const_num, $tp:nr_type>) => do
+  `(Tp.fmtStr $(←mkConstNum n) $(←mkNrType tp))
 | `(nr_type| Unit) => `(Tp.unit)
 | `(nr_type| $i:ident) => `($i) -- Type variable
 | `(nr_type| & $tp) => do `(Tp.ref $(←mkNrType tp))

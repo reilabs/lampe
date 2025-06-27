@@ -8,385 +8,385 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_197] <> std::ops::bit::Not<> for bool where  {
+nr_trait_impl[impl_197] <> std::ops::bit::Not<  > for bool where  {
     fn «not»<> (self : bool) -> bool {
         #bNot(self) : bool;
 }
 }
 
-nr_trait_impl[impl_198] <> std::ops::bit::Not<> for u128 where  {
+nr_trait_impl[impl_198] <> std::ops::bit::Not<  > for u128 where  {
     fn «not»<> (self : u128) -> u128 {
         #uNot(self) : u128;
 }
 }
 
-nr_trait_impl[impl_199] <> std::ops::bit::Not<> for u64 where  {
+nr_trait_impl[impl_199] <> std::ops::bit::Not<  > for u64 where  {
     fn «not»<> (self : u64) -> u64 {
         #uNot(self) : u64;
 }
 }
 
-nr_trait_impl[impl_200] <> std::ops::bit::Not<> for u32 where  {
+nr_trait_impl[impl_200] <> std::ops::bit::Not<  > for u32 where  {
     fn «not»<> (self : u32) -> u32 {
         #uNot(self) : u32;
 }
 }
 
-nr_trait_impl[impl_201] <> std::ops::bit::Not<> for u16 where  {
+nr_trait_impl[impl_201] <> std::ops::bit::Not<  > for u16 where  {
     fn «not»<> (self : u16) -> u16 {
         #uNot(self) : u16;
 }
 }
 
-nr_trait_impl[impl_202] <> std::ops::bit::Not<> for u8 where  {
+nr_trait_impl[impl_202] <> std::ops::bit::Not<  > for u8 where  {
     fn «not»<> (self : u8) -> u8 {
         #uNot(self) : u8;
 }
 }
 
-nr_trait_impl[impl_203] <> std::ops::bit::Not<> for u1 where  {
+nr_trait_impl[impl_203] <> std::ops::bit::Not<  > for u1 where  {
     fn «not»<> (self : u1) -> u1 {
         #uNot(self) : u1;
 }
 }
 
-nr_trait_impl[impl_204] <> std::ops::bit::Not<> for i8 where  {
+nr_trait_impl[impl_204] <> std::ops::bit::Not<  > for i8 where  {
     fn «not»<> (self : i8) -> i8 {
         #iNot(self) : i8;
 }
 }
 
-nr_trait_impl[impl_205] <> std::ops::bit::Not<> for i16 where  {
+nr_trait_impl[impl_205] <> std::ops::bit::Not<  > for i16 where  {
     fn «not»<> (self : i16) -> i16 {
         #iNot(self) : i16;
 }
 }
 
-nr_trait_impl[impl_206] <> std::ops::bit::Not<> for i32 where  {
+nr_trait_impl[impl_206] <> std::ops::bit::Not<  > for i32 where  {
     fn «not»<> (self : i32) -> i32 {
         #iNot(self) : i32;
 }
 }
 
-nr_trait_impl[impl_207] <> std::ops::bit::Not<> for i64 where  {
+nr_trait_impl[impl_207] <> std::ops::bit::Not<  > for i64 where  {
     fn «not»<> (self : i64) -> i64 {
         #iNot(self) : i64;
 }
 }
 
-nr_trait_impl[impl_208] <> std::ops::bit::BitOr<> for bool where  {
+nr_trait_impl[impl_208] <> std::ops::bit::BitOr<  > for bool where  {
     fn «bitor»<> (self : bool, other : bool) -> bool {
         #bOr(self, other) : bool;
 }
 }
 
-nr_trait_impl[impl_209] <> std::ops::bit::BitOr<> for u128 where  {
+nr_trait_impl[impl_209] <> std::ops::bit::BitOr<  > for u128 where  {
     fn «bitor»<> (self : u128, other : u128) -> u128 {
         #uOr(self, other) : u128;
 }
 }
 
-nr_trait_impl[impl_210] <> std::ops::bit::BitOr<> for u64 where  {
+nr_trait_impl[impl_210] <> std::ops::bit::BitOr<  > for u64 where  {
     fn «bitor»<> (self : u64, other : u64) -> u64 {
         #uOr(self, other) : u64;
 }
 }
 
-nr_trait_impl[impl_211] <> std::ops::bit::BitOr<> for u32 where  {
+nr_trait_impl[impl_211] <> std::ops::bit::BitOr<  > for u32 where  {
     fn «bitor»<> (self : u32, other : u32) -> u32 {
         #uOr(self, other) : u32;
 }
 }
 
-nr_trait_impl[impl_212] <> std::ops::bit::BitOr<> for u16 where  {
+nr_trait_impl[impl_212] <> std::ops::bit::BitOr<  > for u16 where  {
     fn «bitor»<> (self : u16, other : u16) -> u16 {
         #uOr(self, other) : u16;
 }
 }
 
-nr_trait_impl[impl_213] <> std::ops::bit::BitOr<> for u8 where  {
+nr_trait_impl[impl_213] <> std::ops::bit::BitOr<  > for u8 where  {
     fn «bitor»<> (self : u8, other : u8) -> u8 {
         #uOr(self, other) : u8;
 }
 }
 
-nr_trait_impl[impl_214] <> std::ops::bit::BitOr<> for u1 where  {
+nr_trait_impl[impl_214] <> std::ops::bit::BitOr<  > for u1 where  {
     fn «bitor»<> (self : u1, other : u1) -> u1 {
         #uOr(self, other) : u1;
 }
 }
 
-nr_trait_impl[impl_215] <> std::ops::bit::BitOr<> for i8 where  {
+nr_trait_impl[impl_215] <> std::ops::bit::BitOr<  > for i8 where  {
     fn «bitor»<> (self : i8, other : i8) -> i8 {
         #iOr(self, other) : i8;
 }
 }
 
-nr_trait_impl[impl_216] <> std::ops::bit::BitOr<> for i16 where  {
+nr_trait_impl[impl_216] <> std::ops::bit::BitOr<  > for i16 where  {
     fn «bitor»<> (self : i16, other : i16) -> i16 {
         #iOr(self, other) : i16;
 }
 }
 
-nr_trait_impl[impl_217] <> std::ops::bit::BitOr<> for i32 where  {
+nr_trait_impl[impl_217] <> std::ops::bit::BitOr<  > for i32 where  {
     fn «bitor»<> (self : i32, other : i32) -> i32 {
         #iOr(self, other) : i32;
 }
 }
 
-nr_trait_impl[impl_218] <> std::ops::bit::BitOr<> for i64 where  {
+nr_trait_impl[impl_218] <> std::ops::bit::BitOr<  > for i64 where  {
     fn «bitor»<> (self : i64, other : i64) -> i64 {
         #iOr(self, other) : i64;
 }
 }
 
-nr_trait_impl[impl_219] <> std::ops::bit::BitAnd<> for bool where  {
+nr_trait_impl[impl_219] <> std::ops::bit::BitAnd<  > for bool where  {
     fn «bitand»<> (self : bool, other : bool) -> bool {
         #bAnd(self, other) : bool;
 }
 }
 
-nr_trait_impl[impl_220] <> std::ops::bit::BitAnd<> for u128 where  {
+nr_trait_impl[impl_220] <> std::ops::bit::BitAnd<  > for u128 where  {
     fn «bitand»<> (self : u128, other : u128) -> u128 {
         #uAnd(self, other) : u128;
 }
 }
 
-nr_trait_impl[impl_221] <> std::ops::bit::BitAnd<> for u64 where  {
+nr_trait_impl[impl_221] <> std::ops::bit::BitAnd<  > for u64 where  {
     fn «bitand»<> (self : u64, other : u64) -> u64 {
         #uAnd(self, other) : u64;
 }
 }
 
-nr_trait_impl[impl_222] <> std::ops::bit::BitAnd<> for u32 where  {
+nr_trait_impl[impl_222] <> std::ops::bit::BitAnd<  > for u32 where  {
     fn «bitand»<> (self : u32, other : u32) -> u32 {
         #uAnd(self, other) : u32;
 }
 }
 
-nr_trait_impl[impl_223] <> std::ops::bit::BitAnd<> for u16 where  {
+nr_trait_impl[impl_223] <> std::ops::bit::BitAnd<  > for u16 where  {
     fn «bitand»<> (self : u16, other : u16) -> u16 {
         #uAnd(self, other) : u16;
 }
 }
 
-nr_trait_impl[impl_224] <> std::ops::bit::BitAnd<> for u8 where  {
+nr_trait_impl[impl_224] <> std::ops::bit::BitAnd<  > for u8 where  {
     fn «bitand»<> (self : u8, other : u8) -> u8 {
         #uAnd(self, other) : u8;
 }
 }
 
-nr_trait_impl[impl_225] <> std::ops::bit::BitAnd<> for u1 where  {
+nr_trait_impl[impl_225] <> std::ops::bit::BitAnd<  > for u1 where  {
     fn «bitand»<> (self : u1, other : u1) -> u1 {
         #uAnd(self, other) : u1;
 }
 }
 
-nr_trait_impl[impl_226] <> std::ops::bit::BitAnd<> for i8 where  {
+nr_trait_impl[impl_226] <> std::ops::bit::BitAnd<  > for i8 where  {
     fn «bitand»<> (self : i8, other : i8) -> i8 {
         #iAnd(self, other) : i8;
 }
 }
 
-nr_trait_impl[impl_227] <> std::ops::bit::BitAnd<> for i16 where  {
+nr_trait_impl[impl_227] <> std::ops::bit::BitAnd<  > for i16 where  {
     fn «bitand»<> (self : i16, other : i16) -> i16 {
         #iAnd(self, other) : i16;
 }
 }
 
-nr_trait_impl[impl_228] <> std::ops::bit::BitAnd<> for i32 where  {
+nr_trait_impl[impl_228] <> std::ops::bit::BitAnd<  > for i32 where  {
     fn «bitand»<> (self : i32, other : i32) -> i32 {
         #iAnd(self, other) : i32;
 }
 }
 
-nr_trait_impl[impl_229] <> std::ops::bit::BitAnd<> for i64 where  {
+nr_trait_impl[impl_229] <> std::ops::bit::BitAnd<  > for i64 where  {
     fn «bitand»<> (self : i64, other : i64) -> i64 {
         #iAnd(self, other) : i64;
 }
 }
 
-nr_trait_impl[impl_230] <> std::ops::bit::BitXor<> for bool where  {
+nr_trait_impl[impl_230] <> std::ops::bit::BitXor<  > for bool where  {
     fn «bitxor»<> (self : bool, other : bool) -> bool {
         #bXor(self, other) : bool;
 }
 }
 
-nr_trait_impl[impl_231] <> std::ops::bit::BitXor<> for u128 where  {
+nr_trait_impl[impl_231] <> std::ops::bit::BitXor<  > for u128 where  {
     fn «bitxor»<> (self : u128, other : u128) -> u128 {
         #uXor(self, other) : u128;
 }
 }
 
-nr_trait_impl[impl_232] <> std::ops::bit::BitXor<> for u64 where  {
+nr_trait_impl[impl_232] <> std::ops::bit::BitXor<  > for u64 where  {
     fn «bitxor»<> (self : u64, other : u64) -> u64 {
         #uXor(self, other) : u64;
 }
 }
 
-nr_trait_impl[impl_233] <> std::ops::bit::BitXor<> for u32 where  {
+nr_trait_impl[impl_233] <> std::ops::bit::BitXor<  > for u32 where  {
     fn «bitxor»<> (self : u32, other : u32) -> u32 {
         #uXor(self, other) : u32;
 }
 }
 
-nr_trait_impl[impl_234] <> std::ops::bit::BitXor<> for u16 where  {
+nr_trait_impl[impl_234] <> std::ops::bit::BitXor<  > for u16 where  {
     fn «bitxor»<> (self : u16, other : u16) -> u16 {
         #uXor(self, other) : u16;
 }
 }
 
-nr_trait_impl[impl_235] <> std::ops::bit::BitXor<> for u8 where  {
+nr_trait_impl[impl_235] <> std::ops::bit::BitXor<  > for u8 where  {
     fn «bitxor»<> (self : u8, other : u8) -> u8 {
         #uXor(self, other) : u8;
 }
 }
 
-nr_trait_impl[impl_236] <> std::ops::bit::BitXor<> for u1 where  {
+nr_trait_impl[impl_236] <> std::ops::bit::BitXor<  > for u1 where  {
     fn «bitxor»<> (self : u1, other : u1) -> u1 {
         #uXor(self, other) : u1;
 }
 }
 
-nr_trait_impl[impl_237] <> std::ops::bit::BitXor<> for i8 where  {
+nr_trait_impl[impl_237] <> std::ops::bit::BitXor<  > for i8 where  {
     fn «bitxor»<> (self : i8, other : i8) -> i8 {
         #iXor(self, other) : i8;
 }
 }
 
-nr_trait_impl[impl_238] <> std::ops::bit::BitXor<> for i16 where  {
+nr_trait_impl[impl_238] <> std::ops::bit::BitXor<  > for i16 where  {
     fn «bitxor»<> (self : i16, other : i16) -> i16 {
         #iXor(self, other) : i16;
 }
 }
 
-nr_trait_impl[impl_239] <> std::ops::bit::BitXor<> for i32 where  {
+nr_trait_impl[impl_239] <> std::ops::bit::BitXor<  > for i32 where  {
     fn «bitxor»<> (self : i32, other : i32) -> i32 {
         #iXor(self, other) : i32;
 }
 }
 
-nr_trait_impl[impl_240] <> std::ops::bit::BitXor<> for i64 where  {
+nr_trait_impl[impl_240] <> std::ops::bit::BitXor<  > for i64 where  {
     fn «bitxor»<> (self : i64, other : i64) -> i64 {
         #iXor(self, other) : i64;
 }
 }
 
-nr_trait_impl[impl_241] <> std::ops::bit::Shl<> for u128 where  {
+nr_trait_impl[impl_241] <> std::ops::bit::Shl<  > for u128 where  {
     fn «shl»<> (self : u128, other : u8) -> u128 {
         #uShl(self, other) : u128;
 }
 }
 
-nr_trait_impl[impl_242] <> std::ops::bit::Shl<> for u64 where  {
+nr_trait_impl[impl_242] <> std::ops::bit::Shl<  > for u64 where  {
     fn «shl»<> (self : u64, other : u8) -> u64 {
         #uShl(self, other) : u64;
 }
 }
 
-nr_trait_impl[impl_243] <> std::ops::bit::Shl<> for u32 where  {
+nr_trait_impl[impl_243] <> std::ops::bit::Shl<  > for u32 where  {
     fn «shl»<> (self : u32, other : u8) -> u32 {
         #uShl(self, other) : u32;
 }
 }
 
-nr_trait_impl[impl_244] <> std::ops::bit::Shl<> for u16 where  {
+nr_trait_impl[impl_244] <> std::ops::bit::Shl<  > for u16 where  {
     fn «shl»<> (self : u16, other : u8) -> u16 {
         #uShl(self, other) : u16;
 }
 }
 
-nr_trait_impl[impl_245] <> std::ops::bit::Shl<> for u8 where  {
+nr_trait_impl[impl_245] <> std::ops::bit::Shl<  > for u8 where  {
     fn «shl»<> (self : u8, other : u8) -> u8 {
         #uShl(self, other) : u8;
 }
 }
 
-nr_trait_impl[impl_246] <> std::ops::bit::Shl<> for u1 where  {
+nr_trait_impl[impl_246] <> std::ops::bit::Shl<  > for u1 where  {
     fn «shl»<> (self : u1, other : u8) -> u1 {
         #uShl(self, other) : u1;
 }
 }
 
-nr_trait_impl[impl_247] <> std::ops::bit::Shl<> for i8 where  {
+nr_trait_impl[impl_247] <> std::ops::bit::Shl<  > for i8 where  {
     fn «shl»<> (self : i8, other : u8) -> i8 {
         #iShl(self, other) : i8;
 }
 }
 
-nr_trait_impl[impl_248] <> std::ops::bit::Shl<> for i16 where  {
+nr_trait_impl[impl_248] <> std::ops::bit::Shl<  > for i16 where  {
     fn «shl»<> (self : i16, other : u8) -> i16 {
         #iShl(self, other) : i16;
 }
 }
 
-nr_trait_impl[impl_249] <> std::ops::bit::Shl<> for i32 where  {
+nr_trait_impl[impl_249] <> std::ops::bit::Shl<  > for i32 where  {
     fn «shl»<> (self : i32, other : u8) -> i32 {
         #iShl(self, other) : i32;
 }
 }
 
-nr_trait_impl[impl_250] <> std::ops::bit::Shl<> for i64 where  {
+nr_trait_impl[impl_250] <> std::ops::bit::Shl<  > for i64 where  {
     fn «shl»<> (self : i64, other : u8) -> i64 {
         #iShl(self, other) : i64;
 }
 }
 
-nr_trait_impl[impl_251] <> std::ops::bit::Shr<> for u128 where  {
+nr_trait_impl[impl_251] <> std::ops::bit::Shr<  > for u128 where  {
     fn «shr»<> (self : u128, other : u8) -> u128 {
         #uShr(self, other) : u128;
 }
 }
 
-nr_trait_impl[impl_252] <> std::ops::bit::Shr<> for u64 where  {
+nr_trait_impl[impl_252] <> std::ops::bit::Shr<  > for u64 where  {
     fn «shr»<> (self : u64, other : u8) -> u64 {
         #uShr(self, other) : u64;
 }
 }
 
-nr_trait_impl[impl_253] <> std::ops::bit::Shr<> for u32 where  {
+nr_trait_impl[impl_253] <> std::ops::bit::Shr<  > for u32 where  {
     fn «shr»<> (self : u32, other : u8) -> u32 {
         #uShr(self, other) : u32;
 }
 }
 
-nr_trait_impl[impl_254] <> std::ops::bit::Shr<> for u16 where  {
+nr_trait_impl[impl_254] <> std::ops::bit::Shr<  > for u16 where  {
     fn «shr»<> (self : u16, other : u8) -> u16 {
         #uShr(self, other) : u16;
 }
 }
 
-nr_trait_impl[impl_255] <> std::ops::bit::Shr<> for u8 where  {
+nr_trait_impl[impl_255] <> std::ops::bit::Shr<  > for u8 where  {
     fn «shr»<> (self : u8, other : u8) -> u8 {
         #uShr(self, other) : u8;
 }
 }
 
-nr_trait_impl[impl_256] <> std::ops::bit::Shr<> for u1 where  {
+nr_trait_impl[impl_256] <> std::ops::bit::Shr<  > for u1 where  {
     fn «shr»<> (self : u1, other : u8) -> u1 {
         #uShr(self, other) : u1;
 }
 }
 
-nr_trait_impl[impl_257] <> std::ops::bit::Shr<> for i8 where  {
+nr_trait_impl[impl_257] <> std::ops::bit::Shr<  > for i8 where  {
     fn «shr»<> (self : i8, other : u8) -> i8 {
         #iShr(self, other) : i8;
 }
 }
 
-nr_trait_impl[impl_258] <> std::ops::bit::Shr<> for i16 where  {
+nr_trait_impl[impl_258] <> std::ops::bit::Shr<  > for i16 where  {
     fn «shr»<> (self : i16, other : u8) -> i16 {
         #iShr(self, other) : i16;
 }
 }
 
-nr_trait_impl[impl_259] <> std::ops::bit::Shr<> for i32 where  {
+nr_trait_impl[impl_259] <> std::ops::bit::Shr<  > for i32 where  {
     fn «shr»<> (self : i32, other : u8) -> i32 {
         #iShr(self, other) : i32;
 }
 }
 
-nr_trait_impl[impl_260] <> std::ops::bit::Shr<> for i64 where  {
+nr_trait_impl[impl_260] <> std::ops::bit::Shr<  > for i64 where  {
     fn «shr»<> (self : i64, other : u8) -> i64 {
         #iShr(self, other) : i64;
 }

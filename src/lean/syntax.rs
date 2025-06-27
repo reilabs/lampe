@@ -26,6 +26,7 @@ fn normalize_ident(ident: &str) -> String {
         .split("::")
         .map(without_generic_args)
         .filter(|p| !is_slice_or_array(p))
+        .filter(|p| !p.is_empty())
         .join("::")
 }
 
@@ -53,7 +54,7 @@ pub(super) fn format_trait_impl(
     trait_constraints: &str,
 ) -> String {
     formatdoc! {
-        "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {trait_constraints} {{
+        "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}< {trait_generics} > for {target} where {trait_constraints} {{
                 {methods}
             }}"
     }
@@ -189,7 +190,7 @@ pub(super) mod r#type {
 
     #[inline]
     pub fn format_struct(struct_name: &str, generics: &str) -> String {
-        format!("{struct_name}<{generics}>")
+        format!("{struct_name}< {generics} >")
     }
 
     /// This ref is implicitly mutable as the Noir compiler has handled all the
@@ -206,7 +207,7 @@ pub(super) mod r#type {
 
     #[inline]
     pub fn format_alias(alias_name: &str, alias_generics: &str) -> String {
-        format!("@{alias_name}<{alias_generics}>")
+        format!("@{alias_name}< {alias_generics} >")
     }
 
     #[inline]
@@ -264,7 +265,7 @@ pub(super) mod expr {
         struct_generic_vals: &str,
         fields_ordered: &str,
     ) -> String {
-        format!("{struct_ident}<{struct_generic_vals}> {{ {fields_ordered} }}")
+        format!("{struct_ident}< {struct_generic_vals} > {{ {fields_ordered} }}")
     }
 
     #[inline]
@@ -355,7 +356,7 @@ pub(super) mod expr {
     #[inline]
     pub fn format_decl_func_ident(ident: &str, generics: &str) -> String {
         let ident = normalize_ident(ident);
-        format!("@{ident}<{generics}>")
+        format!("@{ident}< {generics} >")
     }
 
     #[inline]
@@ -367,7 +368,7 @@ pub(super) mod expr {
         generics: &str,
     ) -> String {
         let func_ident = normalize_ident(func_ident);
-        format!("({sub_type} as {trait_name}<{trait_generics}>)::{func_ident}<{generics}>")
+        format!("({sub_type} as {trait_name}< {trait_generics} >)::{func_ident}< {generics} >")
     }
 
     #[inline]

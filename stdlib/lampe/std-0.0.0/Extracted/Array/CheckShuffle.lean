@@ -17,53 +17,53 @@ nr_def «array»::«check_shuffle»::«__get_index»<@N : u32>(indices : [u32; N
 }
 
 nr_def «array»::«check_shuffle»::«check_shuffle»<T, @N : u32>(lhs : [T; N], rhs : [T; N]) -> Unit {
-        let shuffle_indices = (@std::array::check_shuffle::__get_shuffle_indices<T, N:u32> as λ([T; N], [T; N]) → [u32; N])(lhs, rhs);
+        let shuffle_indices = (@std::array::check_shuffle::__get_shuffle_indices< T, N:u32 > as λ([T; N], [T; N]) → [u32; N])(lhs, rhs);
         for i in 0 : u32 .. u@N {
-                let idx = (@std::array::check_shuffle::__get_index<N:u32> as λ([u32; N], u32) → u32)(shuffle_indices, i);
+                let idx = (@std::array::check_shuffle::__get_index< N:u32 > as λ([u32; N], u32) → u32)(shuffle_indices, i);
             #assert(#uEq(#arrayIndex(shuffle_indices, #cast(idx) : u32) : u32, i) : bool) : Unit;
         };
         for i in 0 : u32 .. u@N {
                 let idx = #arrayIndex(shuffle_indices, #cast(i) : u32) : u32;
             let expected = #arrayIndex(rhs, #cast(idx) : u32) : T;
             let result = #arrayIndex(lhs, #cast(i) : u32) : T;
-            #assert(((T as Eq<>)::eq<> as λ(T, T) → bool)(T, T)) : Unit;
+            #assert(((T as Eq<  >)::eq<  > as λ(T, T) → bool)(T, T)) : Unit;
         };
 }
 
-nr_trait_impl[impl_23] <> std::cmp::Eq<> for array::check_shuffle::test::CompoundStruct<> where  {
-    fn «eq»<> (self : array::check_shuffle::test::CompoundStruct<>, other : array::check_shuffle::test::CompoundStruct<>) -> bool {
-        #bAnd(#bAnd(#bEq((self as array::check_shuffle::test::CompoundStruct<>).a, (other as array::check_shuffle::test::CompoundStruct<>).a) : bool, #fEq((self as array::check_shuffle::test::CompoundStruct<>).b, (other as array::check_shuffle::test::CompoundStruct<>).b) : bool) : bool, #uEq((self as array::check_shuffle::test::CompoundStruct<>).c, (other as array::check_shuffle::test::CompoundStruct<>).c) : bool) : bool;
+nr_trait_impl[impl_23] <> std::cmp::Eq<  > for array::check_shuffle::test::CompoundStruct<  > where  {
+    fn «eq»<> (self : array::check_shuffle::test::CompoundStruct<  >, other : array::check_shuffle::test::CompoundStruct<  >) -> bool {
+        #bAnd(#bAnd(#bEq((self as array::check_shuffle::test::CompoundStruct<  >).a, (other as array::check_shuffle::test::CompoundStruct<  >).a) : bool, #fEq((self as array::check_shuffle::test::CompoundStruct<  >).b, (other as array::check_shuffle::test::CompoundStruct<  >).b) : bool) : bool, #uEq((self as array::check_shuffle::test::CompoundStruct<  >).c, (other as array::check_shuffle::test::CompoundStruct<  >).c) : bool) : bool;
 }
 }
 
 nr_def «array»::«check_shuffle»::«test»::«test_shuffle»<>() -> Unit {
     let lhs = [0 : Field, 1 : Field, 2 : Field, 3 : Field, 4 : Field];
     let rhs = [2 : Field, 0 : Field, 3 : Field, 1 : Field, 4 : Field];
-    (@std::array::check_shuffle::check_shuffle<Field, 5 : u32> as λ([Field; 5], [Field; 5]) → Unit)(lhs, rhs);
+    (@std::array::check_shuffle::check_shuffle< Field, 5 : u32 > as λ([Field; 5], [Field; 5]) → Unit)(lhs, rhs);
 }
 
 nr_def «array»::«check_shuffle»::«test»::«test_shuffle_identity»<>() -> Unit {
     let lhs = [0 : Field, 1 : Field, 2 : Field, 3 : Field, 4 : Field];
     let rhs = [0 : Field, 1 : Field, 2 : Field, 3 : Field, 4 : Field];
-    (@std::array::check_shuffle::check_shuffle<Field, 5 : u32> as λ([Field; 5], [Field; 5]) → Unit)(lhs, rhs);
+    (@std::array::check_shuffle::check_shuffle< Field, 5 : u32 > as λ([Field; 5], [Field; 5]) → Unit)(lhs, rhs);
 }
 
 nr_def «array»::«check_shuffle»::«test»::«test_shuffle_fail»<>() -> Unit {
     let lhs = [0 : Field, 1 : Field, 2 : Field, 3 : Field, 4 : Field];
     let rhs = [0 : Field, 1 : Field, 2 : Field, 3 : Field, 5 : Field];
-    (@std::array::check_shuffle::check_shuffle<Field, 5 : u32> as λ([Field; 5], [Field; 5]) → Unit)(lhs, rhs);
+    (@std::array::check_shuffle::check_shuffle< Field, 5 : u32 > as λ([Field; 5], [Field; 5]) → Unit)(lhs, rhs);
 }
 
 nr_def «array»::«check_shuffle»::«test»::«test_shuffle_duplicates»<>() -> Unit {
     let lhs = [0 : Field, 1 : Field, 2 : Field, 3 : Field, 4 : Field];
     let rhs = [0 : Field, 1 : Field, 2 : Field, 3 : Field, 3 : Field];
-    (@std::array::check_shuffle::check_shuffle<Field, 5 : u32> as λ([Field; 5], [Field; 5]) → Unit)(lhs, rhs);
+    (@std::array::check_shuffle::check_shuffle< Field, 5 : u32 > as λ([Field; 5], [Field; 5]) → Unit)(lhs, rhs);
 }
 
 nr_def «array»::«check_shuffle»::«test»::«test_shuffle_compound_struct»<>() -> Unit {
-    let lhs = [array::check_shuffle::test::CompoundStruct<> { false, 0 : Field, 12345 : u64 }, array::check_shuffle::test::CompoundStruct<> { false, -100 : Field, 54321 : u64 }, array::check_shuffle::test::CompoundStruct<> { true, 5 : Field, 18446744073709551615 : u64 }, array::check_shuffle::test::CompoundStruct<> { true, 9814 : Field, 17221745184140693811 : u64 }, array::check_shuffle::test::CompoundStruct<> { false, 341 : Field, 0 : u64 }];
-    let rhs = [array::check_shuffle::test::CompoundStruct<> { false, 341 : Field, 0 : u64 }, array::check_shuffle::test::CompoundStruct<> { false, 0 : Field, 12345 : u64 }, array::check_shuffle::test::CompoundStruct<> { false, -100 : Field, 54321 : u64 }, array::check_shuffle::test::CompoundStruct<> { true, 9814 : Field, 17221745184140693811 : u64 }, array::check_shuffle::test::CompoundStruct<> { true, 5 : Field, 18446744073709551615 : u64 }];
-    (@std::array::check_shuffle::check_shuffle<array::check_shuffle::test::CompoundStruct<>, 5 : u32> as λ([array::check_shuffle::test::CompoundStruct<>; 5], [array::check_shuffle::test::CompoundStruct<>; 5]) → Unit)(lhs, rhs);
+    let lhs = [array::check_shuffle::test::CompoundStruct<  > { false, 0 : Field, 12345 : u64 }, array::check_shuffle::test::CompoundStruct<  > { false, -100 : Field, 54321 : u64 }, array::check_shuffle::test::CompoundStruct<  > { true, 5 : Field, 18446744073709551615 : u64 }, array::check_shuffle::test::CompoundStruct<  > { true, 9814 : Field, 17221745184140693811 : u64 }, array::check_shuffle::test::CompoundStruct<  > { false, 341 : Field, 0 : u64 }];
+    let rhs = [array::check_shuffle::test::CompoundStruct<  > { false, 341 : Field, 0 : u64 }, array::check_shuffle::test::CompoundStruct<  > { false, 0 : Field, 12345 : u64 }, array::check_shuffle::test::CompoundStruct<  > { false, -100 : Field, 54321 : u64 }, array::check_shuffle::test::CompoundStruct<  > { true, 9814 : Field, 17221745184140693811 : u64 }, array::check_shuffle::test::CompoundStruct<  > { true, 5 : Field, 18446744073709551615 : u64 }];
+    (@std::array::check_shuffle::check_shuffle< array::check_shuffle::test::CompoundStruct<  >, 5 : u32 > as λ([array::check_shuffle::test::CompoundStruct<  >; 5], [array::check_shuffle::test::CompoundStruct<  >; 5]) → Unit)(lhs, rhs);
 }
 
 
