@@ -8,83 +8,83 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«new»<T, @MaxLen : u32>() -> collections::bounded_vec::BoundedVec<T, MaxLen:u32> {
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«new»<T, @MaxLen : u32>() -> collections::bounded_vec::BoundedVec< T, MaxLen:u32 > {
     let zeroed = #zeroed() : T;
-    collections::bounded_vec::BoundedVec<T,MaxLen:u32> { [zeroed ; MaxLen], 0 : u32 };
+    collections::bounded_vec::BoundedVec< T,MaxLen:u32 > { [zeroed ; MaxLen], 0 : u32 };
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«get»<T, @MaxLen : u32>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, index : u32) -> T {
-    #assert(#uLt(index, (self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len) : bool) : Unit;
-    (@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, index);
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«get»<T, @MaxLen : u32>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, index : u32) -> T {
+    #assert(#uLt(index, (self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len) : bool) : Unit;
+    (@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, index);
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«get_unchecked»<T, @MaxLen : u32>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, index : u32) -> T {
-    #arrayIndex((self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage, #cast(index) : u32) : T;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«get_unchecked»<T, @MaxLen : u32>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, index : u32) -> T {
+    #arrayIndex((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, #cast(index) : u32) : T;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«set»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec<T, MaxLen:u32>, index : u32, value : T) -> Unit {
-    #assert(#uLt(index, (#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len) : bool) : Unit;
-    (@collections::bounded_vec::BoundedVec::set_unchecked<T, MaxLen:u32> as λ(&collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32, T) → Unit)(self, index, value);
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«set»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, index : u32, value : T) -> Unit {
+    #assert(#uLt(index, (#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len) : bool) : Unit;
+    (@collections::bounded_vec::BoundedVec::set_unchecked< T, MaxLen:u32 > as λ(&collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32, T) → Unit)(self, index, value);
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«set_unchecked»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec<T, MaxLen:u32>, index : u32, value : T) -> Unit {
-    (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage[#cast(index) : u32] = value;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«set_unchecked»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, index : u32, value : T) -> Unit {
+    (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage[#cast(index) : u32] = value;
     skip;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«push»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec<T, MaxLen:u32>, elem : T) -> Unit {
-    #assert(#uLt((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, u@MaxLen) : bool) : Unit;
-        let i_3527 = (#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len;
-        (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage[#cast(i_3527) : u32] = elem;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«push»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, elem : T) -> Unit {
+    #assert(#uLt((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, u@MaxLen) : bool) : Unit;
+        let i_3527 = (#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len;
+        (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage[#cast(i_3527) : u32] = elem;
         skip;
-    (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, 1 : u32) : u32;
+    (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, 1 : u32) : u32;
     skip;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«len»<T, @MaxLen : u32>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>) -> u32 {
-    (self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«len»<T, @MaxLen : u32>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) -> u32 {
+    (self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«max_len»<T, @MaxLen : u32>(_self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>) -> u32 {
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«max_len»<T, @MaxLen : u32>(_self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) -> u32 {
     u@MaxLen;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«storage»<T, @MaxLen : u32>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>) -> [T; MaxLen] {
-    (self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«storage»<T, @MaxLen : u32>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) -> [T; MaxLen] {
+    (self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«extend_from_array»<T, @MaxLen : u32, @Len : u32>(self : &collections::bounded_vec::BoundedVec<T, MaxLen:u32>, array : [T; Len]) -> Unit {
-    let new_len = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, #arrayLen(array) : u32) : u32;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«extend_from_array»<T, @MaxLen : u32, @Len : u32>(self : &collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, array : [T; Len]) -> Unit {
+    let new_len = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, #arrayLen(array) : u32) : u32;
     #assert(#uLeq(new_len, u@MaxLen) : bool) : Unit;
     for i in 0 : u32 .. #arrayLen(array) : u32 {
-                let i_3535 = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, i) : u32;
-            (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage[#cast(i_3535) : u32] = #arrayIndex(array, #cast(i) : u32) : T;
+                let i_3535 = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, i) : u32;
+            (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage[#cast(i_3535) : u32] = #arrayIndex(array, #cast(i) : u32) : T;
             skip;
     };
-    (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len = new_len;
+    (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len = new_len;
     skip;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«extend_from_slice»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec<T, MaxLen:u32>, slice : [T]) -> Unit {
-    let new_len = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, #sliceLen(slice) : u32) : u32;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«extend_from_slice»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, slice : [T]) -> Unit {
+    let new_len = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, #sliceLen(slice) : u32) : u32;
     #assert(#uLeq(new_len, u@MaxLen) : bool) : Unit;
     for i in 0 : u32 .. #sliceLen(slice) : u32 {
-                let i_3539 = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, i) : u32;
-            (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage[#cast(i_3539) : u32] = #sliceIndex(slice, #cast(i) : u32) : T;
+                let i_3539 = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, i) : u32;
+            (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage[#cast(i_3539) : u32] = #sliceIndex(slice, #cast(i) : u32) : T;
             skip;
     };
-    (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len = new_len;
+    (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len = new_len;
     skip;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«extend_from_bounded_vec»<T, @MaxLen : u32, @Len : u32>(self : &collections::bounded_vec::BoundedVec<T, MaxLen:u32>, vec : collections::bounded_vec::BoundedVec<T, Len:u32>) -> Unit {
-    let append_len = (@collections::bounded_vec::BoundedVec::len<T, Len:u32> as λ(collections::bounded_vec::BoundedVec<T, Len:u32>) → u32)(vec);
-    let new_len = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, append_len) : u32;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«extend_from_bounded_vec»<T, @MaxLen : u32, @Len : u32>(self : &collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, vec : collections::bounded_vec::BoundedVec< T, Len:u32 >) -> Unit {
+    let append_len = (@collections::bounded_vec::BoundedVec::len< T, Len:u32 > as λ(collections::bounded_vec::BoundedVec< T, Len:u32 >) → u32)(vec);
+    let new_len = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, append_len) : u32;
     #assert(#uLeq(new_len, u@MaxLen) : bool) : Unit;
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
             for i in 0 : u32 .. append_len {
-                    let i_3545 = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, i) : u32;
-                (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage[#cast(i_3545) : u32] = (@collections::bounded_vec::BoundedVec::get_unchecked<T, Len:u32> as λ(collections::bounded_vec::BoundedVec<T, Len:u32>, u32) → T)(vec, i);
+                    let i_3545 = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, i) : u32;
+                (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage[#cast(i_3545) : u32] = (@collections::bounded_vec::BoundedVec::get_unchecked< T, Len:u32 > as λ(collections::bounded_vec::BoundedVec< T, Len:u32 >, u32) → T)(vec, i);
                 skip;
         };
     } else {
@@ -92,47 +92,47 @@ nr_def «collections»::«bounded_vec»::«BoundedVec»::«extend_from_bounded_v
         for i in 0 : u32 .. u@Len {
                 exceeded_len = #bOr(exceeded_len, #uEq(i, append_len) : bool) : bool;
             if #bNot(exceeded_len) : bool {
-                        let i_3548 = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, i) : u32;
-                    (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage[#cast(i_3548) : u32] = (@collections::bounded_vec::BoundedVec::get_unchecked<T, Len:u32> as λ(collections::bounded_vec::BoundedVec<T, Len:u32>, u32) → T)(vec, i);
+                        let i_3548 = #uAdd((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, i) : u32;
+                    (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage[#cast(i_3548) : u32] = (@collections::bounded_vec::BoundedVec::get_unchecked< T, Len:u32 > as λ(collections::bounded_vec::BoundedVec< T, Len:u32 >, u32) → T)(vec, i);
                     skip;
             };
         };
     };
-    (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len = new_len;
+    (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len = new_len;
     skip;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_array»<T, @MaxLen : u32, @Len : u32>(array : [T; Len]) -> collections::bounded_vec::BoundedVec<T, MaxLen:u32> {
-    (@std::::static_assert<str<24>> as λ(bool, str<24>) → Unit)(#uLeq(u@Len, u@MaxLen) : bool, "from array out of bounds");
-    let mut vec = (@collections::bounded_vec::BoundedVec::new<T, MaxLen:u32> as λ() → collections::bounded_vec::BoundedVec<T, MaxLen:u32>)();
-    (@collections::bounded_vec::BoundedVec::extend_from_array<T, MaxLen:u32, Len:u32> as λ(&collections::bounded_vec::BoundedVec<T, MaxLen:u32>, [T; Len]) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec<T, MaxLen:u32>, array);
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_array»<T, @MaxLen : u32, @Len : u32>(array : [T; Len]) -> collections::bounded_vec::BoundedVec< T, MaxLen:u32 > {
+    (@std::static_assert< str<24> > as λ(bool, str<24>) → Unit)(#uLeq(u@Len, u@MaxLen) : bool, "from array out of bounds");
+    let mut vec = (@collections::bounded_vec::BoundedVec::new< T, MaxLen:u32 > as λ() → collections::bounded_vec::BoundedVec< T, MaxLen:u32 >)();
+    (@collections::bounded_vec::BoundedVec::extend_from_array< T, MaxLen:u32, Len:u32 > as λ(&collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, [T; Len]) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, array);
     vec;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«pop»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec<T, MaxLen:u32>) -> T {
-    #assert(#uGt((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, 0 : u32) : bool) : Unit;
-    (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len = #uSub((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, 1 : u32) : u32;
-    let elem = #arrayIndex((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage, #cast((#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len) : u32) : T;
-        let i_3554 = (#readRef(self) : collections::bounded_vec::BoundedVec<T, MaxLen:u32> as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len;
-        (*(self) as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage[#cast(i_3554) : u32] = #zeroed() : T;
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«pop»<T, @MaxLen : u32>(self : &collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) -> T {
+    #assert(#uGt((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, 0 : u32) : bool) : Unit;
+    (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len = #uSub((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, 1 : u32) : u32;
+    let elem = #arrayIndex((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, #cast((#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len) : u32) : T;
+        let i_3554 = (#readRef(self) : collections::bounded_vec::BoundedVec< T, MaxLen:u32 > as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len;
+        (*(self) as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage[#cast(i_3554) : u32] = #zeroed() : T;
         skip;
     elem;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«any»<T, @MaxLen : u32, Env>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, predicate : λ(T) → bool) -> bool {
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«any»<T, @MaxLen : u32, Env>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, predicate : λ(T) → bool) -> bool {
     let mut ret = false;
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
-            for i in 0 : u32 .. (self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len {
-                ret = #bOr(ret, (predicate as λ(T) → bool)(#arrayIndex((self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage, #cast(i) : u32) : T)) : bool;
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
+            for i in 0 : u32 .. (self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len {
+                ret = #bOr(ret, (predicate as λ(T) → bool)(#arrayIndex((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, #cast(i) : u32) : T)) : bool;
             skip;
         };
     } else {
             let mut ret = false;
         let mut exceeded_len = false;
         for i in 0 : u32 .. u@MaxLen {
-                exceeded_len = #bOr(exceeded_len, #uEq(i, (self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len) : bool) : bool;
+                exceeded_len = #bOr(exceeded_len, #uEq(i, (self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len) : bool) : bool;
             if #bNot(exceeded_len) : bool {
-                    ret = #bOr(ret, (predicate as λ(T) → bool)(#arrayIndex((self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage, #cast(i) : u32) : T)) : bool;
+                    ret = #bOr(ret, (predicate as λ(T) → bool)(#arrayIndex((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, #cast(i) : u32) : T)) : bool;
                 skip;
             };
         };
@@ -140,18 +140,18 @@ nr_def «collections»::«bounded_vec»::«BoundedVec»::«any»<T, @MaxLen : u3
     ret;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«map»<T, @MaxLen : u32, U, Env>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, f : λ(T) → U) -> collections::bounded_vec::BoundedVec<U, MaxLen:u32> {
-    let mut ret = (@collections::bounded_vec::BoundedVec::new<U, MaxLen:u32> as λ() → collections::bounded_vec::BoundedVec<U, MaxLen:u32>)();
-    (ret as collections::bounded_vec::BoundedVec<U, MaxLen:u32>).len = (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self);
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
-            for i in 0 : u32 .. (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self) {
-                (ret as collections::bounded_vec::BoundedVec<U, MaxLen:u32>).storage[#cast(i) : u32] = (f as λ(T) → U)((@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, i));
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«map»<T, @MaxLen : u32, U, Env>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, f : λ(T) → U) -> collections::bounded_vec::BoundedVec< U, MaxLen:u32 > {
+    let mut ret = (@collections::bounded_vec::BoundedVec::new< U, MaxLen:u32 > as λ() → collections::bounded_vec::BoundedVec< U, MaxLen:u32 >)();
+    (ret as collections::bounded_vec::BoundedVec< U, MaxLen:u32 >).len = (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self);
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
+            for i in 0 : u32 .. (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self) {
+                (ret as collections::bounded_vec::BoundedVec< U, MaxLen:u32 >).storage[#cast(i) : u32] = (f as λ(T) → U)((@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, i));
             skip;
         };
     } else {
             for i in 0 : u32 .. u@MaxLen {
-                if #uLt(i, (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self)) : bool {
-                    (ret as collections::bounded_vec::BoundedVec<U, MaxLen:u32>).storage[#cast(i) : u32] = (f as λ(T) → U)((@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, i));
+                if #uLt(i, (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self)) : bool {
+                    (ret as collections::bounded_vec::BoundedVec< U, MaxLen:u32 >).storage[#cast(i) : u32] = (f as λ(T) → U)((@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, i));
                 skip;
             };
         };
@@ -159,18 +159,18 @@ nr_def «collections»::«bounded_vec»::«BoundedVec»::«map»<T, @MaxLen : u3
     ret;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«mapi»<T, @MaxLen : u32, U, Env>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, f : λ(u32, T) → U) -> collections::bounded_vec::BoundedVec<U, MaxLen:u32> {
-    let mut ret = (@collections::bounded_vec::BoundedVec::new<U, MaxLen:u32> as λ() → collections::bounded_vec::BoundedVec<U, MaxLen:u32>)();
-    (ret as collections::bounded_vec::BoundedVec<U, MaxLen:u32>).len = (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self);
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
-            for i in 0 : u32 .. (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self) {
-                (ret as collections::bounded_vec::BoundedVec<U, MaxLen:u32>).storage[#cast(i) : u32] = (f as λ(u32, T) → U)(i, (@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, i));
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«mapi»<T, @MaxLen : u32, U, Env>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, f : λ(u32, T) → U) -> collections::bounded_vec::BoundedVec< U, MaxLen:u32 > {
+    let mut ret = (@collections::bounded_vec::BoundedVec::new< U, MaxLen:u32 > as λ() → collections::bounded_vec::BoundedVec< U, MaxLen:u32 >)();
+    (ret as collections::bounded_vec::BoundedVec< U, MaxLen:u32 >).len = (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self);
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
+            for i in 0 : u32 .. (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self) {
+                (ret as collections::bounded_vec::BoundedVec< U, MaxLen:u32 >).storage[#cast(i) : u32] = (f as λ(u32, T) → U)(i, (@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, i));
             skip;
         };
     } else {
             for i in 0 : u32 .. u@MaxLen {
-                if #uLt(i, (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self)) : bool {
-                    (ret as collections::bounded_vec::BoundedVec<U, MaxLen:u32>).storage[#cast(i) : u32] = (f as λ(u32, T) → U)(i, (@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, i));
+                if #uLt(i, (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self)) : bool {
+                    (ret as collections::bounded_vec::BoundedVec< U, MaxLen:u32 >).storage[#cast(i) : u32] = (f as λ(u32, T) → U)(i, (@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, i));
                 skip;
             };
         };
@@ -178,38 +178,38 @@ nr_def «collections»::«bounded_vec»::«BoundedVec»::«mapi»<T, @MaxLen : u
     ret;
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«for_each»<T, @MaxLen : u32, Env>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, f : λ(T) → Unit) -> Unit {
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
-            for i in 0 : u32 .. (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self) {
-                (f as λ(T) → Unit)((@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, i));
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«for_each»<T, @MaxLen : u32, Env>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, f : λ(T) → Unit) -> Unit {
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
+            for i in 0 : u32 .. (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self) {
+                (f as λ(T) → Unit)((@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, i));
         };
     } else {
             for i in 0 : u32 .. u@MaxLen {
-                if #uLt(i, (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self)) : bool {
-                    (f as λ(T) → Unit)((@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, i));
+                if #uLt(i, (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self)) : bool {
+                    (f as λ(T) → Unit)((@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, i));
             };
         };
     };
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«for_eachi»<T, @MaxLen : u32, Env>(self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, f : λ(u32, T) → Unit) -> Unit {
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
-            for i in 0 : u32 .. (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self) {
-                (f as λ(u32, T) → Unit)(i, (@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, i));
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«for_eachi»<T, @MaxLen : u32, Env>(self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, f : λ(u32, T) → Unit) -> Unit {
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
+            for i in 0 : u32 .. (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self) {
+                (f as λ(u32, T) → Unit)(i, (@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, i));
         };
     } else {
             for i in 0 : u32 .. u@MaxLen {
-                if #uLt(i, (@collections::bounded_vec::BoundedVec::len<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>) → u32)(self)) : bool {
-                    (f as λ(u32, T) → Unit)(i, (@collections::bounded_vec::BoundedVec::get_unchecked<T, MaxLen:u32> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, u32) → T)(self, i));
+                if #uLt(i, (@collections::bounded_vec::BoundedVec::len< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) → u32)(self)) : bool {
+                    (f as λ(u32, T) → Unit)(i, (@collections::bounded_vec::BoundedVec::get_unchecked< T, MaxLen:u32 > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, u32) → T)(self, i));
             };
         };
     };
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_parts»<T, @MaxLen : u32>(mut array : [T; MaxLen], len : u32) -> collections::bounded_vec::BoundedVec<T, MaxLen:u32> {
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_parts»<T, @MaxLen : u32>(mut array : [T; MaxLen], len : u32) -> collections::bounded_vec::BoundedVec< T, MaxLen:u32 > {
     #assert(#uLeq(len, u@MaxLen) : bool) : Unit;
     let zeroed = #zeroed() : T;
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
             for i in len .. u@MaxLen {
                 array[#cast(i) : u32] = zeroed;
             skip;
@@ -222,274 +222,274 @@ nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_parts»<T, @MaxL
             };
         };
     };
-    collections::bounded_vec::BoundedVec<T,MaxLen:u32> { array, len };
+    collections::bounded_vec::BoundedVec< T,MaxLen:u32 > { array, len };
 }
 
-nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_parts_unchecked»<T, @MaxLen : u32>(array : [T; MaxLen], len : u32) -> collections::bounded_vec::BoundedVec<T, MaxLen:u32> {
+nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_parts_unchecked»<T, @MaxLen : u32>(array : [T; MaxLen], len : u32) -> collections::bounded_vec::BoundedVec< T, MaxLen:u32 > {
     #assert(#uLeq(len, u@MaxLen) : bool) : Unit;
-    collections::bounded_vec::BoundedVec<T,MaxLen:u32> { array, len };
+    collections::bounded_vec::BoundedVec< T,MaxLen:u32 > { array, len };
 }
 
-nr_trait_impl[impl_32] <MaxLen, T> std::cmp::Eq<> for collections::bounded_vec::BoundedVec<T, MaxLen:u32> where T : Eq<> {
-    fn «eq»<> (self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, other : collections::bounded_vec::BoundedVec<T, MaxLen:u32>) -> bool {
-        if #uEq((self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, (other as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len) : bool {
-                    #arrayEq((self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage, (other as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage) : bool;
+nr_trait_impl[impl_32] <MaxLen, T> std::cmp::Eq<  > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where T : Eq<> {
+    fn «eq»<> (self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, other : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) -> bool {
+        if #uEq((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len) : bool {
+                    #arrayEq((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage) : bool;
         } else {
                     false;
         };
 }
 }
 
-nr_trait_impl[impl_32] <T, MaxLen> std::cmp::Eq<> for collections::bounded_vec::BoundedVec<T, MaxLen:u32> where T : Eq<> {
-    fn «eq»<> (self : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, other : collections::bounded_vec::BoundedVec<T, MaxLen:u32>) -> bool {
-        if #uEq((self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len, (other as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).len) : bool {
-                    #arrayEq((self as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage, (other as collections::bounded_vec::BoundedVec<T, MaxLen:u32>).storage) : bool;
+nr_trait_impl[impl_32] <T, MaxLen> std::cmp::Eq<  > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where T : Eq<> {
+    fn «eq»<> (self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, other : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) -> bool {
+        if #uEq((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len) : bool {
+                    #arrayEq((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage) : bool;
         } else {
                     false;
         };
 }
 }
 
-nr_trait_impl[impl_33] <MaxLen, T> std::convert::From<[T; Len]> for collections::bounded_vec::BoundedVec<T, MaxLen:u32> where  {
-    fn «from»<> (array : [T; Len]) -> collections::bounded_vec::BoundedVec<T, MaxLen:u32> {
-        (@collections::bounded_vec::BoundedVec::from_array<T, MaxLen:u32, Len:u32> as λ([T; Len]) → collections::bounded_vec::BoundedVec<T, MaxLen:u32>)(array);
+nr_trait_impl[impl_33] <T, MaxLen> std::convert::From< [T; Len] > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where  {
+    fn «from»<> (array : [T; Len]) -> collections::bounded_vec::BoundedVec< T, MaxLen:u32 > {
+        (@collections::bounded_vec::BoundedVec::from_array< T, MaxLen:u32, Len:u32 > as λ([T; Len]) → collections::bounded_vec::BoundedVec< T, MaxLen:u32 >)(array);
 }
 }
 
-nr_trait_impl[impl_33] <T, MaxLen> std::convert::From<[T; Len]> for collections::bounded_vec::BoundedVec<T, MaxLen:u32> where  {
-    fn «from»<> (array : [T; Len]) -> collections::bounded_vec::BoundedVec<T, MaxLen:u32> {
-        (@collections::bounded_vec::BoundedVec::from_array<T, MaxLen:u32, Len:u32> as λ([T; Len]) → collections::bounded_vec::BoundedVec<T, MaxLen:u32>)(array);
+nr_trait_impl[impl_33] <MaxLen, T> std::convert::From< [T; Len] > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where  {
+    fn «from»<> (array : [T; Len]) -> collections::bounded_vec::BoundedVec< T, MaxLen:u32 > {
+        (@collections::bounded_vec::BoundedVec::from_array< T, MaxLen:u32, Len:u32 > as λ([T; Len]) → collections::bounded_vec::BoundedVec< T, MaxLen:u32 >)(array);
 }
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«get»::«panics_when_reading_elements_past_end_of_vec»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::new<Field, 5 : u32> as λ() → collections::bounded_vec::BoundedVec<Field, 5 : u32>)();
-    (@std::::println<Field> as λ(Field) → Unit)((@collections::bounded_vec::BoundedVec::get<Field, 5 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 5 : u32>, u32) → Field)(vec, 0 : u32));
+    let vec = (@collections::bounded_vec::BoundedVec::new< Field, 5 : u32 > as λ() → collections::bounded_vec::BoundedVec< Field, 5 : u32 >)();
+    (@std::println< Field > as λ(Field) → Unit)((@collections::bounded_vec::BoundedVec::get< Field, 5 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32) → Field)(vec, 0 : u32));
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«set»::«set_updates_values_properly»<>() -> Unit {
-    let mut vec = (@collections::bounded_vec::BoundedVec::from_array<Field, 5 : u32, 5 : u32> as λ([Field; 5]) → collections::bounded_vec::BoundedVec<Field, 5 : u32>)([0 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field]);
-    (@collections::bounded_vec::BoundedVec::set<Field, 5 : u32> as λ(&collections::bounded_vec::BoundedVec<Field, 5 : u32>, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec<Field, 5 : u32>, 0 : u32, 42 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec<Field, 5 : u32>).storage, [42 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
-    (@collections::bounded_vec::BoundedVec::set<Field, 5 : u32> as λ(&collections::bounded_vec::BoundedVec<Field, 5 : u32>, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec<Field, 5 : u32>, 1 : u32, 43 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec<Field, 5 : u32>).storage, [42 : Field, 43 : Field, 0 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
-    (@collections::bounded_vec::BoundedVec::set<Field, 5 : u32> as λ(&collections::bounded_vec::BoundedVec<Field, 5 : u32>, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec<Field, 5 : u32>, 2 : u32, 44 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec<Field, 5 : u32>).storage, [42 : Field, 43 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
-    (@collections::bounded_vec::BoundedVec::set<Field, 5 : u32> as λ(&collections::bounded_vec::BoundedVec<Field, 5 : u32>, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec<Field, 5 : u32>, 1 : u32, 10 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec<Field, 5 : u32>).storage, [42 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
-    (@collections::bounded_vec::BoundedVec::set<Field, 5 : u32> as λ(&collections::bounded_vec::BoundedVec<Field, 5 : u32>, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec<Field, 5 : u32>, 0 : u32, 0 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec<Field, 5 : u32>).storage, [0 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    let mut vec = (@collections::bounded_vec::BoundedVec::from_array< Field, 5 : u32, 5 : u32 > as λ([Field; 5]) → collections::bounded_vec::BoundedVec< Field, 5 : u32 >)([0 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field]);
+    (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(&collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 0 : u32, 42 : Field);
+    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, [42 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(&collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 1 : u32, 43 : Field);
+    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, [42 : Field, 43 : Field, 0 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(&collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 2 : u32, 44 : Field);
+    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, [42 : Field, 43 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(&collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 1 : u32, 10 : Field);
+    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, [42 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(&collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 0 : u32, 0 : Field);
+    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, [0 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«set»::«panics_when_writing_elements_past_end_of_vec»<>() -> Unit {
-    let mut vec = (@collections::bounded_vec::BoundedVec::new<Field, 5 : u32> as λ() → collections::bounded_vec::BoundedVec<Field, 5 : u32>)();
-    (@collections::bounded_vec::BoundedVec::set<Field, 5 : u32> as λ(&collections::bounded_vec::BoundedVec<Field, 5 : u32>, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec<Field, 5 : u32>, 0 : u32, 42 : Field);
-    (@std::::println<Field> as λ(Field) → Unit)((@collections::bounded_vec::BoundedVec::get<Field, 5 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 5 : u32>, u32) → Field)(vec, 0 : u32));
+    let mut vec = (@collections::bounded_vec::BoundedVec::new< Field, 5 : u32 > as λ() → collections::bounded_vec::BoundedVec< Field, 5 : u32 >)();
+    (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(&collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : &collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 0 : u32, 42 : Field);
+    (@std::println< Field > as λ(Field) → Unit)((@collections::bounded_vec::BoundedVec::get< Field, 5 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32) → Field)(vec, 0 : u32));
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«map»::«applies_function_correctly»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
-    let result = (@collections::bounded_vec::BoundedVec::map<u32, 4 : u32, u32, Unit> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, λ(u32) → u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)(vec, |value : u32| -> u32 #uMul(value, 2 : u32) : u32);
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([2 : u32, 4 : u32, 6 : u32, 8 : u32]);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
+    let result = (@collections::bounded_vec::BoundedVec::map< u32, 4 : u32, u32, Unit > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, λ(u32) → u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)(vec, |value : u32| -> u32 #uMul(value, 2 : u32) : u32);
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([2 : u32, 4 : u32, 6 : u32, 8 : u32]);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«map»::«applies_function_that_changes_return_type»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
-    let result = (@collections::bounded_vec::BoundedVec::map<u32, 4 : u32, Field, Unit> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, λ(u32) → Field) → collections::bounded_vec::BoundedVec<Field, 4 : u32>)(vec, |value : u32| -> Field #cast(#uMul(value, 2 : u32) : u32) : Field);
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<Field, 4 : u32, 4 : u32> as λ([Field; 4]) → collections::bounded_vec::BoundedVec<Field, 4 : u32>)([2 : Field, 4 : Field, 6 : Field, 8 : Field]);
-    #assert(((collections::bounded_vec::BoundedVec<Field, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<Field, 4 : u32>, collections::bounded_vec::BoundedVec<Field, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<Field, 4 : u32>, collections::bounded_vec::BoundedVec<Field, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
+    let result = (@collections::bounded_vec::BoundedVec::map< u32, 4 : u32, Field, Unit > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, λ(u32) → Field) → collections::bounded_vec::BoundedVec< Field, 4 : u32 >)(vec, |value : u32| -> Field #cast(#uMul(value, 2 : u32) : u32) : Field);
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< Field, 4 : u32, 4 : u32 > as λ([Field; 4]) → collections::bounded_vec::BoundedVec< Field, 4 : u32 >)([2 : Field, 4 : Field, 6 : Field, 8 : Field]);
+    #assert(((collections::bounded_vec::BoundedVec< Field, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< Field, 4 : u32 >, collections::bounded_vec::BoundedVec< Field, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< Field, 4 : u32 >, collections::bounded_vec::BoundedVec< Field, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«map»::«does_not_apply_function_past_len»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 2 : u32> as λ([u32; 2]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([0 : u32, 1 : u32]);
-    let result = (@collections::bounded_vec::BoundedVec::map<u32, 3 : u32, u32, Unit> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, λ(u32) → u32) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)(vec, |value : u32| -> u32 if #uEq(value, 0 : u32) : bool {
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 2 : u32 > as λ([u32; 2]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([0 : u32, 1 : u32]);
+    let result = (@collections::bounded_vec::BoundedVec::map< u32, 3 : u32, u32, Unit > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, λ(u32) → u32) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)(vec, |value : u32| -> u32 if #uEq(value, 0 : u32) : bool {
             5 : u32;
     } else {
             value;
     });
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 2 : u32> as λ([u32; 2]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([5 : u32, 1 : u32]);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 3 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, collections::bounded_vec::BoundedVec<u32, 3 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 3 : u32>, collections::bounded_vec::BoundedVec<u32, 3 : u32>)) : Unit;
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::get_unchecked<u32, 3 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, u32) → u32)(result, 2 : u32), 0 : u32) : bool) : Unit;
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 2 : u32 > as λ([u32; 2]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([5 : u32, 1 : u32]);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 3 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, collections::bounded_vec::BoundedVec< u32, 3 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, collections::bounded_vec::BoundedVec< u32, 3 : u32 >)) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::get_unchecked< u32, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, u32) → u32)(result, 2 : u32), 0 : u32) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«mapi»::«applies_function_correctly»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
-    let result = (@collections::bounded_vec::BoundedVec::mapi<u32, 4 : u32, u32, Unit> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, λ(u32, u32) → u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)(vec, |i : u32, value : u32| -> u32 #uAdd(i, #uMul(value, 2 : u32) : u32) : u32);
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([2 : u32, 5 : u32, 8 : u32, 11 : u32]);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
+    let result = (@collections::bounded_vec::BoundedVec::mapi< u32, 4 : u32, u32, Unit > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, λ(u32, u32) → u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)(vec, |i : u32, value : u32| -> u32 #uAdd(i, #uMul(value, 2 : u32) : u32) : u32);
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([2 : u32, 5 : u32, 8 : u32, 11 : u32]);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«mapi»::«applies_function_that_changes_return_type»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
-    let result = (@collections::bounded_vec::BoundedVec::mapi<u32, 4 : u32, Field, Unit> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, λ(u32, u32) → Field) → collections::bounded_vec::BoundedVec<Field, 4 : u32>)(vec, |i : u32, value : u32| -> Field #cast(#uAdd(i, #uMul(value, 2 : u32) : u32) : u32) : Field);
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<Field, 4 : u32, 4 : u32> as λ([Field; 4]) → collections::bounded_vec::BoundedVec<Field, 4 : u32>)([2 : Field, 5 : Field, 8 : Field, 11 : Field]);
-    #assert(((collections::bounded_vec::BoundedVec<Field, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<Field, 4 : u32>, collections::bounded_vec::BoundedVec<Field, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<Field, 4 : u32>, collections::bounded_vec::BoundedVec<Field, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
+    let result = (@collections::bounded_vec::BoundedVec::mapi< u32, 4 : u32, Field, Unit > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, λ(u32, u32) → Field) → collections::bounded_vec::BoundedVec< Field, 4 : u32 >)(vec, |i : u32, value : u32| -> Field #cast(#uAdd(i, #uMul(value, 2 : u32) : u32) : u32) : Field);
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< Field, 4 : u32, 4 : u32 > as λ([Field; 4]) → collections::bounded_vec::BoundedVec< Field, 4 : u32 >)([2 : Field, 5 : Field, 8 : Field, 11 : Field]);
+    #assert(((collections::bounded_vec::BoundedVec< Field, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< Field, 4 : u32 >, collections::bounded_vec::BoundedVec< Field, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< Field, 4 : u32 >, collections::bounded_vec::BoundedVec< Field, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«mapi»::«does_not_apply_function_past_len»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 2 : u32> as λ([u32; 2]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([0 : u32, 1 : u32]);
-    let result = (@collections::bounded_vec::BoundedVec::mapi<u32, 3 : u32, u32, Unit> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, λ(u32, u32) → u32) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)(vec, |_ : u32, value : u32| -> u32 if #uEq(value, 0 : u32) : bool {
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 2 : u32 > as λ([u32; 2]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([0 : u32, 1 : u32]);
+    let result = (@collections::bounded_vec::BoundedVec::mapi< u32, 3 : u32, u32, Unit > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, λ(u32, u32) → u32) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)(vec, |_ : u32, value : u32| -> u32 if #uEq(value, 0 : u32) : bool {
             5 : u32;
     } else {
             value;
     });
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 2 : u32> as λ([u32; 2]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([5 : u32, 1 : u32]);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 3 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, collections::bounded_vec::BoundedVec<u32, 3 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 3 : u32>, collections::bounded_vec::BoundedVec<u32, 3 : u32>)) : Unit;
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::get_unchecked<u32, 3 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, u32) → u32)(result, 2 : u32), 0 : u32) : bool) : Unit;
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 2 : u32 > as λ([u32; 2]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([5 : u32, 1 : u32]);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 3 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, collections::bounded_vec::BoundedVec< u32, 3 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, collections::bounded_vec::BoundedVec< u32, 3 : u32 >)) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::get_unchecked< u32, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, u32) → u32)(result, 2 : u32), 0 : u32) : bool) : Unit;
 }
 
-nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_each»::«for_each_map»<T, U, Env, @MaxLen : u32>(input : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, f : λ(T) → U) -> collections::bounded_vec::BoundedVec<U, MaxLen:u32> {
-    let mut output = (@collections::bounded_vec::BoundedVec::new<U, MaxLen:u32> as λ() → collections::bounded_vec::BoundedVec<U, MaxLen:u32>)();
-    let output_ref = #ref(output) : &collections::bounded_vec::BoundedVec<U, MaxLen:u32>;
-    (@collections::bounded_vec::BoundedVec::for_each<T, MaxLen:u32, `(&collections::bounded_vec::BoundedVec<U, MaxLen:u32>, λ(T) → U)> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, λ(T) → Unit) → Unit)(input, |x : T| -> Unit (@collections::bounded_vec::BoundedVec::push<U, MaxLen:u32> as λ(&collections::bounded_vec::BoundedVec<U, MaxLen:u32>, U) → Unit)(output_ref, (f as λ(T) → U)(x)));
+nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_each»::«for_each_map»<T, U, Env, @MaxLen : u32>(input : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, f : λ(T) → U) -> collections::bounded_vec::BoundedVec< U, MaxLen:u32 > {
+    let mut output = (@collections::bounded_vec::BoundedVec::new< U, MaxLen:u32 > as λ() → collections::bounded_vec::BoundedVec< U, MaxLen:u32 >)();
+    let output_ref = #ref(output) : &collections::bounded_vec::BoundedVec< U, MaxLen:u32 >;
+    (@collections::bounded_vec::BoundedVec::for_each< T, MaxLen:u32, `(&collections::bounded_vec::BoundedVec< U, MaxLen:u32 >, λ(T) → U) > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, λ(T) → Unit) → Unit)(input, |x : T| -> Unit (@collections::bounded_vec::BoundedVec::push< U, MaxLen:u32 > as λ(&collections::bounded_vec::BoundedVec< U, MaxLen:u32 >, U) → Unit)(output_ref, (f as λ(T) → U)(x)));
     output;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_each»::«smoke_test»<>() -> Unit {
     let mut acc = 0 : u32;
     let acc_ref = #ref(acc) : &u32;
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 3 : u32> as λ([u32; 3]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([1 : u32, 2 : u32, 3 : u32]);
-    (@collections::bounded_vec::BoundedVec::for_each<u32, 3 : u32, `(&u32)> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, λ(u32) → Unit) → Unit)(vec, |value : u32| -> Unit     *(acc_ref) = #uAdd(#readRef(acc_ref) : u32, value) : u32;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 3 : u32 > as λ([u32; 3]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([1 : u32, 2 : u32, 3 : u32]);
+    (@collections::bounded_vec::BoundedVec::for_each< u32, 3 : u32, `(&u32) > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, λ(u32) → Unit) → Unit)(vec, |value : u32| -> Unit     *(acc_ref) = #uAdd(#readRef(acc_ref) : u32, value) : u32;
         skip;);
     #assert(#uEq(acc, 6 : u32) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_each»::«applies_function_correctly»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
-    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_each::for_each_map<u32, u32, Unit, 4 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, λ(u32) → u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)(vec, |value : u32| -> u32 #uMul(value, 2 : u32) : u32);
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([2 : u32, 4 : u32, 6 : u32, 8 : u32]);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
+    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_each::for_each_map< u32, u32, Unit, 4 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, λ(u32) → u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)(vec, |value : u32| -> u32 #uMul(value, 2 : u32) : u32);
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([2 : u32, 4 : u32, 6 : u32, 8 : u32]);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_each»::«applies_function_that_changes_return_type»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
-    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_each::for_each_map<u32, Field, Unit, 4 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, λ(u32) → Field) → collections::bounded_vec::BoundedVec<Field, 4 : u32>)(vec, |value : u32| -> Field #cast(#uMul(value, 2 : u32) : u32) : Field);
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<Field, 4 : u32, 4 : u32> as λ([Field; 4]) → collections::bounded_vec::BoundedVec<Field, 4 : u32>)([2 : Field, 4 : Field, 6 : Field, 8 : Field]);
-    #assert(((collections::bounded_vec::BoundedVec<Field, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<Field, 4 : u32>, collections::bounded_vec::BoundedVec<Field, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<Field, 4 : u32>, collections::bounded_vec::BoundedVec<Field, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
+    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_each::for_each_map< u32, Field, Unit, 4 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, λ(u32) → Field) → collections::bounded_vec::BoundedVec< Field, 4 : u32 >)(vec, |value : u32| -> Field #cast(#uMul(value, 2 : u32) : u32) : Field);
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< Field, 4 : u32, 4 : u32 > as λ([Field; 4]) → collections::bounded_vec::BoundedVec< Field, 4 : u32 >)([2 : Field, 4 : Field, 6 : Field, 8 : Field]);
+    #assert(((collections::bounded_vec::BoundedVec< Field, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< Field, 4 : u32 >, collections::bounded_vec::BoundedVec< Field, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< Field, 4 : u32 >, collections::bounded_vec::BoundedVec< Field, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_each»::«does_not_apply_function_past_len»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 2 : u32> as λ([u32; 2]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([0 : u32, 1 : u32]);
-    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_each::for_each_map<u32, u32, Unit, 3 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, λ(u32) → u32) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)(vec, |value : u32| -> u32 if #uEq(value, 0 : u32) : bool {
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 2 : u32 > as λ([u32; 2]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([0 : u32, 1 : u32]);
+    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_each::for_each_map< u32, u32, Unit, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, λ(u32) → u32) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)(vec, |value : u32| -> u32 if #uEq(value, 0 : u32) : bool {
             5 : u32;
     } else {
             value;
     });
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 2 : u32> as λ([u32; 2]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([5 : u32, 1 : u32]);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 3 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, collections::bounded_vec::BoundedVec<u32, 3 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 3 : u32>, collections::bounded_vec::BoundedVec<u32, 3 : u32>)) : Unit;
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::get_unchecked<u32, 3 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, u32) → u32)(result, 2 : u32), 0 : u32) : bool) : Unit;
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 2 : u32 > as λ([u32; 2]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([5 : u32, 1 : u32]);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 3 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, collections::bounded_vec::BoundedVec< u32, 3 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, collections::bounded_vec::BoundedVec< u32, 3 : u32 >)) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::get_unchecked< u32, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, u32) → u32)(result, 2 : u32), 0 : u32) : bool) : Unit;
 }
 
-nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_eachi»::«for_eachi_mapi»<T, U, Env, @MaxLen : u32>(input : collections::bounded_vec::BoundedVec<T, MaxLen:u32>, f : λ(u32, T) → U) -> collections::bounded_vec::BoundedVec<U, MaxLen:u32> {
-    let mut output = (@collections::bounded_vec::BoundedVec::new<U, MaxLen:u32> as λ() → collections::bounded_vec::BoundedVec<U, MaxLen:u32>)();
-    let output_ref = #ref(output) : &collections::bounded_vec::BoundedVec<U, MaxLen:u32>;
-    (@collections::bounded_vec::BoundedVec::for_eachi<T, MaxLen:u32, `(&collections::bounded_vec::BoundedVec<U, MaxLen:u32>, λ(u32, T) → U)> as λ(collections::bounded_vec::BoundedVec<T, MaxLen:u32>, λ(u32, T) → Unit) → Unit)(input, |i : u32, x : T| -> Unit (@collections::bounded_vec::BoundedVec::push<U, MaxLen:u32> as λ(&collections::bounded_vec::BoundedVec<U, MaxLen:u32>, U) → Unit)(output_ref, (f as λ(u32, T) → U)(i, x)));
+nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_eachi»::«for_eachi_mapi»<T, U, Env, @MaxLen : u32>(input : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, f : λ(u32, T) → U) -> collections::bounded_vec::BoundedVec< U, MaxLen:u32 > {
+    let mut output = (@collections::bounded_vec::BoundedVec::new< U, MaxLen:u32 > as λ() → collections::bounded_vec::BoundedVec< U, MaxLen:u32 >)();
+    let output_ref = #ref(output) : &collections::bounded_vec::BoundedVec< U, MaxLen:u32 >;
+    (@collections::bounded_vec::BoundedVec::for_eachi< T, MaxLen:u32, `(&collections::bounded_vec::BoundedVec< U, MaxLen:u32 >, λ(u32, T) → U) > as λ(collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, λ(u32, T) → Unit) → Unit)(input, |i : u32, x : T| -> Unit (@collections::bounded_vec::BoundedVec::push< U, MaxLen:u32 > as λ(&collections::bounded_vec::BoundedVec< U, MaxLen:u32 >, U) → Unit)(output_ref, (f as λ(u32, T) → U)(i, x)));
     output;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_eachi»::«smoke_test»<>() -> Unit {
     let mut acc = 0 : u32;
     let acc_ref = #ref(acc) : &u32;
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 3 : u32> as λ([u32; 3]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([1 : u32, 2 : u32, 3 : u32]);
-    (@collections::bounded_vec::BoundedVec::for_eachi<u32, 3 : u32, `(&u32)> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, λ(u32, u32) → Unit) → Unit)(vec, |i : u32, value : u32| -> Unit     *(acc_ref) = #uAdd(#readRef(acc_ref) : u32, #uMul(i, value) : u32) : u32;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 3 : u32 > as λ([u32; 3]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([1 : u32, 2 : u32, 3 : u32]);
+    (@collections::bounded_vec::BoundedVec::for_eachi< u32, 3 : u32, `(&u32) > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, λ(u32, u32) → Unit) → Unit)(vec, |i : u32, value : u32| -> Unit     *(acc_ref) = #uAdd(#readRef(acc_ref) : u32, #uMul(i, value) : u32) : u32;
         skip;);
     #assert(#uEq(acc, 8 : u32) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_eachi»::«applies_function_correctly»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
-    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_eachi::for_eachi_mapi<u32, u32, Unit, 4 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, λ(u32, u32) → u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)(vec, |i : u32, value : u32| -> u32 #uAdd(i, #uMul(value, 2 : u32) : u32) : u32);
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([2 : u32, 5 : u32, 8 : u32, 11 : u32]);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
+    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_eachi::for_eachi_mapi< u32, u32, Unit, 4 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, λ(u32, u32) → u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)(vec, |i : u32, value : u32| -> u32 #uAdd(i, #uMul(value, 2 : u32) : u32) : u32);
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([2 : u32, 5 : u32, 8 : u32, 11 : u32]);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_eachi»::«applies_function_that_changes_return_type»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 4 : u32, 4 : u32> as λ([u32; 4]) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
-    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_eachi::for_eachi_mapi<u32, Field, Unit, 4 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, λ(u32, u32) → Field) → collections::bounded_vec::BoundedVec<Field, 4 : u32>)(vec, |i : u32, value : u32| -> Field #cast(#uAdd(i, #uMul(value, 2 : u32) : u32) : u32) : Field);
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<Field, 4 : u32, 4 : u32> as λ([Field; 4]) → collections::bounded_vec::BoundedVec<Field, 4 : u32>)([2 : Field, 5 : Field, 8 : Field, 11 : Field]);
-    #assert(((collections::bounded_vec::BoundedVec<Field, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<Field, 4 : u32>, collections::bounded_vec::BoundedVec<Field, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<Field, 4 : u32>, collections::bounded_vec::BoundedVec<Field, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 4 : u32, 4 : u32 > as λ([u32; 4]) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 4 : u32]);
+    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_eachi::for_eachi_mapi< u32, Field, Unit, 4 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, λ(u32, u32) → Field) → collections::bounded_vec::BoundedVec< Field, 4 : u32 >)(vec, |i : u32, value : u32| -> Field #cast(#uAdd(i, #uMul(value, 2 : u32) : u32) : u32) : Field);
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< Field, 4 : u32, 4 : u32 > as λ([Field; 4]) → collections::bounded_vec::BoundedVec< Field, 4 : u32 >)([2 : Field, 5 : Field, 8 : Field, 11 : Field]);
+    #assert(((collections::bounded_vec::BoundedVec< Field, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< Field, 4 : u32 >, collections::bounded_vec::BoundedVec< Field, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< Field, 4 : u32 >, collections::bounded_vec::BoundedVec< Field, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«for_eachi»::«does_not_apply_function_past_len»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 2 : u32> as λ([u32; 2]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([0 : u32, 1 : u32]);
-    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_eachi::for_eachi_mapi<u32, u32, Unit, 3 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, λ(u32, u32) → u32) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)(vec, |_ : u32, value : u32| -> u32 if #uEq(value, 0 : u32) : bool {
+    let vec = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 2 : u32 > as λ([u32; 2]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([0 : u32, 1 : u32]);
+    let result = (@std::collections::bounded_vec::bounded_vec_tests::for_eachi::for_eachi_mapi< u32, u32, Unit, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, λ(u32, u32) → u32) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)(vec, |_ : u32, value : u32| -> u32 if #uEq(value, 0 : u32) : bool {
             5 : u32;
     } else {
             value;
     });
-    let expected = (@collections::bounded_vec::BoundedVec::from_array<u32, 3 : u32, 2 : u32> as λ([u32; 2]) → collections::bounded_vec::BoundedVec<u32, 3 : u32>)([5 : u32, 1 : u32]);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 3 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, collections::bounded_vec::BoundedVec<u32, 3 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 3 : u32>, collections::bounded_vec::BoundedVec<u32, 3 : u32>)) : Unit;
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::get_unchecked<u32, 3 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 3 : u32>, u32) → u32)(result, 2 : u32), 0 : u32) : bool) : Unit;
+    let expected = (@collections::bounded_vec::BoundedVec::from_array< u32, 3 : u32, 2 : u32 > as λ([u32; 2]) → collections::bounded_vec::BoundedVec< u32, 3 : u32 >)([5 : u32, 1 : u32]);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 3 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, collections::bounded_vec::BoundedVec< u32, 3 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, collections::bounded_vec::BoundedVec< u32, 3 : u32 >)) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::get_unchecked< u32, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 3 : u32 >, u32) → u32)(result, 2 : u32), 0 : u32) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_array»::«empty»<>() -> Unit {
     let empty_array = [];
-    let bounded_vec = (@collections::bounded_vec::BoundedVec::from_array<Field, 0 : u32, 0 : u32> as λ([Field; 0]) → collections::bounded_vec::BoundedVec<Field, 0 : u32>)([]);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len<Field, 0 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 0 : u32>) → u32)(bounded_vec), 0 : u32) : bool) : Unit;
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<Field, 0 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 0 : u32>) → u32)(bounded_vec), 0 : u32) : bool) : Unit;
-    #assert(#arrayEq((@collections::bounded_vec::BoundedVec::storage<Field, 0 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 0 : u32>) → [Field; 0])(bounded_vec), empty_array) : bool) : Unit;
+    let bounded_vec = (@collections::bounded_vec::BoundedVec::from_array< Field, 0 : u32, 0 : u32 > as λ([Field; 0]) → collections::bounded_vec::BoundedVec< Field, 0 : u32 >)([]);
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len< Field, 0 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 0 : u32 >) → u32)(bounded_vec), 0 : u32) : bool) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len< Field, 0 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 0 : u32 >) → u32)(bounded_vec), 0 : u32) : bool) : Unit;
+    #assert(#arrayEq((@collections::bounded_vec::BoundedVec::storage< Field, 0 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 0 : u32 >) → [Field; 0])(bounded_vec), empty_array) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_array»::«equal_len»<>() -> Unit {
     let array = [1 : Field, 2 : Field, 3 : Field];
-    let bounded_vec = (@collections::bounded_vec::BoundedVec::from_array<Field, 3 : u32, 3 : u32> as λ([Field; 3]) → collections::bounded_vec::BoundedVec<Field, 3 : u32>)(array);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len<Field, 3 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 3 : u32>) → u32)(bounded_vec), 3 : u32) : bool) : Unit;
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<Field, 3 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 3 : u32>) → u32)(bounded_vec), 3 : u32) : bool) : Unit;
-    #assert(#arrayEq((@collections::bounded_vec::BoundedVec::storage<Field, 3 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 3 : u32>) → [Field; 3])(bounded_vec), array) : bool) : Unit;
+    let bounded_vec = (@collections::bounded_vec::BoundedVec::from_array< Field, 3 : u32, 3 : u32 > as λ([Field; 3]) → collections::bounded_vec::BoundedVec< Field, 3 : u32 >)(array);
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len< Field, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → u32)(bounded_vec), 3 : u32) : bool) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len< Field, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → u32)(bounded_vec), 3 : u32) : bool) : Unit;
+    #assert(#arrayEq((@collections::bounded_vec::BoundedVec::storage< Field, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → [Field; 3])(bounded_vec), array) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_array»::«max_len_greater_then_array_len»<>() -> Unit {
     let array = [1 : Field, 2 : Field, 3 : Field];
-    let bounded_vec = (@collections::bounded_vec::BoundedVec::from_array<Field, 10 : u32, 3 : u32> as λ([Field; 3]) → collections::bounded_vec::BoundedVec<Field, 10 : u32>)(array);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>) → u32)(bounded_vec), 10 : u32) : bool) : Unit;
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>) → u32)(bounded_vec), 3 : u32) : bool) : Unit;
-    #assert(#fEq((@collections::bounded_vec::BoundedVec::get<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>, u32) → Field)(bounded_vec, 0 : u32), 1 : Field) : bool) : Unit;
-    #assert(#fEq((@collections::bounded_vec::BoundedVec::get<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>, u32) → Field)(bounded_vec, 1 : u32), 2 : Field) : bool) : Unit;
-    #assert(#fEq((@collections::bounded_vec::BoundedVec::get<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>, u32) → Field)(bounded_vec, 2 : u32), 3 : Field) : bool) : Unit;
+    let bounded_vec = (@collections::bounded_vec::BoundedVec::from_array< Field, 10 : u32, 3 : u32 > as λ([Field; 3]) → collections::bounded_vec::BoundedVec< Field, 10 : u32 >)(array);
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >) → u32)(bounded_vec), 10 : u32) : bool) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >) → u32)(bounded_vec), 3 : u32) : bool) : Unit;
+    #assert(#fEq((@collections::bounded_vec::BoundedVec::get< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >, u32) → Field)(bounded_vec, 0 : u32), 1 : Field) : bool) : Unit;
+    #assert(#fEq((@collections::bounded_vec::BoundedVec::get< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >, u32) → Field)(bounded_vec, 1 : u32), 2 : Field) : bool) : Unit;
+    #assert(#fEq((@collections::bounded_vec::BoundedVec::get< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >, u32) → Field)(bounded_vec, 2 : u32), 3 : Field) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_array»::«max_len_lower_then_array_len»<>() -> Unit {
-    let _? = (@collections::bounded_vec::BoundedVec::from_array<Field, 2 : u32, 3 : u32> as λ([Field; 3]) → collections::bounded_vec::BoundedVec<Field, 2 : u32>)([0 : Field ; 3]);
+    let _? = (@collections::bounded_vec::BoundedVec::from_array< Field, 2 : u32, 3 : u32 > as λ([Field; 3]) → collections::bounded_vec::BoundedVec< Field, 2 : u32 >)([0 : Field ; 3]);
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«trait_from»::«simple»<>() -> Unit {
     let array = [1 : Field, 2 : Field];
-    let bounded_vec = ((collections::bounded_vec::BoundedVec<Field, 10 : u32> as std::convert::From<[Field; 2]>)::from<> as λ([Field; 2]) → collections::bounded_vec::BoundedVec<Field, 10 : u32>)(array);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>) → u32)(bounded_vec), 10 : u32) : bool) : Unit;
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>) → u32)(bounded_vec), 2 : u32) : bool) : Unit;
-    #assert(#fEq((@collections::bounded_vec::BoundedVec::get<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>, u32) → Field)(bounded_vec, 0 : u32), 1 : Field) : bool) : Unit;
-    #assert(#fEq((@collections::bounded_vec::BoundedVec::get<Field, 10 : u32> as λ(collections::bounded_vec::BoundedVec<Field, 10 : u32>, u32) → Field)(bounded_vec, 1 : u32), 2 : Field) : bool) : Unit;
+    let bounded_vec = ((collections::bounded_vec::BoundedVec< Field, 10 : u32 > as std::convert::From< [Field; 2] >)::from<  > as λ([Field; 2]) → collections::bounded_vec::BoundedVec< Field, 10 : u32 >)(array);
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >) → u32)(bounded_vec), 10 : u32) : bool) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >) → u32)(bounded_vec), 2 : u32) : bool) : Unit;
+    #assert(#fEq((@collections::bounded_vec::BoundedVec::get< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >, u32) → Field)(bounded_vec, 0 : u32), 1 : Field) : bool) : Unit;
+    #assert(#fEq((@collections::bounded_vec::BoundedVec::get< Field, 10 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 10 : u32 >, u32) → Field)(bounded_vec, 1 : u32), 2 : Field) : bool) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«trait_eq»::«empty_equality»<>() -> Unit {
-    let mut bounded_vec1 = (@collections::bounded_vec::BoundedVec::new<Field, 3 : u32> as λ() → collections::bounded_vec::BoundedVec<Field, 3 : u32>)();
-    let mut bounded_vec2 = (@collections::bounded_vec::BoundedVec::new<Field, 3 : u32> as λ() → collections::bounded_vec::BoundedVec<Field, 3 : u32>)();
-    #assert(((collections::bounded_vec::BoundedVec<Field, 3 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<Field, 3 : u32>, collections::bounded_vec::BoundedVec<Field, 3 : u32>) → bool)(collections::bounded_vec::BoundedVec<Field, 3 : u32>, collections::bounded_vec::BoundedVec<Field, 3 : u32>)) : Unit;
+    let mut bounded_vec1 = (@collections::bounded_vec::BoundedVec::new< Field, 3 : u32 > as λ() → collections::bounded_vec::BoundedVec< Field, 3 : u32 >)();
+    let mut bounded_vec2 = (@collections::bounded_vec::BoundedVec::new< Field, 3 : u32 > as λ() → collections::bounded_vec::BoundedVec< Field, 3 : u32 >)();
+    #assert(((collections::bounded_vec::BoundedVec< Field, 3 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >, collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → bool)(collections::bounded_vec::BoundedVec< Field, 3 : u32 >, collections::bounded_vec::BoundedVec< Field, 3 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«trait_eq»::«inequality»<>() -> Unit {
-    let mut bounded_vec1 = (@collections::bounded_vec::BoundedVec::new<Field, 3 : u32> as λ() → collections::bounded_vec::BoundedVec<Field, 3 : u32>)();
-    let mut bounded_vec2 = (@collections::bounded_vec::BoundedVec::new<Field, 3 : u32> as λ() → collections::bounded_vec::BoundedVec<Field, 3 : u32>)();
-    (@collections::bounded_vec::BoundedVec::push<Field, 3 : u32> as λ(&collections::bounded_vec::BoundedVec<Field, 3 : u32>, Field) → Unit)(#ref(bounded_vec1) : &collections::bounded_vec::BoundedVec<Field, 3 : u32>, 1 : Field);
-    (@collections::bounded_vec::BoundedVec::push<Field, 3 : u32> as λ(&collections::bounded_vec::BoundedVec<Field, 3 : u32>, Field) → Unit)(#ref(bounded_vec2) : &collections::bounded_vec::BoundedVec<Field, 3 : u32>, 2 : Field);
-    #assert(((collections::bounded_vec::BoundedVec<Field, 3 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<Field, 3 : u32>, collections::bounded_vec::BoundedVec<Field, 3 : u32>) → bool)(collections::bounded_vec::BoundedVec<Field, 3 : u32>, collections::bounded_vec::BoundedVec<Field, 3 : u32>)) : Unit;
+    let mut bounded_vec1 = (@collections::bounded_vec::BoundedVec::new< Field, 3 : u32 > as λ() → collections::bounded_vec::BoundedVec< Field, 3 : u32 >)();
+    let mut bounded_vec2 = (@collections::bounded_vec::BoundedVec::new< Field, 3 : u32 > as λ() → collections::bounded_vec::BoundedVec< Field, 3 : u32 >)();
+    (@collections::bounded_vec::BoundedVec::push< Field, 3 : u32 > as λ(&collections::bounded_vec::BoundedVec< Field, 3 : u32 >, Field) → Unit)(#ref(bounded_vec1) : &collections::bounded_vec::BoundedVec< Field, 3 : u32 >, 1 : Field);
+    (@collections::bounded_vec::BoundedVec::push< Field, 3 : u32 > as λ(&collections::bounded_vec::BoundedVec< Field, 3 : u32 >, Field) → Unit)(#ref(bounded_vec2) : &collections::bounded_vec::BoundedVec< Field, 3 : u32 >, 2 : Field);
+    #assert(((collections::bounded_vec::BoundedVec< Field, 3 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >, collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → bool)(collections::bounded_vec::BoundedVec< Field, 3 : u32 >, collections::bounded_vec::BoundedVec< Field, 3 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_parts»::«from_parts»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_parts<u32, 4 : u32> as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 0 : u32], 3 : u32);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<u32, 4 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>) → u32)(vec), 3 : u32) : bool) : Unit;
-    let vec1 = (@collections::bounded_vec::BoundedVec::from_parts<u32, 4 : u32> as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 1 : u32], 3 : u32);
-    let vec2 = (@collections::bounded_vec::BoundedVec::from_parts<u32, 4 : u32> as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 2 : u32], 3 : u32);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_parts< u32, 4 : u32 > as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 0 : u32], 3 : u32);
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len< u32, 4 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >) → u32)(vec), 3 : u32) : bool) : Unit;
+    let vec1 = (@collections::bounded_vec::BoundedVec::from_parts< u32, 4 : u32 > as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 1 : u32], 3 : u32);
+    let vec2 = (@collections::bounded_vec::BoundedVec::from_parts< u32, 4 : u32 > as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 2 : u32], 3 : u32);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_parts»::«from_parts_unchecked»<>() -> Unit {
-    let vec = (@collections::bounded_vec::BoundedVec::from_parts_unchecked<u32, 4 : u32> as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 0 : u32], 3 : u32);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<u32, 4 : u32> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>) → u32)(vec), 3 : u32) : bool) : Unit;
-    let vec1 = (@collections::bounded_vec::BoundedVec::from_parts_unchecked<u32, 4 : u32> as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 1 : u32], 3 : u32);
-    let vec2 = (@collections::bounded_vec::BoundedVec::from_parts_unchecked<u32, 4 : u32> as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec<u32, 4 : u32>)([1 : u32, 2 : u32, 3 : u32, 2 : u32], 3 : u32);
-    #assert(((collections::bounded_vec::BoundedVec<u32, 4 : u32> as Eq<>)::eq<> as λ(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>) → bool)(collections::bounded_vec::BoundedVec<u32, 4 : u32>, collections::bounded_vec::BoundedVec<u32, 4 : u32>)) : Unit;
+    let vec = (@collections::bounded_vec::BoundedVec::from_parts_unchecked< u32, 4 : u32 > as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 0 : u32], 3 : u32);
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len< u32, 4 : u32 > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >) → u32)(vec), 3 : u32) : bool) : Unit;
+    let vec1 = (@collections::bounded_vec::BoundedVec::from_parts_unchecked< u32, 4 : u32 > as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 1 : u32], 3 : u32);
+    let vec2 = (@collections::bounded_vec::BoundedVec::from_parts_unchecked< u32, 4 : u32 > as λ([u32; 4], u32) → collections::bounded_vec::BoundedVec< u32, 4 : u32 >)([1 : u32, 2 : u32, 3 : u32, 2 : u32], 3 : u32);
+    #assert(((collections::bounded_vec::BoundedVec< u32, 4 : u32 > as Eq<  >)::eq<  > as λ(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >) → bool)(collections::bounded_vec::BoundedVec< u32, 4 : u32 >, collections::bounded_vec::BoundedVec< u32, 4 : u32 >)) : Unit;
 }
 
 

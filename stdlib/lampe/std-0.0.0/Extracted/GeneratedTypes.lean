@@ -13,23 +13,23 @@ nr_struct_def option::Option<T> {
 }
 
 nr_struct_def collections::map::Slot<K, V> {
-    _key_value : option::Option<`(K, V)>,
+    _key_value : option::Option< `(K, V) >,
     _is_deleted : bool
 }
 
 nr_struct_def collections::map::HashMap<K, V, @N : u32, B> {
-    _table : [collections::map::Slot<K, V>; N],
+    _table : [collections::map::Slot< K, V >; N],
     _len : u32,
     _build_hasher : B
 }
 
 nr_struct_def collections::umap::Slot<K, V> {
-    _key_value : option::Option<`(K, V)>,
+    _key_value : option::Option< `(K, V) >,
     _is_deleted : bool
 }
 
 nr_struct_def collections::umap::UHashMap<K, V, B> {
-    _table : [collections::umap::Slot<K, V>],
+    _table : [collections::umap::Slot< K, V >],
     _len : u32,
     _build_hasher : B
 }
@@ -116,7 +116,7 @@ nr_trait_def std::cmp::Eq<>[] {
 }
 
 nr_trait_def std::cmp::Ord<>[] {
-    fn cmp<>(Self, Self) -> cmp::Ordering<>;
+    fn cmp<>(Self, Self) -> cmp::Ordering<  >;
 }
 
 nr_trait_def std::convert::AsPrimitive<T>[] {

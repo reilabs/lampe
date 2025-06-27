@@ -8,65 +8,65 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_def «embedded_curve_ops»::«EmbeddedCurvePoint»::«double»<>(self : embedded_curve_ops::EmbeddedCurvePoint<>) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    (@std::embedded_curve_ops::embedded_curve_add<> as λ(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>) → embedded_curve_ops::EmbeddedCurvePoint<>)(self, self);
+nr_def «embedded_curve_ops»::«EmbeddedCurvePoint»::«double»<>(self : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+    (@std::embedded_curve_ops::embedded_curve_add<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(self, self);
 }
 
-nr_def «embedded_curve_ops»::«EmbeddedCurvePoint»::«point_at_infinity»<>() -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    embedded_curve_ops::EmbeddedCurvePoint<> { 0 : Field, 0 : Field, true };
+nr_def «embedded_curve_ops»::«EmbeddedCurvePoint»::«point_at_infinity»<>() -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+    embedded_curve_ops::EmbeddedCurvePoint<  > { 0 : Field, 0 : Field, true };
 }
 
-nr_def «embedded_curve_ops»::«EmbeddedCurvePoint»::«generator»<>() -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    embedded_curve_ops::EmbeddedCurvePoint<> { 1 : Field, 17631683881184975370165255887551781615748388533673675138860 : Field, false };
+nr_def «embedded_curve_ops»::«EmbeddedCurvePoint»::«generator»<>() -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+    embedded_curve_ops::EmbeddedCurvePoint<  > { 1 : Field, 17631683881184975370165255887551781615748388533673675138860 : Field, false };
 }
 
-nr_trait_impl[impl_25] <> std::ops::arith::Add<> for embedded_curve_ops::EmbeddedCurvePoint<> where  {
-    fn «add»<> (self : embedded_curve_ops::EmbeddedCurvePoint<>, other : embedded_curve_ops::EmbeddedCurvePoint<>) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-        (@std::embedded_curve_ops::embedded_curve_add<> as λ(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>) → embedded_curve_ops::EmbeddedCurvePoint<>)(self, other);
-}
-}
-
-nr_trait_impl[impl_26] <> std::ops::arith::Sub<> for embedded_curve_ops::EmbeddedCurvePoint<> where  {
-    fn «sub»<> (self : embedded_curve_ops::EmbeddedCurvePoint<>, other : embedded_curve_ops::EmbeddedCurvePoint<>) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-        ((embedded_curve_ops::EmbeddedCurvePoint<> as Add<>)::add<> as λ(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>) → embedded_curve_ops::EmbeddedCurvePoint<>)(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>);
+nr_trait_impl[impl_25] <> std::ops::arith::Add<  > for embedded_curve_ops::EmbeddedCurvePoint<  > where  {
+    fn «add»<> (self : embedded_curve_ops::EmbeddedCurvePoint<  >, other : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+        (@std::embedded_curve_ops::embedded_curve_add<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(self, other);
 }
 }
 
-nr_trait_impl[impl_27] <> std::ops::arith::Neg<> for embedded_curve_ops::EmbeddedCurvePoint<> where  {
-    fn «neg»<> (self : embedded_curve_ops::EmbeddedCurvePoint<>) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-        embedded_curve_ops::EmbeddedCurvePoint<> { (self as embedded_curve_ops::EmbeddedCurvePoint<>).x, #fNeg((self as embedded_curve_ops::EmbeddedCurvePoint<>).y) : Field, (self as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite };
+nr_trait_impl[impl_26] <> std::ops::arith::Sub<  > for embedded_curve_ops::EmbeddedCurvePoint<  > where  {
+    fn «sub»<> (self : embedded_curve_ops::EmbeddedCurvePoint<  >, other : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+        ((embedded_curve_ops::EmbeddedCurvePoint<  > as Add<  >)::add<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >);
 }
 }
 
-nr_trait_impl[impl_28] <> std::cmp::Eq<> for embedded_curve_ops::EmbeddedCurvePoint<> where  {
-    fn «eq»<> (self : embedded_curve_ops::EmbeddedCurvePoint<>, b : embedded_curve_ops::EmbeddedCurvePoint<>) -> bool {
-        #bOr(#bAnd((self as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite, (b as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite) : bool, #bAnd(#bAnd(#bEq((self as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite, (b as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite) : bool, #fEq((self as embedded_curve_ops::EmbeddedCurvePoint<>).x, (b as embedded_curve_ops::EmbeddedCurvePoint<>).x) : bool) : bool, #fEq((self as embedded_curve_ops::EmbeddedCurvePoint<>).y, (b as embedded_curve_ops::EmbeddedCurvePoint<>).y) : bool) : bool) : bool;
+nr_trait_impl[impl_27] <> std::ops::arith::Neg<  > for embedded_curve_ops::EmbeddedCurvePoint<  > where  {
+    fn «neg»<> (self : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+        embedded_curve_ops::EmbeddedCurvePoint<  > { (self as embedded_curve_ops::EmbeddedCurvePoint<  >).x, #fNeg((self as embedded_curve_ops::EmbeddedCurvePoint<  >).y) : Field, (self as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite };
 }
 }
 
-nr_trait_impl[impl_29] <> std::hash::Hash<> for embedded_curve_ops::EmbeddedCurvePoint<> where  {
-    fn «hash»<H> (self : embedded_curve_ops::EmbeddedCurvePoint<>, state : &H) -> Unit {
-        if (self as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite {
-                    ((bool as std::hash::Hash<>)::hash<> as λ(bool, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite, state);
+nr_trait_impl[impl_28] <> std::cmp::Eq<  > for embedded_curve_ops::EmbeddedCurvePoint<  > where  {
+    fn «eq»<> (self : embedded_curve_ops::EmbeddedCurvePoint<  >, b : embedded_curve_ops::EmbeddedCurvePoint<  >) -> bool {
+        #bOr(#bAnd((self as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite, (b as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite) : bool, #bAnd(#bAnd(#bEq((self as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite, (b as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite) : bool, #fEq((self as embedded_curve_ops::EmbeddedCurvePoint<  >).x, (b as embedded_curve_ops::EmbeddedCurvePoint<  >).x) : bool) : bool, #fEq((self as embedded_curve_ops::EmbeddedCurvePoint<  >).y, (b as embedded_curve_ops::EmbeddedCurvePoint<  >).y) : bool) : bool) : bool;
+}
+}
+
+nr_trait_impl[impl_29] <> std::hash::Hash<  > for embedded_curve_ops::EmbeddedCurvePoint<  > where  {
+    fn «hash»<H> (self : embedded_curve_ops::EmbeddedCurvePoint<  >, state : &H) -> Unit {
+        if (self as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite {
+                    ((bool as std::hash::Hash<  >)::hash<  > as λ(bool, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite, state);
         } else {
-                    ((Field as std::hash::Hash<>)::hash<> as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<>).x, state);
-                ((Field as std::hash::Hash<>)::hash<> as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<>).y, state);
+                    ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).x, state);
+                ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).y, state);
         };
 }
 }
 
-nr_def «embedded_curve_ops»::«EmbeddedCurveScalar»::«new»<>(lo : Field, hi : Field) -> embedded_curve_ops::EmbeddedCurveScalar<> {
-    embedded_curve_ops::EmbeddedCurveScalar<> { lo, hi };
+nr_def «embedded_curve_ops»::«EmbeddedCurveScalar»::«new»<>(lo : Field, hi : Field) -> embedded_curve_ops::EmbeddedCurveScalar<  > {
+    embedded_curve_ops::EmbeddedCurveScalar<  > { lo, hi };
 }
 
-nr_def «embedded_curve_ops»::«EmbeddedCurveScalar»::«from_field»<>(scalar : Field) -> embedded_curve_ops::EmbeddedCurveScalar<> {
-    let π0 = (@std::field::bn254::decompose<> as λ(Field) → `(Field, Field))(scalar);
+nr_def «embedded_curve_ops»::«EmbeddedCurveScalar»::«from_field»<>(scalar : Field) -> embedded_curve_ops::EmbeddedCurveScalar<  > {
+    let π0 = (@std::field::bn254::decompose<  > as λ(Field) → `(Field, Field))(scalar);
     let a = π0.0;
     let b = π0.1;
-    embedded_curve_ops::EmbeddedCurveScalar<> { a, b };
+    embedded_curve_ops::EmbeddedCurveScalar<  > { a, b };
 }
 
-nr_def «embedded_curve_ops»::«EmbeddedCurveScalar»::«from_bytes»<>(bytes : [u8; 64], offset : u32) -> embedded_curve_ops::EmbeddedCurveScalar<> {
+nr_def «embedded_curve_ops»::«EmbeddedCurveScalar»::«from_bytes»<>(bytes : [u8; 64], offset : u32) -> embedded_curve_ops::EmbeddedCurveScalar<  > {
     let mut v = 1 : Field;
     let mut lo = #cast(0 : Field) : Field;
     let mut hi = #cast(0 : Field) : Field;
@@ -76,89 +76,89 @@ nr_def «embedded_curve_ops»::«EmbeddedCurveScalar»::«from_bytes»<>(bytes :
         v = #fMul(v, 256 : Field) : Field;
         skip;
     };
-    let sig_s = embedded_curve_ops::EmbeddedCurveScalar<> { lo, hi };
+    let sig_s = embedded_curve_ops::EmbeddedCurveScalar<  > { lo, hi };
     sig_s;
 }
 
-nr_trait_impl[impl_30] <> std::cmp::Eq<> for embedded_curve_ops::EmbeddedCurveScalar<> where  {
-    fn «eq»<> (self : embedded_curve_ops::EmbeddedCurveScalar<>, other : embedded_curve_ops::EmbeddedCurveScalar<>) -> bool {
-        #bAnd(#fEq((other as embedded_curve_ops::EmbeddedCurveScalar<>).hi, (self as embedded_curve_ops::EmbeddedCurveScalar<>).hi) : bool, #fEq((other as embedded_curve_ops::EmbeddedCurveScalar<>).lo, (self as embedded_curve_ops::EmbeddedCurveScalar<>).lo) : bool) : bool;
+nr_trait_impl[impl_30] <> std::cmp::Eq<  > for embedded_curve_ops::EmbeddedCurveScalar<  > where  {
+    fn «eq»<> (self : embedded_curve_ops::EmbeddedCurveScalar<  >, other : embedded_curve_ops::EmbeddedCurveScalar<  >) -> bool {
+        #bAnd(#fEq((other as embedded_curve_ops::EmbeddedCurveScalar<  >).hi, (self as embedded_curve_ops::EmbeddedCurveScalar<  >).hi) : bool, #fEq((other as embedded_curve_ops::EmbeddedCurveScalar<  >).lo, (self as embedded_curve_ops::EmbeddedCurveScalar<  >).lo) : bool) : bool;
 }
 }
 
-nr_trait_impl[impl_31] <> std::hash::Hash<> for embedded_curve_ops::EmbeddedCurveScalar<> where  {
-    fn «hash»<H> (self : embedded_curve_ops::EmbeddedCurveScalar<>, state : &H) -> Unit {
-        ((Field as std::hash::Hash<>)::hash<> as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurveScalar<>).hi, state);
-        ((Field as std::hash::Hash<>)::hash<> as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurveScalar<>).lo, state);
+nr_trait_impl[impl_31] <> std::hash::Hash<  > for embedded_curve_ops::EmbeddedCurveScalar<  > where  {
+    fn «hash»<H> (self : embedded_curve_ops::EmbeddedCurveScalar<  >, state : &H) -> Unit {
+        ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurveScalar<  >).hi, state);
+        ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurveScalar<  >).lo, state);
 }
 }
 
-nr_def «embedded_curve_ops»::«multi_scalar_mul»<@N : u32>(points : [embedded_curve_ops::EmbeddedCurvePoint<>; N], scalars : [embedded_curve_ops::EmbeddedCurveScalar<>; N]) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    #arrayIndex((@std::embedded_curve_ops::multi_scalar_mul_array_return<N:u32> as λ([embedded_curve_ops::EmbeddedCurvePoint<>; N], [embedded_curve_ops::EmbeddedCurveScalar<>; N]) → [embedded_curve_ops::EmbeddedCurvePoint<>; 1])(points, scalars), #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<>;
+nr_def «embedded_curve_ops»::«multi_scalar_mul»<@N : u32>(points : [embedded_curve_ops::EmbeddedCurvePoint<  >; N], scalars : [embedded_curve_ops::EmbeddedCurveScalar<  >; N]) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+    #arrayIndex((@std::embedded_curve_ops::multi_scalar_mul_array_return< N:u32 > as λ([embedded_curve_ops::EmbeddedCurvePoint<  >; N], [embedded_curve_ops::EmbeddedCurveScalar<  >; N]) → [embedded_curve_ops::EmbeddedCurvePoint<  >; 1])(points, scalars), #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<  >;
 }
 
-nr_def «embedded_curve_ops»::«multi_scalar_mul_array_return»<@N : u32>(points : [embedded_curve_ops::EmbeddedCurvePoint<>; N], scalars : [embedded_curve_ops::EmbeddedCurveScalar<>; N]) -> [embedded_curve_ops::EmbeddedCurvePoint<>; 1] {
+nr_def «embedded_curve_ops»::«multi_scalar_mul_array_return»<@N : u32>(points : [embedded_curve_ops::EmbeddedCurvePoint<  >; N], scalars : [embedded_curve_ops::EmbeddedCurveScalar<  >; N]) -> [embedded_curve_ops::EmbeddedCurvePoint<  >; 1] {
 
 }
 
-nr_def «embedded_curve_ops»::«fixed_base_scalar_mul»<>(scalar : embedded_curve_ops::EmbeddedCurveScalar<>) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    (@std::embedded_curve_ops::multi_scalar_mul<1 : u32> as λ([embedded_curve_ops::EmbeddedCurvePoint<>; 1], [embedded_curve_ops::EmbeddedCurveScalar<>; 1]) → embedded_curve_ops::EmbeddedCurvePoint<>)([(@embedded_curve_ops::EmbeddedCurvePoint::generator<> as λ() → embedded_curve_ops::EmbeddedCurvePoint<>)()], [scalar]);
+nr_def «embedded_curve_ops»::«fixed_base_scalar_mul»<>(scalar : embedded_curve_ops::EmbeddedCurveScalar<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+    (@std::embedded_curve_ops::multi_scalar_mul< 1 : u32 > as λ([embedded_curve_ops::EmbeddedCurvePoint<  >; 1], [embedded_curve_ops::EmbeddedCurveScalar<  >; 1]) → embedded_curve_ops::EmbeddedCurvePoint<  >)([(@embedded_curve_ops::EmbeddedCurvePoint::generator<  > as λ() → embedded_curve_ops::EmbeddedCurvePoint<  >)()], [scalar]);
 }
 
-nr_def «embedded_curve_ops»::«embedded_curve_add»<>(point1 : embedded_curve_ops::EmbeddedCurvePoint<>, point2 : embedded_curve_ops::EmbeddedCurvePoint<>) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
-            if (point1 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite {
+nr_def «embedded_curve_ops»::«embedded_curve_add»<>(point1 : embedded_curve_ops::EmbeddedCurvePoint<  >, point2 : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
+            if (point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite {
                 point2;
         } else {
-            if (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite {
+            if (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite {
                 point1;
         } else {
-                (@std::embedded_curve_ops::embedded_curve_add_unsafe<> as λ(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>) → embedded_curve_ops::EmbeddedCurvePoint<>)(point1, point2);
+                (@std::embedded_curve_ops::embedded_curve_add_unsafe<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(point1, point2);
         }
         };
     } else {
-            let x_coordinates_match = #fEq((point1 as embedded_curve_ops::EmbeddedCurvePoint<>).x, (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).x) : bool;
-        let y_coordinates_match = #fEq((point1 as embedded_curve_ops::EmbeddedCurvePoint<>).y, (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).y) : bool;
+            let x_coordinates_match = #fEq((point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).x, (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).x) : bool;
+        let y_coordinates_match = #fEq((point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).y, (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).y) : bool;
         let double_predicate = #bAnd(x_coordinates_match, y_coordinates_match) : bool;
         let infinity_predicate = #bAnd(x_coordinates_match, #bNot(y_coordinates_match) : bool) : bool;
-        let point1_1 = embedded_curve_ops::EmbeddedCurvePoint<> { #fAdd((point1 as embedded_curve_ops::EmbeddedCurvePoint<>).x, #cast(x_coordinates_match) : Field) : Field, (point1 as embedded_curve_ops::EmbeddedCurvePoint<>).y, false };
-        let point2_1 = embedded_curve_ops::EmbeddedCurvePoint<> { (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).x, (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).y, false };
-        let mut result = (@std::embedded_curve_ops::embedded_curve_add_unsafe<> as λ(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>) → embedded_curve_ops::EmbeddedCurvePoint<>)(point1_1, point2_1);
-        let double = (@std::embedded_curve_ops::embedded_curve_add_unsafe<> as λ(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>) → embedded_curve_ops::EmbeddedCurvePoint<>)(point1, point1);
+        let point1_1 = embedded_curve_ops::EmbeddedCurvePoint<  > { #fAdd((point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).x, #cast(x_coordinates_match) : Field) : Field, (point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).y, false };
+        let point2_1 = embedded_curve_ops::EmbeddedCurvePoint<  > { (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).x, (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).y, false };
+        let mut result = (@std::embedded_curve_ops::embedded_curve_add_unsafe<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(point1_1, point2_1);
+        let double = (@std::embedded_curve_ops::embedded_curve_add_unsafe<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(point1, point1);
         result = if double_predicate {
                 double;
         } else {
                 result;
         };
-        if (point1 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite {
+        if (point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite {
                 result = point2;
             skip;
         };
-        if (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite {
+        if (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite {
                 result = point1;
             skip;
         };
-        let mut result_is_infinity = #bAnd(infinity_predicate, #bAnd(#bNot((point1 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite) : bool, #bNot((point2 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite) : bool) : bool) : bool;
-        (result as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite = #bOr(result_is_infinity, #bAnd((point1 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite, (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite) : bool) : bool;
+        let mut result_is_infinity = #bAnd(infinity_predicate, #bAnd(#bNot((point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite) : bool, #bNot((point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite) : bool) : bool) : bool;
+        (result as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite = #bOr(result_is_infinity, #bAnd((point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite, (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite) : bool) : bool;
         result;
     };
 }
 
-nr_def «embedded_curve_ops»::«embedded_curve_add_array_return»<>(_point1 : embedded_curve_ops::EmbeddedCurvePoint<>, _point2 : embedded_curve_ops::EmbeddedCurvePoint<>) -> [embedded_curve_ops::EmbeddedCurvePoint<>; 1] {
+nr_def «embedded_curve_ops»::«embedded_curve_add_array_return»<>(_point1 : embedded_curve_ops::EmbeddedCurvePoint<  >, _point2 : embedded_curve_ops::EmbeddedCurvePoint<  >) -> [embedded_curve_ops::EmbeddedCurvePoint<  >; 1] {
 
 }
 
-nr_def «embedded_curve_ops»::«embedded_curve_add_not_nul»<>(point1 : embedded_curve_ops::EmbeddedCurvePoint<>, point2 : embedded_curve_ops::EmbeddedCurvePoint<>) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    #assert(#fNeq((point1 as embedded_curve_ops::EmbeddedCurvePoint<>).x, (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).x) : bool) : Unit;
-    #assert(#bNot((point1 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite) : bool) : Unit;
-    #assert(#bNot((point2 as embedded_curve_ops::EmbeddedCurvePoint<>).is_infinite) : bool) : Unit;
-    let point1_1 = embedded_curve_ops::EmbeddedCurvePoint<> { (point1 as embedded_curve_ops::EmbeddedCurvePoint<>).x, (point1 as embedded_curve_ops::EmbeddedCurvePoint<>).y, false };
-    let point2_1 = embedded_curve_ops::EmbeddedCurvePoint<> { (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).x, (point2 as embedded_curve_ops::EmbeddedCurvePoint<>).y, false };
-    (@std::embedded_curve_ops::embedded_curve_add_unsafe<> as λ(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>) → embedded_curve_ops::EmbeddedCurvePoint<>)(point1_1, point2_1);
+nr_def «embedded_curve_ops»::«embedded_curve_add_not_nul»<>(point1 : embedded_curve_ops::EmbeddedCurvePoint<  >, point2 : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+    #assert(#fNeq((point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).x, (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).x) : bool) : Unit;
+    #assert(#bNot((point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite) : bool) : Unit;
+    #assert(#bNot((point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite) : bool) : Unit;
+    let point1_1 = embedded_curve_ops::EmbeddedCurvePoint<  > { (point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).x, (point1 as embedded_curve_ops::EmbeddedCurvePoint<  >).y, false };
+    let point2_1 = embedded_curve_ops::EmbeddedCurvePoint<  > { (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).x, (point2 as embedded_curve_ops::EmbeddedCurvePoint<  >).y, false };
+    (@std::embedded_curve_ops::embedded_curve_add_unsafe<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(point1_1, point2_1);
 }
 
-nr_def «embedded_curve_ops»::«embedded_curve_add_unsafe»<>(point1 : embedded_curve_ops::EmbeddedCurvePoint<>, point2 : embedded_curve_ops::EmbeddedCurvePoint<>) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    #arrayIndex((@std::embedded_curve_ops::embedded_curve_add_array_return<> as λ(embedded_curve_ops::EmbeddedCurvePoint<>, embedded_curve_ops::EmbeddedCurvePoint<>) → [embedded_curve_ops::EmbeddedCurvePoint<>; 1])(point1, point2), #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<>;
+nr_def «embedded_curve_ops»::«embedded_curve_add_unsafe»<>(point1 : embedded_curve_ops::EmbeddedCurvePoint<  >, point2 : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
+    #arrayIndex((@std::embedded_curve_ops::embedded_curve_add_array_return<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → [embedded_curve_ops::EmbeddedCurvePoint<  >; 1])(point1, point2), #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<  >;
 }
 
 

@@ -57,10 +57,10 @@ partial def ppLampeTp (stx : Syntax) : DelabM <| TSyntax `nr_type := do
     | `(Tp.bool) => return ⟨mkIdentFrom stx `bool⟩
     | `(Tp.field) => return ⟨mkIdentFrom stx `Field⟩
     | `(Tp.str $n) => return ←`(nr_type|str<$(← delabNrConstNum n)>)
-    | `(Tp.fmtStr $n [$tps,*]) =>
+    | `(Tp.fmtStr $n $tp) =>
       let n ← delabNrConstNum n
-      let tps ← tps.getElems.mapM fun tp => ppLampeTp tp
-      return ←`(nr_type| fmtstr<$n,($tps,*)>)
+      let tp ← ppLampeTp tp
+      return ←`(nr_type| fmtstr<$n, $tp>)
     | `(Tp.unit) => return ⟨mkIdentFrom stx `Unit⟩
     | `(Tp.slice $tp) => return ←`(nr_type|[$(←ppLampeTp tp)])
     | `(Tp.array $tp $n) => return ←`(nr_type|[$(←ppLampeTp tp); $(← delabNrConstNum n)])

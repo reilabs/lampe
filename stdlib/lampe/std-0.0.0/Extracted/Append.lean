@@ -8,12 +8,12 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_304] <T> std::append::Append<> for [T] where  {
+nr_trait_impl[impl_304] <T> std::append::Append<  > for [T] where  {
     fn «empty»<> () -> [T] {
         &[];
 };
 fn «append»<> (self : [T], other : [T]) -> [T] {
-        (@std::slice::append<T> as λ([T], [T]) → [T])(self, other);
+        (@std::slice::append< T > as λ([T], [T]) → [T])(self, other);
 }
 }
 

@@ -36,31 +36,31 @@ nr_def «test»::«get_times_mock_called»<>(id : Field) -> Field {
     #fresh() : Field
 }
 
-nr_def «test»::«OracleMock»::«mock»<@N : u32>(name : str<N>) -> test::OracleMock<> {
-    #fresh() : test::OracleMock<>
+nr_def «test»::«OracleMock»::«mock»<@N : u32>(name : str<N>) -> test::OracleMock<  > {
+    #fresh() : test::OracleMock<  >
 }
 
-nr_def «test»::«OracleMock»::«with_params»<P>(self : test::OracleMock<>, params : P) -> test::OracleMock<> {
-    #fresh() : test::OracleMock<>
+nr_def «test»::«OracleMock»::«with_params»<P>(self : test::OracleMock<  >, params : P) -> test::OracleMock<  > {
+    #fresh() : test::OracleMock<  >
 }
 
-nr_def «test»::«OracleMock»::«get_last_params»<P>(self : test::OracleMock<>) -> P {
+nr_def «test»::«OracleMock»::«get_last_params»<P>(self : test::OracleMock<  >) -> P {
     #fresh() : P
 }
 
-nr_def «test»::«OracleMock»::«returns»<R>(self : test::OracleMock<>, returns : R) -> test::OracleMock<> {
-    #fresh() : test::OracleMock<>
+nr_def «test»::«OracleMock»::«returns»<R>(self : test::OracleMock<  >, returns : R) -> test::OracleMock<  > {
+    #fresh() : test::OracleMock<  >
 }
 
-nr_def «test»::«OracleMock»::«times»<>(self : test::OracleMock<>, times : u64) -> test::OracleMock<> {
-    #fresh() : test::OracleMock<>
+nr_def «test»::«OracleMock»::«times»<>(self : test::OracleMock<  >, times : u64) -> test::OracleMock<  > {
+    #fresh() : test::OracleMock<  >
 }
 
-nr_def «test»::«OracleMock»::«clear»<>(self : test::OracleMock<>) -> Unit {
+nr_def «test»::«OracleMock»::«clear»<>(self : test::OracleMock<  >) -> Unit {
     #fresh() : Unit
 }
 
-nr_def «test»::«OracleMock»::«times_called»<>(self : test::OracleMock<>) -> Field {
+nr_def «test»::«OracleMock»::«times_called»<>(self : test::OracleMock<  >) -> Field {
     #fresh() : Field
 }
 

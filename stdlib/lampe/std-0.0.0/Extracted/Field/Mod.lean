@@ -50,11 +50,11 @@ nr_def «field»::«bytes32_to_field»<>(bytes32 : [u8; 32]) -> Field {
 }
 
 nr_def «field»::«lt_fallback»<>(x : Field, y : Field) -> bool {
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
-                (@std::field::field_less_than<> as λ(Field, Field) → bool)(x, y);
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
+                (@std::field::field_less_than<  > as λ(Field, Field) → bool)(x, y);
     } else {
-            let x_bytes = (@Field::to_le_bytes<32 : u32> as λ(Field) → [u8; 32])(x);
-        let y_bytes = (@Field::to_le_bytes<32 : u32> as λ(Field) → [u8; 32])(y);
+            let x_bytes = (@Field::to_le_bytes< 32 : u32 > as λ(Field) → [u8; 32])(x);
+        let y_bytes = (@Field::to_le_bytes< 32 : u32 > as λ(Field) → [u8; 32])(y);
         let mut x_is_lt = false;
         let mut done = false;
         for i in 0 : u32 .. 32 : u32 {
@@ -75,66 +75,66 @@ nr_def «field»::«lt_fallback»<>(x : Field, y : Field) -> bool {
 
 nr_def «field»::«tests»::«test_to_be_bits»<>() -> Unit {
     let field = 2 : Field;
-    let bits = (@Field::to_be_bits<8 : u32> as λ(Field) → [u1; 8])(field);
+    let bits = (@Field::to_be_bits< 8 : u32 > as λ(Field) → [u1; 8])(field);
     #assert(#arrayEq(bits, [0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 1 : u1, 0 : u1]) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_le_bits»<>() -> Unit {
     let field = 2 : Field;
-    let bits = (@Field::to_le_bits<8 : u32> as λ(Field) → [u1; 8])(field);
+    let bits = (@Field::to_le_bits< 8 : u32 > as λ(Field) → [u1; 8])(field);
     #assert(#arrayEq(bits, [0 : u1, 1 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1]) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_be_bytes»<>() -> Unit {
     let field = 2 : Field;
-    let bytes = (@Field::to_be_bytes<8 : u32> as λ(Field) → [u8; 8])(field);
+    let bytes = (@Field::to_be_bytes< 8 : u32 > as λ(Field) → [u8; 8])(field);
     #assert(#arrayEq(bytes, [0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 2 : u8]) : bool) : Unit;
-    #assert(#fEq((@Field::from_be_bytes<8 : u32> as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
+    #assert(#fEq((@Field::from_be_bytes< 8 : u32 > as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_le_bytes»<>() -> Unit {
     let field = 2 : Field;
-    let bytes = (@Field::to_le_bytes<8 : u32> as λ(Field) → [u8; 8])(field);
+    let bytes = (@Field::to_le_bytes< 8 : u32 > as λ(Field) → [u8; 8])(field);
     #assert(#arrayEq(bytes, [2 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8]) : bool) : Unit;
-    #assert(#fEq((@Field::from_le_bytes<8 : u32> as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
+    #assert(#fEq((@Field::from_le_bytes< 8 : u32 > as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_be_radix»<>() -> Unit {
     let field = 259 : Field;
-    let bytes = (@Field::to_be_radix<8 : u32> as λ(Field, u32) → [u8; 8])(field, 256 : u32);
+    let bytes = (@Field::to_be_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 256 : u32);
     #assert(#arrayEq(bytes, [0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 1 : u8, 3 : u8]) : bool) : Unit;
-    #assert(#fEq((@Field::from_be_bytes<8 : u32> as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
+    #assert(#fEq((@Field::from_be_bytes< 8 : u32 > as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_le_radix»<>() -> Unit {
     let field = 259 : Field;
-    let bytes = (@Field::to_le_radix<8 : u32> as λ(Field, u32) → [u8; 8])(field, 256 : u32);
+    let bytes = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 256 : u32);
     #assert(#arrayEq(bytes, [3 : u8, 1 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8]) : bool) : Unit;
-    #assert(#fEq((@Field::from_le_bytes<8 : u32> as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
+    #assert(#fEq((@Field::from_le_bytes< 8 : u32 > as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_le_radix_1»<>() -> Unit {
-    if #bNot((@std::runtime::is_unconstrained<> as λ() → bool)()) : bool {
+    if #bNot((@std::runtime::is_unconstrained<  > as λ() → bool)()) : bool {
             let field = 2 : Field;
-        let _? = (@Field::to_le_radix<8 : u32> as λ(Field, u32) → [u8; 8])(field, 1 : u32);
+        let _? = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 1 : u32);
     } else {
-            (@std::panic::panic<`(), Unit, 28 : u32> as λ(fmtstr<28, ()>) → Unit)(#format("radix must be greater than 1", ));
+            (@std::panic::panic< `(), Unit, 28 : u32 > as λ(fmtstr<28, ()>) → Unit)(#format("radix must be greater than 1", ));
     };
 }
 
 nr_def «field»::«tests»::«test_to_le_radix_3»<>() -> Unit {
-    if #bNot((@std::runtime::is_unconstrained<> as λ() → bool)()) : bool {
+    if #bNot((@std::runtime::is_unconstrained<  > as λ() → bool)()) : bool {
             let field = 2 : Field;
-        let _? = (@Field::to_le_radix<8 : u32> as λ(Field, u32) → [u8; 8])(field, 3 : u32);
+        let _? = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 3 : u32);
     } else {
-            (@std::panic::panic<`(), Unit, 26 : u32> as λ(fmtstr<26, ()>) → Unit)(#format("radix must be a power of 2", ));
+            (@std::panic::panic< `(), Unit, 26 : u32 > as λ(fmtstr<26, ()>) → Unit)(#format("radix must be a power of 2", ));
     };
 }
 
 nr_def «field»::«tests»::«test_to_le_radix_brillig_3»<>() -> Unit {
-    if (@std::runtime::is_unconstrained<> as λ() → bool)() {
+    if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
             let field = 1 : Field;
-        let out = (@Field::to_le_radix<8 : u32> as λ(Field, u32) → [u8; 8])(field, 3 : u32);
+        let out = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 3 : u32);
         let mut expected = [0 : u8 ; 8];
         expected[#cast(0 : u32) : u32] = 1 : u8;
         #assert(#arrayEq(out, expected) : bool) : Unit;
@@ -142,11 +142,11 @@ nr_def «field»::«tests»::«test_to_le_radix_brillig_3»<>() -> Unit {
 }
 
 nr_def «field»::«tests»::«test_to_le_radix_512»<>() -> Unit {
-    if #bNot((@std::runtime::is_unconstrained<> as λ() → bool)()) : bool {
+    if #bNot((@std::runtime::is_unconstrained<  > as λ() → bool)()) : bool {
             let field = 2 : Field;
-        let _? = (@Field::to_le_radix<8 : u32> as λ(Field, u32) → [u8; 8])(field, 512 : u32);
+        let _? = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 512 : u32);
     } else {
-            (@std::panic::panic<`(), Unit, 39 : u32> as λ(fmtstr<39, ()>) → Unit)(#format("radix must be less than or equal to 256", ));
+            (@std::panic::panic< `(), Unit, 39 : u32 > as λ(fmtstr<39, ()>) → Unit)(#format("radix must be less than or equal to 256", ));
     };
 }
 

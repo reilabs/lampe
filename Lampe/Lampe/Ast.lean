@@ -21,7 +21,7 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | litStr : (len : U 32) → FixedLenStr len.toNat → Expr rep (.str len)
 | constFp : Int → Expr rep .field
 | constU : U w → Expr rep (.u w)
-| fmtStr : (len : U 32) → (tps : List Tp) → FormatString len tps → Expr rep (.fmtStr len tps)
+| fmtStr : (len : U 32) → (tps : Tp) → FormatString len tps → Expr rep (.fmtStr len tps)
 | fn : (argTps : List Tp) → (outTp : Tp) → (r : FuncRef argTps outTp) → Expr rep (.fn argTps outTp)
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂

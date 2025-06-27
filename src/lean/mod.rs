@@ -922,9 +922,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // If `typ` is an `impl` param type, directly return the substituted type
         // variable name.
         if let Some(name) = ctx.get_impl_param(typ) {
-            if name == "MaxLen" {
-                println!("doobie doo: {name}");
-            }
             return name.to_string();
         }
         // If `typ` is an `impl` return type, return the substituted type's string
@@ -1921,16 +1918,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 // if ismut {
                 //     panic!("AAAAAAA")
                 // }
-                let name = self
-                    .context
-                    .def_interner
-                    .definition_name(ident.id);
+                let name = self.context.def_interner.definition_name(ident.id);
 
-                let mut_mod = if ismut {
-                    "mut "
-                } else {
-                    ""
-                };
+                let mut_mod = if ismut { "mut " } else { "" };
                 let qualified_type = self.emit_fully_qualified_type(typ, ctx);
 
                 Ok(format!("{mut_mod}{name} : {qualified_type}"))
