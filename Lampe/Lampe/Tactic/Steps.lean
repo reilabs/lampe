@@ -359,7 +359,7 @@ postcondition (taking place after the loop), and `STHoare p env (f i) (body i) (
 `body` is the loop body) holds for all `i`.
 -/
 elab "loop_inv" p:optional("nat") inv:term : tactic => do
-  let solver ← if p.isSome then ``(loop_inv_intro' _ $inv) else ``(loop_inv_intro $inv)
+  let solver ← if p.isSome then ``(loop_inv_intro' $inv) else ``(loop_inv_intro $inv)
   let goals ← steps (← getMainGoal) 1 [AddLemma.mk solver (generalizeEnv := false)]
   replaceMainGoal goals
 
