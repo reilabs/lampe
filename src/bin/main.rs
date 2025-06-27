@@ -26,6 +26,10 @@ pub struct ProgramOptions {
     /// The root of the Noir project to extract.
     #[arg(long, value_name = "PATH", default_value = DEFAULT_NOIR_PROJECT_PATH, value_parser = parse_path)]
     pub root: PathBuf,
+    
+    /// The root of the Lampe project output.
+    #[arg(long, value_name = "TARGET", value_parser = parse_path)]
+    pub target: Option<PathBuf>,
 
     /// Testing mode?
     #[arg(long)]
@@ -80,7 +84,7 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
             continue;
         }
 
-        let result = panic::catch_unwind(|| Project::new(entry.path())?.extract());
+        let result = panic::catch_unwind(|| Project::new(entry.path(), entry.path())?.extract());
 
         match result {
             Err(panic) => {
@@ -154,7 +158,9 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
 ///
 /// - [`Error`] if the extraction process fails for any reason.
 pub fn run(args: &ProgramOptions) -> Result<ExitCode, Error> {
-    let project = Project::new(args.root.clone())?;
+    let noir_root_path = args.root.clone();
+    let target_path = args.target.clone().unwrap_or(noir_root_path.clone());
+    let project = Project::new(noir_root_path, target_path)?;
 
     let result = project.extract()?;
 

@@ -34,13 +34,13 @@ pub struct NoirPackageIdentifier {
 
 /// This function generates whole `lampe` directory with Lampe's structure.
 pub fn lampe_project(
-    noir_root_dir: &Path,
+    target_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
     additional_dependencies: &[Box<dyn LeanDependency>],
     extracted_code: &[LeanFile],
     extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
 ) -> Result<()> {
-    let lampe_root_dir = noir_root_dir.join(LAMPE_DIR_NAME);
+    let lampe_root_dir = target_dir.join(LAMPE_DIR_NAME);
 
     if !lampe_root_dir.exists() {
         fs::create_dir(&lampe_root_dir)?;

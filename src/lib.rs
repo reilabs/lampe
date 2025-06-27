@@ -30,6 +30,7 @@ pub use project::Project;
 
 #[cfg(test)]
 mod tests {
+    use std::env::temp_dir;
     use std::fs;
 
     use tempfile::tempdir;
@@ -54,7 +55,7 @@ authors = [""]
         fs::write(temp_dir.path().join("src").join("lib.nr"), main_source)?;
 
         let mock_project =
-            Project::new(temp_dir.path().to_path_buf()).expect("creating mock project");
+            Project::new(temp_dir.path().to_path_buf(), temp_dir.path().to_path_buf()).expect("creating mock project");
         let warnings = mock_project
             .extract()
             .expect("getting warnings")
