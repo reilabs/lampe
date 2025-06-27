@@ -28,6 +28,7 @@ declare_syntax_cat nr_generic_def
 declare_syntax_cat nr_const_num
 
 syntax ident : nr_ident
+syntax "from" : nr_ident
 syntax ident "::" nr_ident : nr_ident
 
 syntax ident : nr_type
@@ -116,6 +117,7 @@ partial def mkConstNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] 
 
 partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
 | `(nr_ident|$i:ident) => pure i.getId.toString
+| `(nr_ident|from) => pure "from"
 | `(nr_ident|$i:ident :: $j:nr_ident) => do pure s!"{i.getId}::{←mkNrIdent j}"
 | i => throwError "Unexpected ident {i}"
 
@@ -177,6 +179,12 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| i64) => `(Tp.i 64)
 | `(nr_type| bool) => `(Tp.bool)
 | `(nr_type| Field) => `(Tp.field)
+-- these are built into the compiler, but really only used
+-- for macro expansion, so we just ignore any details about
+-- them
+| `(nr_type| TypeDefinition)
+| `(nr_type| Quoted)
+| `(nr_type| CtString) => `(Tp.unit)
 | `(nr_type| str<$n:nr_const_num>) => do `(Tp.str $(←mkConstNum n))
 | `(nr_type| fmtstr<$n:nr_const_num, ($tps,*)>) => do
   let tps ← tps.getElems.toList.mapM mkNrType

@@ -6,6 +6,7 @@ mod pattern;
 mod syntax;
 
 use std::{
+    any::Any,
     cmp::Ordering,
     collections::{HashMap, HashSet},
 };
@@ -395,6 +396,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .iter()
             .filter(|(_, t)| t.borrow().file == module.location.file)
         {
+            if matches!(trait_impl.borrow().typ, Type::Quoted(_)) {
+                continue;
+            }
+
             let impl_id = format!("impl_{}", id.0);
 
             let location = trait_impl
@@ -446,7 +451,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     (Some(location), EmitOutput::Function(def))
                 }
                 ModuleDefId::GlobalId(id) => {
-                    let (global_name, global_string) = self.emit_global(ind, id, &ctx)?;
+                    let Some((global_name, global_string)) = self.emit_global(ind, id, &ctx)?
+                    else {
+                        continue;
+                    };
 
                     func_refs.insert(format!("«{global_name}»"));
 
@@ -505,6 +513,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         } else {
             format!("{fq_crate_name}::{name}")
         };
+        println!("[emit_trait_impl] {full_name} for {}", trait_impl.typ);
         let target = self.emit_fully_qualified_type(&trait_impl.typ, ctx);
 
         let where_clause_str = trait_impl
@@ -656,9 +665,15 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         ind: &mut Indenter,
         global: GlobalId,
         ctx: &EmitterCtx,
-    ) -> Result<(String, String)> {
+    ) -> Result<Option<(String, String)>> {
         let global_data = self.context.def_interner.get_global(global);
         let statement = self.context.def_interner.statement(&global_data.let_statement);
+        let def_info = self.context.def_interner.definition(global_data.definition_id);
+        if def_info.comptime {
+            return Ok(None);
+        }
+
+        println!("GLOBAL {:?}", statement);
 
         match statement {
             HirStatement::Let(lets) => {
@@ -666,7 +681,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     HirPattern::Identifier(hir_ident) => {
                         Ok(self.context.def_interner.definition_name(hir_ident.id).to_string())
                     }
-                    _ => Err(Error::GlobalStatementNotLet),
+                    x => panic!("kuku {:?}", x), // Err(Error::GlobalStatementNotLet),
                 }?;
 
                 let expr_type = self.emit_fully_qualified_type(&lets.r#type, ctx);
@@ -679,11 +694,11 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 let body = ind.run(bound_expr);
                 ind.dedent()?;
 
-                Ok(syntax::format_free_function_def(
+                Ok(Some(syntax::format_free_function_def(
                     &ident, "", "", &expr_type, &body,
-                ))
+                )))
             }
-            _ => Err(Error::GlobalStatementNotLet),
+            _ => panic!("kukuhehe {:?}", statement), // Err(Error::GlobalStatementNotLet),
         }
     }
 
@@ -770,6 +785,11 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let func_meta = self.context.function_meta(&func);
         // The parameters whose type must be replaced by a type variable should be
         // appended to the list of generics.
+        println!(
+            "free fun: {:?} for {:?}",
+            self.context.def_interner.function_name(&func),
+            func_meta.self_type
+        );
         let impl_generics = func_meta
             .parameters
             .iter()
@@ -794,6 +814,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 "",
                 &ret_type,
             ))
+        } else if func_meta.is_stub() {
+            "".to_string()
         } else {
             self.emit_expr(
                 ind,
@@ -1249,7 +1271,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             HirExpression::Ident(ident, generics) => {
                 let name = self.context.def_interner.definition_name(ident.id);
                 let ident_def = self.context.def_interner.definition(ident.id);
-                let bindings = self.context.def_interner.get_instantiation_bindings(expr);
+                let default: TypeBindings = HashMap::default();
+                let bindings = self
+                    .context
+                    .def_interner
+                    .try_get_instantiation_bindings(expr)
+                    .unwrap_or(&default);
 
                 match &ident_def.kind {
                     DefinitionKind::Function(func_id) => {
@@ -1922,7 +1949,10 @@ pub fn collect_named_generics(typ: &Type) -> Vec<String> {
         | Type::Unit
         | Type::FieldElement => Vec::new(),
         Type::NamedGeneric(..) => Vec::from([format!("{typ}")]),
-        _ => unimplemented!("cannot collect named generics from {typ} (yet)"),
+        Type::Alias(..) => unimplemented!("Collect Gens Alias {typ}"),
+        Type::Constant(..) => unimplemented!("Collect Gens Constant {typ}"),
+        Type::Quoted(_) => unimplemented!("Collect Gens Quoted {typ}"),
+        _ => unimplemented!("cannot collect named generics from {:?} (yet)", typ),
     }
 }
 
@@ -2030,7 +2060,8 @@ fn unfold_alias(typ: Type) -> Type {
 pub fn expect_identifier(pattern: &HirPattern) -> Result<&HirIdent> {
     match pattern {
         HirPattern::Identifier(ident) => Ok(ident),
-        _ => Err(Error::MissingIdentifier(format!("{pattern:?}"))),
+        HirPattern::Mutable(ident, _) => expect_identifier(ident),
+        _ => panic!("Expected an identifier pattern, found: {pattern:?}"), /* Err(Error::MissingIdentifier(format!("{pattern:?}"))), */
     }
 }
 
