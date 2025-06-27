@@ -11,7 +11,15 @@ ci_noir_yaml_path = get_project_root() / '.github' / 'workflows' / 'ci-noir.yaml
 
 def get_project_root():
     script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
-    return script_dir.parent.parent
+    root_dir = script_dir
+    while True:
+        if (root_dir / '.git').is_dir():
+            return root_dir
+
+        if root_dir.resolve() == Path('/'):
+            raise Exception("Could not find .git directory in file tree")
+
+        root_dir = root_dir.parent
 
 def load_toml(path):
     with open(path, mode="r") as f:
