@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 jobs:
   ensure-noir-version:
-    name: "Check noir version consistency"
+    name: "Check Noir Versions"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
