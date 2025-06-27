@@ -8,6 +8,23 @@ on:
       - main
   workflow_dispatch:
 jobs:
+  ensure-noir-version:
+    name: "Check noir version consistency"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+      - name: Install xonsh with required python dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update
+          sudo apt-get install -yq python3 pipx
+          pipx install 'xonsh[full]'
+          $(cat $(which xonsh) | head -n 1 | cut -c3-) -m pip install -r scripts/requirements.txt
+          echo "Done!"
+      - name: Check if noir version match everywhere
+        run: scripts/check_noir_version_consistency.xsh
+
   build-lake:
     name: "Build Lean"
     runs-on: ubuntu-latest
