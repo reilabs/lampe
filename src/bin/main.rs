@@ -26,7 +26,7 @@ pub struct ProgramOptions {
     /// The root of the Noir project to extract.
     #[arg(long, value_name = "PATH", default_value = DEFAULT_NOIR_PROJECT_PATH, value_parser = parse_path)]
     pub root: PathBuf,
-    
+
     /// The root of the Lampe project output.
     #[arg(long, value_name = "TARGET", value_parser = parse_path)]
     pub target: Option<PathBuf>,

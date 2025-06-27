@@ -22,7 +22,7 @@ const NONE_DEPENDENCY_VERSION: &str = "0.0.0";
 pub struct Project {
     /// The root directory of the Noir project
     project_root: PathBuf,
-    
+
     /// The directory where put the Lampe project
     target_path: PathBuf,
 
