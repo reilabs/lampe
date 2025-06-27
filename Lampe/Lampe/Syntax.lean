@@ -458,7 +458,7 @@ partial def mkBlock [MonadSyntax m] (items: List (TSyntax `nr_expr)) (k : TSynta
       let body ← mkBlock (n :: rest) k
       `(Lampe.Expr.letIn (Expr.ref $eVal) fun $v => $body)
   | e => do
-  mkExpr e none fun _ => mkBlock (n :: rest) k
+    mkExpr e none fun _ => mkBlock (n :: rest) k
 | [e] => match e with
   | `(nr_expr | let $v = $e)
   | `(nr_expr | let mut $v = $e) => do
@@ -555,7 +555,8 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   mkArgs args.getElems.toList fun argVals => do
     let argTps <- argVals.mapM fun arg => `(typeOf $arg)
     wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) $s)) vname k
-| `(nr_expr| #unit) | `(nr_expr| skip) => `(Expr.skip)
+| `(nr_expr| #unit) | `(nr_expr| skip) => do
+    wrapSimple (←`(Expr.skip)) vname k
 | `(nr_expr| @ $fnName:nr_ident as $t:nr_type) => do
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
   let (paramTps, outTp) ← getFuncSignature t
@@ -791,5 +792,12 @@ elab "nr_trait_def" decl:nr_trait_def : command => do
 
       | _ => throwUnsupportedSyntax
   | _ => throwUnsupportedSyntax
+
+nr_def foo<>(x : Field) -> Field {
+  skip;
+  x
+}
+
+#print foo
 
 end Lampe
