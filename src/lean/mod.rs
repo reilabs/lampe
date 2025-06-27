@@ -1156,7 +1156,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     if matches!(last_stmt, HirStatement::Assign(_)) {
                         statements.push(ind.run("skip;"));
                     }
-                }
+                };
 
                 statements.join("\n")
             }
@@ -1419,13 +1419,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                 } else {
                                     format!("{fq_mod_name}::{fn_name}")
                                 };
-                                println!("Function name: {fq_func_name}");
-                                if fq_func_name
-                                    == "collections::bounded_vec::BoundedVec<T, \
-                                        MaxLen>::get_unchecked"
-                                {
-                                    println!("hehe dupa");
-                                }
                                 let ident_generics = func_meta
                                     .all_generics
                                     .iter()
@@ -1924,14 +1917,23 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let result_params: Vec<String> = params
             .iter()
             .map(|(pattern, typ, ..)| {
+                let (ident, ismut) = expect_identifier(pattern)?;
+                // if ismut {
+                //     panic!("AAAAAAA")
+                // }
                 let name = self
                     .context
                     .def_interner
-                    .definition_name(expect_identifier(pattern)?.id);
+                    .definition_name(ident.id);
 
+                let mut_mod = if ismut {
+                    "mut "
+                } else {
+                    ""
+                };
                 let qualified_type = self.emit_fully_qualified_type(typ, ctx);
 
-                Ok(format!("{name} : {qualified_type}"))
+                Ok(format!("{mut_mod}{name} : {qualified_type}"))
             })
             .try_collect()?;
 
@@ -2081,11 +2083,14 @@ fn unfold_alias(typ: Type) -> Type {
 ///
 /// - [`Error::MissingIdentifier`] if the provided `pattern` is not an
 ///   identifier.
-pub fn expect_identifier(pattern: &HirPattern) -> Result<&HirIdent> {
+pub fn expect_identifier(pattern: &HirPattern) -> Result<(HirIdent, bool)> {
     match pattern {
-        HirPattern::Identifier(ident) => Ok(ident),
-        HirPattern::Mutable(ident, _) => expect_identifier(ident),
-        _ => panic!("Expected an identifier pattern, found: {pattern:?}"), /* Err(Error::MissingIdentifier(format!("{pattern:?}"))), */
+        HirPattern::Identifier(ident) => Ok((ident.clone(), false)),
+        HirPattern::Mutable(ident, _) => match *ident.clone() {
+            HirPattern::Identifier(ident) => Ok((ident.clone(), true)),
+            _ => Err(Error::MissingIdentifier(format!("{pattern:?}"))),
+        },
+        _ => Err(Error::MissingIdentifier(format!("{pattern:?}"))),
     }
 }
 

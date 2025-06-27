@@ -8,13 +8,13 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_37] <K, V> std::default::Default<> for collections::umap::Slot<K, V> where  {
+nr_trait_impl[impl_37] <V, K> std::default::Default<> for collections::umap::Slot<K, V> where  {
     fn «default»<> () -> collections::umap::Slot<K, V> {
         collections::umap::Slot<K,V> { (@option::Option::none<`(K, V)> as λ() → option::Option<`(K, V)>)(), false };
 }
 }
 
-nr_trait_impl[impl_37] <V, K> std::default::Default<> for collections::umap::Slot<K, V> where  {
+nr_trait_impl[impl_37] <K, V> std::default::Default<> for collections::umap::Slot<K, V> where  {
     fn «default»<> () -> collections::umap::Slot<K, V> {
         collections::umap::Slot<K,V> { (@option::Option::none<`(K, V)> as λ() → option::Option<`(K, V)>)(), false };
 }
@@ -208,6 +208,36 @@ nr_def «collections»::«umap»::«UHashMap»::«quadratic_probe»<K, V, B>(sel
     #uRem(#uAdd(hash, #uDiv(#uAdd(attempt, #uMul(attempt, attempt) : u32) : u32, 2 : u32) : u32) : u32, #sliceLen((self as collections::umap::UHashMap<K, V, B>)._table) : u32) : u32;
 }
 
+nr_trait_impl[impl_38] <K, V, B> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+    fn «eq»<> (self : collections::umap::UHashMap<K, V, B>, other : collections::umap::UHashMap<K, V, B>) -> bool {
+        let mut equal = false;
+        if #uEq((@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(self), (@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(other)) : bool {
+                    equal = true;
+                        let ζi0 = (self as collections::umap::UHashMap<K, V, B>)._table;
+                        for ζi1 in 0 : u32 .. #sliceLen(ζi0) : u32 {
+                                    let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot<K, V>;
+                                        if #bAnd(equal, (@collections::umap::Slot::is_valid<K, V> as λ(collections::umap::Slot<K, V>) → bool)(slot)) : bool {
+                                                    let π0 = (@collections::umap::Slot::key_value_unchecked<K, V> as λ(collections::umap::Slot<K, V>) → `(K, V))(slot);
+                                                let key = π0.0;
+                                                let value = π0.1;
+                                                let other_value =         (@collections::umap::UHashMap::get<K, V, B> as λ(collections::umap::UHashMap<K, V, B>, K) → option::Option<V>)(other, key);
+                                                if (@option::Option::is_none<V> as λ(option::Option<V>) → bool)(other_value) {
+                                                            equal = false;
+                                                        skip;
+                                                } else {
+                                                            let other_value = (@option::Option::unwrap_unchecked<V> as λ(option::Option<V>) → V)(other_value);
+                                                        if ((V as Eq<>)::eq<> as λ(V, V) → bool)(V, V) {
+                                                                    equal = false;
+                                                                skip;
+                                                        };
+                                                };
+                                        };
+                        };
+        };
+        equal;
+}
+}
+
 nr_trait_impl[impl_38] <V, K, B> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::umap::UHashMap<K, V, B>, other : collections::umap::UHashMap<K, V, B>) -> bool {
         let mut equal = false;
@@ -238,7 +268,7 @@ nr_trait_impl[impl_38] <V, K, B> std::cmp::Eq<> for collections::umap::UHashMap<
 }
 }
 
-nr_trait_impl[impl_38] <B, K, V> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_38] <K, B, V> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::umap::UHashMap<K, V, B>, other : collections::umap::UHashMap<K, V, B>) -> bool {
         let mut equal = false;
         if #uEq((@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(self), (@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(other)) : bool {
@@ -268,43 +298,13 @@ nr_trait_impl[impl_38] <B, K, V> std::cmp::Eq<> for collections::umap::UHashMap<
 }
 }
 
-nr_trait_impl[impl_38] <B, V, K> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
-    fn «eq»<> (self : collections::umap::UHashMap<K, V, B>, other : collections::umap::UHashMap<K, V, B>) -> bool {
-        let mut equal = false;
-        if #uEq((@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(self), (@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(other)) : bool {
-                    equal = true;
-                        let ζi0 = (self as collections::umap::UHashMap<K, V, B>)._table;
-                        for ζi1 in 0 : u32 .. #sliceLen(ζi0) : u32 {
-                                    let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot<K, V>;
-                                        if #bAnd(equal, (@collections::umap::Slot::is_valid<K, V> as λ(collections::umap::Slot<K, V>) → bool)(slot)) : bool {
-                                                    let π0 = (@collections::umap::Slot::key_value_unchecked<K, V> as λ(collections::umap::Slot<K, V>) → `(K, V))(slot);
-                                                let key = π0.0;
-                                                let value = π0.1;
-                                                let other_value =         (@collections::umap::UHashMap::get<K, V, B> as λ(collections::umap::UHashMap<K, V, B>, K) → option::Option<V>)(other, key);
-                                                if (@option::Option::is_none<V> as λ(option::Option<V>) → bool)(other_value) {
-                                                            equal = false;
-                                                        skip;
-                                                } else {
-                                                            let other_value = (@option::Option::unwrap_unchecked<V> as λ(option::Option<V>) → V)(other_value);
-                                                        if ((V as Eq<>)::eq<> as λ(V, V) → bool)(V, V) {
-                                                                    equal = false;
-                                                                skip;
-                                                        };
-                                                };
-                                        };
-                        };
-        };
-        equal;
-}
-}
-
-nr_trait_impl[impl_39] <V, B, K> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_39] <B, K, V> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::umap::UHashMap<K, V, B> {
         (@collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) → collections::umap::UHashMap<K, V, B>)(((B as std::default::Default<>)::default<> as λ() → B)());
 }
 }
 
-nr_trait_impl[impl_39] <K, B, V> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_39] <V, B, K> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::umap::UHashMap<K, V, B> {
         (@collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) → collections::umap::UHashMap<K, V, B>)(((B as std::default::Default<>)::default<> as λ() → B)());
 }

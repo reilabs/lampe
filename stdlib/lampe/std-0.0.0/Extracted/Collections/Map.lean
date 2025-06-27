@@ -296,7 +296,7 @@ nr_def «collections»::«map»::«HashMap»::«assert_load_factor»<K, V, @N : 
     #assert(#bNot(exceeded) : bool) : Unit;
 }
 
-nr_trait_impl[impl_35] <N, B, V, K> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_35] <V, B, K, N> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::map::HashMap<K, V, N:u32, B>, other : collections::map::HashMap<K, V, N:u32, B>) -> bool {
         let mut equal = false;
         if #uEq((@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(self), (@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(other)) : bool {
@@ -326,7 +326,7 @@ nr_trait_impl[impl_35] <N, B, V, K> std::cmp::Eq<> for collections::map::HashMap
 }
 }
 
-nr_trait_impl[impl_35] <K, B, N, V> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_35] <B, V, K, N> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::map::HashMap<K, V, N:u32, B>, other : collections::map::HashMap<K, V, N:u32, B>) -> bool {
         let mut equal = false;
         if #uEq((@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(self), (@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(other)) : bool {
@@ -356,7 +356,7 @@ nr_trait_impl[impl_35] <K, B, N, V> std::cmp::Eq<> for collections::map::HashMap
 }
 }
 
-nr_trait_impl[impl_35] <K, B, V, N> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_35] <B, K, N, V> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::map::HashMap<K, V, N:u32, B>, other : collections::map::HashMap<K, V, N:u32, B>) -> bool {
         let mut equal = false;
         if #uEq((@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(self), (@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(other)) : bool {
@@ -386,7 +386,7 @@ nr_trait_impl[impl_35] <K, B, V, N> std::cmp::Eq<> for collections::map::HashMap
 }
 }
 
-nr_trait_impl[impl_36] <V, N, B, K> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_36] <V, N, K, B> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::map::HashMap<K, V, N:u32, B> {
         let _build_hasher = ((B as std::default::Default<>)::default<> as λ() → B)();
         let map = (@collections::map::HashMap::with_hasher<K, V, N:u32, B> as λ(B) → collections::map::HashMap<K, V, N:u32, B>)(_build_hasher);
@@ -394,7 +394,7 @@ nr_trait_impl[impl_36] <V, N, B, K> std::default::Default<> for collections::map
 }
 }
 
-nr_trait_impl[impl_36] <K, V, N, B> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_36] <K, V, B, N> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::map::HashMap<K, V, N:u32, B> {
         let _build_hasher = ((B as std::default::Default<>)::default<> as λ() → B)();
         let map = (@collections::map::HashMap::with_hasher<K, V, N:u32, B> as λ(B) → collections::map::HashMap<K, V, N:u32, B>)(_build_hasher);
@@ -402,7 +402,7 @@ nr_trait_impl[impl_36] <K, V, N, B> std::default::Default<> for collections::map
 }
 }
 
-nr_trait_impl[impl_36] <V, K, B, N> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_36] <K, N, B, V> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::map::HashMap<K, V, N:u32, B> {
         let _build_hasher = ((B as std::default::Default<>)::default<> as λ() → B)();
         let map = (@collections::map::HashMap::with_hasher<K, V, N:u32, B> as λ(B) → collections::map::HashMap<K, V, N:u32, B>)(_build_hasher);
