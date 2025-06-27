@@ -44,6 +44,7 @@ syntax "λ(" nr_type,* ")" "→" nr_type : nr_type -- Function
 syntax "_" : nr_type -- Placeholder
 syntax "@" nr_ident "<" nr_generic,* ">" : nr_type -- Type alias
 
+syntax ident ":" ident : nr_generic
 syntax num ":" ident : nr_generic
 syntax nr_type : nr_generic
 
@@ -218,10 +219,12 @@ partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception 
     match g with
     | `(nr_generic| $_:nr_type) => `(Kind.type)
     | `(nr_generic| $_:num : $t) => do `($(← matchGenericDefs t))
+    | `(nr_generic| $_:ident: $t) => do `($(← matchGenericDefs t))
     | _ => throwUnsupportedSyntax)
   let vals ← mkHListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic| $t:nr_type) => (mkNrType t)
+    | `(nr_generic| $n:ident : $_:ident) => pure $ mkIdent $ Name.mkSimple n.getId.toString
     | `(nr_generic| $n:num : $t:ident) => do `($(← mkGenericNum n t))
     | _ => throwUnsupportedSyntax)
   pure (kinds, vals)

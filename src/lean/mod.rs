@@ -922,6 +922,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // If `typ` is an `impl` param type, directly return the substituted type
         // variable name.
         if let Some(name) = ctx.get_impl_param(typ) {
+            if name == "MaxLen" {
+                println!("doobie doo: {name}");
+            }
             return name.to_string();
         }
         // If `typ` is an `impl` return type, return the substituted type's string
@@ -1000,7 +1003,21 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     let b = b.follow_bindings();
                     self.emit_fully_qualified_type(&b, ctx)
                 }
-                TypeBinding::Unbound(..) => format!("{typ}"),
+                TypeBinding::Unbound(_, kind) => match kind {
+                    Kind::Numeric(typ) => {
+                        format!("{typ}:{}", self.emit_fully_qualified_type(typ, ctx))
+                    }
+                    _ => format!("{typ}"),
+                },
+            },
+            Type::NamedGeneric(ng) => match &*ng.type_var.borrow() {
+                TypeBinding::Bound(_) => panic!("Generic cannot be bound"),
+                TypeBinding::Unbound(_, kind) => match kind {
+                    Kind::Numeric(typ) => {
+                        format!("{}:{}", ng.name, self.emit_fully_qualified_type(typ, ctx))
+                    }
+                    _ => format!("{}", ng.name),
+                },
             },
             // In all the other cases we can use the default printing as internal type vars are
             // non-existent, constrained to be types we don't care about customizing, or are
@@ -1402,6 +1419,13 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                 } else {
                                     format!("{fq_mod_name}::{fn_name}")
                                 };
+                                println!("Function name: {fq_func_name}");
+                                if fq_func_name
+                                    == "collections::bounded_vec::BoundedVec<T, \
+                                        MaxLen>::get_unchecked"
+                                {
+                                    println!("hehe dupa");
+                                }
                                 let ident_generics = func_meta
                                     .all_generics
                                     .iter()

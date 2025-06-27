@@ -17,9 +17,9 @@ nr_def «array»::«check_shuffle»::«__get_index»<@N : u32>(indices : [u32; N
 }
 
 nr_def «array»::«check_shuffle»::«check_shuffle»<T, @N : u32>(lhs : [T; N], rhs : [T; N]) -> Unit {
-        let shuffle_indices = (@std::array::check_shuffle::__get_shuffle_indices<T, N> as λ([T; N], [T; N]) → [u32; N])(lhs, rhs);
+        let shuffle_indices = (@std::array::check_shuffle::__get_shuffle_indices<T, N:u32> as λ([T; N], [T; N]) → [u32; N])(lhs, rhs);
         for i in 0 : u32 .. u@N {
-                let idx = (@std::array::check_shuffle::__get_index<N> as λ([u32; N], u32) → u32)(shuffle_indices, i);
+                let idx = (@std::array::check_shuffle::__get_index<N:u32> as λ([u32; N], u32) → u32)(shuffle_indices, i);
             #assert(#uEq(#arrayIndex(shuffle_indices, #cast(idx) : u32) : u32, i) : bool) : Unit;
         };
         for i in 0 : u32 .. u@N {

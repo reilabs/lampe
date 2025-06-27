@@ -55,160 +55,160 @@ nr_def «collections»::«map»::«Slot»::«mark_deleted»<K, V>(self : &collec
     skip;
 }
 
-nr_def «collections»::«map»::«HashMap»::«with_hasher»<K, V, @N : u32, B>(_build_hasher : B) -> collections::map::HashMap<K, V, N, B> {
+nr_def «collections»::«map»::«HashMap»::«with_hasher»<K, V, @N : u32, B>(_build_hasher : B) -> collections::map::HashMap<K, V, N:u32, B> {
     let _table = [((collections::map::Slot<K, V> as std::default::Default<>)::default<> as λ() → collections::map::Slot<K, V>)() ; N];
     let _len = 0 : u32;
-    collections::map::HashMap<K,V,N,B> { _table, _len, _build_hasher };
+    collections::map::HashMap<K,V,N:u32,B> { _table, _len, _build_hasher };
 }
 
-nr_def «collections»::«map»::«HashMap»::«clear»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N, B>) -> Unit {
-    (*(self) as collections::map::HashMap<K, V, N, B>)._table = [((collections::map::Slot<K, V> as std::default::Default<>)::default<> as λ() → collections::map::Slot<K, V>)() ; N];
-    (*(self) as collections::map::HashMap<K, V, N, B>)._len = 0 : u32;
+nr_def «collections»::«map»::«HashMap»::«clear»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N:u32, B>) -> Unit {
+    (*(self) as collections::map::HashMap<K, V, N:u32, B>)._table = [((collections::map::Slot<K, V> as std::default::Default<>)::default<> as λ() → collections::map::Slot<K, V>)() ; N];
+    (*(self) as collections::map::HashMap<K, V, N:u32, B>)._len = 0 : u32;
     skip;
 }
 
-nr_def «collections»::«map»::«HashMap»::«contains_key»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>, key : K) -> bool {
-    (@option::Option::is_some<V> as λ(option::Option<V>) → bool)((@collections::map::HashMap::get<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, K) → option::Option<V>)(self, key));
+nr_def «collections»::«map»::«HashMap»::«contains_key»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>, key : K) -> bool {
+    (@option::Option::is_some<V> as λ(option::Option<V>) → bool)((@collections::map::HashMap::get<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, K) → option::Option<V>)(self, key));
 }
 
-nr_def «collections»::«map»::«HashMap»::«is_empty»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>) -> bool {
-    #uEq((self as collections::map::HashMap<K, V, N, B>)._len, 0 : u32) : bool;
+nr_def «collections»::«map»::«HashMap»::«is_empty»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>) -> bool {
+    #uEq((self as collections::map::HashMap<K, V, N:u32, B>)._len, 0 : u32) : bool;
 }
 
-nr_def «collections»::«map»::«HashMap»::«entries»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>) -> collections::bounded_vec::BoundedVec<`(K, V), N> {
-    let mut entries = (@collections::bounded_vec::BoundedVec::new<`(K, V), N> as λ() → collections::bounded_vec::BoundedVec<`(K, V), N>)();
-        let ζi0 = (self as collections::map::HashMap<K, V, N, B>)._table;
+nr_def «collections»::«map»::«HashMap»::«entries»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>) -> collections::bounded_vec::BoundedVec<`(K, V), N:u32> {
+    let mut entries = (@collections::bounded_vec::BoundedVec::new<`(K, V), N:u32> as λ() → collections::bounded_vec::BoundedVec<`(K, V), N:u32>)();
+        let ζi0 = (self as collections::map::HashMap<K, V, N:u32, B>)._table;
         for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
                 let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot<K, V>;
                 if (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot) {
                         let key_value = (@option::Option::unwrap_unchecked<`(K, V)> as λ(option::Option<`(K, V)>) → `(K, V))((@collections::map::Slot::key_value<K, V> as λ(collections::map::Slot<K, V>) → option::Option<`(K, V)>)(slot));
-                    (@collections::bounded_vec::BoundedVec::push<`(K, V), N> as λ(&collections::bounded_vec::BoundedVec<`(K, V), N>, `(K, V)) → Unit)(#ref(entries) : &collections::bounded_vec::BoundedVec<`(K, V), N>, key_value);
+                    (@collections::bounded_vec::BoundedVec::push<`(K, V), N:u32> as λ(&collections::bounded_vec::BoundedVec<`(K, V), N:u32>, `(K, V)) → Unit)(#ref(entries) : &collections::bounded_vec::BoundedVec<`(K, V), N:u32>, key_value);
                 };
         };
-    let self_len = (self as collections::map::HashMap<K, V, N, B>)._len;
-    let entries_len = (@collections::bounded_vec::BoundedVec::len<`(K, V), N> as λ(collections::bounded_vec::BoundedVec<`(K, V), N>) → u32)(entries);
+    let self_len = (self as collections::map::HashMap<K, V, N:u32, B>)._len;
+    let entries_len = (@collections::bounded_vec::BoundedVec::len<`(K, V), N:u32> as λ(collections::bounded_vec::BoundedVec<`(K, V), N:u32>) → u32)(entries);
     let msg = #format("Amount of valid elements should have been {self_len} times, but got {entries_len}.", self_len, entries_len);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<`(K, V), N> as λ(collections::bounded_vec::BoundedVec<`(K, V), N>) → u32)(entries), (self as collections::map::HashMap<K, V, N, B>)._len) : bool) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<`(K, V), N:u32> as λ(collections::bounded_vec::BoundedVec<`(K, V), N:u32>) → u32)(entries), (self as collections::map::HashMap<K, V, N:u32, B>)._len) : bool) : Unit;
     entries;
 }
 
-nr_def «collections»::«map»::«HashMap»::«keys»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>) -> collections::bounded_vec::BoundedVec<K, N> {
-    let mut keys = (@collections::bounded_vec::BoundedVec::new<K, N> as λ() → collections::bounded_vec::BoundedVec<K, N>)();
-        let ζi0 = (self as collections::map::HashMap<K, V, N, B>)._table;
+nr_def «collections»::«map»::«HashMap»::«keys»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>) -> collections::bounded_vec::BoundedVec<K, N:u32> {
+    let mut keys = (@collections::bounded_vec::BoundedVec::new<K, N:u32> as λ() → collections::bounded_vec::BoundedVec<K, N:u32>)();
+        let ζi0 = (self as collections::map::HashMap<K, V, N:u32, B>)._table;
         for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
                 let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot<K, V>;
                 if (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot) {
                         let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
                     let key = π0.0;
                     let _? = π0.1;
-                    (@collections::bounded_vec::BoundedVec::push<K, N> as λ(&collections::bounded_vec::BoundedVec<K, N>, K) → Unit)(#ref(keys) : &collections::bounded_vec::BoundedVec<K, N>, key);
+                    (@collections::bounded_vec::BoundedVec::push<K, N:u32> as λ(&collections::bounded_vec::BoundedVec<K, N:u32>, K) → Unit)(#ref(keys) : &collections::bounded_vec::BoundedVec<K, N:u32>, key);
                 };
         };
-    let self_len = (self as collections::map::HashMap<K, V, N, B>)._len;
-    let keys_len = (@collections::bounded_vec::BoundedVec::len<K, N> as λ(collections::bounded_vec::BoundedVec<K, N>) → u32)(keys);
+    let self_len = (self as collections::map::HashMap<K, V, N:u32, B>)._len;
+    let keys_len = (@collections::bounded_vec::BoundedVec::len<K, N:u32> as λ(collections::bounded_vec::BoundedVec<K, N:u32>) → u32)(keys);
     let msg = #format("Amount of valid elements should have been {self_len} times, but got {keys_len}.", self_len, keys_len);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<K, N> as λ(collections::bounded_vec::BoundedVec<K, N>) → u32)(keys), (self as collections::map::HashMap<K, V, N, B>)._len) : bool) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<K, N:u32> as λ(collections::bounded_vec::BoundedVec<K, N:u32>) → u32)(keys), (self as collections::map::HashMap<K, V, N:u32, B>)._len) : bool) : Unit;
     keys;
 }
 
-nr_def «collections»::«map»::«HashMap»::«values»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>) -> collections::bounded_vec::BoundedVec<V, N> {
-    let mut values = (@collections::bounded_vec::BoundedVec::new<V, N> as λ() → collections::bounded_vec::BoundedVec<V, N>)();
-        let ζi0 = (self as collections::map::HashMap<K, V, N, B>)._table;
+nr_def «collections»::«map»::«HashMap»::«values»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>) -> collections::bounded_vec::BoundedVec<V, N:u32> {
+    let mut values = (@collections::bounded_vec::BoundedVec::new<V, N:u32> as λ() → collections::bounded_vec::BoundedVec<V, N:u32>)();
+        let ζi0 = (self as collections::map::HashMap<K, V, N:u32, B>)._table;
         for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
                 let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot<K, V>;
                 if (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot) {
                         let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
                     let _? = π0.0;
                     let value = π0.1;
-                    (@collections::bounded_vec::BoundedVec::push<V, N> as λ(&collections::bounded_vec::BoundedVec<V, N>, V) → Unit)(#ref(values) : &collections::bounded_vec::BoundedVec<V, N>, value);
+                    (@collections::bounded_vec::BoundedVec::push<V, N:u32> as λ(&collections::bounded_vec::BoundedVec<V, N:u32>, V) → Unit)(#ref(values) : &collections::bounded_vec::BoundedVec<V, N:u32>, value);
                 };
         };
-    let self_len = (self as collections::map::HashMap<K, V, N, B>)._len;
-    let values_len = (@collections::bounded_vec::BoundedVec::len<V, N> as λ(collections::bounded_vec::BoundedVec<V, N>) → u32)(values);
+    let self_len = (self as collections::map::HashMap<K, V, N:u32, B>)._len;
+    let values_len = (@collections::bounded_vec::BoundedVec::len<V, N:u32> as λ(collections::bounded_vec::BoundedVec<V, N:u32>) → u32)(values);
     let msg = #format("Amount of valid elements should have been {self_len} times, but got {values_len}.", self_len, values_len);
-    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<V, N> as λ(collections::bounded_vec::BoundedVec<V, N>) → u32)(values), (self as collections::map::HashMap<K, V, N, B>)._len) : bool) : Unit;
+    #assert(#uEq((@collections::bounded_vec::BoundedVec::len<V, N:u32> as λ(collections::bounded_vec::BoundedVec<V, N:u32>) → u32)(values), (self as collections::map::HashMap<K, V, N:u32, B>)._len) : bool) : Unit;
     values;
 }
 
-nr_def «collections»::«map»::«HashMap»::«iter_mut»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N, B>, f : λ(K, V) → `(K, V)) -> Unit {
-    let mut entries = (@collections::map::HashMap::entries<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>) → collections::bounded_vec::BoundedVec<`(K, V), N>)(#readRef(self) : collections::map::HashMap<K, V, N, B>);
-    let mut new_map = (@collections::map::HashMap::with_hasher<K, V, N, B> as λ(B) → collections::map::HashMap<K, V, N, B>)((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._build_hasher);
+nr_def «collections»::«map»::«HashMap»::«iter_mut»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N:u32, B>, f : λ(K, V) → `(K, V)) -> Unit {
+    let mut entries = (@collections::map::HashMap::entries<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → collections::bounded_vec::BoundedVec<`(K, V), N:u32>)(#readRef(self) : collections::map::HashMap<K, V, N:u32, B>);
+    let mut new_map = (@collections::map::HashMap::with_hasher<K, V, N:u32, B> as λ(B) → collections::map::HashMap<K, V, N:u32, B>)((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._build_hasher);
     for i in 0 : u32 .. u@N {
-            if #uLt(i, (#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._len) : bool {
-                let entry = (@collections::bounded_vec::BoundedVec::get_unchecked<`(K, V), N> as λ(collections::bounded_vec::BoundedVec<`(K, V), N>, u32) → `(K, V))(entries, i);
+            if #uLt(i, (#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._len) : bool {
+                let entry = (@collections::bounded_vec::BoundedVec::get_unchecked<`(K, V), N:u32> as λ(collections::bounded_vec::BoundedVec<`(K, V), N:u32>, u32) → `(K, V))(entries, i);
             let π0 = (f as λ(K, V) → `(K, V))(entry.0, entry.1);
             let key = π0.0;
             let value = π0.1;
-            (@collections::map::HashMap::insert<K, V, N, B> as λ(&collections::map::HashMap<K, V, N, B>, K, V) → Unit)(#ref(new_map) : &collections::map::HashMap<K, V, N, B>, key, value);
+            (@collections::map::HashMap::insert<K, V, N:u32, B> as λ(&collections::map::HashMap<K, V, N:u32, B>, K, V) → Unit)(#ref(new_map) : &collections::map::HashMap<K, V, N:u32, B>, key, value);
         };
     };
-    (*(self) as collections::map::HashMap<K, V, N, B>)._table = (new_map as collections::map::HashMap<K, V, N, B>)._table;
+    (*(self) as collections::map::HashMap<K, V, N:u32, B>)._table = (new_map as collections::map::HashMap<K, V, N:u32, B>)._table;
     skip;
 }
 
-nr_def «collections»::«map»::«HashMap»::«iter_keys_mut»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N, B>, f : λ(K) → K) -> Unit {
-    let mut entries = (@collections::map::HashMap::entries<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>) → collections::bounded_vec::BoundedVec<`(K, V), N>)(#readRef(self) : collections::map::HashMap<K, V, N, B>);
-    let mut new_map = (@collections::map::HashMap::with_hasher<K, V, N, B> as λ(B) → collections::map::HashMap<K, V, N, B>)((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._build_hasher);
+nr_def «collections»::«map»::«HashMap»::«iter_keys_mut»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N:u32, B>, f : λ(K) → K) -> Unit {
+    let mut entries = (@collections::map::HashMap::entries<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → collections::bounded_vec::BoundedVec<`(K, V), N:u32>)(#readRef(self) : collections::map::HashMap<K, V, N:u32, B>);
+    let mut new_map = (@collections::map::HashMap::with_hasher<K, V, N:u32, B> as λ(B) → collections::map::HashMap<K, V, N:u32, B>)((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._build_hasher);
     for i in 0 : u32 .. u@N {
-            if #uLt(i, (#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._len) : bool {
-                let entry = (@collections::bounded_vec::BoundedVec::get_unchecked<`(K, V), N> as λ(collections::bounded_vec::BoundedVec<`(K, V), N>, u32) → `(K, V))(entries, i);
+            if #uLt(i, (#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._len) : bool {
+                let entry = (@collections::bounded_vec::BoundedVec::get_unchecked<`(K, V), N:u32> as λ(collections::bounded_vec::BoundedVec<`(K, V), N:u32>, u32) → `(K, V))(entries, i);
             let π0 = `((f as λ(K) → K)(entry.0), entry.1);
             let key = π0.0;
             let value = π0.1;
-            (@collections::map::HashMap::insert<K, V, N, B> as λ(&collections::map::HashMap<K, V, N, B>, K, V) → Unit)(#ref(new_map) : &collections::map::HashMap<K, V, N, B>, key, value);
+            (@collections::map::HashMap::insert<K, V, N:u32, B> as λ(&collections::map::HashMap<K, V, N:u32, B>, K, V) → Unit)(#ref(new_map) : &collections::map::HashMap<K, V, N:u32, B>, key, value);
         };
     };
-    (*(self) as collections::map::HashMap<K, V, N, B>)._table = (new_map as collections::map::HashMap<K, V, N, B>)._table;
+    (*(self) as collections::map::HashMap<K, V, N:u32, B>)._table = (new_map as collections::map::HashMap<K, V, N:u32, B>)._table;
     skip;
 }
 
-nr_def «collections»::«map»::«HashMap»::«iter_values_mut»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N, B>, f : λ(V) → V) -> Unit {
+nr_def «collections»::«map»::«HashMap»::«iter_values_mut»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N:u32, B>, f : λ(V) → V) -> Unit {
     for i in 0 : u32 .. u@N {
-            let mut slot = #arrayIndex((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._table, #cast(i) : u32) : collections::map::Slot<K, V>;
+            let mut slot = #arrayIndex((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._table, #cast(i) : u32) : collections::map::Slot<K, V>;
         if (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot) {
                 let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
             let key = π0.0;
             let value = π0.1;
             (@collections::map::Slot::set<K, V> as λ(&collections::map::Slot<K, V>, K, V) → Unit)(#ref(slot) : &collections::map::Slot<K, V>, key, (f as λ(V) → V)(value));
-            (*(self) as collections::map::HashMap<K, V, N, B>)._table[#cast(i) : u32] = slot;
+            (*(self) as collections::map::HashMap<K, V, N:u32, B>)._table[#cast(i) : u32] = slot;
             skip;
         };
     };
 }
 
-nr_def «collections»::«map»::«HashMap»::«retain»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N, B>, f : λ(K, V) → bool) -> Unit {
+nr_def «collections»::«map»::«HashMap»::«retain»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N:u32, B>, f : λ(K, V) → bool) -> Unit {
     for index in 0 : u32 .. u@N {
-            let mut slot = #arrayIndex((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._table, #cast(index) : u32) : collections::map::Slot<K, V>;
+            let mut slot = #arrayIndex((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._table, #cast(index) : u32) : collections::map::Slot<K, V>;
         if (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot) {
                 let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
             let key = π0.0;
             let value = π0.1;
             if #bNot((f as λ(K, V) → bool)(key, value)) : bool {
                     (@collections::map::Slot::mark_deleted<K, V> as λ(&collections::map::Slot<K, V>) → Unit)(#ref(slot) : &collections::map::Slot<K, V>);
-                (*(self) as collections::map::HashMap<K, V, N, B>)._len = #uSub((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._len, 1 : u32) : u32;
-                (*(self) as collections::map::HashMap<K, V, N, B>)._table[#cast(index) : u32] = slot;
+                (*(self) as collections::map::HashMap<K, V, N:u32, B>)._len = #uSub((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._len, 1 : u32) : u32;
+                (*(self) as collections::map::HashMap<K, V, N:u32, B>)._table[#cast(index) : u32] = slot;
                 skip;
             };
         };
     };
 }
 
-nr_def «collections»::«map»::«HashMap»::«len»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>) -> u32 {
-    (self as collections::map::HashMap<K, V, N, B>)._len;
+nr_def «collections»::«map»::«HashMap»::«len»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>) -> u32 {
+    (self as collections::map::HashMap<K, V, N:u32, B>)._len;
 }
 
-nr_def «collections»::«map»::«HashMap»::«capacity»<K, V, @N : u32, B>(_self : collections::map::HashMap<K, V, N, B>) -> u32 {
+nr_def «collections»::«map»::«HashMap»::«capacity»<K, V, @N : u32, B>(_self : collections::map::HashMap<K, V, N:u32, B>) -> u32 {
     u@N;
 }
 
-nr_def «collections»::«map»::«HashMap»::«get»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>, key : K) -> option::Option<V> {
+nr_def «collections»::«map»::«HashMap»::«get»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>, key : K) -> option::Option<V> {
     let mut result = (@option::Option::none<V> as λ() → option::Option<V>)();
-    let hash = (@collections::map::HashMap::hash<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, K) → u32)(self, key);
+    let hash = (@collections::map::HashMap::hash<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, K) → u32)(self, key);
     let mut should_break = false;
     for attempt in 0 : u32 .. u@N {
             if #bNot(should_break) : bool {
-                let index = (@collections::map::HashMap::quadratic_probe<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, u32, u32) → u32)(self, hash, #cast(attempt) : u32);
-            let slot = #arrayIndex((self as collections::map::HashMap<K, V, N, B>)._table, #cast(index) : u32) : collections::map::Slot<K, V>;
+                let index = (@collections::map::HashMap::quadratic_probe<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, u32, u32) → u32)(self, hash, #cast(attempt) : u32);
+            let slot = #arrayIndex((self as collections::map::HashMap<K, V, N:u32, B>)._table, #cast(index) : u32) : collections::map::Slot<K, V>;
             if (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot) {
                     let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
                 let current_key = π0.0;
@@ -224,18 +224,18 @@ nr_def «collections»::«map»::«HashMap»::«get»<K, V, @N : u32, B>(self : 
     result;
 }
 
-nr_def «collections»::«map»::«HashMap»::«insert»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N, B>, key : K, value : V) -> Unit {
-    (@collections::map::HashMap::assert_load_factor<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>) → Unit)(#readRef(self) : collections::map::HashMap<K, V, N, B>);
-    let hash = (@collections::map::HashMap::hash<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, K) → u32)(#readRef(self) : collections::map::HashMap<K, V, N, B>, key);
+nr_def «collections»::«map»::«HashMap»::«insert»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N:u32, B>, key : K, value : V) -> Unit {
+    (@collections::map::HashMap::assert_load_factor<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → Unit)(#readRef(self) : collections::map::HashMap<K, V, N:u32, B>);
+    let hash = (@collections::map::HashMap::hash<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, K) → u32)(#readRef(self) : collections::map::HashMap<K, V, N:u32, B>, key);
     let mut should_break = false;
     for attempt in 0 : u32 .. u@N {
             if #bNot(should_break) : bool {
-                let index = (@collections::map::HashMap::quadratic_probe<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, u32, u32) → u32)(#readRef(self) : collections::map::HashMap<K, V, N, B>, hash, #cast(attempt) : u32);
-            let mut slot = #arrayIndex((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._table, #cast(index) : u32) : collections::map::Slot<K, V>;
+                let index = (@collections::map::HashMap::quadratic_probe<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, u32, u32) → u32)(#readRef(self) : collections::map::HashMap<K, V, N:u32, B>, hash, #cast(attempt) : u32);
+            let mut slot = #arrayIndex((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._table, #cast(index) : u32) : collections::map::Slot<K, V>;
             let mut insert = false;
             if (@collections::map::Slot::is_available<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot) {
                     insert = true;
-                (*(self) as collections::map::HashMap<K, V, N, B>)._len = #uAdd((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._len, 1 : u32) : u32;
+                (*(self) as collections::map::HashMap<K, V, N:u32, B>)._len = #uAdd((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._len, 1 : u32) : u32;
                 skip;
             } else {
                     let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
@@ -248,7 +248,7 @@ nr_def «collections»::«map»::«HashMap»::«insert»<K, V, @N : u32, B>(self
             };
             if insert {
                     (@collections::map::Slot::set<K, V> as λ(&collections::map::Slot<K, V>, K, V) → Unit)(#ref(slot) : &collections::map::Slot<K, V>, key, value);
-                (*(self) as collections::map::HashMap<K, V, N, B>)._table[#cast(index) : u32] = slot;
+                (*(self) as collections::map::HashMap<K, V, N:u32, B>)._table[#cast(index) : u32] = slot;
                 should_break = true;
                 skip;
             };
@@ -256,21 +256,21 @@ nr_def «collections»::«map»::«HashMap»::«insert»<K, V, @N : u32, B>(self
     };
 }
 
-nr_def «collections»::«map»::«HashMap»::«remove»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N, B>, key : K) -> Unit {
-    let hash = (@collections::map::HashMap::hash<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, K) → u32)(#readRef(self) : collections::map::HashMap<K, V, N, B>, key);
+nr_def «collections»::«map»::«HashMap»::«remove»<K, V, @N : u32, B>(self : &collections::map::HashMap<K, V, N:u32, B>, key : K) -> Unit {
+    let hash = (@collections::map::HashMap::hash<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, K) → u32)(#readRef(self) : collections::map::HashMap<K, V, N:u32, B>, key);
     let mut should_break = false;
     for attempt in 0 : u32 .. u@N {
             if #bNot(should_break) : bool {
-                let index = (@collections::map::HashMap::quadratic_probe<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, u32, u32) → u32)(#readRef(self) : collections::map::HashMap<K, V, N, B>, hash, #cast(attempt) : u32);
-            let mut slot = #arrayIndex((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._table, #cast(index) : u32) : collections::map::Slot<K, V>;
+                let index = (@collections::map::HashMap::quadratic_probe<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, u32, u32) → u32)(#readRef(self) : collections::map::HashMap<K, V, N:u32, B>, hash, #cast(attempt) : u32);
+            let mut slot = #arrayIndex((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._table, #cast(index) : u32) : collections::map::Slot<K, V>;
             if (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot) {
                     let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
                 let current_key = π0.0;
                 let _? = π0.1;
                 if ((K as Eq<>)::eq<> as λ(K, K) → bool)(K, K) {
                         (@collections::map::Slot::mark_deleted<K, V> as λ(&collections::map::Slot<K, V>) → Unit)(#ref(slot) : &collections::map::Slot<K, V>);
-                    (*(self) as collections::map::HashMap<K, V, N, B>)._table[#cast(index) : u32] = slot;
-                    (*(self) as collections::map::HashMap<K, V, N, B>)._len = #uSub((#readRef(self) : collections::map::HashMap<K, V, N, B> as collections::map::HashMap<K, V, N, B>)._len, 1 : u32) : u32;
+                    (*(self) as collections::map::HashMap<K, V, N:u32, B>)._table[#cast(index) : u32] = slot;
+                    (*(self) as collections::map::HashMap<K, V, N:u32, B>)._len = #uSub((#readRef(self) : collections::map::HashMap<K, V, N:u32, B> as collections::map::HashMap<K, V, N:u32, B>)._len, 1 : u32) : u32;
                     should_break = true;
                     skip;
                 };
@@ -279,36 +279,36 @@ nr_def «collections»::«map»::«HashMap»::«remove»<K, V, @N : u32, B>(self
     };
 }
 
-nr_def «collections»::«map»::«HashMap»::«hash»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>, key : K) -> u32 {
-    let mut hasher = ((B as std::hash::BuildHasher<>)::build_hasher<> as λ(B) → <B as BuildHasher>::H)((self as collections::map::HashMap<K, V, N, B>)._build_hasher);
+nr_def «collections»::«map»::«HashMap»::«hash»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>, key : K) -> u32 {
+    let mut hasher = ((B as std::hash::BuildHasher<>)::build_hasher<> as λ(B) → <B as BuildHasher>::H)((self as collections::map::HashMap<K, V, N:u32, B>)._build_hasher);
     ((K as std::hash::Hash<>)::hash<> as λ(K, &<B as BuildHasher>::H) → Unit)(key, #ref(hasher) : &<B as BuildHasher>::H);
     #cast(((<B as BuildHasher>::H as std::hash::Hasher<>)::finish<> as λ(<B as BuildHasher>::H) → Field)(hasher)) : u32;
 }
 
-nr_def «collections»::«map»::«HashMap»::«quadratic_probe»<K, V, @N : u32, B>(_self : collections::map::HashMap<K, V, N, B>, hash : u32, attempt : u32) -> u32 {
+nr_def «collections»::«map»::«HashMap»::«quadratic_probe»<K, V, @N : u32, B>(_self : collections::map::HashMap<K, V, N:u32, B>, hash : u32, attempt : u32) -> u32 {
     #uRem(#uAdd(hash, #uDiv(#uAdd(attempt, #uMul(attempt, attempt) : u32) : u32, 2 : u32) : u32) : u32, u@N) : u32;
 }
 
-nr_def «collections»::«map»::«HashMap»::«assert_load_factor»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N, B>) -> Unit {
-    let lhs = #uMul((self as collections::map::HashMap<K, V, N, B>)._len, (@MAX_LOAD_FACTOR_DEN0MINATOR<> as λ() → u32)()) : u32;
-    let rhs = #uMul(#arrayLen((self as collections::map::HashMap<K, V, N, B>)._table) : u32, (@MAX_LOAD_FACTOR_NUMERATOR<> as λ() → u32)()) : u32;
+nr_def «collections»::«map»::«HashMap»::«assert_load_factor»<K, V, @N : u32, B>(self : collections::map::HashMap<K, V, N:u32, B>) -> Unit {
+    let lhs = #uMul((self as collections::map::HashMap<K, V, N:u32, B>)._len, (@MAX_LOAD_FACTOR_DEN0MINATOR<> as λ() → u32)()) : u32;
+    let rhs = #uMul(#arrayLen((self as collections::map::HashMap<K, V, N:u32, B>)._table) : u32, (@MAX_LOAD_FACTOR_NUMERATOR<> as λ() → u32)()) : u32;
     let exceeded = #uGeq(lhs, rhs) : bool;
     #assert(#bNot(exceeded) : bool) : Unit;
 }
 
-nr_trait_impl[impl_35] <V, K, N, B> std::cmp::Eq<> for collections::map::HashMap<K, V, N, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
-    fn «eq»<> (self : collections::map::HashMap<K, V, N, B>, other : collections::map::HashMap<K, V, N, B>) -> bool {
+nr_trait_impl[impl_35] <N, B, V, K> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+    fn «eq»<> (self : collections::map::HashMap<K, V, N:u32, B>, other : collections::map::HashMap<K, V, N:u32, B>) -> bool {
         let mut equal = false;
-        if #uEq((@collections::map::HashMap::len<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>) → u32)(self), (@collections::map::HashMap::len<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>) → u32)(other)) : bool {
+        if #uEq((@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(self), (@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(other)) : bool {
                     equal = true;
-                        let ζi0 = (self as collections::map::HashMap<K, V, N, B>)._table;
+                        let ζi0 = (self as collections::map::HashMap<K, V, N:u32, B>)._table;
                         for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
                                     let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot<K, V>;
                                         if #bAnd(equal, (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot)) : bool {
                                                     let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
                                                 let key = π0.0;
                                                 let value = π0.1;
-                                                let other_value = (@collections::map::HashMap::get<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, K) → option::Option<V>)(other, key);
+                                                let other_value = (@collections::map::HashMap::get<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, K) → option::Option<V>)(other, key);
                                                 if (@option::Option::is_none<V> as λ(option::Option<V>) → bool)(other_value) {
                                                             equal = false;
                                                         skip;
@@ -326,19 +326,19 @@ nr_trait_impl[impl_35] <V, K, N, B> std::cmp::Eq<> for collections::map::HashMap
 }
 }
 
-nr_trait_impl[impl_35] <K, B, V, N> std::cmp::Eq<> for collections::map::HashMap<K, V, N, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
-    fn «eq»<> (self : collections::map::HashMap<K, V, N, B>, other : collections::map::HashMap<K, V, N, B>) -> bool {
+nr_trait_impl[impl_35] <K, B, N, V> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+    fn «eq»<> (self : collections::map::HashMap<K, V, N:u32, B>, other : collections::map::HashMap<K, V, N:u32, B>) -> bool {
         let mut equal = false;
-        if #uEq((@collections::map::HashMap::len<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>) → u32)(self), (@collections::map::HashMap::len<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>) → u32)(other)) : bool {
+        if #uEq((@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(self), (@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(other)) : bool {
                     equal = true;
-                        let ζi0 = (self as collections::map::HashMap<K, V, N, B>)._table;
+                        let ζi0 = (self as collections::map::HashMap<K, V, N:u32, B>)._table;
                         for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
                                     let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot<K, V>;
                                         if #bAnd(equal, (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot)) : bool {
                                                     let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
                                                 let key = π0.0;
                                                 let value = π0.1;
-                                                let other_value = (@collections::map::HashMap::get<K, V, N, B> as λ(collections::map::HashMap<K, V, N, B>, K) → option::Option<V>)(other, key);
+                                                let other_value = (@collections::map::HashMap::get<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, K) → option::Option<V>)(other, key);
                                                 if (@option::Option::is_none<V> as λ(option::Option<V>) → bool)(other_value) {
                                                             equal = false;
                                                         skip;
@@ -356,26 +356,56 @@ nr_trait_impl[impl_35] <K, B, V, N> std::cmp::Eq<> for collections::map::HashMap
 }
 }
 
-nr_trait_impl[impl_36] <B, N, K, V> std::default::Default<> for collections::map::HashMap<K, V, N, B> where B : BuildHasher<>, B : Default<> {
-    fn «default»<> () -> collections::map::HashMap<K, V, N, B> {
+nr_trait_impl[impl_35] <K, B, V, N> std::cmp::Eq<> for collections::map::HashMap<K, V, N:u32, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+    fn «eq»<> (self : collections::map::HashMap<K, V, N:u32, B>, other : collections::map::HashMap<K, V, N:u32, B>) -> bool {
+        let mut equal = false;
+        if #uEq((@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(self), (@collections::map::HashMap::len<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>) → u32)(other)) : bool {
+                    equal = true;
+                        let ζi0 = (self as collections::map::HashMap<K, V, N:u32, B>)._table;
+                        for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
+                                    let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot<K, V>;
+                                        if #bAnd(equal, (@collections::map::Slot::is_valid<K, V> as λ(collections::map::Slot<K, V>) → bool)(slot)) : bool {
+                                                    let π0 = (@collections::map::Slot::key_value_unchecked<K, V> as λ(collections::map::Slot<K, V>) → `(K, V))(slot);
+                                                let key = π0.0;
+                                                let value = π0.1;
+                                                let other_value = (@collections::map::HashMap::get<K, V, N:u32, B> as λ(collections::map::HashMap<K, V, N:u32, B>, K) → option::Option<V>)(other, key);
+                                                if (@option::Option::is_none<V> as λ(option::Option<V>) → bool)(other_value) {
+                                                            equal = false;
+                                                        skip;
+                                                } else {
+                                                            let other_value = (@option::Option::unwrap_unchecked<V> as λ(option::Option<V>) → V)(other_value);
+                                                        if ((V as Eq<>)::eq<> as λ(V, V) → bool)(V, V) {
+                                                                    equal = false;
+                                                                skip;
+                                                        };
+                                                };
+                                        };
+                        };
+        };
+        equal;
+}
+}
+
+nr_trait_impl[impl_36] <V, N, B, K> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
+    fn «default»<> () -> collections::map::HashMap<K, V, N:u32, B> {
         let _build_hasher = ((B as std::default::Default<>)::default<> as λ() → B)();
-        let map = (@collections::map::HashMap::with_hasher<K, V, N, B> as λ(B) → collections::map::HashMap<K, V, N, B>)(_build_hasher);
+        let map = (@collections::map::HashMap::with_hasher<K, V, N:u32, B> as λ(B) → collections::map::HashMap<K, V, N:u32, B>)(_build_hasher);
         map;
 }
 }
 
-nr_trait_impl[impl_36] <K, V, N, B> std::default::Default<> for collections::map::HashMap<K, V, N, B> where B : BuildHasher<>, B : Default<> {
-    fn «default»<> () -> collections::map::HashMap<K, V, N, B> {
+nr_trait_impl[impl_36] <K, V, N, B> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
+    fn «default»<> () -> collections::map::HashMap<K, V, N:u32, B> {
         let _build_hasher = ((B as std::default::Default<>)::default<> as λ() → B)();
-        let map = (@collections::map::HashMap::with_hasher<K, V, N, B> as λ(B) → collections::map::HashMap<K, V, N, B>)(_build_hasher);
+        let map = (@collections::map::HashMap::with_hasher<K, V, N:u32, B> as λ(B) → collections::map::HashMap<K, V, N:u32, B>)(_build_hasher);
         map;
 }
 }
 
-nr_trait_impl[impl_36] <V, N, K, B> std::default::Default<> for collections::map::HashMap<K, V, N, B> where B : BuildHasher<>, B : Default<> {
-    fn «default»<> () -> collections::map::HashMap<K, V, N, B> {
+nr_trait_impl[impl_36] <V, K, B, N> std::default::Default<> for collections::map::HashMap<K, V, N:u32, B> where B : BuildHasher<>, B : Default<> {
+    fn «default»<> () -> collections::map::HashMap<K, V, N:u32, B> {
         let _build_hasher = ((B as std::default::Default<>)::default<> as λ() → B)();
-        let map = (@collections::map::HashMap::with_hasher<K, V, N, B> as λ(B) → collections::map::HashMap<K, V, N, B>)(_build_hasher);
+        let map = (@collections::map::HashMap::with_hasher<K, V, N:u32, B> as λ(B) → collections::map::HashMap<K, V, N:u32, B>)(_build_hasher);
         map;
 }
 }

@@ -25,14 +25,14 @@ nr_def «print»<T>(input : T) -> Unit {
 }
 
 nr_def «verify_proof»<@N : u32, @M : u32, @K : u32>(verification_key : [Field; N], proof : [Field; M], public_inputs : [Field; K], key_hash : Field) -> Unit {
-    (@std::::verify_proof_internal<N, M, K> as λ([Field; N], [Field; M], [Field; K], Field, u32) → Unit)(verification_key, proof, public_inputs, key_hash, 0 : u32);
+    (@std::::verify_proof_internal<N:u32, M:u32, K:u32> as λ([Field; N], [Field; M], [Field; K], Field, u32) → Unit)(verification_key, proof, public_inputs, key_hash, 0 : u32);
 }
 
 nr_def «verify_proof_with_type»<@N : u32, @M : u32, @K : u32>(verification_key : [Field; N], proof : [Field; M], public_inputs : [Field; K], key_hash : Field, proof_type : u32) -> Unit {
     if #bNot((@std::runtime::is_unconstrained<> as λ() → bool)()) : bool {
             (@std::::assert_constant<u32> as λ(u32) → Unit)(proof_type);
     };
-    (@std::::verify_proof_internal<N, M, K> as λ([Field; N], [Field; M], [Field; K], Field, u32) → Unit)(verification_key, proof, public_inputs, key_hash, proof_type);
+    (@std::::verify_proof_internal<N:u32, M:u32, K:u32> as λ([Field; N], [Field; M], [Field; K], Field, u32) → Unit)(verification_key, proof, public_inputs, key_hash, proof_type);
 }
 
 nr_def «verify_proof_internal»<@N : u32, @M : u32, @K : u32>(verification_key : [Field; N], proof : [Field; M], public_inputs : [Field; K], key_hash : Field, proof_type : u32) -> Unit {
