@@ -349,6 +349,15 @@ lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P �
   intro h
   simp_all [STHoare, THoare, SLP.pure_star_iff_and]
 
+/--
+The `loop_inv` tactic allows reasoning about bounded loops in lampe.
+
+It is passed a function `f` which must accept an iteration variable, and two proofs bounding said
+variable, and returns the state after every loop iteration. It must be written such that `f init` is
+your precondition (where `init` is the initial value for the iteration variable), `f end` is your
+postcondition (taking place after the loop), and `STHoare p env (f i) (body i) (f (i+1))` (where
+`body` is the loop body) holds for all `i`.
+-/
 elab "loop_inv" p:optional("nat") inv:term : tactic => do
   let solver ← if p.isSome then ``(loop_inv_intro' _ $inv) else ``(loop_inv_intro $inv)
   let goals ← steps (← getMainGoal) 1 [AddLemma.mk solver (generalizeEnv := false)]
