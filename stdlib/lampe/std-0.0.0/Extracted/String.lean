@@ -10,7 +10,7 @@ namespace Extracted
 
 nr_trait_impl[impl_66] <> std::convert::From<[u8; N]> for str<N> where  {
     fn «from»<> (bytes : [u8; N]) -> str<N> {
-        (@std::array::as_str_unchecked<N> as λ([u8; N]) → str<N>)(bytes);
+        (@std::array::as_str_unchecked<N:u32> as λ([u8; N]) → str<N>)(bytes);
 }
 }
 

@@ -10,7 +10,7 @@ namespace Extracted
 
 nr_trait_impl[impl_24] <N> std::convert::From<str<N>> for [u8; N] where  {
     fn «from»<> (s : str<N>) -> [u8; N] {
-        (@str::as_bytes<N> as λ(str<N>) → [u8; N])(s);
+        (@str::as_bytes<N:u32> as λ(str<N>) → [u8; N])(s);
 }
 }
 
@@ -92,10 +92,10 @@ nr_def «array»::«test»::«mapi_example»<>() -> Unit {
 nr_def «array»::«test»::«for_each_example»<>() -> Unit {
     let a = [1 : Field, 2 : Field, 3 : Field];
     let mut b = [0 : Field, 0 : Field, 0 : Field];
-    let b_ref = #ref(b) : & [Field; 3];
+    let b_ref = #ref(b) : &[Field; 3];
     let mut i = 0 : u32;
-    let i_ref = #ref(i) : & u32;
-    (@std::array::for_each<Field, 3 : u32, `(&u32, & [Field; 3])> as λ([Field; 3], λ(Field) → Unit) → Unit)(a, |x : Field| -> Unit         let i_2903 = #readRef(i_ref) : u32;
+    let i_ref = #ref(i) : &u32;
+    (@std::array::for_each<Field, 3 : u32, `(&u32, &[Field; 3])> as λ([Field; 3], λ(Field) → Unit) → Unit)(a, |x : Field| -> Unit         let i_2903 = #readRef(i_ref) : u32;
             *(b_ref)[#cast(i_2903) : u32] = #fMul(x, 2 : Field) : Field;
             skip;
         *(i_ref) = #uAdd(#readRef(i_ref) : u32, 1 : u32) : u32;

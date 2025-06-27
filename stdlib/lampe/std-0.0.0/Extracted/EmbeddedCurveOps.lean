@@ -94,7 +94,7 @@ nr_trait_impl[impl_31] <> std::hash::Hash<> for embedded_curve_ops::EmbeddedCurv
 }
 
 nr_def «embedded_curve_ops»::«multi_scalar_mul»<@N : u32>(points : [embedded_curve_ops::EmbeddedCurvePoint<>; N], scalars : [embedded_curve_ops::EmbeddedCurveScalar<>; N]) -> embedded_curve_ops::EmbeddedCurvePoint<> {
-    #arrayIndex((@std::embedded_curve_ops::multi_scalar_mul_array_return<N> as λ([embedded_curve_ops::EmbeddedCurvePoint<>; N], [embedded_curve_ops::EmbeddedCurveScalar<>; N]) → [embedded_curve_ops::EmbeddedCurvePoint<>; 1])(points, scalars), #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<>;
+    #arrayIndex((@std::embedded_curve_ops::multi_scalar_mul_array_return<N:u32> as λ([embedded_curve_ops::EmbeddedCurvePoint<>; N], [embedded_curve_ops::EmbeddedCurveScalar<>; N]) → [embedded_curve_ops::EmbeddedCurvePoint<>; 1])(points, scalars), #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<>;
 }
 
 nr_def «embedded_curve_ops»::«multi_scalar_mul_array_return»<@N : u32>(points : [embedded_curve_ops::EmbeddedCurvePoint<>; N], scalars : [embedded_curve_ops::EmbeddedCurveScalar<>; N]) -> [embedded_curve_ops::EmbeddedCurvePoint<>; 1] {

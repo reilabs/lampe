@@ -9,7 +9,7 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «hash»::«poseidon2»::«Poseidon2»::«hash»<@N : u32>(input : [Field; N], message_size : u32) -> Field {
-    (@hash::poseidon2::Poseidon2::hash_internal<N> as λ([Field; N], u32, bool) → Field)(input, message_size, #uNeq(message_size, u@N) : bool);
+    (@hash::poseidon2::Poseidon2::hash_internal<N:u32> as λ([Field; N], u32, bool) → Field)(input, message_size, #uNeq(message_size, u@N) : bool);
 }
 
 nr_def «hash»::«poseidon2»::«Poseidon2»::«new»<>(iv : Field) -> hash::poseidon2::Poseidon2<> {

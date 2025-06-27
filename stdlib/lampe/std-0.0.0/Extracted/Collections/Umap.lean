@@ -8,13 +8,13 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_37] <V, K> std::default::Default<> for collections::umap::Slot<K, V> where  {
+nr_trait_impl[impl_37] <K, V> std::default::Default<> for collections::umap::Slot<K, V> where  {
     fn «default»<> () -> collections::umap::Slot<K, V> {
         collections::umap::Slot<K,V> { (@option::Option::none<`(K, V)> as λ() → option::Option<`(K, V)>)(), false };
 }
 }
 
-nr_trait_impl[impl_37] <K, V> std::default::Default<> for collections::umap::Slot<K, V> where  {
+nr_trait_impl[impl_37] <V, K> std::default::Default<> for collections::umap::Slot<K, V> where  {
     fn «default»<> () -> collections::umap::Slot<K, V> {
         collections::umap::Slot<K,V> { (@option::Option::none<`(K, V)> as λ() → option::Option<`(K, V)>)(), false };
 }
@@ -208,7 +208,7 @@ nr_def «collections»::«umap»::«UHashMap»::«quadratic_probe»<K, V, B>(sel
     #uRem(#uAdd(hash, #uDiv(#uAdd(attempt, #uMul(attempt, attempt) : u32) : u32, 2 : u32) : u32) : u32, #sliceLen((self as collections::umap::UHashMap<K, V, B>)._table) : u32) : u32;
 }
 
-nr_trait_impl[impl_38] <K, B, V> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_38] <V, K, B> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::umap::UHashMap<K, V, B>, other : collections::umap::UHashMap<K, V, B>) -> bool {
         let mut equal = false;
         if #uEq((@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(self), (@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(other)) : bool {
@@ -238,7 +238,7 @@ nr_trait_impl[impl_38] <K, B, V> std::cmp::Eq<> for collections::umap::UHashMap<
 }
 }
 
-nr_trait_impl[impl_38] <K, V, B> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_38] <B, K, V> std::cmp::Eq<> for collections::umap::UHashMap<K, V, B> where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::umap::UHashMap<K, V, B>, other : collections::umap::UHashMap<K, V, B>) -> bool {
         let mut equal = false;
         if #uEq((@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(self), (@collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) → u32)(other)) : bool {
@@ -298,19 +298,13 @@ nr_trait_impl[impl_38] <B, V, K> std::cmp::Eq<> for collections::umap::UHashMap<
 }
 }
 
-nr_trait_impl[impl_39] <K, V, B> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_39] <V, B, K> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::umap::UHashMap<K, V, B> {
         (@collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) → collections::umap::UHashMap<K, V, B>)(((B as std::default::Default<>)::default<> as λ() → B)());
 }
 }
 
-nr_trait_impl[impl_39] <B, K, V> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
-    fn «default»<> () -> collections::umap::UHashMap<K, V, B> {
-        (@collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) → collections::umap::UHashMap<K, V, B>)(((B as std::default::Default<>)::default<> as λ() → B)());
-}
-}
-
-nr_trait_impl[impl_39] <V, K, B> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_39] <K, B, V> std::default::Default<> for collections::umap::UHashMap<K, V, B> where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::umap::UHashMap<K, V, B> {
         (@collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) → collections::umap::UHashMap<K, V, B>)(((B as std::default::Default<>)::default<> as λ() → B)());
 }
