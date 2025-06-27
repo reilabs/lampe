@@ -50,3 +50,10 @@ def change_toml_required_lampe_to_path(toml_path, lampe_path):
 def read_noir_version():
     rust_cargo_toml = load_toml(rust_cargo_toml_path)
     return rust_cargo_toml['dependencies']['noirc_driver']['rev']
+
+def download_noir_stdlib_to_dir(noir_version, dir_path):
+    cd @(dir_path)
+    git clone -n --depth=1 --filter=tree:0 https://github.com/noir-lang/noir
+    cd noir
+    git sparse-checkout set --no-cone /noir_stdlib
+    git checkout @(noir_version)
