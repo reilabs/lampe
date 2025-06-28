@@ -475,7 +475,7 @@ theorem lam_intro :
 
 theorem callLambda_intro' {lambdaBody} {P : SLP $ State p}
   {Q : Tp.denote p outTp → SLP (State p)}
-  {fnRef : Tp.denote p (.fn argTps outTp)}
+  {fnRef : Tp.denote p .fn}
   {hlam : STHoare p Γ P (lambdaBody args) Q} :
   STHoare p Γ (P ⋆ ∃∃ r, ⟦fnRef = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩])
     (Expr.call argTps outTp fnRef args)
@@ -504,7 +504,7 @@ theorem callLambda_intro' {lambdaBody} {P : SLP $ State p}
   · apply STHoare.consequence_frame_left <;> tauto
 
 
-lemma FuncRef.lambda_asLambda {f : FuncRef a o} {h} : FuncRef.lambda (FuncRef.asLambda f h) = f := by
+lemma FuncRef.lambda_asLambda {f : FuncRef} {h} : FuncRef.lambda (FuncRef.asLambda f h) = f := by
   unfold FuncRef.isLambda at h
   split at h
   · rfl
@@ -512,7 +512,7 @@ lemma FuncRef.lambda_asLambda {f : FuncRef a o} {h} : FuncRef.lambda (FuncRef.as
 
 theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
   {Q : Tp.denote p outTp → SLP (State p)}
-  {fnRef : Tp.denote p (.fn argTps outTp)}
+  {fnRef : Tp.denote p .fn}
   {hlam : STHoare p Γ P (lambdaBody args) Q} :
   STHoare p Γ ((∃∃ h, [λfnRef.asLambda h ↦ ⟨argTps, outTp, lambdaBody⟩]) ⋆ P)
     (Expr.call argTps outTp fnRef args)
@@ -537,7 +537,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
     apply SLP.entails_self
     rfl
 
-theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
+theorem callDecl_intro {fnRef : Tp.denote p .fn}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}
     {h_fn : ⟨fnName, func⟩ ∈ Γ.functions}
     {hkc : func.generics = kinds}
@@ -553,7 +553,7 @@ theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
   apply Omni.callDecl <;> tauto
 
 
-theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
+theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p .fn}
     (href : H ⊢  ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
     (h_fn : (fnName, func) ∈ impls)
@@ -571,7 +571,7 @@ theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p 
     apply SLP.extract_prop at h' <;> tauto
   apply Omni.callTrait <;> tauto
 
-theorem fn_intro : STHoare p Γ ⟦⟧ (.fn argTps outTp r) fun v => v = r := by
+theorem fn_intro : STHoare p Γ ⟦⟧ (.fn r) fun v => v = r := by
   unfold STHoare THoare
   intro H st hp
   constructor

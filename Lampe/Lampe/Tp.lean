@@ -32,7 +32,7 @@ inductive Tp where
 | array (element: Tp) (size: U 32)
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
-| fn (argTps : List Tp) (outTp : Tp)
+| fn
 deriving BEq
 
 inductive Kind where
@@ -93,11 +93,6 @@ def tpDecEq (a b : Tp) : Decidable (a = b) := by
     cases (tpDecEq tps₁ tps₂) <;> cases h
     all_goals try { left; simp_all; }
     right; subst_vars; rfl
-  case fn.fn =>
-    rename_i args₁ out₁ args₂ out₂
-    cases (tpDecEq out₁ out₂) <;> cases (tpsDecEq args₁ args₂)
-    all_goals try { left; simp_all; }
-    right; subst_vars; rfl
 
 end
 
@@ -131,18 +126,18 @@ instance : DecidableEq Kind := kindDecEq
 
 instance : DecidableEq $ List Kind := kindsDecEq
 
-inductive FuncRef (argTps : List Tp) (outTp : Tp) where
+inductive FuncRef where
 | lambda (r : Ref)
 | decl (fnName : String) (kinds : List Kind) (generics : HList Kind.denote kinds)
 | trait (selfTp : Tp)
   (traitName : String) (traitKinds : List Kind) (traitGenerics : HList Kind.denote traitKinds)
   (fnName : String) (fnKinds : List Kind) (fnGenerics : HList Kind.denote fnKinds)
 
-def FuncRef.isLambda : FuncRef a o → Bool
+def FuncRef.isLambda : FuncRef → Bool
 | FuncRef.lambda _ => true
 | _ => false
 
-def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Ref :=
+def FuncRef.asLambda (f : FuncRef) (h : FuncRef.isLambda f) : Ref :=
   match h' : f with
   | FuncRef.lambda r => r
   | FuncRef.decl _ _ _ => by cases h
@@ -172,7 +167,7 @@ def Tp.denote : Tp → Type
 | .array tp n => List.Vector (denote tp) n.toNat
 | .ref _ => Ref
 | .tuple _ fields => Tp.denoteArgs fields
-| .fn argTps outTp => FuncRef argTps outTp
+| .fn => FuncRef
 
 end
 
@@ -247,7 +242,7 @@ match tp with
 | .array tp n => List.Vector.replicate n.toNat tp.zero
 | .ref _ => ⟨0⟩
 | .tuple name fields => HList.toTuple p (Tp.zeroArgs fields) name
-| .fn _ _ => .lambda ⟨0⟩
+| .fn => .lambda ⟨0⟩
 
 end
 
