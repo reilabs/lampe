@@ -575,11 +575,23 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .map(|g| self.emit_fully_qualified_type(g, ctx))
             .collect_vec();
 
+        if (full_name == "std::convert::From") {
+            println!("BOOO");
+        }
         let mut impl_generic_decls = HashSet::new();
         // Extend with the generics for the trait.
         impl_generic_decls.extend(trait_generic_vars.iter().cloned());
         // Extend with the generics for the implementor.
-        impl_generic_decls.extend(collect_named_generics(&trait_impl.typ));
+        impl_generic_decls.extend(collect_named_generics(&trait_impl.typ).iter().map(|f| {
+            self.emit_resolved_generic(
+                &ResolvedGeneric {
+                    name:     f.name.clone(),
+                    type_var: f.type_var.clone(),
+                    location: Location::dummy(),
+                },
+                ctx,
+            )
+        }));
         let impl_generic_decls_str = impl_generic_decls.iter().join(", ");
 
         // Emit the implemented functions.
@@ -1990,7 +2002,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
 /// Collects the named generics from a type recursively.
 #[must_use]
-pub fn collect_named_generics(typ: &Type) -> Vec<String> {
+pub fn collect_named_generics(typ: &Type) -> Vec<NamedGeneric> {
     match typ {
         Type::Array(inner_type, _) | Type::Slice(inner_type) | Type::Reference(inner_type, _) => {
             collect_named_generics(inner_type)
@@ -2010,7 +2022,7 @@ pub fn collect_named_generics(typ: &Type) -> Vec<String> {
         | Type::FmtString(..)
         | Type::Unit
         | Type::FieldElement => Vec::new(),
-        Type::NamedGeneric(..) => Vec::from([format!("{typ}")]),
+        Type::NamedGeneric(ng) => Vec::from([ng.clone()]),
         Type::Alias(..) => unimplemented!("Collect Gens Alias {typ}"),
         Type::Constant(..) => unimplemented!("Collect Gens Constant {typ}"),
         Type::Quoted(_) => unimplemented!("Collect Gens Quoted {typ}"),

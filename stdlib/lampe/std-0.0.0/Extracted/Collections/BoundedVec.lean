@@ -230,7 +230,7 @@ nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_parts_unchecked�
     collections::bounded_vec::BoundedVec< T,MaxLen:u32 > { array, len };
 }
 
-nr_trait_impl[impl_32] <MaxLen, T> std::cmp::Eq<  > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where T : Eq<> {
+nr_trait_impl[impl_32] <T, @MaxLen : u32> std::cmp::Eq<  > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where T : Eq<> {
     fn «eq»<> (self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, other : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) -> bool {
         if #uEq((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len) : bool {
                     #arrayEq((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage) : bool;
@@ -240,7 +240,7 @@ nr_trait_impl[impl_32] <MaxLen, T> std::cmp::Eq<  > for collections::bounded_vec
 }
 }
 
-nr_trait_impl[impl_33] <T, MaxLen> std::convert::From< [T; Len] > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where  {
+nr_trait_impl[impl_33] <@MaxLen : u32, T> std::convert::From< [T; Len] > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where  {
     fn «from»<> (array : [T; Len]) -> collections::bounded_vec::BoundedVec< T, MaxLen:u32 > {
         (@collections::bounded_vec::BoundedVec::from_array< T, MaxLen:u32, Len:u32 > as λ([T; Len]) → collections::bounded_vec::BoundedVec< T, MaxLen:u32 >)(array);
 }
