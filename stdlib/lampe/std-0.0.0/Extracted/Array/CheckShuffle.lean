@@ -26,7 +26,7 @@ nr_def «array»::«check_shuffle»::«check_shuffle»<T, @N : u32>(lhs : [T; N]
                 let idx = #arrayIndex(shuffle_indices, #cast(i) : u32) : u32;
             let expected = #arrayIndex(rhs, #cast(idx) : u32) : T;
             let result = #arrayIndex(lhs, #cast(i) : u32) : T;
-            #assert(((T as Eq<  >)::eq<  > as λ(T, T) → bool)(T, T)) : Unit;
+            #assert(((T as Eq<  >)::eq<  > as λ(T, T) → bool)(expected, result)) : Unit;
         };
 }
 

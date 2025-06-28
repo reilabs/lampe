@@ -1252,8 +1252,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     // Convert to a trait call if this infix call doesn't correspond to a builtin
                     // call.
                     let lhs_ty_str = self.emit_fully_qualified_type(&lhs_ty, ctx);
-                    let rhs_ty_str = self.emit_fully_qualified_type(&rhs_ty, ctx);
-                    let args_str = [lhs_ty_str.as_str(), rhs_ty_str.as_str()].join(", ");
+                    let args_str = [lhs.as_str(), rhs.as_str()].join(", ");
                     let trait_method_id = self
                         .context
                         .def_interner

@@ -16,7 +16,7 @@ nr_def «MAX_LOAD_FACTOR_DEN0MINATOR»<>() -> u32 {
     4 : u32
 }
 
-nr_trait_impl[impl_34] <V, K> std::default::Default<  > for collections::map::Slot< K, V > where  {
+nr_trait_impl[impl_34] <K, V> std::default::Default<  > for collections::map::Slot< K, V > where  {
     fn «default»<> () -> collections::map::Slot< K, V > {
         collections::map::Slot< K,V > { (@option::Option::none< `(K, V) > as λ() → option::Option< `(K, V) >)(), false };
 }
@@ -207,7 +207,7 @@ nr_def «collections»::«map»::«HashMap»::«get»<K, V, @N : u32, B>(self : 
                     let π0 = (@collections::map::Slot::key_value_unchecked< K, V > as λ(collections::map::Slot< K, V >) → `(K, V))(slot);
                 let current_key = π0.0;
                 let value = π0.1;
-                if ((K as Eq<  >)::eq<  > as λ(K, K) → bool)(K, K) {
+                if ((K as Eq<  >)::eq<  > as λ(K, K) → bool)(current_key, key) {
                         result = (@option::Option::some< V > as λ(V) → option::Option< V >)(value);
                     should_break = true;
                     skip;
@@ -235,7 +235,7 @@ nr_def «collections»::«map»::«HashMap»::«insert»<K, V, @N : u32, B>(self
                     let π0 = (@collections::map::Slot::key_value_unchecked< K, V > as λ(collections::map::Slot< K, V >) → `(K, V))(slot);
                 let current_key = π0.0;
                 let _? = π0.1;
-                if ((K as Eq<  >)::eq<  > as λ(K, K) → bool)(K, K) {
+                if ((K as Eq<  >)::eq<  > as λ(K, K) → bool)(current_key, key) {
                         insert = true;
                     skip;
                 };
@@ -261,7 +261,7 @@ nr_def «collections»::«map»::«HashMap»::«remove»<K, V, @N : u32, B>(self
                     let π0 = (@collections::map::Slot::key_value_unchecked< K, V > as λ(collections::map::Slot< K, V >) → `(K, V))(slot);
                 let current_key = π0.0;
                 let _? = π0.1;
-                if ((K as Eq<  >)::eq<  > as λ(K, K) → bool)(K, K) {
+                if ((K as Eq<  >)::eq<  > as λ(K, K) → bool)(current_key, key) {
                         (@collections::map::Slot::mark_deleted< K, V > as λ(&collections::map::Slot< K, V >) → Unit)(#ref(slot) : &collections::map::Slot< K, V >);
                     (*(self) as collections::map::HashMap< K, V, N:u32, B >)._table[#cast(index) : u32] = slot;
                     (*(self) as collections::map::HashMap< K, V, N:u32, B >)._len = #uSub((#readRef(self) : collections::map::HashMap< K, V, N:u32, B > as collections::map::HashMap< K, V, N:u32, B >)._len, 1 : u32) : u32;
@@ -290,7 +290,7 @@ nr_def «collections»::«map»::«HashMap»::«assert_load_factor»<K, V, @N : 
     #assert(#bNot(exceeded) : bool) : Unit;
 }
 
-nr_trait_impl[impl_35] <K, V, N, B> std::cmp::Eq<  > for collections::map::HashMap< K, V, N:u32, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_35] <B, N, K, V> std::cmp::Eq<  > for collections::map::HashMap< K, V, N:u32, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::map::HashMap< K, V, N:u32, B >, other : collections::map::HashMap< K, V, N:u32, B >) -> bool {
         let mut equal = false;
         if #uEq((@collections::map::HashMap::len< K, V, N:u32, B > as λ(collections::map::HashMap< K, V, N:u32, B >) → u32)(self), (@collections::map::HashMap::len< K, V, N:u32, B > as λ(collections::map::HashMap< K, V, N:u32, B >) → u32)(other)) : bool {
@@ -308,7 +308,7 @@ nr_trait_impl[impl_35] <K, V, N, B> std::cmp::Eq<  > for collections::map::HashM
                                                         skip;
                                                 } else {
                                                             let other_value = (@option::Option::unwrap_unchecked< V > as λ(option::Option< V >) → V)(other_value);
-                                                        if ((V as Eq<  >)::eq<  > as λ(V, V) → bool)(V, V) {
+                                                        if ((V as Eq<  >)::eq<  > as λ(V, V) → bool)(value, other_value) {
                                                                     equal = false;
                                                                 skip;
                                                         };
@@ -320,7 +320,7 @@ nr_trait_impl[impl_35] <K, V, N, B> std::cmp::Eq<  > for collections::map::HashM
 }
 }
 
-nr_trait_impl[impl_36] <N, B, K, V> std::default::Default<  > for collections::map::HashMap< K, V, N:u32, B > where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_36] <B, V, K, N> std::default::Default<  > for collections::map::HashMap< K, V, N:u32, B > where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::map::HashMap< K, V, N:u32, B > {
         let _build_hasher = ((B as std::default::Default<  >)::default<  > as λ() → B)();
         let map = (@collections::map::HashMap::with_hasher< K, V, N:u32, B > as λ(B) → collections::map::HashMap< K, V, N:u32, B >)(_build_hasher);
