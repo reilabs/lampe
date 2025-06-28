@@ -9,7 +9,7 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «collections»::«vec»::«Vec»::«new»<T>() -> collections::vec::Vec< T > {
-    collections::vec::Vec< T > { &[] };
+    collections::vec::Vec< T > { #mkSlice() : [T] };
 }
 
 nr_def «collections»::«vec»::«Vec»::«from_slice»<T>(slice : [T]) -> collections::vec::Vec< T > {
@@ -56,17 +56,17 @@ nr_def «collections»::«vec»::«Vec»::«len»<T>(self : collections::vec::Ve
 }
 
 nr_def «collections»::«vec»::«tests»::«set_updates_values_properly»<>() -> Unit {
-    let mut vec = collections::vec::Vec< Field > { &[0 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field] };
+    let mut vec = collections::vec::Vec< Field > { #mkSlice(0 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field] };
     (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 0 : u32, 42 : Field);
-    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, &[42 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(42 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
     (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 1 : u32, 43 : Field);
-    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, &[42 : Field, 43 : Field, 0 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(42 : Field, 43 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
     (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 2 : u32, 44 : Field);
-    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, &[42 : Field, 43 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(42 : Field, 43 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
     (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 1 : u32, 10 : Field);
-    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, &[42 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(42 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
     (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 0 : u32, 0 : Field);
-    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, &[0 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field]) : bool) : Unit;
+    #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(0 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
 }
 
 nr_def «collections»::«vec»::«tests»::«panics_when_writing_elements_past_end_of_vec»<>() -> Unit {

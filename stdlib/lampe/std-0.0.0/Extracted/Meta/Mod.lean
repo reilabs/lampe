@@ -29,7 +29,7 @@ nr_def «meta»::«tests»::«concatenate_test»<>() -> Unit {
 }
 
 nr_def «meta»::«tests»::«remove_unused_warnings»<>() -> Unit {
-    let _? = meta::tests::Bar<  > { 1 : Field, [2 : Field, 3 : Field] };
+    let _? = meta::tests::Bar<  > { 1 : Field, #mkArray(2 : Field, 3 : Field) : [Field; 2] };
     let _? = meta::tests::MyStruct<  > { 1 : i32 };
     let _? = meta::tests::MyOtherStruct<  > { 2 : u32 };
     let _? = (@std::meta::tests::derive_do_nothing<  > as λ(TypeDefinition) → Quoted)((@std::panic::panic< `(), TypeDefinition, 0 : u32 > as λ(fmtstr<0, ()>) → TypeDefinition)(#format("", )));

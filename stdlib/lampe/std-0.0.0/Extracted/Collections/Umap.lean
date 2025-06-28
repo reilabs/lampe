@@ -42,13 +42,13 @@ nr_def «collections»::«umap»::«Slot»::«mark_deleted»<K, V>(self : &colle
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«with_hasher»<K, V, B>(_build_hasher : B) -> collections::umap::UHashMap< K, V, B > {
-    let _table = &[((collections::umap::Slot< K, V > as std::default::Default<  >)::default<  > as λ() → collections::umap::Slot< K, V >)()];
+    let _table = #mkSlice(((collections::umap::Slot< K, V > as std::default::Default<  >)::default<  > as λ() → collections::umap::Slot< K, V >)()) : [collections::umap::Slot< K, V >];
     let _len = 0 : u32;
     collections::umap::UHashMap< K,V,B > { _table, _len, _build_hasher };
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«with_hasher_and_capacity»<K, V, B>(_build_hasher : B, capacity : u32) -> collections::umap::UHashMap< K, V, B > {
-    let mut _table = &[];
+    let mut _table = #mkSlice() : [collections::umap::Slot< K, V >];
     for _? in 0 : u32 .. capacity {
             _table = (@std::slice::push_back< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >], collections::umap::Slot< K, V >) → [collections::umap::Slot< K, V >])(_table, ((collections::umap::Slot< K, V > as std::default::Default<  >)::default<  > as λ() → collections::umap::Slot< K, V >)());
         skip;
@@ -58,7 +58,7 @@ nr_def «collections»::«umap»::«UHashMap»::«with_hasher_and_capacity»<K, 
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«clear»<K, V, B>(self : &collections::umap::UHashMap< K, V, B >) -> Unit {
-    (*(self) as collections::umap::UHashMap< K, V, B >)._table = &[((collections::umap::Slot< K, V > as std::default::Default<  >)::default<  > as λ() → collections::umap::Slot< K, V >)()];
+    (*(self) as collections::umap::UHashMap< K, V, B >)._table = #mkSlice(((collections::umap::Slot< K, V > as std::default::Default<  >)::default<  > as λ() → collections::umap::Slot< K, V >)()) : [collections::umap::Slot< K, V >];
     (*(self) as collections::umap::UHashMap< K, V, B >)._len = 0 : u32;
     skip;
 }
@@ -72,7 +72,7 @@ nr_def «collections»::«umap»::«UHashMap»::«is_empty»<K, V, B>(self : col
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«entries»<K, V, B>(self : collections::umap::UHashMap< K, V, B >) -> [`(K, V)] {
-    let mut entries = &[];
+    let mut entries = #mkSlice() : [`(K, V)];
         let ζi0 = (self as collections::umap::UHashMap< K, V, B >)._table;
         for ζi1 in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)(ζi0) {
                 let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot< K, V >;
@@ -90,7 +90,7 @@ nr_def «collections»::«umap»::«UHashMap»::«entries»<K, V, B>(self : coll
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«keys»<K, V, B>(self : collections::umap::UHashMap< K, V, B >) -> [K] {
-    let mut keys = &[];
+    let mut keys = #mkSlice() : [K];
         let ζi0 = (self as collections::umap::UHashMap< K, V, B >)._table;
         for ζi1 in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)(ζi0) {
                 let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot< K, V >;
@@ -110,7 +110,7 @@ nr_def «collections»::«umap»::«UHashMap»::«keys»<K, V, B>(self : collect
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«values»<K, V, B>(self : collections::umap::UHashMap< K, V, B >) -> [V] {
-    let mut values = &[];
+    let mut values = #mkSlice() : [V];
         let ζi0 = (self as collections::umap::UHashMap< K, V, B >)._table;
         for ζi1 in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)(ζi0) {
                 let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot< K, V >;
@@ -202,7 +202,7 @@ nr_def «collections»::«umap»::«UHashMap»::«quadratic_probe»<K, V, B>(sel
     #uRem(#uAdd(hash, #uDiv(#uAdd(attempt, #uMul(attempt, attempt) : u32) : u32, 2 : u32) : u32) : u32, (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)((self as collections::umap::UHashMap< K, V, B >)._table)) : u32;
 }
 
-nr_trait_impl[impl_38] <K, B, V> std::cmp::Eq<  > for collections::umap::UHashMap< K, V, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_38] <B, V, K> std::cmp::Eq<  > for collections::umap::UHashMap< K, V, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::umap::UHashMap< K, V, B >, other : collections::umap::UHashMap< K, V, B >) -> bool {
         let mut equal = false;
         if #uEq((@collections::umap::UHashMap::len< K, V, B > as λ(collections::umap::UHashMap< K, V, B >) → u32)(self), (@collections::umap::UHashMap::len< K, V, B > as λ(collections::umap::UHashMap< K, V, B >) → u32)(other)) : bool {
@@ -232,7 +232,7 @@ nr_trait_impl[impl_38] <K, B, V> std::cmp::Eq<  > for collections::umap::UHashMa
 }
 }
 
-nr_trait_impl[impl_39] <V, K, B> std::default::Default<  > for collections::umap::UHashMap< K, V, B > where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_39] <K, V, B> std::default::Default<  > for collections::umap::UHashMap< K, V, B > where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::umap::UHashMap< K, V, B > {
         (@collections::umap::UHashMap::with_hasher< K, V, B > as λ(B) → collections::umap::UHashMap< K, V, B >)(((B as std::default::Default<  >)::default<  > as λ() → B)());
 }
