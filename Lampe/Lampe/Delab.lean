@@ -155,15 +155,15 @@ def delabLampeGeneric (kind gen : TSyntax `term)  : DelabM <| TSyntax `nr_generi
       return ←`(nr_generic|$(⟨gen⟩):num : $(⟨kind⟩))
 
 -- TODO: [#99] Finish this
-def delabLampeFuncRef (stx : Syntax) : DelabM <| TSyntax `nr_funcref := do
+def delabLampeFuncRef (stx : Syntax) : DelabM <| TSyntax `nr_expr := do
   match stx with
-    | `(FuncRef.lambda $ref) => `(nr_funcref|@ $(⟨ref⟩))
+    | `(FuncRef.lambda $ref) => `(nr_expr| $(⟨ref⟩))
     | `(FuncRef.decl $s:str [$kinds,*] h![$gens,*]) =>
       let generics ← kinds.getElems.zip gens.getElems |>.mapM delabLampeGeneric.uncurry
       let funcName := mkIdent <| .mkSimple s.getString
       let funcName : TSyntax `nr_ident := ⟨funcName⟩
       let generics := ⟨generics⟩
-      return ←`(nr_funcref|@ $funcName <$generics,*>)
+      return ←`(nr_expr|@ $funcName <$generics,*>)
     | `(FuncRef.trait $selfTp
       $traitName:str [$traitKinds,*] h![$traitGenerics,*]
         $fnName:str [$fnKinds,*] h![$fnGenerics,*]) =>
@@ -182,27 +182,19 @@ def delabLampeFuncRef (stx : Syntax) : DelabM <| TSyntax `nr_funcref := do
         delabLampeGeneric.uncurry
       let fnGenerics := ⟨fnGenerics⟩
 
-      return ←`(nr_funcref|($selfTp:nr_type as $(⟨traitName⟩) <$traitGenerics,*>):: $(⟨fnName⟩) <$fnGenerics,*>)
-    | `($v) => return ←`(nr_funcref|$(⟨v⟩)) -- Is this how we should handle already declared refs?
+      return ←`(nr_expr|($selfTp:nr_type as $(⟨traitName⟩) <$traitGenerics,*>):: $(⟨fnName⟩) <$fnGenerics,*>)
+    | `($v) => return ←`(nr_expr|$(⟨v⟩)) -- Is this how we should handle already declared refs?
 
 @[app_delab Lampe.Expr.fn]
 def delabLampeFn : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let argTps := expr.getArg! 1
-    let outTp := expr.getArg! 2
-    let funcRef := expr.getArg! 3
 
-    let argTps ← match (← delab argTps) with
-      | `([$tps,*]) =>
-        tps.getElems.mapM fun tp => ppLampeTp tp
-      | _ => pure #[]
-    let outTp ← ppLampeTp (← delab outTp)
+    let funcRef := expr.getArg! 1
 
-    let funcType ← `(nr_type|λ($argTps,*) → $outTp)
     -- TODO: [#99] This needs to be expanded, probably in its own function
     let funcRef ← delabLampeFuncRef (← delab funcRef)
 
-    return ←`(⸨$funcRef:nr_funcref as $funcType:nr_type⸩)
+    return ←`(⸨$funcRef:nr_expr⸩)
 
 @[app_delab Lampe.Expr.var]
 def delabLampeVar : Delab := whenDelabExprOption getExpr >>= fun expr =>
@@ -218,14 +210,22 @@ def delabLampeVar : Delab := whenDelabExprOption getExpr >>= fun expr =>
 @[app_delab Lampe.Expr.call]
 def delabLampeCall : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
+    let argTps := expr.getArg! 1
+    let outTp := expr.getArg! 2
     let funcRef := expr.getArg! 3
     let args := expr.getArg! 4
+    let argTps ← match (← delab argTps) with
+      | `([$tps,*]) =>
+        tps.getElems.mapM fun tp => ppLampeTp tp
+      | _ => pure #[]
+    let outTp ← ppLampeTp (← delab outTp)
+    let funcType ← `(nr_type|λ($argTps,*) → $outTp)
     let args := match (← delab args) with
       | `(h![$argsss,*]) => argsss.getElems
       | _ => ⟨[]⟩
     let args ← args.mapM fun arg => do `(nr_expr|$(⟨arg⟩))
     let funcRef ← delabLampeFuncRef (← delab funcRef)
-    let callExpr ← `(nr_expr| $(⟨funcRef⟩)($args,*))
+    let callExpr ← `(nr_expr| ($(⟨funcRef⟩) as $(⟨funcType⟩))($args,*))
     return ←`(⸨$callExpr⸩)
 
 @[app_delab Lampe.Expr.callBuiltin]

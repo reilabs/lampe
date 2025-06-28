@@ -113,7 +113,7 @@ example {p Γ x y} : STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body 
 
 nr_def simple_lambda<>(x : Field, y : Field) -> Field {
   let add = |a : Field, b : Field| -> Field { #fAdd(a, b) : Field };
-  add(x, y);
+  (add as λ(Field, Field) → Field)(x, y);
 }
 
 example {p Γ} {x y : Tp.denote p Tp.field} :
@@ -399,7 +399,7 @@ example : STHoare p Γ ⟦⟧ (deref_lens.fn.body _ h![] |>.body h![])
   rfl
 
 nr_def call<>(f : λ() → Field) -> Field {
-  f()
+  (f as λ() → Field)()
 }
 
 nr_def simple_hof<>() -> Field {

@@ -89,11 +89,11 @@ syntax nr_expr "[[" nr_expr "]]" : nr_expr -- Slice access
 
 syntax "#" nr_ident "(" nr_expr,* ")" ppSpace ":" ppSpace nr_type : nr_expr -- Builtin call
 
-syntax "(" nr_type "as" nr_ident "<" nr_generic,* ">" ")" "::" nr_ident "<" nr_generic,* ">" : nr_funcref -- Trait func ident
-syntax "@" nr_ident ("<" nr_generic,* ">")? : nr_funcref -- Lambda and Decl func ident
-syntax nr_funcref ppSpace "as" ppSpace nr_type : nr_expr -- funcref ident
+syntax "(" nr_type "as" nr_ident "<" nr_generic,* ">" ")" "::" nr_ident "<" nr_generic,* ">" : nr_expr -- Trait func ident
+syntax "@" nr_ident ("<" nr_generic,* ">")? : nr_expr -- Decl func ident
+-- syntax nr_funcref ppSpace "as" ppSpace nr_type : nr_expr -- funcref ident
 
-syntax nr_expr "(" nr_expr,* ")" : nr_expr -- Universal call
+syntax "(" nr_expr "as" nr_type ")" "(" nr_expr,* ")" : nr_expr -- Universal call
 
 syntax nr_fn_decl := nr_ident "<" nr_generic_def,* ">" "(" nr_param_decl,* ")" "->" nr_type "{" sepBy(nr_expr, ";", ";", allowTrailingSep) "}"
 syntax nr_trait_constraint := nr_type ":" nr_ident "<" nr_generic,* ">"
@@ -202,9 +202,7 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
   let tps ← tps.getElems.toList.mapM mkNrType
   `(Tp.tuple none $(←mkListLit tps))
 | `(nr_type| λ( $paramTps,* ) → $outTp) => do
-  let paramTps ← (mkListLit (←paramTps.getElems.toList.mapM mkNrType))
-  let outTp ← mkNrType outTp
-  `(Tp.fn $paramTps $outTp)
+  `(Tp.fn)
 | `(nr_type| @ $aliasName < $generics,* >) => do
   let (_, genericVals) ← mkGenericVals generics.getElems.toList
   let aliasFunc := mkTypeAliasIdent (←mkNrIdent aliasName)
@@ -556,36 +554,32 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
     wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) $s)) vname k
 | `(nr_expr| #unit) | `(nr_expr| skip) => do
     wrapSimple (←`(Expr.skip)) vname k
-| `(nr_expr| @ $fnName:nr_ident as $t:nr_type) => do
-  let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
-  let (paramTps, outTp) ← getFuncSignature t
-  wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp (FuncRef.lambda $fnName))) vname k
-| `(nr_expr| @ $fnName:nr_ident < $callGens:nr_generic,* > as $t:nr_type) => do
+| `(nr_expr| @ $fnName:nr_ident < $callGens:nr_generic,* >) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let fnName := Syntax.mkStrLit (←mkNrIdent fnName)
-  let (paramTps, outTp) ← getFuncSignature t
-  wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp (FuncRef.decl $fnName $callGenKinds $callGenVals))) vname k
+  wrapSimple (←`(Expr.fn (FuncRef.decl $fnName $callGenKinds $callGenVals))) vname k
 | `(nr_expr| u@ $i:ident) => do
   wrapSimple (←`(Expr.constU $i)) vname k
 | `(nr_expr| f@ $i:ident) => do
   wrapSimple (←`(Expr.constFp $i)) vname k
 | `(nr_expr| ${ $e:term }) =>
   return e
-| `(nr_expr| ( $selfTp as $traitName < $traitGens,* > ) :: $methodName < $callGens,* > as $t:nr_type) => do
+| `(nr_expr| ( $selfTp as $traitName < $traitGens,* > ) :: $methodName < $callGens,* >) => do
   let (callGenKinds, callGenVals) ← mkGenericVals callGens.getElems.toList
   let (traitGenKinds, traitGenVals) ← mkGenericVals traitGens.getElems.toList
   let methodName := Syntax.mkStrLit (←mkNrIdent methodName)
   let traitName := Syntax.mkStrLit (←mkNrIdent traitName)
-  let (paramTps, outTp) ← getFuncSignature t
   let selfTp ← match selfTp with
     | `(nr_type| $t) => mkNrType t
-  wrapSimple (←`(Expr.fn $(←mkListLit paramTps) $outTp
+  wrapSimple (←`(Expr.fn
     (FuncRef.trait $selfTp $traitName $traitGenKinds $traitGenVals $methodName $callGenKinds $callGenVals))) vname k
-| `(nr_expr| $fnExpr:nr_expr ( $args:nr_expr,* )) => do
+| `(nr_expr| ($fnExpr:nr_expr as $tp:nr_type)( $args:nr_expr,* )) => do
+  let (paramTps, outTp) ← getFuncSignature tp
+  let paramTps ← mkListLit paramTps
   mkExpr fnExpr none fun fnRef => do
     mkArgs args.getElems.toList fun argVals => do
       let args ← mkHListLit argVals
-      wrapSimple (←`(Expr.call _ _ $fnRef $args)) vname k
+      wrapSimple (←`(Expr.call $paramTps $outTp $fnRef $args)) vname k
 | `(nr_expr| ( $_:nr_expr as $_:nr_ident  < $_,* > ) . $_:ident)
 | `(nr_expr| $_:nr_expr . $_:num)
 | `(nr_expr| $_:nr_expr [ $_:nr_expr ])
@@ -791,12 +785,5 @@ elab "nr_trait_def" decl:nr_trait_def : command => do
 
       | _ => throwUnsupportedSyntax
   | _ => throwUnsupportedSyntax
-
-nr_def foo<>(x : Field) -> Field {
-  skip;
-  x
-}
-
-#print foo
 
 end Lampe
