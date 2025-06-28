@@ -100,9 +100,9 @@ nr_def «field»::«bn254»::«lt»<>(a : Field, b : Field) -> bool {
 }
 
 nr_def «field»::«bn254»::«tests»::«check_decompose»<>() -> Unit {
-    #assert(((`(Field, Field) as Eq<  >)::eq<  > as λ(`(Field, Field), `(Field, Field)) → bool)(`(Field, Field), `(Field, Field))) : Unit;
-    #assert(((`(Field, Field) as Eq<  >)::eq<  > as λ(`(Field, Field), `(Field, Field)) → bool)(`(Field, Field), `(Field, Field))) : Unit;
-    #assert(((`(Field, Field) as Eq<  >)::eq<  > as λ(`(Field, Field), `(Field, Field)) → bool)(`(Field, Field), `(Field, Field))) : Unit;
+    #assert(((`(Field, Field) as Eq<  >)::eq<  > as λ(`(Field, Field), `(Field, Field)) → bool)((@std::field::bn254::decompose<  > as λ(Field) → `(Field, Field))((@TWO_POW_128<  > as λ() → Field)()), `(0 : Field, 1 : Field))) : Unit;
+    #assert(((`(Field, Field) as Eq<  >)::eq<  > as λ(`(Field, Field), `(Field, Field)) → bool)((@std::field::bn254::decompose<  > as λ(Field) → `(Field, Field))(#fAdd((@TWO_POW_128<  > as λ() → Field)(), 78187493520 : Field) : Field), `(78187493520 : Field, 1 : Field))) : Unit;
+    #assert(((`(Field, Field) as Eq<  >)::eq<  > as λ(`(Field, Field), `(Field, Field)) → bool)((@std::field::bn254::decompose<  > as λ(Field) → `(Field, Field))(78187493520 : Field), `(78187493520 : Field, 0 : Field))) : Unit;
 }
 
 nr_def «field»::«bn254»::«tests»::«check_decompose_unconstrained»<>() -> Unit {

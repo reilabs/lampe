@@ -104,7 +104,7 @@ nr_trait_impl[impl_276] <A, B> std::default::Default<  > for `(A, B) where A : D
 }
 }
 
-nr_trait_impl[impl_277] <C, A, B> std::default::Default<  > for `(A, B, C) where A : Default<>, B : Default<>, C : Default<> {
+nr_trait_impl[impl_277] <A, C, B> std::default::Default<  > for `(A, B, C) where A : Default<>, B : Default<>, C : Default<> {
     fn «default»<> () -> `(A, B, C) {
         `(((A as std::default::Default<  >)::default<  > as λ() → A)(), ((B as std::default::Default<  >)::default<  > as λ() → B)(), ((C as std::default::Default<  >)::default<  > as λ() → C)());
 }
@@ -116,7 +116,7 @@ nr_trait_impl[impl_278] <A, B, D, C> std::default::Default<  > for `(A, B, C, D)
 }
 }
 
-nr_trait_impl[impl_279] <A, C, D, B, E> std::default::Default<  > for `(A, B, C, D, E) where A : Default<>, B : Default<>, C : Default<>, D : Default<>, E : Default<> {
+nr_trait_impl[impl_279] <D, C, A, B, E> std::default::Default<  > for `(A, B, C, D, E) where A : Default<>, B : Default<>, C : Default<>, D : Default<>, E : Default<> {
     fn «default»<> () -> `(A, B, C, D, E) {
         `(((A as std::default::Default<  >)::default<  > as λ() → A)(), ((B as std::default::Default<  >)::default<  > as λ() → B)(), ((C as std::default::Default<  >)::default<  > as λ() → C)(), ((D as std::default::Default<  >)::default<  > as λ() → D)(), ((E as std::default::Default<  >)::default<  > as λ() → E)());
 }

@@ -28,7 +28,7 @@ nr_trait_impl[impl_25] <> std::ops::arith::Add<  > for embedded_curve_ops::Embed
 
 nr_trait_impl[impl_26] <> std::ops::arith::Sub<  > for embedded_curve_ops::EmbeddedCurvePoint<  > where  {
     fn «sub»<> (self : embedded_curve_ops::EmbeddedCurvePoint<  >, other : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
-        ((embedded_curve_ops::EmbeddedCurvePoint<  > as Add<  >)::add<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >);
+        ((embedded_curve_ops::EmbeddedCurvePoint<  > as Add<  >)::add<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >, embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(self, ((embedded_curve_ops::EmbeddedCurvePoint<  > as std::ops::arith::Neg<  >)::neg<  > as λ(embedded_curve_ops::EmbeddedCurvePoint<  >) → embedded_curve_ops::EmbeddedCurvePoint<  >)(other));
 }
 }
 

@@ -156,7 +156,7 @@ nr_trait_impl[impl_63] <T> std::cmp::Eq<  > for option::Option< T > where T : Eq
     fn «eq»<> (self : option::Option< T >, other : option::Option< T >) -> bool {
         if #bEq((self as option::Option< T >)._is_some, (other as option::Option< T >)._is_some) : bool {
                     if (self as option::Option< T >)._is_some {
-                            ((T as Eq<  >)::eq<  > as λ(T, T) → bool)(T, T);
+                            ((T as Eq<  >)::eq<  > as λ(T, T) → bool)((self as option::Option< T >)._value, (other as option::Option< T >)._value);
                 } else {
                             true;
                 };
