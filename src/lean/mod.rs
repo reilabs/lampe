@@ -322,6 +322,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let mut all_impl_refs = HashSet::new();
         let mut all_func_refs = HashSet::new();
 
+        let trait_impls = self.emit_trait_impls(&mut indenter, file)?;
+        output.extend(trait_impls.defs);
+        all_impl_refs.extend(trait_impls.impl_refs);
+
         // Emit definitions for each of the modules in the context in an arbitrary
         // iteration order
         for (_, module) in self
@@ -373,19 +377,13 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         Ok(format!("{module_defs}\n\n{env_def}"))
     }
 
-    /// Emits the Lean source code corresponding to a Noir module based on the
-    /// `module`'s definition.
-    ///
-    /// # Errors
-    ///
-    /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_module_decls(
+    pub fn emit_trait_impls(
         &self,
         ind: &mut Indenter,
-        module: &ModuleData,
+        file: FileId,
     ) -> Result<ModuleEntries> {
         let mut accumulator: Vec<(Option<Location>, EmitOutput)> = Vec::new();
-        let ctx = EmitterCtx::from_module(module, &self.context.def_interner);
+        let ctx = EmitterCtx::empty();
 
         // We start by emitting the trait implementations.
         let mut impl_refs = HashSet::new();
@@ -394,7 +392,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .def_interner
             .trait_implementations()
             .iter()
-            .filter(|(_, t)| t.borrow().file == module.location.file)
+            .filter(|(_, t)| t.borrow().file == file)
         {
             if matches!(trait_impl.borrow().typ, Type::Quoted(_)) {
                 continue;
@@ -413,6 +411,36 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             accumulator.push((location, EmitOutput::TraitImpl(emitted_trait_impl)));
             impl_refs.insert(impl_id);
         }
+
+        let defs = accumulator
+            .into_iter()
+            .filter(|(_, d)| !d.is_empty())
+            .map(|(loc, mut d)| {
+                d.push_str("\n");
+                (loc, d)
+            })
+            .collect();
+
+        Ok(ModuleEntries {
+            impl_refs,
+            func_refs: HashSet::new(),
+            defs,
+        })
+    }
+
+    /// Emits the Lean source code corresponding to a Noir module based on the
+    /// `module`'s definition.
+    ///
+    /// # Errors
+    ///
+    /// - [`Error`] if the extraction process fails for any reason.
+    pub fn emit_module_decls(
+        &self,
+        ind: &mut Indenter,
+        module: &ModuleData,
+    ) -> Result<ModuleEntries> {
+        let mut accumulator: Vec<(Option<Location>, EmitOutput)> = Vec::new();
+        let ctx = EmitterCtx::from_module(module, &self.context.def_interner);
 
         let mut func_refs = HashSet::new();
         // We then emit all definitions that correspond to the given module.
@@ -480,7 +508,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .collect();
 
         Ok(ModuleEntries {
-            impl_refs,
+            impl_refs: HashSet::new(),
             func_refs,
             defs,
         })
