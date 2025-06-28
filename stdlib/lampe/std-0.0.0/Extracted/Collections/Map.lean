@@ -16,7 +16,7 @@ nr_def «MAX_LOAD_FACTOR_DEN0MINATOR»<>() -> u32 {
     4 : u32
 }
 
-nr_trait_impl[impl_34] <K, V> std::default::Default<  > for collections::map::Slot< K, V > where  {
+nr_trait_impl[impl_34] <V, K> std::default::Default<  > for collections::map::Slot< K, V > where  {
     fn «default»<> () -> collections::map::Slot< K, V > {
         collections::map::Slot< K,V > { (@option::Option::none< `(K, V) > as λ() → option::Option< `(K, V) >)(), false };
 }
@@ -72,7 +72,7 @@ nr_def «collections»::«map»::«HashMap»::«is_empty»<K, V, @N : u32, B>(se
 nr_def «collections»::«map»::«HashMap»::«entries»<K, V, @N : u32, B>(self : collections::map::HashMap< K, V, N:u32, B >) -> collections::bounded_vec::BoundedVec< `(K, V), N:u32 > {
     let mut entries = (@collections::bounded_vec::BoundedVec::new< `(K, V), N:u32 > as λ() → collections::bounded_vec::BoundedVec< `(K, V), N:u32 >)();
         let ζi0 = (self as collections::map::HashMap< K, V, N:u32, B >)._table;
-        for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
+        for ζi1 in 0 : u32 .. (@std::array::len< collections::map::Slot< K, V >, N:u32 > as λ([collections::map::Slot< K, V >; N]) → u32)(ζi0) {
                 let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot< K, V >;
                 if (@collections::map::Slot::is_valid< K, V > as λ(collections::map::Slot< K, V >) → bool)(slot) {
                         let key_value = (@option::Option::unwrap_unchecked< `(K, V) > as λ(option::Option< `(K, V) >) → `(K, V))((@collections::map::Slot::key_value< K, V > as λ(collections::map::Slot< K, V >) → option::Option< `(K, V) >)(slot));
@@ -89,7 +89,7 @@ nr_def «collections»::«map»::«HashMap»::«entries»<K, V, @N : u32, B>(sel
 nr_def «collections»::«map»::«HashMap»::«keys»<K, V, @N : u32, B>(self : collections::map::HashMap< K, V, N:u32, B >) -> collections::bounded_vec::BoundedVec< K, N:u32 > {
     let mut keys = (@collections::bounded_vec::BoundedVec::new< K, N:u32 > as λ() → collections::bounded_vec::BoundedVec< K, N:u32 >)();
         let ζi0 = (self as collections::map::HashMap< K, V, N:u32, B >)._table;
-        for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
+        for ζi1 in 0 : u32 .. (@std::array::len< collections::map::Slot< K, V >, N:u32 > as λ([collections::map::Slot< K, V >; N]) → u32)(ζi0) {
                 let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot< K, V >;
                 if (@collections::map::Slot::is_valid< K, V > as λ(collections::map::Slot< K, V >) → bool)(slot) {
                         let π0 = (@collections::map::Slot::key_value_unchecked< K, V > as λ(collections::map::Slot< K, V >) → `(K, V))(slot);
@@ -108,7 +108,7 @@ nr_def «collections»::«map»::«HashMap»::«keys»<K, V, @N : u32, B>(self :
 nr_def «collections»::«map»::«HashMap»::«values»<K, V, @N : u32, B>(self : collections::map::HashMap< K, V, N:u32, B >) -> collections::bounded_vec::BoundedVec< V, N:u32 > {
     let mut values = (@collections::bounded_vec::BoundedVec::new< V, N:u32 > as λ() → collections::bounded_vec::BoundedVec< V, N:u32 >)();
         let ζi0 = (self as collections::map::HashMap< K, V, N:u32, B >)._table;
-        for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
+        for ζi1 in 0 : u32 .. (@std::array::len< collections::map::Slot< K, V >, N:u32 > as λ([collections::map::Slot< K, V >; N]) → u32)(ζi0) {
                 let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot< K, V >;
                 if (@collections::map::Slot::is_valid< K, V > as λ(collections::map::Slot< K, V >) → bool)(slot) {
                         let π0 = (@collections::map::Slot::key_value_unchecked< K, V > as λ(collections::map::Slot< K, V >) → `(K, V))(slot);
@@ -130,7 +130,7 @@ nr_def «collections»::«map»::«HashMap»::«iter_mut»<K, V, @N : u32, B>(se
     for i in 0 : u32 .. u@N {
             if #uLt(i, (#readRef(self) : collections::map::HashMap< K, V, N:u32, B > as collections::map::HashMap< K, V, N:u32, B >)._len) : bool {
                 let entry = (@collections::bounded_vec::BoundedVec::get_unchecked< `(K, V), N:u32 > as λ(collections::bounded_vec::BoundedVec< `(K, V), N:u32 >, u32) → `(K, V))(entries, i);
-            let π0 = (f as λ(K, V) → `(K, V))(entry.0, entry.1);
+            let π0 = f(entry.0, entry.1);
             let key = π0.0;
             let value = π0.1;
             (@collections::map::HashMap::insert< K, V, N:u32, B > as λ(&collections::map::HashMap< K, V, N:u32, B >, K, V) → Unit)(#ref(new_map) : &collections::map::HashMap< K, V, N:u32, B >, key, value);
@@ -146,7 +146,7 @@ nr_def «collections»::«map»::«HashMap»::«iter_keys_mut»<K, V, @N : u32, 
     for i in 0 : u32 .. u@N {
             if #uLt(i, (#readRef(self) : collections::map::HashMap< K, V, N:u32, B > as collections::map::HashMap< K, V, N:u32, B >)._len) : bool {
                 let entry = (@collections::bounded_vec::BoundedVec::get_unchecked< `(K, V), N:u32 > as λ(collections::bounded_vec::BoundedVec< `(K, V), N:u32 >, u32) → `(K, V))(entries, i);
-            let π0 = `((f as λ(K) → K)(entry.0), entry.1);
+            let π0 = `(f(entry.0), entry.1);
             let key = π0.0;
             let value = π0.1;
             (@collections::map::HashMap::insert< K, V, N:u32, B > as λ(&collections::map::HashMap< K, V, N:u32, B >, K, V) → Unit)(#ref(new_map) : &collections::map::HashMap< K, V, N:u32, B >, key, value);
@@ -163,7 +163,7 @@ nr_def «collections»::«map»::«HashMap»::«iter_values_mut»<K, V, @N : u32
                 let π0 = (@collections::map::Slot::key_value_unchecked< K, V > as λ(collections::map::Slot< K, V >) → `(K, V))(slot);
             let key = π0.0;
             let value = π0.1;
-            (@collections::map::Slot::set< K, V > as λ(&collections::map::Slot< K, V >, K, V) → Unit)(#ref(slot) : &collections::map::Slot< K, V >, key, (f as λ(V) → V)(value));
+            (@collections::map::Slot::set< K, V > as λ(&collections::map::Slot< K, V >, K, V) → Unit)(#ref(slot) : &collections::map::Slot< K, V >, key, f(value));
             (*(self) as collections::map::HashMap< K, V, N:u32, B >)._table[#cast(i) : u32] = slot;
             skip;
         };
@@ -177,7 +177,7 @@ nr_def «collections»::«map»::«HashMap»::«retain»<K, V, @N : u32, B>(self
                 let π0 = (@collections::map::Slot::key_value_unchecked< K, V > as λ(collections::map::Slot< K, V >) → `(K, V))(slot);
             let key = π0.0;
             let value = π0.1;
-            if #bNot((f as λ(K, V) → bool)(key, value)) : bool {
+            if #bNot(f(key, value)) : bool {
                     (@collections::map::Slot::mark_deleted< K, V > as λ(&collections::map::Slot< K, V >) → Unit)(#ref(slot) : &collections::map::Slot< K, V >);
                 (*(self) as collections::map::HashMap< K, V, N:u32, B >)._len = #uSub((#readRef(self) : collections::map::HashMap< K, V, N:u32, B > as collections::map::HashMap< K, V, N:u32, B >)._len, 1 : u32) : u32;
                 (*(self) as collections::map::HashMap< K, V, N:u32, B >)._table[#cast(index) : u32] = slot;
@@ -285,18 +285,18 @@ nr_def «collections»::«map»::«HashMap»::«quadratic_probe»<K, V, @N : u32
 
 nr_def «collections»::«map»::«HashMap»::«assert_load_factor»<K, V, @N : u32, B>(self : collections::map::HashMap< K, V, N:u32, B >) -> Unit {
     let lhs = #uMul((self as collections::map::HashMap< K, V, N:u32, B >)._len, (@MAX_LOAD_FACTOR_DEN0MINATOR<  > as λ() → u32)()) : u32;
-    let rhs = #uMul(#arrayLen((self as collections::map::HashMap< K, V, N:u32, B >)._table) : u32, (@MAX_LOAD_FACTOR_NUMERATOR<  > as λ() → u32)()) : u32;
+    let rhs = #uMul((@std::array::len< collections::map::Slot< K, V >, N:u32 > as λ([collections::map::Slot< K, V >; N]) → u32)((self as collections::map::HashMap< K, V, N:u32, B >)._table), (@MAX_LOAD_FACTOR_NUMERATOR<  > as λ() → u32)()) : u32;
     let exceeded = #uGeq(lhs, rhs) : bool;
     #assert(#bNot(exceeded) : bool) : Unit;
 }
 
-nr_trait_impl[impl_35] <B, N, K, V> std::cmp::Eq<  > for collections::map::HashMap< K, V, N:u32, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_35] <N, K, B, V> std::cmp::Eq<  > for collections::map::HashMap< K, V, N:u32, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::map::HashMap< K, V, N:u32, B >, other : collections::map::HashMap< K, V, N:u32, B >) -> bool {
         let mut equal = false;
         if #uEq((@collections::map::HashMap::len< K, V, N:u32, B > as λ(collections::map::HashMap< K, V, N:u32, B >) → u32)(self), (@collections::map::HashMap::len< K, V, N:u32, B > as λ(collections::map::HashMap< K, V, N:u32, B >) → u32)(other)) : bool {
                     equal = true;
                         let ζi0 = (self as collections::map::HashMap< K, V, N:u32, B >)._table;
-                        for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
+                        for ζi1 in 0 : u32 .. (@std::array::len< collections::map::Slot< K, V >, N:u32 > as λ([collections::map::Slot< K, V >; N]) → u32)(ζi0) {
                                     let slot = #arrayIndex(ζi0, #cast(ζi1) : u32) : collections::map::Slot< K, V >;
                                         if #bAnd(equal, (@collections::map::Slot::is_valid< K, V > as λ(collections::map::Slot< K, V >) → bool)(slot)) : bool {
                                                     let π0 = (@collections::map::Slot::key_value_unchecked< K, V > as λ(collections::map::Slot< K, V >) → `(K, V))(slot);
@@ -320,7 +320,7 @@ nr_trait_impl[impl_35] <B, N, K, V> std::cmp::Eq<  > for collections::map::HashM
 }
 }
 
-nr_trait_impl[impl_36] <B, V, K, N> std::default::Default<  > for collections::map::HashMap< K, V, N:u32, B > where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_36] <K, V, B, N> std::default::Default<  > for collections::map::HashMap< K, V, N:u32, B > where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::map::HashMap< K, V, N:u32, B > {
         let _build_hasher = ((B as std::default::Default<  >)::default<  > as λ() → B)();
         let map = (@collections::map::HashMap::with_hasher< K, V, N:u32, B > as λ(B) → collections::map::HashMap< K, V, N:u32, B >)(_build_hasher);

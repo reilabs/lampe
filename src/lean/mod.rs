@@ -377,11 +377,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         Ok(format!("{module_defs}\n\n{env_def}"))
     }
 
-    pub fn emit_trait_impls(
-        &self,
-        ind: &mut Indenter,
-        file: FileId,
-    ) -> Result<ModuleEntries> {
+    pub fn emit_trait_impls(&self, ind: &mut Indenter, file: FileId) -> Result<ModuleEntries> {
         let mut accumulator: Vec<(Option<Location>, EmitOutput)> = Vec::new();
         let ctx = EmitterCtx::empty();
 
@@ -1215,17 +1211,17 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             "",
                             func_name,
                             "",
+                            &self.emit_fully_qualified_type(
+                                &Type::Function(
+                                    vec![rhs_ty],
+                                    Box::new(out_ty),
+                                    Box::new(Type::Unit),
+                                    false,
+                                ),
+                                ctx,
+                            ),
                         ),
                         &rhs,
-                        &self.emit_fully_qualified_type(
-                            &Type::Function(
-                                vec![rhs_ty],
-                                Box::new(out_ty),
-                                Box::new(Type::Unit),
-                                false,
-                            ),
-                            ctx,
-                        ),
                     )
                 }
             }
@@ -1273,17 +1269,17 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             "",
                             func_name,
                             "",
+                            &self.emit_fully_qualified_type(
+                                &Type::Function(
+                                    vec![lhs_ty, rhs_ty],
+                                    Box::new(out_ty),
+                                    Box::new(Type::Unit),
+                                    false,
+                                ),
+                                ctx,
+                            ),
                         ),
                         &args_str,
-                        &self.emit_fully_qualified_type(
-                            &Type::Function(
-                                vec![lhs_ty, rhs_ty],
-                                Box::new(out_ty),
-                                Box::new(Type::Unit),
-                                false,
-                            ),
-                            ctx,
-                        ),
                     )
                 }
             }
@@ -1304,9 +1300,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 {
                     syntax::expr::format_builtin_call(&builtin_name, &args_str, &out_ty_str)
                 } else {
-                    let fn_typ_str =
-                        self.emit_fully_qualified_type(&self.id_bound_type(call.func), ctx);
-                    syntax::expr::format_call(&func_expr_str, &args_str, &fn_typ_str)
+                    syntax::expr::format_call(&func_expr_str, &args_str)
                 }
             }
             HirExpression::Ident(ident, generics) => {
@@ -1373,12 +1367,15 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
                                     .chain(impl_generics)
                                     .join(", ");
+                                let fn_typ_str =
+                                    self.emit_fully_qualified_type(&self.id_bound_type(expr), ctx);
                                 syntax::expr::format_trait_func_ident(
                                     &self_type_str,
                                     &trait_name,
                                     &trait_generics,
                                     name,
                                     &ident_generics,
+                                    &fn_typ_str,
                                 )
                             }
                             // This branch is executed when the trait method is called on an `impl`
@@ -1406,12 +1403,15 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     .map(|t| substitute_bindings(t, bindings))
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
                                     .expect("self type must be present");
+                                let fn_typ_str =
+                                    self.emit_fully_qualified_type(&self.id_bound_type(expr), ctx);
                                 syntax::expr::format_trait_func_ident(
                                     &self_type,
                                     &trait_name,
                                     &trait_generics,
                                     name,
                                     &ident_generics,
+                                    &fn_typ_str,
                                 )
                             }
                             _ => {
@@ -1451,7 +1451,13 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     .chain(impl_generics)
                                     .join(", ");
 
-                                syntax::expr::format_decl_func_ident(&fq_func_name, &ident_generics)
+                                let fn_typ_str =
+                                    self.emit_fully_qualified_type(&self.id_bound_type(expr), ctx);
+                                syntax::expr::format_decl_func_ident(
+                                    &fq_func_name,
+                                    &ident_generics,
+                                    &fn_typ_str,
+                                )
                             }
                         }
                     }
@@ -1482,10 +1488,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             Box::new(Type::Unit),
                             false,
                         );
-
-                        let global_name = syntax::expr::format_decl_func_ident(&global_name, "");
                         let global_type = self.emit_fully_qualified_type(&dummy_func_type, ctx);
-                        syntax::expr::format_call(&global_name, "", &global_type)
+                        let global_name =
+                            syntax::expr::format_decl_func_ident(&global_name, "", &global_type);
+                        syntax::expr::format_call(&global_name, "")
                     }
                     DefinitionKind::Local(..) => syntax::expr::format_var_ident(name),
                     DefinitionKind::NumericGeneric(_, tt) => match *tt.clone() {

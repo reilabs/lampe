@@ -10,7 +10,7 @@ namespace Extracted
 
 nr_def «panic»::«panic»<T, U, @N : u32>(message : fmtstr<N, T>) -> U {
     #assert(false) : Unit;
-    #zeroed() : U;
+    (@std::mem::zeroed< U > as λ() → U)();
 }
 
 

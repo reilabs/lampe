@@ -88,7 +88,7 @@ nr_def «hash»::«from_field_unsafe»<>(scalar : Field) -> embedded_curve_ops::
 nr_def «hash»::«hash_to_field»<>(inputs : [Field]) -> Field {
     let mut sum = 0 : Field;
         let ζi0 = inputs;
-        for ζi1 in 0 : u32 .. #sliceLen(ζi0) : u32 {
+        for ζi1 in 0 : u32 .. (@std::slice::len< Field > as λ([Field]) → u32)(ζi0) {
                 let input = #sliceIndex(ζi0, #cast(ζi1) : u32) : Field;
                 let input_bytes = (@Field::to_le_bytes< 32 : u32 > as λ(Field) → [u8; 32])(input);
                 sum = #fAdd(sum, (@std::field::bytes32_to_field<  > as λ([u8; 32]) → Field)((@std::hash::blake2s< 32 : u32 > as λ([u8; 32]) → [u8; 32])(input_bytes))) : Field;
@@ -194,7 +194,7 @@ nr_trait_impl[impl_16] <> std::hash::Hash<  > for Unit where  {
 nr_trait_impl[impl_17] <N> std::hash::Hash<  > for [T; N] where T : Hash<> {
     fn «hash»<H> (self : [T; N], state : &H) -> Unit {
                 let ζi0 = self;
-                for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
+                for ζi1 in 0 : u32 .. (@std::array::len< T, N:u32 > as λ([T; N]) → u32)(ζi0) {
                             let elem = #arrayIndex(ζi0, #cast(ζi1) : u32) : T;
                                 ((T as std::hash::Hash<  >)::hash<  > as λ(T, &H) → Unit)(elem, state);
                 };
@@ -203,9 +203,9 @@ nr_trait_impl[impl_17] <N> std::hash::Hash<  > for [T; N] where T : Hash<> {
 
 nr_trait_impl[impl_18] <T> std::hash::Hash<  > for [T] where T : Hash<> {
     fn «hash»<H> (self : [T], state : &H) -> Unit {
-        ((u32 as std::hash::Hash<  >)::hash<  > as λ(u32, &H) → Unit)(#sliceLen(self) : u32, state);
+        ((u32 as std::hash::Hash<  >)::hash<  > as λ(u32, &H) → Unit)((@std::slice::len< T > as λ([T]) → u32)(self), state);
                 let ζi0 = self;
-                for ζi1 in 0 : u32 .. #sliceLen(ζi0) : u32 {
+                for ζi1 in 0 : u32 .. (@std::slice::len< T > as λ([T]) → u32)(ζi0) {
                             let elem = #sliceIndex(ζi0, #cast(ζi1) : u32) : T;
                                 ((T as std::hash::Hash<  >)::hash<  > as λ(T, &H) → Unit)(elem, state);
                 };
@@ -219,7 +219,7 @@ nr_trait_impl[impl_19] <A, B> std::hash::Hash<  > for `(A, B) where A : Hash<>, 
 }
 }
 
-nr_trait_impl[impl_20] <B, A, C> std::hash::Hash<  > for `(A, B, C) where A : Hash<>, B : Hash<>, C : Hash<> {
+nr_trait_impl[impl_20] <B, C, A> std::hash::Hash<  > for `(A, B, C) where A : Hash<>, B : Hash<>, C : Hash<> {
     fn «hash»<H> (self : `(A, B, C), state : &H) -> Unit {
         ((A as std::hash::Hash<  >)::hash<  > as λ(A, &H) → Unit)(self.0, state);
         ((B as std::hash::Hash<  >)::hash<  > as λ(B, &H) → Unit)(self.1, state);
@@ -227,7 +227,7 @@ nr_trait_impl[impl_20] <B, A, C> std::hash::Hash<  > for `(A, B, C) where A : Ha
 }
 }
 
-nr_trait_impl[impl_21] <A, C, B, D> std::hash::Hash<  > for `(A, B, C, D) where A : Hash<>, B : Hash<>, C : Hash<>, D : Hash<> {
+nr_trait_impl[impl_21] <D, B, C, A> std::hash::Hash<  > for `(A, B, C, D) where A : Hash<>, B : Hash<>, C : Hash<>, D : Hash<> {
     fn «hash»<H> (self : `(A, B, C, D), state : &H) -> Unit {
         ((A as std::hash::Hash<  >)::hash<  > as λ(A, &H) → Unit)(self.0, state);
         ((B as std::hash::Hash<  >)::hash<  > as λ(B, &H) → Unit)(self.1, state);
@@ -236,7 +236,7 @@ nr_trait_impl[impl_21] <A, C, B, D> std::hash::Hash<  > for `(A, B, C, D) where 
 }
 }
 
-nr_trait_impl[impl_22] <B, A, E, C, D> std::hash::Hash<  > for `(A, B, C, D, E) where A : Hash<>, B : Hash<>, C : Hash<>, D : Hash<>, E : Hash<> {
+nr_trait_impl[impl_22] <B, D, A, C, E> std::hash::Hash<  > for `(A, B, C, D, E) where A : Hash<>, B : Hash<>, C : Hash<>, D : Hash<>, E : Hash<> {
     fn «hash»<H> (self : `(A, B, C, D, E), state : &H) -> Unit {
         ((A as std::hash::Hash<  >)::hash<  > as λ(A, &H) → Unit)(self.0, state);
         ((B as std::hash::Hash<  >)::hash<  > as λ(B, &H) → Unit)(self.1, state);

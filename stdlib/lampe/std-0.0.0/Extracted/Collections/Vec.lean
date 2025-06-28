@@ -26,12 +26,12 @@ nr_def «collections»::«vec»::«Vec»::«set»<T>(self : &collections::vec::V
 }
 
 nr_def «collections»::«vec»::«Vec»::«push»<T>(self : &collections::vec::Vec< T >, elem : T) -> Unit {
-    (*(self) as collections::vec::Vec< T >).slice = #slicePushBack((#readRef(self) : collections::vec::Vec< T > as collections::vec::Vec< T >).slice, elem) : [T];
+    (*(self) as collections::vec::Vec< T >).slice = (@std::slice::push_back< T > as λ([T], T) → [T])((#readRef(self) : collections::vec::Vec< T > as collections::vec::Vec< T >).slice, elem);
     skip;
 }
 
 nr_def «collections»::«vec»::«Vec»::«pop»<T>(self : &collections::vec::Vec< T >) -> T {
-    let π0 = #slicePopBack((#readRef(self) : collections::vec::Vec< T > as collections::vec::Vec< T >).slice) : `([T], T);
+    let π0 = (@std::slice::pop_back< T > as λ([T]) → `([T], T))((#readRef(self) : collections::vec::Vec< T > as collections::vec::Vec< T >).slice);
     let popped_slice = π0.0;
     let last_elem = π0.1;
     (*(self) as collections::vec::Vec< T >).slice = popped_slice;
@@ -52,7 +52,7 @@ nr_def «collections»::«vec»::«Vec»::«remove»<T>(self : &collections::vec
 }
 
 nr_def «collections»::«vec»::«Vec»::«len»<T>(self : collections::vec::Vec< T >) -> u32 {
-    #sliceLen((self as collections::vec::Vec< T >).slice) : u32;
+    (@std::slice::len< T > as λ([T]) → u32)((self as collections::vec::Vec< T >).slice);
 }
 
 nr_def «collections»::«vec»::«tests»::«set_updates_values_properly»<>() -> Unit {

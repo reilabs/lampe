@@ -56,7 +56,7 @@ nr_def «hash»::«poseidon2»::«Poseidon2»::«hash_internal»<@N : u32>(input
     let two_pow_64 = 18446744073709551616 : Field;
     let iv = #fMul(#cast(in_len) : Field, two_pow_64) : Field;
     let mut sponge = (@hash::poseidon2::Poseidon2::new<  > as λ(Field) → hash::poseidon2::Poseidon2<  >)(iv);
-    for i in 0 : u32 .. #arrayLen(input) : u32 {
+    for i in 0 : u32 .. (@std::array::len< Field, N:u32 > as λ([Field; N]) → u32)(input) {
             if #uLt(i, in_len) : bool {
                 (@hash::poseidon2::Poseidon2::absorb<  > as λ(&hash::poseidon2::Poseidon2<  >, Field) → Unit)(#ref(sponge) : &hash::poseidon2::Poseidon2<  >, #arrayIndex(input, #cast(i) : u32) : Field);
         };
@@ -69,15 +69,15 @@ nr_def «hash»::«poseidon2»::«Poseidon2»::«hash_internal»<@N : u32>(input
 
 nr_trait_impl[impl_0] <> std::hash::Hasher<  > for hash::poseidon2::Poseidon2Hasher<  > where  {
     fn «finish»<> (self : hash::poseidon2::Poseidon2Hasher<  >) -> Field {
-        let iv = #fMul(#cast(#sliceLen((self as hash::poseidon2::Poseidon2Hasher<  >)._state) : u32) : Field, 18446744073709551616 : Field) : Field;
+        let iv = #fMul(#cast((@std::slice::len< Field > as λ([Field]) → u32)((self as hash::poseidon2::Poseidon2Hasher<  >)._state)) : Field, 18446744073709551616 : Field) : Field;
         let mut sponge = (@hash::poseidon2::Poseidon2::new<  > as λ(Field) → hash::poseidon2::Poseidon2<  >)(iv);
-        for i in 0 : u32 .. #sliceLen((self as hash::poseidon2::Poseidon2Hasher<  >)._state) : u32 {
+        for i in 0 : u32 .. (@std::slice::len< Field > as λ([Field]) → u32)((self as hash::poseidon2::Poseidon2Hasher<  >)._state) {
                     (@hash::poseidon2::Poseidon2::absorb<  > as λ(&hash::poseidon2::Poseidon2<  >, Field) → Unit)(#ref(sponge) : &hash::poseidon2::Poseidon2<  >, #sliceIndex((self as hash::poseidon2::Poseidon2Hasher<  >)._state, #cast(i) : u32) : Field);
         };
         (@hash::poseidon2::Poseidon2::squeeze<  > as λ(&hash::poseidon2::Poseidon2<  >) → Field)(#ref(sponge) : &hash::poseidon2::Poseidon2<  >);
 };
 fn «write»<> (self : &hash::poseidon2::Poseidon2Hasher<  >, input : Field) -> Unit {
-        (*(self) as hash::poseidon2::Poseidon2Hasher<  >)._state = #slicePushBack((#readRef(self) : hash::poseidon2::Poseidon2Hasher<  > as hash::poseidon2::Poseidon2Hasher<  >)._state, input) : [Field];
+        (*(self) as hash::poseidon2::Poseidon2Hasher<  >)._state = (@std::slice::push_back< Field > as λ([Field], Field) → [Field])((#readRef(self) : hash::poseidon2::Poseidon2Hasher<  > as hash::poseidon2::Poseidon2Hasher<  >)._state, input);
         skip;
 }
 }

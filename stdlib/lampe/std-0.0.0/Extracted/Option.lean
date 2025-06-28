@@ -9,7 +9,7 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «option»::«Option»::«none»<T>() -> option::Option< T > {
-    option::Option< T > { false, #zeroed() : T };
+    option::Option< T > { false, (@std::mem::zeroed< T > as λ() → T)() };
 }
 
 nr_def «option»::«Option»::«some»<T>(_value : T) -> option::Option< T > {
@@ -45,7 +45,7 @@ nr_def «option»::«Option»::«unwrap_or_else»<T, Env>(self : option::Option<
     if (self as option::Option< T >)._is_some {
             (self as option::Option< T >)._value;
     } else {
-            (default as λ() → T)();
+            default();
     };
 }
 
@@ -56,7 +56,7 @@ nr_def «option»::«Option»::«expect»<T, @N : u32, MessageTypes>(self : opti
 
 nr_def «option»::«Option»::«map»<T, U, Env>(self : option::Option< T >, f : λ(T) → U) -> option::Option< U > {
     if (self as option::Option< T >)._is_some {
-            (@option::Option::some< U > as λ(U) → option::Option< U >)((f as λ(T) → U)((self as option::Option< T >)._value));
+            (@option::Option::some< U > as λ(U) → option::Option< U >)(f((self as option::Option< T >)._value));
     } else {
             (@option::Option::none< U > as λ() → option::Option< U >)();
     };
@@ -64,7 +64,7 @@ nr_def «option»::«Option»::«map»<T, U, Env>(self : option::Option< T >, f 
 
 nr_def «option»::«Option»::«map_or»<T, U, Env>(self : option::Option< T >, default : U, f : λ(T) → U) -> U {
     if (self as option::Option< T >)._is_some {
-            (f as λ(T) → U)((self as option::Option< T >)._value);
+            f((self as option::Option< T >)._value);
     } else {
             default;
     };
@@ -72,9 +72,9 @@ nr_def «option»::«Option»::«map_or»<T, U, Env>(self : option::Option< T >,
 
 nr_def «option»::«Option»::«map_or_else»<T, U, Env1, Env2>(self : option::Option< T >, default : λ() → U, f : λ(T) → U) -> U {
     if (self as option::Option< T >)._is_some {
-            (f as λ(T) → U)((self as option::Option< T >)._value);
+            f((self as option::Option< T >)._value);
     } else {
-            (default as λ() → U)();
+            default();
     };
 }
 
@@ -88,7 +88,7 @@ nr_def «option»::«Option»::«and»<T>(self : option::Option< T >, other : op
 
 nr_def «option»::«Option»::«and_then»<T, U, Env>(self : option::Option< T >, f : λ(T) → option::Option< U >) -> option::Option< U > {
     if (self as option::Option< T >)._is_some {
-            (f as λ(T) → option::Option< U >)((self as option::Option< T >)._value);
+            f((self as option::Option< T >)._value);
     } else {
             (@option::Option::none< U > as λ() → option::Option< U >)();
     };
@@ -106,7 +106,7 @@ nr_def «option»::«Option»::«or_else»<T, Env>(self : option::Option< T >, d
     if (self as option::Option< T >)._is_some {
             self;
     } else {
-            (default as λ() → option::Option< T >)();
+            default();
     };
 }
 
@@ -128,7 +128,7 @@ nr_def «option»::«Option»::«xor»<T>(self : option::Option< T >, other : op
 
 nr_def «option»::«Option»::«filter»<T, Env>(self : option::Option< T >, predicate : λ(T) → bool) -> option::Option< T > {
     if (self as option::Option< T >)._is_some {
-            if (predicate as λ(T) → bool)((self as option::Option< T >)._value) {
+            if predicate((self as option::Option< T >)._value) {
                 self;
         } else {
                 (@option::Option::none< T > as λ() → option::Option< T >)();

@@ -8,7 +8,7 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_37] <V, K> std::default::Default<  > for collections::umap::Slot< K, V > where  {
+nr_trait_impl[impl_37] <K, V> std::default::Default<  > for collections::umap::Slot< K, V > where  {
     fn «default»<> () -> collections::umap::Slot< K, V > {
         collections::umap::Slot< K,V > { (@option::Option::none< `(K, V) > as λ() → option::Option< `(K, V) >)(), false };
 }
@@ -50,7 +50,7 @@ nr_def «collections»::«umap»::«UHashMap»::«with_hasher»<K, V, B>(_build_
 nr_def «collections»::«umap»::«UHashMap»::«with_hasher_and_capacity»<K, V, B>(_build_hasher : B, capacity : u32) -> collections::umap::UHashMap< K, V, B > {
     let mut _table = &[];
     for _? in 0 : u32 .. capacity {
-            _table = #slicePushBack(_table, ((collections::umap::Slot< K, V > as std::default::Default<  >)::default<  > as λ() → collections::umap::Slot< K, V >)()) : [collections::umap::Slot< K, V >];
+            _table = (@std::slice::push_back< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >], collections::umap::Slot< K, V >) → [collections::umap::Slot< K, V >])(_table, ((collections::umap::Slot< K, V > as std::default::Default<  >)::default<  > as λ() → collections::umap::Slot< K, V >)());
         skip;
     };
     let _len = 0 : u32;
@@ -74,58 +74,58 @@ nr_def «collections»::«umap»::«UHashMap»::«is_empty»<K, V, B>(self : col
 nr_def «collections»::«umap»::«UHashMap»::«entries»<K, V, B>(self : collections::umap::UHashMap< K, V, B >) -> [`(K, V)] {
     let mut entries = &[];
         let ζi0 = (self as collections::umap::UHashMap< K, V, B >)._table;
-        for ζi1 in 0 : u32 .. #sliceLen(ζi0) : u32 {
+        for ζi1 in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)(ζi0) {
                 let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot< K, V >;
                 if (@collections::umap::Slot::is_valid< K, V > as λ(collections::umap::Slot< K, V >) → bool)(slot) {
                         let key_value = (@option::Option::unwrap_unchecked< `(K, V) > as λ(option::Option< `(K, V) >) → `(K, V))((@collections::umap::Slot::key_value< K, V > as λ(collections::umap::Slot< K, V >) → option::Option< `(K, V) >)(slot));
-                    entries = #slicePushBack(entries, key_value) : [`(K, V)];
+                    entries = (@std::slice::push_back< `(K, V) > as λ([`(K, V)], `(K, V)) → [`(K, V)])(entries, key_value);
                     skip;
                 };
         };
     let self_len = (self as collections::umap::UHashMap< K, V, B >)._len;
-    let entries_len = #sliceLen(entries) : u32;
+    let entries_len = (@std::slice::len< `(K, V) > as λ([`(K, V)]) → u32)(entries);
     let msg = #format("Amount of valid elements should have been {self_len} times, but got {entries_len}.", self_len, entries_len);
-    #assert(#uEq(#sliceLen(entries) : u32, (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
+    #assert(#uEq((@std::slice::len< `(K, V) > as λ([`(K, V)]) → u32)(entries), (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
     entries;
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«keys»<K, V, B>(self : collections::umap::UHashMap< K, V, B >) -> [K] {
     let mut keys = &[];
         let ζi0 = (self as collections::umap::UHashMap< K, V, B >)._table;
-        for ζi1 in 0 : u32 .. #sliceLen(ζi0) : u32 {
+        for ζi1 in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)(ζi0) {
                 let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot< K, V >;
                 if (@collections::umap::Slot::is_valid< K, V > as λ(collections::umap::Slot< K, V >) → bool)(slot) {
                         let π0 = (@collections::umap::Slot::key_value_unchecked< K, V > as λ(collections::umap::Slot< K, V >) → `(K, V))(slot);
                     let key = π0.0;
                     let _? = π0.1;
-                    keys = #slicePushBack(keys, key) : [K];
+                    keys = (@std::slice::push_back< K > as λ([K], K) → [K])(keys, key);
                     skip;
                 };
         };
     let self_len = (self as collections::umap::UHashMap< K, V, B >)._len;
-    let keys_len = #sliceLen(keys) : u32;
+    let keys_len = (@std::slice::len< K > as λ([K]) → u32)(keys);
     let msg = #format("Amount of valid elements should have been {self_len} times, but got {keys_len}.", self_len, keys_len);
-    #assert(#uEq(#sliceLen(keys) : u32, (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
+    #assert(#uEq((@std::slice::len< K > as λ([K]) → u32)(keys), (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
     keys;
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«values»<K, V, B>(self : collections::umap::UHashMap< K, V, B >) -> [V] {
     let mut values = &[];
         let ζi0 = (self as collections::umap::UHashMap< K, V, B >)._table;
-        for ζi1 in 0 : u32 .. #sliceLen(ζi0) : u32 {
+        for ζi1 in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)(ζi0) {
                 let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot< K, V >;
                 if (@collections::umap::Slot::is_valid< K, V > as λ(collections::umap::Slot< K, V >) → bool)(slot) {
                         let π0 = (@collections::umap::Slot::key_value_unchecked< K, V > as λ(collections::umap::Slot< K, V >) → `(K, V))(slot);
                     let _? = π0.0;
                     let value = π0.1;
-                    values = #slicePushBack(values, value) : [V];
+                    values = (@std::slice::push_back< V > as λ([V], V) → [V])(values, value);
                     skip;
                 };
         };
     let self_len = (self as collections::umap::UHashMap< K, V, B >)._len;
-    let values_len = #sliceLen(values) : u32;
+    let values_len = (@std::slice::len< V > as λ([V]) → u32)(values);
     let msg = #format("Amount of valid elements should have been {self_len} times, but got {values_len}.", self_len, values_len);
-    #assert(#uEq(#sliceLen(values) : u32, (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
+    #assert(#uEq((@std::slice::len< V > as λ([V]) → u32)(values), (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
     values;
 }
 
@@ -138,13 +138,13 @@ nr_def «collections»::«umap»::«UHashMap»::«iter_keys_mut»<K, V, B>(self 
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«iter_values_mut»<K, V, B>(self : &collections::umap::UHashMap< K, V, B >, f : λ(V) → V) -> Unit {
-    for i in 0 : u32 .. #sliceLen((#readRef(self) : collections::umap::UHashMap< K, V, B > as collections::umap::UHashMap< K, V, B >)._table) : u32 {
+    for i in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)((#readRef(self) : collections::umap::UHashMap< K, V, B > as collections::umap::UHashMap< K, V, B >)._table) {
             let mut slot = #sliceIndex((#readRef(self) : collections::umap::UHashMap< K, V, B > as collections::umap::UHashMap< K, V, B >)._table, #cast(i) : u32) : collections::umap::Slot< K, V >;
         if (@collections::umap::Slot::is_valid< K, V > as λ(collections::umap::Slot< K, V >) → bool)(slot) {
                 let π0 = (@collections::umap::Slot::key_value_unchecked< K, V > as λ(collections::umap::Slot< K, V >) → `(K, V))(slot);
             let key = π0.0;
             let value = π0.1;
-            (@collections::umap::Slot::set< K, V > as λ(&collections::umap::Slot< K, V >, K, V) → Unit)(#ref(slot) : &collections::umap::Slot< K, V >, key, (f as λ(V) → V)(value));
+            (@collections::umap::Slot::set< K, V > as λ(&collections::umap::Slot< K, V >, K, V) → Unit)(#ref(slot) : &collections::umap::Slot< K, V >, key, f(value));
             (*(self) as collections::umap::UHashMap< K, V, B >)._table[[#cast(i) : u32]] = slot;
             skip;
         };
@@ -152,13 +152,13 @@ nr_def «collections»::«umap»::«UHashMap»::«iter_values_mut»<K, V, B>(sel
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«retain»<K, V, B>(self : &collections::umap::UHashMap< K, V, B >, f : λ(K, V) → bool) -> Unit {
-    for index in 0 : u32 .. #sliceLen((#readRef(self) : collections::umap::UHashMap< K, V, B > as collections::umap::UHashMap< K, V, B >)._table) : u32 {
+    for index in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)((#readRef(self) : collections::umap::UHashMap< K, V, B > as collections::umap::UHashMap< K, V, B >)._table) {
             let mut slot = #sliceIndex((#readRef(self) : collections::umap::UHashMap< K, V, B > as collections::umap::UHashMap< K, V, B >)._table, #cast(index) : u32) : collections::umap::Slot< K, V >;
         if (@collections::umap::Slot::is_valid< K, V > as λ(collections::umap::Slot< K, V >) → bool)(slot) {
                 let π0 = (@collections::umap::Slot::key_value_unchecked< K, V > as λ(collections::umap::Slot< K, V >) → `(K, V))(slot);
             let key = π0.0;
             let value = π0.1;
-            if #bNot((f as λ(K, V) → bool)(key, value)) : bool {
+            if #bNot(f(key, value)) : bool {
                     (@collections::umap::Slot::mark_deleted< K, V > as λ(&collections::umap::Slot< K, V >) → Unit)(#ref(slot) : &collections::umap::Slot< K, V >);
                 (*(self) as collections::umap::UHashMap< K, V, B >)._len = #uSub((#readRef(self) : collections::umap::UHashMap< K, V, B > as collections::umap::UHashMap< K, V, B >)._len, 1 : u32) : u32;
                 (*(self) as collections::umap::UHashMap< K, V, B >)._table[[#cast(index) : u32]] = slot;
@@ -173,7 +173,7 @@ nr_def «collections»::«umap»::«UHashMap»::«len»<K, V, B>(self : collecti
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«capacity»<K, V, B>(self : collections::umap::UHashMap< K, V, B >) -> u32 {
-    #sliceLen((self as collections::umap::UHashMap< K, V, B >)._table) : u32;
+    (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)((self as collections::umap::UHashMap< K, V, B >)._table);
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«get»<K, V, B>(self : collections::umap::UHashMap< K, V, B >, key : K) -> option::Option< V > {
@@ -199,16 +199,16 @@ nr_def «collections»::«umap»::«UHashMap»::«hash»<K, V, B>(self : collect
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«quadratic_probe»<K, V, B>(self : collections::umap::UHashMap< K, V, B >, hash : u32, attempt : u32) -> u32 {
-    #uRem(#uAdd(hash, #uDiv(#uAdd(attempt, #uMul(attempt, attempt) : u32) : u32, 2 : u32) : u32) : u32, #sliceLen((self as collections::umap::UHashMap< K, V, B >)._table) : u32) : u32;
+    #uRem(#uAdd(hash, #uDiv(#uAdd(attempt, #uMul(attempt, attempt) : u32) : u32, 2 : u32) : u32) : u32, (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)((self as collections::umap::UHashMap< K, V, B >)._table)) : u32;
 }
 
-nr_trait_impl[impl_38] <V, K, B> std::cmp::Eq<  > for collections::umap::UHashMap< K, V, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_38] <K, B, V> std::cmp::Eq<  > for collections::umap::UHashMap< K, V, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::umap::UHashMap< K, V, B >, other : collections::umap::UHashMap< K, V, B >) -> bool {
         let mut equal = false;
         if #uEq((@collections::umap::UHashMap::len< K, V, B > as λ(collections::umap::UHashMap< K, V, B >) → u32)(self), (@collections::umap::UHashMap::len< K, V, B > as λ(collections::umap::UHashMap< K, V, B >) → u32)(other)) : bool {
                     equal = true;
                         let ζi0 = (self as collections::umap::UHashMap< K, V, B >)._table;
-                        for ζi1 in 0 : u32 .. #sliceLen(ζi0) : u32 {
+                        for ζi1 in 0 : u32 .. (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)(ζi0) {
                                     let slot = #sliceIndex(ζi0, #cast(ζi1) : u32) : collections::umap::Slot< K, V >;
                                         if #bAnd(equal, (@collections::umap::Slot::is_valid< K, V > as λ(collections::umap::Slot< K, V >) → bool)(slot)) : bool {
                                                     let π0 = (@collections::umap::Slot::key_value_unchecked< K, V > as λ(collections::umap::Slot< K, V >) → `(K, V))(slot);
@@ -232,7 +232,7 @@ nr_trait_impl[impl_38] <V, K, B> std::cmp::Eq<  > for collections::umap::UHashMa
 }
 }
 
-nr_trait_impl[impl_39] <K, V, B> std::default::Default<  > for collections::umap::UHashMap< K, V, B > where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_39] <V, K, B> std::default::Default<  > for collections::umap::UHashMap< K, V, B > where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::umap::UHashMap< K, V, B > {
         (@collections::umap::UHashMap::with_hasher< K, V, B > as λ(B) → collections::umap::UHashMap< K, V, B >)(((B as std::default::Default<  >)::default<  > as λ() → B)());
 }
