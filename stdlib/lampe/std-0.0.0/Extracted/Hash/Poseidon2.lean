@@ -84,7 +84,7 @@ fn «write»<> (self : &hash::poseidon2::Poseidon2Hasher<  >, input : Field) -> 
 
 nr_trait_impl[impl_1] <> std::default::Default<  > for hash::poseidon2::Poseidon2Hasher<  > where  {
     fn «default»<> () -> hash::poseidon2::Poseidon2Hasher<  > {
-        hash::poseidon2::Poseidon2Hasher<  > { &[] };
+        hash::poseidon2::Poseidon2Hasher<  > { #mkSlice() : [Field] };
 }
 }
 

@@ -49,10 +49,11 @@ use noirc_frontend::{
     TypeBinding,
     TypeBindings,
 };
+use toml::value::Index;
 
 use crate::{
     file_generator::to_import_from_noir_path,
-    lean::indent::Indenter,
+    lean::{builtin::BuiltinName, indent::Indenter},
     noir::{
         self,
         error::emit::{Error, Result},
@@ -1868,13 +1869,25 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let result = match &literal {
             HirLiteral::Array(array) | HirLiteral::Slice(array) => match array {
                 HirArrayLiteral::Standard(elems) => {
-                    let elems: Vec<String> = elems
+                    let elems: String = elems
                         .iter()
                         .map(|elem| self.emit_expr(ind, *elem, ctx))
-                        .try_collect()?;
+                        .try_collect::<_, Vec<_>, _>()?
+                        .join(", ");
                     match literal {
-                        HirLiteral::Array(..) => syntax::literal::format_array(&elems),
-                        HirLiteral::Slice(..) => syntax::literal::format_slice(&elems),
+                        HirLiteral::Array(..) => {
+                            let outtp = self.id_bound_type(expr);
+                            let outtp = self.emit_fully_qualified_type(&outtp, ctx);
+                            let name: BuiltinName = "mkArray".into();
+                            syntax::expr::format_builtin_call(&name, &elems, &outtp)
+                        }
+                        HirLiteral::Slice(..) => {
+                            let outtp = self.id_bound_type(expr);
+                            let outtp = self.emit_fully_qualified_type(&outtp, ctx);
+                            let name: BuiltinName = "mkSlice".into();
+                            syntax::expr::format_builtin_call(&name, &elems, &outtp)
+                        }
+
                         _ => unreachable!(),
                     }
                 }

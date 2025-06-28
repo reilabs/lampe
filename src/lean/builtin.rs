@@ -5,7 +5,7 @@ use noirc_frontend::{
     TypeBinding,
 };
 
-pub type BuiltinName = String;
+pub type  BuiltinName = String;
 
 pub const CAST_BUILTIN_NAME: &str = "cast";
 pub const ASSERT_BUILTIN_NAME: &str = "assert";

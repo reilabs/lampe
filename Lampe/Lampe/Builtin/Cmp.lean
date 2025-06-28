@@ -55,6 +55,9 @@ def strEq := newGenericTotalPureBuiltin
   (fun n => ⟨[.str n, .str n], .bool⟩)
   (fun _ h![a, b] => a = b)
 
+def arrayEq := newGenericTotalPureBuiltin (A := Tp × U 32)
+  (fun (tp, n) => ⟨[.array tp n, .array tp n], .bool⟩)
+  (fun _ h![a, b] => false)
 
 /--
 Defines the less-than comparison between uint values of bit size `s`.

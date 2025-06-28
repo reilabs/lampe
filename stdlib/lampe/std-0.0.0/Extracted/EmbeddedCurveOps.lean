@@ -102,7 +102,7 @@ nr_def «embedded_curve_ops»::«multi_scalar_mul_array_return»<@N : u32>(point
 }
 
 nr_def «embedded_curve_ops»::«fixed_base_scalar_mul»<>(scalar : embedded_curve_ops::EmbeddedCurveScalar<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
-    (@std::embedded_curve_ops::multi_scalar_mul< 1 : u32 > as λ([embedded_curve_ops::EmbeddedCurvePoint<  >; 1], [embedded_curve_ops::EmbeddedCurveScalar<  >; 1]) → embedded_curve_ops::EmbeddedCurvePoint<  >)([(@embedded_curve_ops::EmbeddedCurvePoint::generator<  > as λ() → embedded_curve_ops::EmbeddedCurvePoint<  >)()], [scalar]);
+    (@std::embedded_curve_ops::multi_scalar_mul< 1 : u32 > as λ([embedded_curve_ops::EmbeddedCurvePoint<  >; 1], [embedded_curve_ops::EmbeddedCurveScalar<  >; 1]) → embedded_curve_ops::EmbeddedCurvePoint<  >)(#mkArray((@embedded_curve_ops::EmbeddedCurvePoint::generator<  > as λ() → embedded_curve_ops::EmbeddedCurvePoint<  >)()) : [embedded_curve_ops::EmbeddedCurvePoint<  >; 1], #mkArray(scalar) : [embedded_curve_ops::EmbeddedCurveScalar<  >; 1]);
 }
 
 nr_def «embedded_curve_ops»::«embedded_curve_add»<>(point1 : embedded_curve_ops::EmbeddedCurvePoint<  >, point2 : embedded_curve_ops::EmbeddedCurvePoint<  >) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
