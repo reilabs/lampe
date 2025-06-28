@@ -57,6 +57,13 @@ impl EmitterCtx {
         }
     }
 
+    pub fn empty() -> Self {
+        EmitterCtx {
+            impl_param_overrides: HashMap::new(),
+            impl_ret_overrides: HashMap::new(),
+        }
+    }
+
     pub fn get_impl_param<'a>(&'a self, typ: &Type) -> Option<&'a str> {
         self.impl_param_overrides.get(typ).map(std::string::String::as_str)
     }

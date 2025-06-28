@@ -116,7 +116,7 @@ nr_trait_impl[impl_82] <> std::cmp::Eq<  > for str<N> where  {
 }
 }
 
-nr_trait_impl[impl_83] <B, A> std::cmp::Eq<  > for `(A, B) where A : Eq<>, B : Eq<> {
+nr_trait_impl[impl_83] <A, B> std::cmp::Eq<  > for `(A, B) where A : Eq<>, B : Eq<> {
     fn «eq»<> (self : `(A, B), other : `(A, B)) -> bool {
         #bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool;
 }
@@ -128,73 +128,13 @@ nr_trait_impl[impl_84] <A, B, C> std::cmp::Eq<  > for `(A, B, C) where A : Eq<>,
 }
 }
 
-nr_trait_impl[impl_84] <B, A, C> std::cmp::Eq<  > for `(A, B, C) where A : Eq<>, B : Eq<>, C : Eq<> {
-    fn «eq»<> (self : `(A, B, C), other : `(A, B, C)) -> bool {
-        #bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool;
-}
-}
-
-nr_trait_impl[impl_84] <B, C, A> std::cmp::Eq<  > for `(A, B, C) where A : Eq<>, B : Eq<>, C : Eq<> {
-    fn «eq»<> (self : `(A, B, C), other : `(A, B, C)) -> bool {
-        #bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool;
-}
-}
-
-nr_trait_impl[impl_84] <C, A, B> std::cmp::Eq<  > for `(A, B, C) where A : Eq<>, B : Eq<>, C : Eq<> {
-    fn «eq»<> (self : `(A, B, C), other : `(A, B, C)) -> bool {
-        #bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool;
-}
-}
-
-nr_trait_impl[impl_85] <C, D, B, A> std::cmp::Eq<  > for `(A, B, C, D) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<> {
+nr_trait_impl[impl_85] <A, B, D, C> std::cmp::Eq<  > for `(A, B, C, D) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<> {
     fn «eq»<> (self : `(A, B, C, D), other : `(A, B, C, D)) -> bool {
         #bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool;
 }
 }
 
-nr_trait_impl[impl_85] <C, D, A, B> std::cmp::Eq<  > for `(A, B, C, D) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<> {
-    fn «eq»<> (self : `(A, B, C, D), other : `(A, B, C, D)) -> bool {
-        #bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool;
-}
-}
-
-nr_trait_impl[impl_85] <D, C, B, A> std::cmp::Eq<  > for `(A, B, C, D) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<> {
-    fn «eq»<> (self : `(A, B, C, D), other : `(A, B, C, D)) -> bool {
-        #bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool;
-}
-}
-
-nr_trait_impl[impl_85] <B, C, D, A> std::cmp::Eq<  > for `(A, B, C, D) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<> {
-    fn «eq»<> (self : `(A, B, C, D), other : `(A, B, C, D)) -> bool {
-        #bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool;
-}
-}
-
-nr_trait_impl[impl_86] <B, C, A, D, E> std::cmp::Eq<  > for `(A, B, C, D, E) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<>, E : Eq<> {
-    fn «eq»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> bool {
-        #bAnd(#bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool, ((E as std::cmp::Eq<  >)::eq<  > as λ(E, E) → bool)(self.4, other.4)) : bool;
-}
-}
-
-nr_trait_impl[impl_86] <C, E, B, A, D> std::cmp::Eq<  > for `(A, B, C, D, E) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<>, E : Eq<> {
-    fn «eq»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> bool {
-        #bAnd(#bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool, ((E as std::cmp::Eq<  >)::eq<  > as λ(E, E) → bool)(self.4, other.4)) : bool;
-}
-}
-
-nr_trait_impl[impl_86] <E, D, B, A, C> std::cmp::Eq<  > for `(A, B, C, D, E) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<>, E : Eq<> {
-    fn «eq»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> bool {
-        #bAnd(#bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool, ((E as std::cmp::Eq<  >)::eq<  > as λ(E, E) → bool)(self.4, other.4)) : bool;
-}
-}
-
-nr_trait_impl[impl_86] <A, C, D, E, B> std::cmp::Eq<  > for `(A, B, C, D, E) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<>, E : Eq<> {
-    fn «eq»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> bool {
-        #bAnd(#bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool, ((E as std::cmp::Eq<  >)::eq<  > as λ(E, E) → bool)(self.4, other.4)) : bool;
-}
-}
-
-nr_trait_impl[impl_86] <D, B, E, A, C> std::cmp::Eq<  > for `(A, B, C, D, E) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<>, E : Eq<> {
+nr_trait_impl[impl_86] <D, E, C, A, B> std::cmp::Eq<  > for `(A, B, C, D, E) where A : Eq<>, B : Eq<>, C : Eq<>, D : Eq<>, E : Eq<> {
     fn «eq»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> bool {
         #bAnd(#bAnd(#bAnd(#bAnd(((A as std::cmp::Eq<  >)::eq<  > as λ(A, A) → bool)(self.0, other.0), ((B as std::cmp::Eq<  >)::eq<  > as λ(B, B) → bool)(self.1, other.1)) : bool, ((C as std::cmp::Eq<  >)::eq<  > as λ(C, C) → bool)(self.2, other.2)) : bool, ((D as std::cmp::Eq<  >)::eq<  > as λ(D, D) → bool)(self.3, other.3)) : bool, ((E as std::cmp::Eq<  >)::eq<  > as λ(E, E) → bool)(self.4, other.4)) : bool;
 }
@@ -394,17 +334,6 @@ nr_trait_impl[impl_100] <T> std::cmp::Ord<  > for [T] where T : Ord<> {
 }
 }
 
-nr_trait_impl[impl_101] <B, A> std::cmp::Ord<  > for `(A, B) where A : Ord<>, B : Ord<> {
-    fn «cmp»<> (self : `(A, B), other : `(A, B)) -> cmp::Ordering<  > {
-        let result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result;
-        } else {
-                    ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-        };
-}
-}
-
 nr_trait_impl[impl_101] <A, B> std::cmp::Ord<  > for `(A, B) where A : Ord<>, B : Ord<> {
     fn «cmp»<> (self : `(A, B), other : `(A, B)) -> cmp::Ordering<  > {
         let result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
@@ -413,36 +342,6 @@ nr_trait_impl[impl_101] <A, B> std::cmp::Ord<  > for `(A, B) where A : Ord<>, B 
         } else {
                     ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
         };
-}
-}
-
-nr_trait_impl[impl_102] <C, B, A> std::cmp::Ord<  > for `(A, B, C) where A : Ord<>, B : Ord<>, C : Ord<> {
-    fn «cmp»<> (self : `(A, B, C), other : `(A, B, C)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_102] <A, C, B> std::cmp::Ord<  > for `(A, B, C) where A : Ord<>, B : Ord<>, C : Ord<> {
-    fn «cmp»<> (self : `(A, B, C), other : `(A, B, C)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        result;
 }
 }
 
@@ -461,22 +360,7 @@ nr_trait_impl[impl_102] <C, A, B> std::cmp::Ord<  > for `(A, B, C) where A : Ord
 }
 }
 
-nr_trait_impl[impl_102] <A, B, C> std::cmp::Ord<  > for `(A, B, C) where A : Ord<>, B : Ord<>, C : Ord<> {
-    fn «cmp»<> (self : `(A, B, C), other : `(A, B, C)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_103] <B, C, D, A> std::cmp::Ord<  > for `(A, B, C, D) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<> {
+nr_trait_impl[impl_103] <B, D, C, A> std::cmp::Ord<  > for `(A, B, C, D) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<> {
     fn «cmp»<> (self : `(A, B, C, D), other : `(A, B, C, D)) -> cmp::Ordering<  > {
         let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
         if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
@@ -495,156 +379,7 @@ nr_trait_impl[impl_103] <B, C, D, A> std::cmp::Ord<  > for `(A, B, C, D) where A
 }
 }
 
-nr_trait_impl[impl_103] <B, D, A, C> std::cmp::Ord<  > for `(A, B, C, D) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<> {
-    fn «cmp»<> (self : `(A, B, C, D), other : `(A, B, C, D)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((D as std::cmp::Ord<  >)::cmp<  > as λ(D, D) → cmp::Ordering<  >)(self.3, other.3);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_103] <A, C, D, B> std::cmp::Ord<  > for `(A, B, C, D) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<> {
-    fn «cmp»<> (self : `(A, B, C, D), other : `(A, B, C, D)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((D as std::cmp::Ord<  >)::cmp<  > as λ(D, D) → cmp::Ordering<  >)(self.3, other.3);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_103] <D, B, A, C> std::cmp::Ord<  > for `(A, B, C, D) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<> {
-    fn «cmp»<> (self : `(A, B, C, D), other : `(A, B, C, D)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((D as std::cmp::Ord<  >)::cmp<  > as λ(D, D) → cmp::Ordering<  >)(self.3, other.3);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_104] <C, D, E, A, B> std::cmp::Ord<  > for `(A, B, C, D, E) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<>, E : Ord<> {
-    fn «cmp»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((D as std::cmp::Ord<  >)::cmp<  > as λ(D, D) → cmp::Ordering<  >)(self.3, other.3);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((E as std::cmp::Ord<  >)::cmp<  > as λ(E, E) → cmp::Ordering<  >)(self.4, other.4);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_104] <D, A, B, C, E> std::cmp::Ord<  > for `(A, B, C, D, E) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<>, E : Ord<> {
-    fn «cmp»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((D as std::cmp::Ord<  >)::cmp<  > as λ(D, D) → cmp::Ordering<  >)(self.3, other.3);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((E as std::cmp::Ord<  >)::cmp<  > as λ(E, E) → cmp::Ordering<  >)(self.4, other.4);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_104] <B, C, E, A, D> std::cmp::Ord<  > for `(A, B, C, D, E) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<>, E : Ord<> {
-    fn «cmp»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((D as std::cmp::Ord<  >)::cmp<  > as λ(D, D) → cmp::Ordering<  >)(self.3, other.3);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((E as std::cmp::Ord<  >)::cmp<  > as λ(E, E) → cmp::Ordering<  >)(self.4, other.4);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_104] <E, C, B, A, D> std::cmp::Ord<  > for `(A, B, C, D, E) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<>, E : Ord<> {
-    fn «cmp»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> cmp::Ordering<  > {
-        let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((B as std::cmp::Ord<  >)::cmp<  > as λ(B, B) → cmp::Ordering<  >)(self.1, other.1);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((C as std::cmp::Ord<  >)::cmp<  > as λ(C, C) → cmp::Ordering<  >)(self.2, other.2);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((D as std::cmp::Ord<  >)::cmp<  > as λ(D, D) → cmp::Ordering<  >)(self.3, other.3);
-                skip;
-        };
-        if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
-                    result = ((E as std::cmp::Ord<  >)::cmp<  > as λ(E, E) → cmp::Ordering<  >)(self.4, other.4);
-                skip;
-        };
-        result;
-}
-}
-
-nr_trait_impl[impl_104] <E, C, D, B, A> std::cmp::Ord<  > for `(A, B, C, D, E) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<>, E : Ord<> {
+nr_trait_impl[impl_104] <B, D, A, C, E> std::cmp::Ord<  > for `(A, B, C, D, E) where A : Ord<>, B : Ord<>, C : Ord<>, D : Ord<>, E : Ord<> {
     fn «cmp»<> (self : `(A, B, C, D, E), other : `(A, B, C, D, E)) -> cmp::Ordering<  > {
         let mut result = ((A as std::cmp::Ord<  >)::cmp<  > as λ(A, A) → cmp::Ordering<  >)(self.0, other.0);
         if ((cmp::Ordering<  > as Eq<  >)::eq<  > as λ(cmp::Ordering<  >, cmp::Ordering<  >) → bool)(cmp::Ordering<  >, cmp::Ordering<  >) {
