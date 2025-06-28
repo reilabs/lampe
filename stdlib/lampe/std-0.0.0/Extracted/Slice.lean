@@ -42,7 +42,7 @@ nr_def «slice»::«test»::«for_each_example»<>() -> Unit {
     let a = &[1 : Field, 2 : Field, 3 : Field];
     let mut b = &[];
     let b_ref = #ref(b) : &[Field];
-    (@std::slice::for_each< Field, `(&[Field]) > as λ([Field], λ(Field) → Unit) → Unit)(a, |a : Field| -> Unit     *(b_ref) = #slicePushBack(#readRef(b_ref) : [Field], #fMul(a, 2 : Field) : Field) : [Field];
+    (@std::slice::for_each< Field, `(&[Field]) > as λ([Field], λ(Field) → Unit) → Unit)(a, |a : Field| -> Unit     *(b_ref) = (@std::slice::push_back< Field > as λ([Field], Field) → [Field])(#readRef(b_ref) : [Field], #fMul(a, 2 : Field) : Field);
         skip;);
     #assert(#sliceEq(b, &[2 : Field, 4 : Field, 6 : Field]) : bool) : Unit;
 }
@@ -51,7 +51,7 @@ nr_def «slice»::«test»::«for_eachi_example»<>() -> Unit {
     let a = &[1 : u32, 2 : u32, 3 : u32];
     let mut b = &[];
     let b_ref = #ref(b) : &[u32];
-    (@std::slice::for_eachi< u32, `(&[u32]) > as λ([u32], λ(u32, u32) → Unit) → Unit)(a, |i : u32, a : u32| -> Unit     *(b_ref) = #slicePushBack(#readRef(b_ref) : [u32], #uAdd(i, #uMul(a, 2 : u32) : u32) : u32) : [u32];
+    (@std::slice::for_eachi< u32, `(&[u32]) > as λ([u32], λ(u32, u32) → Unit) → Unit)(a, |i : u32, a : u32| -> Unit     *(b_ref) = (@std::slice::push_back< u32 > as λ([u32], u32) → [u32])(#readRef(b_ref) : [u32], #uAdd(i, #uMul(a, 2 : u32) : u32) : u32);
         skip;);
     #assert(#sliceEq(b, &[2 : u32, 5 : u32, 8 : u32]) : bool) : Unit;
 }
