@@ -202,7 +202,7 @@ nr_def «collections»::«umap»::«UHashMap»::«quadratic_probe»<K, V, B>(sel
     #uRem(#uAdd(hash, #uDiv(#uAdd(attempt, #uMul(attempt, attempt) : u32) : u32, 2 : u32) : u32) : u32, (@std::slice::len< collections::umap::Slot< K, V > > as λ([collections::umap::Slot< K, V >]) → u32)((self as collections::umap::UHashMap< K, V, B >)._table)) : u32;
 }
 
-nr_trait_impl[impl_38] <B, V, K> std::cmp::Eq<  > for collections::umap::UHashMap< K, V, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
+nr_trait_impl[impl_38] <K, V, B> std::cmp::Eq<  > for collections::umap::UHashMap< K, V, B > where K : Eq<>, K : Hash<>, V : Eq<>, B : BuildHasher<> {
     fn «eq»<> (self : collections::umap::UHashMap< K, V, B >, other : collections::umap::UHashMap< K, V, B >) -> bool {
         let mut equal = false;
         if #uEq((@collections::umap::UHashMap::len< K, V, B > as λ(collections::umap::UHashMap< K, V, B >) → u32)(self), (@collections::umap::UHashMap::len< K, V, B > as λ(collections::umap::UHashMap< K, V, B >) → u32)(other)) : bool {
@@ -232,7 +232,7 @@ nr_trait_impl[impl_38] <B, V, K> std::cmp::Eq<  > for collections::umap::UHashMa
 }
 }
 
-nr_trait_impl[impl_39] <K, V, B> std::default::Default<  > for collections::umap::UHashMap< K, V, B > where B : BuildHasher<>, B : Default<> {
+nr_trait_impl[impl_39] <B, V, K> std::default::Default<  > for collections::umap::UHashMap< K, V, B > where B : BuildHasher<>, B : Default<> {
     fn «default»<> () -> collections::umap::UHashMap< K, V, B > {
         (@collections::umap::UHashMap::with_hasher< K, V, B > as λ(B) → collections::umap::UHashMap< K, V, B >)(((B as std::default::Default<  >)::default<  > as λ() → B)());
 }

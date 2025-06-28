@@ -8,7 +8,7 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_24] <N> std::convert::From< str<N> > for [u8; N] where  {
+nr_trait_impl[impl_24] <@N : u32> std::convert::From< str<N> > for [u8; N] where  {
     fn «from»<> (s : str<N>) -> [u8; N] {
         (@str::as_bytes< N:u32 > as λ(str<N>) → [u8; N])(s);
 }
@@ -37,7 +37,6 @@ nr_def «array»::«test»::«test_sort»<>() -> Unit {
     #assert(#arrayEq(sorted, expected) : bool) : Unit;
 }
 
-set_option maxRecDepth 1000 in
 nr_def «array»::«test»::«test_sort_100_values»<>() -> Unit {
     let mut arr = #mkArray(42 : u32, 123 : u32, 87 : u32, 93 : u32, 48 : u32, 80 : u32, 50 : u32, 5 : u32, 104 : u32, 84 : u32, 70 : u32, 47 : u32, 119 : u32, 66 : u32, 71 : u32, 121 : u32, 3 : u32, 29 : u32, 42 : u32, 118 : u32, 2 : u32, 54 : u32, 89 : u32, 44 : u32, 81 : u32, 0 : u32, 26 : u32, 106 : u32, 68 : u32, 96 : u32, 84 : u32, 48 : u32, 95 : u32, 54 : u32, 45 : u32, 32 : u32, 89 : u32, 100 : u32, 109 : u32, 19 : u32, 37 : u32, 41 : u32, 19 : u32, 98 : u32, 53 : u32, 114 : u32, 107 : u32, 66 : u32, 6 : u32, 74 : u32, 13 : u32, 19 : u32, 105 : u32, 64 : u32, 123 : u32, 28 : u32, 44 : u32, 50 : u32, 89 : u32, 58 : u32, 123 : u32, 126 : u32, 21 : u32, 43 : u32, 86 : u32, 35 : u32, 21 : u32, 62 : u32, 82 : u32, 0 : u32, 108 : u32, 120 : u32, 72 : u32, 72 : u32, 62 : u32, 80 : u32, 12 : u32, 71 : u32, 70 : u32, 86 : u32, 116 : u32, 73 : u32, 38 : u32, 15 : u32, 127 : u32, 81 : u32, 30 : u32, 8 : u32, 125 : u32, 28 : u32, 26 : u32, 69 : u32, 114 : u32, 63 : u32, 27 : u32, 28 : u32, 61 : u32, 42 : u32, 13 : u32, 32 : u32) : [u32; 100];
     let sorted = (@std::array::sort< u32, 100 : u32 > as λ([u32; 100]) → [u32; 100])(arr);
@@ -57,7 +56,6 @@ nr_def «array»::«test»::«test_sort_via»<>() -> Unit {
     #assert(#arrayEq(sorted, expected) : bool) : Unit;
 }
 
-set_option maxRecDepth 1000 in
 nr_def «array»::«test»::«test_sort_via_100_values»<>() -> Unit {
     let mut arr = #mkArray(42 : u32, 123 : u32, 87 : u32, 93 : u32, 48 : u32, 80 : u32, 50 : u32, 5 : u32, 104 : u32, 84 : u32, 70 : u32, 47 : u32, 119 : u32, 66 : u32, 71 : u32, 121 : u32, 3 : u32, 29 : u32, 42 : u32, 118 : u32, 2 : u32, 54 : u32, 89 : u32, 44 : u32, 81 : u32, 0 : u32, 26 : u32, 106 : u32, 68 : u32, 96 : u32, 84 : u32, 48 : u32, 95 : u32, 54 : u32, 45 : u32, 32 : u32, 89 : u32, 100 : u32, 109 : u32, 19 : u32, 37 : u32, 41 : u32, 19 : u32, 98 : u32, 53 : u32, 114 : u32, 107 : u32, 66 : u32, 6 : u32, 74 : u32, 13 : u32, 19 : u32, 105 : u32, 64 : u32, 123 : u32, 28 : u32, 44 : u32, 50 : u32, 89 : u32, 58 : u32, 123 : u32, 126 : u32, 21 : u32, 43 : u32, 86 : u32, 35 : u32, 21 : u32, 62 : u32, 82 : u32, 0 : u32, 108 : u32, 120 : u32, 72 : u32, 72 : u32, 62 : u32, 80 : u32, 12 : u32, 71 : u32, 70 : u32, 86 : u32, 116 : u32, 73 : u32, 38 : u32, 15 : u32, 127 : u32, 81 : u32, 30 : u32, 8 : u32, 125 : u32, 28 : u32, 26 : u32, 69 : u32, 114 : u32, 63 : u32, 27 : u32, 28 : u32, 61 : u32, 42 : u32, 13 : u32, 32 : u32) : [u32; 100];
     let sorted = (@std::array::sort_via< u32, 100 : u32, Unit > as λ([u32; 100], λ(u32, u32) → bool) → [u32; 100])(arr, (@std::array::test::sort_u32<  > as λ(u32, u32) → bool));
@@ -109,7 +107,7 @@ nr_def «array»::«test»::«for_each_example»<>() -> Unit {
 nr_def «array»::«test»::«for_eachi_example»<>() -> Unit {
     let a = #mkArray(1 : u32, 2 : u32, 3 : u32) : [u32; 3];
     let mut b = #mkArray(0 : u32, 0 : u32, 0 : u32) : [u32; 3];
-    let b_ref = #ref(b) : & [u32; 3];
+    let b_ref = #ref(b) : &[u32; 3];
     (@std::array::for_eachi< u32, 3 : u32, `(&[u32; 3]) > as λ([u32; 3], λ(u32, u32) → Unit) → Unit)(a, |i : u32, a : u32| -> Unit     *(b_ref)[#cast(i) : u32] = #uAdd(i, #uMul(a, 2 : u32) : u32) : u32;
         skip;);
     #assert(#arrayEq(b, #mkArray(2 : u32, 5 : u32, 8 : u32) : [u32; 3]) : bool) : Unit;
