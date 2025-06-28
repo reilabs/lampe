@@ -22,15 +22,15 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | constFp : Int → Expr rep .field
 | constU : U w → Expr rep (.u w)
 | fmtStr : (len : U 32) → (tps : Tp) → FormatString len tps → Expr rep (.fmtStr len tps)
-| fn : (r : FuncRef) → Expr rep .fn
+| fn : (argTps : List Tp) → (outTp : Tp) → (r : FuncRef argTps outTp) → Expr rep (.fn argTps outTp)
 | var : rep tp → Expr rep tp
 | letIn : Expr rep t₁ → (rep t₁ → Expr rep t₂) → Expr rep t₂
-| call : (argTps : List Tp) → (outTp : Tp) → (rep .fn) → (args : HList rep argTps) → Expr rep outTp
+| call : (argTps : List Tp) → (outTp : Tp) → (rep $ .fn argTps outTp) → (args : HList rep argTps) → Expr rep outTp
 | callBuiltin : (argTps : List Tp) → (outTp : Tp) → (b : Builtin) → (args : HList rep argTps) → Expr rep outTp
 | ite : rep .bool → Expr rep a → Expr rep a → Expr rep a
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
-| lam : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep .fn
+| lam : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep (.fn argTps outTp)
 
 structure Lambda (rep : Tp → Type) where
   argTps : List Tp
