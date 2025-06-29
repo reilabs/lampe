@@ -112,7 +112,7 @@ nr_trait_impl[impl_82] <@N : u32> std::cmp::Eq<  > for str<N> where  {
     fn «eq»<> (self : str<N>, other : str<N>) -> bool {
         let self_bytes = (@str::as_bytes< N:u32 > as λ(str<N>) → [u8; N])(self);
         let other_bytes = (@str::as_bytes< N:u32 > as λ(str<N>) → [u8; N])(other);
-        #arrayEq(self_bytes, other_bytes) : bool;
+        (([u8; N] as Eq<  >)::eq<  > as λ([u8; N], [u8; N]) → bool)(self_bytes, other_bytes);
 }
 }
 

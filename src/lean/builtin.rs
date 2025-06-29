@@ -5,7 +5,7 @@ use noirc_frontend::{
     TypeBinding,
 };
 
-pub type  BuiltinName = String;
+pub type BuiltinName = String;
 
 pub const CAST_BUILTIN_NAME: &str = "cast";
 pub const ASSERT_BUILTIN_NAME: &str = "assert";
@@ -153,8 +153,26 @@ pub fn try_infix_into_builtin_name(
         BinaryOpKind::Multiply if lhs_type.is_arithmetic() => Some(format!("{ty_name}Mul")),
         BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(format!("{ty_name}Rem")),
         // Cmp
-        BinaryOpKind::Equal => Some(format!("{ty_name}Eq")),
-        BinaryOpKind::NotEqual => Some(format!("{ty_name}Neq")),
+        BinaryOpKind::Equal => {
+            if !matches!(
+                lhs_type,
+                BuiltinType::Array | BuiltinType::String | BuiltinType::Slice
+            ) {
+                Some(format!("{ty_name}Eq"))
+            } else {
+                None
+            }
+        }
+        BinaryOpKind::NotEqual => {
+            if !matches!(
+                lhs_type,
+                BuiltinType::Array | BuiltinType::String | BuiltinType::Slice
+            ) {
+                Some(format!("{ty_name}Neq"))
+            } else {
+                None
+            }
+        }
         BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(format!("{ty_name}Gt")),
         BinaryOpKind::GreaterEqual if lhs_type.is_arithmetic() => Some(format!("{ty_name}Geq")),
         BinaryOpKind::Less if lhs_type.is_arithmetic() => Some(format!("{ty_name}Lt")),

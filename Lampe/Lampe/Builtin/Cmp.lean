@@ -55,10 +55,6 @@ def strEq := newGenericTotalPureBuiltin
   (fun n => ⟨[.str n, .str n], .bool⟩)
   (fun _ h![a, b] => a = b)
 
-def arrayEq := newGenericTotalPureBuiltin (A := Tp × U 32)
-  (fun (tp, n) => ⟨[.array tp n, .array tp n], .bool⟩)
-  (fun _ h![a, b] => false)
-
 /--
 Defines the less-than comparison between uint values of bit size `s`.
 We assume that the comparison between two uints evaluates to `true` if and only if the first uint is less than the second uint.
@@ -77,7 +73,17 @@ In Noir, this builtin corresponds to `a <= b` for uints `a`, `b`.
 -/
 def uLeq := newGenericTotalPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], .bool⟩)
-  (fun _ h![a, b] => a < b)
+  (fun _ h![a, b] => a ≤ b)
+
+/--
+Defines the less-than comparison between uint values of bit size `s`.
+We assume that the comparison between two uints evaluates to `true` if and only if the first uint is less than the second uint.
+
+In Noir, this builtin corresponds to `a >= b` for uints `a`, `b`.
+-/
+def uGeq := newGenericTotalPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], .bool⟩)
+  (fun _ h![a, b] => a ≥ b)
 
 /--
 Defines the less-than comparison between int values of bit size `s`.
