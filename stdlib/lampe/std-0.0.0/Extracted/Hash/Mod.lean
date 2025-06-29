@@ -78,7 +78,7 @@ nr_def «hash»::«__derive_generators»<@N : u32, @M : u32>(domain_separator_by
 }
 
 nr_def «hash»::«from_field_unsafe»<>(scalar : Field) -> embedded_curve_ops::EmbeddedCurveScalar<  > {
-    let π0 =     (@std::field::bn254::decompose_hint<  > as λ(Field) → `(Field, Field))(scalar);;
+    let π0 = {        (@std::field::bn254::decompose_hint<  > as λ(Field) → `(Field, Field))(scalar);};
     let xlo = π0.0;
     let xhi = π0.1;
     #assert(#fEq(scalar, #fAdd(xlo, #fMul((@TWO_POW_128<  > as λ() → Field)(), xhi) : Field) : Field) : bool) : Unit;

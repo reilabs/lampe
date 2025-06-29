@@ -489,7 +489,9 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| $s:str) => do wrapSimple (←`(Expr.litStr (String.length $s) (⟨String.data $s, by rfl⟩))) vname k
 | `(nr_expr| true) => do wrapSimple (←`(Expr.litNum Tp.bool 1)) vname k
 | `(nr_expr| false) => do wrapSimple (←`(Expr.litNum Tp.bool 0)) vname k
-| `(nr_expr| { $exprs;* }) => mkBlock exprs.getElems.toList k
+| `(nr_expr| { $exprs;* }) => do
+  let block ← mkBlock exprs.getElems.toList (fun x => `(Expr.var $x))
+  wrapSimple block vname k
 | `(nr_expr| $i:ident) => do
   if ←isAutoDeref i.getId then
     wrapSimple (← `(Expr.readRef $i)) vname k
@@ -628,6 +630,7 @@ def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadErro
   let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
   let params : List (TSyntax `term × TSyntax `term × Bool) ← params.getElems.toList.mapM fun p => match p with
     | `(nr_param_decl|$i:ident : $tp) => do pure (i, ←mkNrType tp, false)
+    | `(nr_param_decl|_ : $tp) => do pure (←`(_), ←mkNrType tp, false)
     | `(nr_param_decl|mut $i:ident : $tp) => do pure (i, ←mkNrType tp, true)
     | _ => throwUnsupportedSyntax
   let mutParams : List (TSyntax `term) := params.filter (fun (_, _, isMut) => isMut) |>.map (fun (i, _, _) => i)

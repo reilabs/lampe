@@ -64,7 +64,7 @@ nr_def «collections»::«umap»::«UHashMap»::«clear»<K, V, B>(self : & coll
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«contains_key»<K, V, B, B_as_BuildHasher_H>(self : collections::umap::UHashMap< K, V, B >, key : K) -> bool {
-    (@option::Option::is_some< V > as λ(option::Option< V >) → bool)(    (@collections::umap::UHashMap::get< K, V, B, B_as_BuildHasher_H > as λ(collections::umap::UHashMap< K, V, B >, K) → option::Option< V >)(self, key););
+    (@option::Option::is_some< V > as λ(option::Option< V >) → bool)({        (@collections::umap::UHashMap::get< K, V, B, B_as_BuildHasher_H > as λ(collections::umap::UHashMap< K, V, B >, K) → option::Option< V >)(self, key);});
 }
 
 nr_def «collections»::«umap»::«UHashMap»::«is_empty»<K, V, B>(self : collections::umap::UHashMap< K, V, B >) -> bool {
@@ -214,7 +214,7 @@ nr_trait_impl[impl_38] <K, V, B, B_as_BuildHasher_H> std::cmp::Eq<  > for collec
                                                     let π0 = (@collections::umap::Slot::key_value_unchecked< K, V > as λ(collections::umap::Slot< K, V >) → `(K, V))(slot);
                                                 let key = π0.0;
                                                 let value = π0.1;
-                                                let other_value =         (@collections::umap::UHashMap::get< K, V, B, B_as_BuildHasher_H > as λ(collections::umap::UHashMap< K, V, B >, K) → option::Option< V >)(other, key);
+                                                let other_value = {            (@collections::umap::UHashMap::get< K, V, B, B_as_BuildHasher_H > as λ(collections::umap::UHashMap< K, V, B >, K) → option::Option< V >)(other, key);};
                                                 if (@option::Option::is_none< V > as λ(option::Option< V >) → bool)(other_value) {
                                                             equal = false;
                                                         skip;

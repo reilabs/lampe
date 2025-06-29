@@ -51,7 +51,7 @@ nr_def «field»::«bytes32_to_field»<>(bytes32 : [u8; 32]) -> Field {
 
 nr_def «field»::«lt_fallback»<>(x : Field, y : Field) -> bool {
     if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
-                (@std::field::field_less_than<  > as λ(Field, Field) → bool)(x, y);
+            {        (@std::field::field_less_than<  > as λ(Field, Field) → bool)(x, y);};
     } else {
             let x_bytes = (@Field::to_le_bytes< 32 : u32 > as λ(Field) → [u8; 32])(x);
         let y_bytes = (@Field::to_le_bytes< 32 : u32 > as λ(Field) → [u8; 32])(y);

@@ -75,7 +75,7 @@ pub enum EmitOutput {
 
 #[derive(Debug)]
 pub struct TotalEmitOutput {
-    pub type_content:  String,
+    pub type_content: String,
     pub decl_contents: HashMap<FileId, String>,
 }
 
@@ -121,7 +121,7 @@ impl std::fmt::Display for EmitOutput {
 pub struct ModuleEntries {
     pub impl_refs: HashSet<String>,
     pub func_refs: HashSet<String>,
-    pub defs:      Vec<(Option<Location>, EmitOutput)>,
+    pub defs: Vec<(Option<Location>, EmitOutput)>,
 }
 
 /// An emitter for specialized Lean definitions based on the corresponding Noir
@@ -611,7 +611,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let type_name = self.emit_fully_qualified_type(&alias_data.typ, ctx);
         let formatted = syntax::format_alias(&alias_name, &generics, &type_name);
         Ok(EmitTypeOutput {
-            name:    alias_name,
+            name: alias_name,
             content: formatted,
         })
     }
@@ -1333,8 +1333,28 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // Get the output type of this expression.
         let out_ty = self.id_bound_type(expr);
         let out_ty_str = self.emit_fully_qualified_type(&out_ty, ctx);
-        let expression = match expr_data {
-            HirExpression::Block(block) | HirExpression::Unsafe(block) => {
+        let mut expression = match expr_data {
+            HirExpression::Unsafe(block) => {
+                ind.indent();
+                let mut statements: Vec<String> = block
+                    .statements
+                    .iter()
+                    .map(|stmt| {
+                        let stmt_line = self.emit_statement(ind, *stmt, ctx)?;
+                        Ok(ind.run(stmt_line))
+                    })
+                    .try_collect()?;
+
+                if let Some(last_stmt_id) = block.statements.iter().last() {
+                    let last_stmt = self.context.def_interner.statement(last_stmt_id);
+                    if matches!(last_stmt, HirStatement::Assign(_)) {
+                        statements.push(ind.run("skip;"));
+                    }
+                };
+                ind.dedent()?;
+                format!("{{{}}}", statements.join("\n"))
+            }
+            HirExpression::Block(block) => {
                 let mut statements: Vec<String> = block
                     .statements
                     .iter()
@@ -2069,224 +2089,224 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 )
             }
             HirLiteral::Str(str) => format!("\"{str}\""),
-            HirLiteral::FmtStr(str_parts, vars, _) => {
-                let tp = self.id_bound_type(expr);
-                let tpstr = match tp {
-                    Type::FmtString(_, args) => self.emit_fully_qualified_type(&args, ctx),
-                    _ => panic!("Expected FmtString type, got {tp}"),
-                };
-                println!("{tpstr}");
-                let output_str = str_parts.iter().fold(String::new(), |mut acc, part| {
-                    match part {
-                        noirc_frontend::token::FmtStrFragment::String(s) => acc.push_str(s),
-                        noirc_frontend::token::FmtStrFragment::Interpolation(inner, _) => {
-                            acc.push_str(&format!("{{{inner}}}"));
+                HirLiteral::FmtStr(str_parts, vars, _) => {
+                    let tp = self.id_bound_type(expr);
+                    let tpstr = match tp {
+                        Type::FmtString(_, args) => self.emit_fully_qualified_type(&args, ctx),
+                        _ => panic!("Expected FmtString type, got {tp}"),
+                    };
+                    println!("{tpstr}");
+                    let output_str = str_parts.iter().fold(String::new(), |mut acc, part| {
+                        match part {
+                            noirc_frontend::token::FmtStrFragment::String(s) => acc.push_str(s),
+                            noirc_frontend::token::FmtStrFragment::Interpolation(inner, _) => {
+                                acc.push_str(&format!("{{{inner}}}"));
+                            }
                         }
-                    }
-                    acc
-                });
+                        acc
+                    });
 
-                let output_vars = vars
-                    .iter()
-                    .flat_map(|&var_id| self.emit_expr(ind, var_id, ctx))
-                    .join(", ");
-                format!("#format<{tpstr}>(\"{output_str}\", {output_vars})")
-            }
-            HirLiteral::Unit => syntax::literal::format_unit(),
-        };
+                    let output_vars = vars
+                        .iter()
+                        .flat_map(|&var_id| self.emit_expr(ind, var_id, ctx))
+                        .join(", ");
+                    format!("#format<{tpstr}>(\"{output_str}\", {output_vars})")
+                }
+                HirLiteral::Unit => syntax::literal::format_unit(),
+            };
 
-        Ok(result)
+            Ok(result)
+        }
+
+        /// Generates a function parameter string from the provided parameters.
+        ///
+        /// # Errors
+        ///
+        /// - [`Error`] if the extraction process fails for any reason.
+        pub fn emit_parameters(&self, params: &Parameters, ctx: &EmitterCtx) -> Result<String> {
+            let result_params: Vec<String> = params
+                .iter()
+                .map(|(pattern, typ, ..)| {
+                    let (ident, ismut) = expect_identifier(pattern)?;
+                    // if ismut {
+                    //     panic!("AAAAAAA")
+                    // }
+                    let name = self.context.def_interner.definition_name(ident.id);
+
+                    let mut_mod = if ismut { "mut " } else { "" };
+                    let qualified_type = self.emit_fully_qualified_type(typ, ctx);
+
+                    Ok(format!("{mut_mod}{name} : {qualified_type}"))
+                })
+                .try_collect()?;
+
+            Ok(result_params.join(", "))
+        }
+
+        fn emit_cast_to_u32(&self, expr: &str, ctx: &EmitterCtx) -> String {
+            syntax::expr::format_builtin_call(
+                &builtin::CAST_BUILTIN_NAME.into(),
+                expr,
+                &self.emit_fully_qualified_type(
+                    &Type::Integer(Signedness::Unsigned, IntegerBitSize::ThirtyTwo),
+                    ctx,
+                ),
+            )
+        }
     }
 
-    /// Generates a function parameter string from the provided parameters.
+    /// Collects the named generics from a type recursively.
+    #[must_use]
+    pub fn collect_named_generics(typ: &Type) -> Vec<NamedGeneric> {
+        match typ {
+            Type::String(inner_type) | Type::Slice(inner_type) | Type::Reference(inner_type, _) => {
+                collect_named_generics(inner_type)
+            }
+            Type::Array(size, inner_type) => {
+                let mut result = collect_named_generics(size);
+                result.append(&mut collect_named_generics(inner_type));
+                result
+            }
+            Type::Tuple(elems) => elems.iter().flat_map(collect_named_generics).collect_vec(),
+            Type::DataType(_, generics)
+            | Type::TraitAsType(
+                _,
+                _,
+                TraitGenerics {
+                    ordered: generics, ..
+                },
+            ) => generics.iter().flat_map(collect_named_generics).collect_vec(),
+            Type::Bool | Type::Integer(..) | Type::FmtString(..) | Type::Unit | Type::FieldElement => {
+                Vec::new()
+            }
+            Type::NamedGeneric(ng) => Vec::from([ng.clone()]),
+            Type::Alias(..) => unimplemented!("Collect Gens Alias {typ}"),
+            Type::Constant(..) => unimplemented!("Collect Gens Constant {typ}"),
+            Type::Quoted(_) => unimplemented!("Collect Gens Quoted {typ}"),
+            _ => unimplemented!("cannot collect named generics from {:?} (yet)", typ),
+        }
+    }
+
+    #[must_use]
+    fn emit_numeric_type_const(typ: &Type) -> String {
+        match typ {
+            Type::TypeVariable(tv) => match &*tv.borrow() {
+                TypeBinding::Bound(b) => {
+                    let b = b.follow_bindings();
+                    emit_numeric_type_const(&b)
+                }
+                TypeBinding::Unbound(..) => format!("{typ}"),
+            },
+            Type::Constant(num, Kind::Numeric(_)) => format!("{num}"),
+
+            _ => format!("{typ}"),
+        }
+    }
+
+    /// Given a type `T` and a `TypeBindings` map `m`, returns a new type where
+    /// the type variables in `T` have been recursively substituted with the
+    /// values in `m`.
+    #[must_use]
+    fn substitute_bindings(typ: &Type, bindings: &TypeBindings) -> Type {
+        match typ {
+            Type::TypeVariable(tv) | Type::NamedGeneric(NamedGeneric { type_var: tv, .. }) => bindings
+                .get(&tv.id())
+                .map(|(_, _, t)| t)
+                .cloned()
+                .unwrap_or(typ.clone()),
+            Type::Array(n, e) => Type::Array(
+                Box::new(substitute_bindings(n.as_ref(), bindings)),
+                Box::new(substitute_bindings(e.as_ref(), bindings)),
+            ),
+            Type::Slice(e) => Type::Slice(Box::new(substitute_bindings(e.as_ref(), bindings))),
+            Type::String(n) => Type::String(Box::new(substitute_bindings(n, bindings))),
+            Type::FmtString(n, vec) => Type::FmtString(
+                Box::new(substitute_bindings(n, bindings)),
+                Box::new(substitute_bindings(vec, bindings)),
+            ),
+            Type::Tuple(vec) => {
+                Type::Tuple(vec.iter().map(|t| substitute_bindings(t, bindings)).collect())
+            }
+            Type::DataType(definition, generics) => Type::DataType(
+                definition.clone(),
+                generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
+            ),
+            Type::Alias(def, generics) => Type::Alias(
+                def.clone(),
+                generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
+            ),
+            Type::Function(params, ret, env, unconstrained) => Type::Function(
+                params.iter().map(|t| substitute_bindings(t, bindings)).collect(),
+                Box::new(substitute_bindings(ret, bindings)),
+                Box::new(substitute_bindings(env, bindings)),
+                *unconstrained,
+            ),
+            Type::TraitAsType(id, name, generics) => Type::TraitAsType(
+                *id,
+                name.clone(),
+                TraitGenerics {
+                    ordered: generics
+                        .ordered
+                        .iter()
+                        .map(|t| substitute_bindings(t, bindings))
+                        .collect(),
+                    named: generics
+                        .named
+                        .iter()
+                        .map(|t| NamedType {
+                            name: t.name.clone(),
+                            typ: substitute_bindings(&t.typ, bindings),
+                        })
+                        .collect(),
+                },
+            ),
+            Type::Reference(t, is_const) => {
+                Type::Reference(Box::new(substitute_bindings(t, bindings)), *is_const)
+            }
+            Type::Forall(tvs, t) => {
+                Type::Forall(tvs.clone(), Box::new(substitute_bindings(t, bindings)))
+            }
+            _ => typ.clone(),
+        }
+    }
+
+    /// If `typ` is an alias, unfolds it until it is no longer an alias.
+    #[must_use]
+    fn unfold_alias(typ: Type) -> Type {
+        match typ {
+            Type::Alias(alias, generics) => {
+                let unfolded_typ = alias.borrow().get_type(&generics);
+                unfold_alias(unfolded_typ)
+            }
+            typ => typ,
+        }
+    }
+
+    /// Expects that the provided pattern is an HIR identifier.
     ///
     /// # Errors
     ///
-    /// - [`Error`] if the extraction process fails for any reason.
-    pub fn emit_parameters(&self, params: &Parameters, ctx: &EmitterCtx) -> Result<String> {
-        let result_params: Vec<String> = params
-            .iter()
-            .map(|(pattern, typ, ..)| {
-                let (ident, ismut) = expect_identifier(pattern)?;
-                // if ismut {
-                //     panic!("AAAAAAA")
-                // }
-                let name = self.context.def_interner.definition_name(ident.id);
-
-                let mut_mod = if ismut { "mut " } else { "" };
-                let qualified_type = self.emit_fully_qualified_type(typ, ctx);
-
-                Ok(format!("{mut_mod}{name} : {qualified_type}"))
-            })
-            .try_collect()?;
-
-        Ok(result_params.join(", "))
-    }
-
-    fn emit_cast_to_u32(&self, expr: &str, ctx: &EmitterCtx) -> String {
-        syntax::expr::format_builtin_call(
-            &builtin::CAST_BUILTIN_NAME.into(),
-            expr,
-            &self.emit_fully_qualified_type(
-                &Type::Integer(Signedness::Unsigned, IntegerBitSize::ThirtyTwo),
-                ctx,
-            ),
-        )
-    }
-}
-
-/// Collects the named generics from a type recursively.
-#[must_use]
-pub fn collect_named_generics(typ: &Type) -> Vec<NamedGeneric> {
-    match typ {
-        Type::String(inner_type) | Type::Slice(inner_type) | Type::Reference(inner_type, _) => {
-            collect_named_generics(inner_type)
-        }
-        Type::Array(size, inner_type) => {
-            let mut result = collect_named_generics(size);
-            result.append(&mut collect_named_generics(inner_type));
-            result
-        }
-        Type::Tuple(elems) => elems.iter().flat_map(collect_named_generics).collect_vec(),
-        Type::DataType(_, generics)
-        | Type::TraitAsType(
-            _,
-            _,
-            TraitGenerics {
-                ordered: generics, ..
+    /// - [`Error::MissingIdentifier`] if the provided `pattern` is not an
+    ///   identifier.
+    pub fn expect_identifier(pattern: &HirPattern) -> Result<(HirIdent, bool)> {
+        match pattern {
+            HirPattern::Identifier(ident) => Ok((ident.clone(), false)),
+            HirPattern::Mutable(ident, _) => match *ident.clone() {
+                HirPattern::Identifier(ident) => Ok((ident.clone(), true)),
+                _ => Err(Error::MissingIdentifier(format!("{pattern:?}"))),
             },
-        ) => generics.iter().flat_map(collect_named_generics).collect_vec(),
-        Type::Bool | Type::Integer(..) | Type::FmtString(..) | Type::Unit | Type::FieldElement => {
-            Vec::new()
-        }
-        Type::NamedGeneric(ng) => Vec::from([ng.clone()]),
-        Type::Alias(..) => unimplemented!("Collect Gens Alias {typ}"),
-        Type::Constant(..) => unimplemented!("Collect Gens Constant {typ}"),
-        Type::Quoted(_) => unimplemented!("Collect Gens Quoted {typ}"),
-        _ => unimplemented!("cannot collect named generics from {:?} (yet)", typ),
-    }
-}
-
-#[must_use]
-fn emit_numeric_type_const(typ: &Type) -> String {
-    match typ {
-        Type::TypeVariable(tv) => match &*tv.borrow() {
-            TypeBinding::Bound(b) => {
-                let b = b.follow_bindings();
-                emit_numeric_type_const(&b)
-            }
-            TypeBinding::Unbound(..) => format!("{typ}"),
-        },
-        Type::Constant(num, Kind::Numeric(_)) => format!("{num}"),
-
-        _ => format!("{typ}"),
-    }
-}
-
-/// Given a type `T` and a `TypeBindings` map `m`, returns a new type where
-/// the type variables in `T` have been recursively substituted with the
-/// values in `m`.
-#[must_use]
-fn substitute_bindings(typ: &Type, bindings: &TypeBindings) -> Type {
-    match typ {
-        Type::TypeVariable(tv) | Type::NamedGeneric(NamedGeneric { type_var: tv, .. }) => bindings
-            .get(&tv.id())
-            .map(|(_, _, t)| t)
-            .cloned()
-            .unwrap_or(typ.clone()),
-        Type::Array(n, e) => Type::Array(
-            Box::new(substitute_bindings(n.as_ref(), bindings)),
-            Box::new(substitute_bindings(e.as_ref(), bindings)),
-        ),
-        Type::Slice(e) => Type::Slice(Box::new(substitute_bindings(e.as_ref(), bindings))),
-        Type::String(n) => Type::String(Box::new(substitute_bindings(n, bindings))),
-        Type::FmtString(n, vec) => Type::FmtString(
-            Box::new(substitute_bindings(n, bindings)),
-            Box::new(substitute_bindings(vec, bindings)),
-        ),
-        Type::Tuple(vec) => {
-            Type::Tuple(vec.iter().map(|t| substitute_bindings(t, bindings)).collect())
-        }
-        Type::DataType(definition, generics) => Type::DataType(
-            definition.clone(),
-            generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
-        ),
-        Type::Alias(def, generics) => Type::Alias(
-            def.clone(),
-            generics.iter().map(|t| substitute_bindings(t, bindings)).collect(),
-        ),
-        Type::Function(params, ret, env, unconstrained) => Type::Function(
-            params.iter().map(|t| substitute_bindings(t, bindings)).collect(),
-            Box::new(substitute_bindings(ret, bindings)),
-            Box::new(substitute_bindings(env, bindings)),
-            *unconstrained,
-        ),
-        Type::TraitAsType(id, name, generics) => Type::TraitAsType(
-            *id,
-            name.clone(),
-            TraitGenerics {
-                ordered: generics
-                    .ordered
-                    .iter()
-                    .map(|t| substitute_bindings(t, bindings))
-                    .collect(),
-                named:   generics
-                    .named
-                    .iter()
-                    .map(|t| NamedType {
-                        name: t.name.clone(),
-                        typ:  substitute_bindings(&t.typ, bindings),
-                    })
-                    .collect(),
-            },
-        ),
-        Type::Reference(t, is_const) => {
-            Type::Reference(Box::new(substitute_bindings(t, bindings)), *is_const)
-        }
-        Type::Forall(tvs, t) => {
-            Type::Forall(tvs.clone(), Box::new(substitute_bindings(t, bindings)))
-        }
-        _ => typ.clone(),
-    }
-}
-
-/// If `typ` is an alias, unfolds it until it is no longer an alias.
-#[must_use]
-fn unfold_alias(typ: Type) -> Type {
-    match typ {
-        Type::Alias(alias, generics) => {
-            let unfolded_typ = alias.borrow().get_type(&generics);
-            unfold_alias(unfolded_typ)
-        }
-        typ => typ,
-    }
-}
-
-/// Expects that the provided pattern is an HIR identifier.
-///
-/// # Errors
-///
-/// - [`Error::MissingIdentifier`] if the provided `pattern` is not an
-///   identifier.
-pub fn expect_identifier(pattern: &HirPattern) -> Result<(HirIdent, bool)> {
-    match pattern {
-        HirPattern::Identifier(ident) => Ok((ident.clone(), false)),
-        HirPattern::Mutable(ident, _) => match *ident.clone() {
-            HirPattern::Identifier(ident) => Ok((ident.clone(), true)),
             _ => Err(Error::MissingIdentifier(format!("{pattern:?}"))),
-        },
-        _ => Err(Error::MissingIdentifier(format!("{pattern:?}"))),
+        }
     }
-}
 
-/// A structure representing the output from an emit phase.
-#[derive(Debug, Eq, PartialEq)]
-pub struct EmitTypeOutput {
-    /// The name of the output, uses for sorting to ensure consistent ordering.
-    name: String,
+    /// A structure representing the output from an emit phase.
+    #[derive(Debug, Eq, PartialEq)]
+    pub struct EmitTypeOutput {
+        /// The name of the output, uses for sorting to ensure consistent ordering.
+        name: String,
 
-    /// The result of the output phase for the item.
-    content: String,
-}
+        /// The result of the output phase for the item.
+        content: String,
+    }
 
 // TODO Proper emit tests

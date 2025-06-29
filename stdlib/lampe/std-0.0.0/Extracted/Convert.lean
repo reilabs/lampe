@@ -140,182 +140,14 @@ nr_trait_impl[impl_61] <> std::convert::From< bool > for Field where  {
 }
 }
 
-nr_trait_impl[impl_345] <> std::convert::AsPrimitive< u32 > for i8 where  {
-    fn «as_»<> (self : i8) -> u32 {
-        #cast(self) : u32;
-}
-}
-
-nr_trait_impl[impl_346] <> std::convert::AsPrimitive< u32 > for i16 where  {
-    fn «as_»<> (self : i16) -> u32 {
-        #cast(self) : u32;
-}
-}
-
-nr_trait_impl[impl_343] <> std::convert::AsPrimitive< u32 > for u64 where  {
-    fn «as_»<> (self : u64) -> u32 {
-        #cast(self) : u32;
-}
-}
-
-nr_trait_impl[impl_312] <> std::convert::AsPrimitive< bool > for i8 where  {
-    fn «as_»<> (self : i8) -> bool {
-        #iNeq(self, 0 : i8) : bool;
-}
-}
-
-nr_trait_impl[impl_348] <> std::convert::AsPrimitive< u32 > for i64 where  {
-    fn «as_»<> (self : i64) -> u32 {
-        #cast(self) : u32;
-}
-}
-
-nr_trait_impl[impl_311] <> std::convert::AsPrimitive< bool > for u128 where  {
-    fn «as_»<> (self : u128) -> bool {
-        #uNeq(self, 0 : u128) : bool;
-}
-}
-
-nr_trait_impl[impl_313] <> std::convert::AsPrimitive< bool > for i16 where  {
-    fn «as_»<> (self : i16) -> bool {
-        #iNeq(self, 0 : i16) : bool;
-}
-}
-
-nr_trait_impl[impl_308] <> std::convert::AsPrimitive< bool > for u16 where  {
-    fn «as_»<> (self : u16) -> bool {
-        #uNeq(self, 0 : u16) : bool;
-}
-}
-
-nr_trait_impl[impl_409] <> std::convert::AsPrimitive< i64 > for u64 where  {
-    fn «as_»<> (self : u64) -> i64 {
-        #cast(self) : i64;
-}
-}
-
-nr_trait_impl[impl_341] <> std::convert::AsPrimitive< u32 > for u16 where  {
-    fn «as_»<> (self : u16) -> u32 {
-        #cast(self) : u32;
-}
-}
-
-nr_trait_impl[impl_353] <> std::convert::AsPrimitive< u64 > for u32 where  {
-    fn «as_»<> (self : u32) -> u64 {
-        #cast(self) : u64;
-}
-}
-
-nr_trait_impl[impl_327] <> std::convert::AsPrimitive< u8 > for Field where  {
-    fn «as_»<> (self : Field) -> u8 {
-        #cast(self) : u8;
-}
-}
-
-nr_trait_impl[impl_395] <> std::convert::AsPrimitive< i32 > for u8 where  {
-    fn «as_»<> (self : u8) -> i32 {
-        #cast(self) : i32;
-}
-}
-
-nr_trait_impl[impl_421] <> std::convert::AsPrimitive< Field > for u128 where  {
-    fn «as_»<> (self : u128) -> Field {
-        #cast(self) : Field;
-}
-}
-
-nr_trait_impl[impl_335] <> std::convert::AsPrimitive< u16 > for i16 where  {
-    fn «as_»<> (self : i16) -> u16 {
-        #cast(self) : u16;
-}
-}
-
-nr_trait_impl[impl_387] <> std::convert::AsPrimitive< i16 > for u64 where  {
-    fn «as_»<> (self : u64) -> i16 {
-        #cast(self) : i16;
-}
-}
-
-nr_trait_impl[impl_392] <> std::convert::AsPrimitive< i16 > for i64 where  {
-    fn «as_»<> (self : i64) -> i16 {
-        #cast(self) : i16;
-}
-}
-
-nr_trait_impl[impl_408] <> std::convert::AsPrimitive< i64 > for u32 where  {
-    fn «as_»<> (self : u32) -> i64 {
-        #cast(self) : i64;
-}
-}
-
-nr_trait_impl[impl_338] <> std::convert::AsPrimitive< u16 > for Field where  {
-    fn «as_»<> (self : Field) -> u16 {
-        #cast(self) : u16;
-}
-}
-
-nr_trait_impl[impl_329] <> std::convert::AsPrimitive< u16 > for u8 where  {
-    fn «as_»<> (self : u8) -> u16 {
-        #cast(self) : u16;
-}
-}
-
-nr_trait_impl[impl_405] <> std::convert::AsPrimitive< i64 > for bool where  {
-    fn «as_»<> (self : bool) -> i64 {
-        #cast(self) : i64;
-}
-}
-
-nr_trait_impl[impl_330] <> std::convert::AsPrimitive< u16 > for u16 where  {
-    fn «as_»<> (self : u16) -> u16 {
+nr_trait_impl[impl_402] <> std::convert::AsPrimitive< i32 > for i32 where  {
+    fn «as_»<> (self : i32) -> i32 {
         self;
 }
 }
 
-nr_trait_impl[impl_406] <> std::convert::AsPrimitive< i64 > for u8 where  {
-    fn «as_»<> (self : u8) -> i64 {
-        #cast(self) : i64;
-}
-}
-
-nr_trait_impl[impl_324] <> std::convert::AsPrimitive< u8 > for i16 where  {
-    fn «as_»<> (self : i16) -> u8 {
-        #cast(self) : u8;
-}
-}
-
-nr_trait_impl[impl_397] <> std::convert::AsPrimitive< i32 > for u32 where  {
-    fn «as_»<> (self : u32) -> i32 {
-        #cast(self) : i32;
-}
-}
-
-nr_trait_impl[impl_369] <> std::convert::AsPrimitive< u128 > for i32 where  {
-    fn «as_»<> (self : i32) -> u128 {
-        #cast(self) : u128;
-}
-}
-
-nr_trait_impl[impl_317] <> std::convert::AsPrimitive< u8 > for bool where  {
-    fn «as_»<> (self : bool) -> u8 {
-        #cast(self) : u8;
-}
-}
-
-nr_trait_impl[impl_309] <> std::convert::AsPrimitive< bool > for u32 where  {
-    fn «as_»<> (self : u32) -> bool {
-        #uNeq(self, 0 : u32) : bool;
-}
-}
-
-nr_trait_impl[impl_384] <> std::convert::AsPrimitive< i16 > for u8 where  {
-    fn «as_»<> (self : u8) -> i16 {
-        #cast(self) : i16;
-}
-}
-
-nr_trait_impl[impl_325] <> std::convert::AsPrimitive< u8 > for i32 where  {
-    fn «as_»<> (self : i32) -> u8 {
+nr_trait_impl[impl_321] <> std::convert::AsPrimitive< u8 > for u64 where  {
+    fn «as_»<> (self : u64) -> u8 {
         #cast(self) : u8;
 }
 }
@@ -326,225 +158,9 @@ nr_trait_impl[impl_315] <> std::convert::AsPrimitive< bool > for i64 where  {
 }
 }
 
-nr_trait_impl[impl_332] <> std::convert::AsPrimitive< u16 > for u64 where  {
-    fn «as_»<> (self : u64) -> u16 {
-        #cast(self) : u16;
-}
-}
-
-nr_trait_impl[impl_372] <> std::convert::AsPrimitive< i8 > for bool where  {
-    fn «as_»<> (self : bool) -> i8 {
-        #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_389] <> std::convert::AsPrimitive< i16 > for i8 where  {
-    fn «as_»<> (self : i8) -> i16 {
-        #cast(self) : i16;
-}
-}
-
-nr_trait_impl[impl_393] <> std::convert::AsPrimitive< i16 > for Field where  {
-    fn «as_»<> (self : Field) -> i16 {
-        #cast(self) : i16;
-}
-}
-
-nr_trait_impl[impl_383] <> std::convert::AsPrimitive< i16 > for bool where  {
-    fn «as_»<> (self : bool) -> i16 {
-        #cast(self) : i16;
-}
-}
-
 nr_trait_impl[impl_382] <> std::convert::AsPrimitive< i8 > for Field where  {
     fn «as_»<> (self : Field) -> i8 {
         #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_344] <> std::convert::AsPrimitive< u32 > for u128 where  {
-    fn «as_»<> (self : u128) -> u32 {
-        #cast(self) : u32;
-}
-}
-
-nr_trait_impl[impl_352] <> std::convert::AsPrimitive< u64 > for u16 where  {
-    fn «as_»<> (self : u16) -> u64 {
-        #cast(self) : u64;
-}
-}
-
-nr_trait_impl[impl_321] <> std::convert::AsPrimitive< u8 > for u64 where  {
-    fn «as_»<> (self : u64) -> u8 {
-        #cast(self) : u8;
-}
-}
-
-nr_trait_impl[impl_363] <> std::convert::AsPrimitive< u128 > for u16 where  {
-    fn «as_»<> (self : u16) -> u128 {
-        #cast(self) : u128;
-}
-}
-
-nr_trait_impl[impl_376] <> std::convert::AsPrimitive< i8 > for u64 where  {
-    fn «as_»<> (self : u64) -> i8 {
-        #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_360] <> std::convert::AsPrimitive< u64 > for Field where  {
-    fn «as_»<> (self : Field) -> u64 {
-        #cast(self) : u64;
-}
-}
-
-nr_trait_impl[impl_320] <> std::convert::AsPrimitive< u8 > for u32 where  {
-    fn «as_»<> (self : u32) -> u8 {
-        #cast(self) : u8;
-}
-}
-
-nr_trait_impl[impl_417] <> std::convert::AsPrimitive< Field > for u8 where  {
-    fn «as_»<> (self : u8) -> Field {
-        #cast(self) : Field;
-}
-}
-
-nr_trait_impl[impl_374] <> std::convert::AsPrimitive< i8 > for u16 where  {
-    fn «as_»<> (self : u16) -> i8 {
-        #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_398] <> std::convert::AsPrimitive< i32 > for u64 where  {
-    fn «as_»<> (self : u64) -> i32 {
-        #cast(self) : i32;
-}
-}
-
-nr_trait_impl[impl_390] <> std::convert::AsPrimitive< i16 > for i16 where  {
-    fn «as_»<> (self : i16) -> i16 {
-        self;
-}
-}
-
-nr_trait_impl[impl_340] <> std::convert::AsPrimitive< u32 > for u8 where  {
-    fn «as_»<> (self : u8) -> u32 {
-        #cast(self) : u32;
-}
-}
-
-nr_trait_impl[impl_358] <> std::convert::AsPrimitive< u64 > for i32 where  {
-    fn «as_»<> (self : i32) -> u64 {
-        #cast(self) : u64;
-}
-}
-
-nr_trait_impl[impl_379] <> std::convert::AsPrimitive< i8 > for i16 where  {
-    fn «as_»<> (self : i16) -> i8 {
-        #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_420] <> std::convert::AsPrimitive< Field > for u64 where  {
-    fn «as_»<> (self : u64) -> Field {
-        #cast(self) : Field;
-}
-}
-
-nr_trait_impl[impl_310] <> std::convert::AsPrimitive< bool > for u64 where  {
-    fn «as_»<> (self : u64) -> bool {
-        #uNeq(self, 0 : u64) : bool;
-}
-}
-
-nr_trait_impl[impl_350] <> std::convert::AsPrimitive< u64 > for bool where  {
-    fn «as_»<> (self : bool) -> u64 {
-        #cast(self) : u64;
-}
-}
-
-nr_trait_impl[impl_365] <> std::convert::AsPrimitive< u128 > for u64 where  {
-    fn «as_»<> (self : u64) -> u128 {
-        #cast(self) : u128;
-}
-}
-
-nr_trait_impl[impl_407] <> std::convert::AsPrimitive< i64 > for u16 where  {
-    fn «as_»<> (self : u16) -> i64 {
-        #cast(self) : i64;
-}
-}
-
-nr_trait_impl[impl_422] <> std::convert::AsPrimitive< Field > for i8 where  {
-    fn «as_»<> (self : i8) -> Field {
-        #cast(self) : Field;
-}
-}
-
-nr_trait_impl[impl_426] <> std::convert::AsPrimitive< Field > for Field where  {
-    fn «as_»<> (self : Field) -> Field {
-        self;
-}
-}
-
-nr_trait_impl[impl_323] <> std::convert::AsPrimitive< u8 > for i8 where  {
-    fn «as_»<> (self : i8) -> u8 {
-        #cast(self) : u8;
-}
-}
-
-nr_trait_impl[impl_366] <> std::convert::AsPrimitive< u128 > for u128 where  {
-    fn «as_»<> (self : u128) -> u128 {
-        self;
-}
-}
-
-nr_trait_impl[impl_307] <> std::convert::AsPrimitive< bool > for u8 where  {
-    fn «as_»<> (self : u8) -> bool {
-        #uNeq(self, 0 : u8) : bool;
-}
-}
-
-nr_trait_impl[impl_378] <> std::convert::AsPrimitive< i8 > for i8 where  {
-    fn «as_»<> (self : i8) -> i8 {
-        self;
-}
-}
-
-nr_trait_impl[impl_319] <> std::convert::AsPrimitive< u8 > for u16 where  {
-    fn «as_»<> (self : u16) -> u8 {
-        #cast(self) : u8;
-}
-}
-
-nr_trait_impl[impl_380] <> std::convert::AsPrimitive< i8 > for i32 where  {
-    fn «as_»<> (self : i32) -> i8 {
-        #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_402] <> std::convert::AsPrimitive< i32 > for i32 where  {
-    fn «as_»<> (self : i32) -> i32 {
-        self;
-}
-}
-
-nr_trait_impl[impl_377] <> std::convert::AsPrimitive< i8 > for u128 where  {
-    fn «as_»<> (self : u128) -> i8 {
-        #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_349] <> std::convert::AsPrimitive< u32 > for Field where  {
-    fn «as_»<> (self : Field) -> u32 {
-        #cast(self) : u32;
-}
-}
-
-nr_trait_impl[impl_328] <> std::convert::AsPrimitive< u16 > for bool where  {
-    fn «as_»<> (self : bool) -> u16 {
-        #cast(self) : u16;
 }
 }
 
@@ -554,27 +170,15 @@ nr_trait_impl[impl_370] <> std::convert::AsPrimitive< u128 > for i64 where  {
 }
 }
 
-nr_trait_impl[impl_385] <> std::convert::AsPrimitive< i16 > for u16 where  {
-    fn «as_»<> (self : u16) -> i16 {
-        #cast(self) : i16;
+nr_trait_impl[impl_345] <> std::convert::AsPrimitive< u32 > for i8 where  {
+    fn «as_»<> (self : i8) -> u32 {
+        #cast(self) : u32;
 }
 }
 
-nr_trait_impl[impl_337] <> std::convert::AsPrimitive< u16 > for i64 where  {
-    fn «as_»<> (self : i64) -> u16 {
-        #cast(self) : u16;
-}
-}
-
-nr_trait_impl[impl_322] <> std::convert::AsPrimitive< u8 > for u128 where  {
-    fn «as_»<> (self : u128) -> u8 {
-        #cast(self) : u8;
-}
-}
-
-nr_trait_impl[impl_334] <> std::convert::AsPrimitive< u16 > for i8 where  {
-    fn «as_»<> (self : i8) -> u16 {
-        #cast(self) : u16;
+nr_trait_impl[impl_374] <> std::convert::AsPrimitive< i8 > for u16 where  {
+    fn «as_»<> (self : u16) -> i8 {
+        #cast(self) : i8;
 }
 }
 
@@ -584,75 +188,27 @@ nr_trait_impl[impl_326] <> std::convert::AsPrimitive< u8 > for i64 where  {
 }
 }
 
-nr_trait_impl[impl_331] <> std::convert::AsPrimitive< u16 > for u32 where  {
-    fn «as_»<> (self : u32) -> u16 {
-        #cast(self) : u16;
-}
-}
-
-nr_trait_impl[impl_371] <> std::convert::AsPrimitive< u128 > for Field where  {
-    fn «as_»<> (self : Field) -> u128 {
-        #cast(self) : u128;
-}
-}
-
-nr_trait_impl[impl_351] <> std::convert::AsPrimitive< u64 > for u8 where  {
-    fn «as_»<> (self : u8) -> u64 {
-        #cast(self) : u64;
-}
-}
-
-nr_trait_impl[impl_318] <> std::convert::AsPrimitive< u8 > for u8 where  {
-    fn «as_»<> (self : u8) -> u8 {
-        self;
-}
-}
-
 nr_trait_impl[impl_399] <> std::convert::AsPrimitive< i32 > for u128 where  {
     fn «as_»<> (self : u128) -> i32 {
         #cast(self) : i32;
 }
 }
 
-nr_trait_impl[impl_416] <> std::convert::AsPrimitive< Field > for bool where  {
-    fn «as_»<> (self : bool) -> Field {
-        #cast(self) : Field;
+nr_trait_impl[impl_308] <> std::convert::AsPrimitive< bool > for u16 where  {
+    fn «as_»<> (self : u16) -> bool {
+        #uNeq(self, 0 : u16) : bool;
 }
 }
 
-nr_trait_impl[impl_364] <> std::convert::AsPrimitive< u128 > for u32 where  {
-    fn «as_»<> (self : u32) -> u128 {
-        #cast(self) : u128;
+nr_trait_impl[impl_340] <> std::convert::AsPrimitive< u32 > for u8 where  {
+    fn «as_»<> (self : u8) -> u32 {
+        #cast(self) : u32;
 }
 }
 
-nr_trait_impl[impl_410] <> std::convert::AsPrimitive< i64 > for u128 where  {
-    fn «as_»<> (self : u128) -> i64 {
-        #cast(self) : i64;
-}
-}
-
-nr_trait_impl[impl_359] <> std::convert::AsPrimitive< u64 > for i64 where  {
-    fn «as_»<> (self : i64) -> u64 {
-        #cast(self) : u64;
-}
-}
-
-nr_trait_impl[impl_362] <> std::convert::AsPrimitive< u128 > for u8 where  {
-    fn «as_»<> (self : u8) -> u128 {
-        #cast(self) : u128;
-}
-}
-
-nr_trait_impl[impl_342] <> std::convert::AsPrimitive< u32 > for u32 where  {
-    fn «as_»<> (self : u32) -> u32 {
-        self;
-}
-}
-
-nr_trait_impl[impl_388] <> std::convert::AsPrimitive< i16 > for u128 where  {
-    fn «as_»<> (self : u128) -> i16 {
-        #cast(self) : i16;
+nr_trait_impl[impl_335] <> std::convert::AsPrimitive< u16 > for i16 where  {
+    fn «as_»<> (self : i16) -> u16 {
+        #cast(self) : u16;
 }
 }
 
@@ -662,26 +218,20 @@ nr_trait_impl[impl_404] <> std::convert::AsPrimitive< i32 > for Field where  {
 }
 }
 
-nr_trait_impl[impl_391] <> std::convert::AsPrimitive< i16 > for i32 where  {
-    fn «as_»<> (self : i32) -> i16 {
-        #cast(self) : i16;
+nr_trait_impl[impl_320] <> std::convert::AsPrimitive< u8 > for u32 where  {
+    fn «as_»<> (self : u32) -> u8 {
+        #cast(self) : u8;
 }
 }
 
-nr_trait_impl[impl_400] <> std::convert::AsPrimitive< i32 > for i8 where  {
-    fn «as_»<> (self : i8) -> i32 {
-        #cast(self) : i32;
+nr_trait_impl[impl_313] <> std::convert::AsPrimitive< bool > for i16 where  {
+    fn «as_»<> (self : i16) -> bool {
+        #iNeq(self, 0 : i16) : bool;
 }
 }
 
-nr_trait_impl[impl_354] <> std::convert::AsPrimitive< u64 > for u64 where  {
-    fn «as_»<> (self : u64) -> u64 {
-        self;
-}
-}
-
-nr_trait_impl[impl_357] <> std::convert::AsPrimitive< u64 > for i16 where  {
-    fn «as_»<> (self : i16) -> u64 {
+nr_trait_impl[impl_358] <> std::convert::AsPrimitive< u64 > for i32 where  {
+    fn «as_»<> (self : i32) -> u64 {
         #cast(self) : u64;
 }
 }
@@ -692,56 +242,206 @@ nr_trait_impl[impl_375] <> std::convert::AsPrimitive< i8 > for u32 where  {
 }
 }
 
-nr_trait_impl[impl_401] <> std::convert::AsPrimitive< i32 > for i16 where  {
-    fn «as_»<> (self : i16) -> i32 {
-        #cast(self) : i32;
-}
-}
-
-nr_trait_impl[impl_314] <> std::convert::AsPrimitive< bool > for i32 where  {
-    fn «as_»<> (self : i32) -> bool {
-        #iNeq(self, 0 : i32) : bool;
-}
-}
-
-nr_trait_impl[impl_386] <> std::convert::AsPrimitive< i16 > for u32 where  {
-    fn «as_»<> (self : u32) -> i16 {
-        #cast(self) : i16;
-}
-}
-
-nr_trait_impl[impl_306] <> std::convert::AsPrimitive< bool > for bool where  {
-    fn «as_»<> (self : bool) -> bool {
-        self;
-}
-}
-
-nr_trait_impl[impl_425] <> std::convert::AsPrimitive< Field > for i64 where  {
-    fn «as_»<> (self : i64) -> Field {
-        #cast(self) : Field;
-}
-}
-
-nr_trait_impl[impl_336] <> std::convert::AsPrimitive< u16 > for i32 where  {
-    fn «as_»<> (self : i32) -> u16 {
-        #cast(self) : u16;
-}
-}
-
-nr_trait_impl[impl_381] <> std::convert::AsPrimitive< i8 > for i64 where  {
-    fn «as_»<> (self : i64) -> i8 {
-        #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_367] <> std::convert::AsPrimitive< u128 > for i8 where  {
-    fn «as_»<> (self : i8) -> u128 {
+nr_trait_impl[impl_369] <> std::convert::AsPrimitive< u128 > for i32 where  {
+    fn «as_»<> (self : i32) -> u128 {
         #cast(self) : u128;
 }
 }
 
-nr_trait_impl[impl_355] <> std::convert::AsPrimitive< u64 > for u128 where  {
-    fn «as_»<> (self : u128) -> u64 {
+nr_trait_impl[impl_388] <> std::convert::AsPrimitive< i16 > for u128 where  {
+    fn «as_»<> (self : u128) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_351] <> std::convert::AsPrimitive< u64 > for u8 where  {
+    fn «as_»<> (self : u8) -> u64 {
+        #cast(self) : u64;
+}
+}
+
+nr_trait_impl[impl_426] <> std::convert::AsPrimitive< Field > for Field where  {
+    fn «as_»<> (self : Field) -> Field {
+        self;
+}
+}
+
+nr_trait_impl[impl_400] <> std::convert::AsPrimitive< i32 > for i8 where  {
+    fn «as_»<> (self : i8) -> i32 {
+        #cast(self) : i32;
+}
+}
+
+nr_trait_impl[impl_337] <> std::convert::AsPrimitive< u16 > for i64 where  {
+    fn «as_»<> (self : i64) -> u16 {
+        #cast(self) : u16;
+}
+}
+
+nr_trait_impl[impl_324] <> std::convert::AsPrimitive< u8 > for i16 where  {
+    fn «as_»<> (self : i16) -> u8 {
+        #cast(self) : u8;
+}
+}
+
+nr_trait_impl[impl_372] <> std::convert::AsPrimitive< i8 > for bool where  {
+    fn «as_»<> (self : bool) -> i8 {
+        #cast(self) : i8;
+}
+}
+
+nr_trait_impl[impl_311] <> std::convert::AsPrimitive< bool > for u128 where  {
+    fn «as_»<> (self : u128) -> bool {
+        #uNeq(self, 0 : u128) : bool;
+}
+}
+
+nr_trait_impl[impl_385] <> std::convert::AsPrimitive< i16 > for u16 where  {
+    fn «as_»<> (self : u16) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_407] <> std::convert::AsPrimitive< i64 > for u16 where  {
+    fn «as_»<> (self : u16) -> i64 {
+        #cast(self) : i64;
+}
+}
+
+nr_trait_impl[impl_342] <> std::convert::AsPrimitive< u32 > for u32 where  {
+    fn «as_»<> (self : u32) -> u32 {
+        self;
+}
+}
+
+nr_trait_impl[impl_331] <> std::convert::AsPrimitive< u16 > for u32 where  {
+    fn «as_»<> (self : u32) -> u16 {
+        #cast(self) : u16;
+}
+}
+
+nr_trait_impl[impl_405] <> std::convert::AsPrimitive< i64 > for bool where  {
+    fn «as_»<> (self : bool) -> i64 {
+        #cast(self) : i64;
+}
+}
+
+nr_trait_impl[impl_397] <> std::convert::AsPrimitive< i32 > for u32 where  {
+    fn «as_»<> (self : u32) -> i32 {
+        #cast(self) : i32;
+}
+}
+
+nr_trait_impl[impl_409] <> std::convert::AsPrimitive< i64 > for u64 where  {
+    fn «as_»<> (self : u64) -> i64 {
+        #cast(self) : i64;
+}
+}
+
+nr_trait_impl[impl_354] <> std::convert::AsPrimitive< u64 > for u64 where  {
+    fn «as_»<> (self : u64) -> u64 {
+        self;
+}
+}
+
+nr_trait_impl[impl_339] <> std::convert::AsPrimitive< u32 > for bool where  {
+    fn «as_»<> (self : bool) -> u32 {
+        #cast(self) : u32;
+}
+}
+
+nr_trait_impl[impl_418] <> std::convert::AsPrimitive< Field > for u16 where  {
+    fn «as_»<> (self : u16) -> Field {
+        #cast(self) : Field;
+}
+}
+
+nr_trait_impl[impl_406] <> std::convert::AsPrimitive< i64 > for u8 where  {
+    fn «as_»<> (self : u8) -> i64 {
+        #cast(self) : i64;
+}
+}
+
+nr_trait_impl[impl_319] <> std::convert::AsPrimitive< u8 > for u16 where  {
+    fn «as_»<> (self : u16) -> u8 {
+        #cast(self) : u8;
+}
+}
+
+nr_trait_impl[impl_383] <> std::convert::AsPrimitive< i16 > for bool where  {
+    fn «as_»<> (self : bool) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_318] <> std::convert::AsPrimitive< u8 > for u8 where  {
+    fn «as_»<> (self : u8) -> u8 {
+        self;
+}
+}
+
+nr_trait_impl[impl_395] <> std::convert::AsPrimitive< i32 > for u8 where  {
+    fn «as_»<> (self : u8) -> i32 {
+        #cast(self) : i32;
+}
+}
+
+nr_trait_impl[impl_377] <> std::convert::AsPrimitive< i8 > for u128 where  {
+    fn «as_»<> (self : u128) -> i8 {
+        #cast(self) : i8;
+}
+}
+
+nr_trait_impl[impl_316] <> std::convert::AsPrimitive< bool > for Field where  {
+    fn «as_»<> (self : Field) -> bool {
+        #fNeq(self, 0 : Field) : bool;
+}
+}
+
+nr_trait_impl[impl_416] <> std::convert::AsPrimitive< Field > for bool where  {
+    fn «as_»<> (self : bool) -> Field {
+        #cast(self) : Field;
+}
+}
+
+nr_trait_impl[impl_392] <> std::convert::AsPrimitive< i16 > for i64 where  {
+    fn «as_»<> (self : i64) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_347] <> std::convert::AsPrimitive< u32 > for i32 where  {
+    fn «as_»<> (self : i32) -> u32 {
+        #cast(self) : u32;
+}
+}
+
+nr_trait_impl[impl_417] <> std::convert::AsPrimitive< Field > for u8 where  {
+    fn «as_»<> (self : u8) -> Field {
+        #cast(self) : Field;
+}
+}
+
+nr_trait_impl[impl_423] <> std::convert::AsPrimitive< Field > for i16 where  {
+    fn «as_»<> (self : i16) -> Field {
+        #cast(self) : Field;
+}
+}
+
+nr_trait_impl[impl_364] <> std::convert::AsPrimitive< u128 > for u32 where  {
+    fn «as_»<> (self : u32) -> u128 {
+        #cast(self) : u128;
+}
+}
+
+nr_trait_impl[impl_317] <> std::convert::AsPrimitive< u8 > for bool where  {
+    fn «as_»<> (self : bool) -> u8 {
+        #cast(self) : u8;
+}
+}
+
+nr_trait_impl[impl_360] <> std::convert::AsPrimitive< u64 > for Field where  {
+    fn «as_»<> (self : Field) -> u64 {
         #cast(self) : u64;
 }
 }
@@ -752,44 +452,146 @@ nr_trait_impl[impl_403] <> std::convert::AsPrimitive< i32 > for i64 where  {
 }
 }
 
-nr_trait_impl[impl_412] <> std::convert::AsPrimitive< i64 > for i16 where  {
-    fn «as_»<> (self : i16) -> i64 {
-        #cast(self) : i64;
-}
-}
-
-nr_trait_impl[impl_394] <> std::convert::AsPrimitive< i32 > for bool where  {
-    fn «as_»<> (self : bool) -> i32 {
-        #cast(self) : i32;
-}
-}
-
-nr_trait_impl[impl_373] <> std::convert::AsPrimitive< i8 > for u8 where  {
-    fn «as_»<> (self : u8) -> i8 {
-        #cast(self) : i8;
-}
-}
-
-nr_trait_impl[impl_418] <> std::convert::AsPrimitive< Field > for u16 where  {
-    fn «as_»<> (self : u16) -> Field {
-        #cast(self) : Field;
-}
-}
-
-nr_trait_impl[impl_414] <> std::convert::AsPrimitive< i64 > for i64 where  {
-    fn «as_»<> (self : i64) -> i64 {
+nr_trait_impl[impl_330] <> std::convert::AsPrimitive< u16 > for u16 where  {
+    fn «as_»<> (self : u16) -> u16 {
         self;
 }
 }
 
-nr_trait_impl[impl_361] <> std::convert::AsPrimitive< u128 > for bool where  {
-    fn «as_»<> (self : bool) -> u128 {
+nr_trait_impl[impl_413] <> std::convert::AsPrimitive< i64 > for i32 where  {
+    fn «as_»<> (self : i32) -> i64 {
+        #cast(self) : i64;
+}
+}
+
+nr_trait_impl[impl_310] <> std::convert::AsPrimitive< bool > for u64 where  {
+    fn «as_»<> (self : u64) -> bool {
+        #uNeq(self, 0 : u64) : bool;
+}
+}
+
+nr_trait_impl[impl_338] <> std::convert::AsPrimitive< u16 > for Field where  {
+    fn «as_»<> (self : Field) -> u16 {
+        #cast(self) : u16;
+}
+}
+
+nr_trait_impl[impl_307] <> std::convert::AsPrimitive< bool > for u8 where  {
+    fn «as_»<> (self : u8) -> bool {
+        #uNeq(self, 0 : u8) : bool;
+}
+}
+
+nr_trait_impl[impl_312] <> std::convert::AsPrimitive< bool > for i8 where  {
+    fn «as_»<> (self : i8) -> bool {
+        #iNeq(self, 0 : i8) : bool;
+}
+}
+
+nr_trait_impl[impl_341] <> std::convert::AsPrimitive< u32 > for u16 where  {
+    fn «as_»<> (self : u16) -> u32 {
+        #cast(self) : u32;
+}
+}
+
+nr_trait_impl[impl_387] <> std::convert::AsPrimitive< i16 > for u64 where  {
+    fn «as_»<> (self : u64) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_401] <> std::convert::AsPrimitive< i32 > for i16 where  {
+    fn «as_»<> (self : i16) -> i32 {
+        #cast(self) : i32;
+}
+}
+
+nr_trait_impl[impl_362] <> std::convert::AsPrimitive< u128 > for u8 where  {
+    fn «as_»<> (self : u8) -> u128 {
         #cast(self) : u128;
 }
 }
 
-nr_trait_impl[impl_347] <> std::convert::AsPrimitive< u32 > for i32 where  {
-    fn «as_»<> (self : i32) -> u32 {
+nr_trait_impl[impl_344] <> std::convert::AsPrimitive< u32 > for u128 where  {
+    fn «as_»<> (self : u128) -> u32 {
+        #cast(self) : u32;
+}
+}
+
+nr_trait_impl[impl_381] <> std::convert::AsPrimitive< i8 > for i64 where  {
+    fn «as_»<> (self : i64) -> i8 {
+        #cast(self) : i8;
+}
+}
+
+nr_trait_impl[impl_391] <> std::convert::AsPrimitive< i16 > for i32 where  {
+    fn «as_»<> (self : i32) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_366] <> std::convert::AsPrimitive< u128 > for u128 where  {
+    fn «as_»<> (self : u128) -> u128 {
+        self;
+}
+}
+
+nr_trait_impl[impl_408] <> std::convert::AsPrimitive< i64 > for u32 where  {
+    fn «as_»<> (self : u32) -> i64 {
+        #cast(self) : i64;
+}
+}
+
+nr_trait_impl[impl_322] <> std::convert::AsPrimitive< u8 > for u128 where  {
+    fn «as_»<> (self : u128) -> u8 {
+        #cast(self) : u8;
+}
+}
+
+nr_trait_impl[impl_309] <> std::convert::AsPrimitive< bool > for u32 where  {
+    fn «as_»<> (self : u32) -> bool {
+        #uNeq(self, 0 : u32) : bool;
+}
+}
+
+nr_trait_impl[impl_314] <> std::convert::AsPrimitive< bool > for i32 where  {
+    fn «as_»<> (self : i32) -> bool {
+        #iNeq(self, 0 : i32) : bool;
+}
+}
+
+nr_trait_impl[impl_336] <> std::convert::AsPrimitive< u16 > for i32 where  {
+    fn «as_»<> (self : i32) -> u16 {
+        #cast(self) : u16;
+}
+}
+
+nr_trait_impl[impl_384] <> std::convert::AsPrimitive< i16 > for u8 where  {
+    fn «as_»<> (self : u8) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_421] <> std::convert::AsPrimitive< Field > for u128 where  {
+    fn «as_»<> (self : u128) -> Field {
+        #cast(self) : Field;
+}
+}
+
+nr_trait_impl[impl_306] <> std::convert::AsPrimitive< bool > for bool where  {
+    fn «as_»<> (self : bool) -> bool {
+        self;
+}
+}
+
+nr_trait_impl[impl_390] <> std::convert::AsPrimitive< i16 > for i16 where  {
+    fn «as_»<> (self : i16) -> i16 {
+        self;
+}
+}
+
+nr_trait_impl[impl_343] <> std::convert::AsPrimitive< u32 > for u64 where  {
+    fn «as_»<> (self : u64) -> u32 {
         #cast(self) : u32;
 }
 }
@@ -800,15 +602,27 @@ nr_trait_impl[impl_396] <> std::convert::AsPrimitive< i32 > for u16 where  {
 }
 }
 
-nr_trait_impl[impl_424] <> std::convert::AsPrimitive< Field > for i32 where  {
-    fn «as_»<> (self : i32) -> Field {
-        #cast(self) : Field;
+nr_trait_impl[impl_414] <> std::convert::AsPrimitive< i64 > for i64 where  {
+    fn «as_»<> (self : i64) -> i64 {
+        self;
 }
 }
 
-nr_trait_impl[impl_415] <> std::convert::AsPrimitive< i64 > for Field where  {
-    fn «as_»<> (self : Field) -> i64 {
-        #cast(self) : i64;
+nr_trait_impl[impl_353] <> std::convert::AsPrimitive< u64 > for u32 where  {
+    fn «as_»<> (self : u32) -> u64 {
+        #cast(self) : u64;
+}
+}
+
+nr_trait_impl[impl_350] <> std::convert::AsPrimitive< u64 > for bool where  {
+    fn «as_»<> (self : bool) -> u64 {
+        #cast(self) : u64;
+}
+}
+
+nr_trait_impl[impl_346] <> std::convert::AsPrimitive< u32 > for i16 where  {
+    fn «as_»<> (self : i16) -> u32 {
+        #cast(self) : u32;
 }
 }
 
@@ -818,21 +632,153 @@ nr_trait_impl[impl_419] <> std::convert::AsPrimitive< Field > for u32 where  {
 }
 }
 
-nr_trait_impl[impl_413] <> std::convert::AsPrimitive< i64 > for i32 where  {
-    fn «as_»<> (self : i32) -> i64 {
+nr_trait_impl[impl_367] <> std::convert::AsPrimitive< u128 > for i8 where  {
+    fn «as_»<> (self : i8) -> u128 {
+        #cast(self) : u128;
+}
+}
+
+nr_trait_impl[impl_376] <> std::convert::AsPrimitive< i8 > for u64 where  {
+    fn «as_»<> (self : u64) -> i8 {
+        #cast(self) : i8;
+}
+}
+
+nr_trait_impl[impl_349] <> std::convert::AsPrimitive< u32 > for Field where  {
+    fn «as_»<> (self : Field) -> u32 {
+        #cast(self) : u32;
+}
+}
+
+nr_trait_impl[impl_356] <> std::convert::AsPrimitive< u64 > for i8 where  {
+    fn «as_»<> (self : i8) -> u64 {
+        #cast(self) : u64;
+}
+}
+
+nr_trait_impl[impl_327] <> std::convert::AsPrimitive< u8 > for Field where  {
+    fn «as_»<> (self : Field) -> u8 {
+        #cast(self) : u8;
+}
+}
+
+nr_trait_impl[impl_420] <> std::convert::AsPrimitive< Field > for u64 where  {
+    fn «as_»<> (self : u64) -> Field {
+        #cast(self) : Field;
+}
+}
+
+nr_trait_impl[impl_352] <> std::convert::AsPrimitive< u64 > for u16 where  {
+    fn «as_»<> (self : u16) -> u64 {
+        #cast(self) : u64;
+}
+}
+
+nr_trait_impl[impl_361] <> std::convert::AsPrimitive< u128 > for bool where  {
+    fn «as_»<> (self : bool) -> u128 {
+        #cast(self) : u128;
+}
+}
+
+nr_trait_impl[impl_389] <> std::convert::AsPrimitive< i16 > for i8 where  {
+    fn «as_»<> (self : i8) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_334] <> std::convert::AsPrimitive< u16 > for i8 where  {
+    fn «as_»<> (self : i8) -> u16 {
+        #cast(self) : u16;
+}
+}
+
+nr_trait_impl[impl_415] <> std::convert::AsPrimitive< i64 > for Field where  {
+    fn «as_»<> (self : Field) -> i64 {
         #cast(self) : i64;
 }
 }
 
-nr_trait_impl[impl_316] <> std::convert::AsPrimitive< bool > for Field where  {
-    fn «as_»<> (self : Field) -> bool {
-        #fNeq(self, 0 : Field) : bool;
+nr_trait_impl[impl_355] <> std::convert::AsPrimitive< u64 > for u128 where  {
+    fn «as_»<> (self : u128) -> u64 {
+        #cast(self) : u64;
 }
 }
 
-nr_trait_impl[impl_339] <> std::convert::AsPrimitive< u32 > for bool where  {
-    fn «as_»<> (self : bool) -> u32 {
+nr_trait_impl[impl_328] <> std::convert::AsPrimitive< u16 > for bool where  {
+    fn «as_»<> (self : bool) -> u16 {
+        #cast(self) : u16;
+}
+}
+
+nr_trait_impl[impl_422] <> std::convert::AsPrimitive< Field > for i8 where  {
+    fn «as_»<> (self : i8) -> Field {
+        #cast(self) : Field;
+}
+}
+
+nr_trait_impl[impl_365] <> std::convert::AsPrimitive< u128 > for u64 where  {
+    fn «as_»<> (self : u64) -> u128 {
+        #cast(self) : u128;
+}
+}
+
+nr_trait_impl[impl_323] <> std::convert::AsPrimitive< u8 > for i8 where  {
+    fn «as_»<> (self : i8) -> u8 {
+        #cast(self) : u8;
+}
+}
+
+nr_trait_impl[impl_412] <> std::convert::AsPrimitive< i64 > for i16 where  {
+    fn «as_»<> (self : i16) -> i64 {
+        #cast(self) : i64;
+}
+}
+
+nr_trait_impl[impl_363] <> std::convert::AsPrimitive< u128 > for u16 where  {
+    fn «as_»<> (self : u16) -> u128 {
+        #cast(self) : u128;
+}
+}
+
+nr_trait_impl[impl_410] <> std::convert::AsPrimitive< i64 > for u128 where  {
+    fn «as_»<> (self : u128) -> i64 {
+        #cast(self) : i64;
+}
+}
+
+nr_trait_impl[impl_379] <> std::convert::AsPrimitive< i8 > for i16 where  {
+    fn «as_»<> (self : i16) -> i8 {
+        #cast(self) : i8;
+}
+}
+
+nr_trait_impl[impl_386] <> std::convert::AsPrimitive< i16 > for u32 where  {
+    fn «as_»<> (self : u32) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_348] <> std::convert::AsPrimitive< u32 > for i64 where  {
+    fn «as_»<> (self : i64) -> u32 {
         #cast(self) : u32;
+}
+}
+
+nr_trait_impl[impl_394] <> std::convert::AsPrimitive< i32 > for bool where  {
+    fn «as_»<> (self : bool) -> i32 {
+        #cast(self) : i32;
+}
+}
+
+nr_trait_impl[impl_325] <> std::convert::AsPrimitive< u8 > for i32 where  {
+    fn «as_»<> (self : i32) -> u8 {
+        #cast(self) : u8;
+}
+}
+
+nr_trait_impl[impl_424] <> std::convert::AsPrimitive< Field > for i32 where  {
+    fn «as_»<> (self : i32) -> Field {
+        #cast(self) : Field;
 }
 }
 
@@ -842,8 +788,20 @@ nr_trait_impl[impl_333] <> std::convert::AsPrimitive< u16 > for u128 where  {
 }
 }
 
-nr_trait_impl[impl_356] <> std::convert::AsPrimitive< u64 > for i8 where  {
-    fn «as_»<> (self : i8) -> u64 {
+nr_trait_impl[impl_329] <> std::convert::AsPrimitive< u16 > for u8 where  {
+    fn «as_»<> (self : u8) -> u16 {
+        #cast(self) : u16;
+}
+}
+
+nr_trait_impl[impl_425] <> std::convert::AsPrimitive< Field > for i64 where  {
+    fn «as_»<> (self : i64) -> Field {
+        #cast(self) : Field;
+}
+}
+
+nr_trait_impl[impl_357] <> std::convert::AsPrimitive< u64 > for i16 where  {
+    fn «as_»<> (self : i16) -> u64 {
         #cast(self) : u64;
 }
 }
@@ -854,15 +812,57 @@ nr_trait_impl[impl_411] <> std::convert::AsPrimitive< i64 > for i8 where  {
 }
 }
 
+nr_trait_impl[impl_332] <> std::convert::AsPrimitive< u16 > for u64 where  {
+    fn «as_»<> (self : u64) -> u16 {
+        #cast(self) : u16;
+}
+}
+
+nr_trait_impl[impl_393] <> std::convert::AsPrimitive< i16 > for Field where  {
+    fn «as_»<> (self : Field) -> i16 {
+        #cast(self) : i16;
+}
+}
+
+nr_trait_impl[impl_371] <> std::convert::AsPrimitive< u128 > for Field where  {
+    fn «as_»<> (self : Field) -> u128 {
+        #cast(self) : u128;
+}
+}
+
 nr_trait_impl[impl_368] <> std::convert::AsPrimitive< u128 > for i16 where  {
     fn «as_»<> (self : i16) -> u128 {
         #cast(self) : u128;
 }
 }
 
-nr_trait_impl[impl_423] <> std::convert::AsPrimitive< Field > for i16 where  {
-    fn «as_»<> (self : i16) -> Field {
-        #cast(self) : Field;
+nr_trait_impl[impl_378] <> std::convert::AsPrimitive< i8 > for i8 where  {
+    fn «as_»<> (self : i8) -> i8 {
+        self;
+}
+}
+
+nr_trait_impl[impl_373] <> std::convert::AsPrimitive< i8 > for u8 where  {
+    fn «as_»<> (self : u8) -> i8 {
+        #cast(self) : i8;
+}
+}
+
+nr_trait_impl[impl_380] <> std::convert::AsPrimitive< i8 > for i32 where  {
+    fn «as_»<> (self : i32) -> i8 {
+        #cast(self) : i8;
+}
+}
+
+nr_trait_impl[impl_359] <> std::convert::AsPrimitive< u64 > for i64 where  {
+    fn «as_»<> (self : i64) -> u64 {
+        #cast(self) : u64;
+}
+}
+
+nr_trait_impl[impl_398] <> std::convert::AsPrimitive< i32 > for u64 where  {
+    fn «as_»<> (self : u64) -> i32 {
+        #cast(self) : i32;
 }
 }
 
