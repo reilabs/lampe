@@ -34,7 +34,7 @@ syntax ident "::" nr_ident : nr_ident
 syntax ident : nr_type
 syntax "${" term "}" : nr_type
 syntax "str<" nr_const_num ">" : nr_type -- Strings
-syntax "fmtstr<" nr_const_num "," nr_type  ">" : nr_type -- Format strings
+syntax "fmtstr<" nr_generic "," nr_generic  ">" : nr_type -- Format strings
 syntax nr_ident "<" nr_generic,* ">" : nr_type -- Struct
 syntax "[" nr_type "]" : nr_type -- Slice
 syntax "[" nr_type ";" nr_const_num "]" : nr_type -- Array
@@ -60,7 +60,7 @@ syntax "_" ":" nr_type : nr_param_decl
 
 syntax ("-" noWs)? num ppSpace ":" ppSpace nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
-syntax "#format(" str "," nr_expr,* ")" : nr_expr -- Foramt string
+syntax "#format" "<" nr_type ">" "(" str "," nr_expr,* ")" : nr_expr -- Foramt string
 syntax "#unit" : nr_expr -- Unit literal
 syntax "skip" : nr_expr -- alias for `#unit`
 syntax ident : nr_expr
@@ -168,6 +168,8 @@ def mkGenericNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] (n : T
 | `(ident| u128) => `(BitVec.ofNat 128 $n)
 | _ => throwUnsupportedSyntax
 
+
+
 mutual
 
 partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_type → m (TSyntax `term)
@@ -192,8 +194,10 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| Quoted)
 | `(nr_type| CtString) => `(Tp.unit)
 | `(nr_type| str<$n:nr_const_num>) => do `(Tp.str $(←mkConstNum n))
-| `(nr_type| fmtstr<$n:nr_const_num, $tp:nr_type>) => do
-  `(Tp.fmtStr $(←mkConstNum n) $(←mkNrType tp))
+| `(nr_type| fmtstr<$n:nr_generic, $tp:nr_generic>) => do
+  let n ← mkGenericVal n
+  let tp ← mkGenericVal tp
+  `(Tp.fmtStr $n $tp)
 | `(nr_type| Unit) => `(Tp.unit)
 | `(nr_type| $i:ident) => `($i) -- Type variable
 | `(nr_type| & $tp) => do `(Tp.ref $(←mkNrType tp))
@@ -217,6 +221,13 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type | _) => `(_)
 | _ => throwUnsupportedSyntax
 
+partial def mkGenericVal [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] :
+    TSyntax `nr_generic → m (TSyntax `term)
+| `(nr_generic| $t:nr_type) => (mkNrType t)
+| `(nr_generic| $n:ident : $_:ident) => pure n
+| `(nr_generic| $n:num : $t:ident) => do `($(← mkGenericNum n t))
+| _ => throwUnsupportedSyntax
+
 partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
     (generics : List $ TSyntax `nr_generic) : m $ (TSyntax `term) × (TSyntax `term) := do
   let kinds ← mkListLit (←generics.mapM fun g =>
@@ -225,12 +236,7 @@ partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception 
     | `(nr_generic| $_:num : $t) => do `($(← matchGenericDefs t))
     | `(nr_generic| $_:ident: $t) => do `($(← matchGenericDefs t))
     | _ => throwUnsupportedSyntax)
-  let vals ← mkHListLit (←generics.mapM fun g =>
-    match g with
-    | `(nr_generic| $t:nr_type) => (mkNrType t)
-    | `(nr_generic| $n:ident : $_:ident) => pure n
-    | `(nr_generic| $n:num : $t:ident) => do `($(← mkGenericNum n t))
-    | _ => throwUnsupportedSyntax)
+  let vals ← mkHListLit (←generics.mapM mkGenericVal)
   pure (kinds, vals)
 
 end
@@ -557,10 +563,10 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 | `(nr_expr| `( $args,* )) => do
   mkArgs args.getElems.toList fun argVals => do
     wrapSimple (←`(Expr.mkTuple none $(←mkHListLit argVals))) vname k
-| `(nr_expr| #format($s:str, $args,*) ) => do
-  mkArgs args.getElems.toList fun argVals => do
-    let argTps <- argVals.mapM fun arg => `(typeOf $arg)
-    wrapSimple (←`(Expr.fmtStr (String.length $s) $(← mkListLit argTps) $s)) vname k
+| `(nr_expr| #format<$tp>($s:str, $args,*) ) => do
+  mkArgs args.getElems.toList fun _ => do
+    let tp ← mkNrType tp
+    wrapSimple (←`(Expr.fmtStr (String.length $s) $tp $s)) vname k
 | `(nr_expr| #unit) | `(nr_expr| skip) => do
     wrapSimple (←`(Expr.skip)) vname k
 | `(nr_expr| @ $fnName:nr_ident as $t:nr_type) => do

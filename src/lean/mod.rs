@@ -540,7 +540,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         } else {
             format!("{fq_crate_name}::{name}")
         };
-        println!("[emit_trait_impl] {full_name} for {}", trait_impl.typ);
         let target = self.emit_fully_qualified_type(&trait_impl.typ, ctx);
 
         let where_clause_str = trait_impl
@@ -568,17 +567,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .collect_vec()
             .join(", ");
 
-        if impl_id == "impl_39" {
-            println!("BUBA")
-        }
-
         let generic_vars = self.gather_trait_impl_generics(&trait_impl);
 
         let impl_generic_decls_str = self.format_generic_inputs(&generic_vars);
-
-        if (full_name == "std::convert::From") {
-            println!("BOOO");
-        }
 
         // Emit the implemented functions.
         ind.indent();
@@ -695,8 +686,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         if def_info.comptime {
             return Ok(None);
         }
-
-        println!("GLOBAL {:?}", statement);
 
         match statement {
             HirStatement::Let(lets) => {
@@ -964,11 +953,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let func_meta = self.context.function_meta(&func);
         // The parameters whose type must be replaced by a type variable should be
         // appended to the list of generics.
-        println!(
-            "free fun: {:?} for {:?}",
-            self.context.def_interner.function_name(&func),
-            func_meta.self_type
-        );
 
         let gens = self.gather_fn_generics(&func_meta);
 
@@ -976,22 +960,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
         let parameters = self.emit_parameters(&func_meta.parameters, ctx)?;
         let ret_type = self.emit_fully_qualified_type(func_meta.return_type(), ctx);
-
-        let traits = func_meta
-            .trait_constraints
-            .iter()
-            .map(|tc| format!("{}", tc.trait_bound.trait_generics))
-            .join("\n");
-
-        let extra_traits = func_meta
-            .extra_trait_constraints
-            .iter()
-            .map(|tc| format!("{}", tc.trait_bound.trait_generics))
-            .join("\n");
-
-        if self.context.def_interner.function_name(&func) == "hash" {
-            println!("BOOO");
-        }
 
         let is_unconstrained = Self::is_func_unconstrained(&func_meta.typ);
 
@@ -1140,6 +1108,13 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     .collect_vec();
                 let elems_str = elem_types.join(", ");
                 syntax::r#type::format_tuple(&elems_str)
+            }
+            Type::FmtString(strlen, args) => {
+                format!(
+                    "fmtstr<{}, {}>",
+                    self.emit_fully_qualified_type(strlen, ctx),
+                    self.emit_fully_qualified_type(args, ctx)
+                )
             }
             Type::DataType(struct_type, generics) => {
                 let type_def = struct_type.borrow();
@@ -1477,12 +1452,6 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     .def_interner
                     .try_get_instantiation_bindings(expr)
                     .unwrap_or(&default);
-
-                if name == "hash" {
-                    let bindings = format!("{bindings:?}");
-                    println!("bindings: {bindings}");
-                    println!("BOOO");
-                }
 
                 match &ident_def.kind {
                     DefinitionKind::Function(func_id) => {
@@ -2069,6 +2038,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             }
             HirLiteral::Str(str) => format!("\"{str}\""),
             HirLiteral::FmtStr(str_parts, vars, _) => {
+                let tp = self.id_bound_type(expr);
+                let tpstr = match tp {
+                    Type::FmtString(_, args) => self.emit_fully_qualified_type(&args, ctx),
+                    _ => panic!("Expected FmtString type, got {tp}"),
+                };
+                println!("{tpstr}");
                 let output_str = str_parts.iter().fold(String::new(), |mut acc, part| {
                     match part {
                         noirc_frontend::token::FmtStrFragment::String(s) => acc.push_str(s),
@@ -2087,10 +2062,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                             acc.push_str(", ");
                             Ok(acc)
                         })?;
-
-                let output_vars = output_vars.trim_end_matches(", ");
-
-                format!("#format(\"{output_str}\", {output_vars})")
+                format!("#format<{tpstr}>(\"{output_str}\", {output_vars})")
             }
             HirLiteral::Unit => syntax::literal::format_unit(),
         };

@@ -2,6 +2,7 @@
 name = "std-0.0.0"
 version = "0.0.0"
 defaultTargets = ["std-0.0.0"]
+moreLeanArgs = ["-DmaxRecDepth=1000000"]
 
 [[lean_lib]]
 name = "«std-0.0.0»"
