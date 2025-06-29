@@ -15,8 +15,8 @@ nr_trait_impl[impl_289] <> std::cmp::Eq<  > for meta::op::UnaryOp<  > where  {
 }
 
 nr_trait_impl[impl_290] <> std::hash::Hash<  > for meta::op::UnaryOp<  > where  {
-    fn «hash»<H> (self : meta::op::UnaryOp<  >, h : &H) -> Unit {
-        ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as meta::op::UnaryOp<  >).op, h);
+    fn «hash»<H> (self : meta::op::UnaryOp<  >, h : & H) -> Unit {
+        ((Field as std::hash::Hash<  >)::hash< H > as λ(Field, & H) → Unit)((self as meta::op::UnaryOp<  >).op, h);
 }
 }
 
@@ -43,8 +43,8 @@ nr_trait_impl[impl_291] <> std::cmp::Eq<  > for meta::op::BinaryOp<  > where  {
 }
 
 nr_trait_impl[impl_292] <> std::hash::Hash<  > for meta::op::BinaryOp<  > where  {
-    fn «hash»<H> (self : meta::op::BinaryOp<  >, h : &H) -> Unit {
-        ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as meta::op::BinaryOp<  >).op, h);
+    fn «hash»<H> (self : meta::op::BinaryOp<  >, h : & H) -> Unit {
+        ((Field as std::hash::Hash<  >)::hash< H > as λ(Field, & H) → Unit)((self as meta::op::BinaryOp<  >).op, h);
 }
 }
 

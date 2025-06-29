@@ -9,6 +9,7 @@ use std::{
     any::Any,
     cmp::Ordering,
     collections::{HashMap, HashSet},
+    fmt::format,
 };
 
 use context::EmitterCtx;
@@ -25,9 +26,9 @@ use noirc_frontend::{
     },
     hir_def::{
         expr::{HirArrayLiteral, HirExpression, HirIdent, HirLiteral},
-        function::Parameters,
+        function::{FuncMeta, Parameters},
         stmt::{HirLValue, HirPattern, HirStatement},
-        traits::{NamedType, Trait, TraitImpl},
+        traits::{NamedType, Trait, TraitConstraint, TraitImpl},
     },
     node_interner::{
         DefinitionKind,
@@ -48,6 +49,7 @@ use noirc_frontend::{
     Type,
     TypeBinding,
     TypeBindings,
+    TypeVariableId,
 };
 use toml::value::Index;
 
@@ -548,11 +550,11 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 let typ_str = self.emit_fully_qualified_type(&cons.typ, ctx);
                 let trait_name =
                     &self.context.def_interner.get_trait(cons.trait_bound.trait_id).name;
-                let trait_generics_str = cons
-                    .trait_bound
-                    .trait_generics
+                let generics = &cons.trait_bound.trait_generics;
+                let trait_generics_str = generics
                     .ordered
                     .iter()
+                    .chain(generics.named.iter().map(|n| &n.typ))
                     .map(|g| self.emit_fully_qualified_type(g, ctx))
                     .join(", ");
                 let trait_str = format!("{trait_name}<{trait_generics_str}>");
@@ -565,34 +567,18 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .map(|g| self.emit_fully_qualified_type(g, ctx))
             .collect_vec()
             .join(", ");
-        // Get the named generics of the trait reference.
-        // These must be included in the type variable declarations of the impl block.
-        let trait_generic_vars = &trait_impl
-            .trait_generics
-            .iter()
-            // Only named generics need to be included in the `<>`.
-            .filter(|g| matches!(g, Type::NamedGeneric(..)))
-            .map(|g| self.emit_fully_qualified_type(g, ctx))
-            .collect_vec();
+
+        if impl_id == "impl_39" {
+            println!("BUBA")
+        }
+
+        let generic_vars = self.gather_trait_impl_generics(&trait_impl);
+
+        let impl_generic_decls_str = self.format_generic_inputs(&generic_vars);
 
         if (full_name == "std::convert::From") {
             println!("BOOO");
         }
-        let mut impl_generic_decls = HashSet::new();
-        // Extend with the generics for the trait.
-        impl_generic_decls.extend(trait_generic_vars.iter().cloned());
-        // Extend with the generics for the implementor.
-        impl_generic_decls.extend(collect_named_generics(&trait_impl.typ).iter().map(|f| {
-            self.emit_resolved_generic(
-                &ResolvedGeneric {
-                    name:     f.name.clone(),
-                    type_var: f.type_var.clone(),
-                    location: Location::dummy(),
-                },
-                ctx,
-            )
-        }));
-        let impl_generic_decls_str = impl_generic_decls.iter().join(", ");
 
         // Emit the implemented functions.
         ind.indent();
@@ -806,6 +792,162 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         }
     }
 
+    //     Type::String(inner_type) | Type::Slice(inner_type) |
+    // Type::Reference(inner_type, _) => {
+    //     collect_named_generics(inner_type)
+    //     }
+    //     Type::Array(size, inner_type) => {
+    //     let mut result = collect_named_generics(size);
+    //     result.append(&mut collect_named_generics(inner_type));
+    //     result
+    //     }
+    //     Type::Tuple(elems) =>
+    // elems.iter().flat_map(collect_named_generics).collect_vec(),
+    //     Type::DataType(_, generics)
+    //     | Type::TraitAsType(
+    //     _,
+    //     _,
+    //     TraitGenerics {
+    //     ordered: generics, ..
+    // },
+    // ) => generics.iter().flat_map(collect_named_generics).collect_vec(),
+    // Type::Bool | Type::Integer(..) | Type::FmtString(..) | Type::Unit |
+    // Type::FieldElement => { Vec::new()
+    // }
+    // Type::NamedGeneric(ng) => Vec::from([ng.clone()]),
+    fn gather_unbound_vars(
+        &self,
+        seen: &mut HashSet<TypeVariableId>,
+        buf: &mut Vec<(String, TypeVariableId, Kind)>,
+        typ: &Type,
+    ) {
+        let x = format!("Gathering unbound vars for {typ:?}");
+        match typ {
+            Type::String(a) | Type::Slice(a) | Type::Reference(a, _) => {
+                self.gather_unbound_vars(seen, buf, a);
+            }
+            Type::Array(a, b) | Type::FmtString(a, b) => {
+                self.gather_unbound_vars(seen, buf, a);
+                self.gather_unbound_vars(seen, buf, b);
+            }
+            Type::Tuple(elems) => {
+                for elem in elems {
+                    self.gather_unbound_vars(seen, buf, elem);
+                }
+            }
+            Type::DataType(_, generics) => {
+                for gen in generics {
+                    self.gather_unbound_vars(seen, buf, gen);
+                }
+            }
+            Type::TypeVariable(tv) => match &*tv.borrow() {
+                TypeBinding::Bound(tp) => self.gather_unbound_vars(seen, buf, &tp),
+                TypeBinding::Unbound(id, kind) => {
+                    if seen.contains(&id) {
+                        return;
+                    }
+                    seen.insert(id.clone());
+                    buf.push((format!("V_{id}"), id.clone(), kind.clone()));
+                }
+            },
+            Type::NamedGeneric(ng) => match &*ng.type_var.borrow() {
+                TypeBinding::Bound(tp) => self.gather_unbound_vars(seen, buf, &tp),
+                TypeBinding::Unbound(id, kind) => {
+                    if seen.contains(&id) {
+                        return;
+                    }
+                    seen.insert(id.clone());
+                    buf.push((ng.name.to_string(), id.clone(), kind.clone()));
+                }
+            },
+            _ => (),
+        }
+    }
+
+    fn gather_trait_constraints_generics(
+        &self,
+        seen: &mut HashSet<TypeVariableId>,
+        result: &mut Vec<(String, TypeVariableId, Kind)>,
+        trait_constraints: &[TraitConstraint],
+    ) {
+        for constraint in trait_constraints {
+            self.gather_unbound_vars(seen, result, &constraint.typ);
+
+            for gen in &constraint.trait_bound.trait_generics.ordered {
+                self.gather_unbound_vars(seen, result, &gen);
+            }
+
+            for gen in &constraint.trait_bound.trait_generics.named {
+                self.gather_unbound_vars(seen, result, &gen.typ);
+            }
+        }
+    }
+
+    fn gather_trait_impl_generics(
+        &self,
+        trait_impl: &TraitImpl,
+    ) -> Vec<(String, TypeVariableId, Kind)> {
+        let mut seen = HashSet::<TypeVariableId>::new();
+        let mut result = Vec::new();
+
+        for v in &trait_impl.trait_generics {
+            self.gather_unbound_vars(&mut seen, &mut result, v);
+        }
+
+        self.gather_unbound_vars(&mut seen, &mut result, &trait_impl.typ);
+
+        for tp in &trait_impl.trait_generics {
+            self.gather_unbound_vars(&mut seen, &mut result, tp);
+        }
+
+        self.gather_trait_constraints_generics(&mut seen, &mut result, &trait_impl.where_clause);
+        result
+    }
+
+    fn gather_fn_generics(&self, func: &FuncMeta) -> Vec<(String, TypeVariableId, Kind)> {
+        let mut seen = HashSet::<TypeVariableId>::new();
+        let mut result = Vec::new();
+
+        for gen in &func.all_generics {
+            if seen.contains(&gen.type_var.id()) {
+                continue;
+            }
+            seen.insert(gen.type_var.id());
+            result.push((
+                gen.name.to_string(),
+                gen.type_var.id(),
+                gen.type_var.kind().clone(),
+            ));
+        }
+
+        self.gather_trait_constraints_generics(&mut seen, &mut result, &func.trait_constraints);
+
+        result
+    }
+
+    fn sanitize_generic_name(name: &str) -> String {
+        name.replace("::", "_")
+            .replace(" ", "_")
+            .replace("<", "")
+            .replace(">", "")
+    }
+
+    fn format_generic_inputs(&self, gens: &[(String, TypeVariableId, Kind)]) -> String {
+        gens.iter()
+            .map(|(name, id, kind)| {
+                let name = Self::sanitize_generic_name(name);
+                let (is_num, u_size) = match kind {
+                    Kind::Numeric(num_tp) => match num_tp.as_ref() {
+                        Type::Integer(_, bit_size) => (true, Some(bit_size.bit_size())),
+                        _ => (true, None),
+                    },
+                    _ => (false, None),
+                };
+                syntax::format_generic_def(&name, is_num, u_size)
+            })
+            .join(", ")
+    }
+
     /// Emits the Lean source code corresponding to a Noir function at the
     /// module level. Returns the definition name and the emitted function
     /// definition.
@@ -827,19 +969,29 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             self.context.def_interner.function_name(&func),
             func_meta.self_type
         );
-        let impl_generics = func_meta
-            .parameters
-            .iter()
-            .filter_map(|(_, ty, _)| ctx.get_impl_param(ty))
-            .map(std::string::ToString::to_string);
-        let generics_string = func_meta
-            .all_generics
-            .iter()
-            .map(|g| self.emit_resolved_generic(g, ctx))
-            .chain(impl_generics)
-            .join(", ");
+
+        let gens = self.gather_fn_generics(&func_meta);
+
+        let generics_string = self.format_generic_inputs(&gens);
+
         let parameters = self.emit_parameters(&func_meta.parameters, ctx)?;
         let ret_type = self.emit_fully_qualified_type(func_meta.return_type(), ctx);
+
+        let traits = func_meta
+            .trait_constraints
+            .iter()
+            .map(|tc| format!("{}", tc.trait_bound.trait_generics))
+            .join("\n");
+
+        let extra_traits = func_meta
+            .extra_trait_constraints
+            .iter()
+            .map(|tc| format!("{}", tc.trait_bound.trait_generics))
+            .join("\n");
+
+        if self.context.def_interner.function_name(&func) == "hash" {
+            println!("BOOO");
+        }
 
         let is_unconstrained = Self::is_func_unconstrained(&func_meta.typ);
 
@@ -1050,7 +1202,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     Kind::Numeric(typ) => {
                         format!("{}:{}", ng.name, self.emit_fully_qualified_type(typ, ctx))
                     }
-                    _ => format!("{}", ng.name),
+                    _ => format!("{}", Self::sanitize_generic_name(&ng.name)), // ng.name),
                 },
             },
             // In all the other cases we can use the default printing as internal type vars are
@@ -1326,29 +1478,21 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     .try_get_instantiation_bindings(expr)
                     .unwrap_or(&default);
 
+                if name == "hash" {
+                    let bindings = format!("{bindings:?}");
+                    println!("bindings: {bindings}");
+                    println!("BOOO");
+                }
+
                 match &ident_def.kind {
                     DefinitionKind::Function(func_id) => {
                         let func_meta = self.context.def_interner.function_meta(func_id);
-                        // Find the `impl` generic values.
-                        // These are later appended to the emitted generics.
-                        let impl_generics = bindings
+                        let generics = self
+                            .gather_fn_generics(&func_meta)
                             .iter()
-                            // Find the instantiation bindings that are not part of the generics of
-                            // this ident expression.
-                            .filter(|(_, (tv, ..))| {
-                                !func_meta
-                                    .all_generics
-                                    .iter()
-                                    .map(|resolved_gen| &resolved_gen.type_var)
-                                    .any(|tv2| tv2.id() == tv.id())
-                            })
-                            // Ensure that the original type variable is substituted in the context.
-                            .filter(|(_, (tv, ..))| {
-                                ctx.get_impl_param(&Type::TypeVariable(tv.clone())).is_some()
-                            })
-                            .map(|(_, (tv, ..))| {
-                                self.emit_fully_qualified_type(&Type::TypeVariable(tv.clone()), ctx)
-                            });
+                            .map(|(_, id, _)| bindings.get(id).unwrap().2.clone())
+                            .collect::<Vec<_>>();
+
                         match (func_meta.trait_impl, func_meta.trait_id) {
                             (Some(trait_impl_id), _) => {
                                 let trait_impl = self
@@ -1374,11 +1518,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
                                     .join(", ");
                                 let ident_generics = generics
-                                    .unwrap_or_default()
                                     .iter()
-                                    .map(|g| substitute_bindings(g, bindings))
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
-                                    .chain(impl_generics)
                                     .join(", ");
                                 let fn_typ_str =
                                     self.emit_fully_qualified_type(&self.id_bound_type(expr), ctx);
@@ -1404,11 +1545,8 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
                                     .join(", ");
                                 let ident_generics = generics
-                                    .unwrap_or_default()
                                     .iter()
-                                    .map(|g| substitute_bindings(g, bindings))
                                     .map(|t| self.emit_fully_qualified_type(&t, ctx))
-                                    .chain(impl_generics)
                                     .join(", ");
                                 let self_type = func_meta
                                     .self_type
@@ -1456,12 +1594,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                 } else {
                                     format!("{fq_mod_name}::{fn_name}")
                                 };
-                                let ident_generics = func_meta
-                                    .all_generics
+                                let ident_generics = generics
                                     .iter()
-                                    .filter_map(|t| bindings.get(&t.type_var.id()))
-                                    .map(|(_, _, ty)| self.emit_fully_qualified_type(ty, ctx))
-                                    .chain(impl_generics)
+                                    .map(|ty| self.emit_fully_qualified_type(ty, ctx))
                                     .join(", ");
 
                                 let fn_typ_str =
@@ -1660,7 +1795,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 // Prepend the body with the appropriate block of let (mut) bindings if there
                 // are any complex parameters.
                 let body = if pattern_stmts_str.is_empty() {
-                    body
+                    format!("{{{body}}}")
                 } else {
                     ind.run(format!("{{\n{pattern_stmts_str};\n{{\n{body}\n}}\n}}"))
                 };
@@ -2004,8 +2139,13 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 #[must_use]
 pub fn collect_named_generics(typ: &Type) -> Vec<NamedGeneric> {
     match typ {
-        Type::Array(inner_type, _) | Type::Slice(inner_type) | Type::Reference(inner_type, _) => {
+        Type::String(inner_type) | Type::Slice(inner_type) | Type::Reference(inner_type, _) => {
             collect_named_generics(inner_type)
+        }
+        Type::Array(size, inner_type) => {
+            let mut result = collect_named_generics(size);
+            result.append(&mut collect_named_generics(inner_type));
+            result
         }
         Type::Tuple(elems) => elems.iter().flat_map(collect_named_generics).collect_vec(),
         Type::DataType(_, generics)
@@ -2016,12 +2156,9 @@ pub fn collect_named_generics(typ: &Type) -> Vec<NamedGeneric> {
                 ordered: generics, ..
             },
         ) => generics.iter().flat_map(collect_named_generics).collect_vec(),
-        Type::Bool
-        | Type::Integer(..)
-        | Type::String(..)
-        | Type::FmtString(..)
-        | Type::Unit
-        | Type::FieldElement => Vec::new(),
+        Type::Bool | Type::Integer(..) | Type::FmtString(..) | Type::Unit | Type::FieldElement => {
+            Vec::new()
+        }
         Type::NamedGeneric(ng) => Vec::from([ng.clone()]),
         Type::Alias(..) => unimplemented!("Collect Gens Alias {typ}"),
         Type::Constant(..) => unimplemented!("Collect Gens Constant {typ}"),

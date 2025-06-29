@@ -167,10 +167,10 @@ nr_trait_impl[impl_63] <T> std::cmp::Eq<  > for option::Option< T > where T : Eq
 }
 
 nr_trait_impl[impl_64] <T> std::hash::Hash<  > for option::Option< T > where T : Hash<> {
-    fn «hash»<H> (self : option::Option< T >, state : &H) -> Unit {
-        ((bool as std::hash::Hash<  >)::hash<  > as λ(bool, &H) → Unit)((self as option::Option< T >)._is_some, state);
+    fn «hash»<H> (self : option::Option< T >, state : & H) -> Unit {
+        ((bool as std::hash::Hash<  >)::hash< H > as λ(bool, & H) → Unit)((self as option::Option< T >)._is_some, state);
         if (self as option::Option< T >)._is_some {
-                    ((T as std::hash::Hash<  >)::hash<  > as λ(T, &H) → Unit)((self as option::Option< T >)._value, state);
+                    ((T as std::hash::Hash<  >)::hash< T, H > as λ(T, & H) → Unit)((self as option::Option< T >)._value, state);
         };
 }
 }
@@ -179,7 +179,7 @@ nr_trait_impl[impl_65] <T> std::cmp::Ord<  > for option::Option< T > where T : O
     fn «cmp»<> (self : option::Option< T >, other : option::Option< T >) -> cmp::Ordering<  > {
         if (self as option::Option< T >)._is_some {
                     if (other as option::Option< T >)._is_some {
-                            ((T as std::cmp::Ord<  >)::cmp<  > as λ(T, T) → cmp::Ordering<  >)((self as option::Option< T >)._value, (other as option::Option< T >)._value);
+                            ((T as std::cmp::Ord<  >)::cmp< T > as λ(T, T) → cmp::Ordering<  >)((self as option::Option< T >)._value, (other as option::Option< T >)._value);
                 } else {
                             (@cmp::Ordering::greater<  > as λ() → cmp::Ordering<  >)();
                 };

@@ -197,7 +197,7 @@ pub(super) mod r#type {
     /// borrow checking
     #[inline]
     pub fn format_ref(inner_type: &str) -> String {
-        format!("&{inner_type}")
+        format!("& {inner_type}")
     }
 
     #[inline]

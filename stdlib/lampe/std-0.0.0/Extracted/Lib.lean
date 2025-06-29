@@ -48,15 +48,15 @@ nr_def «static_assert»<T>(predicate : bool, message : T) -> Unit {
 }
 
 nr_def «wrapping_add»<T>(x : T, y : T) -> T {
-    ((Field as std::convert::AsPrimitive< T >)::as_<  > as λ(Field) → T)(#fAdd(((T as std::convert::AsPrimitive< Field >)::as_<  > as λ(T) → Field)(x), ((T as std::convert::AsPrimitive< Field >)::as_<  > as λ(T) → Field)(y)) : Field);
+    ((Field as std::convert::AsPrimitive< T >)::as_< T, Field > as λ(Field) → T)(#fAdd(((T as std::convert::AsPrimitive< Field >)::as_< Field, T > as λ(T) → Field)(x), ((T as std::convert::AsPrimitive< Field >)::as_< Field, T > as λ(T) → Field)(y)) : Field);
 }
 
 nr_def «wrapping_sub»<T>(x : T, y : T) -> T {
-    ((Field as std::convert::AsPrimitive< T >)::as_<  > as λ(Field) → T)(#fSub(#fAdd(((T as std::convert::AsPrimitive< Field >)::as_<  > as λ(T) → Field)(x), 340282366920938463463374607431768211456 : Field) : Field, ((T as std::convert::AsPrimitive< Field >)::as_<  > as λ(T) → Field)(y)) : Field);
+    ((Field as std::convert::AsPrimitive< T >)::as_< T, Field > as λ(Field) → T)(#fSub(#fAdd(((T as std::convert::AsPrimitive< Field >)::as_< Field, T > as λ(T) → Field)(x), 340282366920938463463374607431768211456 : Field) : Field, ((T as std::convert::AsPrimitive< Field >)::as_< Field, T > as λ(T) → Field)(y)) : Field);
 }
 
 nr_def «wrapping_mul»<T>(x : T, y : T) -> T {
-    ((Field as std::convert::AsPrimitive< T >)::as_<  > as λ(Field) → T)(#fMul(((T as std::convert::AsPrimitive< Field >)::as_<  > as λ(T) → Field)(x), ((T as std::convert::AsPrimitive< Field >)::as_<  > as λ(T) → Field)(y)) : Field);
+    ((Field as std::convert::AsPrimitive< T >)::as_< T, Field > as λ(Field) → T)(#fMul(((T as std::convert::AsPrimitive< Field >)::as_< Field, T > as λ(T) → Field)(x), ((T as std::convert::AsPrimitive< Field >)::as_< Field, T > as λ(T) → Field)(y)) : Field);
 }
 
 nr_def «as_witness»<>(x : Field) -> Unit {

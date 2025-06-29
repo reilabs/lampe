@@ -8,13 +8,13 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_281] <> std::meta::ctstring::AsCtString<  > for str<N> where  {
+nr_trait_impl[impl_281] <@N : u32> std::meta::ctstring::AsCtString<  > for str<N> where  {
     fn «as_ctstring»<> (self : str<N>) -> CtString {
         (@std::meta::ctstring::str_as_ctstring< N:u32 > as λ(str<N>) → CtString)(self);
 }
 }
 
-nr_trait_impl[impl_282] <> std::meta::ctstring::AsCtString<  > for fmtstr<N, T> where  {
+nr_trait_impl[impl_282] <@N : u32, T> std::meta::ctstring::AsCtString<  > for fmtstr<N, T> where  {
     fn «as_ctstring»<> (self : fmtstr<N, T>) -> CtString {
         (@std::meta::ctstring::fmtstr_as_ctstring< N:u32, T > as λ(fmtstr<N, T>) → CtString)(self);
 }
