@@ -17,11 +17,11 @@ nr_def «print_unconstrained»<T>(with_newline : bool, input : T) -> Unit {
 }
 
 nr_def «println»<T>(input : T) -> Unit {
-        (@std::print_unconstrained< T > as λ(bool, T) → Unit)(true, input);
+    {        (@std::print_unconstrained< T > as λ(bool, T) → Unit)(true, input);};
 }
 
 nr_def «print»<T>(input : T) -> Unit {
-        (@std::print_unconstrained< T > as λ(bool, T) → Unit)(false, input);
+    {        (@std::print_unconstrained< T > as λ(bool, T) → Unit)(false, input);};
 }
 
 nr_def «verify_proof»<@N : u32, @M : u32, @K : u32>(verification_key : [Field; N], proof : [Field; M], public_inputs : [Field; K], key_hash : Field) -> Unit {

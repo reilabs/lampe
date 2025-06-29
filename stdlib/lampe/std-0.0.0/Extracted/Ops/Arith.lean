@@ -581,7 +581,7 @@ nr_def «ops»::«arith»::«split64»<>(x : u128) -> `(u64, u64) {
 }
 
 nr_def «ops»::«arith»::«split_into_64_bit_limbs»<>(x : u128) -> `(u64, u64) {
-    let π0 =     (@std::ops::arith::split64<  > as λ(u128) → `(u64, u64))(x);;
+    let π0 = {        (@std::ops::arith::split64<  > as λ(u128) → `(u64, u64))(x);};
     let x_lo = π0.0;
     let x_hi = π0.1;
     #assert(#fEq(#cast(x) : Field, #fAdd(#cast(x_lo) : Field, #fMul(#cast(x_hi) : Field, #cast((@two_pow_64<  > as λ() → u128)()) : Field) : Field) : Field) : bool) : Unit;

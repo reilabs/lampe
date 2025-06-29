@@ -41,31 +41,31 @@ nr_def «field»::«bn254»::«assert_gt_limbs»<>(a : `(Field, Field), b : `(Fi
     let π0 = b;
     let blo = π0.0;
     let bhi = π0.1;
-        let borrow = (@std::field::bn254::lte_hint<  > as λ(Field, Field) → bool)(alo, blo);
-        let rlo = #fAdd(#fSub(#fSub(alo, blo) : Field, 1 : Field) : Field, #fMul(#cast(borrow) : Field, (@TWO_POW_128<  > as λ() → Field)()) : Field) : Field;
-        let rhi = #fSub(#fSub(ahi, bhi) : Field, #cast(borrow) : Field) : Field;
-        (@Field::assert_max_bit_size< 128 : u32 > as λ(Field) → Unit)(rlo);
-        (@Field::assert_max_bit_size< 128 : u32 > as λ(Field) → Unit)(rhi);
+    {        let borrow = (@std::field::bn254::lte_hint<  > as λ(Field, Field) → bool)(alo, blo);
+            let rlo = #fAdd(#fSub(#fSub(alo, blo) : Field, 1 : Field) : Field, #fMul(#cast(borrow) : Field, (@TWO_POW_128<  > as λ() → Field)()) : Field) : Field;
+            let rhi = #fSub(#fSub(ahi, bhi) : Field, #cast(borrow) : Field) : Field;
+            (@Field::assert_max_bit_size< 128 : u32 > as λ(Field) → Unit)(rlo);
+            (@Field::assert_max_bit_size< 128 : u32 > as λ(Field) → Unit)(rhi);};
 }
 
 nr_def «field»::«bn254»::«decompose»<>(x : Field) -> `(Field, Field) {
     if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
             (@std::field::bn254::compute_decomposition<  > as λ(Field) → `(Field, Field))(x);
     } else {
-                let π0 = (@std::field::bn254::decompose_hint<  > as λ(Field) → `(Field, Field))(x);
-            let xlo = π0.0;
-            let xhi = π0.1;
-            (@Field::assert_max_bit_size< 128 : u32 > as λ(Field) → Unit)(xlo);
-            (@Field::assert_max_bit_size< 128 : u32 > as λ(Field) → Unit)(xhi);
-            #assert(#fEq(x, #fAdd(xlo, #fMul((@TWO_POW_128<  > as λ() → Field)(), xhi) : Field) : Field) : bool) : Unit;
-            (@std::field::bn254::assert_gt_limbs<  > as λ(`(Field, Field), `(Field, Field)) → Unit)(`((@PLO<  > as λ() → Field)(), (@PHI<  > as λ() → Field)()), `(xlo, xhi));
-            `(xlo, xhi);
+            {        let π0 = (@std::field::bn254::decompose_hint<  > as λ(Field) → `(Field, Field))(x);
+                let xlo = π0.0;
+                let xhi = π0.1;
+                (@Field::assert_max_bit_size< 128 : u32 > as λ(Field) → Unit)(xlo);
+                (@Field::assert_max_bit_size< 128 : u32 > as λ(Field) → Unit)(xhi);
+                #assert(#fEq(x, #fAdd(xlo, #fMul((@TWO_POW_128<  > as λ() → Field)(), xhi) : Field) : Field) : bool) : Unit;
+                (@std::field::bn254::assert_gt_limbs<  > as λ(`(Field, Field), `(Field, Field)) → Unit)(`((@PLO<  > as λ() → Field)(), (@PHI<  > as λ() → Field)()), `(xlo, xhi));
+                `(xlo, xhi);};
     };
 }
 
 nr_def «field»::«bn254»::«assert_gt»<>(a : Field, b : Field) -> Unit {
     if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
-            #assert(    (@std::field::field_less_than<  > as λ(Field, Field) → bool)(b, a);) : Unit;
+            #assert({        (@std::field::field_less_than<  > as λ(Field, Field) → bool)(b, a);}) : Unit;
     } else {
             let a_limbs = (@std::field::bn254::decompose<  > as λ(Field) → `(Field, Field))(a);
         let b_limbs = (@std::field::bn254::decompose<  > as λ(Field) → `(Field, Field))(b);
@@ -79,18 +79,18 @@ nr_def «field»::«bn254»::«assert_lt»<>(a : Field, b : Field) -> Unit {
 
 nr_def «field»::«bn254»::«gt»<>(a : Field, b : Field) -> bool {
     if (@std::runtime::is_unconstrained<  > as λ() → bool)() {
-                (@std::field::field_less_than<  > as λ(Field, Field) → bool)(b, a);
+            {        (@std::field::field_less_than<  > as λ(Field, Field) → bool)(b, a);};
     } else {
         if #fEq(a, b) : bool {
             false;
     } else {
-                if (@std::field::field_less_than<  > as λ(Field, Field) → bool)(a, b) {
-                    (@std::field::bn254::assert_gt<  > as λ(Field, Field) → Unit)(b, a);
-                false;
-            } else {
-                    (@std::field::bn254::assert_gt<  > as λ(Field, Field) → Unit)(a, b);
-                true;
-            };
+            {        if (@std::field::field_less_than<  > as λ(Field, Field) → bool)(a, b) {
+                            (@std::field::bn254::assert_gt<  > as λ(Field, Field) → Unit)(b, a);
+                        false;
+                } else {
+                            (@std::field::bn254::assert_gt<  > as λ(Field, Field) → Unit)(a, b);
+                        true;
+                };};
     }
     };
 }
