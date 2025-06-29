@@ -84,7 +84,7 @@ nr_def «collections»::«umap»::«UHashMap»::«entries»<K, V, B>(self : coll
         };
     let self_len = (self as collections::umap::UHashMap< K, V, B >)._len;
     let entries_len = (@std::slice::len< `(K, V) > as λ([`(K, V)]) → u32)(entries);
-    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {entries_len}.", self_len, entries_len, );
+    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {entries_len}.", self_len, entries_len);
     #assert(#uEq((@std::slice::len< `(K, V) > as λ([`(K, V)]) → u32)(entries), (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
     entries;
 }
@@ -104,7 +104,7 @@ nr_def «collections»::«umap»::«UHashMap»::«keys»<K, V, B>(self : collect
         };
     let self_len = (self as collections::umap::UHashMap< K, V, B >)._len;
     let keys_len = (@std::slice::len< K > as λ([K]) → u32)(keys);
-    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {keys_len}.", self_len, keys_len, );
+    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {keys_len}.", self_len, keys_len);
     #assert(#uEq((@std::slice::len< K > as λ([K]) → u32)(keys), (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
     keys;
 }
@@ -124,7 +124,7 @@ nr_def «collections»::«umap»::«UHashMap»::«values»<K, V, B>(self : colle
         };
     let self_len = (self as collections::umap::UHashMap< K, V, B >)._len;
     let values_len = (@std::slice::len< V > as λ([V]) → u32)(values);
-    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {values_len}.", self_len, values_len, );
+    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {values_len}.", self_len, values_len);
     #assert(#uEq((@std::slice::len< V > as λ([V]) → u32)(values), (self as collections::umap::UHashMap< K, V, B >)._len) : bool) : Unit;
     values;
 }
