@@ -2086,14 +2086,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     acc
                 });
 
-                let output_vars: String =
-                    vars.iter()
-                        .try_fold(String::new(), |mut acc, &var_id| -> Result<String> {
-                            let var_name = self.emit_expr(ind, var_id, ctx)?;
-                            acc.push_str(&var_name.to_string());
-                            acc.push_str(", ");
-                            Ok(acc)
-                        })?;
+                let output_vars = vars
+                    .iter()
+                    .flat_map(|&var_id| self.emit_expr(ind, var_id, ctx))
+                    .join(", ");
                 format!("#format<{tpstr}>(\"{output_str}\", {output_vars})")
             }
             HirLiteral::Unit => syntax::literal::format_unit(),
