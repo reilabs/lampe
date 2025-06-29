@@ -45,7 +45,7 @@ syntax "_" : nr_type -- Placeholder
 syntax "@" nr_ident "<" nr_generic,* ">" : nr_type -- Type alias
 
 syntax ident ":" ident : nr_generic
-syntax num ":" ident : nr_generic
+syntax nr_const_num ":" ident : nr_generic
 syntax nr_type : nr_generic
 
 syntax "@" ident ":" ident : nr_generic_def
@@ -53,6 +53,12 @@ syntax ident : nr_generic_def -- Kind.type
 
 syntax num : nr_const_num
 syntax ident : nr_const_num
+syntax "(" nr_const_num ")" : nr_const_num
+syntax nr_const_num "+" nr_const_num : nr_const_num
+syntax nr_const_num "-" nr_const_num : nr_const_num
+syntax nr_const_num "*" nr_const_num : nr_const_num
+syntax nr_const_num "/" nr_const_num : nr_const_num
+syntax nr_const_num "%" nr_const_num : nr_const_num
 
 syntax "mut" ident ":" nr_type : nr_param_decl -- Mutable parameter
 syntax ident ":" nr_type : nr_param_decl
@@ -115,6 +121,29 @@ partial def mkConstNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] 
 | `(nr_const_num|$n:num) => pure $ n
 | `(nr_const_num|$i:ident) => do
   `(BitVec.toNat $i)
+| `(nr_const_num|($n)) => do
+  let n ← mkConstNum n
+  pure n
+| `(nr_const_num|$n1 + $n2) => do
+  let n1 ← mkConstNum n1
+  let n2 ← mkConstNum n2
+  `(BitVec.add $n1 $n2)
+| `(nr_const_num|$n1 - $n2) => do
+  let n1 ← mkConstNum n1
+  let n2 ← mkConstNum n2
+  `(BitVec.sub $n1 $n2)
+| `(nr_const_num|$n1 * $n2) => do
+  let n1 ← mkConstNum n1
+  let n2 ← mkConstNum n2
+  `(BitVec.mul $n1 $n2)
+| `(nr_const_num|$n1 / $n2) => do
+  let n1 ← mkConstNum n1
+  let n2 ← mkConstNum n2
+  `(BitVec.div $n1 $n2)
+| `(nr_const_num|$n1 % $n2) => do
+  let n1 ← mkConstNum n1
+  let n2 ← mkConstNum n2
+  `(BitVec.umod $n1 $n2)
 | _ => throwUnsupportedSyntax
 
 partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
@@ -155,17 +184,6 @@ def matchGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] : 
 | `(ident| u32) => `(Kind.u 32)
 | `(ident| u64) => `(Kind.u 64)
 | `(ident| u128) => `(Kind.u 128)
-| _ => throwUnsupportedSyntax
-
-def mkGenericNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] (n : TSyntax `num) :
-    TSyntax `ident → m (TSyntax `term)
-| `(ident| Field) => `($n)
-| `(ident| u1) => `(BitVec.ofNat 1 $n)
-| `(ident| u8) => `(BitVec.ofNat 8 $n)
-| `(ident| u16) => `(BitVec.ofNat 16 $n)
-| `(ident| u32) => `(BitVec.ofNat 32 $n)
-| `(ident| u64) => `(BitVec.ofNat 64 $n)
-| `(ident| u128) => `(BitVec.ofNat 128 $n)
 | _ => throwUnsupportedSyntax
 
 
@@ -225,7 +243,7 @@ partial def mkGenericVal [Monad m] [MonadQuotation m] [MonadExceptOf Exception m
     TSyntax `nr_generic → m (TSyntax `term)
 | `(nr_generic| $t:nr_type) => (mkNrType t)
 | `(nr_generic| $n:ident : $_:ident) => pure n
-| `(nr_generic| $n:num : $t:ident) => do `($(← mkGenericNum n t))
+| `(nr_generic| $n:nr_const_num : $_:ident) => do `($(← mkConstNum n))
 | _ => throwUnsupportedSyntax
 
 partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
@@ -233,7 +251,7 @@ partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception 
   let kinds ← mkListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic| $_:nr_type) => `(Kind.type)
-    | `(nr_generic| $_:num : $t) => do `($(← matchGenericDefs t))
+    | `(nr_generic| $_:nr_const_num : $t) => do `($(← matchGenericDefs t))
     | `(nr_generic| $_:ident: $t) => do `($(← matchGenericDefs t))
     | _ => throwUnsupportedSyntax)
   let vals ← mkHListLit (←generics.mapM mkGenericVal)
@@ -820,6 +838,5 @@ elab "nr_trait_def" decl:nr_trait_def : command => do
 
       | _ => throwUnsupportedSyntax
   | _ => throwUnsupportedSyntax
-
 
 end Lampe

@@ -65,7 +65,7 @@ nr_def «hash»::«pedersen_hash_with_separator»<@N : u32>(input : [Field; N], 
     scalars[#cast(u@N) : u32] = embedded_curve_ops::EmbeddedCurveScalar<  > { #cast(u@N) : Field, #cast(0 : Field) : Field };
     let length_generator = (@std::hash::derive_generators< 1 : u32, 20 : u32 > as λ([u8; 20], u32) → [embedded_curve_ops::EmbeddedCurvePoint<  >; 1])((@str::as_bytes< 20 : u32 > as λ(str<20>) → [u8; 20])("pedersen_hash_length"), 0 : u32);
     generators[#cast(u@N) : u32] = #arrayIndex(length_generator, #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<  >;
-    (#arrayIndex((@std::embedded_curve_ops::multi_scalar_mul_array_return< (N + 1) > as λ([embedded_curve_ops::EmbeddedCurvePoint<  >; (N + 1)], [embedded_curve_ops::EmbeddedCurveScalar<  >; (N + 1)]) → [embedded_curve_ops::EmbeddedCurvePoint<  >; 1])(generators, scalars), #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<  > as embedded_curve_ops::EmbeddedCurvePoint<  >).x;
+    (#arrayIndex((@std::embedded_curve_ops::multi_scalar_mul_array_return< ((N + 1)):u32 > as λ([embedded_curve_ops::EmbeddedCurvePoint<  >; (N + 1)], [embedded_curve_ops::EmbeddedCurveScalar<  >; (N + 1)]) → [embedded_curve_ops::EmbeddedCurvePoint<  >; 1])(generators, scalars), #cast(0 : u32) : u32) : embedded_curve_ops::EmbeddedCurvePoint<  > as embedded_curve_ops::EmbeddedCurvePoint<  >).x;
 }
 
 nr_def «hash»::«derive_generators»<@N : u32, @M : u32>(domain_separator_bytes : [u8; M], starting_index : u32) -> [embedded_curve_ops::EmbeddedCurvePoint<  >; N] {

@@ -51,5 +51,6 @@ def blackBox := stub
 def xcheckedTransmute := stub
 def arrayRefcount := stub
 def sliceRefcount := stub
+def aes128Encrypt := stub
 
 end Lampe.Builtin
