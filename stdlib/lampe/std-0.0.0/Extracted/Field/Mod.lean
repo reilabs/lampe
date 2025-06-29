@@ -9,7 +9,7 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «field»::«__assert_max_bit_size»<>(value : Field, bit_size : u32) -> Unit {
-    #assertMaxBitSize(value, bit_size) : Unit
+    #applyRangeConstraint(value, bit_size) : Unit
 }
 
 nr_def «field»::«__to_le_radix»<@N : u32>(value : Field, radix : u32) -> [u8; N] {

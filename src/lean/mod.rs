@@ -42,6 +42,7 @@ use noirc_frontend::{
         TypeId,
     },
     shared::Signedness,
+    token::FunctionAttributeKind,
     Kind,
     NamedGeneric,
     ResolvedGeneric,
@@ -985,11 +986,23 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     _ => panic!("unsupported pattern in builtin params"),
                 })
                 .join(", ");
-            ind.run(format_builtin_call(
-                &self.context.def_interner.function_name(&func).to_string(),
-                &params,
-                &ret_type,
-            ))
+
+            let name = match &self
+                .context
+                .def_interner
+                .function_attributes(&func)
+                .clone()
+                .function
+                .expect("builtin must have the attribute")
+                .0
+                .kind
+            {
+                FunctionAttributeKind::Builtin(builtin) => builtin.to_string(),
+                FunctionAttributeKind::Foreign(foreign) => foreign.to_string(),
+                _ => panic!("unsupported function attribute kind for builtin"),
+            };
+
+            ind.run(format_builtin_call(&name, &params, &ret_type))
         } else if func_meta.is_stub() {
             "".to_string()
         } else {
