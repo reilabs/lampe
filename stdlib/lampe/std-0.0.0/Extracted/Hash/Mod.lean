@@ -74,7 +74,7 @@ nr_def «hash»::«derive_generators»<@N : u32, @M : u32>(domain_separator_byte
 }
 
 nr_def «hash»::«__derive_generators»<@N : u32, @M : u32>(domain_separator_bytes : [u8; M], starting_index : u32) -> [embedded_curve_ops::EmbeddedCurvePoint<  >; N] {
-    #deriveGenerators(domain_separator_bytes, starting_index) : [embedded_curve_ops::EmbeddedCurvePoint<  >; N]
+    #derivePedersenGenerators(domain_separator_bytes, starting_index) : [embedded_curve_ops::EmbeddedCurvePoint<  >; N]
 }
 
 nr_def «hash»::«from_field_unsafe»<>(scalar : Field) -> embedded_curve_ops::EmbeddedCurveScalar<  > {

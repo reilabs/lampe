@@ -36,7 +36,7 @@ nr_def «verify_proof_with_type»<@N : u32, @M : u32, @K : u32>(verification_key
 }
 
 nr_def «verify_proof_internal»<@N : u32, @M : u32, @K : u32>(verification_key : [Field; N], proof : [Field; M], public_inputs : [Field; K], key_hash : Field, proof_type : u32) -> Unit {
-    #verifyProofInternal(verification_key, proof, public_inputs, key_hash, proof_type) : Unit
+    #recursiveAggregation(verification_key, proof, public_inputs, key_hash, proof_type) : Unit
 }
 
 nr_def «assert_constant»<T>(x : T) -> Unit {
