@@ -45,12 +45,12 @@ nr_trait_impl[impl_28] <> std::cmp::Eq<  > for embedded_curve_ops::EmbeddedCurve
 }
 
 nr_trait_impl[impl_29] <> std::hash::Hash<  > for embedded_curve_ops::EmbeddedCurvePoint<  > where  {
-    fn «hash»<H> (self : embedded_curve_ops::EmbeddedCurvePoint<  >, state : &H) -> Unit {
+    fn «hash»<H> (self : embedded_curve_ops::EmbeddedCurvePoint<  >, state : & H) -> Unit {
         if (self as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite {
-                    ((bool as std::hash::Hash<  >)::hash<  > as λ(bool, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite, state);
+                    ((bool as std::hash::Hash<  >)::hash< H > as λ(bool, & H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).is_infinite, state);
         } else {
-                    ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).x, state);
-                ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).y, state);
+                    ((Field as std::hash::Hash<  >)::hash< H > as λ(Field, & H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).x, state);
+                ((Field as std::hash::Hash<  >)::hash< H > as λ(Field, & H) → Unit)((self as embedded_curve_ops::EmbeddedCurvePoint<  >).y, state);
         };
 }
 }
@@ -87,9 +87,9 @@ nr_trait_impl[impl_30] <> std::cmp::Eq<  > for embedded_curve_ops::EmbeddedCurve
 }
 
 nr_trait_impl[impl_31] <> std::hash::Hash<  > for embedded_curve_ops::EmbeddedCurveScalar<  > where  {
-    fn «hash»<H> (self : embedded_curve_ops::EmbeddedCurveScalar<  >, state : &H) -> Unit {
-        ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurveScalar<  >).hi, state);
-        ((Field as std::hash::Hash<  >)::hash<  > as λ(Field, &H) → Unit)((self as embedded_curve_ops::EmbeddedCurveScalar<  >).lo, state);
+    fn «hash»<H> (self : embedded_curve_ops::EmbeddedCurveScalar<  >, state : & H) -> Unit {
+        ((Field as std::hash::Hash<  >)::hash< H > as λ(Field, & H) → Unit)((self as embedded_curve_ops::EmbeddedCurveScalar<  >).hi, state);
+        ((Field as std::hash::Hash<  >)::hash< H > as λ(Field, & H) → Unit)((self as embedded_curve_ops::EmbeddedCurveScalar<  >).lo, state);
 }
 }
 

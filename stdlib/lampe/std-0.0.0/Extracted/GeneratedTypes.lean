@@ -140,12 +140,12 @@ nr_trait_def std::hash::BuildHasher<>[H] {
 }
 
 nr_trait_def std::hash::Hash<>[] {
-    fn hash<H>(Self, &H) -> Unit;
+    fn hash<H>(Self, & H) -> Unit;
 }
 
 nr_trait_def std::hash::Hasher<>[] {
     fn finish<>(Self) -> Field;
-    fn write<>(&Self, Field) -> Unit;
+    fn write<>(& Self, Field) -> Unit;
 }
 
 nr_trait_def std::meta::ctstring::AsCtString<>[] {

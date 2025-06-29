@@ -8,7 +8,7 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_trait_impl[impl_66] <> std::convert::From< [u8; N] > for str<N> where  {
+nr_trait_impl[impl_66] <@N : u32> std::convert::From< [u8; N] > for str<N> where  {
     fn «from»<> (bytes : [u8; N]) -> str<N> {
         (@std::array::as_str_unchecked< N:u32 > as λ([u8; N]) → str<N>)(bytes);
 }

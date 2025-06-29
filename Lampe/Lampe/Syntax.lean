@@ -112,8 +112,7 @@ abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
 partial def mkConstNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : TSyntax `nr_const_num → m (TSyntax `term)
 | `(nr_const_num|$n:num) => pure $ n
 | `(nr_const_num|$i:ident) => do
-  let ident := mkIdent $ Name.mkSimple i.getId.toString
-  `(BitVec.toNat $ident)
+  `(BitVec.toNat $i)
 | _ => throwUnsupportedSyntax
 
 partial def mkNrIdent [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : Syntax → m String
@@ -153,6 +152,7 @@ def matchGenericDefs [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] : 
 | `(ident| u16) => `(Kind.u 16)
 | `(ident| u32) => `(Kind.u 32)
 | `(ident| u64) => `(Kind.u 64)
+| `(ident| u128) => `(Kind.u 128)
 | _ => throwUnsupportedSyntax
 
 def mkGenericNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] (n : TSyntax `num) :
@@ -163,6 +163,7 @@ def mkGenericNum [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] (n : T
 | `(ident| u16) => `(BitVec.ofNat 16 $n)
 | `(ident| u32) => `(BitVec.ofNat 32 $n)
 | `(ident| u64) => `(BitVec.ofNat 64 $n)
+| `(ident| u128) => `(BitVec.ofNat 128 $n)
 | _ => throwUnsupportedSyntax
 
 mutual
@@ -173,11 +174,13 @@ partial def mkNrType [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [M
 | `(nr_type| u16) => `(Tp.u 16)
 | `(nr_type| u32) => `(Tp.u 32)
 | `(nr_type| u64) => `(Tp.u 64)
+| `(nr_type| u128) => `(Tp.u 128)
 | `(nr_type| i1) => `(Tp.i 1)
 | `(nr_type| i8) => `(Tp.i 8)
 | `(nr_type| i16) => `(Tp.i 16)
 | `(nr_type| i32) => `(Tp.i 32)
 | `(nr_type| i64) => `(Tp.i 64)
+| `(nr_type| i128) => `(Tp.i 128)
 | `(nr_type| bool) => `(Tp.bool)
 | `(nr_type| Field) => `(Tp.field)
 -- these are built into the compiler, but really only used
@@ -223,7 +226,7 @@ partial def mkGenericVals [Monad m] [MonadQuotation m] [MonadExceptOf Exception 
   let vals ← mkHListLit (←generics.mapM fun g =>
     match g with
     | `(nr_generic| $t:nr_type) => (mkNrType t)
-    | `(nr_generic| $n:ident : $_:ident) => pure $ mkIdent $ Name.mkSimple n.getId.toString
+    | `(nr_generic| $n:ident : $_:ident) => pure n
     | `(nr_generic| $n:num : $t:ident) => do `($(← mkGenericNum n t))
     | _ => throwUnsupportedSyntax)
   pure (kinds, vals)

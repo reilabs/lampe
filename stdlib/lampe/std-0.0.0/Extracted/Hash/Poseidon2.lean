@@ -18,7 +18,7 @@ nr_def «hash»::«poseidon2»::«Poseidon2»::«new»<>(iv : Field) -> hash::po
     result;
 }
 
-nr_def «hash»::«poseidon2»::«Poseidon2»::«perform_duplex»<>(self : &hash::poseidon2::Poseidon2<  >) -> Unit {
+nr_def «hash»::«poseidon2»::«Poseidon2»::«perform_duplex»<>(self : & hash::poseidon2::Poseidon2<  >) -> Unit {
     for i in 0 : u32 .. (@RATE<  > as λ() → u32)() {
             if #uLt(i, (#readRef(self) : hash::poseidon2::Poseidon2<  > as hash::poseidon2::Poseidon2<  >).cache_size) : bool {
                 (*(self) as hash::poseidon2::Poseidon2<  >).state[#cast(i) : u32] = #fAdd(#arrayIndex((#readRef(self) : hash::poseidon2::Poseidon2<  > as hash::poseidon2::Poseidon2<  >).state, #cast(i) : u32) : Field, #arrayIndex((#readRef(self) : hash::poseidon2::Poseidon2<  > as hash::poseidon2::Poseidon2<  >).cache, #cast(i) : u32) : Field) : Field;
@@ -29,10 +29,10 @@ nr_def «hash»::«poseidon2»::«Poseidon2»::«perform_duplex»<>(self : &hash
     skip;
 }
 
-nr_def «hash»::«poseidon2»::«Poseidon2»::«absorb»<>(self : &hash::poseidon2::Poseidon2<  >, input : Field) -> Unit {
+nr_def «hash»::«poseidon2»::«Poseidon2»::«absorb»<>(self : & hash::poseidon2::Poseidon2<  >, input : Field) -> Unit {
     #assert(#bNot((#readRef(self) : hash::poseidon2::Poseidon2<  > as hash::poseidon2::Poseidon2<  >).squeeze_mode) : bool) : Unit;
     if #uEq((#readRef(self) : hash::poseidon2::Poseidon2<  > as hash::poseidon2::Poseidon2<  >).cache_size, (@RATE<  > as λ() → u32)()) : bool {
-            (@hash::poseidon2::Poseidon2::perform_duplex<  > as λ(&hash::poseidon2::Poseidon2<  >) → Unit)(self);
+            (@hash::poseidon2::Poseidon2::perform_duplex<  > as λ(& hash::poseidon2::Poseidon2<  >) → Unit)(self);
         (*(self) as hash::poseidon2::Poseidon2<  >).cache[#cast(0 : u32) : u32] = input;
         (*(self) as hash::poseidon2::Poseidon2<  >).cache_size = 1 : u32;
         skip;
@@ -45,9 +45,9 @@ nr_def «hash»::«poseidon2»::«Poseidon2»::«absorb»<>(self : &hash::poseid
     };
 }
 
-nr_def «hash»::«poseidon2»::«Poseidon2»::«squeeze»<>(self : &hash::poseidon2::Poseidon2<  >) -> Field {
+nr_def «hash»::«poseidon2»::«Poseidon2»::«squeeze»<>(self : & hash::poseidon2::Poseidon2<  >) -> Field {
     #assert(#bNot((#readRef(self) : hash::poseidon2::Poseidon2<  > as hash::poseidon2::Poseidon2<  >).squeeze_mode) : bool) : Unit;
-    (@hash::poseidon2::Poseidon2::perform_duplex<  > as λ(&hash::poseidon2::Poseidon2<  >) → Unit)(self);
+    (@hash::poseidon2::Poseidon2::perform_duplex<  > as λ(& hash::poseidon2::Poseidon2<  >) → Unit)(self);
     (*(self) as hash::poseidon2::Poseidon2<  >).squeeze_mode = true;
     #arrayIndex((#readRef(self) : hash::poseidon2::Poseidon2<  > as hash::poseidon2::Poseidon2<  >).state, #cast(0 : u32) : u32) : Field;
 }
@@ -58,13 +58,13 @@ nr_def «hash»::«poseidon2»::«Poseidon2»::«hash_internal»<@N : u32>(input
     let mut sponge = (@hash::poseidon2::Poseidon2::new<  > as λ(Field) → hash::poseidon2::Poseidon2<  >)(iv);
     for i in 0 : u32 .. (@std::array::len< Field, N:u32 > as λ([Field; N]) → u32)(input) {
             if #uLt(i, in_len) : bool {
-                (@hash::poseidon2::Poseidon2::absorb<  > as λ(&hash::poseidon2::Poseidon2<  >, Field) → Unit)(#ref(sponge) : &hash::poseidon2::Poseidon2<  >, #arrayIndex(input, #cast(i) : u32) : Field);
+                (@hash::poseidon2::Poseidon2::absorb<  > as λ(& hash::poseidon2::Poseidon2<  >, Field) → Unit)(#ref(sponge) : & hash::poseidon2::Poseidon2<  >, #arrayIndex(input, #cast(i) : u32) : Field);
         };
     };
     if is_variable_length {
-            (@hash::poseidon2::Poseidon2::absorb<  > as λ(&hash::poseidon2::Poseidon2<  >, Field) → Unit)(#ref(sponge) : &hash::poseidon2::Poseidon2<  >, 1 : Field);
+            (@hash::poseidon2::Poseidon2::absorb<  > as λ(& hash::poseidon2::Poseidon2<  >, Field) → Unit)(#ref(sponge) : & hash::poseidon2::Poseidon2<  >, 1 : Field);
     };
-    (@hash::poseidon2::Poseidon2::squeeze<  > as λ(&hash::poseidon2::Poseidon2<  >) → Field)(#ref(sponge) : &hash::poseidon2::Poseidon2<  >);
+    (@hash::poseidon2::Poseidon2::squeeze<  > as λ(& hash::poseidon2::Poseidon2<  >) → Field)(#ref(sponge) : & hash::poseidon2::Poseidon2<  >);
 }
 
 nr_trait_impl[impl_0] <> std::hash::Hasher<  > for hash::poseidon2::Poseidon2Hasher<  > where  {
@@ -72,11 +72,11 @@ nr_trait_impl[impl_0] <> std::hash::Hasher<  > for hash::poseidon2::Poseidon2Has
         let iv = #fMul(#cast((@std::slice::len< Field > as λ([Field]) → u32)((self as hash::poseidon2::Poseidon2Hasher<  >)._state)) : Field, 18446744073709551616 : Field) : Field;
         let mut sponge = (@hash::poseidon2::Poseidon2::new<  > as λ(Field) → hash::poseidon2::Poseidon2<  >)(iv);
         for i in 0 : u32 .. (@std::slice::len< Field > as λ([Field]) → u32)((self as hash::poseidon2::Poseidon2Hasher<  >)._state) {
-                    (@hash::poseidon2::Poseidon2::absorb<  > as λ(&hash::poseidon2::Poseidon2<  >, Field) → Unit)(#ref(sponge) : &hash::poseidon2::Poseidon2<  >, #sliceIndex((self as hash::poseidon2::Poseidon2Hasher<  >)._state, #cast(i) : u32) : Field);
+                    (@hash::poseidon2::Poseidon2::absorb<  > as λ(& hash::poseidon2::Poseidon2<  >, Field) → Unit)(#ref(sponge) : & hash::poseidon2::Poseidon2<  >, #sliceIndex((self as hash::poseidon2::Poseidon2Hasher<  >)._state, #cast(i) : u32) : Field);
         };
-        (@hash::poseidon2::Poseidon2::squeeze<  > as λ(&hash::poseidon2::Poseidon2<  >) → Field)(#ref(sponge) : &hash::poseidon2::Poseidon2<  >);
+        (@hash::poseidon2::Poseidon2::squeeze<  > as λ(& hash::poseidon2::Poseidon2<  >) → Field)(#ref(sponge) : & hash::poseidon2::Poseidon2<  >);
 };
-fn «write»<> (self : &hash::poseidon2::Poseidon2Hasher<  >, input : Field) -> Unit {
+fn «write»<> (self : & hash::poseidon2::Poseidon2Hasher<  >, input : Field) -> Unit {
         (*(self) as hash::poseidon2::Poseidon2Hasher<  >)._state = (@std::slice::push_back< Field > as λ([Field], Field) → [Field])((#readRef(self) : hash::poseidon2::Poseidon2Hasher<  > as hash::poseidon2::Poseidon2Hasher<  >)._state, input);
         skip;
 }

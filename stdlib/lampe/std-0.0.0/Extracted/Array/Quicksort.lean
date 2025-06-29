@@ -8,11 +8,11 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_def «array»::«quicksort»::«partition»<T, @N : u32, Env>(arr : &[T; N], low : u32, high : u32, sortfn : λ(T, T) → bool) -> u32 {
+nr_def «array»::«quicksort»::«partition»<T, @N : u32, Env>(arr : & [T; N], low : u32, high : u32, sortfn : λ(T, T) → bool) -> u32 {
     #fresh() : u32
 }
 
-nr_def «array»::«quicksort»::«quicksort_loop»<T, @N : u32, Env>(arr : &[T; N], low : u32, high : u32, sortfn : λ(T, T) → bool) -> Unit {
+nr_def «array»::«quicksort»::«quicksort_loop»<T, @N : u32, Env>(arr : & [T; N], low : u32, high : u32, sortfn : λ(T, T) → bool) -> Unit {
     #fresh() : Unit
 }
 

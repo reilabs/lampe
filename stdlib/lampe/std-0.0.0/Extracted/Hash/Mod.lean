@@ -103,7 +103,7 @@ nr_def «hash»::«poseidon2_permutation»<@N : u32>(_input : [Field; N], _state
 
 nr_trait_impl[impl_2] <H> std::hash::BuildHasher<  > for hash::BuildHasherDefault< H > where H : Hasher<>, H : Default<> {
     fn «build_hasher»<> (_self : hash::BuildHasherDefault< H >) -> H {
-        ((H as std::default::Default<  >)::default<  > as λ() → H)();
+        ((H as std::default::Default<  >)::default< H > as λ() → H)();
 }
 }
 
@@ -114,135 +114,135 @@ nr_trait_impl[impl_3] <H> std::default::Default<  > for hash::BuildHasherDefault
 }
 
 nr_trait_impl[impl_4] <> std::hash::Hash<  > for Field where  {
-    fn «hash»<H> (self : Field, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, self);
+    fn «hash»<H> (self : Field, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, self);
 }
 }
 
 nr_trait_impl[impl_5] <> std::hash::Hash<  > for u1 where  {
-    fn «hash»<H> (self : u1, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : u1, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_6] <> std::hash::Hash<  > for u8 where  {
-    fn «hash»<H> (self : u8, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : u8, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_7] <> std::hash::Hash<  > for u16 where  {
-    fn «hash»<H> (self : u16, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : u16, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_8] <> std::hash::Hash<  > for u32 where  {
-    fn «hash»<H> (self : u32, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : u32, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_9] <> std::hash::Hash<  > for u64 where  {
-    fn «hash»<H> (self : u64, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : u64, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_10] <> std::hash::Hash<  > for u128 where  {
-    fn «hash»<H> (self : u128, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : u128, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_11] <> std::hash::Hash<  > for i8 where  {
-    fn «hash»<H> (self : i8, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : i8, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_12] <> std::hash::Hash<  > for i16 where  {
-    fn «hash»<H> (self : i16, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : i16, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_13] <> std::hash::Hash<  > for i32 where  {
-    fn «hash»<H> (self : i32, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : i32, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_14] <> std::hash::Hash<  > for i64 where  {
-    fn «hash»<H> (self : i64, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : i64, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_15] <> std::hash::Hash<  > for bool where  {
-    fn «hash»<H> (self : bool, state : &H) -> Unit {
-        ((H as std::hash::Hasher<  >)::write<  > as λ(&H, Field) → Unit)(state, #cast(self) : Field);
+    fn «hash»<H> (self : bool, state : & H) -> Unit {
+        ((H as std::hash::Hasher<  >)::write< H > as λ(& H, Field) → Unit)(state, #cast(self) : Field);
 }
 }
 
 nr_trait_impl[impl_16] <> std::hash::Hash<  > for Unit where  {
-    fn «hash»<H> (_self : Unit, _state : &H) -> Unit {
+    fn «hash»<H> (_self : Unit, _state : & H) -> Unit {
 
 }
 }
 
-nr_trait_impl[impl_17] <@N : u32> std::hash::Hash<  > for [T; N] where T : Hash<> {
-    fn «hash»<H> (self : [T; N], state : &H) -> Unit {
+nr_trait_impl[impl_17] <@N : u32, T> std::hash::Hash<  > for [T; N] where T : Hash<> {
+    fn «hash»<H> (self : [T; N], state : & H) -> Unit {
                 let ζi0 = self;
                 for ζi1 in 0 : u32 .. (@std::array::len< T, N:u32 > as λ([T; N]) → u32)(ζi0) {
                             let elem = #arrayIndex(ζi0, #cast(ζi1) : u32) : T;
-                                ((T as std::hash::Hash<  >)::hash<  > as λ(T, &H) → Unit)(elem, state);
+                                ((T as std::hash::Hash<  >)::hash< T, H > as λ(T, & H) → Unit)(elem, state);
                 };
 }
 }
 
 nr_trait_impl[impl_18] <T> std::hash::Hash<  > for [T] where T : Hash<> {
-    fn «hash»<H> (self : [T], state : &H) -> Unit {
-        ((u32 as std::hash::Hash<  >)::hash<  > as λ(u32, &H) → Unit)((@std::slice::len< T > as λ([T]) → u32)(self), state);
+    fn «hash»<H> (self : [T], state : & H) -> Unit {
+        ((u32 as std::hash::Hash<  >)::hash< H > as λ(u32, & H) → Unit)((@std::slice::len< T > as λ([T]) → u32)(self), state);
                 let ζi0 = self;
                 for ζi1 in 0 : u32 .. (@std::slice::len< T > as λ([T]) → u32)(ζi0) {
                             let elem = #sliceIndex(ζi0, #cast(ζi1) : u32) : T;
-                                ((T as std::hash::Hash<  >)::hash<  > as λ(T, &H) → Unit)(elem, state);
+                                ((T as std::hash::Hash<  >)::hash< T, H > as λ(T, & H) → Unit)(elem, state);
                 };
 }
 }
 
-nr_trait_impl[impl_19] <B, A> std::hash::Hash<  > for `(A, B) where A : Hash<>, B : Hash<> {
-    fn «hash»<H> (self : `(A, B), state : &H) -> Unit {
-        ((A as std::hash::Hash<  >)::hash<  > as λ(A, &H) → Unit)(self.0, state);
-        ((B as std::hash::Hash<  >)::hash<  > as λ(B, &H) → Unit)(self.1, state);
+nr_trait_impl[impl_19] <A, B> std::hash::Hash<  > for `(A, B) where A : Hash<>, B : Hash<> {
+    fn «hash»<H> (self : `(A, B), state : & H) -> Unit {
+        ((A as std::hash::Hash<  >)::hash< A, H > as λ(A, & H) → Unit)(self.0, state);
+        ((B as std::hash::Hash<  >)::hash< B, H > as λ(B, & H) → Unit)(self.1, state);
 }
 }
 
-nr_trait_impl[impl_20] <B, C, A> std::hash::Hash<  > for `(A, B, C) where A : Hash<>, B : Hash<>, C : Hash<> {
-    fn «hash»<H> (self : `(A, B, C), state : &H) -> Unit {
-        ((A as std::hash::Hash<  >)::hash<  > as λ(A, &H) → Unit)(self.0, state);
-        ((B as std::hash::Hash<  >)::hash<  > as λ(B, &H) → Unit)(self.1, state);
-        ((C as std::hash::Hash<  >)::hash<  > as λ(C, &H) → Unit)(self.2, state);
+nr_trait_impl[impl_20] <A, B, C> std::hash::Hash<  > for `(A, B, C) where A : Hash<>, B : Hash<>, C : Hash<> {
+    fn «hash»<H> (self : `(A, B, C), state : & H) -> Unit {
+        ((A as std::hash::Hash<  >)::hash< A, H > as λ(A, & H) → Unit)(self.0, state);
+        ((B as std::hash::Hash<  >)::hash< B, H > as λ(B, & H) → Unit)(self.1, state);
+        ((C as std::hash::Hash<  >)::hash< C, H > as λ(C, & H) → Unit)(self.2, state);
 }
 }
 
-nr_trait_impl[impl_21] <C, A, B, D> std::hash::Hash<  > for `(A, B, C, D) where A : Hash<>, B : Hash<>, C : Hash<>, D : Hash<> {
-    fn «hash»<H> (self : `(A, B, C, D), state : &H) -> Unit {
-        ((A as std::hash::Hash<  >)::hash<  > as λ(A, &H) → Unit)(self.0, state);
-        ((B as std::hash::Hash<  >)::hash<  > as λ(B, &H) → Unit)(self.1, state);
-        ((C as std::hash::Hash<  >)::hash<  > as λ(C, &H) → Unit)(self.2, state);
-        ((D as std::hash::Hash<  >)::hash<  > as λ(D, &H) → Unit)(self.3, state);
+nr_trait_impl[impl_21] <A, B, C, D> std::hash::Hash<  > for `(A, B, C, D) where A : Hash<>, B : Hash<>, C : Hash<>, D : Hash<> {
+    fn «hash»<H> (self : `(A, B, C, D), state : & H) -> Unit {
+        ((A as std::hash::Hash<  >)::hash< A, H > as λ(A, & H) → Unit)(self.0, state);
+        ((B as std::hash::Hash<  >)::hash< B, H > as λ(B, & H) → Unit)(self.1, state);
+        ((C as std::hash::Hash<  >)::hash< C, H > as λ(C, & H) → Unit)(self.2, state);
+        ((D as std::hash::Hash<  >)::hash< D, H > as λ(D, & H) → Unit)(self.3, state);
 }
 }
 
-nr_trait_impl[impl_22] <B, C, D, A, E> std::hash::Hash<  > for `(A, B, C, D, E) where A : Hash<>, B : Hash<>, C : Hash<>, D : Hash<>, E : Hash<> {
-    fn «hash»<H> (self : `(A, B, C, D, E), state : &H) -> Unit {
-        ((A as std::hash::Hash<  >)::hash<  > as λ(A, &H) → Unit)(self.0, state);
-        ((B as std::hash::Hash<  >)::hash<  > as λ(B, &H) → Unit)(self.1, state);
-        ((C as std::hash::Hash<  >)::hash<  > as λ(C, &H) → Unit)(self.2, state);
-        ((D as std::hash::Hash<  >)::hash<  > as λ(D, &H) → Unit)(self.3, state);
-        ((E as std::hash::Hash<  >)::hash<  > as λ(E, &H) → Unit)(self.4, state);
+nr_trait_impl[impl_22] <A, B, C, D, E> std::hash::Hash<  > for `(A, B, C, D, E) where A : Hash<>, B : Hash<>, C : Hash<>, D : Hash<>, E : Hash<> {
+    fn «hash»<H> (self : `(A, B, C, D, E), state : & H) -> Unit {
+        ((A as std::hash::Hash<  >)::hash< A, H > as λ(A, & H) → Unit)(self.0, state);
+        ((B as std::hash::Hash<  >)::hash< B, H > as λ(B, & H) → Unit)(self.1, state);
+        ((C as std::hash::Hash<  >)::hash< C, H > as λ(C, & H) → Unit)(self.2, state);
+        ((D as std::hash::Hash<  >)::hash< D, H > as λ(D, & H) → Unit)(self.3, state);
+        ((E as std::hash::Hash<  >)::hash< E, H > as λ(E, & H) → Unit)(self.4, state);
 }
 }
 

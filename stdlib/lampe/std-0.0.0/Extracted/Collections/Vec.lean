@@ -20,17 +20,17 @@ nr_def «collections»::«vec»::«Vec»::«get»<T>(self : collections::vec::Ve
     #sliceIndex((self as collections::vec::Vec< T >).slice, #cast(index) : u32) : T;
 }
 
-nr_def «collections»::«vec»::«Vec»::«set»<T>(self : &collections::vec::Vec< T >, index : u32, value : T) -> Unit {
+nr_def «collections»::«vec»::«Vec»::«set»<T>(self : & collections::vec::Vec< T >, index : u32, value : T) -> Unit {
     (*(self) as collections::vec::Vec< T >).slice[[#cast(index) : u32]] = value;
     skip;
 }
 
-nr_def «collections»::«vec»::«Vec»::«push»<T>(self : &collections::vec::Vec< T >, elem : T) -> Unit {
+nr_def «collections»::«vec»::«Vec»::«push»<T>(self : & collections::vec::Vec< T >, elem : T) -> Unit {
     (*(self) as collections::vec::Vec< T >).slice = (@std::slice::push_back< T > as λ([T], T) → [T])((#readRef(self) : collections::vec::Vec< T > as collections::vec::Vec< T >).slice, elem);
     skip;
 }
 
-nr_def «collections»::«vec»::«Vec»::«pop»<T>(self : &collections::vec::Vec< T >) -> T {
+nr_def «collections»::«vec»::«Vec»::«pop»<T>(self : & collections::vec::Vec< T >) -> T {
     let π0 = (@std::slice::pop_back< T > as λ([T]) → `([T], T))((#readRef(self) : collections::vec::Vec< T > as collections::vec::Vec< T >).slice);
     let popped_slice = π0.0;
     let last_elem = π0.1;
@@ -38,12 +38,12 @@ nr_def «collections»::«vec»::«Vec»::«pop»<T>(self : &collections::vec::V
     last_elem;
 }
 
-nr_def «collections»::«vec»::«Vec»::«insert»<T>(self : &collections::vec::Vec< T >, index : u32, elem : T) -> Unit {
+nr_def «collections»::«vec»::«Vec»::«insert»<T>(self : & collections::vec::Vec< T >, index : u32, elem : T) -> Unit {
     (*(self) as collections::vec::Vec< T >).slice = (@std::slice::insert< T > as λ([T], u32, T) → [T])((#readRef(self) : collections::vec::Vec< T > as collections::vec::Vec< T >).slice, index, elem);
     skip;
 }
 
-nr_def «collections»::«vec»::«Vec»::«remove»<T>(self : &collections::vec::Vec< T >, index : u32) -> T {
+nr_def «collections»::«vec»::«Vec»::«remove»<T>(self : & collections::vec::Vec< T >, index : u32) -> T {
     let π0 = (@std::slice::remove< T > as λ([T], u32) → `([T], T))((#readRef(self) : collections::vec::Vec< T > as collections::vec::Vec< T >).slice, index);
     let new_slice = π0.0;
     let elem = π0.1;
@@ -57,21 +57,21 @@ nr_def «collections»::«vec»::«Vec»::«len»<T>(self : collections::vec::Ve
 
 nr_def «collections»::«vec»::«tests»::«set_updates_values_properly»<>() -> Unit {
     let mut vec = collections::vec::Vec< Field > { #mkSlice(0 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field] };
-    (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 0 : u32, 42 : Field);
+    (@collections::vec::Vec::set< Field > as λ(& collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : & collections::vec::Vec< Field >, 0 : u32, 42 : Field);
     #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(42 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
-    (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 1 : u32, 43 : Field);
+    (@collections::vec::Vec::set< Field > as λ(& collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : & collections::vec::Vec< Field >, 1 : u32, 43 : Field);
     #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(42 : Field, 43 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
-    (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 2 : u32, 44 : Field);
+    (@collections::vec::Vec::set< Field > as λ(& collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : & collections::vec::Vec< Field >, 2 : u32, 44 : Field);
     #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(42 : Field, 43 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
-    (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 1 : u32, 10 : Field);
+    (@collections::vec::Vec::set< Field > as λ(& collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : & collections::vec::Vec< Field >, 1 : u32, 10 : Field);
     #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(42 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
-    (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 0 : u32, 0 : Field);
+    (@collections::vec::Vec::set< Field > as λ(& collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : & collections::vec::Vec< Field >, 0 : u32, 0 : Field);
     #assert(#sliceEq((vec as collections::vec::Vec< Field >).slice, #mkSlice(0 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field]) : bool) : Unit;
 }
 
 nr_def «collections»::«vec»::«tests»::«panics_when_writing_elements_past_end_of_vec»<>() -> Unit {
     let mut vec = (@collections::vec::Vec::new< Field > as λ() → collections::vec::Vec< Field >)();
-    (@collections::vec::Vec::set< Field > as λ(&collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : &collections::vec::Vec< Field >, 0 : u32, 42 : Field);
+    (@collections::vec::Vec::set< Field > as λ(& collections::vec::Vec< Field >, u32, Field) → Unit)(#ref(vec) : & collections::vec::Vec< Field >, 0 : u32, 42 : Field);
     (@std::println< Field > as λ(Field) → Unit)((@collections::vec::Vec::get< Field > as λ(collections::vec::Vec< Field >, u32) → Field)(vec, 0 : u32));
 }
 
