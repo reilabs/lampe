@@ -9,11 +9,11 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «hash»::«sha256_compression»<>(input : [u32; 16], state : [u32; 8]) -> [u32; 8] {
-
+    #sha256Compression(input, state) : [u32; 8]
 }
 
 nr_def «hash»::«keccakf1600»<>(input : [u64; 25]) -> [u64; 25] {
-
+    #keccakf1600(input) : [u64; 25]
 }
 
 nr_def «hash»::«keccak»::«keccakf1600»<>(input : [u64; 25]) -> [u64; 25] {
@@ -21,7 +21,7 @@ nr_def «hash»::«keccak»::«keccakf1600»<>(input : [u64; 25]) -> [u64; 25] {
 }
 
 nr_def «hash»::«blake2s»<@N : u32>(input : [u8; N]) -> [u8; 32] {
-
+    #blake2s(input) : [u8; 32]
 }
 
 nr_def «hash»::«blake3»<@N : u32>(input : [u8; N]) -> [u8; 32] {
@@ -32,7 +32,7 @@ nr_def «hash»::«blake3»<@N : u32>(input : [u8; N]) -> [u8; 32] {
 }
 
 nr_def «hash»::«__blake3»<@N : u32>(input : [u8; N]) -> [u8; 32] {
-
+    #blake3(input) : [u8; 32]
 }
 
 nr_def «hash»::«pedersen_commitment»<@N : u32>(input : [Field; N]) -> embedded_curve_ops::EmbeddedCurvePoint<  > {
@@ -74,7 +74,7 @@ nr_def «hash»::«derive_generators»<@N : u32, @M : u32>(domain_separator_byte
 }
 
 nr_def «hash»::«__derive_generators»<@N : u32, @M : u32>(domain_separator_bytes : [u8; M], starting_index : u32) -> [embedded_curve_ops::EmbeddedCurvePoint<  >; N] {
-
+    #deriveGenerators(domain_separator_bytes, starting_index) : [embedded_curve_ops::EmbeddedCurvePoint<  >; N]
 }
 
 nr_def «hash»::«from_field_unsafe»<>(scalar : Field) -> embedded_curve_ops::EmbeddedCurveScalar<  > {
@@ -98,7 +98,7 @@ nr_def «hash»::«hash_to_field»<>(inputs : [Field]) -> Field {
 }
 
 nr_def «hash»::«poseidon2_permutation»<@N : u32>(_input : [Field; N], _state_length : u32) -> [Field; N] {
-
+    #poseidon2Permutation(_input, _state_length) : [Field; N]
 }
 
 nr_trait_impl[impl_2] <H> std::hash::BuildHasher<  > for hash::BuildHasherDefault< H > where H : Hasher<>, H : Default<> {

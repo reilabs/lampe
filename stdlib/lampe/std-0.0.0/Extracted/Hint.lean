@@ -9,7 +9,7 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «hint»::«black_box»<T>(value : T) -> T {
-
+    #blackBox(value) : T
 }
 
 

@@ -9,23 +9,23 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «field»::«__assert_max_bit_size»<>(value : Field, bit_size : u32) -> Unit {
-
+    #assertMaxBitSize(value, bit_size) : Unit
 }
 
 nr_def «field»::«__to_le_radix»<@N : u32>(value : Field, radix : u32) -> [u8; N] {
-
+    #toLeRadix(value, radix) : [u8; N]
 }
 
 nr_def «field»::«__to_be_radix»<@N : u32>(value : Field, radix : u32) -> [u8; N] {
-
+    #toBeRadix(value, radix) : [u8; N]
 }
 
 nr_def «field»::«__to_le_bits»<@N : u32>(value : Field) -> [u1; N] {
-
+    #toLeBits(value) : [u1; N]
 }
 
 nr_def «field»::«__to_be_bits»<@N : u32>(value : Field) -> [u1; N] {
-
+    #toBeBits(value) : [u1; N]
 }
 
 nr_def «field»::«__field_less_than»<>(x : Field, y : Field) -> bool {
