@@ -277,8 +277,6 @@ def Expr.readRef (ref : rep tp.ref) : Expr rep tp :=
 def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Expr rep .unit :=
   Expr.callBuiltin _ .unit .writeRef h![ref, val]
 
-#check Builtin.arrayEq
-
 @[reducible]
 def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp)) : Expr rep (.slice tp) :=
   Expr.callBuiltin _ (.slice tp) .mkSlice vals

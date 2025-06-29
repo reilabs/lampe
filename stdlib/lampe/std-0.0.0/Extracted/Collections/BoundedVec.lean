@@ -233,7 +233,7 @@ nr_def «collections»::«bounded_vec»::«BoundedVec»::«from_parts_unchecked�
 nr_trait_impl[impl_32] <T, @MaxLen : u32> std::cmp::Eq<  > for collections::bounded_vec::BoundedVec< T, MaxLen:u32 > where T : Eq<> {
     fn «eq»<> (self : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >, other : collections::bounded_vec::BoundedVec< T, MaxLen:u32 >) -> bool {
         if #uEq((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).len) : bool {
-                    #arrayEq((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage) : bool;
+                    (([T; MaxLen] as Eq<  >)::eq<  > as λ([T; MaxLen], [T; MaxLen]) → bool)((self as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage, (other as collections::bounded_vec::BoundedVec< T, MaxLen:u32 >).storage);
         } else {
                     false;
         };
@@ -254,15 +254,15 @@ nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«get»::«panic
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«set»::«set_updates_values_properly»<>() -> Unit {
     let mut vec = (@collections::bounded_vec::BoundedVec::from_array< Field, 5 : u32, 5 : u32 > as λ([Field; 5]) → collections::bounded_vec::BoundedVec< Field, 5 : u32 >)(#mkArray(0 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field; 5]);
     (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(& collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : & collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 0 : u32, 42 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(42 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field; 5]) : bool) : Unit;
+    #assert((([Field; 5] as Eq<  >)::eq<  > as λ([Field; 5], [Field; 5]) → bool)((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(42 : Field, 0 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field; 5])) : Unit;
     (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(& collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : & collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 1 : u32, 43 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(42 : Field, 43 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field; 5]) : bool) : Unit;
+    #assert((([Field; 5] as Eq<  >)::eq<  > as λ([Field; 5], [Field; 5]) → bool)((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(42 : Field, 43 : Field, 0 : Field, 0 : Field, 0 : Field) : [Field; 5])) : Unit;
     (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(& collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : & collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 2 : u32, 44 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(42 : Field, 43 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field; 5]) : bool) : Unit;
+    #assert((([Field; 5] as Eq<  >)::eq<  > as λ([Field; 5], [Field; 5]) → bool)((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(42 : Field, 43 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field; 5])) : Unit;
     (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(& collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : & collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 1 : u32, 10 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(42 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field; 5]) : bool) : Unit;
+    #assert((([Field; 5] as Eq<  >)::eq<  > as λ([Field; 5], [Field; 5]) → bool)((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(42 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field; 5])) : Unit;
     (@collections::bounded_vec::BoundedVec::set< Field, 5 : u32 > as λ(& collections::bounded_vec::BoundedVec< Field, 5 : u32 >, u32, Field) → Unit)(#ref(vec) : & collections::bounded_vec::BoundedVec< Field, 5 : u32 >, 0 : u32, 0 : Field);
-    #assert(#arrayEq((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(0 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field; 5]) : bool) : Unit;
+    #assert((([Field; 5] as Eq<  >)::eq<  > as λ([Field; 5], [Field; 5]) → bool)((vec as collections::bounded_vec::BoundedVec< Field, 5 : u32 >).storage, #mkArray(0 : Field, 10 : Field, 44 : Field, 0 : Field, 0 : Field) : [Field; 5])) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«set»::«panics_when_writing_elements_past_end_of_vec»<>() -> Unit {
@@ -412,7 +412,7 @@ nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_array»::
     let bounded_vec = (@collections::bounded_vec::BoundedVec::from_array< Field, 0 : u32, 0 : u32 > as λ([Field; 0]) → collections::bounded_vec::BoundedVec< Field, 0 : u32 >)(#mkArray() : [Field; 0]);
     #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len< Field, 0 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 0 : u32 >) → u32)(bounded_vec), 0 : u32) : bool) : Unit;
     #assert(#uEq((@collections::bounded_vec::BoundedVec::len< Field, 0 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 0 : u32 >) → u32)(bounded_vec), 0 : u32) : bool) : Unit;
-    #assert(#arrayEq((@collections::bounded_vec::BoundedVec::storage< Field, 0 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 0 : u32 >) → [Field; 0])(bounded_vec), empty_array) : bool) : Unit;
+    #assert((([Field; 0] as Eq<  >)::eq<  > as λ([Field; 0], [Field; 0]) → bool)((@collections::bounded_vec::BoundedVec::storage< Field, 0 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 0 : u32 >) → [Field; 0])(bounded_vec), empty_array)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_array»::«equal_len»<>() -> Unit {
@@ -420,7 +420,7 @@ nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_array»::
     let bounded_vec = (@collections::bounded_vec::BoundedVec::from_array< Field, 3 : u32, 3 : u32 > as λ([Field; 3]) → collections::bounded_vec::BoundedVec< Field, 3 : u32 >)(array);
     #assert(#uEq((@collections::bounded_vec::BoundedVec::max_len< Field, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → u32)(bounded_vec), 3 : u32) : bool) : Unit;
     #assert(#uEq((@collections::bounded_vec::BoundedVec::len< Field, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → u32)(bounded_vec), 3 : u32) : bool) : Unit;
-    #assert(#arrayEq((@collections::bounded_vec::BoundedVec::storage< Field, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → [Field; 3])(bounded_vec), array) : bool) : Unit;
+    #assert((([Field; 3] as Eq<  >)::eq<  > as λ([Field; 3], [Field; 3]) → bool)((@collections::bounded_vec::BoundedVec::storage< Field, 3 : u32 > as λ(collections::bounded_vec::BoundedVec< Field, 3 : u32 >) → [Field; 3])(bounded_vec), array)) : Unit;
 }
 
 nr_def «collections»::«bounded_vec»::«bounded_vec_tests»::«from_array»::«max_len_greater_then_array_len»<>() -> Unit {

@@ -15,7 +15,7 @@ nr_trait_impl[impl_24] <@N : u32> std::convert::From< str<N> > for [u8; N] where
 }
 
 nr_def «array»::«test»::«map_empty»<>() -> Unit {
-    #assert(#arrayEq((@std::array::map< Field, 0 : u32, Field, Unit > as λ([Field; 0], λ(Field) → Field) → [Field; 0])(#mkArray() : [Field; 0], |x : Field| -> Field {#fAdd(x, 1 : Field) : Field}), #mkArray() : [Field; 0]) : bool) : Unit;
+    #assert((([Field; 0] as Eq<  >)::eq<  > as λ([Field; 0], [Field; 0]) → bool)((@std::array::map< Field, 0 : u32, Field, Unit > as λ([Field; 0], λ(Field) → Field) → [Field; 0])(#mkArray() : [Field; 0], |x : Field| -> Field {#fAdd(x, 1 : Field) : Field}), #mkArray() : [Field; 0])) : Unit;
 }
 
 nr_def «arr_with_100_values»<>() -> [u32; 100] {
@@ -34,37 +34,37 @@ nr_def «array»::«test»::«test_sort»<>() -> Unit {
     let mut arr = #mkArray(3 : u32, 6 : u32, 8 : u32, 10 : u32, 1 : u32, 2 : u32, 1 : u32) : [u32; 7];
     let sorted = (@std::array::sort< u32, 7 : u32 > as λ([u32; 7]) → [u32; 7])(arr);
     let expected = #mkArray(1 : u32, 1 : u32, 2 : u32, 3 : u32, 6 : u32, 8 : u32, 10 : u32) : [u32; 7];
-    #assert(#arrayEq(sorted, expected) : bool) : Unit;
+    #assert((([u32; 7] as Eq<  >)::eq<  > as λ([u32; 7], [u32; 7]) → bool)(sorted, expected)) : Unit;
 }
 
 nr_def «array»::«test»::«test_sort_100_values»<>() -> Unit {
     let mut arr = #mkArray(42 : u32, 123 : u32, 87 : u32, 93 : u32, 48 : u32, 80 : u32, 50 : u32, 5 : u32, 104 : u32, 84 : u32, 70 : u32, 47 : u32, 119 : u32, 66 : u32, 71 : u32, 121 : u32, 3 : u32, 29 : u32, 42 : u32, 118 : u32, 2 : u32, 54 : u32, 89 : u32, 44 : u32, 81 : u32, 0 : u32, 26 : u32, 106 : u32, 68 : u32, 96 : u32, 84 : u32, 48 : u32, 95 : u32, 54 : u32, 45 : u32, 32 : u32, 89 : u32, 100 : u32, 109 : u32, 19 : u32, 37 : u32, 41 : u32, 19 : u32, 98 : u32, 53 : u32, 114 : u32, 107 : u32, 66 : u32, 6 : u32, 74 : u32, 13 : u32, 19 : u32, 105 : u32, 64 : u32, 123 : u32, 28 : u32, 44 : u32, 50 : u32, 89 : u32, 58 : u32, 123 : u32, 126 : u32, 21 : u32, 43 : u32, 86 : u32, 35 : u32, 21 : u32, 62 : u32, 82 : u32, 0 : u32, 108 : u32, 120 : u32, 72 : u32, 72 : u32, 62 : u32, 80 : u32, 12 : u32, 71 : u32, 70 : u32, 86 : u32, 116 : u32, 73 : u32, 38 : u32, 15 : u32, 127 : u32, 81 : u32, 30 : u32, 8 : u32, 125 : u32, 28 : u32, 26 : u32, 69 : u32, 114 : u32, 63 : u32, 27 : u32, 28 : u32, 61 : u32, 42 : u32, 13 : u32, 32 : u32) : [u32; 100];
     let sorted = (@std::array::sort< u32, 100 : u32 > as λ([u32; 100]) → [u32; 100])(arr);
     let expected = #mkArray(0 : u32, 0 : u32, 2 : u32, 3 : u32, 5 : u32, 6 : u32, 8 : u32, 12 : u32, 13 : u32, 13 : u32, 15 : u32, 19 : u32, 19 : u32, 19 : u32, 21 : u32, 21 : u32, 26 : u32, 26 : u32, 27 : u32, 28 : u32, 28 : u32, 28 : u32, 29 : u32, 30 : u32, 32 : u32, 32 : u32, 35 : u32, 37 : u32, 38 : u32, 41 : u32, 42 : u32, 42 : u32, 42 : u32, 43 : u32, 44 : u32, 44 : u32, 45 : u32, 47 : u32, 48 : u32, 48 : u32, 50 : u32, 50 : u32, 53 : u32, 54 : u32, 54 : u32, 58 : u32, 61 : u32, 62 : u32, 62 : u32, 63 : u32, 64 : u32, 66 : u32, 66 : u32, 68 : u32, 69 : u32, 70 : u32, 70 : u32, 71 : u32, 71 : u32, 72 : u32, 72 : u32, 73 : u32, 74 : u32, 80 : u32, 80 : u32, 81 : u32, 81 : u32, 82 : u32, 84 : u32, 84 : u32, 86 : u32, 86 : u32, 87 : u32, 89 : u32, 89 : u32, 89 : u32, 93 : u32, 95 : u32, 96 : u32, 98 : u32, 100 : u32, 104 : u32, 105 : u32, 106 : u32, 107 : u32, 108 : u32, 109 : u32, 114 : u32, 114 : u32, 116 : u32, 118 : u32, 119 : u32, 120 : u32, 121 : u32, 123 : u32, 123 : u32, 123 : u32, 125 : u32, 126 : u32, 127 : u32) : [u32; 100];
-    #assert(#arrayEq(sorted, expected) : bool) : Unit;
+    #assert((([u32; 100] as Eq<  >)::eq<  > as λ([u32; 100], [u32; 100]) → bool)(sorted, expected)) : Unit;
 }
 
 nr_def «array»::«test»::«test_sort_100_values_comptime»<>() -> Unit {
     let sorted = (@std::array::sort< u32, 100 : u32 > as λ([u32; 100]) → [u32; 100])((@arr_with_100_values<  > as λ() → [u32; 100])());
-    #assert(#arrayEq(sorted, (@expected_with_100_values<  > as λ() → [u32; 100])()) : bool) : Unit;
+    #assert((([u32; 100] as Eq<  >)::eq<  > as λ([u32; 100], [u32; 100]) → bool)(sorted, (@expected_with_100_values<  > as λ() → [u32; 100])())) : Unit;
 }
 
 nr_def «array»::«test»::«test_sort_via»<>() -> Unit {
     let mut arr = #mkArray(3 : u32, 6 : u32, 8 : u32, 10 : u32, 1 : u32, 2 : u32, 1 : u32) : [u32; 7];
     let sorted = (@std::array::sort_via< u32, 7 : u32, Unit > as λ([u32; 7], λ(u32, u32) → bool) → [u32; 7])(arr, (@std::array::test::sort_u32<  > as λ(u32, u32) → bool));
     let expected = #mkArray(1 : u32, 1 : u32, 2 : u32, 3 : u32, 6 : u32, 8 : u32, 10 : u32) : [u32; 7];
-    #assert(#arrayEq(sorted, expected) : bool) : Unit;
+    #assert((([u32; 7] as Eq<  >)::eq<  > as λ([u32; 7], [u32; 7]) → bool)(sorted, expected)) : Unit;
 }
 
 nr_def «array»::«test»::«test_sort_via_100_values»<>() -> Unit {
     let mut arr = #mkArray(42 : u32, 123 : u32, 87 : u32, 93 : u32, 48 : u32, 80 : u32, 50 : u32, 5 : u32, 104 : u32, 84 : u32, 70 : u32, 47 : u32, 119 : u32, 66 : u32, 71 : u32, 121 : u32, 3 : u32, 29 : u32, 42 : u32, 118 : u32, 2 : u32, 54 : u32, 89 : u32, 44 : u32, 81 : u32, 0 : u32, 26 : u32, 106 : u32, 68 : u32, 96 : u32, 84 : u32, 48 : u32, 95 : u32, 54 : u32, 45 : u32, 32 : u32, 89 : u32, 100 : u32, 109 : u32, 19 : u32, 37 : u32, 41 : u32, 19 : u32, 98 : u32, 53 : u32, 114 : u32, 107 : u32, 66 : u32, 6 : u32, 74 : u32, 13 : u32, 19 : u32, 105 : u32, 64 : u32, 123 : u32, 28 : u32, 44 : u32, 50 : u32, 89 : u32, 58 : u32, 123 : u32, 126 : u32, 21 : u32, 43 : u32, 86 : u32, 35 : u32, 21 : u32, 62 : u32, 82 : u32, 0 : u32, 108 : u32, 120 : u32, 72 : u32, 72 : u32, 62 : u32, 80 : u32, 12 : u32, 71 : u32, 70 : u32, 86 : u32, 116 : u32, 73 : u32, 38 : u32, 15 : u32, 127 : u32, 81 : u32, 30 : u32, 8 : u32, 125 : u32, 28 : u32, 26 : u32, 69 : u32, 114 : u32, 63 : u32, 27 : u32, 28 : u32, 61 : u32, 42 : u32, 13 : u32, 32 : u32) : [u32; 100];
     let sorted = (@std::array::sort_via< u32, 100 : u32, Unit > as λ([u32; 100], λ(u32, u32) → bool) → [u32; 100])(arr, (@std::array::test::sort_u32<  > as λ(u32, u32) → bool));
     let expected = #mkArray(0 : u32, 0 : u32, 2 : u32, 3 : u32, 5 : u32, 6 : u32, 8 : u32, 12 : u32, 13 : u32, 13 : u32, 15 : u32, 19 : u32, 19 : u32, 19 : u32, 21 : u32, 21 : u32, 26 : u32, 26 : u32, 27 : u32, 28 : u32, 28 : u32, 28 : u32, 29 : u32, 30 : u32, 32 : u32, 32 : u32, 35 : u32, 37 : u32, 38 : u32, 41 : u32, 42 : u32, 42 : u32, 42 : u32, 43 : u32, 44 : u32, 44 : u32, 45 : u32, 47 : u32, 48 : u32, 48 : u32, 50 : u32, 50 : u32, 53 : u32, 54 : u32, 54 : u32, 58 : u32, 61 : u32, 62 : u32, 62 : u32, 63 : u32, 64 : u32, 66 : u32, 66 : u32, 68 : u32, 69 : u32, 70 : u32, 70 : u32, 71 : u32, 71 : u32, 72 : u32, 72 : u32, 73 : u32, 74 : u32, 80 : u32, 80 : u32, 81 : u32, 81 : u32, 82 : u32, 84 : u32, 84 : u32, 86 : u32, 86 : u32, 87 : u32, 89 : u32, 89 : u32, 89 : u32, 93 : u32, 95 : u32, 96 : u32, 98 : u32, 100 : u32, 104 : u32, 105 : u32, 106 : u32, 107 : u32, 108 : u32, 109 : u32, 114 : u32, 114 : u32, 116 : u32, 118 : u32, 119 : u32, 120 : u32, 121 : u32, 123 : u32, 123 : u32, 123 : u32, 125 : u32, 126 : u32, 127 : u32) : [u32; 100];
-    #assert(#arrayEq(sorted, expected) : bool) : Unit;
+    #assert((([u32; 100] as Eq<  >)::eq<  > as λ([u32; 100], [u32; 100]) → bool)(sorted, expected)) : Unit;
 }
 
 nr_def «array»::«test»::«mapi_empty»<>() -> Unit {
-    #assert(#arrayEq((@std::array::mapi< u32, 0 : u32, u32, Unit > as λ([u32; 0], λ(u32, u32) → u32) → [u32; 0])(#mkArray() : [u32; 0], |i : u32, x : u32| -> u32 {#uAdd(#uMul(i, x) : u32, 1 : u32) : u32}), #mkArray() : [u32; 0]) : bool) : Unit;
+    #assert((([u32; 0] as Eq<  >)::eq<  > as λ([u32; 0], [u32; 0]) → bool)((@std::array::mapi< u32, 0 : u32, u32, Unit > as λ([u32; 0], λ(u32, u32) → u32) → [u32; 0])(#mkArray() : [u32; 0], |i : u32, x : u32| -> u32 {#uAdd(#uMul(i, x) : u32, 1 : u32) : u32}), #mkArray() : [u32; 0])) : Unit;
 }
 
 nr_def «array»::«test»::«for_each_empty»<>() -> Unit {
@@ -80,13 +80,13 @@ nr_def «array»::«test»::«for_eachi_empty»<>() -> Unit {
 nr_def «array»::«test»::«map_example»<>() -> Unit {
     let a = #mkArray(1 : Field, 2 : Field, 3 : Field) : [Field; 3];
     let b = (@std::array::map< Field, 3 : u32, Field, Unit > as λ([Field; 3], λ(Field) → Field) → [Field; 3])(a, |a : Field| -> Field {#fMul(a, 2 : Field) : Field});
-    #assert(#arrayEq(b, #mkArray(2 : Field, 4 : Field, 6 : Field) : [Field; 3]) : bool) : Unit;
+    #assert((([Field; 3] as Eq<  >)::eq<  > as λ([Field; 3], [Field; 3]) → bool)(b, #mkArray(2 : Field, 4 : Field, 6 : Field) : [Field; 3])) : Unit;
 }
 
 nr_def «array»::«test»::«mapi_example»<>() -> Unit {
     let a = #mkArray(1 : u32, 2 : u32, 3 : u32) : [u32; 3];
     let b = (@std::array::mapi< u32, 3 : u32, u32, Unit > as λ([u32; 3], λ(u32, u32) → u32) → [u32; 3])(a, |i : u32, a : u32| -> u32 {#uAdd(i, #uMul(a, 2 : u32) : u32) : u32});
-    #assert(#arrayEq(b, #mkArray(2 : u32, 5 : u32, 8 : u32) : [u32; 3]) : bool) : Unit;
+    #assert((([u32; 3] as Eq<  >)::eq<  > as λ([u32; 3], [u32; 3]) → bool)(b, #mkArray(2 : u32, 5 : u32, 8 : u32) : [u32; 3])) : Unit;
 }
 
 nr_def «array»::«test»::«for_each_example»<>() -> Unit {
@@ -100,7 +100,7 @@ nr_def «array»::«test»::«for_each_example»<>() -> Unit {
             skip;
         *(i_ref) = #uAdd(#readRef(i_ref) : u32, 1 : u32) : u32;
         skip;});
-    #assert(#arrayEq(b, #mkArray(2 : Field, 4 : Field, 6 : Field) : [Field; 3]) : bool) : Unit;
+    #assert((([Field; 3] as Eq<  >)::eq<  > as λ([Field; 3], [Field; 3]) → bool)(b, #mkArray(2 : Field, 4 : Field, 6 : Field) : [Field; 3])) : Unit;
     #assert(#uEq(i, 3 : u32) : bool) : Unit;
 }
 
@@ -110,35 +110,35 @@ nr_def «array»::«test»::«for_eachi_example»<>() -> Unit {
     let b_ref = #ref(b) : & [u32; 3];
     (@std::array::for_eachi< u32, 3 : u32, `(& [u32; 3]) > as λ([u32; 3], λ(u32, u32) → Unit) → Unit)(a, |i : u32, a : u32| -> Unit {    *(b_ref)[#cast(i) : u32] = #uAdd(i, #uMul(a, 2 : u32) : u32) : u32;
         skip;});
-    #assert(#arrayEq(b, #mkArray(2 : u32, 5 : u32, 8 : u32) : [u32; 3]) : bool) : Unit;
+    #assert((([u32; 3] as Eq<  >)::eq<  > as λ([u32; 3], [u32; 3]) → bool)(b, #mkArray(2 : u32, 5 : u32, 8 : u32) : [u32; 3])) : Unit;
 }
 
 nr_def «array»::«test»::«concat»<>() -> Unit {
     let arr1 = #mkArray(1 : Field, 2 : Field, 3 : Field, 4 : Field) : [Field; 4];
     let arr2 = #mkArray(6 : Field, 7 : Field, 8 : Field, 9 : Field, 10 : Field, 11 : Field) : [Field; 6];
     let concatenated_arr = (@std::array::concat< Field, 4 : u32, 6 : u32 > as λ([Field; 4], [Field; 6]) → [Field; 10])(arr1, arr2);
-    #assert(#arrayEq(concatenated_arr, #mkArray(1 : Field, 2 : Field, 3 : Field, 4 : Field, 6 : Field, 7 : Field, 8 : Field, 9 : Field, 10 : Field, 11 : Field) : [Field; 10]) : bool) : Unit;
+    #assert((([Field; 10] as Eq<  >)::eq<  > as λ([Field; 10], [Field; 10]) → bool)(concatenated_arr, #mkArray(1 : Field, 2 : Field, 3 : Field, 4 : Field, 6 : Field, 7 : Field, 8 : Field, 9 : Field, 10 : Field, 11 : Field) : [Field; 10])) : Unit;
 }
 
 nr_def «array»::«test»::«concat_zero_length_with_something»<>() -> Unit {
     let arr1 = #mkArray() : [Field; 0];
     let arr2 = #mkArray(1 : Field) : [Field; 1];
     let concatenated_arr = (@std::array::concat< Field, 0 : u32, 1 : u32 > as λ([Field; 0], [Field; 1]) → [Field; 1])(arr1, arr2);
-    #assert(#arrayEq(concatenated_arr, #mkArray(1 : Field) : [Field; 1]) : bool) : Unit;
+    #assert((([Field; 1] as Eq<  >)::eq<  > as λ([Field; 1], [Field; 1]) → bool)(concatenated_arr, #mkArray(1 : Field) : [Field; 1])) : Unit;
 }
 
 nr_def «array»::«test»::«concat_something_with_zero_length»<>() -> Unit {
     let arr1 = #mkArray(1 : Field) : [Field; 1];
     let arr2 = #mkArray() : [Field; 0];
     let concatenated_arr = (@std::array::concat< Field, 1 : u32, 0 : u32 > as λ([Field; 1], [Field; 0]) → [Field; 1])(arr1, arr2);
-    #assert(#arrayEq(concatenated_arr, #mkArray(1 : Field) : [Field; 1]) : bool) : Unit;
+    #assert((([Field; 1] as Eq<  >)::eq<  > as λ([Field; 1], [Field; 1]) → bool)(concatenated_arr, #mkArray(1 : Field) : [Field; 1])) : Unit;
 }
 
 nr_def «array»::«test»::«concat_zero_lengths»<>() -> Unit {
     let arr1 = #mkArray() : [Field; 0];
     let arr2 = #mkArray() : [Field; 0];
     let concatenated_arr = (@std::array::concat< Field, 0 : u32, 0 : u32 > as λ([Field; 0], [Field; 0]) → [Field; 0])(arr1, arr2);
-    #assert(#arrayEq(concatenated_arr, #mkArray() : [Field; 0]) : bool) : Unit;
+    #assert((([Field; 0] as Eq<  >)::eq<  > as λ([Field; 0], [Field; 0]) → bool)(concatenated_arr, #mkArray() : [Field; 0])) : Unit;
 }
 
 

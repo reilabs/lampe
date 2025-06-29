@@ -76,40 +76,40 @@ nr_def «field»::«lt_fallback»<>(x : Field, y : Field) -> bool {
 nr_def «field»::«tests»::«test_to_be_bits»<>() -> Unit {
     let field = 2 : Field;
     let bits = (@Field::to_be_bits< 8 : u32 > as λ(Field) → [u1; 8])(field);
-    #assert(#arrayEq(bits, #mkArray(0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 1 : u1, 0 : u1) : [u1; 8]) : bool) : Unit;
+    #assert((([u1; 8] as Eq<  >)::eq<  > as λ([u1; 8], [u1; 8]) → bool)(bits, #mkArray(0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 1 : u1, 0 : u1) : [u1; 8])) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_le_bits»<>() -> Unit {
     let field = 2 : Field;
     let bits = (@Field::to_le_bits< 8 : u32 > as λ(Field) → [u1; 8])(field);
-    #assert(#arrayEq(bits, #mkArray(0 : u1, 1 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1) : [u1; 8]) : bool) : Unit;
+    #assert((([u1; 8] as Eq<  >)::eq<  > as λ([u1; 8], [u1; 8]) → bool)(bits, #mkArray(0 : u1, 1 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1, 0 : u1) : [u1; 8])) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_be_bytes»<>() -> Unit {
     let field = 2 : Field;
     let bytes = (@Field::to_be_bytes< 8 : u32 > as λ(Field) → [u8; 8])(field);
-    #assert(#arrayEq(bytes, #mkArray(0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 2 : u8) : [u8; 8]) : bool) : Unit;
+    #assert((([u8; 8] as Eq<  >)::eq<  > as λ([u8; 8], [u8; 8]) → bool)(bytes, #mkArray(0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 2 : u8) : [u8; 8])) : Unit;
     #assert(#fEq((@Field::from_be_bytes< 8 : u32 > as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_le_bytes»<>() -> Unit {
     let field = 2 : Field;
     let bytes = (@Field::to_le_bytes< 8 : u32 > as λ(Field) → [u8; 8])(field);
-    #assert(#arrayEq(bytes, #mkArray(2 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8) : [u8; 8]) : bool) : Unit;
+    #assert((([u8; 8] as Eq<  >)::eq<  > as λ([u8; 8], [u8; 8]) → bool)(bytes, #mkArray(2 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8) : [u8; 8])) : Unit;
     #assert(#fEq((@Field::from_le_bytes< 8 : u32 > as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_be_radix»<>() -> Unit {
     let field = 259 : Field;
     let bytes = (@Field::to_be_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 256 : u32);
-    #assert(#arrayEq(bytes, #mkArray(0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 1 : u8, 3 : u8) : [u8; 8]) : bool) : Unit;
+    #assert((([u8; 8] as Eq<  >)::eq<  > as λ([u8; 8], [u8; 8]) → bool)(bytes, #mkArray(0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 1 : u8, 3 : u8) : [u8; 8])) : Unit;
     #assert(#fEq((@Field::from_be_bytes< 8 : u32 > as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
 }
 
 nr_def «field»::«tests»::«test_to_le_radix»<>() -> Unit {
     let field = 259 : Field;
     let bytes = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 256 : u32);
-    #assert(#arrayEq(bytes, #mkArray(3 : u8, 1 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8) : [u8; 8]) : bool) : Unit;
+    #assert((([u8; 8] as Eq<  >)::eq<  > as λ([u8; 8], [u8; 8]) → bool)(bytes, #mkArray(3 : u8, 1 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8, 0 : u8) : [u8; 8])) : Unit;
     #assert(#fEq((@Field::from_le_bytes< 8 : u32 > as λ([u8; 8]) → Field)(bytes), field) : bool) : Unit;
 }
 
@@ -137,7 +137,7 @@ nr_def «field»::«tests»::«test_to_le_radix_brillig_3»<>() -> Unit {
         let out = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 3 : u32);
         let mut expected = [0 : u8 ; 8];
         expected[#cast(0 : u32) : u32] = 1 : u8;
-        #assert(#arrayEq(out, expected) : bool) : Unit;
+        #assert((([u8; 8] as Eq<  >)::eq<  > as λ([u8; 8], [u8; 8]) → bool)(out, expected)) : Unit;
     };
 }
 
