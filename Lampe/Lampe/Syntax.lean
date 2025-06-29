@@ -54,7 +54,9 @@ syntax ident : nr_generic_def -- Kind.type
 syntax num : nr_const_num
 syntax ident : nr_const_num
 
+syntax "mut" ident ":" nr_type : nr_param_decl -- Mutable parameter
 syntax ident ":" nr_type : nr_param_decl
+syntax "_" ":" nr_type : nr_param_decl
 
 syntax ("-" noWs)? num ppSpace ":" ppSpace nr_type : nr_expr -- Numeric literal
 syntax str : nr_expr -- String literal
@@ -540,9 +542,11 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
   let outTp ← mkNrType outTp
   let argTps ← mkListLit (← params.getElems.toList.mapM fun param => match param with
     | `(nr_param_decl|$_:ident : $tp) => mkNrType tp
+    | `(nr_param_decl|_ : $tp) => mkNrType tp
     | _ => throwUnsupportedSyntax)
   let args ← mkHListLit (← params.getElems.toList.mapM fun param => match param with
     | `(nr_param_decl|$i:ident : $_) => `($i)
+    | `(nr_param_decl|_ : $_) => getName none
     | _ => throwUnsupportedSyntax)
   let body ← mkExpr lambdaBody none fun x => `(Expr.var $x)
   wrapSimple (←`(Expr.lam $argTps $outTp (fun args => match args with | $args => $body))) vname k
@@ -604,16 +608,29 @@ partial def mkExpr [MonadSyntax m] (e : TSyntax `nr_expr) (vname : Option Lean.I
 
 end
 
+def mkMutableArgs [MonadSyntax m] (mutArgs : List (TSyntax `term)) (k : m (TSyntax `term)) : m (TSyntax `term) := match mutArgs with
+| [] => k
+| h :: t => do
+  match h with
+  | `($h:ident) => do
+    registerAutoDeref h.getId
+    let rest ← mkMutableArgs t k
+    `(Lampe.Expr.letIn (Expr.ref $h) fun $h => $rest)
+  | _ => throwUnsupportedSyntax
+
 def mkFnDecl [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] (syn : Syntax) :  m (String × TSyntax `term) := match syn with
 | `(nr_fn_decl| $name < $generics,* > ( $params,* ) -> $outTp { $bExprs;* }) => do
   let name ← mkNrIdent name
   let (genericKinds, genericDefs) ← mkGenericDefs generics.getElems.toList
-  let params : List (TSyntax `term × TSyntax `term) ← params.getElems.toList.mapM fun p => match p with
-    | `(nr_param_decl|$i:ident : $tp) => do pure (i, ←mkNrType tp)
+  let params : List (TSyntax `term × TSyntax `term × Bool) ← params.getElems.toList.mapM fun p => match p with
+    | `(nr_param_decl|$i:ident : $tp) => do pure (i, ←mkNrType tp, false)
+    | `(nr_param_decl|mut $i:ident : $tp) => do pure (i, ←mkNrType tp, true)
     | _ => throwUnsupportedSyntax
-  let body ← MonadSyntax.run $ mkBlock bExprs.getElems.toList fun x => `(Expr.var $x)
+  let mutParams : List (TSyntax `term) := params.filter (fun (_, _, isMut) => isMut) |>.map (fun (i, _, _) => i)
+  let body ← MonadSyntax.run $ mkMutableArgs mutParams do
+    mkBlock bExprs.getElems.toList fun x => `(Expr.var $x)
   let lambdaDecl ← `(fun rep generics => match generics with
-    | $(genericDefs) => ⟨$(←mkListLit $ params.map Prod.snd), $(←mkNrType outTp), fun args => match args with
+    | $(genericDefs) => ⟨$(←mkListLit $ params.map (fun (_, t, _) => t)), $(←mkNrType outTp), fun args => match args with
         | $(←mkHListLit $ params.map Prod.fst) => $body⟩)
   let syn : TSyntax `term ← `(FunctionDecl.mk $(Syntax.mkStrLit name) $ Function.mk $genericKinds $lambdaDecl)
   pure (name, syn)
@@ -797,11 +814,5 @@ elab "nr_trait_def" decl:nr_trait_def : command => do
       | _ => throwUnsupportedSyntax
   | _ => throwUnsupportedSyntax
 
-nr_def foo<>(x : Field) -> Field {
-  skip;
-  x
-}
-
-#print foo
 
 end Lampe
