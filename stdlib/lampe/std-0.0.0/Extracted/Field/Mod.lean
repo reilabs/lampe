@@ -118,7 +118,7 @@ nr_def «field»::«tests»::«test_to_le_radix_1»<>() -> Unit {
             let field = 2 : Field;
         let _? = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 1 : u32);
     } else {
-            (@std::panic::panic< `(), Unit, 28 : u32 > as λ(fmtstr<28, ()>) → Unit)(#format("radix must be greater than 1", ));
+            (@std::panic::panic< `(), Unit, 28 : u32 > as λ(fmtstr<28 : u32, `()>) → Unit)(#format<`()>("radix must be greater than 1", ));
     };
 }
 
@@ -127,7 +127,7 @@ nr_def «field»::«tests»::«test_to_le_radix_3»<>() -> Unit {
             let field = 2 : Field;
         let _? = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 3 : u32);
     } else {
-            (@std::panic::panic< `(), Unit, 26 : u32 > as λ(fmtstr<26, ()>) → Unit)(#format("radix must be a power of 2", ));
+            (@std::panic::panic< `(), Unit, 26 : u32 > as λ(fmtstr<26 : u32, `()>) → Unit)(#format<`()>("radix must be a power of 2", ));
     };
 }
 
@@ -146,7 +146,7 @@ nr_def «field»::«tests»::«test_to_le_radix_512»<>() -> Unit {
             let field = 2 : Field;
         let _? = (@Field::to_le_radix< 8 : u32 > as λ(Field, u32) → [u8; 8])(field, 512 : u32);
     } else {
-            (@std::panic::panic< `(), Unit, 39 : u32 > as λ(fmtstr<39, ()>) → Unit)(#format("radix must be less than or equal to 256", ));
+            (@std::panic::panic< `(), Unit, 39 : u32 > as λ(fmtstr<39 : u32, `()>) → Unit)(#format<`()>("radix must be less than or equal to 256", ));
     };
 }
 

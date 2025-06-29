@@ -114,3 +114,11 @@ In Noir, this builtin corresponds to `a > b` for ints `a`, `b`.
 def iGt := newGenericTotalPureBuiltin
   (fun s => ⟨[(.i s), (.i s)], .bool⟩)
   (fun _ h![a, b] => a > b)
+
+def iNeq := newGenericTotalPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], .bool⟩)
+  (fun _ h![a, b] => a ≠ b)
+
+def uNeq := newGenericTotalPureBuiltin
+  (fun s => ⟨[(.u s), (.u s)], .bool⟩)
+  (fun _ h![a, b] => a ≠ b)

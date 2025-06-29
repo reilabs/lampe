@@ -81,7 +81,7 @@ nr_def «collections»::«map»::«HashMap»::«entries»<K, V, @N : u32, B>(sel
         };
     let self_len = (self as collections::map::HashMap< K, V, N:u32, B >)._len;
     let entries_len = (@collections::bounded_vec::BoundedVec::len< `(K, V), N:u32 > as λ(collections::bounded_vec::BoundedVec< `(K, V), N:u32 >) → u32)(entries);
-    let msg = #format("Amount of valid elements should have been {self_len} times, but got {entries_len}.", self_len, entries_len);
+    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {entries_len}.", self_len, entries_len, );
     #assert(#uEq((@collections::bounded_vec::BoundedVec::len< `(K, V), N:u32 > as λ(collections::bounded_vec::BoundedVec< `(K, V), N:u32 >) → u32)(entries), (self as collections::map::HashMap< K, V, N:u32, B >)._len) : bool) : Unit;
     entries;
 }
@@ -100,7 +100,7 @@ nr_def «collections»::«map»::«HashMap»::«keys»<K, V, @N : u32, B>(self :
         };
     let self_len = (self as collections::map::HashMap< K, V, N:u32, B >)._len;
     let keys_len = (@collections::bounded_vec::BoundedVec::len< K, N:u32 > as λ(collections::bounded_vec::BoundedVec< K, N:u32 >) → u32)(keys);
-    let msg = #format("Amount of valid elements should have been {self_len} times, but got {keys_len}.", self_len, keys_len);
+    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {keys_len}.", self_len, keys_len, );
     #assert(#uEq((@collections::bounded_vec::BoundedVec::len< K, N:u32 > as λ(collections::bounded_vec::BoundedVec< K, N:u32 >) → u32)(keys), (self as collections::map::HashMap< K, V, N:u32, B >)._len) : bool) : Unit;
     keys;
 }
@@ -119,7 +119,7 @@ nr_def «collections»::«map»::«HashMap»::«values»<K, V, @N : u32, B>(self
         };
     let self_len = (self as collections::map::HashMap< K, V, N:u32, B >)._len;
     let values_len = (@collections::bounded_vec::BoundedVec::len< V, N:u32 > as λ(collections::bounded_vec::BoundedVec< V, N:u32 >) → u32)(values);
-    let msg = #format("Amount of valid elements should have been {self_len} times, but got {values_len}.", self_len, values_len);
+    let msg = #format<`(u32, u32)>("Amount of valid elements should have been {self_len} times, but got {values_len}.", self_len, values_len, );
     #assert(#uEq((@collections::bounded_vec::BoundedVec::len< V, N:u32 > as λ(collections::bounded_vec::BoundedVec< V, N:u32 >) → u32)(values), (self as collections::map::HashMap< K, V, N:u32, B >)._len) : bool) : Unit;
     values;
 }

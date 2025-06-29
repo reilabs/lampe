@@ -49,7 +49,7 @@ nr_def «option»::«Option»::«unwrap_or_else»<T, Env>(self : option::Option<
     };
 }
 
-nr_def «option»::«Option»::«expect»<T, @N : u32, MessageTypes>(self : option::Option< T >, message : fmtstr<N, MessageTypes>) -> T {
+nr_def «option»::«Option»::«expect»<T, @N : u32, MessageTypes>(self : option::Option< T >, message : fmtstr<N:u32, MessageTypes>) -> T {
     #assert((@option::Option::is_some< T > as λ(option::Option< T >) → bool)(self)) : Unit;
     (self as option::Option< T >)._value;
 }

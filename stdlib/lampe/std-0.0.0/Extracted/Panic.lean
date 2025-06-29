@@ -8,7 +8,7 @@ open Lampe
 namespace «std-0.0.0»
 namespace Extracted
 
-nr_def «panic»::«panic»<T, U, @N : u32>(message : fmtstr<N, T>) -> U {
+nr_def «panic»::«panic»<T, U, @N : u32>(message : fmtstr<N:u32, T>) -> U {
     #assert(false) : Unit;
     (@std::mem::zeroed< U > as λ() → U)();
 }
