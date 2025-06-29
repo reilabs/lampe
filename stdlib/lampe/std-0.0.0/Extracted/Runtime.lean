@@ -9,7 +9,7 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «runtime»::«is_unconstrained»<>() -> bool {
-
+    #isUnconstrained() : bool
 }
 
 

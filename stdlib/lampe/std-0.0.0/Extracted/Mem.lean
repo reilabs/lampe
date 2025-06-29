@@ -9,19 +9,19 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «mem»::«zeroed»<T>() -> T {
-
+    #zeroed() : T
 }
 
 nr_def «mem»::«checked_transmute»<T, U>(value : T) -> U {
-
+    #xcheckedTransmute(value) : U
 }
 
 nr_def «mem»::«array_refcount»<T, @N : u32>(array : [T; N]) -> u32 {
-
+    #arrayRefcount(array) : u32
 }
 
 nr_def «mem»::«slice_refcount»<T>(slice : [T]) -> u32 {
-
+    #sliceRefcount(slice) : u32
 }
 
 

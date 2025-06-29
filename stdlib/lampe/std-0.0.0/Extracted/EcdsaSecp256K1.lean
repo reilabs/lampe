@@ -9,11 +9,11 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «ecdsa_secp256k1»::«verify_signature»<@N : u32>(public_key_x : [u8; 32], public_key_y : [u8; 32], signature : [u8; 64], message_hash : [u8; N]) -> bool {
-
+    #verifySignature(public_key_x, public_key_y, signature, message_hash) : bool
 }
 
 nr_def «ecdsa_secp256k1»::«verify_signature_slice»<>(public_key_x : [u8; 32], public_key_y : [u8; 32], signature : [u8; 64], message_hash : [u8]) -> bool {
-
+    #verifySignatureSlice(public_key_x, public_key_y, signature, message_hash) : bool
 }
 
 

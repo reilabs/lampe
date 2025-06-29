@@ -9,7 +9,7 @@ namespace «std-0.0.0»
 namespace Extracted
 
 nr_def «aes128»::«aes128_encrypt»<@N : u32>(input : [u8; N], iv : [u8; 16], key : [u8; 16]) -> [u8; ((N + 16) - (N % 16))] {
-
+    #aes128Encrypt(input, iv, key) : [u8; ((N + 16) - (N % 16))]
 }
 
 

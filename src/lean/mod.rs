@@ -55,7 +55,7 @@ use toml::value::Index;
 
 use crate::{
     file_generator::to_import_from_noir_path,
-    lean::{builtin::BuiltinName, indent::Indenter},
+    lean::{builtin::BuiltinName, indent::Indenter, syntax::expr::format_builtin_call},
     noir::{
         self,
         error::emit::{Error, Result},
@@ -969,6 +969,25 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             ind.run(syntax::expr::format_builtin_call(
                 &"fresh".into(),
                 "",
+                &ret_type,
+            ))
+        } else if matches!(
+            func_meta.kind,
+            FunctionKind::Builtin | FunctionKind::LowLevel
+        ) {
+            let params = func_meta
+                .parameters
+                .iter()
+                .map(|p| match &p.0 {
+                    HirPattern::Identifier(id) => {
+                        self.context.def_interner.definition_name(id.id).to_string()
+                    }
+                    _ => panic!("unsupported pattern in builtin params"),
+                })
+                .join(", ");
+            ind.run(format_builtin_call(
+                &self.context.def_interner.function_name(&func).to_string(),
+                &params,
                 &ret_type,
             ))
         } else if func_meta.is_stub() {

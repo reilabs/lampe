@@ -256,6 +256,8 @@ pub(super) mod lval {
 }
 
 pub(super) mod expr {
+    use itertools::Itertools;
+
     use super::{formatdoc, normalize_ident};
     use crate::lean::builtin::BuiltinName;
 
@@ -273,12 +275,37 @@ pub(super) mod expr {
         format!("{func_expr}({func_args})")
     }
 
+    fn capitalize(s: &str) -> String {
+        let mut r = s.split("_")
+            .map(|mut w| {
+                let mut w = w.to_string();
+                if let Some(r) = w.get_mut(0..1) {
+                    r.make_ascii_uppercase();
+                }
+                w
+            })
+            .join("");
+        if let Some(r) = r.get_mut(0..1) {
+            r.make_ascii_lowercase();
+        }
+        r
+    }
+
+    fn sanitize(s: &str) -> String {
+        if s.starts_with("check") {
+            format!("x{s}")
+        } else {
+            s.to_string()
+        }
+    }
+
     #[inline]
     pub fn format_builtin_call(
         builtin_name: &BuiltinName,
         func_args: &str,
         out_ty: &str,
     ) -> String {
+        let builtin_name = sanitize(&capitalize(builtin_name));
         format!("#{builtin_name}({func_args}) : {out_ty}")
     }
 
