@@ -55,7 +55,7 @@ Noir project and extracts it to Lean code, and then this code is compiled to ens
 produce errors and that it has the correct output. Some of these E2E tests (such as the
 [Merkle](../testing/Merkle/) one) feature theorems that have been proven about the Noir code.
 
-These tests can be executed by using the `./testing/test.sh` script. See `./testing/test.sh -h`
+These tests can be executed by using the `./testing/test.xsh` script. See `./testing/test.xsh -h`
 for usage examples, but running the script without arguments will execute all of the tests. The
 test script ensures that the extraction matches the committed extraction, to ensure that we are
 not running into correct extractions that have nevertheless changed without our knowledge.
@@ -65,7 +65,7 @@ script also checks the directory for two special scripts to execute:
 
 - `clean.sh`: This script is run _before_ the extraction process, and allows for running
   pre-extraction cleanup items.
-- `user_actions.sh`: This script is run after extraction but before the Lean code is compiled, and
+- `user_actions.xsh`: This script is run after extraction but before the Lean code is compiled, and
   exists to simulate user actions on the extracted project.
 
 An example of both can be found in the [MerkleFromScratch](../testing/MerkleFromScratch) example.
@@ -95,10 +95,10 @@ To execute these frontend tests, you must provide a local path to a clone of the
 using the `--test` flag, similarly to the [E2E](#end-to-end-tests) test script.
 
 ```bash
-./testing_noir/test.sh --noir-path "/home/user/noir"
+./testing_noir/test.xsh --noir-path "/home/user/noir"
 ```
 
-For more usage information, run `./testing_noir/test.sh -h` to get an idea of what additional flags
+For more usage information, run `./testing_noir/test.xsh -h` to get an idea of what additional flags
 it supports.
 
 ## Extracting Noir's Standard Library
