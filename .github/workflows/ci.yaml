@@ -14,14 +14,14 @@ jobs:
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v4
-      - name: Install xonsh with required python dependencies
+      - name: Install xonsh
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update
           sudo apt-get install -yq python3 pipx
           pipx install 'xonsh[full]'
-          $(cat $(which xonsh) | head -n 1 | cut -c3-) -m pip install -r scripts/requirements.txt
-          echo "Done!"
+      - name: Install xonsh (python) dependencies
+        run: xonsh -c 'xpip install -r scripts/requirements.txt'
       - name: Check if noir version match everywhere
         run: scripts/check_noir_version_consistency.xsh
 
