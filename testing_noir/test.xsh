@@ -13,13 +13,21 @@ def get_script_dir():
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Noir tests with Lampe')
-    parser.add_argument('-t', '--test', dest='test', help='Name of directory (full path, ex. "/home/user/noir/noir_test_success/should_fail_with_matches") with test to run')
+    parser.add_argument('-t', '--test', dest='test', help='Name of test to run. Can use a relative path (e.g. noir_test_success/should_fail_with_matches or an absolute path')
     parser.add_argument('--noir-path', dest='noir_path', required=True, help='Path to noir repository')
     parser.add_argument('--lampe-cmd', dest='lampe_cmd', default='lampe', help='Lampe command (default: lampe)')
     parser.add_argument('--lake-cmd', dest='lake_cmd', default='lake', help='Lake command (default: lake)')
     parser.add_argument('--log-dir', dest='log_dir', help='Path where to put logs (default: current directory)')
     parser.add_argument('--log-stdout', dest='log_stdout', action='store_true', help='Define if logs should go to file or stdout - pass true (default: false)')
+    parser.add_argument('--use-local', dest='use_local', action='store_true', help='Use local version of Lampe instead of the remote one')
     return parser.parse_args()
+
+def prepare_lampe(lake_cmd, script_dir):
+    """Build a local version of lampe if use_local is set"""
+    pushd @(script_dir.parent / "Lampe")
+    $(@(lake_cmd) exe cache get)
+    $(@(lake_cmd) build)
+    popd
 
 def find_test_directories(test_programs_path):
     """Find all test directories in the noir test_programs folder"""
@@ -43,7 +51,7 @@ def find_test_directories(test_programs_path):
 
     return test_dirs
 
-def process_test(test_dir, lake_dir, log_file, lampe_cmd, lake_cmd, log_stdout):
+def process_test(test_dir, lake_dir, log_file, lampe_cmd, lake_cmd, log_stdout, use_local):
     """Process a single test directory"""
     dirname = test_dir.resolve()
 
@@ -66,9 +74,29 @@ def process_test(test_dir, lake_dir, log_file, lampe_cmd, lake_cmd, log_stdout):
 
         cd lampe
 
-        lake_symlink = ".lake"
-        if not Path(lake_symlink).exists():
-            ln -s @(lake_dir) .lake
+        if use_local:
+            lakefile_path = Path("lakefile.toml")
+            content = lakefile_path.read_text()
+            lines = content.split('\n')
+
+            lampe_line_start = -1
+            for i, line in enumerate(lines):
+                if 'name = "Lampe"' in line:
+                    lampe_line_start = i
+                    break
+
+            if lampe_line_start > -1:
+                lines[lampe_line_start + 1] = 'path = "../../../Lampe"'
+                lines[lampe_line_start + 2] = ''
+                lines[lampe_line_start + 3] = ''
+
+                lakefile_path.write_text('\n'.join(lines))
+
+            $(@(lake_cmd) update)
+        else:
+            lake_symlink = ".lake"
+            if not Path(lake_symlink).exists():
+                ln -s @(lake_dir) .lake
 
         try:
             $(@(lake_cmd) exe cache get)
@@ -189,9 +217,12 @@ def main():
         if lampe_cmd_path.exists():
             lampe_cmd = lampe_cmd_path
 
+    if args.use_local:
+        prepare_lampe(args.lake_cmd, script_dir)
+
     for i, test_dir in enumerate(test_dirs):
         print(f"{i + 1}/{num_test_cases}")
-        success = process_test(test_dir, lake_dir, log_file, lampe_cmd, args.lake_cmd, args.log_stdout)
+        success = process_test(test_dir, lake_dir, log_file, lampe_cmd, args.lake_cmd, args.log_stdout, args.use_local)
         test_results.append((test_dir, success))
 
     if not args.test:
