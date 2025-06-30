@@ -304,7 +304,7 @@ theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::to_le
         BitVec.natCast_eq_ofNat, BitVec.reduceToInt, Int.reducePow, exists_prop,
         BitVec.ofNat_eq_ofNat, BitVec.reduceToNat, Builtin.instCastTpU, BitVec.ofNat_toNat,
         BitVec.setWidth_eq, BitVec.toInt_setWidth, neg_mul, Lens.modify, Lens.get,
-        Option.bind_eq_bind, Option.some_bind, Option.bind_some] at *
+        Option.bind_eq_bind, Option.bind_some] at *
       subst_vars
       simp only [Access.modify, BitVec.toNat_ofNat, Nat.reducePow, Nat.reduceMod,
         BitVec.reduceToNat, BitVec.toNat_mul, Nat.mul_mod_mod, BitVec.toNat_add, Nat.one_mod,
@@ -326,12 +326,12 @@ theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::to_le
       simp_all only [BitVec.toInt_mul, BitVec.reduceToInt, Nat.reducePow, BitVec.toNat_add,
       BitVec.toNat_mul, BitVec.toNat_ofNat, Nat.reduceMod, Nat.one_mod, Nat.mod_add_mod,
       BitVec.toInt_setWidth, Int.mul_bmod_bmod, BitVec.toInt_add, Int.add_bmod_bmod,
-      Int.bmod_add_bmod_congr, neg_mul, BitVec.ofNat_eq_ofNat, Lens.modify, Lens.get,
+      Int.bmod_add_bmod, neg_mul, BitVec.ofNat_eq_ofNat, Lens.modify, Lens.get,
       Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
-      Option.bind_eq_bind, Option.some_bind, Option.bind_some, Nat.reduceLeDiff,
-      Nat.mod_succ_eq_iff_lt, Nat.succ_eq_add_one, Nat.reduceAdd, List.get?Internal_eq_getElem?,
-      List.Vector.toList_length, List.getElem?_eq_getElem, Option.toList_some, List.cons_append,
-      List.nil_append, List.cons.injEq, and_true]
+      Option.bind_eq_bind, Option.bind_some, Nat.reduceLeDiff, Nat.mod_succ_eq_iff_lt,
+      Nat.succ_eq_add_one, Nat.reduceAdd, List.get?Internal_eq_getElem?, List.Vector.toList_length,
+      List.getElem?_eq_getElem, Option.toList_some, List.cons_append, List.nil_append,
+      List.cons.injEq, and_true]
 
       simp [Fp.toBytesLE]
 
@@ -351,7 +351,7 @@ theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::to_le
         Nat.mul_mod_mod, Nat.add_mod_mod, Nat.mod_add_mod]
       unfold BitVec.ofNat
       congr 1
-      unfold Fin.ofNat'
+      unfold Fin.ofNat
       congr 1
       simp only [Nat.reducePow, Nat.add_mod_mod, Nat.mod_add_mod, mul_comm]
     · decide
@@ -421,9 +421,9 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧
     simp only [List.replicate, List.set_cons_zero, getElem?, decidableGetElem?, ↓reduceDIte,
       Option.toList_some, List.singleton_append, this, hi, hhi]
     simp_all only [Int.cast_zero, BitVec.ofNat_eq_ofNat, Nat.reducePow, BitVec.le_ofFin,
-    BitVec.toFin_ofNat, Fin.ofNat'_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Lens.modify,
+    BitVec.toFin_ofNat, Fin.ofNat_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Lens.modify,
     Lens.get, BitVec.toNat_ofFin, Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat,
-    BitVec.setWidth_eq, List.get_eq_getElem, Option.bind_eq_bind, Option.some_bind,
+    BitVec.setWidth_eq, List.get_eq_getElem, Option.bind_eq_bind, Option.bind_some,
     Option.bind_some, Nat.reduceLeDiff, List.get?Internal_eq_getElem?, List.getElem?_eq_getElem,
     Option.toList_some, List.cons_append, List.nil_append]
   steps
@@ -478,13 +478,13 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
       have : (16 - i) = (15 - i) + 1 := by omega
       simp only [this, List.replicate_succ, getElem?, decidableGetElem?, i₅, List.Vector.toList]
       simp_all only [Int.cast_zero, BitVec.ofNat_eq_ofNat, Nat.reducePow, BitVec.le_ofFin,
-      BitVec.toFin_ofNat, Fin.ofNat'_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Lens.modify,
+      BitVec.toFin_ofNat, Fin.ofNat_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Lens.modify,
       Lens.get, BitVec.toNat_ofFin, BitVec.reduceToNat, Builtin.instCastTpU,
       BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, Option.bind_eq_bind,
-      Option.some_bind, Option.bind_some, Nat.reduceLeDiff, List.set_cons_zero,
-      List.get?Internal_eq_getElem?, List.length_map, List.Vector.length_val, BitVec.toNat_ofNat,
-      Nat.reduceMod, List.getElem?_eq_getElem, List.getElem_map, Option.toList_some,
-      List.cons_append, List.nil_append]
+      Option.bind_some, Nat.reduceLeDiff, List.set_cons_zero, List.get?Internal_eq_getElem?,
+      List.length_map, List.Vector.length_val, BitVec.toNat_ofNat, Nat.reduceMod,
+      List.getElem?_eq_getElem, List.getElem_map, Option.toList_some, List.cons_append, 
+      List.nil_append]
 
   steps
 
@@ -530,11 +530,11 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
           some (Ref.sbox (List.Vector.toList bytes)[16 + i] : U 8) else none)
         := by
           simp_all only [Int.cast_zero, BitVec.ofNat_eq_ofNat, Nat.reducePow, BitVec.le_ofFin, BitVec.toFin_ofNat,
-            Fin.ofNat'_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Int.cast_ofNat, BitVec.reduceToInt,
+            Fin.ofNat_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Int.cast_ofNat, BitVec.reduceToInt,
             Int.reducePow, Lens.modify, Lens.get, BitVec.toNat_ofFin, BitVec.reduceToNat, Nat.reduceSub,
             Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, BitVec.add_ofFin,
-            Nat.cast_ofNat, Option.bind_eq_bind, Option.some_bind, Option.bind_some, Nat.reduceLeDiff,
-            List.length_drop, List.length_map, List.Vector.toList_length, List.getElem?_eq_getElem, List.getElem_drop,
+            Nat.cast_ofNat, Option.bind_eq_bind, Option.bind_some, Nat.reduceLeDiff, List.length_drop,
+            List.length_map, List.Vector.toList_length, List.getElem?_eq_getElem, List.getElem_drop,
             List.getElem_map, ↓reduceDIte]
 
       rw [this]
@@ -573,6 +573,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
       rfl
 
   steps [as_array_intro, from_le_bytes_intro]
+  
   rotate_left
   · subst «#v_35» v
     simp

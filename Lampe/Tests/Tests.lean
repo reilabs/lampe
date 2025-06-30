@@ -46,7 +46,7 @@ lemma BitVec.add_toNat_of_lt_max {a b : BitVec w} (h: a.toNat + b.toNat < 2^w) :
 lemma BitVec.ofNat_ge_zero {n : Nat} (a : Nat) : 0 ≤ BitVec.ofNat n a := by
   simp only [ofNat_eq_ofNat, ofNat_le_ofNat, Nat.zero_mod, zero_le]
 
-lemma BitVec.toNat_zero {n : Nat} : BitVec.toNat (n := n) (0 : Int) = 0 := by
+lemma BitVec.toNat_zero {n : Nat} : BitVec.toNat (w := n) (0 : Int) = 0 := by
   change BitVec.toNat 0 = 0
   simp
 

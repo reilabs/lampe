@@ -19,5 +19,5 @@ echo '
 [[require]]
 name = "proven-zk"
 git = "https://github.com/reilabs/proven-zk"
-rev = "4.19"
+rev = "45b4de912bf9ae37f0a42df4d4adcf24c8348fb3"
 ' >> ./lampe/lakefile.toml

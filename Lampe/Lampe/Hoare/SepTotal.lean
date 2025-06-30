@@ -247,7 +247,7 @@ lemma BitVec.le_of_lt {a b : BitVec w}: a < b → a ≤ b := by
 lemma BitVec.le_or_lt (a b : BitVec w): a ≤ b ∨ b < a := by
   cases_type* BitVec
   simp only [BitVec.le_ofFin, BitVec.lt_ofFin] at *
-  apply _root_.le_or_lt
+  apply le_or_gt
 
 lemma BitVec.not_lt {a b : BitVec w}: ¬ a < b ↔ b ≤ a := by
   cases_type* BitVec
@@ -278,14 +278,14 @@ lemma U.le_add_one_of_exists_lt {i : U s}  (h: i < j) : i ≤ i + 1 := by
   rcases i with ⟨⟨_, _⟩⟩
   rcases j with ⟨⟨_, _⟩⟩
   simp only [BitVec.lt_def, BitVec.toNat] at h
-  simp only [BitVec.le_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat, Fin.ofNat']
+  simp only [BitVec.le_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat, Fin.ofNat]
   rw [Nat.mod_eq_of_lt] <;>
     (rw [Nat.mod_eq_of_lt] <;> linarith)
 
 lemma U.le_plus_one_of_lt {i j : U s} (h: i < j): i + 1 ≤ j := by
   rcases i with ⟨⟨_, _⟩⟩
   rcases j with ⟨⟨_, _⟩⟩
-  simp only [BitVec.le_def, BitVec.lt_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat, Fin.ofNat'] at *
+  simp only [BitVec.le_def, BitVec.lt_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat, Fin.ofNat] at *
   rw [Nat.mod_eq_of_lt] <;> (
     have : 1 % 2^s ≤ 1 := by apply Nat.mod_le;
     linarith
