@@ -20,8 +20,11 @@ use crate::{
 const NONE_DEPENDENCY_VERSION: &str = "0.0.0";
 
 pub struct Project {
-    /// The root directory of the project
+    /// The root directory of the Noir project
     project_root: PathBuf,
+
+    /// The directory where put the Lampe project
+    target_path: PathBuf,
 
     /// Nargo object keeping the workspace data
     nargo_workspace: Workspace,
@@ -39,7 +42,7 @@ impl Project {
     /// # Errors
     ///
     /// Will return `Error` if something goes wrong witch reading Noir project.
-    pub fn new(project_root: PathBuf) -> Result<Self, Error> {
+    pub fn new(project_root: PathBuf, target_path: PathBuf) -> Result<Self, Error> {
         // Workspace loading was done based on https://github.com/noir-lang/noir/blob/c3a43abf9be80c6f89560405b65f5241ed67a6b2/tooling/nargo_cli/src/cli/mod.rs#L180
         // It can be replaced when integrated into nargo tool.
         let toml_path = nargo_toml::get_package_manifest(&project_root)?;
@@ -50,6 +53,7 @@ impl Project {
 
         Ok(Self {
             project_root,
+            target_path,
             nargo_workspace,
             nargo_file_manager,
             nargo_parsed_files,
@@ -103,7 +107,7 @@ impl Project {
         let extracted_dependencies = res.data;
 
         file_generator::lampe_project(
-            &self.nargo_workspace.root_dir,
+            &self.target_path,
             &NoirPackageIdentifier {
                 name:    package_name.clone(),
                 version: package_version.clone(),

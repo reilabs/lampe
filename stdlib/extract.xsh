@@ -16,4 +16,4 @@ lampe_cmd = project_root / 'target' / 'release' / 'lampe'
 
 cd @(project_root / 'stdlib')
 
-$(@(lampe_cmd))
+$(@(lampe_cmd) --root "./noir" --target "./lampe")
