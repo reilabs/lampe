@@ -4,6 +4,7 @@ mod context;
 pub mod indent;
 mod pattern;
 mod syntax;
+mod ast;
 
 use std::{
     any::Any,
