@@ -20,7 +20,7 @@ nr_def «unit_return»::«bar»<>() -> Unit {
 
 nr_def «unit_return»::«baz»<>() -> Unit {
     let _x = 3 : Field;
-    (@unit_return::bar<> as λ() → Unit)();
+    (@unit_return::bar<  > as λ() → Unit)();
 }
 
 

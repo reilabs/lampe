@@ -17,7 +17,7 @@ nr_def «field_generics»::«foo»<@A : Field>() -> Field {
 }
 
 nr_def «field_generics»::«main»<>() -> Unit {
-    let _? = (@field_generics::foo<4294967297 : Field> as λ() → Field)();
+    let _? = (@field_generics::foo< 4294967297 : Field > as λ() → Field)();
 }
 
 

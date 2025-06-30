@@ -8,17 +8,17 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_def «patterns»::«Option2»::«some»<T>(value : T) -> patterns::Option2<T> {
-    patterns::Option2<T> { true, value };
+nr_def «patterns»::«Option2»::«some»<T>(value : T) -> patterns::Option2< T > {
+    patterns::Option2< T > { true, value };
 }
 
 nr_def «patterns»::«pattern_test»<>() -> Unit {
-    let opt = (@patterns::Option2::some<bool> as λ(bool) → patterns::Option2<bool>)(true);
+    let opt = (@patterns::Option2::some< bool > as λ(bool) → patterns::Option2< bool >)(true);
     let t = `(1 : Field, opt, 3 : Field);
     let π0 = t;
     let _x = π0.0;
-    let mut _? = (π0.1 as patterns::Option2<bool>).is_some;
-    let mut _? = (π0.1 as patterns::Option2<bool>).value;
+    let mut _? = (π0.1 as patterns::Option2< bool >).is_some;
+    let mut _? = (π0.1 as patterns::Option2< bool >).value;
     let mut _z = π0.2;
     let _lam = |π0 : `(bool, bool, bool), _k : Field| -> bool     {
         let x = π0.0;

@@ -1244,7 +1244,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 },
             },
             Type::NamedGeneric(ng) => match &*ng.type_var.borrow() {
-                TypeBinding::Bound(_) => panic!("Generic cannot be bound"),
+                TypeBinding::Bound(b) => {
+                    let b = b.follow_bindings();
+                    self.emit_fully_qualified_type(&b, ctx)
+                }
                 TypeBinding::Unbound(_, kind) => match kind {
                     Kind::Numeric(typ) => {
                         format!("{}:{}", ng.name, self.emit_fully_qualified_type(typ, ctx))

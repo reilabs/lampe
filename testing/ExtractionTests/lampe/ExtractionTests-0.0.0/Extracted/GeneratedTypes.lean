@@ -17,25 +17,25 @@ nr_struct_def experiments::Option2<T> {
     _value : T
 }
 
-nr_type_alias AliasedOpt<T> = experiments::Option2<T>
+nr_type_alias AliasedOpt<T> = experiments::Option2< T >
 
 nr_struct_def type_order::BarStruct<> {
     y : Field
 }
 
-nr_type_alias BarType<> = type_order::BarStruct<>
+nr_type_alias BarType<> = type_order::BarStruct<  >
 
 nr_type_alias FooType<> = Field
 
 nr_struct_def type_order::FooStruct<> {
-    x : @FooType<>
+    x : @FooType<  >
 }
 
 nr_struct_def struct_namespaces::test::Foo<> {
     i : Field
 }
 
-nr_type_alias Bar<> = associated_type::Pair<>
+nr_type_alias Bar<> = associated_type::Pair<  >
 
 nr_struct_def multiple_generics::Pair<I> {
     a : I,
