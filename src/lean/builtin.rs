@@ -9,6 +9,7 @@ pub type BuiltinName = String;
 
 pub const CAST_BUILTIN_NAME: &str = "cast";
 pub const ASSERT_BUILTIN_NAME: &str = "assert";
+pub const TUPLE_BUILTIN_NAME: &str = "__tuple";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinType {
@@ -59,6 +60,7 @@ impl TryInto<BuiltinType> for Type {
 }
 
 impl BuiltinType {
+    #[must_use]
     fn is_arithmetic(self) -> bool {
         matches!(
             self,
@@ -66,6 +68,7 @@ impl BuiltinType {
         )
     }
 
+    #[must_use]
     fn is_bitwise(self) -> bool {
         matches!(
             self,
@@ -73,10 +76,12 @@ impl BuiltinType {
         )
     }
 
+    #[must_use]
     fn is_collection(self) -> bool {
         matches!(self, BuiltinType::Array | BuiltinType::Slice)
     }
 
+    #[must_use]
     fn name_prefix(self) -> String {
         match self {
             BuiltinType::Field => "f".to_string(),
@@ -92,6 +97,7 @@ impl BuiltinType {
     }
 }
 
+#[must_use]
 pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
     let builtin_names = [
         ("@std::slice::len", "sliceLen"),
@@ -111,6 +117,7 @@ pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
     None
 }
 
+#[must_use]
 pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     if coll_type.is_collection() {
         let ty_name = coll_type.name_prefix();
@@ -120,6 +127,7 @@ pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     }
 }
 
+#[must_use]
 pub fn try_prefix_into_builtin_name(
     op: UnaryOp,
     // `None` if the type is not a builtin type.
@@ -139,6 +147,7 @@ pub fn try_prefix_into_builtin_name(
     }
 }
 
+#[must_use]
 pub fn try_infix_into_builtin_name(
     op: BinaryOpKind,
     lhs_type: BuiltinType,
@@ -154,23 +163,23 @@ pub fn try_infix_into_builtin_name(
         BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(format!("{ty_name}Rem")),
         // Cmp
         BinaryOpKind::Equal => {
-            if !matches!(
+            if matches!(
                 lhs_type,
                 BuiltinType::Array | BuiltinType::String | BuiltinType::Slice
             ) {
-                Some(format!("{ty_name}Eq"))
-            } else {
                 None
+            } else {
+                Some(format!("{ty_name}Eq"))
             }
         }
         BinaryOpKind::NotEqual => {
-            if !matches!(
+            if matches!(
                 lhs_type,
                 BuiltinType::Array | BuiltinType::String | BuiltinType::Slice
             ) {
-                Some(format!("{ty_name}Neq"))
-            } else {
                 None
+            } else {
+                Some(format!("{ty_name}Neq"))
             }
         }
         BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(format!("{ty_name}Gt")),

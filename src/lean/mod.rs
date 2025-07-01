@@ -1,16 +1,19 @@
 //! Functionality for emitting Lean definitions from Noir source.
-mod builtin;
-mod context;
+//!
+//! Note that there are a bunch of clippy allows. This file is going away, I
+//! just want to make CI not yell at me.
+pub mod ast;
+pub mod builtin;
+pub mod context;
+pub mod emit;
+pub mod generator;
 pub mod indent;
-mod pattern;
-mod syntax;
-mod ast;
+pub mod pattern;
+pub mod syntax;
 
 use std::{
-    any::Any,
     cmp::Ordering,
     collections::{HashMap, HashSet},
-    fmt::format,
     mem,
 };
 
@@ -54,11 +57,10 @@ use noirc_frontend::{
     TypeBindings,
     TypeVariableId,
 };
-use toml::value::Index;
 
 use crate::{
     file_generator::to_import_from_noir_path,
-    lean::{builtin::BuiltinName, indent::Indenter, syntax::expr::format_builtin_call},
+    lean::{builtin::BuiltinName, indent::Indenter},
     noir::{
         self,
         error::emit::{Error, Result},
@@ -146,6 +148,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     /// The emitter wraps the current noir compilation `context`, and also has
     /// knowledge of the `known_files` that were added explicitly to the
     /// extraction process by the user.
+    #[expect(clippy::missing_panics_doc)]
     pub fn new(context: Context<'file_manager, 'parsed_files>, root_crate: CrateId) -> Self {
         let known_files = context
             .def_map(&root_crate)
@@ -196,6 +199,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         })
     }
 
+    #[expect(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn emit_types(&self) -> Result<String> {
         let mut indenter = Indenter::default();
         let mut outputs = HashSet::new();
@@ -322,6 +326,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         Ok(type_defs)
     }
 
+    #[expect(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn emit_decls(&self, file: FileId) -> Result<String> {
         let mut indenter = Indenter::default();
         let mut output = Vec::new();
@@ -383,6 +388,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         Ok(format!("{module_defs}\n\n{env_def}"))
     }
 
+    #[expect(clippy::missing_errors_doc)]
     pub fn emit_trait_impls(&self, ind: &mut Indenter, file: FileId) -> Result<ModuleEntries> {
         let mut accumulator: Vec<(Option<Location>, EmitOutput)> = Vec::new();
         let ctx = EmitterCtx::empty();
@@ -570,7 +576,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .collect_vec()
             .join(", ");
 
-        let generic_vars = self.gather_trait_impl_generics(&trait_impl);
+        let generic_vars = self.gather_trait_impl_generics(trait_impl);
 
         let impl_generic_decls_str = self.format_generic_inputs(&generic_vars);
 
@@ -677,6 +683,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
+    #[expect(clippy::missing_panics_doc)]
     pub fn emit_global(
         &self,
         ind: &mut Indenter,
@@ -696,7 +703,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     HirPattern::Identifier(hir_ident) => {
                         Ok(self.context.def_interner.definition_name(hir_ident.id).to_string())
                     }
-                    x => panic!("kuku {:?}", x), // Err(Error::GlobalStatementNotLet),
+                    x => panic!("kuku {x:?}"),
                 }?;
 
                 let expr_type = self.emit_fully_qualified_type(&lets.r#type, ctx);
@@ -713,7 +720,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     &ident, "", "", &expr_type, &body,
                 )))
             }
-            _ => panic!("kukuhehe {:?}", statement), // Err(Error::GlobalStatementNotLet),
+            _ => panic!("kukuhehe {statement:?}"),
         }
     }
 
@@ -807,13 +814,14 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     // Type::FieldElement => { Vec::new()
     // }
     // Type::NamedGeneric(ng) => Vec::from([ng.clone()]),
+    #[expect(clippy::only_used_in_recursion)]
     fn gather_unbound_vars(
         &self,
         seen: &mut HashSet<TypeVariableId>,
         buf: &mut Vec<(String, TypeVariableId, Kind)>,
         typ: &Type,
     ) {
-        let x = format!("Gathering unbound vars for {typ:?}");
+        let _x = format!("Gathering unbound vars for {typ:?}");
         match typ {
             Type::String(a) | Type::Slice(a) | Type::Reference(a, _) => {
                 self.gather_unbound_vars(seen, buf, a);
@@ -833,23 +841,23 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 }
             }
             Type::TypeVariable(tv) => match &*tv.borrow() {
-                TypeBinding::Bound(tp) => self.gather_unbound_vars(seen, buf, &tp),
+                TypeBinding::Bound(tp) => self.gather_unbound_vars(seen, buf, tp),
                 TypeBinding::Unbound(id, kind) => {
-                    if seen.contains(&id) {
+                    if seen.contains(id) {
                         return;
                     }
-                    seen.insert(id.clone());
-                    buf.push((format!("V_{id}"), id.clone(), kind.clone()));
+                    seen.insert(*id);
+                    buf.push((format!("V_{id}"), *id, kind.clone()));
                 }
             },
             Type::NamedGeneric(ng) => match &*ng.type_var.borrow() {
-                TypeBinding::Bound(tp) => self.gather_unbound_vars(seen, buf, &tp),
+                TypeBinding::Bound(tp) => self.gather_unbound_vars(seen, buf, tp),
                 TypeBinding::Unbound(id, kind) => {
-                    if seen.contains(&id) {
+                    if seen.contains(id) {
                         return;
                     }
-                    seen.insert(id.clone());
-                    buf.push((ng.name.to_string(), id.clone(), kind.clone()));
+                    seen.insert(*id);
+                    buf.push((ng.name.to_string(), *id, kind.clone()));
                 }
             },
             _ => (),
@@ -866,7 +874,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             self.gather_unbound_vars(seen, result, &constraint.typ);
 
             for gen in &constraint.trait_bound.trait_generics.ordered {
-                self.gather_unbound_vars(seen, result, &gen);
+                self.gather_unbound_vars(seen, result, gen);
             }
 
             for gen in &constraint.trait_bound.trait_generics.named {
@@ -917,6 +925,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         result
     }
 
+    #[expect(clippy::single_char_pattern)]
     fn sanitize_generic_name(name: &str) -> String {
         name.replace("::", "_")
             .replace(" ", "_")
@@ -924,9 +933,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
             .replace(">", "")
     }
 
+    #[expect(clippy::unused_self)]
     fn format_generic_inputs(&self, gens: &[(String, TypeVariableId, Kind)]) -> String {
         gens.iter()
-            .map(|(name, id, kind)| {
+            .map(|(name, _id, kind)| {
                 let name = Self::sanitize_generic_name(name);
                 let (is_num, u_size) = match kind {
                     Kind::Numeric(num_tp) => match num_tp.as_ref() {
@@ -947,6 +957,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
+    #[expect(clippy::missing_panics_doc)]
     pub fn emit_free_function_def(
         &self,
         ind: &mut Indenter,
@@ -956,8 +967,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         let func_meta = self.context.function_meta(&func);
         // The parameters whose type must be replaced by a type variable should be
         // appended to the list of generics.
-
-        let gens = self.gather_fn_generics(&func_meta);
+        let gens = self.gather_fn_generics(func_meta);
 
         let generics_string = self.format_generic_inputs(&gens);
 
@@ -1004,9 +1014,9 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 _ => panic!("unsupported function attribute kind for builtin"),
             };
 
-            ind.run(format_builtin_call(&name, &params, &ret_type))
+            ind.run(syntax::expr::format_builtin_call(&name, &params, &ret_type))
         } else if func_meta.is_stub() {
-            "".to_string()
+            String::new()
         } else {
             self.emit_expr(
                 ind,
@@ -1099,9 +1109,10 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         ))
     }
 
+    #[expect(clippy::missing_panics_doc)]
     pub fn infer_kind(&self, ctx: &EmitterCtx, typ: &Type) -> String {
         let disc = mem::discriminant(typ);
-        let disc_str = format!("{disc:?}");
+        let _disc_str = format!("{disc:?}");
         match typ {
             Type::InfixExpr(l, ..) => self.infer_kind(ctx, l),
             Type::TypeVariable(tv) => match &*tv.borrow() {
@@ -1110,9 +1121,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     self.infer_kind(ctx, &b)
                 }
                 TypeBinding::Unbound(_, kind) => match kind {
-                    Kind::Numeric(typ) => {
-                        format!("{}", self.emit_fully_qualified_type(typ, ctx))
-                    }
+                    Kind::Numeric(typ) => self.emit_fully_qualified_type(typ, ctx),
                     _ => panic!("impossible"),
                 },
             },
@@ -1122,9 +1131,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     self.infer_kind(ctx, &b)
                 }
                 TypeBinding::Unbound(_, kind) => match kind {
-                    Kind::Numeric(typ) => {
-                        format!("{}", self.emit_fully_qualified_type(typ, ctx))
-                    }
+                    Kind::Numeric(typ) => self.emit_fully_qualified_type(typ, ctx),
                     _ => panic!("impossible"),
                 },
             },
@@ -1146,11 +1153,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     ///
     /// When encountering situations that would indicate a bug in the Noir
     /// compiler.
+    #[expect(clippy::match_same_arms, clippy::too_many_lines)]
     pub fn emit_fully_qualified_type(&self, typ: &Type, ctx: &EmitterCtx) -> String {
         // If `typ` is an `impl` param type, directly return the substituted type
         // variable name.
 
-        let tpstr = format!("{typ}  {typ:?}");
+        let _tpstr = format!("{typ}  {typ:?}");
         if let Some(name) = ctx.get_impl_param(typ) {
             return name.to_string();
         }
@@ -1253,12 +1261,12 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     Kind::Numeric(typ) => {
                         format!("{}:{}", ng.name, self.emit_fully_qualified_type(typ, ctx))
                     }
-                    _ => format!("{}", Self::sanitize_generic_name(&ng.name)), // ng.name),
+                    _ => Self::sanitize_generic_name(&ng.name).to_string(),
                 },
             },
-            Type::InfixExpr(left, op, right, _) => {
+            Type::InfixExpr(left, _op, _right, _) => {
                 let kind = self.infer_kind(ctx, left);
-                format!("({}):{}", typ, kind)
+                format!("({typ}):{kind}")
             }
             // In all the other cases we can use the default printing as internal type vars are
             // non-existent, constrained to be types we don't care about customizing, or are
@@ -1391,7 +1399,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // Get the output type of this expression.
         let out_ty = self.id_bound_type(expr);
         let out_ty_str = self.emit_fully_qualified_type(&out_ty, ctx);
-        let mut expression = match expr_data {
+        let expression = match expr_data {
             HirExpression::Unsafe(block) => {
                 ind.indent();
                 let mut statements: Vec<String> = block
@@ -1553,7 +1561,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     syntax::expr::format_call(&func_expr_str, &args_str)
                 }
             }
-            HirExpression::Ident(ident, generics) => {
+            HirExpression::Ident(ident, _generics) => {
                 let name = self.context.def_interner.definition_name(ident.id);
                 let ident_def = self.context.def_interner.definition(ident.id);
                 let default: TypeBindings = HashMap::default();
@@ -1567,7 +1575,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     DefinitionKind::Function(func_id) => {
                         let func_meta = self.context.def_interner.function_meta(func_id);
                         let generics = self
-                            .gather_fn_generics(&func_meta)
+                            .gather_fn_generics(func_meta)
                             .iter()
                             .map(|(_, id, _)| bindings.get(id).unwrap().2.clone())
                             .collect::<Vec<_>>();
@@ -1598,7 +1606,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     .join(", ");
                                 let ident_generics = generics
                                     .iter()
-                                    .map(|t| self.emit_fully_qualified_type(&t, ctx))
+                                    .map(|t| self.emit_fully_qualified_type(t, ctx))
                                     .join(", ");
                                 let fn_typ_str =
                                     self.emit_fully_qualified_type(&self.id_bound_type(expr), ctx);
@@ -1625,7 +1633,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                                     .join(", ");
                                 let ident_generics = generics
                                     .iter()
-                                    .map(|t| self.emit_fully_qualified_type(&t, ctx))
+                                    .map(|t| self.emit_fully_qualified_type(t, ctx))
                                     .join(", ");
                                 let self_type = func_meta
                                     .self_type
@@ -2086,6 +2094,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
     /// # Errors
     ///
     /// - [`Error`] if the extraction process fails for any reason.
+    #[allow(clippy::missing_panics_doc)]
     pub fn emit_literal(
         &self,
         ind: &mut Indenter,

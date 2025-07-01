@@ -17,6 +17,7 @@ pub struct LeanDependencyGitBuilder {
 
 #[allow(dead_code)]
 impl LeanDependencyGitBuilder {
+    #[must_use]
     fn new(name: &str) -> Self {
         Self {
             dependency: LeanDependencyGit {
@@ -28,21 +29,25 @@ impl LeanDependencyGitBuilder {
         }
     }
 
+    #[must_use]
     pub fn git(mut self, git: &str) -> Self {
         self.dependency.git = Some(git.to_string());
         self
     }
 
+    #[must_use]
     pub fn rev(mut self, rev: &str) -> Self {
         self.dependency.rev = Some(rev.to_string());
         self
     }
 
+    #[must_use]
     pub fn subdir(mut self, subdir: &str) -> Self {
         self.dependency.sub_dir = Some(subdir.to_string());
         self
     }
 
+    #[must_use]
     pub fn build(self) -> LeanDependencyGit {
         self.dependency
     }
@@ -50,12 +55,18 @@ impl LeanDependencyGitBuilder {
 
 #[allow(dead_code)]
 impl LeanDependencyGit {
+    #[must_use]
     pub fn builder(name: &str) -> LeanDependencyGitBuilder {
         LeanDependencyGitBuilder::new(name)
     }
 }
 
 impl LeanDependency for LeanDependencyGit {
+    /// Generates the lean dependency.
+    ///
+    /// # Errors
+    ///
+    /// - If the dependency cannot be generated.
     fn generate(&self) -> Result<String, fmt::Error> {
         let mut result = String::new();
         result.push_str("[[require]]\n");

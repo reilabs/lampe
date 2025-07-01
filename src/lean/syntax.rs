@@ -17,6 +17,7 @@ fn without_generic_args(ty_str: &str) -> String {
 
 /// Returns true if the given type string (extracted by `format_type`) is a
 /// slice or array type, e.g., `[T]`.
+#[must_use]
 pub fn is_slice_or_array(ty_str: &str) -> bool {
     ty_str.starts_with('[') && ty_str.ends_with(']')
 }
@@ -132,18 +133,6 @@ pub(super) mod literal {
         } else {
             "false".to_string()
         }
-    }
-
-    #[inline]
-    pub fn format_array(elems: &[String]) -> String {
-        let elems_str = elems.join(", ");
-        format!("[{elems_str}]")
-    }
-
-    #[inline]
-    pub fn format_slice(elems: &[String]) -> String {
-        let array_lit = format_array(elems);
-        format!("&{array_lit}")
     }
 
     #[inline]
@@ -276,8 +265,9 @@ pub(super) mod expr {
     }
 
     fn capitalize(s: &str) -> String {
-        let mut r = s.split("_")
-            .map(|mut w| {
+        let mut r = s
+            .split('_')
+            .map(|w| {
                 let mut w = w.to_string();
                 if let Some(r) = w.get_mut(0..1) {
                     r.make_ascii_uppercase();
