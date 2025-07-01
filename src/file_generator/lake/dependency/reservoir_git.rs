@@ -17,6 +17,7 @@ pub struct LeanDependencyReservoirGitBuilder {
 
 #[allow(dead_code)]
 impl LeanDependencyReservoirGitBuilder {
+    #[must_use]
     fn new(name: &str) -> Self {
         Self {
             dependency: LeanDependencyReservoirGit {
@@ -27,16 +28,19 @@ impl LeanDependencyReservoirGitBuilder {
         }
     }
 
+    #[must_use]
     pub fn scope(mut self, scope: &str) -> Self {
         self.dependency.scope = Some(scope.to_string());
         self
     }
 
+    #[must_use]
     pub fn rev(mut self, rev: &str) -> Self {
         self.dependency.rev = Some(rev.to_string());
         self
     }
 
+    #[must_use]
     pub fn build(self) -> LeanDependencyReservoirGit {
         self.dependency
     }
@@ -44,12 +48,18 @@ impl LeanDependencyReservoirGitBuilder {
 
 #[allow(dead_code)]
 impl LeanDependencyReservoirGit {
+    #[must_use]
     pub fn builder(name: &str) -> LeanDependencyReservoirGitBuilder {
         LeanDependencyReservoirGitBuilder::new(name)
     }
 }
 
 impl LeanDependency for LeanDependencyReservoirGit {
+    /// Generates the lean dependency.
+    ///
+    /// # Errors
+    ///
+    /// - If the dependency cannot be generated.
     fn generate(&self) -> Result<String, fmt::Error> {
         let mut result = String::new();
         result.push_str("[[require]]\n");

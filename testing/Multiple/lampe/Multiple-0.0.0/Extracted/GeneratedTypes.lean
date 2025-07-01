@@ -7,10 +7,11 @@ open Lampe
 namespace «Multiple-0.0.0»
 namespace Extracted
 
-nr_type_alias Asdf<> = Field
+noir_type_alias Asdf<> := Field;
 
-nr_struct_def bar::Asdf2<> {
-    asdf : @Asdf<>
+noir_struct_def bar::Asdf2<> {
+  @Asdf<>,
 }
 
-nr_type_alias Asdf3<> = bar::Asdf2<>
+noir_type_alias Asdf3<> := bar::Asdf2<>;
+

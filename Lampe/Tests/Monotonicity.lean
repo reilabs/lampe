@@ -12,11 +12,11 @@ open Lean Elab Term
 set_option Lampe.pp.Expr true
 
 -- We start by defining a very simple function and its isolated environment.
-nr_def return_three<>() -> Field {
-  3 : Field
+noir_def return_three<>() → Field := {
+  3: Field
 }
 
-def SimpleEnvReturnThree : Env := ⟨[return_three, return_three], []⟩
+def SimpleEnvReturnThree : Env := ⟨[return_three], []⟩
 
 -- We can then show that this function behaves correctly in accordance with its specification by
 -- proving a theorem that says it returns three unconditionally.
@@ -35,8 +35,8 @@ theorem return_three_correct
   rfl
 
 -- Next we define another very simple function and its isolated environment.
-nr_def add_one<>(n : Field) -> Field {
-  #fAdd(n, 1 : Field) : Field
+noir_def add_one<>(n: Field) → Field := {
+  (#_fAdd returning Field)(n, 1: Field)
 }
 
 def SimpleEnvAddOne : Env := ⟨[add_one], []⟩
@@ -60,10 +60,10 @@ theorem add_one_correct
 
 -- Finally, we define a slightly more complex function that will rely on the proofs of correctness
 -- for both of the above functions.
-nr_def add_one_to_three_and_n<>(n : Field) -> Field {
-  let three = (@return_three<> as λ() → Field)();
-  let added_one = (@add_one<> as λ(Field) → Field)(three);
-  #fAdd(added_one, n) : Field;
+noir_def add_one_to_three_and_n<>(n: Field) → Field := {
+  let (three: Field) = (return_three<> as λ() → Field)();
+  let (added_one: Field) = (add_one<> as λ(Field) → Field)(three);
+  (#_fAdd returning Field)(added_one, n)
 }
 
 -- We define the environment here using two different styles. The first one is _manual_, adding the
@@ -138,19 +138,19 @@ theorem add_one_to_three_and_n_correct_in_concat_env
 -- Let's also define a trait, with implementations on `Field` and `u8`, to check whether trait impl
 -- search interacts properly with monotonicity.
 
-nr_trait_def Default<>[] {
-  fn default<>() -> Self;
+noir_trait_def Default<> [] := {
+  method default<>() -> Self;
 }
 
-nr_trait_impl[DefaultForField] <> Default<> for Field where {
-  fn default<>() -> Field {
-    42 : Field
+noir_trait_impl[DefaultForField]<> Default<> for Field where [] := {
+  noir_def default<>() → Field := {
+    42: Field
   }
 }
 
-nr_trait_impl[DefaultForu8] <> Default<> for u8 where {
-  fn default<>() -> u8 {
-    255 : u8
+noir_trait_impl[DefaultForu8]<> Default<> for u8 where [] := {
+  noir_def default<>() → u8 := {
+    255: u8
   }
 }
 
@@ -187,10 +187,10 @@ theorem default_u8_correct
 
 -- With both of our trait implementations proved to do the right thing, let's define a function that
 -- uses both trait implementations at once, along with an environment for it and the traits.
-nr_def call_trait_impls_and_add<>(n : Field) -> Field {
-  let _default_u8 = ((u8 as Default<>)::default<> as λ() → u8)();
-  let default_field = ((Field as Default<>)::default<> as λ() → Field)();
-  #fAdd(default_field, n) : Field
+noir_def call_trait_impls_and_add<>(n: Field) → Field := {
+  let (_default_u8: u8) = ((u8 as Default<>)::default<> as λ() → u8)();
+  let (default_field: Field) = ((Field as Default<>)::default<> as λ() → Field)();
+  (#_fAdd returning Field)(default_field, n)
 }
 
 def FieldTraitEnvWithCall : Env := ⟨[call_trait_impls_and_add], []⟩ ++ TraitsEnv
@@ -214,10 +214,10 @@ theorem call_trait_impls_and_add_correct
 -- Now we know that things compose with trait search, let's go one level deeper to really be assured
 -- that the monotonicity works. We define a function that uses both already-composed environments,
 -- along with its accompanying env.
-nr_def combining_everything<>(n : Field) -> Field {
-  let added_4 = (@add_one_to_three_and_n<> as λ(Field) → Field)(n);
-  let added_42 = (@call_trait_impls_and_add<> as λ(Field) → Field)(n);
-  #fAdd(added_4, added_42) : Field
+noir_def combining_everything<>(n: Field) → Field := {
+  let (added_4: Field) = (add_one_to_three_and_n<> as λ(Field) → Field)(n);
+  let (added_42: Field) = (call_trait_impls_and_add<> as λ(Field) → Field)(n);
+  (#_fAdd returning Field)(added_4, added_42)
 }
 
 def EverythingEnv : Env := ⟨[combining_everything], []⟩
@@ -235,9 +235,6 @@ theorem combining_everything_correct
       (combining_everything.call h![] h![n])
       fun out => out = (n + 4) + (n + 42) := by
   enter_decl
-  steps [
-    add_one_to_three_and_n_correct_in_concat_env,
-    call_trait_impls_and_add_correct
-  ]
+  steps [add_one_to_three_and_n_correct_in_concat_env, call_trait_impls_and_add_correct]
   subst_vars
   ring_nf

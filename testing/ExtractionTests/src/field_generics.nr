@@ -1,7 +1,7 @@
 global A: Field = 4294967297;
 
-fn foo<let A: Field>() -> Field { A }
+fn foo1<let A: Field>() -> Field { A }
 
 fn main() {
-    let _ = foo::<A>();
+    let _ = foo1::<A>();
 }

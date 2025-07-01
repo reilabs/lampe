@@ -24,6 +24,13 @@ def mkSlice := newGenericTotalPureBuiltin
   (fun _ args => HList.toList args rfl)
 
 /--
+Defines the builtin for repeated slices
+-/
+def mkRepeatedSlice := newGenericTotalPureBuiltin
+  (fun (a : Tp)=> ⟨[Tp.u 32, a], (.slice a)⟩)
+  (fun _ h![n, val] => List.replicate n.toNat val)
+
+/--
 Defines the indexing of a slice `l : List tp` with `i : U 32`
 We make the following assumptions:
 - If `i < l.length`, then the builtin returns `l[i] : Tp.denote tp`

@@ -34,5 +34,14 @@ proven_zk_dependency = [
     '\n'
 ]
 
+# TODO: We should delete this in a follow up PR, as the current setup checks this example against the `main` branch
+lampe_dependency = [
+    '[[require]]\n',
+    'name = "Lampe"\n',
+    'path = "../../../Lampe"\n',
+    '\n'
+]
+
 with open('./lampe/lakefile.toml', 'a') as f:
     f.writelines(proven_zk_dependency)
+    f.writelines(lampe_dependency)

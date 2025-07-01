@@ -1,4 +1,4 @@
-pub fn foo() {
+pub fn foo2() {
     let _x = 3;
 }
 

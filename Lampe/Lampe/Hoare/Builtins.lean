@@ -438,13 +438,21 @@ theorem writeRef_intro :
 
 -- Struct/tuple
 
+-- TODO maybe these can be removed as `steps` automates it and the compound construction is still usable manually.
 theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) fieldExprs (a := (name, fieldTps)) := by
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
+theorem makeData_intro : STHoarePureBuiltin p Γ Builtin.makeData (by tauto) fieldExprs (a := (name, fieldTps)) := by
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
+
+theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by tauto) fieldExprs (a := name) := by
+  apply pureBuiltin_intro_consequence <;> try tauto
 
 -- Lens
 

@@ -13,6 +13,7 @@ pub struct LeanFilePath {
 }
 
 impl LeanFilePath {
+    #[must_use]
     fn from_noir_path(path: &Path) -> Self {
         let components = path.components().map(|c| c.as_os_str().to_string_lossy().to_string());
         let mut segments: Vec<String> = components
@@ -27,12 +28,14 @@ impl LeanFilePath {
         Self { segments }
     }
 
+    #[must_use]
     fn from_segments<I: IntoIterator<Item = T>, T: Into<String>>(segments: I) -> Self {
         Self {
             segments: segments.into_iter().map(T::into).collect(),
         }
     }
 
+    #[must_use]
     pub fn to_lean_path(&self) -> PathBuf {
         self.segments
             .iter()
@@ -41,6 +44,7 @@ impl LeanFilePath {
             .with_extension("lean")
     }
 
+    #[must_use]
     pub fn to_lean_import(&self) -> String {
         self.segments
             .iter()
@@ -60,6 +64,12 @@ pub struct LeanFile {
 }
 
 impl LeanFile {
+    /// Generates a lean file corresponding to the user's Noir file.
+    ///
+    /// # Errors
+    ///
+    /// - If the file cannot be loaded.
+    /// - If the file is a duplicate.
     pub fn from_user_noir_file(path: &Path, content: LeanFileContent) -> Result<Self> {
         let file_path = LeanFilePath::from_noir_path(path);
 
@@ -73,6 +83,7 @@ impl LeanFile {
         })
     }
 
+    #[must_use]
     pub fn from_generated_types(content: LeanFileContent) -> Self {
         LeanFile {
             file_path: Self::generated_types_file_path(),
@@ -80,15 +91,18 @@ impl LeanFile {
         }
     }
 
+    #[must_use]
     pub fn is_generated_types(&self) -> bool {
         self.file_path == Self::generated_types_file_path()
     }
 
+    #[must_use]
     fn generated_types_file_path() -> LeanFilePath {
         LeanFilePath::from_segments(["generated_types"])
     }
 }
 
+#[must_use]
 pub fn to_import_from_noir_path(path: &Path) -> String {
     LeanFilePath::from_noir_path(path).to_lean_import()
 }

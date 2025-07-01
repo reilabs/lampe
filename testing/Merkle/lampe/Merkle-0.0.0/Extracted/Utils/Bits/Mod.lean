@@ -8,21 +8,23 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
-nr_def «utils»::«bits»::«to_le_bits»<>(self : Field) -> [u1; 256] {
-    let mut val = self;
-    let mut bits = [0 : u1 ; 256];
-    for i in 0 : u32 .. 256 : u32 {
-            bits[#cast(i) : u32] = (@utils::sgn0<> as λ(Field) → u1)(val);
-        if #uEq(#arrayIndex(bits, #cast(i) : u32) : u1, 0 : u1) : bool {
-                val = #fDiv(val, 2 : Field) : Field;
-            skip;
-        } else {
-                val = #fDiv(#fSub(val, 1 : Field) : Field, 2 : Field) : Field;
-            skip;
-        };
-    };
-    bits;
+noir_def utils::bits::to_le_bits<>(self: Field) -> Array<u1, 256: u32> := {
+  let mut (val: Field) = self;
+  let mut (bits: Array<u1, 256: u32>) = (#_mkRepeatedArray returning Array<u1, 256: u32>)((0: u1));
+  for i in (0: u32) .. (256: u32) do {
+    (bits[i]: u1) = (utils::sgn0<> as λ(Field) -> u1)(val);
+    if (#_uEq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)(i)), (0: u1)) then {
+      val = (#_fDiv returning Field)(val, (2: Field));
+      #_skip
+    } else {
+      val = (#_fDiv returning Field)((#_fSub returning Field)(val, (1: Field)), (2: Field));
+      #_skip
+    }
+  };
+  bits
 }
 
 
-def Utils.Bits.Mod.env := Lampe.Env.mk [«utils::bits::to_le_bits»] []
+def Utils.Bits.Mod.env : Env := Env.mk
+  [«utils::bits::to_le_bits»]
+  []

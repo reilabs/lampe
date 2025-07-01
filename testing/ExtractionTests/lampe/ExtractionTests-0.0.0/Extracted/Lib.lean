@@ -9,5 +9,6 @@ namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
 
-
-def Lib.env := Lampe.Env.mk [] []
+def Lib.env : Env := Env.mk
+  []
+  []

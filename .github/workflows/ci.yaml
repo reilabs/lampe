@@ -109,7 +109,7 @@ jobs:
           components: rustfmt, clippy
       - name: Lint (clippy)
         working-directory: lampe
-        run: RUSTFLAGS="-Dwarnings" cargo clippy
+        run: RUSTFLAGS="-Dwarnings" cargo clippy --all-targets --all-features
 
   test-cargo:
     name: "Test Rust"

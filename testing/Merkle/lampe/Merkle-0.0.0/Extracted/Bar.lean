@@ -8,28 +8,35 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
-nr_def «bar»::«bar»<>(a : Field) -> Field {
-    let bytes = (@utils::bytes::to_le_bytes<> as λ(Field) → [u8; 32])(a);
-    let mut new_left = [0 : u8 ; 16];
-    let mut new_right = [0 : u8 ; 16];
-    for i in 0 : u32 .. 16 : u32 {
-            new_left[#cast(i) : u32] = (@utils::sbox<> as λ(u8) → u8)(#arrayIndex(bytes, #cast(i) : u32) : u8);
-        skip;
+noir_def bar::bar<>(a: Field) -> Field := {
+  let (bytes: Array<u8, 32: u32>) = (utils::bytes::to_le_bytes<> as λ(Field) -> Array<u8, 32: u32>)(a);
+  let mut (new_left: Array<u8, 16: u32>) = (#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8));
+  let mut (new_right: Array<u8, 16: u32>) = (#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8));
+  for i in (0: u32) .. (16: u32) do {
+    (new_left[i]: u8) = (utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)));
+    #_skip
+  };
+  for i in (0: u32) .. (16: u32) do {
+    (new_right[i]: u8) = (utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uAdd returning u32)((16: u32), i))));
+    #_skip
+  };
+  let mut (new_bytes: Slice<u8>) = (#_arrayAsSlice returning Slice<u8>)(new_right);
+  {
+    let (ζi0: Array<u8, 16: u32>) = new_left;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: u8) = (#_arrayIndex returning u8)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        new_bytes = (#_slicePushBack returning Slice<u8>)(new_bytes, elem);
+        #_skip
+      }
     };
-    for i in 0 : u32 .. 16 : u32 {
-            new_right[#cast(i) : u32] = (@utils::sbox<> as λ(u8) → u8)(#arrayIndex(bytes, #cast(#uAdd(16 : u32, i) : u32) : u32) : u8);
-        skip;
-    };
-    let mut new_bytes = #arrayAsSlice(new_right) : [u8];
-        let ζi0 = new_left;
-        for ζi1 in 0 : u32 .. #arrayLen(ζi0) : u32 {
-                let elem = #arrayIndex(ζi0, #cast(ζi1) : u32) : u8;
-                new_bytes = #slicePushBack(new_bytes, elem) : [u8];
-                skip;
-        };
-    let new_bytes_array = (@utils::as_array<> as λ([u8]) → [u8; 32])(new_bytes);
-    (@utils::bytes::from_le_bytes<> as λ([u8; 32]) → Field)(new_bytes_array);
+    #_skip
+  };
+  let (new_bytes_array: Array<u8, 32: u32>) = (utils::as_array<> as λ(Slice<u8>) -> Array<u8, 32: u32>)(new_bytes);
+  (utils::bytes::from_le_bytes<> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
 }
 
 
-def Bar.env := Lampe.Env.mk [«bar::bar»] []
+def Bar.env : Env := Env.mk
+  [«bar::bar»]
+  []

@@ -8,13 +8,16 @@ open Lampe
 namespace «SimpleProject-0.0.0»
 namespace Extracted
 
-nr_def «return_one»<>() -> Field {
-    1 : Field;
+noir_def return_one<>() -> Field := {
+  (1: Field)
 }
 
-nr_def «test_equal_one»<>() -> Unit {
-    #assert(#fEq(1 : Field, (@return_one<> as λ() → Field)()) : bool) : Unit;
+noir_def test_equal_one<>() -> Unit := {
+  (#_assert returning Unit)((#_fEq returning bool)((1: Field), (return_one<> as λ() -> Field)()));
+  #_skip
 }
 
 
-def Lib.env := Lampe.Env.mk [«return_one», «test_equal_one»] []
+def Lib.env : Env := Env.mk
+  [return_one, test_equal_one]
+  []

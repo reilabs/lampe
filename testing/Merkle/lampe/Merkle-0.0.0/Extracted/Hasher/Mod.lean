@@ -9,5 +9,6 @@ namespace «Merkle-0.0.0»
 namespace Extracted
 
 
-
-def Hasher.Mod.env := Lampe.Env.mk [] []
+def Hasher.Mod.env : Env := Env.mk
+  []
+  []

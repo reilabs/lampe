@@ -1,6 +1,6 @@
 pub trait Foo {
     type Out;
-    fn foo(self) -> Self::Out;
+    fn foo_meth(self) -> Self::Out;
 }
 
 pub struct Pair {
@@ -13,7 +13,7 @@ pub type Bar = Pair;
 impl Foo for Pair {
     type Out = Field;
 
-    fn foo(self) -> Self::Out {
+    fn foo_meth(self) -> Self::Out {
         self.a
     }
 }

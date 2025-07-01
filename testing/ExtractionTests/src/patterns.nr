@@ -18,6 +18,5 @@ impl<T> Option2<T> {
 pub fn pattern_test() {
     let opt = Option2::some(true);
     let t = (1, opt, 3);
-    let (_x, mut Option2 { is_some: _, value: _ }, mut _z) = t;
-    let _lam = |(x, mut _y, _z): (bool, bool, bool), _k: Field| -> bool { x };
+    let (_x, Option2 { is_some: _, value: _ }, mut _z) = t;
 }

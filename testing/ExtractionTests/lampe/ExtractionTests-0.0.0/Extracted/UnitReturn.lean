@@ -8,20 +8,24 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_def «unit_return»::«foo»<>() -> Unit {
-    let _x = 3 : Field;
+noir_def unit_return::foo2<>() -> Unit := {
+  let (_x: Field) = (3: Field);
+  #_skip
 }
 
-nr_def «unit_return»::«bar»<>() -> Unit {
-    let mut x = 3 : Field;
-    x = 4 : Field;
-    skip;
+noir_def unit_return::bar<>() -> Unit := {
+  let mut (x: Field) = (3: Field);
+  x = (4: Field);
+  #_skip
 }
 
-nr_def «unit_return»::«baz»<>() -> Unit {
-    let _x = 3 : Field;
-    (@unit_return::bar<> as λ() → Unit)();
+noir_def unit_return::baz<>() -> Unit := {
+  let (_x: Field) = (3: Field);
+  (unit_return::bar<> as λ() -> Unit)();
+  #_skip
 }
 
 
-def UnitReturn.env := Lampe.Env.mk [«unit_return::bar», «unit_return::baz», «unit_return::foo»] []
+def UnitReturn.env : Env := Env.mk
+  [«unit_return::foo2», «unit_return::bar», «unit_return::baz»]
+  []

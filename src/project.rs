@@ -13,6 +13,7 @@ use crate::{
     error::Error,
     file_generator,
     file_generator::{lake::dependency::LeanDependency, LeanFile, NoirPackageIdentifier},
+    lean::emit::{ModuleEmitter, TypesEmitter},
     noir,
     noir::WithWarnings,
 };
@@ -223,25 +224,29 @@ impl Project {
     ) -> Result<WithWarnings<Vec<LeanFile>>, Error> {
         let compile_result = noir_project.compile_package(package)?;
         let warnings = compile_result.warnings.clone();
-        let lean_emitter = compile_result.take();
-        let generated_source = lean_emitter.emit()?;
+        let lean_generator = compile_result.take();
+        let generated_program = lean_generator.generate();
 
-        let mut lean_files = generated_source
-            .decl_contents
+        let mut lean_files = generated_program
+            .modules
             .iter()
-            .map(|(id, content)| -> Result<LeanFile, Error> {
-                Ok(LeanFile::from_user_noir_file(
-                    noir_project.file_manager().path(*id).ok_or(
-                        noir::error::file::Error::Other(format!("Unknown file ID: {id:?}")),
-                    )?,
-                    content.clone(),
-                )
-                .map_err(file_generator::error::Error::from)?)
+            .map(|module| {
+                let file_path = noir_project
+                    .file_manager()
+                    .path(module.id)
+                    .unwrap_or_else(|| panic!("Unknown file ID: {:?}", module.id));
+                let content = ModuleEmitter::new(module.clone()).emit();
+                LeanFile::from_user_noir_file(file_path, content).unwrap_or_else(|_| {
+                    panic!(
+                        "Unable to create file at {}",
+                        file_path.to_str().unwrap_or("Unknown")
+                    )
+                })
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect_vec();
 
         lean_files.push(LeanFile::from_generated_types(
-            generated_source.type_content,
+            TypesEmitter::new(generated_program.types.clone()).emit(),
         ));
 
         Ok(WithWarnings::new(lean_files, warnings))

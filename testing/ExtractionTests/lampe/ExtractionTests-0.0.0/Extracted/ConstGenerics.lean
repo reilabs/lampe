@@ -8,21 +8,24 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_def «const_generics»::«nat_generic_test»<@N : u32>() -> [Field; N] {
-    for i in 0 : u32 .. u@N {
-            let _? = i;
-    };
-    [1 : Field ; N];
+noir_def const_generics::nat_generic_test<N: u32>() -> Array<Field, N: u32> := {
+  for i in (0: u32) .. uConst!(N: u32) do {
+    let (_: u32) = i;
+    #_skip
+  };
+  (#_mkRepeatedArray returning Array<Field, N: u32>)((1: Field))
 }
 
-nr_def «const_generics»::«nat_generic_test_2»<@N : u8>(x : Field) -> Field {
-    let mut res = x;
-    for _? in 0 : u8 .. u@N {
-            res = #fMul(res, 2 : Field) : Field;
-        skip;
-    };
-    res;
+noir_def const_generics::nat_generic_test_2<N: u8>(x: Field) -> Field := {
+  let mut (res: Field) = x;
+  for _ in (0: u8) .. uConst!(N: u8) do {
+    res = (#_fMul returning Field)(res, (2: Field));
+    #_skip
+  };
+  res
 }
 
 
-def ConstGenerics.env := Lampe.Env.mk [«const_generics::nat_generic_test_2», «const_generics::nat_generic_test»] []
+def ConstGenerics.env : Env := Env.mk
+  [«const_generics::nat_generic_test», «const_generics::nat_generic_test_2»]
+  []

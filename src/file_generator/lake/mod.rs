@@ -27,6 +27,10 @@ fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
 
 /// Generates main lake file.
 /// Path: $(project)/lampe/lakefile.toml
+///
+/// # Errors
+///
+/// - If the lakefile cannot be generated properly.
 pub fn generate_lakefile_toml(
     lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
@@ -82,6 +86,10 @@ struct LakefileConfig {
 }
 
 /// Returns name extracted out of Lampe's project's lakefile.toml.
+///
+/// # Errors
+///
+/// - If the package name does not point to a valid file.
 pub fn read_package_name(lampe_root_dir: &Path) -> Result<String, Error> {
     let lakefile_path = lampe_root_dir.join("lakefile.toml");
     let content = fs::read_to_string(lakefile_path)?;

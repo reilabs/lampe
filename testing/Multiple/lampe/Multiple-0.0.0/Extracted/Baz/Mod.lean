@@ -9,5 +9,6 @@ namespace «Multiple-0.0.0»
 namespace Extracted
 
 
-
-def Baz.Mod.env := Lampe.Env.mk [] []
+def Baz.Mod.env : Env := Env.mk
+  []
+  []

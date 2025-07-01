@@ -8,13 +8,15 @@ open Lampe
 namespace «Multiple-0.0.0»
 namespace Extracted
 
-nr_def «main»<>(x : Field) -> Field {
-    let mut x = x;
-    x = (@foo::foo<> as λ(Field) → Field)(x);
-    x = (@bar::bar<> as λ(Field) → Field)(x);
-    x = (@baz::bang::bang<> as λ(Field) → Field)(x);
-    x;
+noir_def main<>(x: Field) -> Field := {
+  let mut (x: Field) = x;
+  x = (foo::foo<> as λ(Field) -> Field)(x);
+  x = (bar::bar<> as λ(Field) -> Field)(x);
+  x = (baz::bang::bang<> as λ(Field) -> Field)(x);
+  x
 }
 
 
-def Main.env := Lampe.Env.mk [«main»] []
+def Main.env : Env := Env.mk
+  [main]
+  []

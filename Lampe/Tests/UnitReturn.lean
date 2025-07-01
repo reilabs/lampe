@@ -2,16 +2,12 @@ import Lampe
 
 open Lampe
 
-nr_def foo<>() -> Unit {
-    let a = 3 : Field;
+noir_def foo<>() → Unit := {
+  let (a: Field) = 3: Field;
+  #_skip
 }
 
-nr_def bar<>() -> Unit {
-    let mut a = 3 : Field;
+noir_def bar<>() → Unit := {
+  let mut (a: Field) = 3: Field;
+  #_skip
 }
-
-nr_def baz<>() -> Field {
-    let mut a = 3 : Field;
-    a
-}
-

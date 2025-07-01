@@ -1,11 +1,11 @@
-import Lampe.SeparationLogic.State
-import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
+import Lampe.Hoare.SepTotal
+import Lampe.SeparationLogic.State
 import Lampe.Syntax
+import Lampe.Tactic.EnvSubsetSolver
+import Lampe.Tactic.SL
 import Lampe.Tactic.SLNorm
 import Lampe.Tactic.Traits
-import Lampe.Tactic.SL
-import Lampe.Tactic.EnvSubsetSolver
 
 import Lean.Meta.Tactic.Simp.Main
 
@@ -37,6 +37,14 @@ def getLetInVarName (e : Expr) : TacticM (Option Name) := do
   | Lean.Expr.lam n _ _ _ => return some n
   | _ => return none
 
+/--
+Attempts to get a term that can close the goal, returning the result and whether the resultant
+variable should be substituted (akin to `subst_vars`).
+
+This function matches the simple things that can be automated while keeping the automation sane. In
+particular, it should never turn a solvable goal into an unsolvable goal, and should always avoid
+polluting the proof state or blowing up the number of goals.
+-/
 def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"getClosingTerm {Lean.exceptEmoji e}")  do
   let head := val.getAppFn
   match head with
@@ -66,6 +74,7 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
       return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := ($size, _)) rfl), true)
     | ``Expr.getLens => return some (←``(getLens_intro), false)
     | ``Expr.modifyLens => return some (←``(modifyLens_intro), false)
+    | ``Expr.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl), true)
     | ``Lampe.Expr.fn => return some (←``(fn_intro), true)
     | ``Lampe.Expr.callBuiltin =>
       let some builtin := val.getAppArgs[3]? | throwError "malformed builtin"
@@ -97,16 +106,30 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro), false)
         | ``Lampe.Builtin.uMul => return some (←``(uMul_intro), false)
 
-        | ``Lampe.Builtin.mkArray => return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray rfl), true)
+        -- Array builtins
+        | ``Lampe.Builtin.mkArray =>
+          let some argTypes := val.getAppArgs[1]? | throwError "malformed mkSlice"
+          let argTypes ← argTypes.toSyntax
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := (List.length $argTypes, _)) rfl), true)
+        | ``Lampe.Builtin.mkRepeatedArray =>
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedArray (a := (_, _)) rfl), true)
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)
         | ``Lampe.Builtin.arrayLen => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayLen (a := (_,_)) rfl), true)
         | ``Lampe.Builtin.arrayAsSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayAsSlice (a := (_,_)) rfl), true)
 
+        -- Slice builtins
+        | ``Lampe.Builtin.mkSlice =>
+          let some argTypes := val.getAppArgs[1]? | throwError "malformed mkSlice"
+          let argTypes ← argTypes.toSyntax
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := (List.length $argTypes, _)) rfl), true)
+        | ``Lampe.Builtin.mkRepeatedSlice =>
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedSlice (a := _) rfl), true)
         | ``Lampe.Builtin.slicePushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushBack rfl), true)
         | ``Lampe.Builtin.slicePushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushFront rfl), true)
         | ``Lampe.Builtin.sliceLen => return some (←``(sliceLen_intro), false)
         | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro), false)
         | ``Lampe.Builtin.ref => return some (←``(ref_intro), false)
+        | ``Lampe.Builtin.readRef => return some (←``(readRef_intro), false)
 
         | ``Lampe.Builtin.fApplyRangeConstraint => return some (←``(fApplyRangeConstraint_intro), false)
         | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits), true)
@@ -118,6 +141,10 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.iFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.iFromField), true)
         | ``Lampe.Builtin.uAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.uAsField), true)
         | ``Lampe.Builtin.uFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.uFromField), true)
+
+        -- Tuple/struct builtins
+        | ``Lampe.Builtin.makeData => return some (← ``(genericTotalPureBuiltin_intro (a := (_, _)) Builtin.makeData rfl), true)
+        | ``Lampe.Builtin.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl), true)
 
         | _ => return none
       | _ => return none
@@ -268,10 +295,13 @@ elab "triple_norm" : tactic => do
   replaceMainGoal goals.flatten
 
 /--
-Takes a single "obvious" step – if the goal expression is a let, it will apply `letIn` and try to close the body.
-If the goal is not a `letIn` it will try to close it with a closing theorem.
-This takes care of solving any entailments as well.
-Throws an exception if it cannot make progress or close any subsequent SL goals.
+Takes a single "obvious" step to attempt to advance the proof state by simplifying the goal.
+
+If the goal expression is a let, it will apply `letIn` and try to close the body. If it is not a let
+it will try to close it using a closing theorem. It also takes care of solving any Sepratation Logic
+entailments found in the goal.
+
+It throws an exception if it cannot make progress or close any subsequent SL goal(s).
 -/
 partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoals := do
   let target ← mvar.instantiateMVarsInType
@@ -313,7 +343,9 @@ partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoa
       return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
 
 /--
-Takes `limit` obvious steps. Behaves like `repeat step` – never throws exceptions.
+Takes `limit` obvious steps, behaving like `repeat step`.
+
+It will never throw exceptions.
 -/
 partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) : TacticM TripleGoals := do
   let goals ← normalizeGoals goals
@@ -329,30 +361,18 @@ partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit :
     | none => return goals
   | none => return goals
 
+
+/--
+Takes a sequence of at most `limit` steps to attempt to advance the proof state by continually
+simplifying the goal.
+-/
 partial def steps (mvar : MVarId) (limit : Nat) (addLemmas : List AddLemma) : TacticM (List MVarId) := do
   let goals ← stepsLoop (TripleGoals.mk mvar [] []) addLemmas limit
   return goals.flatten
 
-
-syntax "steps" (num)? ("[" term,* "]")?: tactic
-elab "steps" limit:optional(num) "[" ts:term,*  "]" : tactic => do
-  let limit := limit.map (fun n => n.getNat) |>.getD 10000
-  let addLemmas := ts.getElems.toList
-  let newGoals ← steps (← getMainGoal) limit ((AddLemma.mk (generalizeEnv := true)) <$> addLemmas)
-  replaceMainGoal newGoals
-elab "steps" limit:optional(num) : tactic => do
-  let limit := limit.map (fun n => n.getNat) |>.getD 10000
-  let newGoals ← steps (← getMainGoal) limit []
-  replaceMainGoal newGoals
-
 lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
   intro h
   simp_all [STHoare, THoare, SLP.pure_star_iff_and]
-
-elab "loop_inv" p:optional("nat") inv:term : tactic => do
-  let solver ← if p.isSome then ``(loop_inv_intro' _ $inv) else ``(loop_inv_intro $inv)
-  let goals ← steps (← getMainGoal) 1 [AddLemma.mk solver (generalizeEnv := false)]
-  replaceMainGoal goals
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
     (h_found : (Γ.functions.find? (fun ⟨n, _⟩ => n = fnName)) = some ⟨fnName, func⟩)
@@ -378,19 +398,110 @@ theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
     cases htci
     rfl
 
+theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
+  apply hp v
+theorem step_as H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
+
+/--
+Takes a sequence of steps to attempt to advance the proof state by continually simplifying the goal.
+
+It aims to make progress on the goal by applying small and well-reasoned operations that are
+intended to always make the goal smaller and to not pollute the proof state. If it cannot discharge
+a simple goal it will always roll back so as to not mess up the proof.
+
+If the goal expression is a let, it will apply `letIn` and try to close the body. If it is not a let
+it will try to close it using a closing theorem. It also takes care of solving any Sepratation Logic
+entailments found in the goal.
+
+It can be called in three main ways:
+
+- `steps`: A bare call to the tactic will simply try to advance the goal by performing as many steps
+  as it can without blowing up the proof state or failing. This version can take a maximum of 10000
+  steps before failing.
+- `steps n`: As above, except that it will take at most n : ℕ steps before terminating.
+- `steps [lemmas,*]`: As for `steps`, except that it will specifically use the provided lemmas in
+  addition to its inbuilt rules to advance the goal state. This version can be combined with the
+  explicit limit case to combine the behaviors in the obvious way `steps n [lemmas,*]`.
+-/
+elab "steps" limit:optional(num) "[" ts:term,*  "]" : tactic => do
+  let limit := limit.map (fun n => n.getNat) |>.getD 10000
+  let addLemmas := ts.getElems.toList
+  let newGoals ← steps (← getMainGoal) limit ((AddLemma.mk (generalizeEnv := true)) <$> addLemmas)
+  replaceMainGoal newGoals
+elab "steps" limit:optional(num) : tactic => do
+  let limit := limit.map (fun n => n.getNat) |>.getD 10000
+  let newGoals ← steps (← getMainGoal) limit []
+  replaceMainGoal newGoals
+
+/--
+Performs the next step of a program proof, manually providing the pre- and post-conditions.
+
+It is intended to be used in cases where `steps` cannot automatically perform the next step, as it
+allows the user to provide a precise description of how they expect the next step to change the
+program state.
+
+It can be called in two main ways:
+
+- `step_as (precondition) (postcondition)`: Performs the next step of the program logic, generating
+  proof goals based on the explicitly-provided pre- and post-conditions.
+- `step_as name => (precondition) (postcondition)`: The provided `name` acts like a metavariable,
+  binding to a term in the precondition such that it is available under that name in the
+  postcondition. In all other ways it operates as the previous form.
+-/
+elab "step_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
+  let goal ← getMainGoal
+  trace[Lampe.STHoare.Helpers] "step_as {n}"
+  let enterer ← match n with
+  | some n => ``(bindVar (fun $n => step_as $pre $post))
+  | none => ``(step_as $pre $post)
+  let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)]
+  replaceMainGoal newGoals
+
+/--
+States the invariants that hold for a loop, and then creates goals that need to be proved to prove
+that the loop operates according to this specification.
+
+It can be called in two main ways:
+
+- `loop_inv invariant`: States the invariant that holds for the loop using the iteration variable as
+   existing in scope.
+- `loop_inv nat invariant`: States the invariant that holds for the loop using an iteration variable
+   that is a natural number ℕ. This variant can sometimes produce fewer proof goals that will need
+   to be manually discharged.
+-/
+elab "loop_inv" p:optional("nat") inv:term : tactic => do
+  let solver ← if p.isSome then ``(loop_inv_intro' $inv) else ``(loop_inv_intro $inv)
+  let goals ← steps (← getMainGoal) 1 [AddLemma.mk solver (generalizeEnv := false)]
+  replaceMainGoal goals
+
+/--
+Enters the declaration of a function as given by the theorem statement and unfolds the body of the
+function to enable reasoning.
+
+It is almost always the first tactic that should be run when aiming to prove a theorem about the
+semantics of a piece of code.
+-/
 syntax "enter_decl" : tactic
 macro_rules | `(tactic|enter_decl) => `(tactic|
   apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl); simp only)
 
-theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
-  apply hp v
-theorem enter_block H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
+/--
+Enters the body of a locally-defined lambda, allowing the proof to reason about its behavior using
+the manually-provided pre- and post-conditions.
 
-elab "enter_block_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
+It can be called in two main ways:
+
+- `step_as (precondition) (postcondition)`: Generates proof goals to verify the behavior of the
+  lambda function based on the provided pre- and post-conditions.
+- `step_as name => (precondition) (postcondition)`: The provided `name` acts like a metavariable,
+  binding to a term in the precondition such that it is available under that name in the
+  postcondition. In all other ways it operates as the previous form.
+-/
+elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
   let goal ← getMainGoal
-  trace[Lampe.STHoare.Helpers] "enter_block_as {n}"
+  trace[Lampe.STHoare.Helpers] "enter_lambda_as {n}"
   let enterer ← match n with
-  | some n => ``(bindVar (fun $n => enter_block $pre $post))
-  | none => ``(enter_block $pre $post)
+  | some n => ``(bindVar (fun $n => STHoare.callLambda_intro (P := $pre) (Q := $post)))
+  | none => ``(STHoare.callLambda_intro (P := $pre) (Q := $post))
   let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)]
   replaceMainGoal newGoals
