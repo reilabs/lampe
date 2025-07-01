@@ -28,9 +28,9 @@ cat ./user_files/append_to_Merkle.lean >> ./lampe/Merkle-1.0.0.lean
 
 proven_zk_dependency = [
     '[[require]]\n',
-    'name = "proven-zk\n',
+    'name = "proven-zk"\n',
     'git = "https://github.com/reilabs/proven-zk"\n',
-    'rev = 4.19\n',
+    'rev = "45b4de912bf9ae37f0a42df4d4adcf24c8348fb3"\n',
     '\n'
 ]
 

@@ -49,6 +49,10 @@ def main():
         cd @(dir_path)
         dir_name = dir_path.name
 
+        print("-" * 40)
+        print(f"Running tests in {dir_name}...")
+        print("-" * 40)
+
         if dir_name.startswith('_'):
             continue
 
