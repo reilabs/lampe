@@ -3,6 +3,7 @@ pub mod ast;
 pub mod builtin;
 pub mod context;
 pub mod emit;
+pub mod generator;
 pub mod indent;
 pub mod pattern;
 pub mod syntax;

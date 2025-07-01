@@ -12,7 +12,7 @@ use noirc_driver::{check_crate, CompileOptions};
 use noirc_frontend::hir::ParsedFiles;
 
 use crate::{
-    lean::LeanEmitter,
+    lean::generator::LeanGenerator,
     noir::{
         error::compilation::{Error as CompileError, Result as CompileResult},
         WithWarnings,
@@ -56,7 +56,7 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
     /// # Errors
     ///
     /// - [`CompileError`] if the compilation process fails.
-    pub fn compile_package(&self, package: &Package) -> CompileResult<WithWarnings<LeanEmitter>> {
+    pub fn compile_package(&self, package: &Package) -> CompileResult<WithWarnings<LeanGenerator>> {
         let (mut context, crate_id) =
             prepare_package(self.nargo_file_manager, self.nargo_parsed_files, package);
         // Enables reference tracking in the internal context.
@@ -75,7 +75,7 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
         .map_err(|diagnostics| CompileError::CheckFailure { diagnostics })?;
 
         Ok(WithWarnings::new(
-            LeanEmitter::new(context, crate_id),
+            LeanGenerator::new(context, crate_id),
             warnings,
         ))
     }

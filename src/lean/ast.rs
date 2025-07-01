@@ -3,71 +3,85 @@
 
 use noirc_frontend::signed_field::SignedField;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Crate {
-    types:   Vec<TypeDefinition>,
-    modules: Vec<Module>,
+    pub types:   Vec<TypeDefinition>,
+    pub modules: Vec<Module>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Module {
-    name:        String,
-    definitions: Vec<ModuleDefinition>,
+    pub name:        String,
+    pub definitions: Vec<ModuleDefinition>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ModuleDefinition {
     Trait(TraitImplementation),
     Function(FunctionDefinition),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum TypeDefinition {
+    Alias(TypeAlias),
     Struct(StructDefinition),
     Trait(TraitDefinition),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct TypeAlias {
+    pub name: String,
+    pub typ:  Type,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct TraitDefinition {
-    name:     String,
-    generics: Vec<Type>,
+    pub name:     String,
+    pub generics: Vec<NamedGeneric>,
+    pub methods:  Vec<FunctionDefinition>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct TraitImplementation {
-    name:     String,
-    generics: Vec<Type>,
+    pub name:     String,
+    pub generics: Vec<Type>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct FunctionDefinition {
-    name:        String,
-    generics:    Vec<Type>,
-    parameters:  Vec<ParamDef>,
-    return_type: TypeExpr,
-    body:        Expression,
+    pub name:        String,
+    pub generics:    Vec<NamedGeneric>,
+    pub parameters:  Vec<ParamDef>,
+    pub return_type: TypeExpr,
+    pub body:        Expression,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct NamedGeneric {
+    pub name: String,
+    pub kind: Kind,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct StructDefinition {
-    name:     String,
-    generics: Vec<Type>,
-    members:  Vec<ParamDef>,
+    pub name:     String,
+    pub generics: Vec<NamedGeneric>,
+    pub members:  Vec<ParamDef>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ParamDef {
-    name: String,
-    typ:  TypeExpr,
+    pub name: String,
+    pub typ:  Type,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ParamVal {
-    name:  String,
-    value: Box<Expression>,
+    pub name:  String,
+    pub value: Box<Expression>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Statement {
     Assign(AssignStatement),
     Break,
@@ -76,46 +90,45 @@ pub enum Statement {
     Let(LetStatement),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct LetStatement {
-    pattern:    Pattern,
-    typ:        Type,
-    expression: Box<Expression>,
+    pub pattern:    Pattern,
+    pub typ:        Type,
+    pub expression: Box<Expression>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct AssignStatement {
-    name:       String,
-    typ:        Type,
-    expression: Expression,
+    pub name:       String,
+    pub typ:        Type,
+    pub expression: Expression,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ForStatement {
-    identifier:  String,
-    start_range: Box<Expression>,
-    end_range:   Box<Expression>,
-    body:        Box<Expression>,
+    pub identifier:  String,
+    pub start_range: Box<Expression>,
+    pub end_range:   Box<Expression>,
+    pub body:        Box<Expression>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Expression {
-    Ident(Identifier),
-    Literal(Literal),
     Block(Block),
-    DeclCallRef(DeclCallRef),
-    IfThenElse(IfThenElse),
-    TraitCallRef(TraitCallRef),
-    Infix(Infix),
-    Constructor(Constructor),
+    BuiltinCallRef(String),
     Call(Call),
     Cast(Cast),
+    Constructor(Constructor),
+    DeclCallRef(DeclCallRef),
+    Ident(Identifier),
+    IfThenElse(IfThenElse),
     Index(Index),
-    Typle(Tuple),
     Lambda(Lambda),
+    Literal(Literal),
+    TraitCallRef(TraitCallRef),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Pattern {
     Identifier(Identifier),
     Mutable(Box<Pattern>),
@@ -123,65 +136,49 @@ pub enum Pattern {
     Struct(StructPattern),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct StructPattern {
-    typ:    Type,
-    fields: Vec<(Identifier, Pattern)>,
+    pub fields: Vec<Pattern>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Lambda {
-    params:      Vec<(Pattern, Type)>,
-    return_type: Type,
-    body:        Box<Expression>,
-    captures:    Vec<Identifier>,
+    pub params:      Vec<(Pattern, Type)>,
+    pub return_type: Type,
+    pub body:        Box<Expression>,
+    pub captures:    Vec<Identifier>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Tuple {
-    elems: Vec<Expression>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Index {
-    value: Box<Expression>,
-    index: Box<Expression>,
+    pub value: Box<Expression>,
+    pub index: Box<Expression>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Cast {
-    lhs:    Box<Expression>,
-    target: Type,
+    pub lhs:    Box<Expression>,
+    pub target: Type,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Infix {
-    lhs:      Box<Expression>,
-    operator: String,
-    rhs:      Box<Expression>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Constructor {
-    typ:          Type,
-    generic_args: Vec<TypeExpr>,
-    fields:       Vec<ParamVal>,
+    pub typ:          Type,
+    pub generic_args: Vec<TypeExpr>,
+    pub fields:       Vec<ParamVal>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Literal {
-    Array(ArrayLiteral),
     Bool(bool),
-    FormatString(FormatString),
     Integer(SignedField),
-    Slice(ArrayLiteral),
     String(String),
     Unit,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ArrayLiteral {
-    elements: Vec<Expression>,
+    pub elements: Vec<Expression>,
 }
 impl ArrayLiteral {
     pub fn len(&self) -> usize {
@@ -189,93 +186,155 @@ impl ArrayLiteral {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct FormatString {
-    template:  String,
-    fragments: Vec<Expression>,
+    pub template:  String,
+    pub fragments: Vec<Expression>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Identifier {
-    name:     String,
-    typ:      Type,
-    generics: Vec<Type>,
+    pub name: String,
+    pub typ:  Type,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Block {
-    statements: Vec<Statement>,
-    expression: Box<Expression>,
+    pub statements: Vec<Statement>,
+    pub expression: Option<Box<Expression>>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct IfThenElse {
-    condition:   Box<Expression>,
-    then_branch: Box<Expression>,
-    else_branch: Option<Box<Expression>>,
+    pub condition:   Box<Expression>,
+    pub then_branch: Box<Expression>,
+    pub else_branch: Option<Box<Expression>>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct DeclCallRef {
-    function:    String,
-    generics:    Vec<Type>,
-    param_types: Vec<TypeExpr>,
-    return_type: TypeExpr,
+    pub function:    String,
+    pub generics:    Vec<Type>,
+    pub param_types: Vec<TypeExpr>,
+    pub return_type: TypeExpr,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct TraitCallRef {
-    trait_name:     String,
-    function:       String,
-    trait_generics: Vec<Type>,
-    fun_generics:   Vec<Type>,
-    param_types:    Vec<TypeExpr>,
-    return_type:    TypeExpr,
+    pub trait_name:     String,
+    pub function:       String,
+    pub trait_generics: Vec<Type>,
+    pub fun_generics:   Vec<Type>,
+    pub param_types:    Vec<TypeExpr>,
+    pub return_type:    TypeExpr,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Call {
-    function: Box<Expression>,
-    params:   Vec<Expression>,
+    pub function: Box<Expression>,
+    pub params:   Vec<Expression>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Type {
-    expr: TypeExpr,
-    kind: Kind,
+    pub expr: TypeExpr,
+    pub kind: Kind,
+}
+impl Type {
+    pub fn builtin(expr: TypeExpr, kind: Kind) -> Self {
+        Type { expr, kind }
+    }
+
+    pub fn array(elem: TypeExpr, len: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::array(len, elem),
+            kind: Kind::Type,
+        }
+    }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum TypeExpr {
-    Array(ArrayTypeExpr),
+    Bool,
+    BuiltinType(BuiltinType),
+    Char,
     DataType(DataTypeTypeExpr),
+    Field,
     FieldConst(String),
+    FormatString(FormatStringTypeExpr),
+    Integer(IntegerTypeExpr),
     Slice(SliceTypeExpr),
+    Tuple(TupleTypeExpr),
     TypeVariable(String),
-    UConst(u64),
+    UConst(u128),
     Unit,
 }
+impl TypeExpr {
+    pub fn builtin(name: &str, generics: Vec<Type>) -> Self {
+        Self::BuiltinType(BuiltinType {
+            name:     name.to_string(),
+            generics: generics.to_vec(),
+        })
+    }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DataTypeTypeExpr {
+    pub fn array(length: TypeExpr, typ: TypeExpr) -> Self {
+        let length = Type {
+            expr: length,
+            kind: Kind::U(32),
+        };
+        let typ = Type {
+            expr: typ,
+            kind: Kind::Type,
+        };
+        Self::builtin("Array", vec![typ, length])
+    }
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct BuiltinType {
     name:     String,
     generics: Vec<Type>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct TupleTypeExpr {
+    pub elements: Vec<Type>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct FormatStringTypeExpr {
+    pub length:         Box<Type>,
+    pub argument_types: Box<Type>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct IntegerTypeExpr {
+    pub signed: bool,
+    pub size:   u8,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct DataTypeTypeExpr {
+    pub name:     String,
+    pub generics: Vec<Type>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct SliceTypeExpr {
-    elem_type: Box<TypeExpr>,
+    pub elem_type: Box<Type>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ArrayTypeExpr {
-    elem_type: Box<TypeExpr>,
-    len:       Box<TypeExpr>,
+    pub elem_type: Box<Type>,
+    pub len:       Box<Type>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Kind {
     Field,
+    Integer,
+    IntegerOrField,
     Type,
     U(u64),
 }
