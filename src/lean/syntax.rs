@@ -26,6 +26,7 @@ fn normalize_ident(ident: &str) -> String {
         .split("::")
         .map(without_generic_args)
         .filter(|p| !is_slice_or_array(p))
+        .filter(|p| !p.is_empty())
         .join("::")
 }
 
@@ -53,7 +54,7 @@ pub(super) fn format_trait_impl(
     trait_constraints: &str,
 ) -> String {
     formatdoc! {
-        "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}<{trait_generics}> for {target} where {trait_constraints} {{
+        "nr_trait_impl[{impl_id}] <{impl_generics}> {trait_name}< {trait_generics} > for {target} where {trait_constraints} {{
                 {methods}
             }}"
     }
@@ -189,14 +190,14 @@ pub(super) mod r#type {
 
     #[inline]
     pub fn format_struct(struct_name: &str, generics: &str) -> String {
-        format!("{struct_name}<{generics}>")
+        format!("{struct_name}< {generics} >")
     }
 
     /// This ref is implicitly mutable as the Noir compiler has handled all the
     /// borrow checking
     #[inline]
     pub fn format_ref(inner_type: &str) -> String {
-        format!("&{inner_type}")
+        format!("& {inner_type}")
     }
 
     #[inline]
@@ -206,7 +207,7 @@ pub(super) mod r#type {
 
     #[inline]
     pub fn format_alias(alias_name: &str, alias_generics: &str) -> String {
-        format!("@{alias_name}<{alias_generics}>")
+        format!("@{alias_name}< {alias_generics} >")
     }
 
     #[inline]
@@ -255,6 +256,8 @@ pub(super) mod lval {
 }
 
 pub(super) mod expr {
+    use itertools::Itertools;
+
     use super::{formatdoc, normalize_ident};
     use crate::lean::builtin::BuiltinName;
 
@@ -264,12 +267,36 @@ pub(super) mod expr {
         struct_generic_vals: &str,
         fields_ordered: &str,
     ) -> String {
-        format!("{struct_ident}<{struct_generic_vals}> {{ {fields_ordered} }}")
+        format!("{struct_ident}< {struct_generic_vals} > {{ {fields_ordered} }}")
     }
 
     #[inline]
-    pub fn format_call(func_expr: &str, func_args: &str, fn_type: &str) -> String {
-        format!("({func_expr} as {fn_type})({func_args})")
+    pub fn format_call(func_expr: &str, func_args: &str) -> String {
+        format!("{func_expr}({func_args})")
+    }
+
+    fn capitalize(s: &str) -> String {
+        let mut r = s.split("_")
+            .map(|mut w| {
+                let mut w = w.to_string();
+                if let Some(r) = w.get_mut(0..1) {
+                    r.make_ascii_uppercase();
+                }
+                w
+            })
+            .join("");
+        if let Some(r) = r.get_mut(0..1) {
+            r.make_ascii_lowercase();
+        }
+        r
+    }
+
+    fn sanitize(s: &str) -> String {
+        if s.starts_with("check") {
+            format!("x{s}")
+        } else {
+            s.to_string()
+        }
     }
 
     #[inline]
@@ -278,6 +305,7 @@ pub(super) mod expr {
         func_args: &str,
         out_ty: &str,
     ) -> String {
+        let builtin_name = sanitize(&capitalize(builtin_name));
         format!("#{builtin_name}({func_args}) : {out_ty}")
     }
 
@@ -353,9 +381,9 @@ pub(super) mod expr {
     }
 
     #[inline]
-    pub fn format_decl_func_ident(ident: &str, generics: &str) -> String {
+    pub fn format_decl_func_ident(ident: &str, generics: &str, fn_type: &str) -> String {
         let ident = normalize_ident(ident);
-        format!("@{ident}<{generics}>")
+        format!("(@{ident}< {generics} > as {fn_type})")
     }
 
     #[inline]
@@ -365,9 +393,13 @@ pub(super) mod expr {
         trait_generics: &str,
         func_ident: &str,
         generics: &str,
+        fn_type: &str,
     ) -> String {
         let func_ident = normalize_ident(func_ident);
-        format!("({sub_type} as {trait_name}<{trait_generics}>)::{func_ident}<{generics}>")
+        format!(
+            "(({sub_type} as {trait_name}< {trait_generics} >)::{func_ident}< {generics} > as \
+             {fn_type})"
+        )
     }
 
     #[inline]
