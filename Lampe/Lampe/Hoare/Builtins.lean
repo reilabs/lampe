@@ -464,7 +464,7 @@ theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) 
     . unfold SLP.star State.valSingleton at *
       aesop
     . unfold mapToValHeapCondition
-      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
+      simp_all only [Option.map_some, SLP.true_star, SLP.star_assoc]
       obtain ⟨st₁, st₂, ⟨h₁, _⟩, h₂, h₃, h₄⟩ := h
       simp only [State.valSingleton] at h₃
       rename (Tp.denote p tp₁) => s'
@@ -497,7 +497,7 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
   . apply Builtin.getLensOmni.err <;> tauto
   . apply Builtin.getLensOmni.ok <;> try tauto
     . unfold mapToValHeapCondition
-      simp_all only [Option.map_some', SLP.true_star, SLP.star_assoc]
+      simp_all only [Option.map_some, SLP.true_star, SLP.star_assoc]
       apply SLP.ent_star_top at h
       simp_all
 

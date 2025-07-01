@@ -33,7 +33,7 @@ instance : Fintype (BitVec 1) where
 lemma BitVec.ofNat_1_eq_mod :  BitVec.ofNat 1 (x % 2) = BitVec.ofNat 1 x := by
   unfold BitVec.ofNat
   apply congrArg
-  unfold Fin.ofNat'
+  unfold Fin.ofNat
   simp
 
 lemma BitVec.ofNat_1_eq_0_iff : 0#1 = BitVec.ofNat 1 x ↔ x % 2 = 0 := by
@@ -41,23 +41,23 @@ lemma BitVec.ofNat_1_eq_0_iff : 0#1 = BitVec.ofNat 1 x ↔ x % 2 = 0 := by
   · unfold BitVec.ofNat
     intro h
     injection h with h
-    simp [Fin.ofNat'] at h
+    simp [Fin.ofNat] at h
     assumption
   · intro h
     unfold BitVec.ofNat
     apply BitVec.eq_of_toFin_eq
     simp only
-    simp [Fin.ofNat', h]
+    simp [Fin.ofNat, h]
 
 lemma BitVec.ofNat_1_eq_1_iff : 1#1 = BitVec.ofNat 1 x ↔ x % 2 = 1 := by
   apply Iff.intro
   · unfold BitVec.ofNat
     intro h
     injection h with h
-    simp [Fin.ofNat'] at h
+    simp [Fin.ofNat] at h
     assumption
   · intro h
     unfold BitVec.ofNat
     apply BitVec.eq_of_toFin_eq
     simp only
-    simp [Fin.ofNat', h]
+    simp [Fin.ofNat, h]
