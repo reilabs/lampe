@@ -1,14 +1,15 @@
-import «Merkle-0.0.0».Extracted
-import «Merkle-0.0.0».Field
-import «Merkle-0.0.0».Ref
+import «Merkle-1.0.0».Extracted
+import «Merkle-1.0.0».Field
+import «Merkle-1.0.0».Ref
 import Lampe
 
 import ProvenZk
 
 import Mathlib.Data.Vector.Snoc
 
-open Lampe «Merkle-0.0.0» «Merkle-0.0.0».Extracted «Merkle-0.0.0».Field
+open Lampe «Merkle-1.0.0» «Merkle-1.0.0».Extracted «Merkle-1.0.0».Field
 
+namespace «Merkle-1.0.0»
 namespace Spec
 
 def lp : Lampe.Prime := ⟨p, pPrime⟩
@@ -483,7 +484,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
       BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, Option.bind_eq_bind,
       Option.bind_some, Nat.reduceLeDiff, List.set_cons_zero, List.get?Internal_eq_getElem?,
       List.length_map, List.Vector.length_val, BitVec.toNat_ofNat, Nat.reduceMod,
-      List.getElem?_eq_getElem, List.getElem_map, Option.toList_some, List.cons_append, 
+      List.getElem?_eq_getElem, List.getElem_map, Option.toList_some, List.cons_append,
       List.nil_append]
 
   steps
@@ -573,7 +574,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
       rfl
 
   steps [as_array_intro, from_le_bytes_intro]
-  
+
   rotate_left
   · subst «#v_35» v
     simp
