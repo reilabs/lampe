@@ -1,16 +1,15 @@
 //! Functionality for emitting Lean definitions from Noir source.
-mod builtin;
-mod context;
+pub mod ast;
+pub mod builtin;
+pub mod context;
+pub mod emit;
 pub mod indent;
-mod pattern;
-mod syntax;
-mod ast;
+pub mod pattern;
+pub mod syntax;
 
 use std::{
-    any::Any,
     cmp::Ordering,
     collections::{HashMap, HashSet},
-    fmt::format,
     mem,
 };
 
@@ -54,11 +53,10 @@ use noirc_frontend::{
     TypeBindings,
     TypeVariableId,
 };
-use toml::value::Index;
 
 use crate::{
     file_generator::to_import_from_noir_path,
-    lean::{builtin::BuiltinName, indent::Indenter, syntax::expr::format_builtin_call},
+    lean::{builtin::BuiltinName, indent::Indenter},
     noir::{
         self,
         error::emit::{Error, Result},
@@ -813,7 +811,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         buf: &mut Vec<(String, TypeVariableId, Kind)>,
         typ: &Type,
     ) {
-        let x = format!("Gathering unbound vars for {typ:?}");
+        let _x = format!("Gathering unbound vars for {typ:?}");
         match typ {
             Type::String(a) | Type::Slice(a) | Type::Reference(a, _) => {
                 self.gather_unbound_vars(seen, buf, a);
@@ -926,7 +924,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
     fn format_generic_inputs(&self, gens: &[(String, TypeVariableId, Kind)]) -> String {
         gens.iter()
-            .map(|(name, id, kind)| {
+            .map(|(name, _id, kind)| {
                 let name = Self::sanitize_generic_name(name);
                 let (is_num, u_size) = match kind {
                     Kind::Numeric(num_tp) => match num_tp.as_ref() {
@@ -1004,7 +1002,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                 _ => panic!("unsupported function attribute kind for builtin"),
             };
 
-            ind.run(format_builtin_call(&name, &params, &ret_type))
+            ind.run(syntax::expr::format_builtin_call(&name, &params, &ret_type))
         } else if func_meta.is_stub() {
             "".to_string()
         } else {
@@ -1101,7 +1099,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
 
     pub fn infer_kind(&self, ctx: &EmitterCtx, typ: &Type) -> String {
         let disc = mem::discriminant(typ);
-        let disc_str = format!("{disc:?}");
+        let _disc_str = format!("{disc:?}");
         match typ {
             Type::InfixExpr(l, ..) => self.infer_kind(ctx, l),
             Type::TypeVariable(tv) => match &*tv.borrow() {
@@ -1150,7 +1148,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // If `typ` is an `impl` param type, directly return the substituted type
         // variable name.
 
-        let tpstr = format!("{typ}  {typ:?}");
+        let _tpstr = format!("{typ}  {typ:?}");
         if let Some(name) = ctx.get_impl_param(typ) {
             return name.to_string();
         }
@@ -1256,7 +1254,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     _ => format!("{}", Self::sanitize_generic_name(&ng.name)), // ng.name),
                 },
             },
-            Type::InfixExpr(left, op, right, _) => {
+            Type::InfixExpr(left, _op, _right, _) => {
                 let kind = self.infer_kind(ctx, left);
                 format!("({}):{}", typ, kind)
             }
@@ -1391,7 +1389,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
         // Get the output type of this expression.
         let out_ty = self.id_bound_type(expr);
         let out_ty_str = self.emit_fully_qualified_type(&out_ty, ctx);
-        let mut expression = match expr_data {
+        let expression = match expr_data {
             HirExpression::Unsafe(block) => {
                 ind.indent();
                 let mut statements: Vec<String> = block
@@ -1553,7 +1551,7 @@ impl<'file_manager, 'parsed_files> LeanEmitter<'file_manager, 'parsed_files> {
                     syntax::expr::format_call(&func_expr_str, &args_str)
                 }
             }
-            HirExpression::Ident(ident, generics) => {
+            HirExpression::Ident(ident, _generics) => {
                 let name = self.context.def_interner.definition_name(ident.id);
                 let ident_def = self.context.def_interner.definition(ident.id);
                 let default: TypeBindings = HashMap::default();

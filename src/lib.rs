@@ -16,11 +16,11 @@
 // we should worry about
 #![allow(clippy::mutable_key_type)]
 
-mod lean;
-mod noir;
+pub mod lean;
+pub mod noir;
 
 pub mod error;
-mod file_generator;
+pub mod file_generator;
 pub mod project;
 
 pub use error::Error;
@@ -30,7 +30,7 @@ pub use project::Project;
 
 #[cfg(test)]
 mod tests {
-    use std::{env::temp_dir, fs};
+    use std::fs;
 
     use tempfile::tempdir;
     use walkdir::WalkDir;
