@@ -1,3 +1,5 @@
+// FIXME To be removed
+
 use std::collections::HashMap;
 
 use noirc_frontend::{hir::def_map::ModuleData, node_interner::NodeInterner, Type};
@@ -16,6 +18,7 @@ pub(super) fn is_impl(typ: &Type) -> bool {
 
 impl EmitterCtx {
     /// Builds the context from the module.
+    #[must_use]
     pub fn from_module(module: &ModuleData, interner: &NodeInterner) -> Self {
         let mut impl_param_overrides = HashMap::new();
         let mut impl_ret_overrides = HashMap::new();
@@ -57,17 +60,20 @@ impl EmitterCtx {
         }
     }
 
+    #[must_use]
     pub fn empty() -> Self {
         EmitterCtx {
             impl_param_overrides: HashMap::new(),
-            impl_ret_overrides: HashMap::new(),
+            impl_ret_overrides:   HashMap::new(),
         }
     }
 
+    #[must_use]
     pub fn get_impl_param<'a>(&'a self, typ: &Type) -> Option<&'a str> {
         self.impl_param_overrides.get(typ).map(std::string::String::as_str)
     }
 
+    #[must_use]
     pub fn get_impl_return<'a>(&'a self, typ: &Type) -> Option<&'a Type> {
         self.impl_ret_overrides.get(typ)
     }

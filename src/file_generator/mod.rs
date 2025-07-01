@@ -33,12 +33,16 @@ pub struct NoirPackageIdentifier {
 }
 
 /// This function generates whole `lampe` directory with Lampe's structure.
-pub fn lampe_project(
+///
+/// # Errors
+///
+/// - If the lampe project cannot be loaded.
+pub fn lampe_project<H: std::hash::BuildHasher>(
     target_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
     additional_dependencies: &[Box<dyn LeanDependency>],
     extracted_code: &[LeanFile],
-    extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+    extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
 ) -> Result<()> {
     let lampe_root_dir = target_dir.join(LAMPE_DIR_NAME);
 
@@ -64,6 +68,10 @@ pub fn lampe_project(
 }
 
 /// Convert passed Noir's dependency into Lean's dependency
+///
+/// # Errors
+///
+/// - If the lean dependency cannot be loaded.
 pub fn get_lean_dependency(
     dependency_name: &str,
     dependency_config: &DependencyConfig,
@@ -109,12 +117,17 @@ pub fn get_lean_dependency(
 }
 
 /// Checks if Noir's package is also Lampe's project.
+#[must_use]
 pub fn has_lampe(package: &Package) -> bool {
     let package_lampe_dir = package.root_dir.join(LAMPE_DIR_NAME);
     package_lampe_dir.exists() && package_lampe_dir.is_dir()
 }
 
 /// Returns name of the generated Lean's package in Lampe's project.
+///
+/// # Errors
+///
+/// - If the lake package name cannot be read.
 pub fn read_lampe_package_name(package: &Package) -> Result<String> {
     let package_lampe_dir = package.root_dir.join(LAMPE_DIR_NAME);
     lake::read_package_name(&package_lampe_dir)

@@ -17,5 +17,10 @@ pub use reservoir::LeanDependencyReservoir;
 pub use reservoir_git::LeanDependencyReservoirGit;
 
 pub trait LeanDependency {
+    /// Generates the lean dependency.
+    ///
+    /// # Errors
+    ///
+    /// - If the dependency cannot be generated.
     fn generate(&self) -> Result<String, fmt::Error>;
 }
