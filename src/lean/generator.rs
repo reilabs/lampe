@@ -10,14 +10,29 @@ use noirc_frontend::{
     hir::{def_map::ModuleDefId, Context},
     node_interner::{DependencyId, TraitId, TypeAliasId, TypeId},
     shared::Signedness,
+    BinaryTypeOperator,
     Kind as NoirKind,
-    ResolvedGeneric,
     Type as NoirType,
+    TypeBinding,
+    TypeVariable,
 };
-use noirc_frontend::QuotedType::TypedExpr;
 use petgraph::data::DataMap;
 
-use crate::lean::ast::{ArrayTypeExpr, Crate, DataTypeTypeExpr, FormatStringTypeExpr, IntegerTypeExpr, Kind, NamedGeneric, ParamDef, SliceTypeExpr, StructDefinition, TraitDefinition, TupleTypeExpr, Type, TypeAlias, TypeDefinition, TypeExpr};
+use crate::lean::ast::{
+    BuiltinTag,
+    BuiltinTypeExpr,
+    Crate,
+    Kind,
+    ParamDef,
+    StructDefinition,
+    TraitDefinition,
+    Type,
+    TypeAlias,
+    TypeArithOp,
+    TypeDefinition,
+    TypeExpr,
+    TypePattern,
+};
 
 /// A generator for Lean definitions that correspond to the Noir project in
 /// question.
@@ -203,7 +218,7 @@ impl<'file_manager, 'parsed_files> LeanGenerator<'file_manager, 'parsed_files> {
         let generics = struct_data
             .generics
             .iter()
-            .map(|g| self.generate_named_generic(g))
+            .map(|g| self.generate_ty_var(&g.type_var, Some(g.name.to_string())))
             .collect_vec();
 
         let fields = struct_data.get_fields_as_written().unwrap_or_default();
@@ -211,7 +226,7 @@ impl<'file_manager, 'parsed_files> LeanGenerator<'file_manager, 'parsed_files> {
             .into_iter()
             .map(|f| {
                 let name = f.name.to_string();
-                let typ = self.generate_lean_type(&f.typ);
+                let typ = self.generate_lean_type_value(&f.typ);
                 ParamDef { name, typ }
             })
             .collect_vec();
@@ -223,110 +238,160 @@ impl<'file_manager, 'parsed_files> LeanGenerator<'file_manager, 'parsed_files> {
         }
     }
 
-    pub fn generate_lean_type(&self, typ: &NoirType) -> Type {
+    pub fn generate_lean_type_value(&self, typ: &NoirType) -> Type {
         match typ {
-            NoirType::FieldElement => Type { expr: TypeExpr::Field, kind: Kind::Type },
-            NoirType::Array(count, typ) => {
+            NoirType::FieldElement => Type {
+                expr: TypeExpr::builtin(BuiltinTag::Field, vec![]),
+                kind: Kind::Type,
             },
-            NoirType::Slice(typ) => {
-                let expr = TypeExpr::Slice(SliceTypeExpr {
-                    elem_type: Box::new(self.generate_lean_type(&typ)),
-                });
-                Type { expr, kind: Kind::Type}
-            },
-            NoirType::Integer(signedness, bit_size) => {
-                let expr = TypeExpr::Integer(IntegerTypeExpr {
-                    signed: match signedness {
-                        Signedness::Unsigned => false,
-                        Signedness::Signed => true,
-                    },
-                    size:   bit_size.bit_size(),
-                });
-                Type { expr, kind: Kind::Type }
-            },
-            NoirType::Bool => Type { expr: TypeExpr::Bool, kind: Kind::Type },
-            NoirType::String(count) => {
-                let expr = TypeExpr::Array(ArrayTypeExpr {
-                    elem_type: Box::new(Type {
-                        expr: TypeExpr::Char,
-                        kind: Kind::Type,
-                    }),
-                    len:       Box::new(self.generate_lean_type(&count)),
-                });
-                Type { expr, kind: Kind::Type }
-            },
-            NoirType::FmtString(length, args) => {
-                let length = Box::new(self.generate_lean_type(&length));
-                let argument_types = Box::new(self.generate_lean_type(&args));
-                let expr = TypeExpr::FormatString(FormatStringTypeExpr { length, argument_types });
-
-                Type { expr, kind: Kind::Type }
+            NoirType::Array(count, typ) => Type::array(
+                self.generate_lean_type_value(typ).expr,
+                self.generate_lean_type_value(count).expr,
+            ),
+            NoirType::Slice(typ) => Type::slice(self.generate_lean_type_value(typ).expr),
+            NoirType::Integer(signedness, bit_size) => Type::integer(
+                bit_size.bit_size() as u64,
+                *signedness == Signedness::Signed,
+            ),
+            NoirType::Bool => Type::bool(),
+            NoirType::String(count) => Type::string(self.generate_lean_type_value(count).expr),
+            NoirType::FmtString(_, args) => {
+                Type::fmt_string(self.generate_lean_type_value(args).expr)
             }
-            NoirType::Unit => Type { expr: TypeExpr::Unit, kind: Kind::Type },
+            NoirType::Unit => Type::unit(),
             NoirType::Tuple(elems) => {
-                let elements = elems.iter().map(|e| self.generate_lean_type(e)).collect_vec();
-                let expr = TypeExpr::Tuple(TupleTypeExpr { elements});
-                Type { expr, kind: Kind::Type }
+                let elems = elems
+                    .iter()
+                    .map(|e| self.generate_lean_type_value(e).expr)
+                    .collect_vec();
+                Type::tuple(elems)
             }
             NoirType::DataType(struct_type, generics) => {
                 let type_def = struct_type.borrow();
                 let module_id = type_def.id.module_id();
-                let name = self.context.fully_qualified_struct_path(&module_id.krate, type_def.id);
-                let generics = generics.iter().map(|g| self.generate_lean_type(g)).collect_vec();
-                let expr = TypeExpr::DataType(DataTypeTypeExpr { name, generics });
-
-                Type { expr, kind: Kind::Type }
+                let name = self
+                    .context
+                    .fully_qualified_struct_path(&module_id.krate, type_def.id);
+                let generics = generics
+                    .iter()
+                    .map(|g| self.generate_lean_type_value(g).expr)
+                    .collect_vec();
+                Type::data_type(&name, generics)
             }
             NoirType::Alias(alias, generics) => {
                 let alias = alias.borrow();
-                let underlying_type = self.generate_lean_type(&alias.typ);
-
-                unimplemented!();
+                let name = alias.name.to_string();
+                let generics = generics
+                    .iter()
+                    .map(|g| self.generate_lean_type_value(g).expr)
+                    .collect_vec();
+                Type::alias(&name, generics)
             }
-            NoirType::TypeVariable(_) => unimplemented!(),
-            NoirType::TraitAsType(..) => unimplemented!(),
-            NoirType::NamedGeneric(_) => unimplemented!(),
-            NoirType::CheckedCast { .. } => unimplemented!(),
-            NoirType::Function(..) => unimplemented!(),
-            NoirType::Reference(..) => unimplemented!(),
-            NoirType::Forall(..) => unimplemented!(),
-            NoirType::Constant(..) => unimplemented!(),
-            NoirType::Quoted(_) => unimplemented!(),
-            NoirType::InfixExpr(..) => unimplemented!(),
+            NoirType::TypeVariable(tv) => self.generate_ty_var(tv, None),
+            NoirType::NamedGeneric(ng) => {
+                self.generate_ty_var(&ng.type_var, Some(ng.name.to_string()))
+            }
+            NoirType::CheckedCast { to, .. } => Type::cast(self.generate_lean_type_value(to).expr),
+            NoirType::Function(parameters, returns, captures, unconstrained) => {
+                assert!(!unconstrained, "Unconstrained function type encountered");
+                let parameters = parameters
+                    .iter()
+                    .map(|p| self.generate_lean_type_value(p).expr)
+                    .collect_vec();
+                let returns = self.generate_lean_type_value(returns).expr;
+                let captures = self.generate_lean_type_value(captures).expr;
+                Type::function(parameters, returns, captures)
+            }
+            NoirType::Reference(typ, mutable) => {
+                let typ = self.generate_lean_type_value(typ).expr;
+                if *mutable {
+                    Type::mutable_reference(typ)
+                } else {
+                    Type::immutable_reference(typ)
+                }
+            }
+            NoirType::Constant(felt, kind) => {
+                let felt_value = felt.to_string();
+                let kind = self.expect_constant_numeric_kind(kind);
+
+                Type::numeric_const(&felt_value, kind)
+            }
+            NoirType::InfixExpr(left, op, right, _) => {
+                let left = self.generate_lean_type_value(left).expr;
+                let right = self.generate_lean_type_value(right).expr;
+                let op = match op {
+                    BinaryTypeOperator::Addition => TypeArithOp::Add,
+                    BinaryTypeOperator::Subtraction => TypeArithOp::Sub,
+                    BinaryTypeOperator::Multiplication => TypeArithOp::Mul,
+                    BinaryTypeOperator::Division => TypeArithOp::Div,
+                    BinaryTypeOperator::Modulo => TypeArithOp::Mod,
+                };
+                Type::infix(left, op, right)
+            }
+            NoirType::Forall(..) => panic!("Encountered forall type"),
+            NoirType::Quoted(_) => panic!("Encountered quoted type"),
+            NoirType::TraitAsType(..) => {
+                panic!("Encountered TraitAsType, but this should be resolved to a type variable")
+            }
             NoirType::Error => panic!("Encountered error type"),
         }
     }
 
-    pub fn generate_named_generic(&self, generic: &ResolvedGeneric) -> NamedGeneric {
-        let name = generic.name.to_string();
-        let kind = match generic.kind() {
-            NoirKind::Any => Kind::Type,
-            NoirKind::Normal => Kind::Type,
-            NoirKind::IntegerOrField => Kind::IntegerOrField,
-            NoirKind::Integer => Kind::Integer,
-            NoirKind::Numeric(a) => {
-                dbg!(a.as_monotype());
-                unimplemented!("No idea what to do here, waiting for an example to cause a crash")
-            }
+    pub fn generate_lean_type_pattern(&self, typ: &NoirType) -> TypePattern {
+        let (tv, name) = match typ {
+            NoirType::TypeVariable(tv) => (tv, None),
+            NoirType::NamedGeneric(ng) => (&ng.type_var, Some(ng.name.to_string())),
+            _ => panic!("Encountered illegal type {typ:?} to generate a pattern from"),
+        };
+        let typ = self.generate_ty_var(&tv, name);
+        let kind = typ.kind;
+        let pattern = match typ.expr {
+            TypeExpr::TypeVariable(n) => n,
+            _ => panic!("Built type pattern from type variable without containing type variable"),
         };
 
-        NamedGeneric { name, kind }
+        TypePattern { pattern, kind }
     }
 
-    pub fn generate_alias(&self, id: TypeAliasId) -> TypeAlias {
-        let alias_data = self.context.def_interner.get_type_alias(id);
-        let alias_data = alias_data.borrow();
-        let name = alias_data.name.to_string();
-        let generics =
+    pub fn expect_constant_numeric_kind(&self, kind: &NoirKind) -> Kind {
+        match kind {
+            NoirKind::Numeric(kind) => match self.generate_lean_type_value(kind).expr {
+                TypeExpr::Builtin(BuiltinTypeExpr { tag, .. }) => match tag {
+                    BuiltinTag::U(i) => Kind::U(i),
+                    BuiltinTag::Field => Kind::Field,
+                    _ => panic!("Invalid kind {tag:?} encountered for numeric kind"),
+                },
+                _ => panic!("Invalid kind {kind:?} encountered for numeric kind"),
+            },
+            _ => panic!("Invalid kind {kind} encountered for constant"),
+        }
+    }
+
+    pub fn generate_ty_var(&self, tv: &TypeVariable, name: Option<String>) -> Type {
+        match &*tv.borrow() {
+            TypeBinding::Bound(b) => {
+                let b = b.follow_bindings();
+                self.generate_lean_type_value(&b)
+            }
+            TypeBinding::Unbound(_, kind) => {
+                let name = name.unwrap_or_else(|| format!("TV_{tv:?}"));
+                let kind = match kind {
+                    NoirKind::Any | NoirKind::Normal => Kind::Type,
+                    NoirKind::IntegerOrField | NoirKind::Integer => {
+                        panic!("Kinds should be concrete at this stage")
+                    }
+                    NoirKind::Numeric(_) => self.expect_constant_numeric_kind(kind),
+                };
+                Type::variable(name, kind)
+            }
+        }
+    }
+
+    pub fn generate_alias(&self, _id: TypeAliasId) -> TypeAlias {
         unimplemented!()
     }
 
     pub fn generate_trait_definition(&self, _id: TraitId) -> TraitDefinition {
-        // TODO
-        TraitDefinition {
-            name:     "Bar".into(),
-            generics: Vec::default(),
-            methods:  Vec::default(),
-        }
+        unimplemented!()
     }
 }

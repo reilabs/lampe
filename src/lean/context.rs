@@ -60,7 +60,7 @@ impl EmitterCtx {
     pub fn empty() -> Self {
         EmitterCtx {
             impl_param_overrides: HashMap::new(),
-            impl_ret_overrides: HashMap::new(),
+            impl_ret_overrides:   HashMap::new(),
         }
     }
 

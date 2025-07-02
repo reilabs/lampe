@@ -65,7 +65,7 @@ pub struct NamedGeneric {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct StructDefinition {
     pub name:     String,
-    pub generics: Vec<NamedGeneric>,
+    pub generics: Vec<Type>,
     pub members:  Vec<ParamDef>,
 }
 
@@ -247,94 +247,242 @@ impl Type {
 
     pub fn array(elem: TypeExpr, len: TypeExpr) -> Self {
         Type {
-            expr: TypeExpr::array(len, elem),
+            expr: TypeExpr::builtin(BuiltinTag::Array, vec![elem, len]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn slice(elem: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::Slice, vec![elem]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn field() -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::Field, vec![]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn integer(size: u64, signed: bool) -> Self {
+        let tag = if signed {
+            BuiltinTag::I(size)
+        } else {
+            BuiltinTag::U(size)
+        };
+        Type {
+            expr: TypeExpr::builtin(tag, vec![]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn bool() -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::Bool, vec![]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn string(size: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::String, vec![size]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn fmt_string(args: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::FmtString, vec![args]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn variable(name: String, kind: Kind) -> Self {
+        Type {
+            expr: TypeExpr::TypeVariable(name),
+            kind,
+        }
+    }
+
+    pub fn unit() -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::Unit, Vec::default()),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn tuple(elems: Vec<TypeExpr>) -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::Tuple, elems),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn data_type(name: &str, generics: Vec<TypeExpr>) -> Self {
+        Type {
+            expr: TypeExpr::Struct(DataTypeExpr {
+                name: name.to_string(),
+                generics,
+            }),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn alias(name: &str, generics: Vec<TypeExpr>) -> Self {
+        Type {
+            expr: TypeExpr::Alias(DataTypeExpr {
+                name: name.to_string(),
+                generics,
+            }),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn cast(target: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::Cast(CastTypeExpr {
+                target: Box::new(target),
+            }),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn function(params: Vec<TypeExpr>, ret: TypeExpr, captures: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::Function(FunctionTypeExpr {
+                arguments:   params,
+                return_type: Box::new(ret),
+                captures:    Box::new(captures),
+            }),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn immutable_reference(typ: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::Reference(Mutability::Immutable), vec![typ]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn mutable_reference(typ: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::Reference(Mutability::Mutable), vec![typ]),
+            kind: Kind::Type,
+        }
+    }
+
+    pub fn numeric_const(value: &str, kind: Kind) -> Self {
+        Type {
+            expr: TypeExpr::NumericConst(value.to_string()),
+            kind,
+        }
+    }
+
+    pub fn infix(left: TypeExpr, op: TypeArithOp, right: TypeExpr) -> Self {
+        Type {
+            expr: TypeExpr::Arith(TypeArithExpr {
+                op,
+                left: Box::new(left),
+                right: Box::new(right),
+            }),
             kind: Kind::Type,
         }
     }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum TypeExpr {
+pub enum Mutability {
+    Immutable,
+    Mutable,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum BuiltinTag {
+    Array,
     Bool,
-    BuiltinType(BuiltinType),
-    Char,
-    DataType(DataTypeTypeExpr),
     Field,
-    FieldConst(String),
-    FormatString(FormatStringTypeExpr),
-    Integer(IntegerTypeExpr),
-    Slice(SliceTypeExpr),
-    Tuple(TupleTypeExpr),
-    TypeVariable(String),
-    UConst(u128),
+    FmtString,
+    I(u64),
+    Reference(Mutability),
+    Slice,
+    String,
+    Tuple,
+    U(u64),
     Unit,
 }
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum TypeArithOp {
+    Add,
+    Div,
+    Mod,
+    Mul,
+    Sub,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum TypeExpr {
+    Alias(DataTypeExpr),
+    Arith(TypeArithExpr),
+    Builtin(BuiltinTypeExpr),
+    Cast(CastTypeExpr),
+    Function(FunctionTypeExpr),
+    NumericConst(String),
+    Struct(DataTypeExpr),
+    TypeVariable(String),
+}
 impl TypeExpr {
-    pub fn builtin(name: &str, generics: Vec<Type>) -> Self {
-        Self::BuiltinType(BuiltinType {
-            name:     name.to_string(),
+    pub fn builtin(tag: BuiltinTag, generics: Vec<TypeExpr>) -> Self {
+        Self::Builtin(BuiltinTypeExpr {
+            tag,
             generics: generics.to_vec(),
         })
     }
-
-    pub fn array(length: TypeExpr, typ: TypeExpr) -> Self {
-        let length = Type {
-            expr: length,
-            kind: Kind::U(32),
-        };
-        let typ = Type {
-            expr: typ,
-            kind: Kind::Type,
-        };
-        Self::builtin("Array", vec![typ, length])
-    }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct BuiltinType {
-    name:     String,
-    generics: Vec<Type>,
+pub struct BuiltinTypeExpr {
+    pub tag:      BuiltinTag,
+    pub generics: Vec<TypeExpr>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct TupleTypeExpr {
-    pub elements: Vec<Type>,
+pub struct CastTypeExpr {
+    pub target: Box<TypeExpr>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct FormatStringTypeExpr {
-    pub length:         Box<Type>,
-    pub argument_types: Box<Type>,
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct IntegerTypeExpr {
-    pub signed: bool,
-    pub size:   u8,
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct DataTypeTypeExpr {
+pub struct DataTypeExpr {
     pub name:     String,
-    pub generics: Vec<Type>,
+    pub generics: Vec<TypeExpr>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct SliceTypeExpr {
-    pub elem_type: Box<Type>,
+pub struct FunctionTypeExpr {
+    pub arguments:   Vec<TypeExpr>,
+    pub return_type: Box<TypeExpr>,
+    pub captures:    Box<TypeExpr>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ArrayTypeExpr {
-    pub elem_type: Box<Type>,
-    pub len:       Box<Type>,
+pub struct TypeArithExpr {
+    pub op:    TypeArithOp,
+    pub left:  Box<TypeExpr>,
+    pub right: Box<TypeExpr>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Kind {
     Field,
-    Integer,
-    IntegerOrField,
     Type,
     U(u64),
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct TypePattern {
+    pub pattern: String,
+    pub kind:    Kind,
 }
