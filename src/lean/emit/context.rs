@@ -25,6 +25,10 @@ pub struct EmitContext {
 
     /// The string repeated per indentation level and prepended to the line.
     indent_level_contents: String,
+
+    /// Set if the current line has had the correct amount of indentation
+    /// prepended to it, and unset otherwise.
+    current_line_has_indent: bool,
 }
 
 /// The basic functionality of the emitter that does not deal specifically with
@@ -35,9 +39,10 @@ impl EmitContext {
     #[must_use]
     pub fn new(indent_level_contents: &str) -> Self {
         Self {
-            source_buffer:         String::new(),
-            indent_level:          0,
-            indent_level_contents: indent_level_contents.to_owned(),
+            source_buffer:           String::new(),
+            indent_level:            0,
+            indent_level_contents:   indent_level_contents.to_owned(),
+            current_line_has_indent: false,
         }
     }
 
@@ -63,29 +68,72 @@ impl EmitContext {
         self.indent_level_contents.repeat(self.indent_level)
     }
 
-    /// Appends a line to the source buffer, implicitly adding a newline at the
-    /// end of the provided `content`.
+    /// Appends the provided text to the current line of the source buffer.
     ///
-    /// This will automatically increase the indentation level if the line ends
-    /// with [`INCREASE_INDENT_TAIL`] and automatically decrease the indentation
-    /// level if the line ends with [`DECREASE_INDENT_TAIL`].
-    pub fn append_line(&mut self, content: &str) {
-        // Handle any negative changes to indentation that may result from the line.
-        if content.ends_with(DECREASE_INDENT_TAIL) {
-            self.decrease_indent();
+    /// If the provided `text` is the first text appended to a line, then this
+    /// functional will first prepend the correct amount of indentation.
+    pub fn append_to_line(&mut self, text: &str) {
+        if !self.current_line_has_indent {
+            self.source_buffer.push_str(&self.generate_indent());
+            self.current_line_has_indent = true;
         }
+        self.source_buffer.push_str(text);
+    }
 
-        // Append the correct indent to the buffer.
-        self.source_buffer.push_str(&self.generate_indent());
+    /// Ends the current line and creates a new line that begins with the
+    /// current indentation level.
+    ///
+    /// This means that you need to call [`Self::increase_indent`] or
+    /// [`Self::decrease_indent`] **before** calling this method. For utility's
+    /// sake we also provide [`Self::end_line_and_indent`] and
+    /// [`Self::end_line_and_dedent`].
+    pub fn end_line(&mut self) {
+        self.append_to_line("\n");
+        self.current_line_has_indent = false;
+    }
 
-        // Start by appending the line to the buffer.
-        self.source_buffer.push_str(content);
-        self.source_buffer.push('\n');
+    /// Ends the current line and increases the indentation level.
+    pub fn end_line_and_indent(&mut self) {
+        self.end_line();
+        self.increase_indent();
+    }
 
-        // Handle any positive changes to indentation that may result from the line.
-        if content.ends_with(INCREASE_INDENT_TAIL) {
-            self.increase_indent();
-        }
+    /// Ends the current line and decreases the indentation level.
+    pub fn end_line_and_dedent(&mut self) {
+        self.end_line();
+        self.decrease_indent();
+    }
+
+    /// Appends the provided `text` to the current line and begins a new line.
+    ///
+    /// You can also use [`Self::finish_line_with_and_then_indent`],
+    /// [`Self::append_to_line_and_dedent`], [`Self::indent_and_append_line`],
+    /// and [`Self::dedent_and_begin_line_with`].
+    pub fn append_to_line_and_end(&mut self, text: &str) {
+        self.append_to_line(text);
+        self.end_line();
+    }
+
+    /// Appends the provided `text` to the current line and then begins a new
+    /// line with indentation increased one level.
+    pub fn finish_line_with_and_then_indent(&mut self, text: &str) {
+        self.append_to_line(text);
+        self.end_line_and_indent();
+    }
+
+    /// Appends the provided `text` to the current line and then begins a new
+    /// line with indentation decreased one level.
+    pub fn append_to_line_and_dedent(&mut self, text: &str) {
+        self.append_to_line(text);
+        self.end_line_and_dedent();
+    }
+
+    /// Appends the provided `text` to the buffer on a new line with indentation
+    /// decreased by one level.
+    pub fn dedent_and_begin_line_with(&mut self, text: &str) {
+        self.decrease_indent();
+        self.end_line();
+        self.append_to_line(text);
     }
 
     /// Quotes the provided `text` between [`LEAN_QUOTE_START`] and
@@ -123,48 +171,20 @@ mod test {
     }
 
     #[test]
-    fn increases_indentation_correctly() {
-        let mut emitter = EmitContext::default();
-        emitter.increase_indent();
-        assert_eq!(emitter.get_indent_level(), 1);
-
-        emitter.append_line("foo");
-        assert_eq!(emitter.get_indent_level(), 1);
-
-        emitter.append_line("foobar {");
-        assert_eq!(emitter.get_indent_level(), 2);
-    }
-
-    #[test]
-    fn decreases_indentation_correctly() {
-        let mut emitter = EmitContext::default();
-        emitter.increase_indent();
-        emitter.increase_indent();
-        assert_eq!(emitter.get_indent_level(), 2);
-
-        emitter.append_line("foo");
-        assert_eq!(emitter.get_indent_level(), 2);
-
-        emitter.append_line("}");
-        assert_eq!(emitter.get_indent_level(), 1);
-
-        emitter.decrease_indent();
-        assert_eq!(emitter.get_indent_level(), 0);
-    }
-
-    #[test]
     fn builds_output_correctly() {
         let mut emitter = EmitContext::default();
 
         // Write a function.
-        emitter.append_line("nr_def return_three<>() -> Field {");
-        emitter.append_line("3 : Field");
-        emitter.append_line("}");
+        emitter.append_to_line("nr_def return_three<>() -> Field {");
+        emitter.end_line_and_indent();
+        emitter.append_to_line("3 : Field");
+        emitter.end_line_and_dedent();
+        emitter.append_to_line("}");
 
         // Check if the output is correct.
         assert_eq!(
             emitter.consume(),
-            "nr_def return_three<>() -> Field {\n  3 : Field\n}\n"
+            "nr_def return_three<>() -> Field {\n  3 : Field\n}"
         );
     }
 }

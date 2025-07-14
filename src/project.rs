@@ -13,7 +13,7 @@ use crate::{
     error::Error,
     file_generator,
     file_generator::{lake::dependency::LeanDependency, LeanFile, NoirPackageIdentifier},
-    lean::emit::TypesEmitter,
+    lean::emit::{ModuleEmitter, TypesEmitter},
     noir,
     noir::WithWarnings,
 };
@@ -227,27 +227,28 @@ impl Project {
         let lean_generator = compile_result.take();
         let generated_program = lean_generator.generate();
 
-        let _types = TypesEmitter::new(generated_program.types.clone()).emit();
+        let mut lean_files = generated_program
+            .modules
+            .iter()
+            .map(|module| {
+                let file_path = noir_project
+                    .file_manager()
+                    .path(module.id)
+                    .unwrap_or_else(|| panic!("Unknown file ID: {:?}", module.id));
+                let content = ModuleEmitter::new(module.clone()).emit();
+                LeanFile::from_user_noir_file(file_path, content).unwrap_or_else(|_| {
+                    panic!(
+                        "Unable to create file at {}",
+                        file_path.to_str().unwrap_or("Unknown")
+                    )
+                })
+            })
+            .collect_vec();
 
-        // let mut lean_files = generated_source
-        //     .decl_contents
-        //     .iter()
-        //     .map(|(id, content)| -> Result<LeanFile, Error> {
-        //         Ok(LeanFile::from_user_noir_file(
-        //             noir_project.file_manager().path(*id).ok_or(
-        //                 noir::error::file::Error::Other(format!("Unknown file ID:
-        // {id:?}")),             )?,
-        //             content.clone(),
-        //         )
-        //         .map_err(file_generator::error::Error::from)?)
-        //     })
-        //     .collect::<Result<Vec<_>, _>>()?;
-        //
-        // lean_files.push(LeanFile::from_generated_types(
-        //     generated_source.type_content,
-        // ));
-        //
-        // Ok(WithWarnings::new(lean_files, warnings))
+        lean_files.push(LeanFile::from_generated_types(
+            TypesEmitter::new(generated_program.types.clone()).emit(),
+        ));
+
         unimplemented!("generation")
     }
 }

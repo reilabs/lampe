@@ -1889,8 +1889,8 @@ impl LeanGenerator<'_, '_> {
             HirStatement::Let(lets) => self.generate_let_statement(&lets),
             HirStatement::Assign(assign) => self.generate_assign_statement(&assign),
             HirStatement::For(fors) => self.generate_for(&fors),
-            HirStatement::Break => Statement::Break,
-            HirStatement::Continue => Statement::Continue,
+            HirStatement::Break => panic!("Encountered break statement in constrained code"),
+            HirStatement::Continue => panic!("Encountered continue statement in constrained code"),
             HirStatement::Expression(expr) | HirStatement::Semi(expr) => {
                 Statement::Expression(self.generate_expr(expr))
             }

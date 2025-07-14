@@ -104,8 +104,6 @@ pub struct ParamVal {
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Statement {
     Assign(AssignStatement),
-    Break,
-    Continue,
     Expression(Expression),
     For(ForStatement),
     Let(LetStatement),

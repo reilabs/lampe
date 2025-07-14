@@ -2,6 +2,9 @@
 //! AST definitions.
 
 pub mod context;
+pub mod module;
 pub mod types;
+pub mod writer;
 
+pub use module::ModuleEmitter;
 pub use types::TypesEmitter;
