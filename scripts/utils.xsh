@@ -5,10 +5,6 @@ from tomlkit import dumps
 from tomlkit import parse
 import yaml
 
-lakefile_toml_path = get_project_root() / 'testing' / 'MerkleFromScratch' / 'lampe' / 'lakefile.toml'
-rust_cargo_toml_path = get_project_root() / 'Cargo.toml'
-ci_noir_yaml_path = get_project_root() / '.github' / 'workflows' / 'ci-noir.yaml'
-
 def get_project_root():
     script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
     root_dir = script_dir
@@ -20,6 +16,10 @@ def get_project_root():
             raise Exception("Could not find .git directory in file tree")
 
         root_dir = root_dir.parent
+
+lakefile_toml_path = get_project_root() / 'testing' / 'MerkleFromScratch' / 'lampe' / 'lakefile.toml'
+rust_cargo_toml_path = get_project_root() / 'Cargo.toml'
+ci_noir_yaml_path = get_project_root() / '.github' / 'workflows' / 'ci-noir.yaml'
 
 def load_toml(path):
     with open(path, mode="r") as f:
@@ -44,7 +44,7 @@ def change_required_lampe_to_path(toml, path):
                     continue
             del v[key]
 
-        v['path'] = 'fakePath'
+        v['path'] = path
 
     return toml
 

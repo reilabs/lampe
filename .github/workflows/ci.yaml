@@ -142,7 +142,13 @@ jobs:
         with:
           path: lampe
       - name: Install xonsh
-        run: sudo apt install -y xonsh
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update
+          sudo apt-get install -yq python3 pipx
+          pipx install 'xonsh[full]'
+      - name: Install xonsh (python) dependencies
+        run: xonsh -c 'xpip install -r scripts/requirements.txt'
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:

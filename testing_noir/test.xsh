@@ -7,9 +7,24 @@ import sys
 from pathlib import Path
 import subprocess
 
+def get_project_root():
+    script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
+    root_dir = script_dir
+    while True:
+        if (root_dir / '.git').is_dir():
+            return root_dir
+
+        if root_dir.resolve() == Path('/'):
+            raise Exception("Could not find .git directory in file tree")
+
+        root_dir = root_dir.parent
+
+print('Project root: ' + str(get_project_root()))
+
+source @(get_project_root() / 'scripts' / 'utils.xsh')
+
 def get_script_dir():
-    script_path = Path($(echo $XONSH_SOURCE).strip()).resolve()
-    return script_path.parent
+    return get_project_root() / "scripts"
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Noir tests with Lampe')
@@ -22,9 +37,9 @@ def parse_args():
     parser.add_argument('--use-local', dest='use_local', action='store_true', help='Use local version of Lampe instead of the remote one')
     return parser.parse_args()
 
-def prepare_lampe(lake_cmd, script_dir):
+def prepare_lampe(lake_cmd):
     """Build a local version of lampe if use_local is set"""
-    pushd @(script_dir.parent / "Lampe")
+    pushd @(get_project_root() / "Lampe")
     $(@(lake_cmd) exe cache get)
     $(@(lake_cmd) build)
     popd
@@ -76,27 +91,15 @@ def process_test(test_dir, lake_dir, log_file, lampe_cmd, lake_cmd, log_stdout, 
 
         if use_local:
             lakefile_path = Path("lakefile.toml")
-            content = lakefile_path.read_text()
-            lines = content.split('\n')
+            lakefile_lampe_relative_path = "../../../Lampe"
 
-            lampe_line_start = -1
-            for i, line in enumerate(lines):
-                if 'name = "Lampe"' in line:
-                    lampe_line_start = i
-                    break
-
-            if lampe_line_start > -1:
-                lines[lampe_line_start + 1] = 'path = "../../../Lampe"'
-                lines[lampe_line_start + 2] = ''
-                lines[lampe_line_start + 3] = ''
-
-                lakefile_path.write_text('\n'.join(lines))
+            change_toml_required_lampe_to_path(lakefile_path, lakefile_lampe_relative_path)
 
             $(@(lake_cmd) update)
-        else:
-            lake_symlink = ".lake"
-            if not Path(lake_symlink).exists():
-                ln -s @(lake_dir) .lake
+
+        lake_symlink = ".lake"
+        if not Path(lake_symlink).exists():
+            ln -s @(lake_dir) .lake
 
         try:
             $(@(lake_cmd) exe cache get)
@@ -218,7 +221,7 @@ def main():
             lampe_cmd = lampe_cmd_path
 
     if args.use_local:
-        prepare_lampe(args.lake_cmd, script_dir)
+        prepare_lampe(args.lake_cmd)
 
     for i, test_dir in enumerate(test_dirs):
         print(f"{i + 1}/{num_test_cases}")
