@@ -20,7 +20,7 @@ source @(get_project_root() / 'scripts' / 'utils.xsh')
 source @(get_project_root() / 'scripts' / 'test.xsh')
 
 def main():
-    run_tests()
+    run_tests('examples')
 
 if __name__ == "__main__":
     main()

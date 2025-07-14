@@ -25,11 +25,11 @@ def parse_args():
     parser.add_argument('-u', '--update', action='store_true', help='Update checked-in files using the new extraction instead of comparing with them')
     return parser.parse_args()
 
-def run_tests():
+def run_tests(dir):
     args = parse_args()
-    script_dir = get_script_dir()
+    project_root = get_project_root()
+    script_dir = project_root / dir
     examples_dir = script_dir
-    project_root = get_project_root(examples_dir)
 
     selected_test = args.test or ""
     update_mode = args.update
