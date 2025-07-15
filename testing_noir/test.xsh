@@ -23,8 +23,11 @@ print('Project root: ' + str(get_project_root()))
 
 source @(get_project_root() / 'scripts' / 'utils.xsh')
 
-def get_script_dir():
+def get_scripts_dir():
     return get_project_root() / "scripts"
+
+def get_testing_noir_dir():
+    return get_project_root() / "testing_noir"
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Noir tests with Lampe')
@@ -120,10 +123,10 @@ def process_test(test_dir, lake_dir, log_file, lampe_cmd, lake_cmd, log_stdout, 
         log_message(f"failed {test_dir} - {str(e)}")
         return False
 
-def read_expected_results(script_dir):
+def read_expected_results(testing_noir_dir):
     """Read the should_fail and should_succeed files"""
-    should_fail_file = script_dir / "should_fail"
-    should_succeed_file = script_dir / "should_succeed"
+    should_fail_file = testing_noir_dir / "should_fail"
+    should_succeed_file = testing_noir_dir / "should_succeed"
 
     should_fail = set()
     should_succeed = set()
@@ -140,9 +143,9 @@ def read_expected_results(script_dir):
 
     return should_fail, should_succeed
 
-def check_results(test_results, test_programs_path, script_dir):
+def check_results(test_results, test_programs_path, testing_noir_dir):
     """Check test results against expected outcomes"""
-    should_fail, should_succeed = read_expected_results(script_dir)
+    should_fail, should_succeed = read_expected_results(testing_noir_dir)
 
     failed_dirs = [test_dir for test_dir, success in test_results if not success]
     succeeded_dirs = [test_dir for test_dir, success in test_results if success]
@@ -182,7 +185,7 @@ def resolve_test_path(test_name, test_programs_path):
 
 def main():
     args = parse_args()
-    script_dir = get_script_dir()
+    testing_noir_dir = get_testing_noir_dir()
 
     noir_path = Path(args.noir_path)
     test_programs_path = noir_path / "test_programs"
@@ -191,10 +194,10 @@ def main():
         print(f"Path to noir repo is not set properly. Couldn't find dir: {test_programs_path}")
         sys.exit(1)
 
-    log_dir = Path(args.log_dir) if args.log_dir else script_dir
+    log_dir = Path(args.log_dir) if args.log_dir else testing_noir_dir
     log_file = log_dir / "running.log" if not args.log_stdout else None
 
-    lake_dir = script_dir / ".lake"
+    lake_dir = testing_noir_dir / ".lake"
     if not lake_dir.exists():
         lake_dir.mkdir(parents=True)
 
@@ -229,7 +232,7 @@ def main():
         test_results.append((test_dir, success))
 
     if not args.test:
-        unexpected_fails, unexpected_succeeds = check_results(test_results, test_programs_path, script_dir)
+        unexpected_fails, unexpected_succeeds = check_results(test_results, test_programs_path, testing_noir_dir)
 
         count_expected_mismatch = len(unexpected_fails) + len(unexpected_succeeds)
         if count_expected_mismatch != 0:
