@@ -54,9 +54,13 @@ impl ModuleEmitter {
 
         writer.append_to_line("nr_def ");
         writer.append_to_line(&function.name);
-        writer.append_to_line("<");
-        writer.write_sep_by(&function.generics, Writer::write_type_pattern, ", ");
-        writer.append_to_line(">");
+
+        if !function.generics.is_empty() {
+            writer.append_to_line("<");
+            writer.write_sep_by(&function.generics, Writer::write_type_pattern, ", ");
+            writer.append_to_line(">");
+        }
+
         writer.append_to_line("(");
         writer.write_sep_by(
             &function.parameters,
@@ -83,26 +87,38 @@ impl ModuleEmitter {
         let mut writer = Writer::new(&mut self.context);
 
         writer.append_to_line("impl");
-        writer.append_to_line("<");
-        writer.write_sep_by(&trait_impl.generic_vars, Writer::write_type_pattern, ", ");
-        writer.append_to_line(">");
+
+        if !trait_impl.generic_vars.is_empty() {
+            writer.append_to_line("<");
+            writer.write_sep_by(&trait_impl.generic_vars, Writer::write_type_pattern, ", ");
+            writer.append_to_line(">");
+        }
+
         writer.space();
         writer.append_to_line(&trait_impl.trait_name);
-        writer.append_to_line("<");
-        writer.write_sep_by(
-            &trait_impl.generic_vals,
-            |w, t| w.write_type_value(t, false),
-            ", ",
-        );
-        writer.append_to_line(">");
+
+        if !trait_impl.generic_vals.is_empty() {
+            writer.append_to_line("<");
+            writer.write_sep_by(
+                &trait_impl.generic_vals,
+                |w, t| w.write_type_value(t, false),
+                ", ",
+            );
+            writer.append_to_line(">");
+        }
+
         writer.append_to_line(" for ");
         writer.write_type_value(&trait_impl.self_type, false);
         writer.append_to_line(" as ");
         writer.append_to_line(&trait_impl.name);
-        writer.finish_line_with_and_then_indent("{");
+        writer.finish_line_with_and_then_indent(" {");
 
-        for method in &trait_impl.methods {
+        for (i, method) in trait_impl.methods.iter().enumerate() {
             self.emit_function_definition(method);
+
+            if i + 1 != trait_impl.methods.len() {
+                self.context.end_line();
+            }
         }
 
         // Avoid extending the lifetime of the mutable borrow into the loop where it is

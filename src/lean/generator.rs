@@ -121,6 +121,7 @@ use crate::lean::{
     },
     builtin,
     builtin::{BuiltinType, ASSERT_BUILTIN_NAME, TUPLE_BUILTIN_NAME},
+    emit::context::EmitContext,
 };
 
 /// A generator for Lean definitions that correspond to the Noir project in
@@ -332,7 +333,7 @@ impl LeanGenerator<'_, '_> {
             .collect_vec();
 
         StructDefinition {
-            name: qualified_path,
+            name: EmitContext::quote_name_if_needed(&qualified_path),
             generics,
             members,
         }
@@ -381,9 +382,11 @@ impl LeanGenerator<'_, '_> {
             NoirType::DataType(struct_type, generics) => {
                 let type_def = struct_type.borrow();
                 let module_id = type_def.id.module_id();
-                let name = self
-                    .context
-                    .fully_qualified_struct_path(&module_id.krate, type_def.id);
+                let name = EmitContext::quote_name_if_needed(
+                    &self
+                        .context
+                        .fully_qualified_struct_path(&module_id.krate, type_def.id),
+                );
                 let generics = generics
                     .iter()
                     .map(|g| self.generate_lean_type_value(g).expr)
@@ -392,15 +395,20 @@ impl LeanGenerator<'_, '_> {
             }
             NoirType::Alias(alias, generics) => {
                 let alias = alias.borrow();
-                let name = alias.name.to_string();
+                let name = EmitContext::quote_name_if_needed(alias.name.as_str());
                 let generics = generics
                     .iter()
                     .map(|g| self.generate_lean_type_value(g).expr)
                     .collect_vec();
                 Type::alias(&name, generics)
             }
-            NoirType::TypeVariable(tv) => self.generate_ty_var(tv, format!("TV_{tv:?}")),
-            NoirType::NamedGeneric(ng) => self.generate_ty_var(&ng.type_var, ng.name.to_string()),
+            NoirType::TypeVariable(tv) => {
+                self.generate_ty_var(tv, EmitContext::quote_name_if_needed(&format!("TV_{tv:?}")))
+            }
+            NoirType::NamedGeneric(ng) => self.generate_ty_var(
+                &ng.type_var,
+                EmitContext::quote_name_if_needed(ng.name.as_str()),
+            ),
             NoirType::CheckedCast { to, .. } => Type::cast(self.generate_lean_type_value(to).expr),
             NoirType::Function(parameters, returns, captures, _) => {
                 let parameters = parameters
@@ -479,7 +487,10 @@ impl LeanGenerator<'_, '_> {
         &self,
         rg: &ResolvedGeneric,
     ) -> TypePattern {
-        self.generate_lean_type_pattern_from_tyvar(&rg.type_var, rg.name.to_string())
+        self.generate_lean_type_pattern_from_tyvar(
+            &rg.type_var,
+            EmitContext::quote_name_if_needed(rg.name.as_str()),
+        )
     }
 
     /// Generates a lean type pattern from the provided type variable `tv`.
@@ -492,7 +503,7 @@ impl LeanGenerator<'_, '_> {
         tv: &TypeVariable,
         name: String,
     ) -> TypePattern {
-        let typ = self.generate_ty_var(tv, name);
+        let typ = self.generate_ty_var(tv, EmitContext::quote_name_if_needed(&name));
         let kind = typ.kind;
         let TypeExpr::TypeVariable(pattern) = typ.expr else {
             panic!("Attempted to build type pattern from tyvar that did not contain a tyvar")
@@ -509,7 +520,10 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_lean_type_pattern_from_type(&self, typ: &NoirType) -> TypePattern {
         let (tv, name) = match typ {
             NoirType::TypeVariable(tv) => (tv, format!("TV_{tv:?}")),
-            NoirType::NamedGeneric(ng) => (&ng.type_var, ng.name.to_string()),
+            NoirType::NamedGeneric(ng) => (
+                &ng.type_var,
+                EmitContext::quote_name_if_needed(ng.name.as_str()),
+            ),
             _ => panic!("Encountered illegal type {typ:?} to generate a pattern from"),
         };
 
@@ -562,11 +576,12 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_alias(&self, id: TypeAliasId) -> TypeAlias {
         let alias_data = self.context.def_interner.get_type_alias(id);
         let alias_data = alias_data.borrow();
-        let name = alias_data.name.to_string();
+        let name = EmitContext::quote_name_if_needed(alias_data.name.as_str());
         let generics = alias_data
             .generics
             .iter()
             .map(|g| self.generate_lean_type_pattern_from_resolved_generic(g))
+            .unique()
             .collect_vec();
         let aliased_type = self.generate_lean_type_value(&alias_data.typ);
         TypeAlias {
@@ -578,16 +593,20 @@ impl LeanGenerator<'_, '_> {
 
     pub fn generate_trait_definition(&self, id: TraitId) -> TraitDefinition {
         let trait_def = self.context.def_interner.get_trait(id);
-        let name = self.resolve_fq_trait_name_from_crate_id(trait_def.crate_id, id);
-        let generics = trait_def
+        let name = EmitContext::quote_name_if_needed(
+            &self.resolve_fq_trait_name_from_crate_id(trait_def.crate_id, id),
+        );
+        let trait_generics = trait_def
             .generics
             .iter()
             .map(|g| self.generate_lean_type_pattern_from_resolved_generic(g))
+            .unique()
             .collect_vec();
         let associated_types = trait_def
             .associated_types
             .iter()
             .map(|t| self.generate_lean_type_pattern_from_resolved_generic(t))
+            .unique()
             .collect_vec();
 
         let methods = trait_def
@@ -595,10 +614,12 @@ impl LeanGenerator<'_, '_> {
             .iter()
             .map(|method| {
                 let method_name = method.name.to_string();
-                let generics = method
+                let method_generics = method
                     .direct_generics
                     .iter()
                     .map(|g| self.generate_lean_type_pattern_from_resolved_generic(g))
+                    .filter(|g| !trait_generics.contains(g))
+                    .unique()
                     .collect_vec();
                 let parameters = method
                     .arguments()
@@ -609,7 +630,7 @@ impl LeanGenerator<'_, '_> {
 
                 TraitMethodDeclaration {
                     name: method_name,
-                    generics,
+                    generics: method_generics,
                     parameters,
                     return_type: Box::new(out_type),
                 }
@@ -618,7 +639,7 @@ impl LeanGenerator<'_, '_> {
 
         TraitDefinition {
             name,
-            generics,
+            generics: trait_generics,
             associated_types,
             methods,
         }
@@ -781,9 +802,11 @@ impl LeanGenerator<'_, '_> {
             self.generate_expr(self.context.def_interner.function(id).as_expr())
         };
 
-        let name = self
-            .context
-            .fully_qualified_function_name(&function_meta.source_crate, id);
+        let name = EmitContext::quote_name_if_needed(
+            &self
+                .context
+                .fully_qualified_function_name(&function_meta.source_crate, id),
+        );
 
         FunctionDefinition {
             name,
@@ -811,7 +834,9 @@ impl LeanGenerator<'_, '_> {
             .into_iter()
             .map(|p| match &p.0 {
                 HirPattern::Identifier(ident) => {
-                    let name = self.context.def_interner.definition_name(ident.id).to_string();
+                    let name = EmitContext::quote_name_if_needed(
+                        &self.context.def_interner.definition_name(ident.id).to_string(),
+                    );
                     let typ = self.generate_lean_type_value(
                         &self.context.def_interner.definition_type(ident.id),
                     );
@@ -848,7 +873,8 @@ impl LeanGenerator<'_, '_> {
         let all_generics_on_func = data
             .all_generics
             .iter()
-            .map(|g| self.generate_lean_type_pattern_from_resolved_generic(g));
+            .map(|g| self.generate_lean_type_pattern_from_resolved_generic(g))
+            .unique();
 
         let trait_gens =
             self.gather_trait_constraint_generics_patterns(data.trait_constraints.as_slice());
@@ -972,7 +998,10 @@ impl LeanGenerator<'_, '_> {
                         Vec::default()
                     } else {
                         seen.insert(*id);
-                        vec![self.generate_lean_type_pattern_from_tyvar(tv, format!("V_{id}"))]
+                        vec![self.generate_lean_type_pattern_from_tyvar(
+                            tv,
+                            EmitContext::quote_name_if_needed(&format!("TV_{id}")),
+                        )]
                     }
                 }
             },
@@ -985,7 +1014,7 @@ impl LeanGenerator<'_, '_> {
                         seen.insert(*id);
                         vec![self.generate_lean_type_pattern_from_tyvar(
                             &ng.type_var,
-                            ng.name.to_string(),
+                            EmitContext::quote_name_if_needed(ng.name.as_str()),
                         )]
                     }
                 }
@@ -1006,13 +1035,17 @@ impl LeanGenerator<'_, '_> {
                 let typ = self.generate_lean_type_value(typ);
                 match pattern {
                     HirPattern::Identifier(ident) => ParamDef {
-                        name: self.context.def_interner.definition_name(ident.id).to_string(),
+                        name: EmitContext::quote_name_if_needed(
+                            self.context.def_interner.definition_name(ident.id),
+                        ),
                         typ,
                         is_mut: false,
                     },
                     HirPattern::Mutable(ident, _) => match ident.as_ref() {
                         HirPattern::Identifier(ident) => ParamDef {
-                            name: self.context.def_interner.definition_name(ident.id).to_string(),
+                            name: EmitContext::quote_name_if_needed(
+                                self.context.def_interner.definition_name(ident.id),
+                            ),
                             typ,
                             is_mut: true,
                         },
@@ -1041,9 +1074,9 @@ impl LeanGenerator<'_, '_> {
         match statement {
             HirStatement::Let(binding) => {
                 let name = match binding.pattern {
-                    HirPattern::Identifier(hir_ident) => {
-                        self.context.def_interner.definition_name(hir_ident.id).to_string()
-                    }
+                    HirPattern::Identifier(hir_ident) => EmitContext::quote_name_if_needed(
+                        self.context.def_interner.definition_name(hir_ident.id),
+                    ),
                     _ => panic!("Encountered a malformed global"),
                 };
 
@@ -1073,7 +1106,7 @@ impl LeanGenerator<'_, '_> {
                     return None;
                 }
 
-                let name = format!("impl_{id:?}");
+                let name = format!("impl_{:?}", id.0);
                 let location = trait_impl.borrow().location;
                 Some((
                     location,
@@ -1091,8 +1124,9 @@ impl LeanGenerator<'_, '_> {
     ) -> TraitImplementation {
         let trait_def_id = trait_impl.trait_id;
         let trait_def_data = self.context.def_interner.get_trait(trait_def_id);
-        let trait_name =
-            self.resolve_fq_trait_name_from_crate_id(trait_def_data.crate_id, trait_def_id);
+        let trait_name = EmitContext::quote_name_if_needed(
+            &self.resolve_fq_trait_name_from_crate_id(trait_def_data.crate_id, trait_def_id),
+        );
         let self_type = self.generate_lean_type_value(&trait_impl.typ);
 
         let where_clauses = trait_impl
@@ -1100,12 +1134,13 @@ impl LeanGenerator<'_, '_> {
             .iter()
             .map(|cons| {
                 let var = self.generate_lean_type_value(&cons.typ);
-                let trait_name = self
-                    .context
-                    .def_interner
-                    .get_trait(cons.trait_bound.trait_id)
-                    .name
-                    .to_string();
+                let trait_name = EmitContext::quote_name_if_needed(
+                    self.context
+                        .def_interner
+                        .get_trait(cons.trait_bound.trait_id)
+                        .name
+                        .as_str(),
+                );
                 let bound = TypePattern {
                     pattern: trait_name,
                     kind:    Kind::Type,
@@ -1132,12 +1167,16 @@ impl LeanGenerator<'_, '_> {
             .map(|g| self.generate_lean_type_value(g))
             .collect_vec();
 
-        let generic_vars = self.gather_trait_impl_generics(&trait_impl);
+        let generic_vars = self
+            .gather_trait_impl_generics(&trait_impl)
+            .into_iter()
+            .unique()
+            .collect_vec();
 
         let methods = trait_impl
             .methods
             .iter()
-            .map(|m| self.generate_trait_function_def(*m))
+            .map(|m| self.generate_trait_function_def(*m, &generic_vars))
             .collect_vec();
 
         TraitImplementation {
@@ -1167,14 +1206,23 @@ impl LeanGenerator<'_, '_> {
         patterns
     }
 
-    pub fn generate_trait_function_def(&self, id: FuncId) -> FunctionDefinition {
+    pub fn generate_trait_function_def(
+        &self,
+        id: FuncId,
+        trait_generics: &[TypePattern],
+    ) -> FunctionDefinition {
         // Note that we NEVER want to qualify the name of the trait function.
         let function_meta = self.context.function_meta(&id);
         let name = self.context.function_name(&id).to_string();
 
         let parameters = self.generate_function_parameters(function_meta);
         let return_type = self.generate_lean_type_value(function_meta.return_type());
-        let generics = self.gather_function_generic_patterns(function_meta);
+        let generics = self
+            .gather_function_generic_patterns(function_meta)
+            .into_iter()
+            .filter(|g| !trait_generics.contains(g))
+            .unique()
+            .collect_vec();
         let body = self.generate_expr(self.context.def_interner.function(&id).as_expr());
 
         FunctionDefinition {
@@ -1406,7 +1454,9 @@ impl LeanGenerator<'_, '_> {
         let struct_def = &constructor.r#type;
         let struct_def = struct_def.borrow();
         let crate_id = self.root_crate;
-        let name = self.context.fully_qualified_struct_path(&crate_id, struct_def.id);
+        let name = EmitContext::quote_name_if_needed(
+            &self.context.fully_qualified_struct_path(&crate_id, struct_def.id),
+        );
         let fields = &constructor.fields;
 
         // We work with fields in _order_, so we need to turn these into orders.
@@ -1502,17 +1552,18 @@ impl LeanGenerator<'_, '_> {
                 .context
                 .def_interner
                 .get_operator_trait_method(infix.operator.kind);
-            let function_name = self
-                .context
-                .def_interner
-                .definition_name(self.context.def_interner.trait_method_id(trait_method_id))
-                .to_string();
-            let trait_name = self
-                .context
-                .def_interner
-                .get_trait(trait_method_id.trait_id)
-                .name
-                .to_string();
+            let function_name = EmitContext::quote_name_if_needed(
+                self.context
+                    .def_interner
+                    .definition_name(self.context.def_interner.trait_method_id(trait_method_id)),
+            );
+            let trait_name = EmitContext::quote_name_if_needed(
+                self.context
+                    .def_interner
+                    .get_trait(trait_method_id.trait_id)
+                    .name
+                    .as_str(),
+            );
 
             let call_target = TraitCallRef {
                 trait_name,
@@ -1561,13 +1612,13 @@ impl LeanGenerator<'_, '_> {
                 .def_interner
                 .get_prefix_operator_trait_method(&prefix.operator)
                 .unwrap_or_else(|| panic!("Found no trait corresponding to {:?}", prefix.operator));
-            let function_name = self
-                .context
-                .def_interner
-                .definition_name(self.context.def_interner.trait_method_id(trait_method_id))
-                .to_string();
+            let function_name = EmitContext::quote_name_if_needed(
+                self.context
+                    .def_interner
+                    .definition_name(self.context.def_interner.trait_method_id(trait_method_id)),
+            );
             let corresponding_trait = self.context.def_interner.get_trait(trait_method_id.trait_id);
-            let trait_name = corresponding_trait.name.to_string();
+            let trait_name = EmitContext::quote_name_if_needed(corresponding_trait.name.as_str());
 
             let call_target = TraitCallRef {
                 trait_name,
@@ -1689,7 +1740,8 @@ impl LeanGenerator<'_, '_> {
         ident: &HirIdent,
         output_type: &Type,
     ) -> Expression {
-        let name = self.context.def_interner.definition_name(ident.id).to_string();
+        let name =
+            EmitContext::quote_name_if_needed(self.context.def_interner.definition_name(ident.id));
         let ident_def = self.context.def_interner.definition(ident.id);
         let default: TypeBindings = HashMap::default();
         let bindings = self
@@ -1712,9 +1764,11 @@ impl LeanGenerator<'_, '_> {
                             || panic!("Trait function {name} missing Self type"),
                             |t| self.substitute_bindings(t, bindings),
                         ));
-                    let trait_name = self.resolve_fq_trait_name_from_crate_id(
-                        trait_impl.crate_id,
-                        trait_impl.trait_id,
+                    let trait_name = EmitContext::quote_name_if_needed(
+                        &self.resolve_fq_trait_name_from_crate_id(
+                            trait_impl.crate_id,
+                            trait_impl.trait_id,
+                        ),
                     );
                     let trait_generics = trait_impl
                         .trait_generics
@@ -1741,8 +1795,12 @@ impl LeanGenerator<'_, '_> {
                     Expression::TraitCallRef(call_ref)
                 } else if let Some(trait_id) = func_meta.trait_id {
                     let trait_data = self.context.def_interner.get_trait(trait_id);
-                    let trait_name = self
-                        .resolve_fq_trait_name_from_crate_id(trait_data.crate_id, trait_data.id);
+                    let trait_name = EmitContext::quote_name_if_needed(
+                        &self.resolve_fq_trait_name_from_crate_id(
+                            trait_data.crate_id,
+                            trait_data.id,
+                        ),
+                    );
                     let trait_generics = trait_data
                         .generics
                         .iter()
@@ -1776,18 +1834,19 @@ impl LeanGenerator<'_, '_> {
                     };
                     Expression::TraitCallRef(call_ref)
                 } else {
-                    let func_name = match &func_meta.self_type {
-                        Some(self_type) => {
-                            let maybe_self_type = self.generate_lean_type_value(self_type);
-                            if let TypeExpr::Struct(s) = maybe_self_type.expr {
-                                let struct_path = s.name;
-                                format!("{struct_path}::{name}")
-                            } else {
-                                name
+                    let func_name =
+                        EmitContext::quote_name_if_needed(&match &func_meta.self_type {
+                            Some(self_type) => {
+                                let maybe_self_type = self.generate_lean_type_value(self_type);
+                                if let TypeExpr::Struct(s) = maybe_self_type.expr {
+                                    let struct_path = s.name;
+                                    format!("{struct_path}::{name}")
+                                } else {
+                                    name
+                                }
                             }
-                        }
-                        None => name,
-                    };
+                            None => name,
+                        });
                     let param_types = self
                         .generate_function_parameters(func_meta)
                         .into_iter()
@@ -1811,9 +1870,9 @@ impl LeanGenerator<'_, '_> {
                 let (global_name, global_type) = match let_stmt {
                     HirStatement::Let(let_stmt) => {
                         let ident = match &let_stmt.pattern {
-                            HirPattern::Identifier(hir_ident) => {
-                                self.context.def_interner.definition_name(hir_ident.id).to_string()
-                            }
+                            HirPattern::Identifier(hir_ident) => EmitContext::quote_name_if_needed(
+                                self.context.def_interner.definition_name(hir_ident.id),
+                            ),
                             _ => panic!("Encountered a malformed global"),
                         };
                         let typ = self.generate_lean_type_value(&let_stmt.r#type);
@@ -1948,7 +2007,9 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_lvalue(&self, lvalue: &HirLValue) -> LValue {
         match lvalue {
             HirLValue::Ident(ident, typ) => LValue::Ident(Identifier {
-                name: self.context.def_interner.definition_name(ident.id).to_string(),
+                name: EmitContext::quote_name_if_needed(
+                    self.context.def_interner.definition_name(ident.id),
+                ),
                 typ:  self.generate_lean_type_value(typ),
             }),
             HirLValue::MemberAccess {

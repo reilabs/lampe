@@ -223,7 +223,7 @@ impl Project {
         package: &Package,
     ) -> Result<WithWarnings<Vec<LeanFile>>, Error> {
         let compile_result = noir_project.compile_package(package)?;
-        let _warnings = compile_result.warnings.clone();
+        let warnings = compile_result.warnings.clone();
         let lean_generator = compile_result.take();
         let generated_program = lean_generator.generate();
 
@@ -249,7 +249,7 @@ impl Project {
             TypesEmitter::new(generated_program.types.clone()).emit(),
         ));
 
-        unimplemented!("generation")
+        Ok(WithWarnings::new(lean_files, warnings))
     }
 }
 

@@ -49,9 +49,14 @@ impl TypesEmitter {
 
         writer.append_to_line("nr_type_alias ");
         writer.append_to_line(&alias.name);
-        writer.append_to_line("<");
-        writer.write_sep_by(&alias.generics, Writer::write_type_pattern, ", ");
-        writer.append_to_line("> := ");
+
+        if !alias.generics.is_empty() {
+            writer.append_to_line("<");
+            writer.write_sep_by(&alias.generics, Writer::write_type_pattern, ", ");
+            writer.append_to_line(">");
+        }
+
+        writer.append_to_line(" := ");
         writer.write_type_value(&alias.typ, false);
         writer.append_to_line(";");
         writer.end_line();
@@ -64,9 +69,13 @@ impl TypesEmitter {
 
         writer.append_to_line("nr_struct_def ");
         writer.append_to_line(&struct_.name);
-        writer.append_to_line("<");
-        writer.write_sep_by(&struct_.generics, Writer::write_type_pattern, ", ");
-        writer.append_to_line(">");
+
+        if !struct_.generics.is_empty() {
+            writer.append_to_line("<");
+            writer.write_sep_by(&struct_.generics, Writer::write_type_pattern, ", ");
+            writer.append_to_line(">");
+        }
+
         writer.space();
 
         if struct_.members.is_empty() {
@@ -108,9 +117,13 @@ impl TypesEmitter {
             for method in &trait_.methods {
                 writer.append_to_line("method ");
                 writer.append_to_line(&method.name);
-                writer.append_to_line("<");
-                writer.write_sep_by(&method.generics, Writer::write_type_pattern, ", ");
-                writer.append_to_line(">");
+
+                if !method.generics.is_empty() {
+                    writer.append_to_line("<");
+                    writer.write_sep_by(&method.generics, Writer::write_type_pattern, ", ");
+                    writer.append_to_line(">");
+                }
+
                 writer.append_to_line("(");
                 writer.write_sep_by(
                     &method.parameters,

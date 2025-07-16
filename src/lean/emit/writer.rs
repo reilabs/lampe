@@ -224,32 +224,32 @@ impl Writer<'_> {
     pub fn write_trait_call_ref(&mut self, call_ref: &TraitCallRef) {
         self.append_to_line("(");
         self.write_type_value(&call_ref.self_type, false);
-        self.append_to_line("<");
-        self.write_sep_by(
-            call_ref.trait_generics.as_slice(),
-            |s, t| Self::write_type_value(s, t, false),
-            ", ",
-        );
-        self.append_to_line(">");
+
+        if !call_ref.trait_generics.is_empty() {
+            self.append_to_line("<");
+            self.write_sep_by(
+                call_ref.trait_generics.as_slice(),
+                |s, t| Self::write_type_value(s, t, false),
+                ", ",
+            );
+            self.append_to_line(">");
+        }
+
         self.append_to_line(".");
         self.append_to_line(&call_ref.function_name);
-        self.append_to_line("<");
-        self.write_sep_by(
-            call_ref.fun_generics.as_slice(),
-            |s, t| Self::write_type_value(s, t, false),
-            ", ",
-        );
-        self.append_to_line(">");
+
+        if !call_ref.fun_generics.is_empty() {
+            self.append_to_line("<");
+            self.write_sep_by(
+                call_ref.fun_generics.as_slice(),
+                |s, t| Self::write_type_value(s, t, false),
+                ", ",
+            );
+            self.append_to_line(">");
+        }
+
         self.append_to_line(" as ");
-        let func_type = FunctionTypeExpr {
-            arguments:   call_ref.param_types.iter().map(|t| t.expr.clone()).collect_vec(),
-            return_type: Box::new(call_ref.return_type.expr.clone()),
-            captures:    Box::new(TypeExpr::Builtin(BuiltinTypeExpr {
-                tag:      BuiltinTag::Unit,
-                generics: Vec::default(),
-            })),
-        };
-        self.write_function_type_expression(&func_type);
+        self.write_type_expression(&call_ref.return_type.expr);
         self.append_to_line(")");
     }
 
@@ -258,23 +258,19 @@ impl Writer<'_> {
     pub fn write_decl_call_ref(&mut self, call_ref: &DeclCallRef) {
         self.append_to_line("(");
         self.append_to_line(&call_ref.function);
-        self.append_to_line("<");
-        self.write_sep_by(
-            call_ref.generics.as_slice(),
-            |s, t| Self::write_type_value(s, t, false),
-            ", ",
-        );
-        self.append_to_line(">");
+
+        if !call_ref.generics.is_empty() {
+            self.append_to_line("<");
+            self.write_sep_by(
+                call_ref.generics.as_slice(),
+                |s, t| Self::write_type_value(s, t, false),
+                ", ",
+            );
+            self.append_to_line(">");
+        }
+
         self.append_to_line(" as ");
-        let func_type = FunctionTypeExpr {
-            arguments:   call_ref.param_types.iter().map(|t| t.expr.clone()).collect_vec(),
-            return_type: Box::new(call_ref.return_type.expr.clone()),
-            captures:    Box::new(TypeExpr::Builtin(BuiltinTypeExpr {
-                tag:      BuiltinTag::Unit,
-                generics: Vec::default(),
-            })),
-        };
-        self.write_function_type_expression(&func_type);
+        self.write_type_expression(&call_ref.return_type.expr);
         self.append_to_line(")");
     }
 
@@ -375,9 +371,7 @@ impl Writer<'_> {
     /// builder.
     pub fn write_ite(&mut self, ite: &IfThenElse) {
         self.append_to_line("if ");
-        self.append_to_line("(");
         self.write_expression(&ite.condition);
-        self.append_to_line(")");
         self.append_to_line(" then ");
         self.write_expression(&ite.then_branch);
         ite.else_branch.iter().for_each(|branch| {
@@ -391,13 +385,17 @@ impl Writer<'_> {
     pub fn write_constructor_expression(&mut self, constructor: &Constructor) {
         let name = &constructor.name;
         self.append_to_line(&format!("{name}.mk"));
-        self.append_to_line("<");
-        self.write_sep_by(
-            constructor.generic_args.as_slice(),
-            |s, t| Self::write_type_value(s, t, false),
-            ", ",
-        );
-        self.append_to_line(">");
+
+        if !constructor.generic_args.is_empty() {
+            self.append_to_line("<");
+            self.write_sep_by(
+                constructor.generic_args.as_slice(),
+                |s, t| Self::write_type_value(s, t, false),
+                ", ",
+            );
+            self.append_to_line(">");
+        }
+
         self.append_to_line("(");
         self.write_sep_by(constructor.fields.as_slice(), Self::write_expression, ", ");
         self.append_to_line(")");
@@ -509,13 +507,16 @@ impl Writer<'_> {
         };
 
         self.append_to_line(&tag);
-        self.append_to_line("<");
-        self.write_sep_by(
-            builtin.generics.as_slice(),
-            Self::write_type_expression,
-            ", ",
-        );
-        self.append_to_line(">");
+
+        if !builtin.generics.is_empty() {
+            self.append_to_line("<");
+            self.write_sep_by(
+                builtin.generics.as_slice(),
+                Self::write_type_expression,
+                ", ",
+            );
+            self.append_to_line(">");
+        }
     }
 
     /// Directly writes the contents of the type arithmetic expression into the
@@ -538,13 +539,16 @@ impl Writer<'_> {
     /// builder.
     pub fn write_data_type_expression(&mut self, data_type: &DataTypeExpr) {
         self.append_to_line(&data_type.name);
-        self.append_to_line("<");
-        self.write_sep_by(
-            data_type.generics.as_slice(),
-            Self::write_type_expression,
-            ", ",
-        );
-        self.append_to_line(">");
+
+        if !data_type.generics.is_empty() {
+            self.append_to_line("<");
+            self.write_sep_by(
+                data_type.generics.as_slice(),
+                Self::write_type_expression,
+                ", ",
+            );
+            self.append_to_line(">");
+        }
     }
 
     /// Directly writes the content of the provided kind into the builder.

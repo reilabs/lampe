@@ -84,18 +84,10 @@ impl EmitContext {
     /// current indentation level.
     ///
     /// This means that you need to call [`Self::increase_indent`] or
-    /// [`Self::decrease_indent`] **before** calling this method. For utility's
-    /// sake we also provide [`Self::end_line_and_indent`] and
-    /// [`Self::end_line_and_dedent`].
+    /// [`Self::decrease_indent`] **before** calling this method.
     pub fn end_line(&mut self) {
         self.append_to_line("\n");
         self.current_line_has_indent = false;
-    }
-
-    /// Ends the current line and increases the indentation level.
-    pub fn end_line_and_indent(&mut self) {
-        self.end_line();
-        self.increase_indent();
     }
 
     /// Ends the current line and decreases the indentation level.
@@ -104,43 +96,27 @@ impl EmitContext {
         self.decrease_indent();
     }
 
-    /// Appends the provided `text` to the current line and begins a new line.
-    ///
-    /// You can also use [`Self::finish_line_with_and_then_indent`],
-    /// [`Self::append_to_line_and_dedent`], [`Self::indent_and_append_line`],
-    /// and [`Self::dedent_and_begin_line_with`].
-    pub fn append_to_line_and_end(&mut self, text: &str) {
-        self.append_to_line(text);
-        self.end_line();
-    }
-
     /// Appends the provided `text` to the current line and then begins a new
     /// line with indentation increased one level.
     pub fn finish_line_with_and_then_indent(&mut self, text: &str) {
         self.append_to_line(text);
-        self.end_line_and_indent();
-    }
-
-    /// Appends the provided `text` to the current line and then begins a new
-    /// line with indentation decreased one level.
-    pub fn append_to_line_and_dedent(&mut self, text: &str) {
-        self.append_to_line(text);
-        self.end_line_and_dedent();
-    }
-
-    /// Appends the provided `text` to the buffer on a new line with indentation
-    /// decreased by one level.
-    pub fn dedent_and_begin_line_with(&mut self, text: &str) {
-        self.decrease_indent();
         self.end_line();
-        self.append_to_line(text);
+        self.increase_indent();
     }
 
     /// Quotes the provided `text` between [`LEAN_QUOTE_START`] and
-    /// [`LEAN_QUOTE_END`].
+    /// [`LEAN_QUOTE_END`] if it is necessary.
     #[must_use]
-    pub fn quote(&self, text: &str) -> String {
-        format!("{LEAN_QUOTE_START}{text}{LEAN_QUOTE_END}")
+    pub fn quote_name_if_needed(text: &str) -> String {
+        if !text.starts_with(LEAN_QUOTE_START) || !text.ends_with(LEAN_QUOTE_END) {
+            if text.contains("::") {
+                format!("{LEAN_QUOTE_START}{text}{LEAN_QUOTE_END}")
+            } else {
+                text.to_string()
+            }
+        } else {
+            text.to_string()
+        }
     }
 
     /// Consumes the emitter structure to result in the source buffer that it
@@ -176,7 +152,8 @@ mod test {
 
         // Write a function.
         emitter.append_to_line("nr_def return_three<>() -> Field {");
-        emitter.end_line_and_indent();
+        emitter.end_line();
+        emitter.increase_indent();
         emitter.append_to_line("3 : Field");
         emitter.end_line_and_dedent();
         emitter.append_to_line("}");
