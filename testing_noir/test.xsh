@@ -7,9 +7,34 @@ import sys
 from pathlib import Path
 import subprocess
 
-def get_script_dir():
-    script_path = Path($(echo $XONSH_SOURCE).strip()).resolve()
-    return script_path.parent
+# --- Start of copied part.
+# This method is used to resolve the project's root directory,
+# which is necessary for importing dependencies and other files.
+# It is copied into every *.xsh file we use.
+# If you make changes to this method, be sure to update all other
+# copies as well.
+def get_project_root():
+    script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
+    root_dir = script_dir
+    while True:
+        if (root_dir / '.git').is_dir():
+            return root_dir
+
+        if root_dir.resolve() == Path('/'):
+            raise Exception("Could not find .git directory in file tree")
+
+        root_dir = root_dir.parent
+
+project_root = get_project_root()
+# --- End of copied part.
+
+source @(project_root / 'scripts' / 'utils.xsh')
+
+def get_scripts_dir():
+    return project_root / "scripts"
+
+def get_testing_noir_dir():
+    return project_root / "testing_noir"
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Noir tests with Lampe')
@@ -22,9 +47,9 @@ def parse_args():
     parser.add_argument('--use-local', dest='use_local', action='store_true', help='Use local version of Lampe instead of the remote one')
     return parser.parse_args()
 
-def prepare_lampe(lake_cmd, script_dir):
+def prepare_lampe(lake_cmd):
     """Build a local version of lampe if use_local is set"""
-    pushd @(script_dir.parent / "Lampe")
+    pushd @(project_root / "Lampe")
     $(@(lake_cmd) exe cache get)
     $(@(lake_cmd) build)
     popd
@@ -76,27 +101,15 @@ def process_test(test_dir, lake_dir, log_file, lampe_cmd, lake_cmd, log_stdout, 
 
         if use_local:
             lakefile_path = Path("lakefile.toml")
-            content = lakefile_path.read_text()
-            lines = content.split('\n')
+            lakefile_lampe_relative_path = "../../../Lampe"
 
-            lampe_line_start = -1
-            for i, line in enumerate(lines):
-                if 'name = "Lampe"' in line:
-                    lampe_line_start = i
-                    break
-
-            if lampe_line_start > -1:
-                lines[lampe_line_start + 1] = 'path = "../../../Lampe"'
-                lines[lampe_line_start + 2] = ''
-                lines[lampe_line_start + 3] = ''
-
-                lakefile_path.write_text('\n'.join(lines))
+            change_toml_required_lampe_to_path(lakefile_path, lakefile_lampe_relative_path)
 
             $(@(lake_cmd) update)
-        else:
-            lake_symlink = ".lake"
-            if not Path(lake_symlink).exists():
-                ln -s @(lake_dir) .lake
+
+        lake_symlink = ".lake"
+        if not Path(lake_symlink).exists():
+            ln -s @(lake_dir) .lake
 
         try:
             $(@(lake_cmd) exe cache get)
@@ -117,10 +130,10 @@ def process_test(test_dir, lake_dir, log_file, lampe_cmd, lake_cmd, log_stdout, 
         log_message(f"failed {test_dir} - {str(e)}")
         return False
 
-def read_expected_results(script_dir):
+def read_expected_results(testing_noir_dir):
     """Read the should_fail and should_succeed files"""
-    should_fail_file = script_dir / "should_fail"
-    should_succeed_file = script_dir / "should_succeed"
+    should_fail_file = testing_noir_dir / "should_fail"
+    should_succeed_file = testing_noir_dir / "should_succeed"
 
     should_fail = set()
     should_succeed = set()
@@ -137,9 +150,9 @@ def read_expected_results(script_dir):
 
     return should_fail, should_succeed
 
-def check_results(test_results, test_programs_path, script_dir):
+def check_results(test_results, test_programs_path, testing_noir_dir):
     """Check test results against expected outcomes"""
-    should_fail, should_succeed = read_expected_results(script_dir)
+    should_fail, should_succeed = read_expected_results(testing_noir_dir)
 
     failed_dirs = [test_dir for test_dir, success in test_results if not success]
     succeeded_dirs = [test_dir for test_dir, success in test_results if success]
@@ -179,7 +192,7 @@ def resolve_test_path(test_name, test_programs_path):
 
 def main():
     args = parse_args()
-    script_dir = get_script_dir()
+    testing_noir_dir = get_testing_noir_dir()
 
     noir_path = Path(args.noir_path)
     test_programs_path = noir_path / "test_programs"
@@ -188,10 +201,10 @@ def main():
         print(f"Path to noir repo is not set properly. Couldn't find dir: {test_programs_path}")
         sys.exit(1)
 
-    log_dir = Path(args.log_dir) if args.log_dir else script_dir
+    log_dir = Path(args.log_dir) if args.log_dir else testing_noir_dir
     log_file = log_dir / "running.log" if not args.log_stdout else None
 
-    lake_dir = script_dir / ".lake"
+    lake_dir = testing_noir_dir / ".lake"
     if not lake_dir.exists():
         lake_dir.mkdir(parents=True)
 
@@ -218,7 +231,7 @@ def main():
             lampe_cmd = lampe_cmd_path
 
     if args.use_local:
-        prepare_lampe(args.lake_cmd, script_dir)
+        prepare_lampe(args.lake_cmd)
 
     for i, test_dir in enumerate(test_dirs):
         print(f"{i + 1}/{num_test_cases}")
@@ -226,7 +239,7 @@ def main():
         test_results.append((test_dir, success))
 
     if not args.test:
-        unexpected_fails, unexpected_succeeds = check_results(test_results, test_programs_path, script_dir)
+        unexpected_fails, unexpected_succeeds = check_results(test_results, test_programs_path, testing_noir_dir)
 
         count_expected_mismatch = len(unexpected_fails) + len(unexpected_succeeds)
         if count_expected_mismatch != 0:

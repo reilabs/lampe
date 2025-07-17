@@ -4,12 +4,29 @@ import argparse
 import sys
 from pathlib import Path
 
-def get_script_dir():
-    script_path = Path($(echo $XONSH_SOURCE).strip()).resolve()
-    return script_path.parent
+# --- Start of copied part.
+# This method is used to resolve the project's root directory,
+# which is necessary for importing dependencies and other files.
+# It is copied into every *.xsh file we use.
+# If you make changes to this method, be sure to update all other
+# copies as well.
+def get_project_root():
+    script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
+    root_dir = script_dir
+    while True:
+        if (root_dir / '.git').is_dir():
+            return root_dir
 
-def get_project_root(script_dir):
-    return script_dir.parent
+        if root_dir.resolve() == Path('/'):
+            raise Exception("Could not find .git directory in file tree")
+
+        root_dir = root_dir.parent
+
+project_root = get_project_root()
+# --- End of copied part.
+
+def get_script_dir():
+    return project_root / "scripts"
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Lampe tests')
@@ -17,15 +34,18 @@ def parse_args():
     parser.add_argument('-u', '--update', action='store_true', help='Update checked-in files using the new extraction instead of comparing with them')
     return parser.parse_args()
 
-def main():
+def run_tests(dir):
     args = parse_args()
-    script_dir = get_script_dir()
+    script_dir = project_root / dir
     examples_dir = script_dir
-    project_root = get_project_root(examples_dir)
 
     selected_test = args.test or ""
     update_mode = args.update
     lake_dir = examples_dir / ".lake"
+    lakefile_lampe_relative_path = "../../../Lampe"
+
+    if 'LAMPE_TEST_CURRENT_COMMIT_SHA' not in ${...}:
+        $LAMPE_TEST_CURRENT_COMMIT_SHA=$(git rev-parse HEAD)
 
     if not lake_dir.exists():
         lake_dir.mkdir()
@@ -112,21 +132,7 @@ def main():
         # Overwrite Lampe to local path
         lakefile_path = dir_path / "lampe" / "lakefile.toml"
         if lakefile_path.exists():
-            content = lakefile_path.read_text()
-            lines = content.split('\n')
-
-            lampe_line_start = -1
-            for i, line in enumerate(lines):
-                if 'name = "Lampe"' in line:
-                    lampe_line_start = i
-                    break
-
-            if lampe_line_start > -1:
-                lines[lampe_line_start + 1] = 'path = "../../../Lampe"'
-                lines[lampe_line_start + 2] = ''
-                lines[lampe_line_start + 3] = ''
-
-                lakefile_path.write_text('\n'.join(lines))
+            change_toml_required_lampe_to_path(lakefile_path, lakefile_lampe_relative_path)
 
         if (dir_path / "user_actions.xsh").exists():
             /usr/bin/env xonsh @(dir_path / "user_actions.xsh")
