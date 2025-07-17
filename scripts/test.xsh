@@ -44,14 +44,8 @@ def run_tests(dir):
     lake_dir = examples_dir / ".lake"
     lakefile_lampe_relative_path = "../../../Lampe"
 
-    print("before A")
-    print($LAMPE_TEST_CURRENT_COMMIT_SHA)
-
     if 'LAMPE_TEST_CURRENT_COMMIT_SHA' not in ${...}:
         $LAMPE_TEST_CURRENT_COMMIT_SHA=$(git rev-parse HEAD)
-
-    print("after A")
-    print($LAMPE_TEST_CURRENT_COMMIT_SHA)
 
     if not lake_dir.exists():
         lake_dir.mkdir()

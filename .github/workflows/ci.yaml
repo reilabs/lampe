@@ -137,7 +137,7 @@ jobs:
     needs: [ build-lake, build-cargo ]
     runs-on: ubuntu-latest
     env:
-      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.sha }}
+      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref }}
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v4
