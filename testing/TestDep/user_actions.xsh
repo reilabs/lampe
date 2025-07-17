@@ -46,7 +46,7 @@ def change_toml_required_lampe_to_path(toml_path, rev):
 def make_merkle_import(libname):
     return "import «" + libname + "».Extracted\n"
 
-rev = $(git rev-parse HEAD)
+rev = $LAMPE_TEST_CURRENT_COMMIT_SHA
 change_toml_required_lampe_to_path('./lampe/lakefile.toml', rev)
 
 with open('./lampe/TestDep-0.0.0.lean', 'r+') as f:

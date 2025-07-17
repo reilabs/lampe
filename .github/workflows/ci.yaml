@@ -136,6 +136,8 @@ jobs:
     name: "E2E Tests"
     needs: [ build-lake, build-cargo ]
     runs-on: ubuntu-latest
+    env:
+      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.sha }}
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v4
