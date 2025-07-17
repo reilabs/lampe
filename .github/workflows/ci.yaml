@@ -148,6 +148,7 @@ jobs:
           sudo apt-get install -yq python3 pipx
           pipx install 'xonsh[full]'
       - name: Install xonsh (python) dependencies
+        working-directory: lampe
         run: xonsh -c 'xpip install -r scripts/requirements.txt'
       - name: Set up Rust
         uses: actions-rs/toolchain@v1

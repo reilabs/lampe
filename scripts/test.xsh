@@ -4,6 +4,12 @@ import argparse
 import sys
 from pathlib import Path
 
+# --- Start of copied part.
+# This method is used to resolve the project's root directory,
+# which is necessary for importing dependencies and other files.
+# It is copied into every *.xsh file we use.
+# If you make changes to this method, be sure to update all other
+# copies as well.
 def get_project_root():
     script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
     root_dir = script_dir
@@ -16,8 +22,11 @@ def get_project_root():
 
         root_dir = root_dir.parent
 
+project_root = get_project_root()
+# --- End of copied part.
+
 def get_script_dir():
-    return get_project_root() / "scripts"
+    return project_root / "scripts"
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Lampe tests')
@@ -27,7 +36,6 @@ def parse_args():
 
 def run_tests(dir):
     args = parse_args()
-    project_root = get_project_root()
     script_dir = project_root / dir
     examples_dir = script_dir
 

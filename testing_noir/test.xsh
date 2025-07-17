@@ -7,6 +7,12 @@ import sys
 from pathlib import Path
 import subprocess
 
+# --- Start of copied part.
+# This method is used to resolve the project's root directory,
+# which is necessary for importing dependencies and other files.
+# It is copied into every *.xsh file we use.
+# If you make changes to this method, be sure to update all other
+# copies as well.
 def get_project_root():
     script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
     root_dir = script_dir
@@ -19,15 +25,16 @@ def get_project_root():
 
         root_dir = root_dir.parent
 
-print('Project root: ' + str(get_project_root()))
+project_root = get_project_root()
+# --- End of copied part.
 
-source @(get_project_root() / 'scripts' / 'utils.xsh')
+source @(project_root / 'scripts' / 'utils.xsh')
 
 def get_scripts_dir():
-    return get_project_root() / "scripts"
+    return project_root / "scripts"
 
 def get_testing_noir_dir():
-    return get_project_root() / "testing_noir"
+    return project_root / "testing_noir"
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Noir tests with Lampe')
@@ -42,7 +49,7 @@ def parse_args():
 
 def prepare_lampe(lake_cmd):
     """Build a local version of lampe if use_local is set"""
-    pushd @(get_project_root() / "Lampe")
+    pushd @(project_root / "Lampe")
     $(@(lake_cmd) exe cache get)
     $(@(lake_cmd) build)
     popd

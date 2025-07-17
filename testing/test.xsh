@@ -2,6 +2,12 @@
 
 from pathlib import Path
 
+# --- Start of copied part.
+# This method is used to resolve the project's root directory,
+# which is necessary for importing dependencies and other files.
+# It is copied into every *.xsh file we use.
+# If you make changes to this method, be sure to update all other
+# copies as well.
 def get_project_root():
     script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
     root_dir = script_dir
@@ -14,10 +20,11 @@ def get_project_root():
 
         root_dir = root_dir.parent
 
-print('Project root: ' + str(get_project_root()))
+project_root = get_project_root()
+# --- End of copied part.
 
-source @(get_project_root() / 'scripts' / 'utils.xsh')
-source @(get_project_root() / 'scripts' / 'test.xsh')
+source @(project_root / 'scripts' / 'utils.xsh')
+source @(project_root / 'scripts' / 'test.xsh')
 
 def main():
     run_tests('testing')

@@ -5,6 +5,12 @@ from tomlkit import dumps
 from tomlkit import parse
 import yaml
 
+# --- Start of copied part.
+# This method is used to resolve the project's root directory,
+# which is necessary for importing dependencies and other files.
+# It is copied into every *.xsh file we use.
+# If you make changes to this method, be sure to update all other
+# copies as well.
 def get_project_root():
     script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
     root_dir = script_dir
@@ -17,9 +23,12 @@ def get_project_root():
 
         root_dir = root_dir.parent
 
-lakefile_toml_path = get_project_root() / 'testing' / 'MerkleFromScratch' / 'lampe' / 'lakefile.toml'
-rust_cargo_toml_path = get_project_root() / 'Cargo.toml'
-ci_noir_yaml_path = get_project_root() / '.github' / 'workflows' / 'ci-noir.yaml'
+project_root = get_project_root()
+# --- End of copied part.
+
+lakefile_toml_path = project_root / 'testing' / 'MerkleFromScratch' / 'lampe' / 'lakefile.toml'
+rust_cargo_toml_path = project_root / 'Cargo.toml'
+ci_noir_yaml_path = project_root / '.github' / 'workflows' / 'ci-noir.yaml'
 
 def load_toml(path):
     with open(path, mode="r") as f:
