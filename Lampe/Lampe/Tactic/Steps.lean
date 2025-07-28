@@ -187,7 +187,7 @@ def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bo
   getClosingTerm val
 
 structure AddLemma where
-  term : TSyntax `term
+  lem : Expr
   /--
   Controls whether the environment is generalized before applying the lemma.
   If `true`, the theorem will be applied with `apply Lampe.STHoare.is_mono` first.
@@ -198,7 +198,7 @@ structure AddLemma where
 def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
 | n::ns => do
-  trace[Lampe.STHoare.Helpers] "trying {n.term} with generalizeEnv: {n.generalizeEnv}"
+  trace[Lampe.STHoare.Helpers] "trying {← ppExpr n.lem} with generalizeEnv: {n.generalizeEnv}"
   try
     let (subset, goal, others) ← if n.generalizeEnv
       then
@@ -206,13 +206,16 @@ def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVa
           | throwError "apply Lampe.STHoare.is_mono gave unexpected result"
         pure ([subset], main, others)
       else pure ([], goal, [])
-    let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $(n.term))) goal
+    -- let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $(n.term))) goal
+    let main ← withTransparency TransparencyMode.all do
+      let mvarIds' ← goal.apply n.lem
+      return mvarIds'
     for s in subset do
       trace[Lampe.STHoare.Helpers] "Solving env subset goal {s}"
       Env.SubsetSolver.solveSubset s
     pure $ main ++ others
   catch e =>
-    trace[Lampe.STHoare.Helpers] "failed {n.term} with {e.toMessageData}"
+    trace[Lampe.STHoare.Helpers] "failed {←ppExpr n.lem} with {e.toMessageData}"
     tryApplySyntaxes goal ns
 
 lemma STHoare.pure_left_star {p tp} {E : Expr (Tp.denote p) tp} {Γ P₁ P₂ Q} : (P₁ → STHoare  p Γ P₂ E Q) → STHoare p Γ (⟦P₁⟧ ⋆ P₂) E Q := by
@@ -358,13 +361,16 @@ Takes `limit` obvious steps, behaving like `repeat step`.
 
 It will never throw exceptions.
 -/
-partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) : TacticM TripleGoals := do
+partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat)
+    (strict : Bool := false) : TacticM TripleGoals := do
   let goals ← normalizeGoals goals
   if limit == 0 then return goals
 
   match goals.triple with
   | some mvar =>
-    let nextTriple ← try some <$> step mvar addLemmas catch _ => pure none
+    let nextTriple ← try some <$> step mvar addLemmas
+    catch e =>
+      if strict then throw e else pure none
     match nextTriple with
     | some nextTriple => do
       let nextGoals := nextTriple ++ SLGoals.mk goals.props goals.implicits
@@ -372,18 +378,68 @@ partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit :
     | none => return goals
   | none => return goals
 
-
 /--
 Takes a sequence of at most `limit` steps to attempt to advance the proof state by continually
 simplifying the goal.
 -/
-partial def steps (mvar : MVarId) (limit : Nat) (addLemmas : List AddLemma) : TacticM (List MVarId) := do
-  let goals ← stepsLoop (TripleGoals.mk mvar [] []) addLemmas limit
+partial def steps (mvar : MVarId) (config : StepsConfig) (limit : Nat) (addLemmas : List AddLemma) : TacticM (List MVarId) := do
+  let goals ← stepsLoop (TripleGoals.mk mvar [] []) config.addLemmas config.limit config.strict
   return goals.flatten
+
+declare_syntax_cat steps_items
+
+syntax "[" term,* "]" : steps_items
+syntax "steps" (num)? (steps_items)? optConfig : tactic
+
+def parseStepsConfig (limit : Option (TSyntax `num))
+                     (stepsItems : Option (TSyntax `steps_items))
+                     (config : TSyntax `Lean.Parser.Tactic.optConfig) : TacticM StepsConfig := do
+  -- Parse the limit
+  let limit := limit.map (fun n => n.getNat) |>.getD 1000
+
+  -- Parse the additional lemmas
+  let addLemmas ← match stepsItems with
+    | some x =>
+      match x with
+      | `(steps_items| [ $ts,*]) =>
+        ts.getElems.toList.mapM fun t => do
+          let x ← elabTerm t none
+          return AddLemma.mk x true
+      | _ => throwError "unexpected syntax for additional lemmas"
+    | none => pure []
+
+  -- Parse the config
+  let optConfig := getConfigItems config
+  let configItems ← optConfig.mapM fun config =>
+    match config with
+    | `(configItem| +$ident) => return (ident.getId, true)
+    | `(configItem| -$ident) => return (ident.getId, false)
+    | _ => throwError "unexpected config item {config}"
+
+  -- Get the `strict` config item
+  let strict := configItems.contains (`strict, true)
+
+  return { limit, addLemmas, strict }
+
+elab "steps" limit:optional(num) lemmas:optional(steps_items) config:optConfig : tactic => do
+  let config ← parseStepsConfig limit lemmas config
+  let goals ← getMainGoal
+  let goals ← steps goals config
+  replaceMainGoal goals
 
 lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
   intro h
   simp_all [STHoare, THoare, SLP.pure_star_iff_and]
+
+elab "loop_inv" p:optional("nat") inv:term : tactic => do
+  let solver ← if p.isSome then ``(loop_inv_intro' _ $inv) else ``(loop_inv_intro $inv)
+  let loopInvConfig := {
+    limit := 1,
+    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm solver none) (generalizeEnv := false)],
+    strict := true
+  }
+  let goals ← steps (← getMainGoal) loopInvConfig
+  replaceMainGoal goals
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
     (h_found : (Γ.functions.find? (fun ⟨n, _⟩ => n = fnName)) = some ⟨fnName, func⟩)
@@ -512,7 +568,12 @@ elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term 
   let goal ← getMainGoal
   trace[Lampe.STHoare.Helpers] "enter_lambda_as {n}"
   let enterer ← match n with
-  | some n => ``(bindVar (fun $n => STHoare.callLambda_intro (P := $pre) (Q := $post)))
-  | none => ``(STHoare.callLambda_intro (P := $pre) (Q := $post))
-  let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)]
+  | some n => ``(bindVar (fun $n => enter_block $pre $post))
+  | none => ``(enter_block $pre $post)
+  let enterBlockConfig := {
+    limit := 1,
+    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm enterer none) (generalizeEnv := false)],
+    strict := true
+  }
+  let newGoals ← steps goal enterBlockConfig
   replaceMainGoal newGoals
