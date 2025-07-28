@@ -65,3 +65,16 @@ theorem fib_spec {N : U 32} (h : N < (2 ^ 32 : Nat) - 2) :
   · steps
     subst_vars
     rfl
+
+-- TODO: Make this error way better
+
+nr_def hello<>() -> str<5> {
+  "hello"
+}
+
+theorem t1 {lp}: STHoare lp env (⟦⟧)
+    (hello.call h![] h![])
+      fun output => (String.mk output.toList) = hello2 := by
+      -- fun output => output = (hello2, by rfl) := by
+  enter_decl
+
