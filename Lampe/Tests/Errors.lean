@@ -66,15 +66,35 @@ theorem fib_spec {N : U 32} (h : N < (2 ^ 32 : Nat) - 2) :
     subst_vars
     rfl
 
--- TODO: Make this error way better
-
 nr_def hello<>() -> str<5> {
   "hello"
 }
 
+-- TODO: Make this error way better
+/--
+error: tactic 'rfl' failed, the left-hand side
+  List.find?
+    (fun x ↦
+      match x with
+      | { name := n, «fn» := «fn» } => decide (n = hello.name))
+    env.functions
+is not definitionally equal to the right-hand side
+  some { name := hello.name, «fn» := ?m.8313 }
+lp : Lampe.Prime
+⊢ List.find?
+      (fun x ↦
+        match x with
+        | { name := n, «fn» := «fn» } => decide (n = hello.name))
+      env.functions =
+    some { name := hello.name, «fn» := ?m.8313 }
+---
+error: unsolved goals
+lp : Lampe.Prime
+⊢ STHoare lp env ⟦True⟧ ((hello.fn.body (Tp.denote lp) h![]).body h![]) fun output ↦
+    ⟦{ data := List.Vector.toList output } = "hello"⟧
+-/
+#guard_msgs in
 theorem t1 {lp}: STHoare lp env (⟦⟧)
     (hello.call h![] h![])
-      fun output => (String.mk output.toList) = hello2 := by
-      -- fun output => output = (hello2, by rfl) := by
+      fun output => (String.mk output.toList) = "hello" := by
   enter_decl
-
