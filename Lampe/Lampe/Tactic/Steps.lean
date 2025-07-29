@@ -186,8 +186,11 @@ def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bo
   let some val := args[3]? | throwError "malformed letIn"
   getClosingTerm val
 
+-- TODO : Figure out what's going on with the expr stuff not unifying and decide one way or the
+-- other to keep it
 structure AddLemma where
-  lem : Expr
+  expr : Expr
+  term : Term
   /--
   Controls whether the environment is generalized before applying the lemma.
   If `true`, the theorem will be applied with `apply Lampe.STHoare.is_mono` first.
@@ -195,10 +198,11 @@ structure AddLemma where
   -/
   generalizeEnv : Bool := false
 
+-- TODO: change the name if we can get the commented out code to work
 def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
 | n::ns => do
-  trace[Lampe.STHoare.Helpers] "trying {← ppExpr n.lem} with generalizeEnv: {n.generalizeEnv}"
+  trace[Lampe.STHoare.Helpers] "trying {← ppExpr n.expr} with generalizeEnv: {n.generalizeEnv}"
   try
     let (subset, goal, others) ← if n.generalizeEnv
       then
@@ -206,16 +210,17 @@ def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVa
           | throwError "apply Lampe.STHoare.is_mono gave unexpected result"
         pure ([subset], main, others)
       else pure ([], goal, [])
-    -- let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $(n.term))) goal
-    let main ← withTransparency TransparencyMode.all do
-      let mvarIds' ← goal.apply n.lem
-      return mvarIds'
+    let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $(n.term))) goal
+    -- TODO: This is where we
+    -- let main ← withTransparency TransparencyMode.all do
+    --   let mvarIds' ← goal.apply n.lem
+    --   return mvarIds'
     for s in subset do
       trace[Lampe.STHoare.Helpers] "Solving env subset goal {s}"
       Env.SubsetSolver.solveSubset s
     pure $ main ++ others
   catch e =>
-    trace[Lampe.STHoare.Helpers] "failed {←ppExpr n.lem} with {e.toMessageData}"
+    trace[Lampe.STHoare.Helpers] "failed {←ppExpr n.expr} with {e.toMessageData}"
     tryApplySyntaxes goal ns
 
 lemma STHoare.pure_left_star {p tp} {E : Expr (Tp.denote p) tp} {Γ P₁ P₂ Q} : (P₁ → STHoare  p Γ P₂ E Q) → STHoare p Γ (⟦P₁⟧ ⋆ P₂) E Q := by
@@ -402,9 +407,9 @@ def parseStepsConfig (limit : Option (TSyntax `num))
     | some x =>
       match x with
       | `(steps_items| [ $ts,*]) =>
-        ts.getElems.toList.mapM fun t => do
-          let x ← elabTerm t none
-          return AddLemma.mk x true
+        ts.getElems.toList.mapM fun term => do
+          let expr ← elabTerm term none
+          return AddLemma.mk expr ⟨term⟩ true
       | _ => throwError "unexpected syntax for additional lemmas"
     | none => pure []
 
@@ -435,7 +440,7 @@ elab "loop_inv" p:optional("nat") inv:term : tactic => do
   let solver ← if p.isSome then ``(loop_inv_intro' _ $inv) else ``(loop_inv_intro $inv)
   let loopInvConfig := {
     limit := 1,
-    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm solver none) (generalizeEnv := false)],
+    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm solver none) solver (generalizeEnv := false)],
     strict := true
   }
   let goals ← steps (← getMainGoal) loopInvConfig
@@ -572,7 +577,7 @@ elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term 
   | none => ``(enter_block $pre $post)
   let enterBlockConfig := {
     limit := 1,
-    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm enterer none) (generalizeEnv := false)],
+    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm enterer none) enterer (generalizeEnv := false)],
     strict := true
   }
   let newGoals ← steps goal enterBlockConfig
