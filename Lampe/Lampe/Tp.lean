@@ -251,4 +251,23 @@ match tp with
 
 end
 
+/- In this section we provide unification hints to assist with the ergonomics of stating theorems -/
+section unificationHints
+
+/-- This is slightly dangerous, as it could conflict with the unification with `Tp.i n` -/
+unif_hint (p : Prime) (n : Nat) (tp : Tp) where
+  Tp.u n =?= tp
+  ⊢ Tp.denote p tp =?= BitVec n
+
+unif_hint (p : Prime) (tp : Tp) where
+  Tp.bool =?= tp
+  ⊢ Tp.denote p tp =?= Bool
+
+unif_hint (p q : Prime) (tp : Tp) where
+  p =?= q
+  Tp.field =?= tp
+  ⊢ Tp.denote p tp =?= Fin (q.val + 1)
+
+end unificationHints
+
 end Lampe

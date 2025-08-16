@@ -186,8 +186,6 @@ def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bo
   let some val := args[3]? | throwError "malformed letIn"
   getClosingTerm val
 
--- TODO : Figure out what's going on with the expr stuff not unifying and decide one way or the
--- other to keep it
 structure AddLemma where
   expr : Expr
   term : Term
@@ -198,7 +196,6 @@ structure AddLemma where
   -/
   generalizeEnv : Bool := false
 
--- TODO: change the name if we can get the commented out code to work
 def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
 | n::ns => do
@@ -211,10 +208,6 @@ def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVa
         pure ([subset], main, others)
       else pure ([], goal, [])
     let main ← evalTacticAt (←`(tactic|with_unfolding_all apply $(n.term))) goal
-    -- TODO: This is where we
-    -- let main ← withTransparency TransparencyMode.all do
-    --   let mvarIds' ← goal.apply n.lem
-    --   return mvarIds'
     for s in subset do
       trace[Lampe.STHoare.Helpers] "Solving env subset goal {s}"
       Env.SubsetSolver.solveSubset s
@@ -469,7 +462,6 @@ theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
     cases htco
     cases htci
     rfl
-
 theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
   apply hp v
 theorem step_as H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
@@ -495,15 +487,6 @@ It can be called in three main ways:
   addition to its inbuilt rules to advance the goal state. This version can be combined with the
   explicit limit case to combine the behaviors in the obvious way `steps n [lemmas,*]`.
 -/
-elab "steps" limit:optional(num) "[" ts:term,*  "]" : tactic => do
-  let limit := limit.map (fun n => n.getNat) |>.getD 10000
-  let addLemmas := ts.getElems.toList
-  let newGoals ← steps (← getMainGoal) limit ((AddLemma.mk (generalizeEnv := true)) <$> addLemmas)
-  replaceMainGoal newGoals
-elab "steps" limit:optional(num) : tactic => do
-  let limit := limit.map (fun n => n.getNat) |>.getD 10000
-  let newGoals ← steps (← getMainGoal) limit []
-  replaceMainGoal newGoals
 
 /--
 Performs the next step of a program proof, manually providing the pre- and post-conditions.
@@ -520,14 +503,42 @@ It can be called in two main ways:
   binding to a term in the precondition such that it is available under that name in the
   postcondition. In all other ways it operates as the previous form.
 -/
-elab "step_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
+
+syntax (name := enterDecl) "enter_decl" : tactic
+
+@[tactic enterDecl]
+def elabEnterDecl : Tactic := fun _ => do
   let goal ← getMainGoal
-  trace[Lampe.STHoare.Helpers] "step_as {n}"
-  let enterer ← match n with
-  | some n => ``(bindVar (fun $n => step_as $pre $post))
-  | none => ``(step_as $pre $post)
-  let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)]
-  replaceMainGoal newGoals
+  let newGoals ← goal.applyConst ``callDecl_direct_intro
+
+  -- Note: newGoals[1] is the data of the `Function` which is unified from goal 0
+  let (some nameGoal, some continuationGoal,some genericsGoal, some argTypeGoal, some outTypeGoal) :=
+    (newGoals[0]?, newGoals[1]?, newGoals[3]?, newGoals[4]?, newGoals[5]?) |
+      throwError "enter_decl generated unexpected goals, expected 6 goals, got {newGoals.length}"
+
+  pushGoal continuationGoal
+
+  try nameGoal.refl catch _ => throwError "Unable to find a declaration in the environment with the right name"
+  try genericsGoal.refl catch _ => throwError "Found declaration has the wrong generics"
+  try argTypeGoal.refl catch _ => throwError "Found declaration has the wrong arguments"
+  try outTypeGoal.refl catch _ => throwError "Found declaration has the wrong output type"
+
+  evalTactic (←`(tactic|simp only))syntax "enter_decl" : tactic
+macro_rules | `(tactic|enter_decl) => `(tactic|
+  apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl); simp only)
+
+/--
+Enters the body of a locally-defined lambda, allowing the proof to reason about its behavior using
+the manually-provided pre- and post-conditions.
+
+It can be called in two main ways:
+
+- `step_as (precondition) (postcondition)`: Generates proof goals to verify the behavior of the
+  lambda function based on the provided pre- and post-conditions.
+- `step_as name => (precondition) (postcondition)`: The provided `name` acts like a metavariable,
+  binding to a term in the precondition such that it is available under that name in the
+  postcondition. In all other ways it operates as the previous form.
+-/
 
 /--
 States the invariants that hold for a loop, and then creates goals that need to be proved to prove
@@ -541,10 +552,6 @@ It can be called in two main ways:
    that is a natural number ℕ. This variant can sometimes produce fewer proof goals that will need
    to be manually discharged.
 -/
-elab "loop_inv" p:optional("nat") inv:term : tactic => do
-  let solver ← if p.isSome then ``(loop_inv_intro' $inv) else ``(loop_inv_intro $inv)
-  let goals ← steps (← getMainGoal) 1 [AddLemma.mk solver (generalizeEnv := false)]
-  replaceMainGoal goals
 
 /--
 Enters the declaration of a function as given by the theorem statement and unfolds the body of the
@@ -553,9 +560,6 @@ function to enable reasoning.
 It is almost always the first tactic that should be run when aiming to prove a theorem about the
 semantics of a piece of code.
 -/
-syntax "enter_decl" : tactic
-macro_rules | `(tactic|enter_decl) => `(tactic|
-  apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl); simp only)
 
 /--
 Enters the body of a locally-defined lambda, allowing the proof to reason about its behavior using
@@ -580,5 +584,8 @@ elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term 
     addLemmas := [AddLemma.mk (← withMainContext <| elabTerm enterer none) enterer (generalizeEnv := false)],
     strict := true
   }
-  let newGoals ← steps goal enterBlockConfig
+  let newGoals ← try steps goal enterBlockConfig catch e =>
+    throwError
+    m!"enter_block_as has encountered an error in proceeding.
+    The returned exception is {e.toMessageData}"
   replaceMainGoal newGoals

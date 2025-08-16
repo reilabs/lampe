@@ -17,7 +17,7 @@ example : STHoare p env ⟦⟧ (zero_by_another_name.fn.body _ h![] |>.body h![]
   simp only [zero_by_another_name]
   steps
 
-  step_as (⟦⟧) (fun v => v = (-1 : Tp.denote p Tp.field))
+  step_as (⟦⟧) (fun v => v = (-1 : Fp p))
   · enter_decl
     steps
     simp_all
