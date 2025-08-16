@@ -16,6 +16,7 @@ structure Env where
 
   -- All trait implementations in scope, pairing the name with the implementation details.
   traits : List (Ident × TraitImpl)
+deriving Inhabited
 
 namespace Env
 

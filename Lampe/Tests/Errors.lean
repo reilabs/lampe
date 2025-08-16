@@ -2,99 +2,70 @@ import Lampe
 
 open Lampe
 
--- TODO: I'm using this file for testing, delete before I merging
-
-nr_def fib<@N : u32>() -> Field {
-    let mut a = 0 : Field;
-    let mut b = 1 : Field;
-    for _? in 0 : u32 .. u@N {
-            let temp = a;
-        a = b;
-        b = #fAdd(temp, b) : Field;
-        skip;
-    };
-    a;
-}
-
-def env := Lampe.Env.mk [fib] []
-
-open Lampe
-
-variable {p : Prime}
-
-def Ref.fib : Nat → Nat
-| 0 => 0
-| 1 => 1
-| n + 2 => fib (n + 1) + fib n
-
-def Spec.fib (p) (N : U 32) : Fp p :=
-  Ref.fib N.toNat
-
-@[simp]
-lemma fib_induction (i : U 32) (hhi : i < (2 ^ 32 : Nat) - 2)
-    : Spec.fib p (i + 2) = Spec.fib _ (i + 1) + Spec.fib _ i := by
-  simp only [Spec.fib, fib]
-  repeat rw [BitVec.toNat_add]
-  simp
-  have h2 : i.toNat + 2 < 4294967296 := by
-    have : i.toNat < 2 ^32 - 2 := by change i < (2 ^ 32 : Nat) - 2; assumption
-    omega
-  have h1 : i.toNat + 1 < 4294967296 := by omega
-  rw [Nat.mod_eq_of_lt h2, Nat.mod_eq_of_lt h1]
-  simp [Ref.fib]
-
-open Spec in
-theorem fib_spec {N : U 32} (h : N < (2 ^ 32 : Nat) - 2) :
-    STHoare p env ⟦⟧ (fib.call h![N] h![])
-      fun output => output = fib p N := by
-  enter_decl
-  steps
-  loop_inv fun i _ _ => ([a ↦ ⟨Tp.field, fib p i⟩] ⋆ [b ↦ ⟨Tp.field, fib p (i + 1)⟩])
-  · change 0 ≤ N; bv_decide
-  · intros i _ _
-    steps
-    · intros
-      congr
-      simp_all
-    · congr
-      simp_all
-      rw [add_comm]
-      calc fib p (i + 1) + fib p i = fib p (i + 2) := by rw [fib_induction (p := p) i (by bv_decide)]
-        _ = fib p (i + (1 + 1)) := by rfl
-        _ = fib p (i + 1 + 1) := by rw [BitVec.add_assoc]
-  · steps
-    subst_vars
-    rfl
-
 nr_def hello<>() -> str<5> {
   "hello"
 }
 
--- TODO: Make this error way better
+def helloEnv : Env := .mk [hello] []
+ /- testing enter_decl error reporting -/
+
 /--
-error: tactic 'rfl' failed, the left-hand side
-  List.find?
-    (fun x ↦
-      match x with
-      | { name := n, «fn» := «fn» } => decide (n = hello.name))
-    env.functions
-is not definitionally equal to the right-hand side
-  some { name := hello.name, «fn» := ?m.8313 }
-lp : Lampe.Prime
-⊢ List.find?
-      (fun x ↦
-        match x with
-        | { name := n, «fn» := «fn» } => decide (n = hello.name))
-      env.functions =
-    some { name := hello.name, «fn» := ?m.8313 }
----
-error: unsolved goals
-lp : Lampe.Prime
-⊢ STHoare lp env ⟦True⟧ ((hello.fn.body (Tp.denote lp) h![]).body h![]) fun output ↦
-    ⟦{ data := List.Vector.toList output } = "hello"⟧
+error: Unable to find a declaration in the environment with the right name
 -/
 #guard_msgs in
-theorem t1 {lp}: STHoare lp env (⟦⟧)
-    (hello.call h![] h![])
-      fun output => (String.mk output.toList) = "hello" := by
+theorem enter_decl_error : STHoare p env ⟦⟧ (hello.call h![] h![])
+    fun output => (String.mk output.toList) = "hello" := by
   enter_decl
+
+/- testing enter_block_as error reporting -/
+
+/--
+error: failed to synthesize
+  OfNat String 5
+numerals are polymorphic in Lean, but the numeral `5` cannot be used in a context where the expected type is
+  String
+due to the absence of the instance above
+
+Additional diagnostic information may be available using the `set_option diagnostics true` command.-/
+#guard_msgs in
+theorem enter_block_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
+    fun output => (String.mk output.toList) = "hello" := by
+  enter_decl
+  enter_block_as (⟦⟧) (fun (v : Tp.denote p (Tp.str 5)) => (String.mk v.toList) = 5)
+  sorry
+
+/- testing steps error messaging -/
+
+/-- error: unknown identifier 'bad_lemma'-/
+#guard_msgs in
+theorem steps_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
+    fun output => (String.mk output.toList) = "hello" := by
+  enter_decl
+  steps [bad_lemma]
+  sorry
+
+nr_def loop_fn<>() -> Field {
+  let mut t = (1 : Field);
+
+  for _i in (0 : u32)..(5 : u32) {
+    t = #fMul(t, 2 : Field) : Field;
+  } ;
+  t
+}
+
+def loopEnv : Env := .mk [loop_fn] []
+
+/- testing loop_inv error reporting -/
+
+/--
+error: unknown identifier 'u'
+---
+error: final singleton is not equal
+-/
+#guard_msgs in
+theorem loop_inv_error : STHoare p loopEnv ⟦⟧ (loop_fn.call h![] h![])
+    fun output => output = (32 : Tp.denote p Tp.field) := by
+  enter_decl
+  steps
+  loop_inv fun i _ _ => [u ↦ ⟨Tp.field, 3⟩] -- random mal-formed loop invariant to show it works
+  all_goals sorry
