@@ -8,19 +8,21 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_def «struct_namespaces»::«test»::«Foo»::«bar»<>(self : struct_namespaces::test::Foo<>) -> Field {
-    (self as struct_namespaces::test::Foo<>).i;
+noir_def struct_namespaces::test::Foo::bar<>(self: struct_namespaces::test::Foo<>) -> Field := {
+  self.0
 }
 
-nr_def «struct_namespaces»::«test»::«Foo»::«bar2»<>() -> Field {
-    3 : Field;
+noir_def struct_namespaces::test::Foo::bar2<>() -> Field := {
+  (3: Field)
 }
 
-nr_def «struct_namespaces»::«baz»<>(a : struct_namespaces::test::Foo<>) -> Field {
-    let x = (@struct_namespaces::test::Foo::bar2<> as λ() → Field)();
-    let y = (@struct_namespaces::test::Foo::bar<> as λ(struct_namespaces::test::Foo<>) → Field)(a);
-    #fAdd(x, y) : Field;
+noir_def struct_namespaces::baz<>(a: struct_namespaces::test::Foo<>) -> Field := {
+  let (x: Field) = (struct_namespaces::test::Foo::bar2<> as λ() -> Field)();
+  let (y: Field) = (struct_namespaces::test::Foo::bar<> as λ(struct_namespaces::test::Foo<>) -> Field)(a);
+  (#_fAdd returning Field)(x, y)
 }
 
 
-def StructNamespaces.env := Lampe.Env.mk [«struct_namespaces::baz», «struct_namespaces::test::Foo::bar2», «struct_namespaces::test::Foo::bar»] []
+def StructNamespaces.env : Env := Env.mk
+  [«struct_namespaces::test::Foo::bar», «struct_namespaces::test::Foo::bar2», «struct_namespaces::baz»]
+  []

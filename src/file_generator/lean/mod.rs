@@ -25,11 +25,15 @@ pub mod file;
 /// |  |  |  |-- Each dependency in own module
 /// |  |  |--Noir extracted code matching file paths as created by user in Noir project
 /// Example path: $(project)/lampe/*
-pub fn generate_lean_files(
+///
+/// # Errors
+///
+/// - If it cannot generate the Lean files.
+pub fn generate_lean_files<H: std::hash::BuildHasher>(
     lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
     extracted_code: &[LeanFile],
-    extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+    extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
 ) -> Result<(), Error> {
     generate_lib_file(lampe_root_dir, noir_package_identifier, false)?;
 

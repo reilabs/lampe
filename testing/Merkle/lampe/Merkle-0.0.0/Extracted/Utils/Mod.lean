@@ -8,46 +8,48 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
-nr_def «utils»::«rl»<>(u : u8) -> u8 {
-    let top_bit = #uShr(u, 7 : u8) : u8;
-    #uOr(#uShl(u, 1 : u8) : u8, top_bit) : u8;
+noir_def utils::rl<>(u: u8) -> u8 := {
+  let (top_bit: u8) = (#_uShr returning u8)(u, (7: u8));
+  (#_uOr returning u8)((#_uShl returning u8)(u, (1: u8)), top_bit)
 }
 
-nr_def «utils»::«rotate_left»<>(u : u8, N : u8) -> u8 {
-    let mut result = u;
-    for _? in 0 : u8 .. N {
-            result = (@utils::rl<> as λ(u8) → u8)(result);
-        skip;
-    };
-    result;
+noir_def utils::rotate_left<>(u: u8, N: u8) -> u8 := {
+  let mut (result: u8) = u;
+  for _ in (0: u8) .. N do {
+    result = (utils::rl<> as λ(u8) -> u8)(result);
+    #_skip
+  };
+  result
 }
 
-nr_def «utils»::«sbox»<>(v : u8) -> u8 {
-    let x1 = #uNot(v) : u8;
-    let x2 = (@utils::rotate_left<> as λ(u8, u8) → u8)(x1, 1 : u8);
-    let x3 = (@utils::rotate_left<> as λ(u8, u8) → u8)(v, 2 : u8);
-    let x4 = (@utils::rotate_left<> as λ(u8, u8) → u8)(v, 3 : u8);
-    let x5 = #uAnd(#uAnd(x2, x3) : u8, x4) : u8;
-    let x6 = (@utils::rotate_left<> as λ(u8, u8) → u8)(x5, 1 : u8);
-    #uXor(v, x6) : u8;
+noir_def utils::sbox<>(v: u8) -> u8 := {
+  let (x1: u8) = (#_uNot returning u8)(v);
+  let (x2: u8) = (utils::rotate_left<> as λ(u8, u8) -> u8)(x1, (1: u8));
+  let (x3: u8) = (utils::rotate_left<> as λ(u8, u8) -> u8)(v, (2: u8));
+  let (x4: u8) = (utils::rotate_left<> as λ(u8, u8) -> u8)(v, (3: u8));
+  let (x5: u8) = (#_uAnd returning u8)((#_uAnd returning u8)(x2, x3), x4);
+  let (x6: u8) = (utils::rotate_left<> as λ(u8, u8) -> u8)(x5, (1: u8));
+  (#_uXor returning u8)(v, x6)
 }
 
-nr_def «utils»::«sgn0»<>(self : Field) -> u1 {
-    #cast(self) : u1;
+noir_def utils::sgn0<>(self: Field) -> u1 := {
+  (#_cast returning u1)(self)
 }
 
-nr_def «utils»::«as_array»<>(self : [u8]) -> [u8; 32] {
-    let mut array = [0 : u8 ; 32];
-    for i in 0 : u32 .. 32 : u32 {
-            array[#cast(i) : u32] = #sliceIndex(self, #cast(i) : u32) : u8;
-        skip;
-    };
-    array;
+noir_def utils::as_array<>(self: Slice<u8>) -> Array<u8, 32: u32> := {
+  let mut (array: Array<u8, 32: u32>) = (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8));
+  for i in (0: u32) .. (32: u32) do {
+    (array[i]: u8) = (#_sliceIndex returning u8)(self, (#_cast returning u32)(i));
+    #_skip
+  };
+  array
 }
 
-nr_def «utils»::«square»<>(a : Field) -> Field {
-    #fMul(#fMul(a, a) : Field, (@SIGMA<> as λ() → Field)()) : Field;
+noir_def utils::square<>(a: Field) -> Field := {
+  (#_fMul returning Field)((#_fMul returning Field)(a, a), (SIGMA<> as λ() -> Field)())
 }
 
 
-def Utils.Mod.env := Lampe.Env.mk [«utils::as_array», «utils::rl», «utils::rotate_left», «utils::sbox», «utils::sgn0», «utils::square»] []
+def Utils.Mod.env : Env := Env.mk
+  [«utils::rl», «utils::rotate_left», «utils::sbox», «utils::sgn0», «utils::as_array», «utils::square»]
+  []

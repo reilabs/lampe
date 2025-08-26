@@ -8,9 +8,11 @@ open Lampe
 namespace «Multiple-0.0.0»
 namespace Extracted
 
-nr_def «baz»::«bang»::«bang»<>(x : Field) -> Field {
-    #fAdd(x, 1 : Field) : Field;
+noir_def baz::bang::bang<>(x: Field) -> Field := {
+  (#_fAdd returning Field)(x, (1: Field))
 }
 
 
-def Baz.Bang.env := Lampe.Env.mk [«baz::bang::bang»] []
+def Baz.Bang.env : Env := Env.mk
+  [«baz::bang::bang»]
+  []

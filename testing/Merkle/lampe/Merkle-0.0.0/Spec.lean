@@ -86,44 +86,42 @@ theorem recover_intro {H N idx proof item}
         (fun v => v = H' (a ::ᵥ b ::ᵥ .nil))):
     STHoare lp env ⟦True⟧ (mtree_recover.call h![H, N] h![idx, proof, item]) (fun v => v = MerkleTree.recover H' idx.reverse proof.reverse item) := by
   enter_decl
-  simp only [mtree_recover]
   steps
   loop_inv fun i _ _ =>
     [curr_h ↦ ⟨Tp.field,
       MerkleTree.recover H' (List.Vector.takeF idx i.toNat (by simpa [←BitVec.lt_def];)).reverse
                  (List.Vector.takeF proof i.toNat (by simpa [←BitVec.lt_def])).reverse item⟩]
-  · simp [BitVec.le_def, Int.cast, IntCast.intCast]
+  · simp only [Int.cast, IntCast.intCast, BitVec.ofInt_ofNat, BitVec.le_def, BitVec.toNat_ofNat,
+    Nat.reducePow, Nat.zero_mod, zero_le]
   · intro i _ hi
     steps
-    enter_block_as m =>
+    step_as m =>
       ([curr_h ↦ ⟨Tp.field, m⟩])
       (fun _ => [curr_h ↦ ⟨Tp.field, if dir then H' (sibling_root ::ᵥ m ::ᵥ .nil) else H' (m ::ᵥ sibling_root ::ᵥ .nil) ⟩])
+    · congr
+      have : (i + 1).toNat = i.toNat + 1 := by
+        rcases N with ⟨N, lt⟩
+        simp [BitVec.lt_def] at hi
+        simp
+        linarith []
+      simp_rw [List.Vector.takeF_congr this, List.Vector.cast_reverse]
+      rw [List.Vector.congrArg₂ (f := fun a b => MerkleTree.recover _ a b _)]
+      casesm* ∃_,_
+      rename dir = _ => hdir
+      rename sibling_root = _ => hsr
+      simp at hdir hsr
+      simp [MerkleTree.recover, List.Vector.takeF_succ_eq_snoc_get, ←hdir, ←hsr]
+      cases dir <;> rfl
+
     apply STHoare.ite_intro <;> {
       rintro rfl
       steps [hHash]
       simp_all
     }
 
-    steps
-    have : (i + 1).toNat = i.toNat + 1 := by
-      rcases N with ⟨N, lt⟩
-      simp [BitVec.lt_def] at hi
-      simp
-      linarith []
-    congr 1
-    simp_rw [List.Vector.takeF_congr this, List.Vector.cast_reverse]
-    rw [List.Vector.congrArg₂ (f := fun a b => MerkleTree.recover _ a b _)]
-    casesm* ∃_, _
-    rename dir = _ => hdir
-    rename sibling_root = _ => hsr
-    simp at hdir hsr
-    simp [MerkleTree.recover, List.Vector.takeF_succ_eq_snoc_get, ←hdir, ←hsr]
-    cases dir <;> rfl
-
   steps
   subst_vars
-  congr
-  all_goals simp
+  simp
 
 theorem rl_intro : STHoare lp env ⟦⟧
     («utils::rl».call h![] h![input])
@@ -212,7 +210,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
     simp only [«utils::bits::to_le_bits»]
     steps
 
-    enter_block_as v =>
+    step_as v =>
       ([val ↦ ⟨.field, input⟩] ⋆ [bits ↦ v])
       (fun _ => [val ↦ ⟨.field, 0⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE 256 input⟩])
 
@@ -234,30 +232,9 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
       · let this : i % 4294967296 = i := by rw [Nat.mod_eq_of_lt]; linarith
         simp [Access.modify, Nat.mod_eq_of_lt, this, hi]
         rfl
-      enter_block_as v =>
+      step_as v =>
         ([val ↦ ⟨.field, v⟩])
         (fun _ => [val ↦ ⟨.field, ↑(v.val / 2)⟩])
-      · simp only [ZMod.div2_on_vals]
-        have : i % 4294967296 = i := by
-          apply Nat.mod_eq_of_lt; linarith
-        fin_cases «#v_11»
-        · apply STHoare.iteTrue_intro
-          steps
-          casesm* ∃_,_
-          subst_vars
-          rename 0#1 = _ => h
-          simp [*] at *
-          rw [BitVec.ofNat_1_eq_0_iff] at h
-          simp [Fp.cast_self, h]
-        · apply STHoare.iteFalse_intro
-          steps
-          casesm* ∃_,_
-          subst_vars
-          simp [Fp.cast_self, this] at *
-          rename _ = BitVec.ofNat _ _ => h
-          rw [BitVec.ofNat_1_eq_1_iff] at h
-          simp [h, Fp.cast_self]
-      steps
       · simp only [pow_succ]
         congr 2
         rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
@@ -277,8 +254,27 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
         rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
         apply lt_of_le_of_lt (Nat.div_le_self _ _)
         simp [ZMod.val, lp, Prime.natVal]
-    · decide
-
+      · simp only [ZMod.div2_on_vals]
+        casesm ∃_, _
+        have : i % 4294967296 = i := by
+          apply Nat.mod_eq_of_lt; linarith
+        fin_cases «#v_10»
+        · apply STHoare.iteTrue_intro
+          steps
+          casesm* ∃_,_
+          subst_vars
+          rename 0#1 = _ => h
+          simp [*] at *
+          rw [BitVec.ofNat_1_eq_0_iff] at h
+          simp [Fp.cast_self, h]
+        · apply STHoare.iteFalse_intro
+          steps
+          casesm* ∃_,_
+          subst_vars
+          simp [Fp.cast_self, this] at *
+          rename _ = BitVec.ofNat _ _ => h
+          rw [BitVec.ofNat_1_eq_1_iff] at h
+          simp [h, Fp.cast_self]
     steps
     simp_all
 
@@ -290,7 +286,7 @@ set_option maxHeartbeats 2000000 in
 theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::to_le_bytes».call h![] h![input]) fun v => v = Fp.toBytesLE 32 input := by
   enter_decl
   steps [to_le_bits_intro]
-  enter_block_as =>
+  step_as =>
     ([bytes ↦ ⟨(Tp.u 8).array 32, List.Vector.replicate 32 0⟩])
     (fun _ => [bytes ↦ ⟨(Tp.u 8).array 32, Fp.toBytesLE 32 input⟩])
 
@@ -354,7 +350,6 @@ theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::to_le
       unfold Fin.ofNat
       congr 1
       simp only [Nat.reducePow, Nat.add_mod_mod, Nat.mod_add_mod, mul_comm]
-    · decide
   steps
   simp_all
 
@@ -384,13 +379,12 @@ theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::fro
       simp [*, List.Vector.get, ofBaseLE]
       rw [mul_comm]
       rfl
-  · decide
   steps
   simp_all
   rw [List.take_of_length_le]
   · simp
 
-theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧
+theorem as_array_intro input (hi : input.length = 32) : STHoare lp env ⟦⟧
     («utils::as_array».call h![] h![input])
     fun output => output = ⟨input, hi⟩ := by
   enter_decl
@@ -435,6 +429,7 @@ theorem as_array_intro (hi : input.length = 32) : STHoare lp env ⟦⟧
   have : input.length ≤ input.length := by linarith
   simp only [←hi, Int.cast, IntCast.intCast, BitVec.ofInt, List.takeD_eq_take, this, List.take_length]
 
+
 set_option maxHeartbeats 3000000000000
 theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
     fun output => output = Ref.bar input := by
@@ -442,7 +437,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
   simp only [«bar::bar»]
   steps [to_le_bytes_intro]
 
-  enter_block_as
+  step_as
     ([new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
     (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Ref.sbox⟩])
 
@@ -483,12 +478,12 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
       BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, Option.bind_eq_bind,
       Option.bind_some, Nat.reduceLeDiff, List.set_cons_zero, List.get?Internal_eq_getElem?,
       List.length_map, List.Vector.length_val, BitVec.toNat_ofNat, Nat.reduceMod,
-      List.getElem?_eq_getElem, List.getElem_map, Option.toList_some, List.cons_append, 
+      List.getElem?_eq_getElem, List.getElem_map, Option.toList_some, List.cons_append,
       List.nil_append]
 
   steps
 
-  enter_block_as
+  step_as
     ([new_right ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
     (fun _ => [new_right ↦ ⟨(Tp.u 8).array 16, bytes.drop 16 |>.map Ref.sbox⟩])
 
@@ -545,17 +540,19 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
 
   steps
 
-  rename' «#v_25» => v
+  rename' «#v_27» => v
 
-  enter_block_as =>
-    ([new_bytes ↦ ⟨(Tp.u 8).slice, v.toList⟩])
-    (fun _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ ζi0.toList⟩])
+  step_as =>
+    ( [new_bytes ↦ ⟨(Tp.u 8).slice, List.Vector.toList v⟩ ] ⋆
+    [ new_right ↦ ⟨(Tp.u 8).array 16, List.Vector.map Ref.sbox (List.Vector.drop 16 bytes)⟩ ] ⋆
+      [ new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.map Ref.sbox (List.Vector.take 16 bytes)⟩ ])
+    (fun _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ (List.Vector.map Ref.sbox (List.Vector.take 16 bytes)).toList⟩])
+  steps
+
   · loop_inv fun i _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ ζi0.toList.take i.toNat⟩]
     · decide
     · congr 1
       simp [Int.cast, IntCast.intCast]
-    · congr 1
-      simp
     · intro i _ hlt
       rename bytes = _ => bytes_def
       clear bytes_def
@@ -566,19 +563,18 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
       rw [BitVec.lt_def] at hlt
       conv at hlt => congr <;> whnf
       casesm* ∃_,_
-      subst «#v_30» elem
+      subst «#v_32» elem
       have : i + 1 < 4294967296 := by linarith
       simp [Nat.mod_eq_of_lt, this, List.take_succ]
       simp [List.Vector.toList_length, hlt, ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true]
       rfl
-
+    · subst_vars
+      steps
   steps [as_array_intro, from_le_bytes_intro]
-  
   rotate_left
-  · subst «#v_35» v
-    simp
-  · subst_vars
-    rfl
+  · subst_vars; rfl
+  · subst_vars; rfl
+
 
 theorem sigma_intro : STHoare lp env (⟦⟧)
     (Extracted.SIGMA.call h![] h![])
@@ -599,7 +595,7 @@ theorem rc_intro : STHoare lp env (⟦⟧)
   rfl
 
 theorem square_intro : STHoare lp env (⟦⟧)
-    (Expr.call [Tp.field] Tp.field (FuncRef.decl "utils::square" [] HList.nil) h![input])
+    (Expr.call [Tp.field] Tp.field (FuncRef.decl "«utils::square»" [] HList.nil) h![input])
       fun output => output = Ref.square input := by
   enter_decl
   steps [sigma_intro]
@@ -607,7 +603,7 @@ theorem square_intro : STHoare lp env (⟦⟧)
   subst_vars
   rfl
 
-theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "permute::permute" [] HList.nil) h![i])
+theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "«permute::permute»" [] HList.nil) h![i])
     fun output => output = (Ref.State.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Ref.State.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
   enter_decl
   cases i using List.Vector.casesOn with | cons _ i =>
@@ -633,9 +629,9 @@ lemma SkyscraperHash_correct: STHoare lp env ⟦⟧
 
 lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ («witness::weird_assert_eq».call h![] h![a, b]) (fun _ => a = b) := by
   enter_decl
-  steps
-  enter_block_as (⟦⟧) (fun _ => ⟦⟧)
-  · enter_decl
+  step_as (⟦⟧) (fun _ => ⟦⟧)
+  · steps
+    enter_decl
     steps
   steps
   simp_all

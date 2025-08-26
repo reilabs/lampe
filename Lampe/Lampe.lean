@@ -1,4 +1,5 @@
 import Lampe.Ast
+import Lampe.Ast.Extensions
 import Lampe.Builtin.Arith
 import Lampe.Builtin.Array
 import Lampe.Builtin.Basic
@@ -13,12 +14,12 @@ import Lampe.Builtin.Memory
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
+import Lampe.Builtin.Stubs
 import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.Data.Integers
 import Lampe.Data.Meta
 import Lampe.Data.Strings
-import Lampe.Delab
 import Lampe.Hoare.Builtins
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Total
@@ -31,6 +32,12 @@ import Lampe.SeparationLogic.SLP
 import Lampe.SeparationLogic.State
 import Lampe.SeparationLogic.ValHeap
 import Lampe.Syntax
+import Lampe.Syntax.Builders
+import Lampe.Syntax.Delab
+import Lampe.Syntax.Elab
+import Lampe.Syntax.Rules
+import Lampe.Syntax.State
+import Lampe.Syntax.Utils
 import Lampe.Tactic.EnvSubsetSolver
 import Lampe.Tactic.IntroCases
 import Lampe.Tactic.SL

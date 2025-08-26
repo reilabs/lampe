@@ -122,6 +122,11 @@ theorem singleton_congr_star_mv {p} {r} {v₁ v₂ : AnyValue p}  (heq: v₁ = v
   simp
   apply SLP.entails_self
 
+theorem lmbSingleton_congr_star_mv (heq: v₁ = v₂): ([λr ↦ v₁] ⊢ [λr ↦ v₂] ⋆ ⟦⟧) := by
+  cases heq
+  simp
+  apply SLP.entails_self
+
 theorem exists_singleton_congr_mv {p} {r} {v₁ : AnyValue p} {v₂ : α → AnyValue p} (heq: ∀a, v₁ = v₂ a):
     ((∃∃a, [r ↦ v₂ a]) ⊢ [r ↦ v₁] ⋆ ⟦⟧) := by
   intro h
@@ -257,6 +262,13 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
         catch _ => pure [heq]
       pure $ SLGoals.mk heq impl
     else throwError "final singleton is not equal"
+  | SLTerm.lmbSingleton v _ =>
+    if (←isDefEq v rhs) then
+      let heq :: impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.lmbSingleton_congr_star_mv) | throwError "unexpect goals in singleton_congr_star_mv"
+      let heq ← try heq.refl; pure []
+        catch _ => pure [heq]
+      pure $ SLGoals.mk heq impl
+    else throwError "final lmb singleton is not equal"
   | SLTerm.exi _ =>
     if (←solvesSingleton lhs rhs) then
       let heq :: impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.exists_singleton_congr_mv) | throwError "unexpect goals in exists_singleton_congr_mv"

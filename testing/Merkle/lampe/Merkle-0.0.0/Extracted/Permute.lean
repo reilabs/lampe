@@ -8,42 +8,22 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
-nr_def «permute»::«permute»<>(s : [Field; 2]) -> [Field; 2] {
-    let π0 = `(#arrayIndex(s, #cast(0 : u32) : u32) : Field, #arrayIndex(s, #cast(1 : u32) : u32) : Field);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(0 : u32) : u32) : Field) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(1 : u32) : u32) : Field) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(2 : u32) : u32) : Field) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(3 : u32) : u32) : Field) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(4 : u32) : u32) : Field) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(5 : u32) : u32) : Field) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@bar::bar<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(6 : u32) : u32) : Field) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, #arrayIndex((@RC<> as λ() → [Field; 8])(), #cast(7 : u32) : u32) : Field) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    let π0 = `(#fAdd(r, (@utils::square<> as λ(Field) → Field)(l)) : Field, l);
-    let l = π0.0;
-    let r = π0.1;
-    [l, r];
+noir_def permute::permute<>(s: Array<Field, 2: u32>) -> Array<Field, 2: u32> := {
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_arrayIndex returning Field)(s, (0: u32)), (#_arrayIndex returning Field)(s, (1: u32)));
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)(r, (utils::square<> as λ(Field) -> Field)(l)), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)((#_fAdd returning Field)(r, (utils::square<> as λ(Field) -> Field)(l)), (#_arrayIndex returning Field)((RC<> as λ() -> Array<Field, 8: u32>)(), (0: u32))), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)((#_fAdd returning Field)(r, (bar::bar<> as λ(Field) -> Field)(l)), (#_arrayIndex returning Field)((RC<> as λ() -> Array<Field, 8: u32>)(), (1: u32))), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)((#_fAdd returning Field)(r, (bar::bar<> as λ(Field) -> Field)(l)), (#_arrayIndex returning Field)((RC<> as λ() -> Array<Field, 8: u32>)(), (2: u32))), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)((#_fAdd returning Field)(r, (utils::square<> as λ(Field) -> Field)(l)), (#_arrayIndex returning Field)((RC<> as λ() -> Array<Field, 8: u32>)(), (3: u32))), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)((#_fAdd returning Field)(r, (utils::square<> as λ(Field) -> Field)(l)), (#_arrayIndex returning Field)((RC<> as λ() -> Array<Field, 8: u32>)(), (4: u32))), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)((#_fAdd returning Field)(r, (bar::bar<> as λ(Field) -> Field)(l)), (#_arrayIndex returning Field)((RC<> as λ() -> Array<Field, 8: u32>)(), (5: u32))), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)((#_fAdd returning Field)(r, (bar::bar<> as λ(Field) -> Field)(l)), (#_arrayIndex returning Field)((RC<> as λ() -> Array<Field, 8: u32>)(), (6: u32))), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)((#_fAdd returning Field)(r, (utils::square<> as λ(Field) -> Field)(l)), (#_arrayIndex returning Field)((RC<> as λ() -> Array<Field, 8: u32>)(), (7: u32))), l);
+  let ((l: Field), (r: Field)) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)(r, (utils::square<> as λ(Field) -> Field)(l)), l);
+  (#_mkArray returning Array<Field, 2: u32>)(l, r)
 }
 
 
-def Permute.env := Lampe.Env.mk [«permute::permute»] []
+def Permute.env : Env := Env.mk
+  [«permute::permute»]
+  []

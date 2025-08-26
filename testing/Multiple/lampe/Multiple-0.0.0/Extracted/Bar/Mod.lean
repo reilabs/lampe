@@ -8,9 +8,11 @@ open Lampe
 namespace «Multiple-0.0.0»
 namespace Extracted
 
-nr_def «bar»::«bar»<>(x : Field) -> Field {
-    #fAdd(x, 1 : Field) : Field;
+noir_def bar::bar<>(x: Field) -> Field := {
+  (#_fAdd returning Field)(x, (1: Field))
 }
 
 
-def Bar.Mod.env := Lampe.Env.mk [«bar::bar»] []
+def Bar.Mod.env : Env := Env.mk
+  [«bar::bar»]
+  []

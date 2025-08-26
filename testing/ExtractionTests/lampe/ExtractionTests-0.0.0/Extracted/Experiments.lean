@@ -8,134 +8,138 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_def «experiments»::«my_func3»<>(a : u8) -> u8 {
-    (@experiments::my_func<> as λ(u8) → u8)(a);
+noir_def experiments::my_func3<>(a: u8) -> u8 := {
+  (experiments::my_func<> as λ(u8) -> u8)(a)
 }
 
-nr_def «experiments»::«my_func»<>(a : u8) -> u8 {
-    #uAdd(a, 1 : u8) : u8;
+noir_def experiments::my_func<>(a: u8) -> u8 := {
+  (#_uAdd returning u8)(a, (1: u8))
 }
 
-nr_def «experiments»::«my_func2»<>(arr : [u8; 8], b : u32) -> u8 {
-    #arrayIndex(arr, #cast(b) : u32) : u8;
+noir_def experiments::my_func2<>(arr: Array<u8, 8: u32>, b: u32) -> u8 := {
+  (#_arrayIndex returning u8)(arr, (#_cast returning u32)(b))
 }
 
-nr_def «experiments»::«get_unchecked»<T>(a : experiments::Option2<T>) -> T {
-    (a as experiments::Option2<T>)._value;
+noir_def experiments::get_unchecked<T: Type>(a: experiments::Option2<T>) -> T := {
+  a.1
 }
 
-nr_def «experiments»::«my_fn»<>() -> u8 {
-    #uAdd(1 : u8, 1 : u8) : u8;
+noir_def experiments::my_fn<>() -> u8 := {
+  (#_uAdd returning u8)((1: u8), (1: u8))
 }
 
-nr_def «experiments»::«cast_test»<>(a : u8) -> u64 {
-    if #uEq(a, 0 : u8) : bool {
-            0 : u64;
-    } else {
-            #cast(a) : u64;
-    };
+noir_def experiments::cast_test<>(a: u8) -> u64 := {
+  if (#_uEq returning bool)(a, (0: u8)) then {
+    (0: u64)
+  } else {
+    (#_cast returning u64)(a)
+  }
 }
 
-nr_def «experiments»::«tuple_test»<>(a : u8) -> `(u8, u8) {
-    let _b = |c : u8| -> u8 #uAdd(#uAdd(c, a) : u8, 10 : u8) : u8;
-    `(a, a);
+noir_def experiments::tuple_test<>(a: u8) -> Tuple<u8, u8> := {
+  let (_b: λ(u8) -> u8) = (fn((c: u8)): u8 := (#_uAdd returning u8)((#_uAdd returning u8)(c, a), (10: u8)));
+  (#_makeData returning Tuple<u8, u8>)(a, a)
 }
 
-nr_def «experiments»::«literal_test»<>() -> Unit {
-    let _a = 1 : Field;
-    let b = true;
-    let _c = false;
-    let _d = [1 : Field ; 5];
-    let _e = &[1 : Field ; 5];
-    let _f = [1 : Field, 2 : Field, 3 : Field];
-    let _h = "asdf";
-    let _i = #format("${b}", b);
+noir_def experiments::literal_test<>() -> Unit := {
+  let (_a: Field) = (1: Field);
+  let (b: bool) = #_true;
+  let (_c: bool) = #_false;
+  let (_d: Array<Field, 5: u32>) = (#_mkRepeatedArray returning Array<Field, 5: u32>)((1: Field));
+  let (_e: Slice<Field>) = (#_mkRepeatedSlice returning Slice<Field>)((1: Field), (5: u32));
+  let (_f: Array<Field, 3: u32>) = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
+  let (_h: String<4: u32>) = "asdf";
+  let (_i: FmtString<4: u32, Tuple<bool> >) = (#_mkFormatString returning FmtString<4: u32, Tuple<bool> >)("${}{b}", b);
+  #_skip
 }
 
-nr_def «experiments»::«assigns»<>(x : u8) -> Unit {
-    let mut y = 3 : u8;
-    y = #uAdd(y, x) : u8;
-    let mut arr = [1 : Field, 2 : Field];
-    arr[#cast(0 : u32) : u32] = 10 : Field;
-    skip;
+noir_def experiments::assigns<>(x: u8) -> Unit := {
+  let mut (y: u8) = (3: u8);
+  y = (#_uAdd returning u8)(y, x);
+  let mut (arr: Array<Field, 2: u32>) = (#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field));
+  (arr[(0: u32)]: Field) = (10: Field);
+  #_skip
 }
 
-nr_def «experiments»::«uncons»<>(x : u8) -> Unit {
-    #fresh() : Unit
+noir_def experiments::uncons<>(x: u8) -> Unit := {
+  (#_fresh returning Unit)()
 }
 
-nr_def «experiments»::«check»<>(x : u8) -> Unit {
-    #assert(#uEq(x, 5 : u8) : bool) : Unit;
+noir_def experiments::check<>(x: u8) -> Unit := {
+  (#_assert returning Unit)((#_uEq returning bool)(x, (5: u8)));
+  #_skip
 }
 
-nr_trait_impl[impl_429] <T> std::default::Default<> for experiments::Option2<T> where  {
-    fn «default»<> () -> experiments::Option2<T> {
-        (@experiments::Option2::none<T> as λ() → experiments::Option2<T>)();
-}
-}
-
-nr_def «experiments»::«Option2»::«none»<T>() -> experiments::Option2<T> {
-    experiments::Option2<T> { false, #zeroed() : T };
+noir_trait_impl[impl_429]<T: Type> std::default::Default<> for experiments::Option2<T> where [] := {
+  noir_def default<>() -> experiments::Option2<T> := {
+    (experiments::Option2::none<> as λ() -> experiments::Option2<T>)()
+  };
 }
 
-nr_def «experiments»::«Option2»::«some»<T>(_value : T) -> experiments::Option2<T> {
-    experiments::Option2<T> { true, _value };
+noir_def experiments::Option2::none<T: Type>() -> experiments::Option2<T> := {
+  (#_makeData returning experiments::Option2<T>)(#_false, (#_zeroed returning T)())
 }
 
-nr_def «experiments»::«Option2»::«is_none»<T>(self : experiments::Option2<T>) -> bool {
-    #bNot((@experiments::Option2::is_some<T> as λ(experiments::Option2<T>) → bool)(self)) : bool;
+noir_def experiments::Option2::some<T: Type>(_value: T) -> experiments::Option2<T> := {
+  (#_makeData returning experiments::Option2<T>)(#_true, _value)
 }
 
-nr_def «experiments»::«Option2»::«is_some»<T>(self : experiments::Option2<T>) -> bool {
-    (self as experiments::Option2<T>)._is_some;
+noir_def experiments::Option2::is_none<T: Type>(self: experiments::Option2<T>) -> bool := {
+  (#_bNot returning bool)((experiments::Option2::is_some<> as λ(experiments::Option2<T>) -> bool)(self))
 }
 
-nr_trait_impl[impl_430] <T> experiments::MyTrait<> for experiments::Option2<T> where  {
-    fn «foo»<> (self : experiments::Option2<T>) -> experiments::Option2<T> {
-        self;
-}
+noir_def experiments::Option2::is_some<T: Type>(self: experiments::Option2<T>) -> bool := {
+  self.0
 }
 
-nr_trait_impl[impl_431] <T> experiments::MyTrait<> for `(T, bool) where T : MyTrait<> {
-    fn «foo»<> (self : `(T, bool)) -> `(T, bool) {
-        self;
-}
-}
-
-nr_def «experiments»::«string_test»<>() -> str<5> {
-    let x = "Hello";
-    x;
+noir_trait_impl[impl_430]<T: Type> experiments::MyTrait<> for experiments::Option2<T> where [] := {
+  noir_def foo<>(self: experiments::Option2<T>) -> experiments::Option2<T> := {
+    self
+  };
 }
 
-nr_def «experiments»::«fmtstr_test»<>(x : Field, y : Field) -> Field {
-    #assert(#fNeq(x, y) : bool) : Unit;
-    let _a = #format("this is first:{x}  this is second:{y}", x, y);
-    #fAdd(x, y) : Field;
+noir_trait_impl[impl_431]<T: Type> experiments::MyTrait<> for Tuple<T, bool> where [T: experiments::MyTrait<>] := {
+  noir_def foo<>(self: Tuple<T, bool>) -> Tuple<T, bool> := {
+    self
+  };
 }
 
-nr_def «experiments»::«is_alias_some»<T>(x : @AliasedOpt<T>) -> bool {
-    (@experiments::Option2::is_some<T> as λ(experiments::Option2<T>) → bool)(x);
+noir_def experiments::string_test<>() -> String<5: u32> := {
+  let (x: String<5: u32>) = "Hello";
+  x
 }
 
-nr_def «experiments»::«main»<>() -> Unit {
-    let mut op1 = (@experiments::Option2::some<Field> as λ(Field) → experiments::Option2<Field>)(5 : Field);
-    let op2 = ((experiments::Option2<Field> as Default<>)::default<> as λ() → experiments::Option2<Field>)();
-    let _op3 = ((experiments::Option2<Field> as experiments::MyTrait<>)::foo<> as λ(experiments::Option2<Field>) → experiments::Option2<Field>)(if true {
-            op1;
-    } else {
-            op2;
-    });
-    let _? = (@experiments::Option2::is_some<Field> as λ(experiments::Option2<Field>) → bool)(op1);
-    let mut l = [1 : Field, 2 : Field, 3 : Field];
-    let _? = #arrayIndex(l, #cast(0 : u32) : u32) : Field;
-    let t = `(1 : Field, true, 3 : Field);
-    let _? = t.2;
-    l[#cast(1 : u32) : u32] = 4 : Field;
-    (op1 as experiments::Option2<Field>)._is_some = false;
-    let mut tpl = `(1 : Field, true);
-    tpl.0 = 2 : Field;
-    skip;
+noir_def experiments::fmtstr_test<>(x: Field, y: Field) -> Field := {
+  (#_assert returning Unit)((#_fNeq returning bool)(x, y));
+  let (_a: FmtString<37: u32, Tuple<Field, Field> >) = (#_mkFormatString returning FmtString<37: u32, Tuple<Field, Field> >)("this is first:{}{x}{}  this is second:{}{y}", x, y);
+  (#_fAdd returning Field)(x, y)
+}
+
+noir_def experiments::is_alias_some<T: Type>(x: @AliasedOpt<T>) -> bool := {
+  (experiments::Option2::is_some<> as λ(experiments::Option2<T>) -> bool)(x)
+}
+
+noir_def experiments::main<>() -> Unit := {
+  let mut (op1: experiments::Option2<Field>) = (experiments::Option2::some<> as λ(Field) -> experiments::Option2<Field>)((5: Field));
+  let (op2: experiments::Option2<Field>) = ((experiments::Option2<Field> as std::default::Default<>)::default<> as λ() -> experiments::Option2<Field>)();
+  let (_op3: experiments::Option2<Field>) = ((experiments::Option2<Field> as experiments::MyTrait<>)::foo<> as λ(experiments::Option2<Field>) -> experiments::Option2<Field>)(if #_true then {
+    op1
+  } else {
+    op2
+  });
+  let (_: bool) = (experiments::Option2::is_some<> as λ(experiments::Option2<Field>) -> bool)(op1);
+  let mut (l: Array<Field, 3: u32>) = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
+  let (_: Field) = (#_arrayIndex returning Field)(l, (0: u32));
+  let (t: Tuple<Field, bool, Field>) = (#_makeData returning Tuple<Field, bool, Field>)((1: Field), #_true, (3: Field));
+  let (_: Field) = t.2;
+  (l[(1: u32)]: Field) = (4: Field);
+  (op1.0: bool) = #_false;
+  let mut (tpl: Tuple<Field, bool>) = (#_makeData returning Tuple<Field, bool>)((1: Field), #_true);
+  (tpl.0: Field) = (2: Field);
+  #_skip
 }
 
 
-def Experiments.env := Lampe.Env.mk [«experiments::Option2::is_none», «experiments::Option2::is_some», «experiments::Option2::none», «experiments::Option2::some», «experiments::assigns», «experiments::cast_test», «experiments::check», «experiments::fmtstr_test», «experiments::get_unchecked», «experiments::is_alias_some», «experiments::literal_test», «experiments::main», «experiments::my_fn», «experiments::my_func2», «experiments::my_func3», «experiments::my_func», «experiments::string_test», «experiments::tuple_test», «experiments::uncons»] [impl_429, impl_430, impl_431]
+def Experiments.env : Env := Env.mk
+  [«experiments::my_func3», «experiments::my_func», «experiments::my_func2», «experiments::get_unchecked», «experiments::my_fn», «experiments::cast_test», «experiments::tuple_test», «experiments::literal_test», «experiments::assigns», «experiments::uncons», «experiments::check», «experiments::Option2::none», «experiments::Option2::some», «experiments::Option2::is_none», «experiments::Option2::is_some», «experiments::string_test», «experiments::fmtstr_test», «experiments::is_alias_some», «experiments::main»]
+  [impl_429, impl_430, impl_431]

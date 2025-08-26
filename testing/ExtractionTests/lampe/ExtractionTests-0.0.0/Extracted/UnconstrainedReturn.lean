@@ -8,13 +8,15 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_def «unconstrained_return»::«fun»<>() -> Field {
-    #fresh() : Field
+noir_def unconstrained_return::f<>() -> Field := {
+  (#_fresh returning Field)()
 }
 
-nr_def «unconstrained_return»::«main»<>() -> Unit {
-
+noir_def unconstrained_return::main<>() -> Unit := {
+  #_skip
 }
 
 
-def UnconstrainedReturn.env := Lampe.Env.mk [«unconstrained_return::fun», «unconstrained_return::main»] []
+def UnconstrainedReturn.env : Env := Env.mk
+  [«unconstrained_return::f», «unconstrained_return::main»]
+  []

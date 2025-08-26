@@ -8,26 +8,29 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
-nr_def «mtree_recover»<H, @N : u32>(idx : [bool; N], p : [Field; N], item : Field) -> Field {
-    let mut curr_h = item;
-    for i in 0 : u32 .. u@N {
-            let dir = #arrayIndex(idx, #cast(i) : u32) : bool;
-        let sibling_root = #arrayIndex(p, #cast(i) : u32) : Field;
-        if dir {
-                curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(sibling_root, curr_h);
-            skip;
-        } else {
-                curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) → Field)(curr_h, sibling_root);
-            skip;
-        };
-    };
-    curr_h;
+noir_def mtree_recover<H: Type, N: u32>(idx: Array<bool, N: u32>, p: Array<Field, N: u32>, item: Field) -> Field := {
+  let mut (curr_h: Field) = item;
+  for i in (0: u32) .. uConst!(N: u32) do {
+    let (dir: bool) = (#_arrayIndex returning bool)(idx, (#_cast returning u32)(i));
+    let (sibling_root: Field) = (#_arrayIndex returning Field)(p, (#_cast returning u32)(i));
+    if dir then {
+      curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(sibling_root, curr_h);
+      #_skip
+    } else {
+      curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(curr_h, sibling_root);
+      #_skip
+    }
+  };
+  curr_h
 }
 
-nr_def «main»<>(root : Field, proof : [Field; 32], item : Field, idx : [bool; 32]) -> Unit {
-    let calculated_root = (@mtree_recover<skyscraper::Skyscraper<>, 32 : u32> as λ([bool; 32], [Field; 32], Field) → Field)(idx, proof, item);
-    (@witness::weird_assert_eq<> as λ(Field, Field) → Unit)(root, calculated_root);
+noir_def main<>(root: Field, proof: Array<Field, 32: u32>, item: Field, idx: Array<bool, 32: u32>) -> Unit := {
+  let (calculated_root: Field) = (mtree_recover<skyscraper::Skyscraper<>, 32: u32> as λ(Array<bool, 32: u32>, Array<Field, 32: u32>, Field) -> Field)(idx, proof, item);
+  (witness::weird_assert_eq<> as λ(Field, Field) -> Unit)(root, calculated_root);
+  #_skip
 }
 
 
-def Main.env := Lampe.Env.mk [«main», «mtree_recover»] []
+def Main.env : Env := Env.mk
+  [mtree_recover, main]
+  []

@@ -8,17 +8,18 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_def «A»<>() -> Field {
-    4294967297 : Field
+noir_global_def A: Field = (4294967297: Field);
+
+noir_def field_generics::foo1<A: Field>() -> Field := {
+  fConst!(A: Field)
 }
 
-nr_def «field_generics»::«foo»<@A : Field>() -> Field {
-    f@A;
-}
-
-nr_def «field_generics»::«main»<>() -> Unit {
-    let _? = (@field_generics::foo<4294967297 : Field> as λ() → Field)();
+noir_def field_generics::main<>() -> Unit := {
+  let (_: Field) = (field_generics::foo1<4294967297: Field> as λ() -> Field)();
+  #_skip
 }
 
 
-def FieldGenerics.env := Lampe.Env.mk [«A», «field_generics::foo», «field_generics::main»] []
+def FieldGenerics.env : Env := Env.mk
+  [A, «field_generics::foo1», «field_generics::main»]
+  []

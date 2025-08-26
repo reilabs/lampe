@@ -8,9 +8,11 @@ open Lampe
 namespace «Merkle-0.0.0»
 namespace Extracted
 
-nr_def «witness»::«uncons»::«weird_eq_witness»<>(a : Field, _b : Field) -> Field {
-    #fresh() : Field
+noir_def witness::uncons::weird_eq_witness<>(a: Field, _b: Field) -> Field := {
+  (#_fresh returning Field)()
 }
 
 
-def Witness.Uncons.env := Lampe.Env.mk [«witness::uncons::weird_eq_witness»] []
+def Witness.Uncons.env : Env := Env.mk
+  [«witness::uncons::weird_eq_witness»]
+  []

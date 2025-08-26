@@ -7,59 +7,60 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_struct_def associated_type::Pair<> {
-    a : Field,
-    b : Field
+noir_struct_def associated_type::Pair<> {
+  Field,
+  Field,
 }
 
-nr_struct_def experiments::Option2<T> {
-    _is_some : bool,
-    _value : T
+noir_struct_def experiments::Option2<T: Type> {
+  bool,
+  T,
 }
 
-nr_type_alias AliasedOpt<T> = experiments::Option2<T>
+noir_type_alias AliasedOpt<T: Type> := experiments::Option2<T>;
 
-nr_struct_def type_order::BarStruct<> {
-    y : Field
+noir_struct_def type_order::BarStruct<> {
+  Field,
 }
 
-nr_type_alias BarType<> = type_order::BarStruct<>
+noir_type_alias BarType<> := type_order::BarStruct<>;
 
-nr_type_alias FooType<> = Field
+noir_type_alias FooType<> := Field;
 
-nr_struct_def type_order::FooStruct<> {
-    x : @FooType<>
+noir_struct_def type_order::FooStruct<> {
+  @FooType<>,
 }
 
-nr_struct_def struct_namespaces::test::Foo<> {
-    i : Field
+noir_struct_def struct_namespaces::test::Foo<> {
+  Field,
 }
 
-nr_type_alias Bar<> = associated_type::Pair<>
+noir_type_alias Bar<> := associated_type::Pair<>;
 
-nr_struct_def multiple_generics::Pair<I> {
-    a : I,
-    b : I
+noir_struct_def multiple_generics::Pair<I: Type> {
+  I,
+  I,
 }
 
-nr_struct_def patterns::Option1<T> {
-    is_some : bool,
-    value : T
+noir_struct_def patterns::Option1<T: Type> {
+  bool,
+  T,
 }
 
-nr_struct_def patterns::Option2<T> {
-    is_some : bool,
-    value : T
+noir_struct_def patterns::Option2<T: Type> {
+  bool,
+  T,
 }
 
-nr_trait_def associated_type::Foo<>[Out] {
-    fn foo<>(Self) -> Out;
+noir_trait_def associated_type::Foo<> [Out: Type] := {
+  method foo_meth<>(Self) -> Out;
 }
 
-nr_trait_def experiments::MyTrait<>[] {
-    fn foo<>(Self) -> Self;
+noir_trait_def experiments::MyTrait<> [] := {
+  method foo<>(Self) -> Self;
 }
 
-nr_trait_def multiple_generics::Foo<I>[] {
-    fn foo<>(Self) -> I;
+noir_trait_def multiple_generics::Foo<I: Type> [] := {
+  method foo3<>(Self) -> I;
 }
+

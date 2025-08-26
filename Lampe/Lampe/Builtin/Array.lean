@@ -83,6 +83,13 @@ def mkArray := newGenericTotalPureBuiltin
   (fun _ args => HList.toVec args (by rfl))
 
 /--
+Defines the builtin array constructor for repeated arrays
+-/
+def mkRepeatedArray := newGenericTotalPureBuiltin
+  (fun (len, tp) => ⟨[tp], (.array tp len)⟩)
+  (fun (num, _) h![val] => List.Vector.replicate num.toNat val)
+
+/--
 Defines the indexing of a array `l : Array tp n` with `i : U 32`
 We make the following assumptions:
 - If `i < n`, then the builtin returns `l[i] : Tp.denote tp`
@@ -113,5 +120,6 @@ In Noir, this corresponds to `fn as_slice(self) -> [T]` implemented for `[T; n]`
 def arrayAsSlice := newGenericTotalPureBuiltin
   (fun (tp, n) => ⟨[.array tp n], .slice tp⟩)
   (fun (_, _) h![a] => a.toList)
+
 
 end Lampe.Builtin

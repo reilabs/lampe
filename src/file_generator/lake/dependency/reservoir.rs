@@ -17,6 +17,7 @@ pub struct LeanDependencyReservoirBuilder {
 
 #[allow(dead_code)]
 impl LeanDependencyReservoirBuilder {
+    #[must_use]
     fn new(name: &str) -> Self {
         Self {
             dependency: LeanDependencyReservoir {
@@ -28,21 +29,25 @@ impl LeanDependencyReservoirBuilder {
         }
     }
 
+    #[must_use]
     pub fn scope(mut self, scope: &str) -> Self {
         self.dependency.scope = Some(scope.to_string());
         self
     }
 
+    #[must_use]
     pub fn version(mut self, version: &str) -> Self {
         self.dependency.version = Some(version.to_string());
         self
     }
 
+    #[must_use]
     pub fn options(mut self, options: HashMap<String, String>) -> Self {
         self.dependency.options = Some(options);
         self
     }
 
+    #[must_use]
     pub fn build(self) -> LeanDependencyReservoir {
         self.dependency
     }
@@ -50,12 +55,18 @@ impl LeanDependencyReservoirBuilder {
 
 #[allow(dead_code)]
 impl LeanDependencyReservoir {
+    #[must_use]
     pub fn builder(name: &str) -> LeanDependencyReservoirBuilder {
         LeanDependencyReservoirBuilder::new(name)
     }
 }
 
 impl LeanDependency for LeanDependencyReservoir {
+    /// Generates the Lean dependency.
+    ///
+    /// # Errors
+    ///
+    /// - If the dependency cannot be generated.
     fn generate(&self) -> Result<String, fmt::Error> {
         let mut result = String::new();
         result.push_str("[[require]]\n");

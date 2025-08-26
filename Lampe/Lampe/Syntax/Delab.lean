@@ -1,8 +1,7 @@
 import Lean
 import Lampe.Data.Meta
-import Lampe.Syntax
 import Lampe.Hoare.SepTotal
-import Lampe.Tactic.Steps
+import Lampe.Syntax.Elab
 
 open Lean PrettyPrinter Delaborator SubExpr
 
@@ -45,6 +44,13 @@ def delabNrConstNum (stx : Syntax) : DelabM <| TSyntax `nr_const_num := do
     -- TODO: [#99] Need to deal with BitVec applications
     | _ => return ←`(nr_const_num|$(⟨stx⟩))
 
+def delabGeneric (stx : Syntax) : DelabM <| TSyntax `nr_generic := do
+  match stx with
+    | `(nr_generic| $tp:nr_type) => `(nr_generic|$(⟨tp⟩))
+    | `(nr_generic| $n:ident : $_:ident) => return ⟨n⟩
+    | `(nr_generic| $n:num : $_t:ident) => `(nr_generic|$(⟨n⟩))
+    | _ => failure
+
 partial def ppLampeTp (stx : Syntax) : DelabM <| TSyntax `nr_type := do
   match stx with
     | `(Tp.u $n:num) =>
@@ -57,10 +63,10 @@ partial def ppLampeTp (stx : Syntax) : DelabM <| TSyntax `nr_type := do
     | `(Tp.bool) => return ⟨mkIdentFrom stx `bool⟩
     | `(Tp.field) => return ⟨mkIdentFrom stx `Field⟩
     | `(Tp.str $n) => return ←`(nr_type|str<$(← delabNrConstNum n)>)
-    | `(Tp.fmtStr $n [$tps,*]) =>
+    | `(Tp.fmtStr $n $tp) =>
       let n ← delabNrConstNum n
-      let tps ← tps.getElems.mapM fun tp => ppLampeTp tp
-      return ←`(nr_type| fmtstr<$n,($tps,*)>)
+      let _tp ← ppLampeTp tp
+      return ←`(nr_type| fmtstr<$(⟨←delabGeneric n⟩), $(⟨←delabGeneric n⟩)>)
     | `(Tp.unit) => return ⟨mkIdentFrom stx `Unit⟩
     | `(Tp.slice $tp) => return ←`(nr_type|[$(←ppLampeTp tp)])
     | `(Tp.array $tp $n) => return ←`(nr_type|[$(←ppLampeTp tp); $(← delabNrConstNum n)])
@@ -141,9 +147,9 @@ def delabLampeConstU : Delab := whenDelabExprOption getExpr >>= fun expr =>
 @[app_delab Lampe.Expr.fmtStr]
 def delabLampeFmtStr : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let _tps := expr.getArg! 2
+    let tps := expr.getArg! 2
     let string := expr.getArg! 3
-    let fmtStr ← `(nr_expr| #format($(⟨← delab string⟩),))
+    let fmtStr ← `(nr_expr| #format<$(⟨← delab tps⟩)>($(⟨← delab string⟩),))
     return ←`(⸨$fmtStr⸩)
 
 def delabLampeGeneric (kind gen : TSyntax `term)  : DelabM <| TSyntax `nr_generic := do

@@ -7,8 +7,18 @@ use noirc_frontend::{
 
 pub type BuiltinName = String;
 
-pub const CAST_BUILTIN_NAME: &str = "cast";
+pub const ALIAS_PREFIX: &str = "@";
+pub const ARRAY_GET_BUILTIN_NAME: &str = "arrayIndex";
 pub const ASSERT_BUILTIN_NAME: &str = "assert";
+pub const BUILTIN_PREFIX: &str = "#_";
+pub const CAST_BUILTIN_NAME: &str = "cast";
+pub const MAKE_ARRAY_BUILTIN_NAME: &str = "mkArray";
+pub const MAKE_REPEATED_ARRAY_BUILTIN_NAME: &str = "mkRepeatedArray";
+pub const MAKE_REPEATED_SLICE_BUILTIN_NAME: &str = "mkRepeatedSlice";
+pub const MAKE_SLICE_BUILTIN_NAME: &str = "mkSlice";
+pub const MAKE_STRUCT_BUILTIN_NAME: &str = "makeData";
+pub const SKIP_BUILTIN_NAME: &str = "skip";
+pub const UNIT_TYPE_NAME: &str = "Unit";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinType {
@@ -59,6 +69,7 @@ impl TryInto<BuiltinType> for Type {
 }
 
 impl BuiltinType {
+    #[must_use]
     fn is_arithmetic(self) -> bool {
         matches!(
             self,
@@ -66,6 +77,7 @@ impl BuiltinType {
         )
     }
 
+    #[must_use]
     fn is_bitwise(self) -> bool {
         matches!(
             self,
@@ -73,10 +85,12 @@ impl BuiltinType {
         )
     }
 
+    #[must_use]
     fn is_collection(self) -> bool {
         matches!(self, BuiltinType::Array | BuiltinType::Slice)
     }
 
+    #[must_use]
     fn name_prefix(self) -> String {
         match self {
             BuiltinType::Field => "f".to_string(),
@@ -92,16 +106,17 @@ impl BuiltinType {
     }
 }
 
-pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
+#[must_use]
+pub fn try_func_name_as_builtin(func_expr: &str) -> Option<BuiltinName> {
     let builtin_names = [
-        ("@std::slice::len", "sliceLen"),
-        ("@std::slice::push_back", "slicePushBack"),
-        ("@std::slice::push_front", "slicePushFront"),
-        ("@std::slice::pop_back", "slicePopBack"),
-        ("@std::slice::pop_front", "slicePopFront"),
-        ("@std::array::len", "arrayLen"),
-        ("@std::array::as_slice", "arrayAsSlice"),
-        ("@std::mem::zeroed", "zeroed"),
+        ("std::slice::len", "sliceLen"),
+        ("std::slice::push_back", "slicePushBack"),
+        ("std::slice::push_front", "slicePushFront"),
+        ("std::slice::pop_back", "slicePopBack"),
+        ("std::slice::pop_front", "slicePopFront"),
+        ("std::array::len", "arrayLen"),
+        ("std::array::as_slice", "arrayAsSlice"),
+        ("mem::zeroed", "zeroed"),
     ];
     for (prefix, builtin) in builtin_names {
         if func_expr.starts_with(prefix) {
@@ -111,6 +126,7 @@ pub fn try_func_expr_into_builtin_name(func_expr: &str) -> Option<BuiltinName> {
     None
 }
 
+#[must_use]
 pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     if coll_type.is_collection() {
         let ty_name = coll_type.name_prefix();
@@ -120,6 +136,7 @@ pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     }
 }
 
+#[must_use]
 pub fn try_prefix_into_builtin_name(
     op: UnaryOp,
     // `None` if the type is not a builtin type.
@@ -139,6 +156,7 @@ pub fn try_prefix_into_builtin_name(
     }
 }
 
+#[must_use]
 pub fn try_infix_into_builtin_name(
     op: BinaryOpKind,
     lhs_type: BuiltinType,
@@ -153,8 +171,26 @@ pub fn try_infix_into_builtin_name(
         BinaryOpKind::Multiply if lhs_type.is_arithmetic() => Some(format!("{ty_name}Mul")),
         BinaryOpKind::Modulo if lhs_type.is_arithmetic() => Some(format!("{ty_name}Rem")),
         // Cmp
-        BinaryOpKind::Equal => Some(format!("{ty_name}Eq")),
-        BinaryOpKind::NotEqual => Some(format!("{ty_name}Neq")),
+        BinaryOpKind::Equal => {
+            if matches!(
+                lhs_type,
+                BuiltinType::Array | BuiltinType::String | BuiltinType::Slice
+            ) {
+                None
+            } else {
+                Some(format!("{ty_name}Eq"))
+            }
+        }
+        BinaryOpKind::NotEqual => {
+            if matches!(
+                lhs_type,
+                BuiltinType::Array | BuiltinType::String | BuiltinType::Slice
+            ) {
+                None
+            } else {
+                Some(format!("{ty_name}Neq"))
+            }
+        }
         BinaryOpKind::Greater if lhs_type.is_arithmetic() => Some(format!("{ty_name}Gt")),
         BinaryOpKind::GreaterEqual if lhs_type.is_arithmetic() => Some(format!("{ty_name}Geq")),
         BinaryOpKind::Less if lhs_type.is_arithmetic() => Some(format!("{ty_name}Lt")),

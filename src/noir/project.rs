@@ -12,7 +12,7 @@ use noirc_driver::{check_crate, CompileOptions};
 use noirc_frontend::hir::ParsedFiles;
 
 use crate::{
-    lean::LeanEmitter,
+    lean::generator::LeanGenerator,
     noir::{
         error::compilation::{Error as CompileError, Result as CompileResult},
         WithWarnings,
@@ -31,7 +31,7 @@ pub struct Project<'file_manager, 'parsed_files> {
 
 impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
     /// Creates a new project with the provided root.
-    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn new(
         nargo_file_manager: &'file_manager FileManager,
         nargo_parsed_files: &'parsed_files ParsedFiles,
@@ -42,6 +42,7 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
         }
     }
 
+    #[must_use]
     pub fn file_manager(&self) -> &'file_manager FileManager {
         self.nargo_file_manager
     }
@@ -56,11 +57,11 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
     /// # Errors
     ///
     /// - [`CompileError`] if the compilation process fails.
-    pub fn compile_package(&self, package: &Package) -> CompileResult<WithWarnings<LeanEmitter>> {
+    pub fn compile_package(&self, package: &Package) -> CompileResult<WithWarnings<LeanGenerator>> {
         let (mut context, crate_id) =
             prepare_package(self.nargo_file_manager, self.nargo_parsed_files, package);
         // Enables reference tracking in the internal context.
-        context.activate_lsp_mode(); //
+        context.activate_lsp_mode();
 
         // Perform compilation to check the code within it.
         let ((), warnings) = check_crate(
@@ -75,7 +76,7 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
         .map_err(|diagnostics| CompileError::CheckFailure { diagnostics })?;
 
         Ok(WithWarnings::new(
-            LeanEmitter::new(context, crate_id),
+            LeanGenerator::new(context, crate_id),
             warnings,
         ))
     }
@@ -83,6 +84,7 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
 
 // Copied from: https://github.com/noir-lang/noir/blob/e93f44cd41bbc570096e6d12c652aa4c4abc5839/tooling/nargo_cli/src/cli/compile_cmd.rs#L108
 /// Parse all files in the workspace.
+#[must_use]
 pub fn parse_workspace(workspace: &Workspace) -> (FileManager, ParsedFiles) {
     let mut file_manager = workspace.new_file_manager();
     insert_all_files_for_workspace_into_file_manager(workspace, &mut file_manager);

@@ -8,27 +8,18 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-nr_def «patterns»::«Option2»::«some»<T>(value : T) -> patterns::Option2<T> {
-    patterns::Option2<T> { true, value };
+noir_def patterns::Option2::some<T: Type>(value: T) -> patterns::Option2<T> := {
+  (#_makeData returning patterns::Option2<T>)(#_true, value)
 }
 
-nr_def «patterns»::«pattern_test»<>() -> Unit {
-    let opt = (@patterns::Option2::some<bool> as λ(bool) → patterns::Option2<bool>)(true);
-    let t = `(1 : Field, opt, 3 : Field);
-    let π0 = t;
-    let _x = π0.0;
-    let mut _? = (π0.1 as patterns::Option2<bool>).is_some;
-    let mut _? = (π0.1 as patterns::Option2<bool>).value;
-    let mut _z = π0.2;
-    let _lam = |π0 : `(bool, bool, bool), _k : Field| -> bool     {
-        let x = π0.0;
-        let mut _y = π0.1;
-        let _z = π0.2;
-        {
-            x;
-        }
-        };
+noir_def patterns::pattern_test<>() -> Unit := {
+  let (opt: patterns::Option2<bool>) = (patterns::Option2::some<> as λ(bool) -> patterns::Option2<bool>)(#_true);
+  let (t: Tuple<Field, patterns::Option2<bool>, Field>) = (#_makeData returning Tuple<Field, patterns::Option2<bool>, Field>)((1: Field), opt, (3: Field));
+  let ((_x: Field), ((_: bool), (_: bool)), mut (_z: Field)) = t;
+  #_skip
 }
 
 
-def Patterns.env := Lampe.Env.mk [«patterns::Option2::some», «patterns::pattern_test»] []
+def Patterns.env : Env := Env.mk
+  [«patterns::Option2::some», «patterns::pattern_test»]
+  []

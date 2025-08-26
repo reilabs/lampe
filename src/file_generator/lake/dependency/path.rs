@@ -15,6 +15,7 @@ pub struct LeanDependencyPathBuilder {
 
 #[allow(dead_code)]
 impl LeanDependencyPathBuilder {
+    #[must_use]
     fn new(name: &str) -> Self {
         Self {
             dependency: LeanDependencyPath {
@@ -24,11 +25,13 @@ impl LeanDependencyPathBuilder {
         }
     }
 
+    #[must_use]
     pub fn path(mut self, path: &str) -> Self {
         self.dependency.path = Some(path.to_string());
         self
     }
 
+    #[must_use]
     pub fn build(self) -> LeanDependencyPath {
         self.dependency
     }
@@ -36,12 +39,18 @@ impl LeanDependencyPathBuilder {
 
 #[allow(dead_code)]
 impl LeanDependencyPath {
+    #[must_use]
     pub fn builder(name: &str) -> LeanDependencyPathBuilder {
         LeanDependencyPathBuilder::new(name)
     }
 }
 
 impl LeanDependency for LeanDependencyPath {
+    /// Generates the Lean dependency.
+    ///
+    /// # Errors
+    ///
+    /// - If the dependency cannot be generated.
     fn generate(&self) -> Result<String, fmt::Error> {
         let mut result = String::new();
         result.push_str("[[require]]\n");
