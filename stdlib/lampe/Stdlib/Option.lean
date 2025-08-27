@@ -2,7 +2,12 @@ import «std-1.0.0-beta.11».Extracted
 -- import «std-1.0.0-beta.11».Extracted.GeneratedTypes
 import Lampe
 
+namespace Lampe
+namespace Stdlib
+
 open «std-1.0.0-beta.11».Extracted
+
+-- TODO re-export option defs
 
 #print «struct#std::option::Option»
 
