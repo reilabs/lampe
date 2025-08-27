@@ -8,19 +8,19 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def array::quicksort::partition<T: Type, N: u32, Env: Type>(arr: & Array<T, N: u32>, low: u32, high: u32, sortfn: λ(T, T) -> bool) -> u32 := {
+noir_def std::array::quicksort::partition<T: Type, N: u32, Env: Type>(arr: & Array<T, N: u32>, low: u32, high: u32, sortfn: λ(T, T) -> bool) -> u32 := {
   (#_fresh returning u32)()
 }
 
-noir_def array::quicksort::quicksort_loop<T: Type, N: u32, Env: Type>(arr: & Array<T, N: u32>, low: u32, high: u32, sortfn: λ(T, T) -> bool) -> Unit := {
+noir_def std::array::quicksort::quicksort_loop<T: Type, N: u32, Env: Type>(arr: & Array<T, N: u32>, low: u32, high: u32, sortfn: λ(T, T) -> bool) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def array::quicksort::quicksort<T: Type, N: u32, Env: Type>(arr: Array<T, N: u32>, sortfn: λ(T, T) -> bool) -> Array<T, N: u32> := {
+noir_def std::array::quicksort::quicksort<T: Type, N: u32, Env: Type>(arr: Array<T, N: u32>, sortfn: λ(T, T) -> bool) -> Array<T, N: u32> := {
   (#_fresh returning Array<T, N: u32>)()
 }
 
 
 def Array.Quicksort.env : Env := Env.mk
-  [«array::quicksort::partition», «array::quicksort::quicksort_loop», «array::quicksort::quicksort»]
+  [«std::array::quicksort::partition», «std::array::quicksort::quicksort_loop», «std::array::quicksort::quicksort»]
   []

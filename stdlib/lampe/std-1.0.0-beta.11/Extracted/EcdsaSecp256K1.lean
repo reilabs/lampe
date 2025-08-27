@@ -8,15 +8,15 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def ecdsa_secp256k1::verify_signature<N: u32>(public_key_x: Array<u8, 32: u32>, public_key_y: Array<u8, 32: u32>, signature: Array<u8, 64: u32>, message_hash: Array<u8, N: u32>) -> bool := {
+noir_def std::ecdsa_secp256k1::verify_signature<N: u32>(public_key_x: Array<u8, 32: u32>, public_key_y: Array<u8, 32: u32>, signature: Array<u8, 64: u32>, message_hash: Array<u8, N: u32>) -> bool := {
   (#_ecdsa_secp256k1 returning bool)(public_key_x, public_key_y, signature, message_hash)
 }
 
-noir_def ecdsa_secp256k1::verify_signature_slice<>(public_key_x: Array<u8, 32: u32>, public_key_y: Array<u8, 32: u32>, signature: Array<u8, 64: u32>, message_hash: Slice<u8>) -> bool := {
+noir_def std::ecdsa_secp256k1::verify_signature_slice<>(public_key_x: Array<u8, 32: u32>, public_key_y: Array<u8, 32: u32>, signature: Array<u8, 64: u32>, message_hash: Slice<u8>) -> bool := {
   (#_ecdsa_secp256k1 returning bool)(public_key_x, public_key_y, signature, message_hash)
 }
 
 
 def EcdsaSecp256K1.env : Env := Env.mk
-  [«ecdsa_secp256k1::verify_signature», «ecdsa_secp256k1::verify_signature_slice»]
+  [«std::ecdsa_secp256k1::verify_signature», «std::ecdsa_secp256k1::verify_signature_slice»]
   []

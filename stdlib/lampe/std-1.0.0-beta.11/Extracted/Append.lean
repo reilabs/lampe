@@ -14,7 +14,7 @@ noir_trait_impl[impl_315]<T: Type> std::append::Append<> for Slice<T> where [] :
   };
   
   noir_def append<>(self: Slice<T>, other: Slice<T>) -> Slice<T> := {
-    (std::slice::append<> as λ(Slice<T>, Slice<T>) -> Slice<T>)(self, other)
+    (std::slice::append<T> as λ(Slice<T>, Slice<T>) -> Slice<T>)(self, other)
   };
 }
 

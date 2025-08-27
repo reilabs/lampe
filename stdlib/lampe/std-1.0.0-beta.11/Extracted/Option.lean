@@ -50,15 +50,15 @@ noir_def std::option::Option::unwrap_or_else<T: Type, Env: Type>(self: std::opti
 }
 
 noir_def std::option::Option::expect<T: Type, N: u32, MessageTypes: Type>(self: std::option::Option<T>, message: FmtString<N: u32, MessageTypes>) -> T := {
-  (#_assert returning Unit)((std::option::Option::is_some<> as λ(std::option::Option<T>) -> bool)(self));
+  (#_assert returning Unit)((std::option::Option::is_some<T> as λ(std::option::Option<T>) -> bool)(self));
   self.1
 }
 
 noir_def std::option::Option::map<T: Type, U: Type, Env: Type>(self: std::option::Option<T>, f: λ(T) -> U) -> std::option::Option<U> := {
   if self.0 then {
-    (std::option::Option::some<> as λ(U) -> std::option::Option<U>)((f as λ(T) -> U)(self.1))
+    (std::option::Option::some<U> as λ(U) -> std::option::Option<U>)((f as λ(T) -> U)(self.1))
   } else {
-    (std::option::Option::none<> as λ() -> std::option::Option<U>)()
+    (std::option::Option::none<U> as λ() -> std::option::Option<U>)()
   }
 }
 
@@ -79,8 +79,8 @@ noir_def std::option::Option::map_or_else<T: Type, U: Type, Env1: Type, Env2: Ty
 }
 
 noir_def std::option::Option::and<T: Type>(self: std::option::Option<T>, other: std::option::Option<T>) -> std::option::Option<T> := {
-  if (std::option::Option::is_none<> as λ(std::option::Option<T>) -> bool)(self) then {
-    (std::option::Option::none<> as λ() -> std::option::Option<T>)()
+  if (std::option::Option::is_none<T> as λ(std::option::Option<T>) -> bool)(self) then {
+    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
   } else {
     other
   }
@@ -90,7 +90,7 @@ noir_def std::option::Option::and_then<T: Type, U: Type, Env: Type>(self: std::o
   if self.0 then {
     (f as λ(T) -> std::option::Option<U>)(self.1)
   } else {
-    (std::option::Option::none<> as λ() -> std::option::Option<U>)()
+    (std::option::Option::none<U> as λ() -> std::option::Option<U>)()
   }
 }
 
@@ -113,14 +113,14 @@ noir_def std::option::Option::or_else<T: Type, Env: Type>(self: std::option::Opt
 noir_def std::option::Option::xor<T: Type>(self: std::option::Option<T>, other: std::option::Option<T>) -> std::option::Option<T> := {
   if self.0 then {
     if other.0 then {
-      (std::option::Option::none<> as λ() -> std::option::Option<T>)()
+      (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
     } else {
       self
     }
   } else if other.0 then {
     other
   } else {
-    (std::option::Option::none<> as λ() -> std::option::Option<T>)()
+    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
   }
 }
 
@@ -129,10 +129,10 @@ noir_def std::option::Option::filter<T: Type, Env: Type>(self: std::option::Opti
     if (predicate as λ(T) -> bool)(self.1) then {
       self
     } else {
-      (std::option::Option::none<> as λ() -> std::option::Option<T>)()
+      (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
     }
   } else {
-    (std::option::Option::none<> as λ() -> std::option::Option<T>)()
+    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
   }
 }
 
@@ -140,13 +140,13 @@ noir_def std::option::Option::flatten<T: Type>(option: std::option::Option<std::
   if option.0 then {
     option.1
   } else {
-    (std::option::Option::none<> as λ() -> std::option::Option<T>)()
+    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
   }
 }
 
 noir_trait_impl[impl_73]<T: Type> std::default::Default<> for std::option::Option<T> where [] := {
   noir_def default<>() -> std::option::Option<T> := {
-    (std::option::Option::none<> as λ() -> std::option::Option<T>)()
+    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
   };
 }
 

@@ -10,7 +10,7 @@ namespace Extracted
 
 noir_trait_impl[impl_77]<N: u32> std::convert::From<Array<u8, N: u32> > for String<N: u32> where [] := {
   noir_def from<>(bytes: Array<u8, N: u32>) -> String<N: u32> := {
-    (std::array::as_str_unchecked<> as λ(Array<u8, N: u32>) -> String<N: u32>)(bytes)
+    (std::array::as_str_unchecked<N: u32> as λ(Array<u8, N: u32>) -> String<N: u32>)(bytes)
   };
 }
 

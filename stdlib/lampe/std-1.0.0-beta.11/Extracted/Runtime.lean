@@ -8,11 +8,11 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def runtime::is_unconstrained<>() -> bool := {
+noir_def std::runtime::is_unconstrained<>() -> bool := {
   (#_is_unconstrained returning bool)()
 }
 
 
 def Runtime.env : Env := Env.mk
-  [«runtime::is_unconstrained»]
+  [«std::runtime::is_unconstrained»]
   []
