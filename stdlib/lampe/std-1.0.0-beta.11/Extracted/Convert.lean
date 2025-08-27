@@ -21,187 +21,187 @@ noir_trait_impl[impl_41]<T: Type, U: Type> std::convert::Into<T> for U where [T:
 }
 
 noir_trait_impl[impl_42]<> std::convert::From<u8> for u16 where [] := {
-  noir_def from<>(value: u8) -> u16 := {
+  noir_def «from»<>(value: u8) -> u16 := {
     (#_cast returning u16)(value)
   };
 }
 
 noir_trait_impl[impl_43]<> std::convert::From<u8> for u32 where [] := {
-  noir_def from<>(value: u8) -> u32 := {
+  noir_def «from»<>(value: u8) -> u32 := {
     (#_cast returning u32)(value)
   };
 }
 
 noir_trait_impl[impl_44]<> std::convert::From<u16> for u32 where [] := {
-  noir_def from<>(value: u16) -> u32 := {
+  noir_def «from»<>(value: u16) -> u32 := {
     (#_cast returning u32)(value)
   };
 }
 
 noir_trait_impl[impl_45]<> std::convert::From<u8> for u64 where [] := {
-  noir_def from<>(value: u8) -> u64 := {
+  noir_def «from»<>(value: u8) -> u64 := {
     (#_cast returning u64)(value)
   };
 }
 
 noir_trait_impl[impl_46]<> std::convert::From<u16> for u64 where [] := {
-  noir_def from<>(value: u16) -> u64 := {
+  noir_def «from»<>(value: u16) -> u64 := {
     (#_cast returning u64)(value)
   };
 }
 
 noir_trait_impl[impl_47]<> std::convert::From<u32> for u64 where [] := {
-  noir_def from<>(value: u32) -> u64 := {
+  noir_def «from»<>(value: u32) -> u64 := {
     (#_cast returning u64)(value)
   };
 }
 
 noir_trait_impl[impl_48]<> std::convert::From<u8> for u128 where [] := {
-  noir_def from<>(value: u8) -> u128 := {
+  noir_def «from»<>(value: u8) -> u128 := {
     (#_cast returning u128)(value)
   };
 }
 
 noir_trait_impl[impl_49]<> std::convert::From<u16> for u128 where [] := {
-  noir_def from<>(value: u16) -> u128 := {
+  noir_def «from»<>(value: u16) -> u128 := {
     (#_cast returning u128)(value)
   };
 }
 
 noir_trait_impl[impl_50]<> std::convert::From<u32> for u128 where [] := {
-  noir_def from<>(value: u32) -> u128 := {
+  noir_def «from»<>(value: u32) -> u128 := {
     (#_cast returning u128)(value)
   };
 }
 
 noir_trait_impl[impl_51]<> std::convert::From<u64> for u128 where [] := {
-  noir_def from<>(value: u64) -> u128 := {
+  noir_def «from»<>(value: u64) -> u128 := {
     (#_cast returning u128)(value)
   };
 }
 
 noir_trait_impl[impl_52]<> std::convert::From<u8> for Field where [] := {
-  noir_def from<>(value: u8) -> Field := {
+  noir_def «from»<>(value: u8) -> Field := {
     (#_cast returning Field)(value)
   };
 }
 
 noir_trait_impl[impl_53]<> std::convert::From<u16> for Field where [] := {
-  noir_def from<>(value: u16) -> Field := {
+  noir_def «from»<>(value: u16) -> Field := {
     (#_cast returning Field)(value)
   };
 }
 
 noir_trait_impl[impl_54]<> std::convert::From<u32> for Field where [] := {
-  noir_def from<>(value: u32) -> Field := {
+  noir_def «from»<>(value: u32) -> Field := {
     (#_cast returning Field)(value)
   };
 }
 
 noir_trait_impl[impl_55]<> std::convert::From<u64> for Field where [] := {
-  noir_def from<>(value: u64) -> Field := {
+  noir_def «from»<>(value: u64) -> Field := {
     (#_cast returning Field)(value)
   };
 }
 
 noir_trait_impl[impl_56]<> std::convert::From<u128> for Field where [] := {
-  noir_def from<>(value: u128) -> Field := {
+  noir_def «from»<>(value: u128) -> Field := {
     (#_cast returning Field)(value)
   };
 }
 
 noir_trait_impl[impl_57]<> std::convert::From< i8> for i16 where [] := {
-  noir_def from<>(value: i8) -> i16 := {
+  noir_def «from»<>(value: i8) -> i16 := {
     (#_cast returning i16)(value)
   };
 }
 
 noir_trait_impl[impl_58]<> std::convert::From< i8> for i32 where [] := {
-  noir_def from<>(value: i8) -> i32 := {
+  noir_def «from»<>(value: i8) -> i32 := {
     (#_cast returning i32)(value)
   };
 }
 
 noir_trait_impl[impl_59]<> std::convert::From< i16> for i32 where [] := {
-  noir_def from<>(value: i16) -> i32 := {
+  noir_def «from»<>(value: i16) -> i32 := {
     (#_cast returning i32)(value)
   };
 }
 
 noir_trait_impl[impl_60]<> std::convert::From< i8> for i64 where [] := {
-  noir_def from<>(value: i8) -> i64 := {
+  noir_def «from»<>(value: i8) -> i64 := {
     (#_cast returning i64)(value)
   };
 }
 
 noir_trait_impl[impl_61]<> std::convert::From< i16> for i64 where [] := {
-  noir_def from<>(value: i16) -> i64 := {
+  noir_def «from»<>(value: i16) -> i64 := {
     (#_cast returning i64)(value)
   };
 }
 
 noir_trait_impl[impl_62]<> std::convert::From< i32> for i64 where [] := {
-  noir_def from<>(value: i32) -> i64 := {
+  noir_def «from»<>(value: i32) -> i64 := {
     (#_cast returning i64)(value)
   };
 }
 
 noir_trait_impl[impl_63]<> std::convert::From<bool> for u8 where [] := {
-  noir_def from<>(value: bool) -> u8 := {
+  noir_def «from»<>(value: bool) -> u8 := {
     (#_cast returning u8)(value)
   };
 }
 
 noir_trait_impl[impl_64]<> std::convert::From<bool> for u16 where [] := {
-  noir_def from<>(value: bool) -> u16 := {
+  noir_def «from»<>(value: bool) -> u16 := {
     (#_cast returning u16)(value)
   };
 }
 
 noir_trait_impl[impl_65]<> std::convert::From<bool> for u32 where [] := {
-  noir_def from<>(value: bool) -> u32 := {
+  noir_def «from»<>(value: bool) -> u32 := {
     (#_cast returning u32)(value)
   };
 }
 
 noir_trait_impl[impl_66]<> std::convert::From<bool> for u64 where [] := {
-  noir_def from<>(value: bool) -> u64 := {
+  noir_def «from»<>(value: bool) -> u64 := {
     (#_cast returning u64)(value)
   };
 }
 
 noir_trait_impl[impl_67]<> std::convert::From<bool> for u128 where [] := {
-  noir_def from<>(value: bool) -> u128 := {
+  noir_def «from»<>(value: bool) -> u128 := {
     (#_cast returning u128)(value)
   };
 }
 
 noir_trait_impl[impl_68]<> std::convert::From<bool> for i8 where [] := {
-  noir_def from<>(value: bool) -> i8 := {
+  noir_def «from»<>(value: bool) -> i8 := {
     (#_cast returning i8)(value)
   };
 }
 
 noir_trait_impl[impl_69]<> std::convert::From<bool> for i16 where [] := {
-  noir_def from<>(value: bool) -> i16 := {
+  noir_def «from»<>(value: bool) -> i16 := {
     (#_cast returning i16)(value)
   };
 }
 
 noir_trait_impl[impl_70]<> std::convert::From<bool> for i32 where [] := {
-  noir_def from<>(value: bool) -> i32 := {
+  noir_def «from»<>(value: bool) -> i32 := {
     (#_cast returning i32)(value)
   };
 }
 
 noir_trait_impl[impl_71]<> std::convert::From<bool> for i64 where [] := {
-  noir_def from<>(value: bool) -> i64 := {
+  noir_def «from»<>(value: bool) -> i64 := {
     (#_cast returning i64)(value)
   };
 }
 
 noir_trait_impl[impl_72]<> std::convert::From<bool> for Field where [] := {
-  noir_def from<>(value: bool) -> Field := {
+  noir_def «from»<>(value: bool) -> Field := {
     (#_cast returning Field)(value)
   };
 }
