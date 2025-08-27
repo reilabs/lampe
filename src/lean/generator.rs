@@ -138,8 +138,8 @@ use crate::{
             UNIT_TYPE_NAME,
         },
         conflicts_with_lean_keyword,
+        LEAN_QUOTE_END,
         LEAN_QUOTE_START,
-        LEAN_QUOTE_END
     },
 };
 
