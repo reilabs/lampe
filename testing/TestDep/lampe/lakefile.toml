@@ -8,9 +8,7 @@ name = "«TestDep-0.0.0»"
 
 [[require]]
 name = "Lampe"
-git = "https://github.com/reilabs/lampe"
-rev = "57022adf67126277217eab1b034067522eceef8c"
-subDir = "Lampe"
+path = "../../../Lampe"
 
 [[require]]
 name = "GitDepWithLampe-0.0.0"

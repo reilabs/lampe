@@ -70,7 +70,7 @@ noir_def experiments::check<>(x: u8) -> Unit := {
   #_skip
 }
 
-noir_trait_impl[impl_429]<T: Type> std::default::Default<> for experiments::Option2<T> where [] := {
+noir_trait_impl[impl_431]<T: Type> std::default::Default<> for experiments::Option2<T> where [] := {
   noir_def default<>() -> experiments::Option2<T> := {
     (experiments::Option2::none<> as λ() -> experiments::Option2<T>)()
   };
@@ -92,13 +92,13 @@ noir_def experiments::Option2::is_some<T: Type>(self: experiments::Option2<T>) -
   self.0
 }
 
-noir_trait_impl[impl_430]<T: Type> experiments::MyTrait<> for experiments::Option2<T> where [] := {
+noir_trait_impl[impl_432]<T: Type> experiments::MyTrait<> for experiments::Option2<T> where [] := {
   noir_def foo<>(self: experiments::Option2<T>) -> experiments::Option2<T> := {
     self
   };
 }
 
-noir_trait_impl[impl_431]<T: Type> experiments::MyTrait<> for Tuple<T, bool> where [T: experiments::MyTrait<>] := {
+noir_trait_impl[impl_433]<T: Type> experiments::MyTrait<> for Tuple<T, bool> where [T: experiments::MyTrait<>] := {
   noir_def foo<>(self: Tuple<T, bool>) -> Tuple<T, bool> := {
     self
   };
@@ -142,4 +142,4 @@ noir_def experiments::main<>() -> Unit := {
 
 def Experiments.env : Env := Env.mk
   [«experiments::my_func3», «experiments::my_func», «experiments::my_func2», «experiments::get_unchecked», «experiments::my_fn», «experiments::cast_test», «experiments::tuple_test», «experiments::literal_test», «experiments::assigns», «experiments::uncons», «experiments::check», «experiments::Option2::none», «experiments::Option2::some», «experiments::Option2::is_none», «experiments::Option2::is_some», «experiments::string_test», «experiments::fmtstr_test», «experiments::is_alias_some», «experiments::main»]
-  [impl_429, impl_430, impl_431]
+  [impl_431, impl_432, impl_433]

@@ -16,6 +16,6 @@ name = "Lampe"
 path = "../../../Lampe"
 
 [[require]]
-name = "std-1.0.0-beta.3"
+name = "std-1.0.0-beta.11"
 path = "../../../stdlib/lampe/"
 
