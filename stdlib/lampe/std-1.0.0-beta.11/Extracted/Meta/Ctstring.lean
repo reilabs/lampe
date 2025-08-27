@@ -20,7 +20,7 @@ noir_trait_impl[impl_293]<N: u32, T: Type> std::meta::ctstring::AsCtString<> for
   };
 }
 
-noir_def std::meta::ctstring::test::as_quoted_str_example<>() -> Unit := {
+noir_def «meta»::ctstring::test::as_quoted_str_example<>() -> Unit := {
   #_unit
 }
 

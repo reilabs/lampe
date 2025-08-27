@@ -107,7 +107,6 @@ partial def makeConstNum [MonadUtil m] : TSyntax `noir_const_num → m (TSyntax 
 private partial def makeNoirIdentAux [MonadUtil m] : Syntax → m String
 | `(ident|$i:ident) => pure i.getId.toString
 | `(noir_ident|$i:ident) => pure i.getId.toString
-| `(noir_ident|from) => pure "from"
 | `(noir_ident|$i:ident :: $j:noir_ident) => do pure s!"{i.getId}::{←makeNoirIdentAux j}"
 | `(noir_ident|_) => pure "_"
 | i => throwError "Invalid identifier `{i}`"
