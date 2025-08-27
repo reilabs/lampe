@@ -10,3 +10,7 @@ name = "«SimpleProject-0.0.0»"
 name = "Lampe"
 path = "../../../Lampe"
 
+[[require]]
+name = "std-1.0.0-beta.11"
+path = "../../../stdlib/lampe"
+

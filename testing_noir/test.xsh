@@ -25,7 +25,14 @@ def get_project_root():
 
         root_dir = root_dir.parent
 
-project_root = get_project_root()
+# This is a hack for xonsh. This way we have global value
+# initialized only once across all runs. It is required for some
+# scripts that are being imported with source command and being
+# run from directory outside of the project tree (like copied).
+try:
+    try_get_project_root = project_root
+except NameError:
+    project_root = get_project_root()
 # --- End of copied part.
 
 source @(project_root / 'scripts' / 'utils.xsh')

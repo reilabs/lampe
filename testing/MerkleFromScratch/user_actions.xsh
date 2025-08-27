@@ -2,26 +2,7 @@
 
 from pathlib import Path
 
-# --- Start of copied part.
-# This method is used to resolve the project's root directory,
-# which is necessary for importing dependencies and other files.
-# It is copied into every *.xsh file we use.
-# If you make changes to this method, be sure to update all other
-# copies as well.
-def get_project_root():
-    script_dir = Path($(echo $XONSH_SOURCE).strip()).resolve()
-    root_dir = script_dir
-    while True:
-        if (root_dir / '.git').is_dir():
-            return root_dir
-
-        if root_dir.resolve() == Path('/'):
-            raise Exception("Could not find .git directory in file tree")
-
-        root_dir = root_dir.parent
-
-project_root = get_project_root()
-# --- End of copied part.
+project_root = Path($ARG1)
 
 source @(project_root / 'scripts' / 'utils.xsh')
 
@@ -61,6 +42,3 @@ proven_zk_dependency = [
 
 with open('./lampe/lakefile.toml', 'a') as f:
     f.writelines(proven_zk_dependency)
-
-change_toml_required_dep_to_path_by_regex('./lampe/lakefile.toml', '^Lampe$', '../../../Lampe')
-change_toml_required_dep_to_path_by_regex('./lampe/lakefile.toml', '^std-.*$', '../../../stdlib/lampe')

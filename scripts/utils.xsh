@@ -24,7 +24,14 @@ def get_project_root():
 
         root_dir = root_dir.parent
 
-project_root = get_project_root()
+# This is a hack for xonsh. This way we have global value
+# initialized only once across all runs. It is required for some
+# scripts that are being imported with source command and being
+# run from directory outside of the project tree (like copied).
+try:
+    try_get_project_root = project_root
+except NameError:
+    project_root = get_project_root()
 # --- End of copied part.
 
 lakefile_toml_path = project_root / 'testing' / 'MerkleFromScratch' / 'lampe' / 'lakefile.toml'
@@ -60,10 +67,28 @@ def change_required_dep_to_path_by_regex(toml, name_regex, path):
 
     return toml
 
+def change_required_dep_to_rev_by_regex(toml, name_regex, rev):
+    compiled_name_regex = re.compile(name_regex)
+
+    for i, v in enumerate(toml['require']):
+        if not compiled_name_regex.match(v['name']):
+                continue
+
+        v['rev'] = rev
+
+    return toml
+
 def change_toml_required_dep_to_path_by_regex(toml_path, name_regex, path):
     lakefile_toml = load_toml(toml_path)
 
     change_required_dep_to_path_by_regex(lakefile_toml, name_regex, path)
+
+    write_toml(toml_path, lakefile_toml)
+
+def change_toml_required_dep_to_rev_by_regex(toml_path, name_regex, rev):
+    lakefile_toml = load_toml(toml_path)
+
+    change_required_dep_to_rev_by_regex(lakefile_toml, name_regex, rev)
 
     write_toml(toml_path, lakefile_toml)
 
