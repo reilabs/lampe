@@ -53,4 +53,4 @@ with tempfile.TemporaryDirectory() as tmpdirname:
     stdlib_path = Path(tmpdirname) / 'noir' / 'noir_stdlib'
     project_stdlib_path = project_root / 'stdlib' / 'noir'
 
-    diff -r @(stdlib_path) @(project_stdlib_path)
+    diff -x Nargo.toml -r @(stdlib_path) @(project_stdlib_path)
