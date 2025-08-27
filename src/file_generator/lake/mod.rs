@@ -6,23 +6,45 @@ use std::{fmt::Write, fs, path::Path};
 use serde::Deserialize;
 
 use crate::file_generator::{
-    lake::dependency::{LeanDependency, LeanDependencyGit},
+    lake::{
+        constants::NOIR_STDLIB_PACKAGE_NAME,
+        dependency::{LeanDependency, LeanDependencyGit},
+    },
     Error,
     NoirPackageIdentifier,
     LAMPE_GENERATED_COMMENT,
 };
 
+pub mod constants;
 pub mod dependency;
 
 /// This is list of dependencies added by default to all Lampe's projects.
-fn default_lean_dependencies() -> Vec<Box<dyn LeanDependency>> {
-    vec![Box::new(
+///
+/// If `stdlib_info` is provided the project is assumed not to be the standard
+/// library, and the bundled standard library is added.
+fn default_lean_dependencies(stdlib_info: Option<StdlibInfo>) -> Vec<Box<dyn LeanDependency>> {
+    let mut deps: Vec<Box<dyn LeanDependency>> = vec![Box::new(
         LeanDependencyGit::builder("Lampe")
             .git("https://github.com/reilabs/lampe")
             .rev("main")
             .subdir("Lampe")
             .build(),
-    )]
+    )];
+
+    // We include the standard library for any project that is _not_ the standard
+    // library.
+    if let Some(info) = stdlib_info {
+        let dep_name = format!("{}-{}", info.name, info.version);
+        deps.push(Box::new(
+            LeanDependencyGit::builder(&dep_name)
+                .git("https://github.com/reilabs/lampe")
+                .rev("main")
+                .subdir("stdlib/lampe")
+                .build(),
+        ));
+    }
+
+    deps
 }
 
 /// Generates main lake file.
@@ -64,7 +86,35 @@ pub fn generate_lakefile_toml(
     )?;
     result.push('\n');
 
-    for dependency in default_lean_dependencies() {
+    let stdlib_info = if noir_package_identifier.name == NOIR_STDLIB_PACKAGE_NAME {
+        None
+    } else {
+        let stdlib_toml = include_str!("../../../stdlib/noir/Nargo.toml");
+        if let Ok(toml_content) = stdlib_toml.parse::<toml::Table>() {
+            if let toml::Value::Table(package_info) = &toml_content["package"] {
+                if let toml::Value::String(name) = &package_info["name"] {
+                    let version = package_info["version"].as_str().unwrap_or("0.0.0");
+
+                    Some(StdlibInfo {
+                        name:    name.clone(),
+                        version: version.to_string(),
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            eprintln!(
+                "Could not read standard library config; not including standard library as \
+                 dependency"
+            );
+            None
+        }
+    };
+
+    for dependency in default_lean_dependencies(stdlib_info) {
         result.push_str(&dependency.generate()?);
         result.push('\n');
     }
@@ -83,6 +133,12 @@ pub fn generate_lakefile_toml(
 #[derive(Deserialize, Debug)]
 struct LakefileConfig {
     name: String,
+}
+
+/// Contains information about the current standard library.
+struct StdlibInfo {
+    pub name:    String,
+    pub version: String,
 }
 
 /// Returns name extracted out of Lampe's project's lakefile.toml.

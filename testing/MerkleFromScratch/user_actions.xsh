@@ -34,7 +34,8 @@ proven_zk_dependency = [
     '\n'
 ]
 
-# TODO: We should delete this in a follow up PR, as the current setup checks this example against the `main` branch
+# This exists to run the test against the current version of Lampe, rather than whatever is at the
+# repository's head.
 lampe_dependency = [
     '[[require]]\n',
     'name = "Lampe"\n',
@@ -42,6 +43,16 @@ lampe_dependency = [
     '\n'
 ]
 
+# This exists to run the test against the current version of Lampe, rather than whatever is at the
+# repository's head.
+stdlib_dependency = [
+    '[[require]]\n',
+    'name = "std-1.0.0-beta.3"\n',
+    'path = "../../../stdlib/lampe"\n',
+    '\n'
+]
+
 with open('./lampe/lakefile.toml', 'a') as f:
     f.writelines(proven_zk_dependency)
     f.writelines(lampe_dependency)
+    f.writelines(stdlib_dependency)
