@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install xonsh
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -26,11 +26,11 @@ jobs:
         run: scripts/check_noir_version_consistency.xsh
 
   build-lake:
-    name: "Build Lean"
+    name: "Build Lampe"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch (sparse)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: |
             Lampe
@@ -43,22 +43,48 @@ jobs:
           lint: false
           use-mathlib-cache: true
           lake-package-directory: Lampe
-      - name: mk_all (lake)
+      - name: Make All (Lampe)
         working-directory: Lampe
         run: lake exe mk_all --check --lib Lampe
-      - name: Build (lake)
+      - name: Build Lampe
         working-directory: Lampe
         run: lake build
-      - name: Test (lake)
+      - name: Test Lampe
         working-directory: Lampe
         run: lake test
+
+  build-stdlib:
+    name: "Build Stdlib"
+    needs: [ build-lake, build-cargo ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch (sparse)
+        uses: actions/checkout@v5
+      - name: Set up Lean 4
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-mathlib-cache: true
+          lake-package-directory: Lampe
+      - name: Check Stdlib Extraction
+        working-directory: stdlib/lampe
+        run: echo "TODO"
+      - name: Download Mathlib
+        working-directory: stdlib/lampe
+        run: lake exe cache get
+      - name: Build Stdlib
+        working-directory: stdlib/lampe
+        run: lake build
 
   build-cargo:
     name: "Build Rust"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: lampe
       - name: Set up Rust
@@ -76,7 +102,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
       - name: Install rust
@@ -98,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: lampe
       - name: Set up Rust
@@ -117,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: lampe
       - name: Set up Rust
@@ -128,9 +154,7 @@ jobs:
           components: rustfmt, clippy
       - name: Test (cargo)
         working-directory: lampe
-        run: |
-          export RUST_MIN_STACK=16777216;  # 16 MB
-          cargo test --all
+        run: cargo test --all
 
   end-to-end:
     name: "E2E Tests"
@@ -140,7 +164,7 @@ jobs:
       LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: lampe
       - name: Install xonsh

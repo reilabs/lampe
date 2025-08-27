@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Noir repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: noir-lang/noir
           ref: fd3925aaaeb76c76319f44590d135498ef41ea6c
@@ -30,7 +30,7 @@ jobs:
         working-directory: noir/test_programs
         run: ./rebuild.sh
       - name: Checkout Lampe repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: lampe
       - name: Install xonsh

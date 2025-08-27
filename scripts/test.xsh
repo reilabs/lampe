@@ -43,6 +43,7 @@ def run_tests(dir):
     update_mode = args.update
     lake_dir = examples_dir / ".lake"
     lakefile_lampe_relative_path = "../../../Lampe"
+    lakefile_stdlib_relative_path = "../../../stdlib/lampe"
 
     if 'LAMPE_TEST_CURRENT_COMMIT_SHA' not in ${...}:
         $LAMPE_TEST_CURRENT_COMMIT_SHA=$(git rev-parse HEAD)
@@ -133,6 +134,9 @@ def run_tests(dir):
         lakefile_path = dir_path / "lampe" / "lakefile.toml"
         if lakefile_path.exists():
             change_toml_required_lampe_to_path(lakefile_path, lakefile_lampe_relative_path)
+
+        if lakefile_path.exists():
+            change_toml_required_dep_to_path_by_regex(lakefile_path, '^std-.*$', '../../../stdlib/lampe')
 
         if (dir_path / "user_actions.xsh").exists():
             /usr/bin/env xonsh @(dir_path / "user_actions.xsh")

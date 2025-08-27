@@ -8,9 +8,9 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_global_def MAX_LOAD_FACTOR_NUMERATOR: u32 = (3: u32);
+noir_global_def std::collections::map::MAX_LOAD_FACTOR_NUMERATOR: u32 = (3: u32);
 
-noir_global_def MAX_LOAD_FACTOR_DEN0MINATOR: u32 = (4: u32);
+noir_global_def std::collections::map::MAX_LOAD_FACTOR_DEN0MINATOR: u32 = (4: u32);
 
 noir_trait_impl[impl_34]<K: Type, V: Type> std::default::Default<> for std::collections::map::Slot<K, V> where [] := {
   noir_def default<>() -> std::collections::map::Slot<K, V> := {
@@ -337,5 +337,5 @@ noir_trait_impl[impl_36]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: 
 }
 
 def Collections.Map.env : Env := Env.mk
-  [MAX_LOAD_FACTOR_NUMERATOR, MAX_LOAD_FACTOR_DEN0MINATOR, «std::collections::map::Slot::is_valid», «std::collections::map::Slot::is_available», «std::collections::map::Slot::key_value», «std::collections::map::Slot::key_value_unchecked», «std::collections::map::Slot::set», «std::collections::map::Slot::mark_deleted», «std::collections::map::HashMap::with_hasher», «std::collections::map::HashMap::clear», «std::collections::map::HashMap::contains_key», «std::collections::map::HashMap::is_empty», «std::collections::map::HashMap::entries», «std::collections::map::HashMap::keys», «std::collections::map::HashMap::values», «std::collections::map::HashMap::iter_mut», «std::collections::map::HashMap::iter_keys_mut», «std::collections::map::HashMap::iter_values_mut», «std::collections::map::HashMap::retain», «std::collections::map::HashMap::len», «std::collections::map::HashMap::capacity», «std::collections::map::HashMap::get», «std::collections::map::HashMap::insert», «std::collections::map::HashMap::remove», «std::collections::map::HashMap::hash», «std::collections::map::HashMap::quadratic_probe», «std::collections::map::HashMap::assert_load_factor»]
+  [«std::collections::map::MAX_LOAD_FACTOR_NUMERATOR», «std::collections::map::MAX_LOAD_FACTOR_DEN0MINATOR», «std::collections::map::Slot::is_valid», «std::collections::map::Slot::is_available», «std::collections::map::Slot::key_value», «std::collections::map::Slot::key_value_unchecked», «std::collections::map::Slot::set», «std::collections::map::Slot::mark_deleted», «std::collections::map::HashMap::with_hasher», «std::collections::map::HashMap::clear», «std::collections::map::HashMap::contains_key», «std::collections::map::HashMap::is_empty», «std::collections::map::HashMap::entries», «std::collections::map::HashMap::keys», «std::collections::map::HashMap::values», «std::collections::map::HashMap::iter_mut», «std::collections::map::HashMap::iter_keys_mut», «std::collections::map::HashMap::iter_values_mut», «std::collections::map::HashMap::retain», «std::collections::map::HashMap::len», «std::collections::map::HashMap::capacity», «std::collections::map::HashMap::get», «std::collections::map::HashMap::insert», «std::collections::map::HashMap::remove», «std::collections::map::HashMap::hash», «std::collections::map::HashMap::quadratic_probe», «std::collections::map::HashMap::assert_load_factor»]
   [impl_34, impl_35, impl_36]

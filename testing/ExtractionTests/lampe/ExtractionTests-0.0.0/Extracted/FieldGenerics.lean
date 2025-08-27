@@ -8,7 +8,7 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-noir_global_def A: Field = (4294967297: Field);
+noir_global_def field_generics::A: Field = (4294967297: Field);
 
 noir_def field_generics::foo1<A: Field>() -> Field := {
   fConst!(A: Field)
@@ -20,5 +20,5 @@ noir_def field_generics::main<>() -> Unit := {
 }
 
 def FieldGenerics.env : Env := Env.mk
-  [A, «field_generics::foo1», «field_generics::main»]
+  [«field_generics::A», «field_generics::foo1», «field_generics::main»]
   []

@@ -1308,7 +1308,7 @@ impl LeanGenerator<'_, '_> {
     }
 
     /// Generates the AST for a global definition corresponding to the Noir IR.
-    ///
+    //
     /// # Panics
     ///
     /// - If the global definition pointed to by `id` is malformed.
@@ -1323,13 +1323,7 @@ impl LeanGenerator<'_, '_> {
 
         match statement {
             HirStatement::Let(binding) => {
-                let name = match binding.pattern {
-                    HirPattern::Identifier(hir_ident) => {
-                        self.context.def_interner.definition_name(hir_ident.id).to_string()
-                    }
-                    _ => panic!("Encountered a malformed global"),
-                };
-
+                let name = self.fully_qualified_global_name(id);
                 let typ = self.generate_lean_type_value(&binding.r#type, None);
                 let expr = self.generate_expr(binding.expression);
 
@@ -2225,14 +2219,9 @@ impl LeanGenerator<'_, '_> {
                 let let_stmt = self.context.def_interner.statement(&global_info.let_statement);
                 let (global_name, global_type) = match let_stmt {
                     HirStatement::Let(let_stmt) => {
-                        let ident = match &let_stmt.pattern {
-                            HirPattern::Identifier(hir_ident) => {
-                                self.context.def_interner.definition_name(hir_ident.id).to_string()
-                            }
-                            _ => panic!("Encountered a malformed global"),
-                        };
+                        let name = self.fully_qualified_global_name(id);
                         let typ = self.generate_lean_type_value(&let_stmt.r#type, None);
-                        (ident, typ)
+                        (name, typ)
                     }
                     _ => panic!("Encountered a global that was not defined with a let binding"),
                 };
@@ -2674,6 +2663,56 @@ impl LeanGenerator<'_, '_> {
             format!("std::{fq_name}")
         } else {
             fq_name
+        }
+    }
+
+    /// Returns the fully-qualified global name for the described global.
+    ///
+    /// # Panics
+    ///
+    /// - If the global definition is not a let binding.
+    pub fn fully_qualified_global_name(&self, id: &GlobalId) -> String {
+        let global_data = self.context.def_interner.get_global(*id);
+        let statement = self.context.def_interner.statement(&global_data.let_statement);
+
+        match statement {
+            HirStatement::Let(binding) => match binding.pattern {
+                HirPattern::Identifier(hir_ident) => {
+                    let def_name =
+                        self.context.def_interner.definition_name(hir_ident.id).to_string();
+
+                    let krate = self
+                        .context
+                        .def_map(&global_data.crate_id)
+                        .expect("module should exist in context");
+                    if let Some((id, mod_data)) = krate.modules().iter().find(|(_, m)| {
+                        m.value_definitions()
+                            .any(|i| matches!(i, ModuleDefId::GlobalId(inner) if *id == inner))
+                    }) {
+                        let module_path = krate.get_module_path_with_separator(
+                            LocalModuleId::new(id),
+                            mod_data.parent,
+                            "::",
+                        );
+
+                        if self.root_crate_is_stdlib() {
+                            if module_path.is_empty() {
+                                format!("std::{def_name}")
+                            } else {
+                                format!("std::{module_path}::{def_name}")
+                            }
+                        } else if module_path.is_empty() {
+                            def_name.to_string()
+                        } else {
+                            format!("{module_path}::{def_name}")
+                        }
+                    } else {
+                        def_name.to_string()
+                    }
+                }
+                _ => panic!("Encountered a malformed global"),
+            },
+            _ => panic!("Encountered a malformed global"),
         }
     }
 }

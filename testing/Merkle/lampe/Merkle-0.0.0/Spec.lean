@@ -579,34 +579,32 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
   · subst_vars; rfl
   · subst_vars; rfl
 
-theorem sigma_intro : STHoare lp env (⟦⟧)
-    (Extracted.SIGMA.call h![] h![])
-      fun output => output = Ref.SIGMA := by
+theorem sigma_intro : STHoare lp env (⟦⟧) («globals::SIGMA».call h![] h![])
+    fun output => output = Ref.SIGMA := by
   enter_decl
-  simp only [Extracted.SIGMA]
+  simp only [Extracted.«globals::SIGMA»]
   steps []
   unfold Ref.SIGMA
   assumption
 
-theorem rc_intro : STHoare lp env (⟦⟧)
-    (Expr.call [] (Tp.field.array 8) (FuncRef.decl "RC" [] HList.nil) h![])
-      fun output => output = ⟨Ref.RC.toList, by rfl⟩ := by
+theorem rc_intro : STHoare lp env (⟦⟧) («globals::RC».call h![] h![])
+    fun output => output = ⟨Ref.RC.toList, by rfl⟩ := by
   enter_decl
   steps []
   subst_vars
   unfold Ref.RC
   rfl
 
-theorem square_intro : STHoare lp env (⟦⟧)
-    (Expr.call [Tp.field] Tp.field (FuncRef.decl "«utils::square»" [] HList.nil) h![input])
-      fun output => output = Ref.square input := by
+theorem square_intro : STHoare lp env (⟦⟧) («utils::square».call h![] h![input])
+    fun output => output = Ref.square input := by
   enter_decl
   steps [sigma_intro]
   unfold Ref.square
   subst_vars
   rfl
 
-theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "«permute::permute»" [] HList.nil) h![i])
+theorem permute_intro : STHoare lp env ⟦⟧
+    («permute::permute».call h![] h![i])
     fun output => output = (Ref.State.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Ref.State.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
   enter_decl
   cases i using List.Vector.casesOn with | cons _ i =>
@@ -622,7 +620,7 @@ instance {α H n} : Membership α (MerkleTree α H n) where
   mem t e := ∃p, e = MerkleTree.itemAt t p
 
 lemma SkyscraperHash_correct: STHoare lp env ⟦⟧
-      («hasher::BinaryHasher».hash h![.field] («struct#skyscraper::Skyscraper».tp h![]) h![] h![] h![a,b])
+      («hasher::BinaryHasher».hash h![.field] («skyscraper::Skyscraper».tp h![]) h![] h![] h![a,b])
       (fun v => v = Ref.State.compress ⟨[a, b], rfl⟩) := by
   try_all_traits [] env
   steps [permute_intro]
@@ -645,7 +643,7 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : Merk
         (main.call h![] h![tree.root, proof, item, index])
         (fun _ => item ∈ tree) := by
   enter_decl
-  steps [recover_intro (H:= «struct#skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
+  steps [recover_intro (H:= «skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
   use index.reverse
   subst_vars
   rename tree.root = _ => hroot
