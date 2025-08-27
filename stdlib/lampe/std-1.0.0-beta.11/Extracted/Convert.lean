@@ -9,14 +9,14 @@ namespace «std-1.0.0-beta.11»
 namespace Extracted
 
 noir_trait_impl[impl_40]<T: Type> std::convert::From<T> for T where [] := {
-  noir_def from<>(input: T) -> T := {
+  noir_def «from»<>(input: T) -> T := {
     input
   };
 }
 
 noir_trait_impl[impl_41]<T: Type, U: Type> std::convert::Into<T> for U where [T: std::convert::From<U>] := {
   noir_def into<>(self: U) -> T := {
-    ((T as std::convert::From<U>)::from<> as λ(U) -> T)(self)
+    ((T as std::convert::From<U>)::«from»<> as λ(U) -> T)(self)
   };
 }
 

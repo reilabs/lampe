@@ -262,8 +262,8 @@ noir_trait_impl[impl_32]<T: Type, MaxLen: u32> std::cmp::Eq<> for std::collectio
 }
 
 noir_trait_impl[impl_33]<Len: u32, T: Type, MaxLen: u32> std::convert::From<Array<T, Len: u32> > for std::collections::bounded_vec::BoundedVec<T, MaxLen: u32> where [] := {
-  noir_def from<>(array: Array<T, Len: u32>) -> std::collections::bounded_vec::BoundedVec<T, MaxLen: u32> := {
-    (std::collections::bounded_vec::BoundedVec::from_array<T, MaxLen: u32, Len: u32> as λ(Array<T, Len: u32>) -> std::collections::bounded_vec::BoundedVec<T, MaxLen: u32>)(array)
+  noir_def «from»<>(array: Array<T, Len: u32>) -> std::collections::bounded_vec::BoundedVec<T, MaxLen: u32> := {
+    (std::collections::bounded_vec::BoundedVec::from_array<Len: u32> as λ(Array<T, Len: u32>) -> std::collections::bounded_vec::BoundedVec<T, MaxLen: u32>)(array)
   };
 }
 

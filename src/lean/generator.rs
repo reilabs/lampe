@@ -274,7 +274,7 @@ impl LeanGenerator<'_, '_> {
                             .into_iter()
                             .position(|item| *item == DependencyId::Struct(id));
                         let struct_def = self.generate_struct_def(id);
-                        let name = struct_def.name.clone();
+                        let name = quote_lean_keywords(&struct_def.name);
                         let def = TypeDefinition::Struct(struct_def);
 
                         vec![(def_order, name, def)]
@@ -289,7 +289,7 @@ impl LeanGenerator<'_, '_> {
                             .into_iter()
                             .position(|item| *item == DependencyId::Alias(id));
                         let alias_def = self.generate_alias(id);
-                        let name = alias_def.name.clone();
+                        let name = quote_lean_keywords(&alias_def.name);
                         let def = TypeDefinition::Alias(alias_def);
 
                         vec![(def_order, name, def)]
@@ -300,7 +300,7 @@ impl LeanGenerator<'_, '_> {
                             .into_iter()
                             .position(|item| *item == DependencyId::Trait(id));
                         let trait_def = self.generate_trait_definition(id);
-                        let name = trait_def.name.clone();
+                        let name = quote_lean_keywords(&trait_def.name);
                         let def = TypeDefinition::Trait(trait_def);
 
                         vec![(def_order, name, def)]
@@ -347,16 +347,7 @@ impl LeanGenerator<'_, '_> {
         let qualified_path =
             self.fully_qualified_struct_path(&struct_data.id.module_id().krate, &id);
 
-        let name = qualified_path
-            .split("::")
-            .map(|seg| {
-                if conflicts_with_lean_keyword(seg) {
-                    format!("{LEAN_QUOTE_START}{seg}{LEAN_QUOTE_END}")
-                } else {
-                    seg.to_string()
-                }
-            })
-            .join("::");
+        let name = quote_lean_keywords(&qualified_path);
 
         // We always need the generics to be in a consistent order, otherwise we would
         // potentially break user code. Unfortunately, they do not _come_ in a
@@ -434,6 +425,7 @@ impl LeanGenerator<'_, '_> {
                 let type_def = struct_type.borrow();
                 let module_id = type_def.id.module_id();
                 let name = &self.fully_qualified_struct_path(&module_id.krate, &type_def.id);
+                let name = &quote_lean_keywords(name);
                 let generics = generics
                     .iter()
                     .map(|g| self.generate_lean_type_value(g, bindings))
@@ -443,6 +435,7 @@ impl LeanGenerator<'_, '_> {
             NoirType::Alias(alias, generics) => {
                 let alias = alias.borrow();
                 let name = alias.name.as_str();
+                let name = &quote_lean_keywords(name);
                 let generics = generics
                     .iter()
                     .map(|g| self.generate_lean_type_value(g, bindings))
@@ -664,7 +657,7 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_alias(&self, id: TypeAliasId) -> TypeAlias {
         let alias_data = self.context.def_interner.get_type_alias(id);
         let alias_data = alias_data.borrow();
-        let name = alias_data.name.to_string();
+        let name = quote_lean_keywords(&alias_data.to_string());
         let generics = self.gather_lean_type_patterns_from_resolved_generics(&alias_data.generics);
         let aliased_type = self.generate_lean_type_value(&alias_data.typ, None);
         TypeAlias {
@@ -677,6 +670,7 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_trait_definition(&self, id: TraitId) -> TraitDefinition {
         let trait_def = self.context.def_interner.get_trait(id);
         let name = self.resolve_fq_trait_name_from_crate_id(trait_def.crate_id, id);
+        let name = quote_lean_keywords(&name);
         let trait_generics =
             self.gather_lean_type_patterns_from_resolved_generics(&trait_def.generics);
         let associated_types =
@@ -687,6 +681,7 @@ impl LeanGenerator<'_, '_> {
             .iter()
             .map(|method| {
                 let method_name = method.name.to_string();
+                let method_name = quote_lean_keywords(&method_name);
                 let method_generics = self
                     .gather_lean_type_patterns_from_resolved_generics(&method.direct_generics)
                     .into_iter()
@@ -1384,6 +1379,7 @@ impl LeanGenerator<'_, '_> {
         let trait_def_data = self.context.def_interner.get_trait(trait_def_id);
         let trait_name =
             self.resolve_fq_trait_name_from_crate_id(trait_def_data.crate_id, trait_def_id);
+        let trait_name = quote_lean_keywords(&trait_name);
         let self_type = self.generate_lean_type_value(&trait_impl.typ, None);
 
         let where_clauses = trait_impl
@@ -1465,6 +1461,7 @@ impl LeanGenerator<'_, '_> {
         // Note that we NEVER want to qualify the name of the trait function.
         let function_meta = self.context.function_meta(&id);
         let name = self.context.function_name(&id).to_string();
+        let name = quote_lean_keywords(&name);
 
         let parameters = self.generate_function_parameters(function_meta);
         let return_type = self.generate_lean_type_value(function_meta.return_type(), None);
@@ -2088,6 +2085,7 @@ impl LeanGenerator<'_, '_> {
         output_type: &Type,
     ) -> Expression {
         let name = self.context.def_interner.definition_name(ident.id).to_string();
+        let name = quote_lean_keywords(&name);
         let ident_def = self.context.def_interner.definition(ident.id);
         let default: TypeBindings = HashMap::default();
         let bindings = self
@@ -2743,6 +2741,20 @@ pub fn sanitize_generic_name(name: &str) -> String {
 #[must_use]
 pub fn sanitize_variable_name(name: &str) -> String {
     name.replace('$', "ζ")
+}
+
+/// Quotes the Lean keywords in the fully qualified name to avoid conflicts with
+/// the Lean parser
+fn quote_lean_keywords(text: &str) -> String {
+    text.split("::")
+        .map(|part| {
+            if conflicts_with_lean_keyword(part) {
+                format!("{LEAN_QUOTE_START}{part}{LEAN_QUOTE_END}")
+            } else {
+                part.to_string()
+            }
+        })
+        .join("::")
 }
 
 /// A container for top-level non-type definitions in a module.

@@ -130,7 +130,8 @@ impl EmitContext {
     #[must_use]
     pub fn quote_name_if_needed(text: &str) -> String {
         if !text.starts_with(LEAN_QUOTE_START) || !text.ends_with(LEAN_QUOTE_END) {
-            if text.contains("::") || conflicts_with_lean_keyword(text) {
+            if text.contains("::") {
+                let text = text.replace(LEAN_QUOTE_START, "").replace(LEAN_QUOTE_END, "");
                 format!("{LEAN_QUOTE_START}{text}{LEAN_QUOTE_END}")
             } else {
                 text.to_string()
