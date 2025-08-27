@@ -1396,6 +1396,7 @@ impl LeanGenerator<'_, '_> {
                 let trait_data = self.context.def_interner.get_trait(cons.trait_bound.trait_id);
                 let trait_name =
                     &self.resolve_fq_trait_name_from_crate_id(trait_data.crate_id, trait_data.id);
+                let trait_name = &quote_lean_keywords(trait_name);
                 let generics = &cons.trait_bound.trait_generics;
                 let generics = generics
                     .ordered
@@ -1727,6 +1728,7 @@ impl LeanGenerator<'_, '_> {
         let struct_def = struct_def.borrow();
         let crate_id = self.root_crate;
         let name = self.fully_qualified_struct_path(&crate_id, &struct_def.id);
+        let name = quote_lean_keywords(&name);
         let fields = &constructor.fields;
 
         // We work with fields in _order_, so we need to turn these into orders.
@@ -2243,6 +2245,7 @@ impl LeanGenerator<'_, '_> {
                             }
                             _ => panic!("Encountered a malformed global"),
                         };
+                        let ident = quote_lean_keywords(&ident);
                         let typ = self.generate_lean_type_value(&let_stmt.r#type, None);
                         (ident, typ)
                     }

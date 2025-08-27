@@ -47,11 +47,11 @@ noir_struct_def std::embedded_curve_ops::EmbeddedCurvePoint<> {
 
 noir_type_alias DeriveFunction<> := λ(Unit) -> Unit;
 
-noir_struct_def std::meta::tests::MyOtherStruct<> {
+noir_struct_def std::«meta»::tests::MyOtherStruct<> {
   u32,
 }
 
-noir_struct_def std::meta::tests::Bar<> {
+noir_struct_def std::«meta»::tests::Bar<> {
   Field,
   Array<Field, 2: u32>,
 }
@@ -71,7 +71,7 @@ noir_struct_def std::«meta»::tests::MyStruct<> {
   i32,
 }
 
-noir_struct_def std::meta::op::BinaryOp<> {
+noir_struct_def std::«meta»::op::BinaryOp<> {
   Field,
 }
 
@@ -92,7 +92,7 @@ noir_struct_def std::hash::poseidon2::Poseidon2<> {
 
 noir_struct_def std::hash::BuildHasherDefault<H: Type> {}
 
-noir_struct_def std::meta::op::UnaryOp<> {
+noir_struct_def std::«meta»::op::UnaryOp<> {
   Field,
 }
 

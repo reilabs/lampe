@@ -8,14 +8,14 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_trait_impl[impl_300]<> std::cmp::Eq<> for std::meta::op::UnaryOp<> where [] := {
-  noir_def eq<>(self: std::meta::op::UnaryOp<>, other: std::meta::op::UnaryOp<>) -> bool := {
+noir_trait_impl[impl_300]<> std::cmp::Eq<> for std::«meta»::op::UnaryOp<> where [] := {
+  noir_def eq<>(self: std::«meta»::op::UnaryOp<>, other: std::«meta»::op::UnaryOp<>) -> bool := {
     (#_fEq returning bool)(self.0, other.0)
   };
 }
 
-noir_trait_impl[impl_301]<> std::hash::Hash<> for std::meta::op::UnaryOp<> where [] := {
-  noir_def hash<H: Type>(self: std::meta::op::UnaryOp<>, h: & H) -> Unit := {
+noir_trait_impl[impl_301]<> std::hash::Hash<> for std::«meta»::op::UnaryOp<> where [] := {
+  noir_def hash<H: Type>(self: std::«meta»::op::UnaryOp<>, h: & H) -> Unit := {
     ((Field as std::hash::Hash<>)::hash<H> as λ(Field, & H) -> Unit)(self.0, h);
     #_skip
   };
@@ -37,14 +37,14 @@ noir_def std::«meta»::op::UnaryOp::is_dereference<>(self: std::«meta»::op::U
   (#_fEq returning bool)(self.0, (3: Field))
 }
 
-noir_trait_impl[impl_302]<> std::cmp::Eq<> for std::meta::op::BinaryOp<> where [] := {
-  noir_def eq<>(self: std::meta::op::BinaryOp<>, other: std::meta::op::BinaryOp<>) -> bool := {
+noir_trait_impl[impl_302]<> std::cmp::Eq<> for std::«meta»::op::BinaryOp<> where [] := {
+  noir_def eq<>(self: std::«meta»::op::BinaryOp<>, other: std::«meta»::op::BinaryOp<>) -> bool := {
     (#_fEq returning bool)(self.0, other.0)
   };
 }
 
-noir_trait_impl[impl_303]<> std::hash::Hash<> for std::meta::op::BinaryOp<> where [] := {
-  noir_def hash<H: Type>(self: std::meta::op::BinaryOp<>, h: & H) -> Unit := {
+noir_trait_impl[impl_303]<> std::hash::Hash<> for std::«meta»::op::BinaryOp<> where [] := {
+  noir_def hash<H: Type>(self: std::«meta»::op::BinaryOp<>, h: & H) -> Unit := {
     ((Field as std::hash::Hash<>)::hash<H> as λ(Field, & H) -> Unit)(self.0, h);
     #_skip
   };
