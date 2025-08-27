@@ -144,9 +144,8 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
   steps
   enter_lambda_as (⟦⟧) (fun v => v = x + y)
   . assumption
-  . assumption
-  . steps
-    assumption
+  steps
+  assumption
 
 noir_trait_def Bulbulize<> [] := {
   method bulbulize<>(Self) -> Field;
@@ -595,7 +594,6 @@ example : STHoare p testLamEnv ⟦⟧ (test_lam.call h![] h![x])
   enter_decl
   steps
   enter_lambda_as (⟦⟧) (fun v => v = x)
-  · assumption
   · assumption
   steps
   simp_all

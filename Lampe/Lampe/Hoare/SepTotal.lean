@@ -448,15 +448,14 @@ theorem skip_intro :
 
 theorem lam_intro :
   STHoare p Γ ⟦⟧ (.lam argTps outTp lambdaBody)
-    fun v => ∃∃ (h:v.isLambda), [λ (v.asLambda h) ↦ ⟨argTps, outTp, lambdaBody⟩] := by
+    fun v => [λv ↦ ⟨argTps, outTp, lambdaBody⟩] := by
   unfold STHoare THoare
   intros H st h
   constructor
   intros
   simp_all only [SLP.true_star, SLP.star_assoc]
   rename Ref => r
-  generalize (⟨_, _, _⟩ : Lambda _) = lambda
-  exists ⟨∅, Finmap.singleton r lambda⟩, st
+  exists ⟨∅, Finmap.singleton r ⟨argTps, outTp, lambdaBody⟩⟩, st
   refine ⟨?_, ?_, ?_, ?_⟩
   . simp only [LawfulHeap.disjoint]
     refine ⟨?_, ?_⟩
@@ -464,23 +463,22 @@ theorem lam_intro :
     . apply Finmap.singleton_disjoint_of_not_mem (by tauto)
   . simp only [State.union_parts, State.mk.injEq]
     refine ⟨by simp_all, ?_⟩
-    have hd : Finmap.Disjoint st.lambdas (Finmap.singleton r lambda) := by
+    have hd : Finmap.Disjoint st.lambdas (Finmap.singleton r ⟨argTps, outTp, lambdaBody⟩) := by
       rw [Finmap.Disjoint.symm_iff]
       apply Finmap.singleton_disjoint_of_not_mem (by assumption)
     simp only [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
-  . unfold State.lmbSingleton SLP.exists'
+  . unfold State.lmbSingleton
     simp [FuncRef.isLambda]
-    rfl
   . apply SLP.ent_star_top
     tauto
 
-theorem callLambda_intro' {lambdaBody} {P : SLP $ State p}
+theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
   {Q : Tp.denote p outTp → SLP (State p)}
   {fnRef : Tp.denote p (.fn argTps outTp)}
   {hlam : STHoare p Γ P (lambdaBody args) Q} :
-  STHoare p Γ (P ⋆ ∃∃ r, ⟦fnRef = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩])
+  STHoare p Γ (P ⋆ [λfnRef ↦ ⟨argTps, outTp, lambdaBody⟩])
     (Expr.call argTps outTp fnRef args)
-    (fun v => (Q v) ⋆ ∃∃ r, ⟦fnRef = FuncRef.lambda r⟧ ⋆ [λr ↦ ⟨argTps, outTp, lambdaBody⟩]) := by
+    (fun v => (Q v) ⋆ [λfnRef ↦ ⟨argTps, outTp, lambdaBody⟩]) := by
   unfold STHoare THoare
   intros H st h
   have h₁ : ∃ r, fnRef = .lambda r := by
@@ -489,11 +487,10 @@ theorem callLambda_intro' {lambdaBody} {P : SLP $ State p}
   obtain ⟨r, _⟩ := h₁
   apply Omni.callLambda (ref := r) (lambdaBody := lambdaBody)
   · tauto
-  . obtain ⟨st₁, st₂, _, _, ⟨_, _, _, _, _, _, _, _, _, _, ⟨_, _⟩, _⟩, _⟩ := h
+  . obtain ⟨st₁, st₂, _, _, ⟨_, _, _, _, _, _, _, _⟩ , _⟩ := h
     subst_vars
     simp_all only [FuncRef.lambda.injEq]
     subst_vars
-    simp_all only [LawfulHeap.empty_union, LawfulHeap.empty_disjoint]
     simp only [State.union_parts]
     rw [Finmap.lookup_union_left, Finmap.lookup_union_right]
     <;> simp only [State.lmbSingleton, LawfulHeap.disjoint, State.union_parts] at *
@@ -503,40 +500,6 @@ theorem callLambda_intro' {lambdaBody} {P : SLP $ State p}
       tauto
     . simp_all
   · apply STHoare.consequence_frame_left <;> tauto
-
-
-lemma FuncRef.lambda_asLambda {f : FuncRef a o} {h} : FuncRef.lambda (FuncRef.asLambda f h) = f := by
-  unfold FuncRef.isLambda at h
-  split at h
-  · rfl
-  · contradiction
-
-theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
-  {Q : Tp.denote p outTp → SLP (State p)}
-  {fnRef : Tp.denote p (.fn argTps outTp)}
-  {hlam : STHoare p Γ P (lambdaBody args) Q} :
-  STHoare p Γ ((∃∃ h, [λfnRef.asLambda h ↦ ⟨argTps, outTp, lambdaBody⟩]) ⋆ P)
-    (Expr.call argTps outTp fnRef args)
-    (fun v => (∃∃ h, [λfnRef.asLambda h ↦ ⟨argTps, outTp, lambdaBody⟩]) ⋆ Q v) := by
-  apply STHoare.consequence (h_hoare := callLambda_intro' (P := P) (Q := Q) (hlam := hlam))
-  · rw [SLP.star_comm]
-    apply SLP.star_mono_l
-    apply SLP.exists_intro_l
-    intro h
-    apply SLP.exists_intro_r (a := fnRef.asLambda h)
-    simp [FuncRef.lambda_asLambda]
-    apply SLP.entails_self
-  · intro
-    apply SLP.star_mono_r
-    rw [SLP.star_comm]
-    apply SLP.star_mono_r
-    apply SLP.exists_intro_l
-    intro r
-    apply SLP.pure_left
-    rintro rfl
-    apply SLP.exists_intro_r
-    apply SLP.entails_self
-    rfl
 
 theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}
