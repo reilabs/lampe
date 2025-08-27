@@ -455,7 +455,6 @@ theorem lam_intro :
   intros
   simp_all only [SLP.true_star, SLP.star_assoc]
   rename Ref => r
-  -- generalize (⟨_, _, _⟩ : Lambda _) = lambda
   exists ⟨∅, Finmap.singleton r ⟨argTps, outTp, lambdaBody⟩⟩, st
   refine ⟨?_, ?_, ?_, ?_⟩
   . simp only [LawfulHeap.disjoint]
