@@ -67,7 +67,7 @@ noir_struct_def std::embedded_curve_ops::EmbeddedCurveScalar<> {
   Field,
 }
 
-noir_struct_def std::meta::tests::MyStruct<> {
+noir_struct_def std::«meta»::tests::MyStruct<> {
   i32,
 }
 
