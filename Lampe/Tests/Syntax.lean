@@ -659,3 +659,9 @@ noir_def generic_fconst<N: Field>() -> Slice<Field> := {
 noir_def generic_uconst<N: u32>() -> Slice<Field> := {
   (#_mkRepeatedSlice returning Slice<Field>)(0: Field, uConst!(N: u32))
 }
+
+noir_def from<>() -> Field := {
+  (3: Field)
+}
+
+noir_struct_def has::meta::«from»::name<> {}
