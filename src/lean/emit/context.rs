@@ -1,4 +1,4 @@
-use crate::lean::{conflicts_with_lean_keyword, LEAN_QUOTE_START, LEAN_QUOTE_END};
+use crate::lean::{LEAN_QUOTE_END, LEAN_QUOTE_START};
 
 /// The default contents of a single indentation level.
 pub const DEFAULT_INDENTATION_CONTENT: &str = "  ";
@@ -171,8 +171,7 @@ impl Default for EmitContext {
 
 #[cfg(test)]
 mod test {
-    use crate::lean::emit::context::{EmitContext};
-    use crate::lean::{LEAN_QUOTE_END, LEAN_QUOTE_START};
+    use crate::lean::{emit::context::EmitContext, LEAN_QUOTE_END, LEAN_QUOTE_START};
 
     #[test]
     fn quotes_correctly() {
