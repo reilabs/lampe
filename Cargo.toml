@@ -11,14 +11,14 @@ repository = "https://github.com/reilabs/lampe"
 license = "MIT"
 
 [dependencies]
-# When update noir version used in here please remember about changing
-# also CI job `.github/workflows/ci-noir.yaml` to match used noir repo.
-fm = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
-nargo = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
-nargo_toml = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
-noirc_driver = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
-noirc_errors = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
-noirc_frontend = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b51e111a49a5f78d827774ef8e80c74" }
+# When update noir version used in here please remember about changing the
+# `ci-noir` workflow and standard library to pull from the same version.
+fm = { git = "https://github.com/noir-lang/noir", rev = "fd3925aaaeb76c76319f44590d135498ef41ea6c" }
+nargo = { git = "https://github.com/noir-lang/noir", rev = "fd3925aaaeb76c76319f44590d135498ef41ea6c" }
+nargo_toml = { git = "https://github.com/noir-lang/noir", rev = "fd3925aaaeb76c76319f44590d135498ef41ea6c" }
+noirc_driver = { git = "https://github.com/noir-lang/noir", rev = "fd3925aaaeb76c76319f44590d135498ef41ea6c" }
+noirc_errors = { git = "https://github.com/noir-lang/noir", rev = "fd3925aaaeb76c76319f44590d135498ef41ea6c" }
+noirc_frontend = { git = "https://github.com/noir-lang/noir", rev = "fd3925aaaeb76c76319f44590d135498ef41ea6c" }
 
 # Left behind to enable easier local development when needed
 # fm = { path = "../noir/compiler/fm" }
@@ -28,15 +28,15 @@ noirc_frontend = { git = "https://github.com/noir-lang/noir", rev = "5071093f9b5
 # noirc_errors = { path = "../noir/compiler/noirc_errors" }
 # noirc_frontend = { path = "../noir/compiler/noirc_frontend" }
 
-clap = { version = "4.5.17", features = ["unstable-v5"] }
+clap = { version = "4.5.46", features = ["unstable-v5"] }
 derivative = "2.2.0"
 itertools = "0.14.0"
-thiserror = "2.0.12"
-tempfile = "3.19.1"
-petgraph = "0.6.5" # Cannot bump as it is currently required to be this version by a dependency
+thiserror = "2.0.16"
+tempfile = "3.21.0"
+petgraph = "0.8.2"
 convert_case = "0.8.0"
 serde = { version = "1.0.204", features = ["derive"] }
-toml = { version = "0.8.20" }
+toml = { version = "0.9.5" }
 
 [dev-dependencies]
 tempfile = "3.8.1"

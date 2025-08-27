@@ -8,7 +8,7 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-noir_trait_impl[impl_428]<> associated_type::Foo<> for associated_type::Pair<> where [] := {
+noir_trait_impl[impl_430]<> associated_type::Foo<> for associated_type::Pair<> where [] := {
   noir_def foo_meth<>(self: associated_type::Pair<>) -> Field := {
     self.0
   };
@@ -17,4 +17,4 @@ noir_trait_impl[impl_428]<> associated_type::Foo<> for associated_type::Pair<> w
 
 def AssociatedType.env : Env := Env.mk
   []
-  [impl_428]
+  [impl_430]

@@ -47,7 +47,7 @@ lampe_dependency = [
 # repository's head.
 stdlib_dependency = [
     '[[require]]\n',
-    'name = "std-1.0.0-beta.3"\n',
+    'name = "std-1.0.0-beta.11"\n',
     'path = "../../../stdlib/lampe"\n',
     '\n'
 ]

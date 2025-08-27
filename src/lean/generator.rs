@@ -1707,10 +1707,11 @@ impl LeanGenerator<'_, '_> {
                 .context
                 .def_interner
                 .get_operator_trait_method(infix.operator.kind);
+
             let function_name = self
                 .context
                 .def_interner
-                .definition_name(self.context.def_interner.trait_method_id(trait_method_id))
+                .definition_name(trait_method_id.item_id)
                 .to_string();
             let trait_name = self
                 .context
@@ -1769,7 +1770,7 @@ impl LeanGenerator<'_, '_> {
             let function_name = self
                 .context
                 .def_interner
-                .definition_name(self.context.def_interner.trait_method_id(trait_method_id))
+                .definition_name(trait_method_id.item_id)
                 .to_string();
             let corresponding_trait = self.context.def_interner.get_trait(trait_method_id.trait_id);
             let trait_name = corresponding_trait.name.to_string();

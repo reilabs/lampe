@@ -290,9 +290,17 @@ fn call_trait2_unbound<T>(x : T, y : T) -> Field where T : WeirdAdd {
     #[test]
     fn test_unbound2() {
         let unbound_source = r"
-use std::ops::arith::Add;
+trait Add2 {
+    fn add(self, other: Self) -> Self;
+}
 
-fn call_trait2<T, U> (x: T, y: U) -> Field where T: Add, U: Add {
+impl Add2 for u64 {
+    fn add(self, other: Self) -> Self {
+        self + other
+    }
+}
+
+fn call_trait2<T, U> (x: T, y: U) -> Field where T: Add2, U: Add2 {
     let x = x.add(x);
     let y = y.add(y);
     3
