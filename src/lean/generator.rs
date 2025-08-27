@@ -137,6 +137,9 @@ use crate::{
             MAKE_STRUCT_BUILTIN_NAME,
             UNIT_TYPE_NAME,
         },
+        conflicts_with_lean_keyword,
+        LEAN_QUOTE_START,
+        LEAN_QUOTE_END
     },
 };
 
@@ -344,6 +347,17 @@ impl LeanGenerator<'_, '_> {
         let qualified_path =
             self.fully_qualified_struct_path(&struct_data.id.module_id().krate, &id);
 
+        let name = qualified_path
+            .split("::")
+            .map(|seg| {
+                if conflicts_with_lean_keyword(seg) {
+                    format!("{LEAN_QUOTE_START}{seg}{LEAN_QUOTE_END}")
+                } else {
+                    seg.to_string()
+                }
+            })
+            .join("::");
+
         // We always need the generics to be in a consistent order, otherwise we would
         // potentially break user code. Unfortunately, they do not _come_ in a
         // consistent order as iteration order seems to be determined by id.
@@ -360,7 +374,7 @@ impl LeanGenerator<'_, '_> {
             .collect_vec();
 
         StructDefinition {
-            name: qualified_path,
+            name,
             generics,
             members,
         }

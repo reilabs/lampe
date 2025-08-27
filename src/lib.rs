@@ -517,4 +517,26 @@ fn call_binary_hasher_2<H>() -> Field where H: BinaryHasherIsh2<F = Field> {
 
         print!("{}", result.unwrap().1);
     }
+
+    #[test]
+    fn keyword_conflicts() {
+        let keyword_source = r"
+mod has {
+    pub mod meta {
+        pub mod from {
+            pub struct name;
+        }
+    }
+}
+
+    fn from() ->  Field {
+        3
+    }
+";
+
+        let result = test_extractor_on(keyword_source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
 }

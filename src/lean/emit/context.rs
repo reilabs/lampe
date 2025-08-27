@@ -1,3 +1,5 @@
+use crate::lean::{conflicts_with_lean_keyword, LEAN_QUOTE_START, LEAN_QUOTE_END};
+
 /// The default contents of a single indentation level.
 pub const DEFAULT_INDENTATION_CONTENT: &str = "  ";
 
@@ -6,15 +8,6 @@ pub const INCREASE_INDENT_TAIL: &str = "{";
 
 /// If this is seen at the end of a line, the indent level is decreased.
 pub const DECREASE_INDENT_TAIL: &str = "}";
-
-/// The opening quote for use in the Lean source.
-pub const LEAN_QUOTE_START: &str = "«";
-
-/// The closing quote for use in the Lean source.
-pub const LEAN_QUOTE_END: &str = "»";
-
-/// Keywords that are built into Lean's syntax., so we need to quote them
-pub const LEAN_KEYWORDS: &[&str] = &["from"];
 
 /// Handles the emission of Lean DSL source code for a single module / file pair
 /// in the Noir source.
@@ -170,10 +163,6 @@ impl EmitContext {
     }
 }
 
-fn conflicts_with_lean_keyword(text: &str) -> bool {
-    LEAN_KEYWORDS.iter().any(|&keyword| text == keyword)
-}
-
 impl Default for EmitContext {
     fn default() -> Self {
         Self::new(DEFAULT_INDENTATION_CONTENT)
@@ -182,7 +171,8 @@ impl Default for EmitContext {
 
 #[cfg(test)]
 mod test {
-    use crate::lean::emit::context::{EmitContext, LEAN_QUOTE_END, LEAN_QUOTE_START};
+    use crate::lean::emit::context::{EmitContext};
+    use crate::lean::{LEAN_QUOTE_END, LEAN_QUOTE_START};
 
     #[test]
     fn quotes_correctly() {
