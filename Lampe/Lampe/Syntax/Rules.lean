@@ -174,7 +174,7 @@ syntax "(" noir_pat,* ")" : noir_pat -- A tuple pattern stands in for both tuple
 -- lenses, but we provide syntax for ease of reading.
 
 syntax ident : noir_lval -- A bare identifier.
-syntax "(" noir_lval "." num ":" noir_type ")" : noir_lval -- A field access with numeric field selection.
+syntax "(" noir_lval "." num ppSpace ":" ppSpace noir_type ")" : noir_lval -- A field access with numeric field selection.
 syntax "(" noir_lval "[" noir_expr "]" ":" noir_type ")" : noir_lval -- An array access.
 syntax "(" noir_lval "[[" noir_expr "]]" ":" noir_type ")" : noir_lval -- A slice access
 syntax "(" "*" noir_expr ":" noir_type ")" : noir_lval -- A dereferenced value.

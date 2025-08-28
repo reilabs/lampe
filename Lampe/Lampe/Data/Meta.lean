@@ -19,6 +19,12 @@ def whenFullyApplied (expr : Expr) (f : DelabM α) : DelabM α := do
   let arity2 := fType.getNumHeadLambdas
   if numArgs == arity + arity2 then f else failure
 
+def mkHListLit [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m] : List (TSyntax `term) → m (TSyntax `term)
+| [] => `(HList.nil)
+| x :: xs => do
+  let tail ← mkHListLit xs
+  `(HList.cons $x $tail)
+
 end Lampe
 
 /-- TODO: docs -/
@@ -26,7 +32,7 @@ partial def Lean.Expr.hListLit? (e : Expr) : Option $ List Expr :=
   let rec loop (e : Expr) (acc : List Expr) :=
     if e.isAppOfArity' ``HList.nil 2 then
       some acc.reverse
-    else if e.isAppOfArity' ``HList.cons 3 then
+    else if e.isAppOfArity' ``HList.cons 6 then
       loop e.appArg!' (e.appFn!'.appArg!' :: acc)
     else
       none

@@ -1,7 +1,7 @@
+import Lampe.Data.Meta
 import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
-import Lampe.Syntax
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
@@ -171,4 +171,3 @@ elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
 
   oldState.restore
   throwError m!"no matching trait implementation found in environment {← ppExpr envExpr}"
-
