@@ -4,6 +4,7 @@ from pathlib import Path
 from tomlkit import dumps
 from tomlkit import parse
 import yaml
+import re
 
 # --- Start of copied part.
 # This method is used to resolve the project's root directory,
@@ -41,6 +42,30 @@ def write_toml(path, toml):
 def load_yaml(path):
     with open(path, mode="r") as f:
         return yaml.safe_load(f)
+
+def change_required_dep_to_path_by_regex(toml, name_regex, path):
+    compiled_name_regex = re.compile(name_regex)
+
+    for i, v in enumerate(toml['require']):
+        if not compiled_name_regex.match(v['name']):
+                continue
+
+        keys = list(v.keys())
+        for key in keys:
+            if key == 'name':
+                    continue
+            del v[key]
+
+        v['path'] = path
+
+    return toml
+
+def change_toml_required_dep_to_path_by_regex(toml_path, name_regex, path):
+    lakefile_toml = load_toml(toml_path)
+
+    change_required_dep_to_path_by_regex(lakefile_toml, name_regex, path)
+
+    write_toml(toml_path, lakefile_toml)
 
 def change_required_lampe_to_path(toml, path):
     for i, v in enumerate(toml['require']):
