@@ -17,14 +17,10 @@ register_option Lampe.pp.STHoare : Bool := {
 
 namespace Lampe
 
+/-- Switch whether the `Expr` delaborator fires based off the `Lampe.pp.Expr` option -/
 abbrev whenDelabExprOption : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.Expr
 
--- TODO: probably delete this eventually
-partial def mkGenVal (stx : Syntax) : DelabM <| TSyntax `noir_gen_val := do
-  match stx.getKind with
-  | `noir_type => pure ⟨stx⟩
-  | _ => pure ⟨stx⟩
-
+/-- Helper function to delaborate struct types of the form «struct#Name».tp h![⋯] -/
 def delabStructTp (expr : Lean.Expr) : DelabM <| (TSyntax `noir_ident) × Lean.Expr :=
   whenFullyApplied expr do
     let struct := expr.getArg! 0
@@ -50,7 +46,7 @@ partial def ppTp (expr : Lean.Expr) : DelabM <| TSyntax `noir_type := do
   | Tp.tuple _name fields => do
       let some (_, fields) := fields.listLit? | throwError "expected list lit error in Tp.tuple"
       let fields ← fields.mapM fun tp => ppTp tp
-      let fields ← fields.toArray.mapM fun tp => mkGenVal tp
+      let fields ← fields.toArray.mapM fun tp => `(noir_gen_val|$tp:noir_type)
       let tupleType ←`(noir_type|$(⟨mkIdent `Tuple⟩):noir_ident <$fields,*>) -- This doesn't work
 
       return tupleType
@@ -84,6 +80,7 @@ def ppLampeBool (stx : Syntax) : DelabM <| TSyntax `noir_expr := do
     | `($v) =>
       return ←`(noir_expr|$(⟨v⟩))
 
+/-- Extract the inner Lampe expression from a block or enclosing `⸨⋯⸩` block -/
 def extractInnerLampeExpr (stx : TSyntax `term) : TSyntax `noir_expr :=
   let e := match stx with
   | `(⸨ $e ⸩) => e
@@ -92,6 +89,7 @@ def extractInnerLampeExpr (stx : TSyntax `term) : TSyntax `noir_expr :=
   | `(noir_expr|{$e}) => e
   | `(noir_expr|$e) => e
 
+/-- Used to avoid situations with multiple enclosing blocks in the delaborator -/
 def ensureOneBracket (stx : TSyntax `noir_expr) : DelabM <| TSyntax `noir_expr := do
   match stx with
   | `(noir_expr|{{$e;*}}) =>
@@ -128,6 +126,7 @@ def delabReadRef : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let val := expr.getArg! 2
     `(⸨$(⟨← delab val⟩)⸩)
 
+/-- Descends through a `Member.head/tail` access pattern to determine the projection indexes -/
 partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat := do
   let headIdent := mkIdent `Builtin.Member.head
   let tailIdent := mkIdent `tail
@@ -138,6 +137,7 @@ partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat :=
   else
     return none
 
+/-- Deconstructs a tuple/struct lens access to its list of projection indexes -/
 partial def deconstructLens (lens : Lean.Expr) (acc : List Nat := []) : DelabM $ List Nat :=
   match_expr lens with
   | Lens.nil _ _ => pure acc
@@ -147,6 +147,7 @@ partial def deconstructLens (lens : Lean.Expr) (acc : List Nat := []) : DelabM $
     deconstructLens lens (idx :: acc)
   | _ => throwError "Invalid lens"
 
+/-- Helper function to build a `noir_lval` to build a lens access syntax term -/
 def buildLVal (lval : TSyntax `noir_lval) (lensSteps : List Nat) (type : TSyntax `noir_type)
     : DelabM $ TSyntax `noir_lval := do
   match lensSteps with
@@ -446,6 +447,7 @@ declare_syntax_cat sthoare
 syntax "⦃" term "⦄" : slp_cond
 syntax slp_cond ppLine term ppLine slp_cond : term
 
+/-- Switch whether the `STHoare` delaborator fires based off the `Lampe.pp.STHoare` option -/
 abbrev whenDelabSTHoareOption : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.STHoare
 
 @[app_delab Lampe.STHoare]
