@@ -49,7 +49,6 @@ noir_def utils::square<>(a: Field) -> Field := {
   (#_fMul returning Field)((#_fMul returning Field)(a, a), (SIGMA<> as λ() -> Field)())
 }
 
-
 def Utils.Mod.env : Env := Env.mk
   [«utils::rl», «utils::rotate_left», «utils::sbox», «utils::sgn0», «utils::as_array», «utils::square»]
   []

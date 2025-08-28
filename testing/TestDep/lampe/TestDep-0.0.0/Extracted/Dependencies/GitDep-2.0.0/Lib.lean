@@ -23,7 +23,6 @@ noir_def test_not_equal<>() -> Unit := {
   #_skip
 }
 
-
 def Lib.env : Env := Env.mk
   [not_equal, hello, hello_git_dep_v2, test_not_equal]
   []

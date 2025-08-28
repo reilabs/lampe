@@ -16,7 +16,6 @@ noir_def main<>(x: Field) -> Field := {
   x
 }
 
-
 def Main.env : Env := Env.mk
   [main]
   []

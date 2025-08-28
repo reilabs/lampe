@@ -107,26 +107,6 @@ impl BuiltinType {
 }
 
 #[must_use]
-pub fn try_func_name_as_builtin(func_expr: &str) -> Option<BuiltinName> {
-    let builtin_names = [
-        ("std::slice::len", "sliceLen"),
-        ("std::slice::push_back", "slicePushBack"),
-        ("std::slice::push_front", "slicePushFront"),
-        ("std::slice::pop_back", "slicePopBack"),
-        ("std::slice::pop_front", "slicePopFront"),
-        ("std::array::len", "arrayLen"),
-        ("std::array::as_slice", "arrayAsSlice"),
-        ("mem::zeroed", "zeroed"),
-    ];
-    for (prefix, builtin) in builtin_names {
-        if func_expr.starts_with(prefix) {
-            return Some(builtin.to_string());
-        }
-    }
-    None
-}
-
-#[must_use]
 pub fn get_index_builtin_name(coll_type: BuiltinType) -> Option<BuiltinName> {
     if coll_type.is_collection() {
         let ty_name = coll_type.name_prefix();

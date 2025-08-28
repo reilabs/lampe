@@ -24,7 +24,6 @@ noir_def utils::bits::to_le_bits<>(self: Field) -> Array<u1, 256: u32> := {
   bits
 }
 
-
 def Utils.Bits.Mod.env : Env := Env.mk
   [«utils::bits::to_le_bits»]
   []

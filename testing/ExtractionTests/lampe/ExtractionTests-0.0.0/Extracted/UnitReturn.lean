@@ -25,7 +25,6 @@ noir_def unit_return::baz<>() -> Unit := {
   #_skip
 }
 
-
 def UnitReturn.env : Env := Env.mk
   [«unit_return::foo2», «unit_return::bar», «unit_return::baz»]
   []

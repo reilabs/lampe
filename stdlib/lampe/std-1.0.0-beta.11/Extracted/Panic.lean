@@ -13,7 +13,6 @@ noir_def std::panic::panic<T: Type, U: Type, N: u32>(message: FmtString<N: u32, 
   (#_zeroed returning U)()
 }
 
-
 def Panic.env : Env := Env.mk
   [«std::panic::panic»]
   []

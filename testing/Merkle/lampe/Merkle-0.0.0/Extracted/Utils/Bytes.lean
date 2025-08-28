@@ -29,7 +29,6 @@ noir_def utils::bytes::from_le_bytes<>(bytes: Array<u8, 32: u32>) -> Field := {
   result
 }
 
-
 def Utils.Bytes.env : Env := Env.mk
   [«utils::bytes::to_le_bytes», «utils::bytes::from_le_bytes»]
   []

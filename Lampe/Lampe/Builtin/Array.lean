@@ -117,7 +117,7 @@ Defines the function that converts an array to a slice.
 
 In Noir, this corresponds to `fn as_slice(self) -> [T]` implemented for `[T; n]`.
 -/
-def arrayAsSlice := newGenericTotalPureBuiltin
+def asSlice := newGenericTotalPureBuiltin
   (fun (tp, n) => ⟨[.array tp n], .slice tp⟩)
   (fun (_, _) h![a] => a.toList)
 

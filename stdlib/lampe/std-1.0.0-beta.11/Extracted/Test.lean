@@ -64,7 +64,6 @@ noir_def std::test::OracleMock::times_called<>(self: std::test::OracleMock<>) ->
   (#_fresh returning Field)()
 }
 
-
 def Test.env : Env := Env.mk
   [«std::test::create_mock_oracle», «std::test::set_mock_params_oracle», «std::test::get_mock_last_params_oracle», «std::test::set_mock_returns_oracle», «std::test::set_mock_times_oracle», «std::test::clear_mock_oracle», «std::test::get_times_mock_called», «std::test::OracleMock::mock», «std::test::OracleMock::with_params», «std::test::OracleMock::get_last_params», «std::test::OracleMock::returns», «std::test::OracleMock::times», «std::test::OracleMock::clear», «std::test::OracleMock::times_called»]
   []

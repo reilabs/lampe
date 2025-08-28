@@ -8,7 +8,6 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-
 def Meta.FormatString.env : Env := Env.mk
   []
   []

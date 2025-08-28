@@ -23,7 +23,6 @@ noir_def permute::permute<>(s: Array<Field, 2: u32>) -> Array<Field, 2: u32> := 
   (#_mkArray returning Array<Field, 2: u32>)(l, r)
 }
 
-
 def Permute.env : Env := Env.mk
   [«permute::permute»]
   []

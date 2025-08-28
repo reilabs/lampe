@@ -99,9 +99,9 @@ noir_trait_impl[impl_91]<N: u32, T: Type> std::cmp::Eq<> for Array<T, N: u32> wh
 
 noir_trait_impl[impl_92]<T: Type> std::cmp::Eq<> for Slice<T> where [T: std::cmp::Eq<>] := {
   noir_def eq<>(self: Slice<T>, other: Slice<T>) -> bool := {
-    let mut (result: bool) = (#_uEq returning bool)((#_sliceLen returning u32)(self), (#_sliceLen returning u32)(other));
+    let mut (result: bool) = (#_uEq returning bool)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
     if result then {
-      for i in (0: u32) .. (#_sliceLen returning u32)(self) do {
+      for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
         result = (#_bAnd returning bool)(result, ((T as std::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i))));
         #_skip
       };
@@ -113,8 +113,8 @@ noir_trait_impl[impl_92]<T: Type> std::cmp::Eq<> for Slice<T> where [T: std::cmp
 
 noir_trait_impl[impl_93]<N: u32> std::cmp::Eq<> for String<N: u32> where [] := {
   noir_def eq<>(self: String<N: u32>, other: String<N: u32>) -> bool := {
-    let (self_bytes: Array<u8, N: u32>) = (std::string::as_bytes<N: u32> as λ(String<N: u32>) -> Array<u8, N: u32>)(self);
-    let (other_bytes: Array<u8, N: u32>) = (std::string::as_bytes<N: u32> as λ(String<N: u32>) -> Array<u8, N: u32>)(other);
+    let (self_bytes: Array<u8, N: u32>) = (#_strAsBytes returning Array<u8, N: u32>)(self);
+    let (other_bytes: Array<u8, N: u32>) = (#_strAsBytes returning Array<u8, N: u32>)(other);
     ((Array<u8, N: u32> as Eq<>)::eq<> as λ(Array<u8, N: u32>, Array<u8, N: u32>) -> bool)(self_bytes, other_bytes)
   };
 }
@@ -306,8 +306,8 @@ noir_trait_impl[impl_110]<N: u32, T: Type> std::cmp::Ord<> for Array<T, N: u32> 
 
 noir_trait_impl[impl_111]<T: Type> std::cmp::Ord<> for Slice<T> where [T: std::cmp::Ord<>] := {
   noir_def cmp<>(self: Slice<T>, other: Slice<T>) -> std::cmp::Ordering<> := {
-    let mut (result: std::cmp::Ordering<>) = ((u32 as std::cmp::Ord<>)::cmp<> as λ(u32, u32) -> std::cmp::Ordering<>)((#_sliceLen returning u32)(self), (#_sliceLen returning u32)(other));
-    for i in (0: u32) .. (#_sliceLen returning u32)(self) do {
+    let mut (result: std::cmp::Ordering<>) = ((u32 as std::cmp::Ord<>)::cmp<> as λ(u32, u32) -> std::cmp::Ordering<>)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
+    for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
       if ((std::cmp::Ordering<> as Eq<>)::eq<> as λ(std::cmp::Ordering<>, std::cmp::Ordering<>) -> bool)(result, (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)()) then {
         result = ((T as std::cmp::Ord<>)::cmp<> as λ(T, T) -> std::cmp::Ordering<>)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i)));
         #_skip
@@ -402,18 +402,18 @@ noir_def std::cmp::min<T: Type>(v1: T, v2: T) -> T := {
 }
 
 noir_def std::cmp::cmp_tests::sanity_check_min<>() -> Unit := {
-  (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (0: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u8> as λ(u8, u8) -> u8)((255: u8), (0: u8)), (0: u8)));
+  (#_assert returning Unit)((#_uEq returning bool)((std::cmp::min<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (0: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((std::cmp::min<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((std::cmp::min<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((std::cmp::min<u8> as λ(u8, u8) -> u8)((255: u8), (0: u8)), (0: u8)));
   #_skip
 }
 
 noir_def std::cmp::cmp_tests::sanity_check_max<>() -> Unit := {
-  (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (1: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u8> as λ(u8, u8) -> u8)((255: u8), (0: u8)), (255: u8)));
+  (#_assert returning Unit)((#_uEq returning bool)((std::cmp::max<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (1: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((std::cmp::max<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((std::cmp::max<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((std::cmp::max<u8> as λ(u8, u8) -> u8)((255: u8), (0: u8)), (255: u8)));
   #_skip
 }
 
@@ -423,7 +423,6 @@ noir_def std::cmp::cmp_tests::correctly_handles_unequal_length_slices<>() -> Uni
   (#_assert returning Unit)((#_bNot returning bool)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(slice_1, slice_2)));
   #_skip
 }
-
 
 def Cmp.env : Env := Env.mk
   [«std::cmp::Ordering::less», «std::cmp::Ordering::equal», «std::cmp::Ordering::greater», «std::cmp::max», «std::cmp::min», «std::cmp::cmp_tests::sanity_check_min», «std::cmp::cmp_tests::sanity_check_max», «std::cmp::cmp_tests::correctly_handles_unequal_length_slices»]

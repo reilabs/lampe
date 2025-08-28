@@ -17,9 +17,9 @@ noir_def std::array::check_shuffle::__get_index<N: u32>(indices: Array<u32, N: u
 }
 
 noir_def std::array::check_shuffle::check_shuffle<T: Type, N: u32>(lhs: Array<T, N: u32>, rhs: Array<T, N: u32>) -> Unit := {
-  let (shuffle_indices: Array<u32, N: u32>) = (array::check_shuffle::__get_shuffle_indices<T, N: u32> as λ(Array<T, N: u32>, Array<T, N: u32>) -> Array<u32, N: u32>)(lhs, rhs);
+  let (shuffle_indices: Array<u32, N: u32>) = (std::array::check_shuffle::__get_shuffle_indices<T, N: u32> as λ(Array<T, N: u32>, Array<T, N: u32>) -> Array<u32, N: u32>)(lhs, rhs);
   for i in (0: u32) .. uConst!(N: u32) do {
-    let (idx: u32) = (array::check_shuffle::__get_index<N: u32> as λ(Array<u32, N: u32>, u32) -> u32)(shuffle_indices, i);
+    let (idx: u32) = (std::array::check_shuffle::__get_index<N: u32> as λ(Array<u32, N: u32>, u32) -> u32)(shuffle_indices, i);
     (#_assert returning Unit)((#_uEq returning bool)((#_arrayIndex returning u32)(shuffle_indices, (#_cast returning u32)(idx)), i));
     #_skip
   };
@@ -42,38 +42,37 @@ noir_trait_impl[impl_23]<> std::cmp::Eq<> for std::array::check_shuffle::test::C
 noir_def std::array::check_shuffle::test::test_shuffle<>() -> Unit := {
   let (lhs: Array<Field, 5: u32>) = (#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field));
   let (rhs: Array<Field, 5: u32>) = (#_mkArray returning Array<Field, 5: u32>)((2: Field), (0: Field), (3: Field), (1: Field), (4: Field));
-  (array::check_shuffle::check_shuffle<Field, 5: u32> as λ(Array<Field, 5: u32>, Array<Field, 5: u32>) -> Unit)(lhs, rhs);
+  (std::array::check_shuffle::check_shuffle<Field, 5: u32> as λ(Array<Field, 5: u32>, Array<Field, 5: u32>) -> Unit)(lhs, rhs);
   #_skip
 }
 
 noir_def std::array::check_shuffle::test::test_shuffle_identity<>() -> Unit := {
   let (lhs: Array<Field, 5: u32>) = (#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field));
   let (rhs: Array<Field, 5: u32>) = (#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field));
-  (array::check_shuffle::check_shuffle<Field, 5: u32> as λ(Array<Field, 5: u32>, Array<Field, 5: u32>) -> Unit)(lhs, rhs);
+  (std::array::check_shuffle::check_shuffle<Field, 5: u32> as λ(Array<Field, 5: u32>, Array<Field, 5: u32>) -> Unit)(lhs, rhs);
   #_skip
 }
 
 noir_def std::array::check_shuffle::test::test_shuffle_fail<>() -> Unit := {
   let (lhs: Array<Field, 5: u32>) = (#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field));
   let (rhs: Array<Field, 5: u32>) = (#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (5: Field));
-  (array::check_shuffle::check_shuffle<Field, 5: u32> as λ(Array<Field, 5: u32>, Array<Field, 5: u32>) -> Unit)(lhs, rhs);
+  (std::array::check_shuffle::check_shuffle<Field, 5: u32> as λ(Array<Field, 5: u32>, Array<Field, 5: u32>) -> Unit)(lhs, rhs);
   #_skip
 }
 
 noir_def std::array::check_shuffle::test::test_shuffle_duplicates<>() -> Unit := {
   let (lhs: Array<Field, 5: u32>) = (#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field));
   let (rhs: Array<Field, 5: u32>) = (#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (3: Field));
-  (array::check_shuffle::check_shuffle<Field, 5: u32> as λ(Array<Field, 5: u32>, Array<Field, 5: u32>) -> Unit)(lhs, rhs);
+  (std::array::check_shuffle::check_shuffle<Field, 5: u32> as λ(Array<Field, 5: u32>, Array<Field, 5: u32>) -> Unit)(lhs, rhs);
   #_skip
 }
 
 noir_def std::array::check_shuffle::test::test_shuffle_compound_struct<>() -> Unit := {
   let (lhs: Array<std::array::check_shuffle::test::CompoundStruct<>, 5: u32>) = (#_mkArray returning Array<std::array::check_shuffle::test::CompoundStruct<>, 5: u32>)((#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_false, (0: Field), (12345: u64)), (#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_false, (-100: Field), (54321: u64)), (#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_true, (5: Field), (18446744073709551615: u64)), (#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_true, (9814: Field), (17221745184140693811: u64)), (#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_false, (341: Field), (0: u64)));
   let (rhs: Array<std::array::check_shuffle::test::CompoundStruct<>, 5: u32>) = (#_mkArray returning Array<std::array::check_shuffle::test::CompoundStruct<>, 5: u32>)((#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_false, (341: Field), (0: u64)), (#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_false, (0: Field), (12345: u64)), (#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_false, (-100: Field), (54321: u64)), (#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_true, (9814: Field), (17221745184140693811: u64)), (#_makeData returning std::array::check_shuffle::test::CompoundStruct<>)(#_true, (5: Field), (18446744073709551615: u64)));
-  (array::check_shuffle::check_shuffle<std::array::check_shuffle::test::CompoundStruct<>, 5: u32> as λ(Array<std::array::check_shuffle::test::CompoundStruct<>, 5: u32>, Array<std::array::check_shuffle::test::CompoundStruct<>, 5: u32>) -> Unit)(lhs, rhs);
+  (std::array::check_shuffle::check_shuffle<std::array::check_shuffle::test::CompoundStruct<>, 5: u32> as λ(Array<std::array::check_shuffle::test::CompoundStruct<>, 5: u32>, Array<std::array::check_shuffle::test::CompoundStruct<>, 5: u32>) -> Unit)(lhs, rhs);
   #_skip
 }
-
 
 def Array.CheckShuffle.env : Env := Env.mk
   [«std::array::check_shuffle::__get_shuffle_indices», «std::array::check_shuffle::__get_index», «std::array::check_shuffle::check_shuffle», «std::array::check_shuffle::test::test_shuffle», «std::array::check_shuffle::test::test_shuffle_identity», «std::array::check_shuffle::test::test_shuffle_fail», «std::array::check_shuffle::test::test_shuffle_duplicates», «std::array::check_shuffle::test::test_shuffle_compound_struct»]

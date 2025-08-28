@@ -14,7 +14,6 @@ noir_trait_impl[impl_434]<I: Type> multiple_generics::Foo<I> for multiple_generi
   };
 }
 
-
 def MultipleGenerics.env : Env := Env.mk
   []
   [impl_434]

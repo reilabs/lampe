@@ -8,7 +8,6 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-
 def TypeOrder.env : Env := Env.mk
   []
   []

@@ -190,7 +190,6 @@ noir_trait_impl[impl_76]<T: Type> std::cmp::Ord<> for std::option::Option<T> whe
   };
 }
 
-
 def Option.env : Env := Env.mk
   [«std::option::Option::none», «std::option::Option::some», «std::option::Option::is_none», «std::option::Option::is_some», «std::option::Option::unwrap», «std::option::Option::unwrap_unchecked», «std::option::Option::unwrap_or», «std::option::Option::unwrap_or_else», «std::option::Option::expect», «std::option::Option::map», «std::option::Option::map_or», «std::option::Option::map_or_else», «std::option::Option::and», «std::option::Option::and_then», «std::option::Option::or», «std::option::Option::or_else», «std::option::Option::xor», «std::option::Option::filter», «std::option::Option::flatten»]
   [impl_73, impl_74, impl_75, impl_76]

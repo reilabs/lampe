@@ -15,7 +15,6 @@ noir_trait_impl[impl_430]<> hasher::BinaryHasher<Field> for skyscraper::Skyscrap
   };
 }
 
-
 def Skyscraper.Mod.env : Env := Env.mk
   []
   [impl_430]

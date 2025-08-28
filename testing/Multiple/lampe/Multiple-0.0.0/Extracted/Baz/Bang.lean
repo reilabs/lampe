@@ -12,7 +12,6 @@ noir_def baz::bang::bang<>(x: Field) -> Field := {
   (#_fAdd returning Field)(x, (1: Field))
 }
 
-
 def Baz.Bang.env : Env := Env.mk
   [«baz::bang::bang»]
   []

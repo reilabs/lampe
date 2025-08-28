@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
+use convert_case::{Case, Casing};
 use itertools::Itertools;
 
 use crate::lean::{
@@ -285,7 +286,7 @@ impl Writer<'_> {
     pub fn write_builtin_call_ref(&mut self, call_ref: &BuiltinCallRef) {
         self.append_to_line("(");
         self.append_to_line(BUILTIN_PREFIX);
-        self.append_to_line(call_ref.name.as_str());
+        self.append_to_line(&call_ref.name.to_case(Case::Camel));
         self.append_to_line(" returning ");
         self.write_type_expression(&call_ref.return_type.expr);
         self.append_to_line(")");

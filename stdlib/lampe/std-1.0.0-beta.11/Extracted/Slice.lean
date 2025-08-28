@@ -8,6 +8,180 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
+noir_def std::slice::append<T: Type>(mut self: Slice<T>, other: Slice<T>) -> Slice<T> := {
+  {
+    let (ζi0: Slice<T>) = other;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        self = (#_slicePushBack returning Slice<T>)(self, elem);
+        #_skip
+      }
+    };
+    #_skip
+  };
+  self
+}
+
+noir_def std::slice::as_array<T: Type, N: u32>(self: Slice<T>) -> Array<T, N: u32> := {
+  (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(self), uConst!(N: u32)));
+  let mut (array: Array<T, N: u32>) = (#_mkRepeatedArray returning Array<T, N: u32>)((#_zeroed returning T)());
+  for i in (0: u32) .. uConst!(N: u32) do {
+    (array[i]: T) = (#_sliceIndex returning T)(self, (#_cast returning u32)(i));
+    #_skip
+  };
+  array
+}
+
+noir_def std::slice::map<T: Type, U: Type, Env: Type>(self: Slice<T>, f: λ(T) -> U) -> Slice<U> := {
+  let mut (ret: Slice<U>) = (#_mkSlice returning Slice<U>)();
+  {
+    let (ζi0: Slice<T>) = self;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        ret = (#_slicePushBack returning Slice<U>)(ret, (f as λ(T) -> U)(elem));
+        #_skip
+      }
+    };
+    #_skip
+  };
+  ret
+}
+
+noir_def std::slice::mapi<T: Type, U: Type, Env: Type>(self: Slice<T>, f: λ(u32, T) -> U) -> Slice<U> := {
+  let mut (ret: Slice<U>) = (#_mkSlice returning Slice<U>)();
+  let mut (index: u32) = (0: u32);
+  {
+    let (ζi0: Slice<T>) = self;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        ret = (#_slicePushBack returning Slice<U>)(ret, (f as λ(u32, T) -> U)(index, elem));
+        index = (#_uAdd returning u32)(index, (1: u32));
+        #_skip
+      }
+    };
+    #_skip
+  };
+  ret
+}
+
+noir_def std::slice::for_each<T: Type, Env: Type>(self: Slice<T>, f: λ(T) -> Unit) -> Unit := {
+  let (ζi0: Slice<T>) = self;
+  for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+    let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+    {
+      (f as λ(T) -> Unit)(elem);
+      #_skip
+    }
+  };
+  #_skip
+}
+
+noir_def std::slice::for_eachi<T: Type, Env: Type>(self: Slice<T>, f: λ(u32, T) -> Unit) -> Unit := {
+  let mut (index: u32) = (0: u32);
+  {
+    let (ζi0: Slice<T>) = self;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        (f as λ(u32, T) -> Unit)(index, elem);
+        index = (#_uAdd returning u32)(index, (1: u32));
+        #_skip
+      }
+    };
+    #_skip
+  }
+}
+
+noir_def std::slice::fold<T: Type, U: Type, Env: Type>(self: Slice<T>, mut accumulator: U, f: λ(U, T) -> U) -> U := {
+  {
+    let (ζi0: Slice<T>) = self;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        accumulator = (f as λ(U, T) -> U)(accumulator, elem);
+        #_skip
+      }
+    };
+    #_skip
+  };
+  accumulator
+}
+
+noir_def std::slice::reduce<T: Type, Env: Type>(self: Slice<T>, f: λ(T, T) -> T) -> T := {
+  let mut (accumulator: T) = (#_sliceIndex returning T)(self, (0: u32));
+  for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
+    accumulator = (f as λ(T, T) -> T)(accumulator, (#_sliceIndex returning T)(self, (#_cast returning u32)(i)));
+    #_skip
+  };
+  accumulator
+}
+
+noir_def std::slice::filter<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> Slice<T> := {
+  let mut (ret: Slice<T>) = (#_mkSlice returning Slice<T>)();
+  {
+    let (ζi0: Slice<T>) = self;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        if (predicate as λ(T) -> bool)(elem) then {
+          ret = (#_slicePushBack returning Slice<T>)(ret, elem);
+          #_skip
+        }
+      }
+    };
+    #_skip
+  };
+  ret
+}
+
+noir_def std::slice::join<T: Type>(self: Slice<T>, separator: T) -> T := {
+  let mut (ret: T) = ((T as std::append::Append<>)::empty<> as λ() -> T)();
+  if (#_uNeq returning bool)((#_arrayLen returning u32)(self), (0: u32)) then {
+    ret = (#_sliceIndex returning T)(self, (0: u32));
+    for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
+      ret = ((T as std::append::Append<>)::append<> as λ(T, T) -> T)(((T as std::append::Append<>)::append<> as λ(T, T) -> T)(ret, separator), (#_sliceIndex returning T)(self, (#_cast returning u32)(i)));
+      #_skip
+    };
+    #_skip
+  };
+  ret
+}
+
+noir_def std::slice::all<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
+  let mut (ret: bool) = #_true;
+  {
+    let (ζi0: Slice<T>) = self;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        ret = (#_bAnd returning bool)(ret, (predicate as λ(T) -> bool)(elem));
+        #_skip
+      }
+    };
+    #_skip
+  };
+  ret
+}
+
+noir_def std::slice::any<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
+  let mut (ret: bool) = #_false;
+  {
+    let (ζi0: Slice<T>) = self;
+    for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
+      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      {
+        ret = (#_bOr returning bool)(ret, (predicate as λ(T) -> bool)(elem));
+        #_skip
+      }
+    };
+    #_skip
+  };
+  ret
+}
+
 noir_def std::slice::test::map_empty<>() -> Unit := {
   (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)((std::slice::map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)((#_mkSlice returning Slice<Field>)(), (fn((x: Field)): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkSlice returning Slice<Field>)()));
   #_skip
@@ -68,7 +242,6 @@ noir_def std::slice::test::for_eachi_example<>() -> Unit := {
   #_skip
 }
 
-
 def Slice.env : Env := Env.mk
-  [«std::slice::test::map_empty», «std::slice::test::mapi_empty», «std::slice::test::for_each_empty», «std::slice::test::for_eachi_empty», «std::slice::test::map_example», «std::slice::test::mapi_example», «std::slice::test::for_each_example», «std::slice::test::for_eachi_example»]
+  [«std::slice::append», «std::slice::as_array», «std::slice::map», «std::slice::mapi», «std::slice::for_each», «std::slice::for_eachi», «std::slice::fold», «std::slice::reduce», «std::slice::filter», «std::slice::join», «std::slice::all», «std::slice::any», «std::slice::test::map_empty», «std::slice::test::mapi_empty», «std::slice::test::for_each_empty», «std::slice::test::for_eachi_empty», «std::slice::test::map_example», «std::slice::test::mapi_example», «std::slice::test::for_each_example», «std::slice::test::for_eachi_example»]
   []

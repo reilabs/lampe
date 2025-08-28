@@ -20,7 +20,7 @@ noir_def bar::bar<>(a: Field) -> Field := {
     (new_right[i]: u8) = (utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uAdd returning u32)((16: u32), i))));
     #_skip
   };
-  let mut (new_bytes: Slice<u8>) = (#_arrayAsSlice returning Slice<u8>)(new_right);
+  let mut (new_bytes: Slice<u8>) = (#_asSlice returning Slice<u8>)(new_right);
   {
     let (ζi0: Array<u8, 16: u32>) = new_left;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
@@ -35,7 +35,6 @@ noir_def bar::bar<>(a: Field) -> Field := {
   let (new_bytes_array: Array<u8, 32: u32>) = (utils::as_array<> as λ(Slice<u8>) -> Array<u8, 32: u32>)(new_bytes);
   (utils::bytes::from_le_bytes<> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
 }
-
 
 def Bar.env : Env := Env.mk
   [«bar::bar»]

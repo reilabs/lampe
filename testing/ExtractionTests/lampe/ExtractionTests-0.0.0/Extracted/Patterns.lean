@@ -19,7 +19,6 @@ noir_def patterns::pattern_test<>() -> Unit := {
   #_skip
 }
 
-
 def Patterns.env : Env := Env.mk
   [«patterns::Option2::some», «patterns::pattern_test»]
   []

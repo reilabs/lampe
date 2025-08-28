@@ -8,11 +8,6 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def std::aes128::aes128_encrypt<N: u32>(input: Array<u8, N: u32>, iv: Array<u8, 16: u32>, key: Array<u8, 16: u32>) -> Array<u8, ((N + 16) - (N % 16)): u32> := {
-  (#_aes128_encrypt returning Array<u8, ((N + 16) - (N % 16)): u32>)(input, iv, key)
-}
-
-
 def Aes128.env : Env := Env.mk
-  [«std::aes128::aes128_encrypt»]
+  []
   []

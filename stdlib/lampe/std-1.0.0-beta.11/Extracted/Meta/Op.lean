@@ -114,7 +114,6 @@ noir_def std::meta::op::BinaryOp::is_modulo<>(self: std::meta::op::BinaryOp<>) -
   (#_fEq returning bool)(self.0, (15: Field))
 }
 
-
 def Meta.Op.env : Env := Env.mk
   [«std::meta::op::UnaryOp::is_minus», «std::meta::op::UnaryOp::is_not», «std::meta::op::UnaryOp::is_mutable_reference», «std::meta::op::UnaryOp::is_dereference», «std::meta::op::BinaryOp::is_add», «std::meta::op::BinaryOp::is_subtract», «std::meta::op::BinaryOp::is_multiply», «std::meta::op::BinaryOp::is_divide», «std::meta::op::BinaryOp::is_equal», «std::meta::op::BinaryOp::is_not_equal», «std::meta::op::BinaryOp::is_less_than», «std::meta::op::BinaryOp::is_less_than_or_equal», «std::meta::op::BinaryOp::is_greater_than», «std::meta::op::BinaryOp::is_greater_than_or_equal», «std::meta::op::BinaryOp::is_and», «std::meta::op::BinaryOp::is_or», «std::meta::op::BinaryOp::is_xor», «std::meta::op::BinaryOp::is_shift_right», «std::meta::op::BinaryOp::is_shift_left», «std::meta::op::BinaryOp::is_modulo»]
   [impl_300, impl_301, impl_302, impl_303]

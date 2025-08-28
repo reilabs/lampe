@@ -25,7 +25,6 @@ noir_def const_generics::nat_generic_test_2<N: u8>(x: Field) -> Field := {
   res
 }
 
-
 def ConstGenerics.env : Env := Env.mk
   [«const_generics::nat_generic_test», «const_generics::nat_generic_test_2»]
   []

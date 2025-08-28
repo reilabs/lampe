@@ -19,7 +19,6 @@ noir_def field_generics::main<>() -> Unit := {
   #_skip
 }
 
-
 def FieldGenerics.env : Env := Env.mk
   [A, «field_generics::foo1», «field_generics::main»]
   []

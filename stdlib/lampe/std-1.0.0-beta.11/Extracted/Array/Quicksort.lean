@@ -20,7 +20,6 @@ noir_def std::array::quicksort::quicksort<T: Type, N: u32, Env: Type>(arr: Array
   (#_fresh returning Array<T, N: u32>)()
 }
 
-
 def Array.Quicksort.env : Env := Env.mk
   [«std::array::quicksort::partition», «std::array::quicksort::quicksort_loop», «std::array::quicksort::quicksort»]
   []

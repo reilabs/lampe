@@ -22,7 +22,6 @@ noir_def struct_namespaces::baz<>(a: struct_namespaces::test::Foo<>) -> Field :=
   (#_fAdd returning Field)(x, y)
 }
 
-
 def StructNamespaces.env : Env := Env.mk
   [«struct_namespaces::test::Foo::bar», «struct_namespaces::test::Foo::bar2», «struct_namespaces::baz»]
   []

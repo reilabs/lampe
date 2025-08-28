@@ -5,6 +5,7 @@ use std::{
     cell::Ref,
     cmp::Ordering,
     collections::{HashMap, HashSet},
+    rc::Rc,
     str::FromStr,
 };
 
@@ -12,7 +13,7 @@ use fm::FileId;
 use itertools::Itertools;
 use noirc_errors::Location;
 use noirc_frontend::{
-    ast::{FunctionKind, Ident},
+    ast::{FunctionKind, Ident, IntegerBitSize},
     graph::CrateId,
     hir::{
         def_map::{LocalModuleId, ModuleData, ModuleDefId},
@@ -127,7 +128,6 @@ use crate::{
         },
         builtin,
         builtin::{
-            try_func_name_as_builtin,
             BuiltinType,
             ASSERT_BUILTIN_NAME,
             MAKE_ARRAY_BUILTIN_NAME,
@@ -135,6 +135,7 @@ use crate::{
             MAKE_REPEATED_SLICE_BUILTIN_NAME,
             MAKE_SLICE_BUILTIN_NAME,
             MAKE_STRUCT_BUILTIN_NAME,
+            UNIT_TYPE_NAME,
         },
     },
 };
@@ -180,6 +181,11 @@ impl<'file_manager, 'parsed_files> LeanGenerator<'file_manager, 'parsed_files> {
     /// Gets the root crate from the compilation context.
     pub fn root_crate(&self) -> CrateId {
         self.root_crate
+    }
+
+    /// Returns `true` if the root crate in the standard library.
+    pub fn root_crate_is_stdlib(&self) -> bool {
+        &self.root_crate == self.context.stdlib_crate_id()
     }
 }
 
@@ -704,13 +710,15 @@ impl LeanGenerator<'_, '_> {
     /// - If the root crate of the compilation context cannot be found.
     /// - If the file given by `id` has no module in the compilation context.
     pub fn generate_module_contents(&self, id: FileId) -> Module {
+        // We gather all modules that are defined in the file, but skip any that are
+        // acting as impl blocks as we handle methods on types elsewhere.
         let modules_data = self
             .context
             .def_map(&self.root_crate)
             .expect("Root crate was missing in compilation context")
             .modules()
             .iter()
-            .filter(|(_, mod_data)| mod_data.location.file == id);
+            .filter(|(_, mod_data)| mod_data.location.file == id && !mod_data.is_type);
 
         let mut definitions = self
             .generate_module_trait_impls(id)
@@ -740,6 +748,7 @@ impl LeanGenerator<'_, '_> {
             .into_iter()
             .sorted_by(|(l_loc, _), (r_loc, _)| l_loc.span.cmp(&r_loc.span))
             .map(|(_, def)| def)
+            .unique()
             .collect_vec();
 
         // FIXME: unwrap here is a bit scary, but all the files we're extracting should
@@ -753,10 +762,135 @@ impl LeanGenerator<'_, '_> {
         }
     }
 
+    /// Looks up methods defined on builtin types in the current module, and
+    /// returns their definition identifiers.
+    pub fn lookup_builtin_methods_in_module(&self, module: &ModuleData) -> Vec<ModuleDefId> {
+        if !self.root_crate_is_stdlib() {
+            return vec![];
+        }
+
+        // This is a dummy generic that we can use for querying builtin types that have
+        // generics.
+        let dummy_tv = TypeVariable::unbound(
+            self.context.def_interner.next_type_variable_id(),
+            NoirKind::Any,
+        );
+        let dummy_generic = NoirType::NamedGeneric(NamedGeneric {
+            type_var: dummy_tv.clone(),
+            name:     Rc::new("LOOKUP_DUMMY".to_string()),
+            implicit: false,
+        });
+
+        // We then create the "method keys" for the builtin types; these are NoirType
+        // values that are passed to the method discovery logic.
+        let method_keys = vec![
+            NoirType::Array(
+                Box::new(dummy_generic.clone()),
+                Box::new(dummy_generic.clone()),
+            ),
+            NoirType::Bool,
+            NoirType::FieldElement,
+            NoirType::FmtString(
+                Box::new(dummy_generic.clone()),
+                Box::new(dummy_generic.clone()),
+            ),
+            NoirType::Function(
+                vec![],
+                Box::new(NoirType::Unit),
+                Box::new(NoirType::Unit),
+                false,
+            ),
+            NoirType::Integer(Signedness::Unsigned, IntegerBitSize::One),
+            NoirType::Slice(Box::new(dummy_generic.clone())),
+            NoirType::String(Box::new(dummy_generic.clone())),
+            NoirType::Tuple(vec![dummy_generic; 0]),
+            NoirType::Unit,
+        ];
+
+        let mut extra_defs = Vec::default();
+
+        // We then query the direct methods of each builtin type, and add them to the
+        // output ONLY if they were defined in the same file as the module in question.
+        // This way we ensure they are output in the right place.
+        for key in method_keys {
+            let all_methods = self.context.def_interner.get_type_methods(&key);
+
+            if let Some(all_methods) = all_methods {
+                let direct_methods = all_methods.values().flat_map(|m| {
+                    m.direct.iter().filter_map(|m| {
+                        let func_data = self.context.def_interner.function_meta(&m.method);
+                        if func_data.location.file == module.location.file {
+                            Some(ModuleDefId::FunctionId(m.method))
+                        } else {
+                            None
+                        }
+                    })
+                });
+
+                extra_defs.extend(direct_methods);
+            }
+        }
+
+        extra_defs
+    }
+
     pub fn generate_module_definitions(&self, module: &ModuleData) -> ModuleDefs {
         let mut globals = HashSet::new();
         let mut functions = HashSet::new();
-        let module_defs = module.definitions().definitions();
+
+        // We start by grabbing the definitions in the module, doing a lookup for
+        // methods defined on types in this module.
+        let module_defs = module
+            .definitions()
+            .definitions()
+            .into_iter()
+            .flat_map(|def| match def {
+                ModuleDefId::TypeId(id) => {
+                    let type_data_ref = self.context.def_interner.get_type(id);
+                    let struct_data = type_data_ref.borrow();
+                    let generics = struct_data
+                        .generics
+                        .iter()
+                        .map(|g| {
+                            NoirType::NamedGeneric(NamedGeneric {
+                                type_var: g.type_var.clone(),
+                                name:     g.name.clone(),
+                                implicit: false,
+                            })
+                        })
+                        .collect_vec();
+
+                    let data_type = NoirType::DataType(type_data_ref.clone(), generics);
+
+                    if let Some(meths) = self.context.def_interner.get_type_methods(&data_type) {
+                        meths
+                            .values()
+                            .flat_map(|methods| {
+                                methods.direct.iter().filter_map(|m| {
+                                    let func_data =
+                                        self.context.def_interner.function_meta(&m.method);
+                                    if func_data.location.file == module.location.file {
+                                        Some(ModuleDefId::FunctionId(m.method))
+                                    } else {
+                                        None
+                                    }
+                                })
+                            })
+                            .collect_vec()
+                    } else {
+                        vec![]
+                    }
+                }
+                _ => vec![def],
+            })
+            .collect_vec();
+
+        // We then handle the special cases of methods defined on builtin types in this
+        // module and add them.
+        let module_defs = module_defs
+            .into_iter()
+            .chain(self.lookup_builtin_methods_in_module(module))
+            .collect_vec();
 
         for def in module_defs {
             match def {
@@ -787,7 +921,9 @@ impl LeanGenerator<'_, '_> {
                     let location = self.context.def_interner.function_modifiers(&id).name_location;
 
                     // We can now emit the function definition itself.
-                    functions.insert((location, self.generate_free_function_def(&id)));
+                    if let Some(function) = self.generate_free_function_def(&id) {
+                        functions.insert((location, function));
+                    }
                 }
                 ModuleDefId::GlobalId(id) => {
                     let location = self.context.def_interner.get_global(id).location;
@@ -811,12 +947,13 @@ impl LeanGenerator<'_, '_> {
         }
     }
 
-    /// Generates the free function definition for the function given by `id`.
+    /// Generates the free function definition for the function given by `id`,
+    /// or returns [`None`] if a function should not be generated.
     ///
     /// # Panics
     ///
     /// - If an unsupported function kind is found for a builtin function.
-    pub fn generate_free_function_def(&self, id: &FuncId) -> FunctionDefinition {
+    pub fn generate_free_function_def(&self, id: &FuncId) -> Option<FunctionDefinition> {
         let function_meta = self.context.function_meta(id);
 
         let name = if let Some(ty) = &function_meta.self_type {
@@ -826,7 +963,23 @@ impl LeanGenerator<'_, '_> {
             let ty = self.generate_lean_type_value(ty, None).expr;
             let self_ty_name = match ty {
                 TypeExpr::Struct(s) => s.name,
-                _ => panic!("Non-struct `Self` type for function"),
+                TypeExpr::Builtin(e) => match e.tag {
+                    BuiltinTag::Array => "std::array".to_string(),
+                    BuiltinTag::Bool => "std::bool".to_string(),
+                    BuiltinTag::Field => "std::field".to_string(),
+                    BuiltinTag::FmtString => "std::fmt_string".to_string(),
+                    BuiltinTag::I(w) => format!("i{w}"),
+                    BuiltinTag::Slice => "std::slice".to_string(),
+                    BuiltinTag::String => "std::string".to_string(),
+                    BuiltinTag::Tuple => "std::tuple".to_string(),
+                    BuiltinTag::U(w) => format!("u{w}").to_string(),
+                    BuiltinTag::Unit => UNIT_TYPE_NAME.to_string(),
+                    _ => panic!(
+                        "Invalid builtin {:?} used as `Self` type in function",
+                        e.tag
+                    ),
+                },
+                _ => panic!("Invalid `Self` type {ty:?} for function"),
             };
 
             format!("{self_ty_name}::{func_name_bare}")
@@ -849,26 +1002,7 @@ impl LeanGenerator<'_, '_> {
             function_meta.kind,
             FunctionKind::Builtin | FunctionKind::LowLevel
         ) {
-            let func_kind = self
-                .context
-                .def_interner
-                .function_attributes(id)
-                .clone()
-                .function
-                .expect("Builtins must have attributes")
-                .0
-                .kind;
-            let name = match func_kind {
-                FunctionAttributeKind::Builtin(b) => b.to_string(),
-                FunctionAttributeKind::Foreign(f) => f.to_string(),
-                _ => panic!("Unsupported function kind {func_kind:?} encountered for builtin"),
-            };
-            let params = function_meta.parameters.iter().collect_vec();
-            let call = self.generate_builtin_call(&name, params, return_type.clone());
-            Expression::Block(Block {
-                statements: Vec::default(),
-                expression: Some(Box::new(call)),
-            })
+            return None;
         } else if function_meta.is_stub() {
             Expression::Block(Block {
                 statements: Vec::default(),
@@ -878,13 +1012,13 @@ impl LeanGenerator<'_, '_> {
             self.generate_expr(self.context.def_interner.function(id).as_expr())
         };
 
-        FunctionDefinition {
+        Some(FunctionDefinition {
             name,
             generics,
             parameters,
             return_type,
             body,
-        }
+        })
     }
 
     /// Generates a call to the builtin function given by `name` with the
@@ -2020,38 +2154,69 @@ impl LeanGenerator<'_, '_> {
                     };
                     Expression::TraitCallRef(call_ref)
                 } else {
-                    let func_name = match &func_meta.self_type {
-                        Some(self_type) => {
-                            let maybe_self_type = self.generate_lean_type_value(self_type, None);
-                            if let TypeExpr::Struct(s) = maybe_self_type.expr {
-                                let struct_path = s.name;
-                                format!("{struct_path}::{name}")
-                            } else {
-                                self.fully_qualified_function_name(&func_meta.source_crate, id)
-                            }
-                        }
-                        None => self
-                            .context
-                            .fully_qualified_function_name(&func_meta.source_crate, id),
-                    };
-
-                    let param_types = func_meta
-                        .parameters
-                        .iter()
-                        .map(|(_, t, _)| self.generate_lean_type_value(t, Some(bindings)))
-                        .collect_vec();
                     let return_type =
                         self.generate_lean_type_value(func_meta.return_type(), Some(bindings));
 
-                    if let Some(name) = try_func_name_as_builtin(&func_name) {
-                        Expression::BuiltinCallRef(BuiltinCallRef { name, return_type })
-                    } else {
-                        Expression::DeclCallRef(DeclCallRef {
-                            function: func_name,
-                            generics: fun_generics,
-                            param_types,
-                            return_type,
-                        })
+                    match func_meta.kind {
+                        FunctionKind::LowLevel | FunctionKind::Builtin => {
+                            let func_kind = self
+                                .context
+                                .def_interner
+                                .function_attributes(id)
+                                .clone()
+                                .function
+                                .expect("Builtins must have attributes")
+                                .0
+                                .kind;
+                            let name = match func_kind {
+                                FunctionAttributeKind::Builtin(b) => b.to_string(),
+                                FunctionAttributeKind::Foreign(f) => f.to_string(),
+                                _ => panic!(
+                                    "Unsupported function kind {func_kind:?} encountered for \
+                                     builtin"
+                                ),
+                            };
+
+                            Expression::BuiltinCallRef(BuiltinCallRef { name, return_type })
+                        }
+                        FunctionKind::Normal => {
+                            let func_name = match &func_meta.self_type {
+                                Some(self_type) => {
+                                    let maybe_self_type =
+                                        self.generate_lean_type_value(self_type, None);
+                                    if let TypeExpr::Struct(s) = maybe_self_type.expr {
+                                        let struct_path = s.name;
+                                        format!("{struct_path}::{name}")
+                                    } else {
+                                        self.fully_qualified_function_name(
+                                            &func_meta.source_crate,
+                                            id,
+                                        )
+                                    }
+                                }
+                                None => {
+                                    self.fully_qualified_function_name(&func_meta.source_crate, id)
+                                }
+                            };
+
+                            let param_types = func_meta
+                                .parameters
+                                .iter()
+                                .map(|(_, t, _)| self.generate_lean_type_value(t, Some(bindings)))
+                                .collect_vec();
+
+                            Expression::DeclCallRef(DeclCallRef {
+                                function: func_name,
+                                generics: fun_generics,
+                                param_types,
+                                return_type,
+                            })
+                        }
+                        _ => panic!(
+                            "Encountered a call to a function with kind {:?} where none should \
+                             occur",
+                            func_meta.kind
+                        ),
                     }
                 }
             }
