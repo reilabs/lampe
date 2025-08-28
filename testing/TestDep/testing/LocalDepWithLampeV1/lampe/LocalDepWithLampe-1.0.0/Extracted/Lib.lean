@@ -8,22 +8,19 @@ open Lampe
 namespace «LocalDepWithLampe-1.0.0»
 namespace Extracted
 
-nr_def «not_equal»<>(x : Field, y : Field) -> bool {
-    #fNeq(x, y) : bool;
+noir_def not_equal<>(x: Field, y: Field) -> bool := {
+  (#_fNeq returning bool)(x, y)
 }
 
-nr_def «hello»<>() -> str<29> {
-    "hello-local-dep-with-lampe-v1"
+noir_global_def hello: String<29: u32> = "hello-local-dep-with-lampe-v1";
+
+noir_global_def hello_local_dep_with_lampe_v1: String<29: u32> = "hello-local-dep-with-lampe-v1";
+
+noir_def test_not_equal<>() -> Unit := {
+  (#_assert returning Unit)((not_equal<> as λ(Field, Field) -> bool)((1: Field), (2: Field)));
+  #_skip
 }
 
-nr_def «hello_local_dep_with_lampe_v1»<>() -> str<29> {
-    "hello-local-dep-with-lampe-v1"
-}
-
-nr_def «test_not_equal»<>() -> Unit {
-    #assert((@not_equal<> as λ(Field, Field) → bool)(1 : Field, 2 : Field)) : Unit;
-    skip;
-}
-
-
-def Lib.env := Lampe.Env.mk [«hello_local_dep_with_lampe_v1», «hello», «not_equal», «test_not_equal»] []
+def Lib.env : Env := Env.mk
+  [not_equal, hello, hello_local_dep_with_lampe_v1, test_not_equal]
+  []
