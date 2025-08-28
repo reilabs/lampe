@@ -1,7 +1,7 @@
+import Lampe.Ast.Extensions
 import Lampe.Hoare.Builtins
 import Lampe.Hoare.SepTotal
 import Lampe.SeparationLogic.State
-import Lampe.Syntax
 import Lampe.Tactic.EnvSubsetSolver
 import Lampe.Tactic.SL
 import Lampe.Tactic.SLNorm

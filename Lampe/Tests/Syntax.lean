@@ -309,7 +309,6 @@ noir_def simple_slice<>() -> bool := {
   (#_sliceIndex returning bool)(s, (1: u32))
 }
 
-
 example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .bool) => v = false :=   by
   simp only [simple_slice]
