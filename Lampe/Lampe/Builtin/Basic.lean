@@ -188,4 +188,36 @@ def fresh : Builtin := {
     tauto
 }
 
+inductive arrayLenOmni : Omni where
+| mkSlice {P st tp x Q} : x.length < 2 ^ 32 → (Q (some (st, x.length))) → arrayLenOmni P st [Tp.slice tp] (Tp.u 32) h![x] Q
+| mkArray {P st tp N x Q} : (Q (some (st, N))) → arrayLenOmni P st [Tp.array tp N] (Tp.u 32) h![x] Q
+
+/--
+Defines the function that evaluates to an array (or slice)'s length `n`.
+This builtin evaluates to an `U 32`. Hence, we assume that `n < 2^32`.
+
+In Noir, this corresponds to `fn len(self) -> u32` implemented for `[_; n]`.
+-/
+def arrayLen : Builtin := {
+  omni := arrayLenOmni
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type arrayLenOmni
+    · next h₁ h₂ => constructor; assumption; tauto
+    · next h => constructor; tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type arrayLenOmni
+    · next h₁ h₂ =>
+      constructor <;> try assumption
+      unfold SLP.star
+      tauto
+    · next h =>
+      constructor ; try assumption
+      unfold SLP.star
+      tauto
+}
+
 end Lampe.Builtin

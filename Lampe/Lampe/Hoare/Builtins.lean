@@ -160,9 +160,38 @@ theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto)
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
-theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![arr] (a := (tp, n)) := by
-  apply pureBuiltin_intro_consequence <;> try tauto
-  tauto
+theorem array_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.array tp N] (Tp.u 32) Builtin.arrayLen h![x])
+    fun v => v = x.length := by
+  unfold STHoare
+  unfold THoare
+  intros H st Q
+  constructor
+  constructor
+  unfold mapToValHeapCondition
+  simp
+  simp at Q
+  unfold SLP.star
+  use st
+  use ∅
+  simp
+  assumption
+
+theorem slice_arrayLen_intro (hLen : x.length < 2^32) : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (Tp.u 32) Builtin.arrayLen h![x])
+    fun v => v = x.length := by
+  unfold STHoare
+  unfold THoare
+  intros H st Q
+  constructor
+  constructor
+  assumption
+  unfold mapToValHeapCondition
+  simp
+  simp at Q
+  unfold SLP.star
+  use st
+  use ∅
+  simp
+  assumption
 
 theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![arr] (a := (tp, n)) := by
   apply pureBuiltin_intro_consequence <;> try tauto
@@ -305,10 +334,6 @@ theorem iAsField_intro {p Γ s f} : STHoarePureBuiltin p Γ Builtin.iAsField (by
   tauto
 
 -- Slice
-
-theorem sliceLen_intro : STHoarePureBuiltin p Γ Builtin.sliceLen (by tauto) h![s] := by
-  apply pureBuiltin_intro_consequence <;> try rfl
-  tauto
 
 theorem sliceIndex_intro : STHoarePureBuiltin p Γ Builtin.sliceIndex (by tauto) h![sl, i] := by
   apply pureBuiltin_intro_consequence <;> try rfl

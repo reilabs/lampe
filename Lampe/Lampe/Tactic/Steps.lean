@@ -116,7 +116,8 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.mkRepeatedArray =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedArray (a := (_, _)) rfl), true)
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)
-        | ``Lampe.Builtin.arrayLen => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayLen (a := (_,_)) rfl), true)
+        | ``Lampe.Builtin.arrayLen => sorry
+          -- return some (←``(genericTotalPureBuiltin_intro Builtin.arrayLen (a := (_,_)) rfl), true)
         | ``Lampe.Builtin.asSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.asSlice (a := (_,_)) rfl), true)
 
         -- Slice builtins
@@ -128,7 +129,6 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedSlice (a := _) rfl), true)
         | ``Lampe.Builtin.slicePushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushBack rfl), true)
         | ``Lampe.Builtin.slicePushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushFront rfl), true)
-        | ``Lampe.Builtin.sliceLen => return some (←``(sliceLen_intro), false)
         | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro), false)
         | ``Lampe.Builtin.ref => return some (←``(ref_intro), false)
         | ``Lampe.Builtin.readRef => return some (←``(readRef_intro), false)
