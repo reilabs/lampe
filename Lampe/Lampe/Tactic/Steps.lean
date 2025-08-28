@@ -85,6 +85,8 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.fresh => return some (←``(fresh_intro), false)
         | ``Lampe.Builtin.assert => return some (←``(assert_intro), false)
 
+        | ``Lampe.Builtin.bNot => return some (←``(genericTotalPureBuiltin_intro Builtin.bNot rfl), true)
+
         | ``Lampe.Builtin.uNot => return some (←``(genericTotalPureBuiltin_intro Builtin.uNot rfl), true)
         | ``Lampe.Builtin.uAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.uAnd rfl), true)
         | ``Lampe.Builtin.uOr => return some (←``(genericTotalPureBuiltin_intro Builtin.uOr rfl), true)
@@ -132,19 +134,22 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.readRef => return some (←``(readRef_intro), false)
 
         | ``Lampe.Builtin.fApplyRangeConstraint => return some (←``(fApplyRangeConstraint_intro), false)
-        | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits), true)
-        | ``Lampe.Builtin.fModBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBytes), true)
-        | ``Lampe.Builtin.fModLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBits), true)
-        | ``Lampe.Builtin.fModLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBytes), true)
+        | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits rfl), true)
+        | ``Lampe.Builtin.fModBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBytes rfl), true)
+        | ``Lampe.Builtin.fModLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBits rfl), true)
+        | ``Lampe.Builtin.fModLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBytes rfl), true)
         | ``Lampe.Builtin.fModNumBits => return some (←``(fModNumBits_intro), false)
-        | ``Lampe.Builtin.iAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.iAsField), true)
-        | ``Lampe.Builtin.iFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.iFromField), true)
-        | ``Lampe.Builtin.uAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.uAsField), true)
-        | ``Lampe.Builtin.uFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.uFromField), true)
+        | ``Lampe.Builtin.iAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.iAsField rfl), true)
+        | ``Lampe.Builtin.iFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.iFromField rfl), true)
+        | ``Lampe.Builtin.uAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.uAsField rfl), true)
+        | ``Lampe.Builtin.uFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.uFromField rfl), true)
 
         -- Tuple/struct builtins
         | ``Lampe.Builtin.makeData => return some (← ``(genericTotalPureBuiltin_intro (a := (_, _)) Builtin.makeData rfl), true)
         | ``Lampe.Builtin.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl), true)
+
+        | ``Lampe.Builtin.zeroed => return some (←``(genericTotalPureBuiltin_intro Builtin.zeroed rfl), true)
+
 
         | _ => return none
       | _ => return none

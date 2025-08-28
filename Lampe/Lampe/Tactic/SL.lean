@@ -122,7 +122,8 @@ theorem singleton_congr_star_mv {p} {r} {v₁ v₂ : AnyValue p}  (heq: v₁ = v
   simp
   apply SLP.entails_self
 
-theorem lmbSingleton_congr_star_mv {p} {v: Lambda (Tp.denote p)}  {r}: ([λr ↦ v] ⊢ [λr ↦ v] ⋆ ⟦⟧) := by
+theorem lmbSingleton_congr_star_mv {argTps outTp p} (r : FuncRef argTps outTp) (f : HList (Tp.denote p) argTps → Expr (Tp.denote p) outTp):
+    ([λr ↦ f] ⊢ [λr ↦ f] ⋆ ⟦⟧) := by
   simp
   apply SLP.entails_self
 

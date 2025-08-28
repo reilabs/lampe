@@ -85,10 +85,10 @@ def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) :=
 notation:max "[ " l " ↦ " r " ]" => State.valSingleton l r
 
 @[reducible]
-def State.lmbSingleton  (v : Lambda (Tp.denote p)) (r : FuncRef v.argTps v.outTp) : SLP (State p) :=
-  fun st => ∃ rr, r = FuncRef.lambda rr ∧ st.lambdas = Finmap.singleton rr v
+def State.lmbSingleton  (r : FuncRef argTps outTp) (f : HList (Tp.denote p) argTps → Expr (Tp.denote p) outTp) : SLP (State p) :=
+  fun st => ∃ rr, r = FuncRef.lambda rr ∧ st.lambdas = Finmap.singleton rr ⟨argTps, outTp, f⟩
 
-notation:max "[λ " l " ↦ " r " ]" => State.lmbSingleton r l
+notation:max "[λ " r " ↦ " f " ]" => State.lmbSingleton r f
 
 @[simp]
 lemma State.union_parts_left :

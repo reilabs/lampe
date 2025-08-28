@@ -448,7 +448,7 @@ theorem skip_intro :
 
 theorem lam_intro :
   STHoare p Γ ⟦⟧ (.lam argTps outTp lambdaBody)
-    fun v => [λv ↦ ⟨argTps, outTp, lambdaBody⟩] := by
+    fun v => [λv ↦ lambdaBody] := by
   unfold STHoare THoare
   intros H st h
   constructor
@@ -476,9 +476,9 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
   {Q : Tp.denote p outTp → SLP (State p)}
   {fnRef : Tp.denote p (.fn argTps outTp)}
   {hlam : STHoare p Γ P (lambdaBody args) Q} :
-  STHoare p Γ (P ⋆ [λfnRef ↦ ⟨argTps, outTp, lambdaBody⟩])
+  STHoare p Γ (P ⋆ [λfnRef ↦ lambdaBody])
     (Expr.call argTps outTp fnRef args)
-    (fun v => (Q v) ⋆ [λfnRef ↦ ⟨argTps, outTp, lambdaBody⟩]) := by
+    (fun v => (Q v) ⋆ [λfnRef ↦ lambdaBody]) := by
   unfold STHoare THoare
   intros H st h
   have h₁ : ∃ r, fnRef = .lambda r := by
