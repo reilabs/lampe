@@ -10,16 +10,16 @@ namespace Extracted
 
 noir_trait_impl[impl_37]<K: Type, V: Type> std::default::Default<> for std::collections::umap::Slot<K, V> where [] := {
   noir_def default<>() -> std::collections::umap::Slot<K, V> := {
-    (#_makeData returning std::collections::umap::Slot<K, V>)((std::option::Option::none<> as λ() -> std::option::Option<Tuple<K, V> >)(), #_false)
+    (#_makeData returning std::collections::umap::Slot<K, V>)((std::option::Option::none<Tuple<K, V> > as λ() -> std::option::Option<Tuple<K, V> >)(), #_false)
   };
 }
 
 noir_def std::collections::umap::Slot::is_valid<K: Type, V: Type>(self: std::collections::umap::Slot<K, V>) -> bool := {
-  (#_bAnd returning bool)((#_bNot returning bool)(self.1), (std::option::Option::is_some<> as λ(std::option::Option<Tuple<K, V> >) -> bool)(self.0))
+  (#_bAnd returning bool)((#_bNot returning bool)(self.1), (std::option::Option::is_some<Tuple<K, V> > as λ(std::option::Option<Tuple<K, V> >) -> bool)(self.0))
 }
 
 noir_def std::collections::umap::Slot::is_available<K: Type, V: Type>(self: std::collections::umap::Slot<K, V>) -> bool := {
-  (#_bOr returning bool)(self.1, (std::option::Option::is_none<> as λ(std::option::Option<Tuple<K, V> >) -> bool)(self.0))
+  (#_bOr returning bool)(self.1, (std::option::Option::is_none<Tuple<K, V> > as λ(std::option::Option<Tuple<K, V> >) -> bool)(self.0))
 }
 
 noir_def std::collections::umap::Slot::key_value<K: Type, V: Type>(self: std::collections::umap::Slot<K, V>) -> std::option::Option<Tuple<K, V> > := {
@@ -27,11 +27,11 @@ noir_def std::collections::umap::Slot::key_value<K: Type, V: Type>(self: std::co
 }
 
 noir_def std::collections::umap::Slot::key_value_unchecked<K: Type, V: Type>(self: std::collections::umap::Slot<K, V>) -> Tuple<K, V> := {
-  (std::option::Option::unwrap_unchecked<> as λ(std::option::Option<Tuple<K, V> >) -> Tuple<K, V>)(self.0)
+  (std::option::Option::unwrap_unchecked<Tuple<K, V> > as λ(std::option::Option<Tuple<K, V> >) -> Tuple<K, V>)(self.0)
 }
 
 noir_def std::collections::umap::Slot::set<K: Type, V: Type>(self: & std::collections::umap::Slot<K, V>, key: K, value: V) -> Unit := {
-  ((*self: std::collections::umap::Slot<K, V>).0: std::option::Option<Tuple<K, V> >) = (std::option::Option::some<> as λ(Tuple<K, V>) -> std::option::Option<Tuple<K, V> >)((#_makeData returning Tuple<K, V>)(key, value));
+  ((*self: std::collections::umap::Slot<K, V>).0: std::option::Option<Tuple<K, V> >) = (std::option::Option::some<Tuple<K, V> > as λ(Tuple<K, V>) -> std::option::Option<Tuple<K, V> >)((#_makeData returning Tuple<K, V>)(key, value));
   ((*self: std::collections::umap::Slot<K, V>).1: bool) = #_false;
   #_skip
 }
@@ -64,8 +64,8 @@ noir_def std::collections::umap::UHashMap::clear<K: Type, V: Type, B: Type>(self
 }
 
 noir_def std::collections::umap::UHashMap::contains_key<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: std::collections::umap::UHashMap<K, V, B>, key: K) -> bool := {
-  (std::option::Option::is_some<> as λ(std::option::Option<V>) -> bool)({
-    (std::collections::umap::UHashMap::get<> as λ(std::collections::umap::UHashMap<K, V, B>, K) -> std::option::Option<V>)(self, key)
+  (std::option::Option::is_some<V> as λ(std::option::Option<V>) -> bool)({
+    (std::collections::umap::UHashMap::get<K, V, B> as λ(std::collections::umap::UHashMap<K, V, B>, K) -> std::option::Option<V>)(self, key)
   })
 }
 
@@ -80,8 +80,8 @@ noir_def std::collections::umap::UHashMap::entries<K: Type, V: Type, B: Type>(se
     for ζi1 in (0: u32) .. (#_sliceLen returning u32)(ζi0) do {
       let (slot: std::collections::umap::Slot<K, V>) = (#_sliceIndex returning std::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
-        if (std::collections::umap::Slot::is_valid<> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
-          let (key_value: Tuple<K, V>) = (std::option::Option::unwrap_unchecked<> as λ(std::option::Option<Tuple<K, V> >) -> Tuple<K, V>)((std::collections::umap::Slot::key_value<> as λ(std::collections::umap::Slot<K, V>) -> std::option::Option<Tuple<K, V> >)(slot));
+        if (std::collections::umap::Slot::is_valid<K, V> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
+          let (key_value: Tuple<K, V>) = (std::option::Option::unwrap_unchecked<Tuple<K, V> > as λ(std::option::Option<Tuple<K, V> >) -> Tuple<K, V>)((std::collections::umap::Slot::key_value<K, V> as λ(std::collections::umap::Slot<K, V>) -> std::option::Option<Tuple<K, V> >)(slot));
           entries = (#_slicePushBack returning Slice<Tuple<K, V> >)(entries, key_value);
           #_skip
         }
@@ -103,8 +103,8 @@ noir_def std::collections::umap::UHashMap::keys<K: Type, V: Type, B: Type>(self:
     for ζi1 in (0: u32) .. (#_sliceLen returning u32)(ζi0) do {
       let (slot: std::collections::umap::Slot<K, V>) = (#_sliceIndex returning std::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
-        if (std::collections::umap::Slot::is_valid<> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
-          let ((key: K), (_: V)) = (std::collections::umap::Slot::key_value_unchecked<> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
+        if (std::collections::umap::Slot::is_valid<K, V> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
+          let ((key: K), (_: V)) = (std::collections::umap::Slot::key_value_unchecked<K, V> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
           keys = (#_slicePushBack returning Slice<K>)(keys, key);
           #_skip
         }
@@ -126,8 +126,8 @@ noir_def std::collections::umap::UHashMap::values<K: Type, V: Type, B: Type>(sel
     for ζi1 in (0: u32) .. (#_sliceLen returning u32)(ζi0) do {
       let (slot: std::collections::umap::Slot<K, V>) = (#_sliceIndex returning std::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
-        if (std::collections::umap::Slot::is_valid<> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
-          let ((_: K), (value: V)) = (std::collections::umap::Slot::key_value_unchecked<> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
+        if (std::collections::umap::Slot::is_valid<K, V> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
+          let ((_: K), (value: V)) = (std::collections::umap::Slot::key_value_unchecked<K, V> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
           values = (#_slicePushBack returning Slice<V>)(values, value);
           #_skip
         }
@@ -153,9 +153,9 @@ noir_def std::collections::umap::UHashMap::iter_keys_mut<K: Type, V: Type, B: Ty
 noir_def std::collections::umap::UHashMap::iter_values_mut<K: Type, V: Type, B: Type>(self: & std::collections::umap::UHashMap<K, V, B>, f: λ(V) -> V) -> Unit := {
   for i in (0: u32) .. (#_sliceLen returning u32)((#_readRef returning std::collections::umap::UHashMap<K, V, B>)(self).0) do {
     let mut (slot: std::collections::umap::Slot<K, V>) = (#_sliceIndex returning std::collections::umap::Slot<K, V>)((#_readRef returning std::collections::umap::UHashMap<K, V, B>)(self).0, (#_cast returning u32)(i));
-    if (std::collections::umap::Slot::is_valid<> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
-      let ((key: K), (value: V)) = (std::collections::umap::Slot::key_value_unchecked<> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
-      (std::collections::umap::Slot::set<> as λ(& std::collections::umap::Slot<K, V>, K, V) -> Unit)((#_ref returning & std::collections::umap::Slot<K, V>)(slot), key, (f as λ(V) -> V)(value));
+    if (std::collections::umap::Slot::is_valid<K, V> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
+      let ((key: K), (value: V)) = (std::collections::umap::Slot::key_value_unchecked<K, V> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
+      (std::collections::umap::Slot::set<K, V> as λ(& std::collections::umap::Slot<K, V>, K, V) -> Unit)((#_ref returning & std::collections::umap::Slot<K, V>)(slot), key, (f as λ(V) -> V)(value));
       (((*self: std::collections::umap::UHashMap<K, V, B>).0: Slice<std::collections::umap::Slot<K, V> >)[[i]]: std::collections::umap::Slot<K, V>) = slot;
       #_skip
     }
@@ -166,10 +166,10 @@ noir_def std::collections::umap::UHashMap::iter_values_mut<K: Type, V: Type, B: 
 noir_def std::collections::umap::UHashMap::retain<K: Type, V: Type, B: Type>(self: & std::collections::umap::UHashMap<K, V, B>, f: λ(K, V) -> bool) -> Unit := {
   for index in (0: u32) .. (#_sliceLen returning u32)((#_readRef returning std::collections::umap::UHashMap<K, V, B>)(self).0) do {
     let mut (slot: std::collections::umap::Slot<K, V>) = (#_sliceIndex returning std::collections::umap::Slot<K, V>)((#_readRef returning std::collections::umap::UHashMap<K, V, B>)(self).0, (#_cast returning u32)(index));
-    if (std::collections::umap::Slot::is_valid<> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
-      let ((key: K), (value: V)) = (std::collections::umap::Slot::key_value_unchecked<> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
+    if (std::collections::umap::Slot::is_valid<K, V> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot) then {
+      let ((key: K), (value: V)) = (std::collections::umap::Slot::key_value_unchecked<K, V> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
       if (#_bNot returning bool)((f as λ(K, V) -> bool)(key, value)) then {
-        (std::collections::umap::Slot::mark_deleted<> as λ(& std::collections::umap::Slot<K, V>) -> Unit)((#_ref returning & std::collections::umap::Slot<K, V>)(slot));
+        (std::collections::umap::Slot::mark_deleted<K, V> as λ(& std::collections::umap::Slot<K, V>) -> Unit)((#_ref returning & std::collections::umap::Slot<K, V>)(slot));
         ((*self: std::collections::umap::UHashMap<K, V, B>).1: u32) = (#_uSub returning u32)((#_readRef returning std::collections::umap::UHashMap<K, V, B>)(self).1, (1: u32));
         (((*self: std::collections::umap::UHashMap<K, V, B>).0: Slice<std::collections::umap::Slot<K, V> >)[[index]]: std::collections::umap::Slot<K, V>) = slot;
         #_skip
@@ -216,23 +216,23 @@ noir_def std::collections::umap::UHashMap::quadratic_probe<K: Type, V: Type, B: 
 noir_trait_impl[impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> std::cmp::Eq<> for std::collections::umap::UHashMap<K, V, B> where [K: std::cmp::Eq<>, K: std::hash::Hash<>, V: std::cmp::Eq<>, B: std::hash::BuildHasher<B_as_BuildHasher_H>] := {
   noir_def eq<>(self: std::collections::umap::UHashMap<K, V, B>, other: std::collections::umap::UHashMap<K, V, B>) -> bool := {
     let mut (equal: bool) = #_false;
-    if (#_uEq returning bool)((std::collections::umap::UHashMap::len<> as λ(std::collections::umap::UHashMap<K, V, B>) -> u32)(self), (std::collections::umap::UHashMap::len<> as λ(std::collections::umap::UHashMap<K, V, B>) -> u32)(other)) then {
+    if (#_uEq returning bool)((std::collections::umap::UHashMap::len<K, V, B> as λ(std::collections::umap::UHashMap<K, V, B>) -> u32)(self), (std::collections::umap::UHashMap::len<K, V, B> as λ(std::collections::umap::UHashMap<K, V, B>) -> u32)(other)) then {
       equal = #_true;
       {
         let (ζi0: Slice<std::collections::umap::Slot<K, V> >) = self.0;
         for ζi1 in (0: u32) .. (#_sliceLen returning u32)(ζi0) do {
           let (slot: std::collections::umap::Slot<K, V>) = (#_sliceIndex returning std::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
           {
-            if (#_bAnd returning bool)(equal, (std::collections::umap::Slot::is_valid<> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot)) then {
-              let ((key: K), (value: V)) = (std::collections::umap::Slot::key_value_unchecked<> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
+            if (#_bAnd returning bool)(equal, (std::collections::umap::Slot::is_valid<K, V> as λ(std::collections::umap::Slot<K, V>) -> bool)(slot)) then {
+              let ((key: K), (value: V)) = (std::collections::umap::Slot::key_value_unchecked<K, V> as λ(std::collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
               let (other_value: std::option::Option<V>) = {
-                (std::collections::umap::UHashMap::get<> as λ(std::collections::umap::UHashMap<K, V, B>, K) -> std::option::Option<V>)(other, key)
+                (std::collections::umap::UHashMap::get<K, V, B> as λ(std::collections::umap::UHashMap<K, V, B>, K) -> std::option::Option<V>)(other, key)
               };
-              if (std::option::Option::is_none<> as λ(std::option::Option<V>) -> bool)(other_value) then {
+              if (std::option::Option::is_none<V> as λ(std::option::Option<V>) -> bool)(other_value) then {
                 equal = #_false;
                 #_skip
               } else {
-                let (other_value: V) = (std::option::Option::unwrap_unchecked<> as λ(std::option::Option<V>) -> V)(other_value);
+                let (other_value: V) = (std::option::Option::unwrap_unchecked<V> as λ(std::option::Option<V>) -> V)(other_value);
                 if ((V as Eq<>)::eq<> as λ(V, V) -> bool)(value, other_value) then {
                   equal = #_false;
                   #_skip
@@ -250,7 +250,7 @@ noir_trait_impl[impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> st
 
 noir_trait_impl[impl_39]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> std::default::Default<> for std::collections::umap::UHashMap<K, V, B> where [B: std::hash::BuildHasher<B_as_BuildHasher_H>, B: std::default::Default<>] := {
   noir_def default<>() -> std::collections::umap::UHashMap<K, V, B> := {
-    (std::collections::umap::UHashMap::with_hasher<> as λ(B) -> std::collections::umap::UHashMap<K, V, B>)(((B as std::default::Default<>)::default<> as λ() -> B)())
+    (std::collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) -> std::collections::umap::UHashMap<K, V, B>)(((B as std::default::Default<>)::default<> as λ() -> B)())
   };
 }
 

@@ -8,11 +8,11 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def compat::is_bn254<>() -> bool := {
+noir_def std::compat::is_bn254<>() -> bool := {
   #_true
 }
 
 
 def Compat.env : Env := Env.mk
-  [«compat::is_bn254»]
+  [«std::compat::is_bn254»]
   []

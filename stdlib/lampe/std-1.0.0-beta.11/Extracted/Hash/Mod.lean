@@ -8,23 +8,23 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def hash::sha256_compression<>(input: Array<u32, 16: u32>, state: Array<u32, 8: u32>) -> Array<u32, 8: u32> := {
+noir_def std::hash::sha256_compression<>(input: Array<u32, 16: u32>, state: Array<u32, 8: u32>) -> Array<u32, 8: u32> := {
   (#_sha256_compression returning Array<u32, 8: u32>)(input, state)
 }
 
-noir_def hash::keccakf1600<>(input: Array<u64, 25: u32>) -> Array<u64, 25: u32> := {
+noir_def std::hash::keccakf1600<>(input: Array<u64, 25: u32>) -> Array<u64, 25: u32> := {
   (#_keccakf1600 returning Array<u64, 25: u32>)(input)
 }
 
-noir_def hash::keccak::keccakf1600<>(input: Array<u64, 25: u32>) -> Array<u64, 25: u32> := {
+noir_def std::hash::keccak::keccakf1600<>(input: Array<u64, 25: u32>) -> Array<u64, 25: u32> := {
   (hash::keccakf1600<> as λ(Array<u64, 25: u32>) -> Array<u64, 25: u32>)(input)
 }
 
-noir_def hash::blake2s<N: u32>(input: Array<u8, N: u32>) -> Array<u8, 32: u32> := {
+noir_def std::hash::blake2s<N: u32>(input: Array<u8, N: u32>) -> Array<u8, 32: u32> := {
   (#_blake2s returning Array<u8, 32: u32>)(input)
 }
 
-noir_def hash::blake3<N: u32>(input: Array<u8, N: u32>) -> Array<u8, 32: u32> := {
+noir_def std::hash::blake3<N: u32>(input: Array<u8, N: u32>) -> Array<u8, 32: u32> := {
   if (runtime::is_unconstrained<> as λ() -> bool)() then {
     (static_assert<String<74: u32> > as λ(bool, String<74: u32>) -> Unit)((#_uLeq returning bool)(uConst!(N: u32), (1024: u32)), "Barretenberg cannot prove blake3 hashes with inputs larger than 1024 bytes");
     #_skip
@@ -32,53 +32,53 @@ noir_def hash::blake3<N: u32>(input: Array<u8, N: u32>) -> Array<u8, 32: u32> :=
   (hash::__blake3<N: u32> as λ(Array<u8, N: u32>) -> Array<u8, 32: u32>)(input)
 }
 
-noir_def hash::__blake3<N: u32>(input: Array<u8, N: u32>) -> Array<u8, 32: u32> := {
+noir_def std::hash::__blake3<N: u32>(input: Array<u8, N: u32>) -> Array<u8, 32: u32> := {
   (#_blake3 returning Array<u8, 32: u32>)(input)
 }
 
-noir_def hash::pedersen_commitment<N: u32>(input: Array<Field, N: u32>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
+noir_def std::hash::pedersen_commitment<N: u32>(input: Array<Field, N: u32>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
   (hash::pedersen_commitment_with_separator<N: u32> as λ(Array<Field, N: u32>, u32) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(input, (0: u32))
 }
 
-noir_def hash::pedersen_commitment_with_separator<N: u32>(input: Array<Field, N: u32>, separator: u32) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
+noir_def std::hash::pedersen_commitment_with_separator<N: u32>(input: Array<Field, N: u32>, separator: u32) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
   let mut (points: Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>) = (#_mkRepeatedArray returning Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>)((#_makeData returning std::embedded_curve_ops::EmbeddedCurveScalar<>)((0: Field), (0: Field)));
   for i in (0: u32) .. uConst!(N: u32) do {
     (points[i]: std::embedded_curve_ops::EmbeddedCurveScalar<>) = (hash::from_field_unsafe<> as λ(Field) -> std::embedded_curve_ops::EmbeddedCurveScalar<>)((#_arrayIndex returning Field)(input, (#_cast returning u32)(i)));
     #_skip
   };
-  let (generators: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>) = (hash::derive_generators<N: u32, 24: u32> as λ(Array<u8, 24: u32>, u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>)((std::string::as_bytes<> as λ(String<24: u32>) -> Array<u8, 24: u32>)("DEFAULT_DOMAIN_SEPARATOR"), separator);
+  let (generators: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>) = (hash::derive_generators<N: u32, 24: u32> as λ(Array<u8, 24: u32>, u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>)((std::string::as_bytes<24: u32> as λ(String<24: u32>) -> Array<u8, 24: u32>)("DEFAULT_DOMAIN_SEPARATOR"), separator);
   (embedded_curve_ops::multi_scalar_mul<N: u32> as λ(Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>, Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(generators, points)
 }
 
-noir_def hash::pedersen_hash<N: u32>(input: Array<Field, N: u32>) -> Field := {
+noir_def std::hash::pedersen_hash<N: u32>(input: Array<Field, N: u32>) -> Field := {
   (hash::pedersen_hash_with_separator<N: u32> as λ(Array<Field, N: u32>, u32) -> Field)(input, (0: u32))
 }
 
-noir_def hash::pedersen_hash_with_separator<N: u32>(input: Array<Field, N: u32>, separator: u32) -> Field := {
+noir_def std::hash::pedersen_hash_with_separator<N: u32>(input: Array<Field, N: u32>, separator: u32) -> Field := {
   let mut (scalars: Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, (N + 1): u32>) = (#_mkRepeatedArray returning Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, (N + 1): u32>)((#_makeData returning std::embedded_curve_ops::EmbeddedCurveScalar<>)((0: Field), (0: Field)));
   let mut (generators: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, (N + 1): u32>) = (#_mkRepeatedArray returning Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, (N + 1): u32>)((std::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity<> as λ() -> std::embedded_curve_ops::EmbeddedCurvePoint<>)());
-  let (domain_generators: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>) = (hash::derive_generators<N: u32, 24: u32> as λ(Array<u8, 24: u32>, u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>)((std::string::as_bytes<> as λ(String<24: u32>) -> Array<u8, 24: u32>)("DEFAULT_DOMAIN_SEPARATOR"), separator);
+  let (domain_generators: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>) = (hash::derive_generators<N: u32, 24: u32> as λ(Array<u8, 24: u32>, u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>)((std::string::as_bytes<24: u32> as λ(String<24: u32>) -> Array<u8, 24: u32>)("DEFAULT_DOMAIN_SEPARATOR"), separator);
   for i in (0: u32) .. uConst!(N: u32) do {
     (scalars[i]: std::embedded_curve_ops::EmbeddedCurveScalar<>) = (hash::from_field_unsafe<> as λ(Field) -> std::embedded_curve_ops::EmbeddedCurveScalar<>)((#_arrayIndex returning Field)(input, (#_cast returning u32)(i)));
     (generators[i]: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (#_arrayIndex returning std::embedded_curve_ops::EmbeddedCurvePoint<>)(domain_generators, (#_cast returning u32)(i));
     #_skip
   };
   (scalars[uConst!(N: u32)]: std::embedded_curve_ops::EmbeddedCurveScalar<>) = (#_makeData returning std::embedded_curve_ops::EmbeddedCurveScalar<>)((#_cast returning Field)(uConst!(N: u32)), (#_cast returning Field)((0: Field)));
-  let (length_generator: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>) = (hash::derive_generators<1: u32, 20: u32> as λ(Array<u8, 20: u32>, u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)((std::string::as_bytes<> as λ(String<20: u32>) -> Array<u8, 20: u32>)("pedersen_hash_length"), (0: u32));
+  let (length_generator: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>) = (hash::derive_generators<1: u32, 20: u32> as λ(Array<u8, 20: u32>, u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)((std::string::as_bytes<20: u32> as λ(String<20: u32>) -> Array<u8, 20: u32>)("pedersen_hash_length"), (0: u32));
   (generators[uConst!(N: u32)]: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (#_arrayIndex returning std::embedded_curve_ops::EmbeddedCurvePoint<>)(length_generator, (0: u32));
   (#_arrayIndex returning std::embedded_curve_ops::EmbeddedCurvePoint<>)((embedded_curve_ops::multi_scalar_mul_array_return<(N + 1): u32> as λ(Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, (N + 1): u32>, Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, (N + 1): u32>) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(generators, scalars), (0: u32)).0
 }
 
-noir_def hash::derive_generators<N: u32, M: u32>(domain_separator_bytes: Array<u8, M: u32>, starting_index: u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32> := {
+noir_def std::hash::derive_generators<N: u32, M: u32>(domain_separator_bytes: Array<u8, M: u32>, starting_index: u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32> := {
   (assert_constant<Array<u8, M: u32> > as λ(Array<u8, M: u32>) -> Unit)(domain_separator_bytes);
   (hash::__derive_generators<N: u32, M: u32> as λ(Array<u8, M: u32>, u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>)(domain_separator_bytes, starting_index)
 }
 
-noir_def hash::__derive_generators<N: u32, M: u32>(domain_separator_bytes: Array<u8, M: u32>, starting_index: u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32> := {
+noir_def std::hash::__derive_generators<N: u32, M: u32>(domain_separator_bytes: Array<u8, M: u32>, starting_index: u32) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32> := {
   (#_derive_pedersen_generators returning Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>)(domain_separator_bytes, starting_index)
 }
 
-noir_def hash::from_field_unsafe<>(scalar: Field) -> std::embedded_curve_ops::EmbeddedCurveScalar<> := {
+noir_def std::hash::from_field_unsafe<>(scalar: Field) -> std::embedded_curve_ops::EmbeddedCurveScalar<> := {
   let ((xlo: Field), (xhi: Field)) = {
     (field::bn254::decompose_hint<> as λ(Field) -> Tuple<Field, Field>)(scalar)
   };
@@ -86,7 +86,7 @@ noir_def hash::from_field_unsafe<>(scalar: Field) -> std::embedded_curve_ops::Em
   (#_makeData returning std::embedded_curve_ops::EmbeddedCurveScalar<>)(xlo, xhi)
 }
 
-noir_def hash::poseidon2_permutation<N: u32>(_input: Array<Field, N: u32>, _state_length: u32) -> Array<Field, N: u32> := {
+noir_def std::hash::poseidon2_permutation<N: u32>(_input: Array<Field, N: u32>, _state_length: u32) -> Array<Field, N: u32> := {
   (#_poseidon2_permutation returning Array<Field, N: u32>)(_input, _state_length)
 }
 
@@ -261,7 +261,7 @@ noir_trait_impl[impl_22]<A: Type, B: Type, C: Type, D: Type, E: Type> std::hash:
   };
 }
 
-noir_def hash::assert_pedersen<>() -> Unit := {
+noir_def std::hash::assert_pedersen<>() -> Unit := {
   (#_assert returning Unit)((#_fEq returning bool)((hash::pedersen_hash_with_separator<1: u32> as λ(Array<Field, 1: u32>, u32) -> Field)((#_mkArray returning Array<Field, 1: u32>)((1: Field)), (1: u32)), (-9563966249275741675388072609438711537348680428347819854678797696612266004386: Field)));
   (#_assert returning Unit)(((std::embedded_curve_ops::EmbeddedCurvePoint<> as Eq<>)::eq<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> bool)((hash::pedersen_commitment_with_separator<1: u32> as λ(Array<Field, 1: u32>, u32) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)((#_mkArray returning Array<Field, 1: u32>)((1: Field)), (1: u32)), (#_makeData returning std::embedded_curve_ops::EmbeddedCurvePoint<>)((2393473289045184898987089634332637236754766663897650125720167164137088869378: Field), (-7135402912423807765050323395026152633898511180575289670895350565966806597339: Field), #_false)));
   (#_assert returning Unit)((#_fEq returning bool)((hash::pedersen_hash_with_separator<2: u32> as λ(Array<Field, 2: u32>, u32) -> Field)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)), (2: u32)), (-4514641934080458214240751313245257091597283372119704256508270041112972328364: Field)));
@@ -287,5 +287,5 @@ noir_def hash::assert_pedersen<>() -> Unit := {
 
 
 def Hash.Mod.env : Env := Env.mk
-  [«hash::sha256_compression», «hash::keccakf1600», «hash::keccak::keccakf1600», «hash::blake2s», «hash::blake3», «hash::__blake3», «hash::pedersen_commitment», «hash::pedersen_commitment_with_separator», «hash::pedersen_hash», «hash::pedersen_hash_with_separator», «hash::derive_generators», «hash::__derive_generators», «hash::from_field_unsafe», «hash::poseidon2_permutation», «hash::assert_pedersen»]
+  [«std::hash::sha256_compression», «std::hash::keccakf1600», «std::hash::keccak::keccakf1600», «std::hash::blake2s», «std::hash::blake3», «std::hash::__blake3», «std::hash::pedersen_commitment», «std::hash::pedersen_commitment_with_separator», «std::hash::pedersen_hash», «std::hash::pedersen_hash_with_separator», «std::hash::derive_generators», «std::hash::__derive_generators», «std::hash::from_field_unsafe», «std::hash::poseidon2_permutation», «std::hash::assert_pedersen»]
   [impl_2, impl_3, impl_4, impl_5, impl_6, impl_7, impl_8, impl_9, impl_10, impl_11, impl_12, impl_13, impl_14, impl_15, impl_16, impl_17, impl_18, impl_19, impl_20, impl_21, impl_22]

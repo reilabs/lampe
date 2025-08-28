@@ -8,25 +8,25 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def print_oracle<T: Type>(with_newline: bool, input: T) -> Unit := {
+noir_def std::print_oracle<T: Type>(with_newline: bool, input: T) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def print_unconstrained<T: Type>(with_newline: bool, input: T) -> Unit := {
+noir_def std::print_unconstrained<T: Type>(with_newline: bool, input: T) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def println<T: Type>(input: T) -> Unit := {
+noir_def std::println<T: Type>(input: T) -> Unit := {
   (print_unconstrained<T> as λ(bool, T) -> Unit)(#_true, input);
   #_skip
 }
 
-noir_def print<T: Type>(input: T) -> Unit := {
+noir_def std::print<T: Type>(input: T) -> Unit := {
   (print_unconstrained<T> as λ(bool, T) -> Unit)(#_false, input);
   #_skip
 }
 
-noir_def verify_proof_with_type<N: u32, M: u32, K: u32>(verification_key: Array<Field, N: u32>, proof: Array<Field, M: u32>, public_inputs: Array<Field, K: u32>, key_hash: Field, proof_type: u32) -> Unit := {
+noir_def std::verify_proof_with_type<N: u32, M: u32, K: u32>(verification_key: Array<Field, N: u32>, proof: Array<Field, M: u32>, public_inputs: Array<Field, K: u32>, key_hash: Field, proof_type: u32) -> Unit := {
   if (#_bNot returning bool)((runtime::is_unconstrained<> as λ() -> bool)()) then {
     (assert_constant<u32> as λ(u32) -> Unit)(proof_type);
     #_skip
@@ -35,40 +35,40 @@ noir_def verify_proof_with_type<N: u32, M: u32, K: u32>(verification_key: Array<
   #_skip
 }
 
-noir_def verify_proof_internal<N: u32, M: u32, K: u32>(verification_key: Array<Field, N: u32>, proof: Array<Field, M: u32>, public_inputs: Array<Field, K: u32>, key_hash: Field, proof_type: u32) -> Unit := {
+noir_def std::verify_proof_internal<N: u32, M: u32, K: u32>(verification_key: Array<Field, N: u32>, proof: Array<Field, M: u32>, public_inputs: Array<Field, K: u32>, key_hash: Field, proof_type: u32) -> Unit := {
   (#_recursive_aggregation returning Unit)(verification_key, proof, public_inputs, key_hash, proof_type)
 }
 
-noir_def assert_constant<T: Type>(x: T) -> Unit := {
+noir_def std::assert_constant<T: Type>(x: T) -> Unit := {
   (#_assert_constant returning Unit)(x)
 }
 
-noir_def static_assert<T: Type>(predicate: bool, message: T) -> Unit := {
+noir_def std::static_assert<T: Type>(predicate: bool, message: T) -> Unit := {
   (#_static_assert returning Unit)(predicate, message)
 }
 
-noir_def wrapping_add<T: Type>(x: T, y: T) -> T := {
+noir_def std::wrapping_add<T: Type>(x: T, y: T) -> T := {
   ((Field as std::convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fAdd returning Field)(((T as std::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), ((T as std::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
-noir_def wrapping_sub<T: Type>(x: T, y: T) -> T := {
+noir_def std::wrapping_sub<T: Type>(x: T, y: T) -> T := {
   ((Field as std::convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fSub returning Field)((#_fAdd returning Field)(((T as std::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), (340282366920938463463374607431768211456: Field)), ((T as std::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
-noir_def wrapping_mul<T: Type>(x: T, y: T) -> T := {
+noir_def std::wrapping_mul<T: Type>(x: T, y: T) -> T := {
   ((Field as std::convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fMul returning Field)(((T as std::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), ((T as std::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
-noir_def as_witness<>(x: Field) -> Unit := {
+noir_def std::as_witness<>(x: Field) -> Unit := {
   (#_as_witness returning Unit)(x)
 }
 
-noir_def tests::test_static_assert_custom_message<>() -> Unit := {
+noir_def std::tests::test_static_assert_custom_message<>() -> Unit := {
   (static_assert<String<14: u32> > as λ(bool, String<14: u32>) -> Unit)((#_fEq returning bool)((1: Field), (2: Field)), "custom message");
   #_skip
 }
 
-noir_def tests::test_wrapping_mul<>() -> Unit := {
+noir_def std::tests::test_wrapping_mul<>() -> Unit := {
   let (zero: u128) = (0: u128);
   let (one: u128) = (1: u128);
   let (two_pow_64: u128) = (18446744073709551616: u128);
@@ -87,5 +87,5 @@ noir_def tests::test_wrapping_mul<>() -> Unit := {
 
 
 def Lib.env : Env := Env.mk
-  [print_oracle, print_unconstrained, println, print, verify_proof_with_type, verify_proof_internal, assert_constant, static_assert, wrapping_add, wrapping_sub, wrapping_mul, as_witness, «tests::test_static_assert_custom_message», «tests::test_wrapping_mul»]
+  [«std::print_oracle», «std::print_unconstrained», «std::println», «std::print», «std::verify_proof_with_type», «std::verify_proof_internal», «std::assert_constant», «std::static_assert», «std::wrapping_add», «std::wrapping_sub», «std::wrapping_mul», «std::as_witness», «std::tests::test_static_assert_custom_message», «std::tests::test_wrapping_mul»]
   []

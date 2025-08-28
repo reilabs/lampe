@@ -8,7 +8,7 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def meta::tests::returning_versus_macro_insertion<>() -> Unit := {
+noir_def std::meta::tests::returning_versus_macro_insertion<>() -> Unit := {
   #_unit
 }
 
@@ -24,11 +24,11 @@ noir_trait_impl[impl_314]<> std::meta::tests::DoNothing<> for std::meta::tests::
   };
 }
 
-noir_def meta::tests::concatenate_test<>() -> Unit := {
+noir_def std::meta::tests::concatenate_test<>() -> Unit := {
   #_unit
 }
 
-noir_def meta::tests::remove_unused_warnings<>() -> Unit := {
+noir_def std::meta::tests::remove_unused_warnings<>() -> Unit := {
   let (_: std::meta::tests::Bar<>) = (#_makeData returning std::meta::tests::Bar<>)((1: Field), (#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)));
   let (_: std::meta::tests::MyStruct<>) = (#_makeData returning std::meta::tests::MyStruct<>)((1: i32));
   let (_: std::meta::tests::MyOtherStruct<>) = (#_makeData returning std::meta::tests::MyOtherStruct<>)((2: u32));
@@ -42,5 +42,5 @@ noir_def meta::tests::remove_unused_warnings<>() -> Unit := {
 
 
 def Meta.Mod.env : Env := Env.mk
-  [«meta::tests::returning_versus_macro_insertion», «meta::tests::concatenate_test», «meta::tests::remove_unused_warnings»]
+  [«std::meta::tests::returning_versus_macro_insertion», «std::meta::tests::concatenate_test», «std::meta::tests::remove_unused_warnings»]
   [impl_429, impl_314]

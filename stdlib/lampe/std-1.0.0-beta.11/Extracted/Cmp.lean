@@ -113,8 +113,8 @@ noir_trait_impl[impl_92]<T: Type> std::cmp::Eq<> for Slice<T> where [T: std::cmp
 
 noir_trait_impl[impl_93]<N: u32> std::cmp::Eq<> for String<N: u32> where [] := {
   noir_def eq<>(self: String<N: u32>, other: String<N: u32>) -> bool := {
-    let (self_bytes: Array<u8, N: u32>) = (std::string::as_bytes<> as λ(String<N: u32>) -> Array<u8, N: u32>)(self);
-    let (other_bytes: Array<u8, N: u32>) = (std::string::as_bytes<> as λ(String<N: u32>) -> Array<u8, N: u32>)(other);
+    let (self_bytes: Array<u8, N: u32>) = (std::string::as_bytes<N: u32> as λ(String<N: u32>) -> Array<u8, N: u32>)(self);
+    let (other_bytes: Array<u8, N: u32>) = (std::string::as_bytes<N: u32> as λ(String<N: u32>) -> Array<u8, N: u32>)(other);
     ((Array<u8, N: u32> as Eq<>)::eq<> as λ(Array<u8, N: u32>, Array<u8, N: u32>) -> bool)(self_bytes, other_bytes)
   };
 }
@@ -385,7 +385,7 @@ noir_trait_impl[impl_115]<A: Type, B: Type, C: Type, D: Type, E: Type> std::cmp:
   };
 }
 
-noir_def cmp::max<T: Type>(v1: T, v2: T) -> T := {
+noir_def std::cmp::max<T: Type>(v1: T, v2: T) -> T := {
   if ((T as Ord<>)::cmp<> as λ(T, T) -> bool)(v1, v2) then {
     v1
   } else {
@@ -393,7 +393,7 @@ noir_def cmp::max<T: Type>(v1: T, v2: T) -> T := {
   }
 }
 
-noir_def cmp::min<T: Type>(v1: T, v2: T) -> T := {
+noir_def std::cmp::min<T: Type>(v1: T, v2: T) -> T := {
   if ((T as Ord<>)::cmp<> as λ(T, T) -> bool)(v1, v2) then {
     v2
   } else {
@@ -401,7 +401,7 @@ noir_def cmp::min<T: Type>(v1: T, v2: T) -> T := {
   }
 }
 
-noir_def cmp::cmp_tests::sanity_check_min<>() -> Unit := {
+noir_def std::cmp::cmp_tests::sanity_check_min<>() -> Unit := {
   (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (0: u64)));
   (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
   (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
@@ -409,7 +409,7 @@ noir_def cmp::cmp_tests::sanity_check_min<>() -> Unit := {
   #_skip
 }
 
-noir_def cmp::cmp_tests::sanity_check_max<>() -> Unit := {
+noir_def std::cmp::cmp_tests::sanity_check_max<>() -> Unit := {
   (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (1: u64)));
   (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
   (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
@@ -417,7 +417,7 @@ noir_def cmp::cmp_tests::sanity_check_max<>() -> Unit := {
   #_skip
 }
 
-noir_def cmp::cmp_tests::correctly_handles_unequal_length_slices<>() -> Unit := {
+noir_def std::cmp::cmp_tests::correctly_handles_unequal_length_slices<>() -> Unit := {
   let (slice_1: Slice<Field>) = (#_mkSlice returning Slice<Field>)((0: Field), (1: Field), (2: Field), (3: Field));
   let (slice_2: Slice<Field>) = (#_mkSlice returning Slice<Field>)((0: Field), (1: Field), (2: Field));
   (#_assert returning Unit)((#_bNot returning bool)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(slice_1, slice_2)));
@@ -426,5 +426,5 @@ noir_def cmp::cmp_tests::correctly_handles_unequal_length_slices<>() -> Unit := 
 
 
 def Cmp.env : Env := Env.mk
-  [«std::cmp::Ordering::less», «std::cmp::Ordering::equal», «std::cmp::Ordering::greater», «cmp::max», «cmp::min», «cmp::cmp_tests::sanity_check_min», «cmp::cmp_tests::sanity_check_max», «cmp::cmp_tests::correctly_handles_unequal_length_slices»]
+  [«std::cmp::Ordering::less», «std::cmp::Ordering::equal», «std::cmp::Ordering::greater», «std::cmp::max», «std::cmp::min», «std::cmp::cmp_tests::sanity_check_min», «std::cmp::cmp_tests::sanity_check_max», «std::cmp::cmp_tests::correctly_handles_unequal_length_slices»]
   [impl_78, impl_79, impl_80, impl_81, impl_82, impl_83, impl_84, impl_85, impl_86, impl_87, impl_88, impl_89, impl_90, impl_91, impl_92, impl_93, impl_94, impl_95, impl_96, impl_97, impl_98, impl_99, impl_100, impl_101, impl_102, impl_103, impl_104, impl_105, impl_106, impl_107, impl_108, impl_109, impl_110, impl_111, impl_112, impl_113, impl_114, impl_115]

@@ -756,7 +756,7 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_module_definitions(&self, module: &ModuleData) -> ModuleDefs {
         let mut globals = HashSet::new();
         let mut functions = HashSet::new();
-        let module_defs = module.type_definitions().chain(module.value_definitions());
+        let module_defs = module.definitions().definitions();
 
         for def in module_defs {
             match def {
@@ -818,6 +818,22 @@ impl LeanGenerator<'_, '_> {
     /// - If an unsupported function kind is found for a builtin function.
     pub fn generate_free_function_def(&self, id: &FuncId) -> FunctionDefinition {
         let function_meta = self.context.function_meta(id);
+
+        let name = if let Some(ty) = &function_meta.self_type {
+            let func_name_bare = self.context.function_name(id);
+
+            // Safe to pull the expr as we know the kind here must always be "Type"
+            let ty = self.generate_lean_type_value(ty, None).expr;
+            let self_ty_name = match ty {
+                TypeExpr::Struct(s) => s.name,
+                _ => panic!("Non-struct `Self` type for function"),
+            };
+
+            format!("{self_ty_name}::{func_name_bare}")
+        } else {
+            self.fully_qualified_function_name(&function_meta.source_crate, id)
+        };
+
         let generics = self.gather_function_generic_patterns(function_meta);
         let parameters = self.generate_function_parameters(function_meta);
         let return_type = self.generate_lean_type_value(function_meta.return_type(), None);
@@ -860,22 +876,6 @@ impl LeanGenerator<'_, '_> {
             })
         } else {
             self.generate_expr(self.context.def_interner.function(id).as_expr())
-        };
-
-        let name = if let Some(ty) = &function_meta.self_type {
-            let func_name_bare = self.context.function_name(id);
-
-            // Safe to pull the expr as we know the kind here must always be "Type"
-            let ty = self.generate_lean_type_value(ty, None).expr;
-            let self_ty_name = match ty {
-                TypeExpr::Struct(s) => s.name,
-                _ => panic!("Non-struct `Self` type for function"),
-            };
-
-            format!("{self_ty_name}::{func_name_bare}")
-        } else {
-            self.context
-                .fully_qualified_function_name(&function_meta.source_crate, id)
         };
 
         FunctionDefinition {
@@ -942,16 +942,23 @@ impl LeanGenerator<'_, '_> {
             .try_get_instantiation_bindings(func_expr)
             .unwrap_or(&default);
 
-        data.direct_generics
-            .iter()
-            .map(|rg| {
-                self.generate_lean_type_value(
-                    &NoirType::TypeVariable(rg.type_var.clone()),
-                    Some(bindings),
-                )
-            })
-            .unique()
-            .collect()
+        // If it is a trait function we only want to gather direct generics, but if it
+        // is a free function def we need to gather the generics from the impl scope as
+        // well.
+        if data.trait_impl.is_some() || data.trait_id.is_some() {
+            &data.direct_generics
+        } else {
+            &data.all_generics
+        }
+        .iter()
+        .map(|rg| {
+            self.generate_lean_type_value(
+                &NoirType::TypeVariable(rg.type_var.clone()),
+                Some(bindings),
+            )
+        })
+        .unique()
+        .collect()
     }
 
     pub fn gather_lean_type_patterns_from_resolved_generics(

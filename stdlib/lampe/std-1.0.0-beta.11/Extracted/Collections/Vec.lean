@@ -37,12 +37,12 @@ noir_def std::collections::vec::Vec::pop<T: Type>(self: & std::collections::vec:
 }
 
 noir_def std::collections::vec::Vec::insert<T: Type>(self: & std::collections::vec::Vec<T>, index: u32, elem: T) -> Unit := {
-  ((*self: std::collections::vec::Vec<T>).0: Slice<T>) = (std::slice::insert<> as λ(Slice<T>, u32, T) -> Slice<T>)((#_readRef returning std::collections::vec::Vec<T>)(self).0, index, elem);
+  ((*self: std::collections::vec::Vec<T>).0: Slice<T>) = (std::slice::insert<T> as λ(Slice<T>, u32, T) -> Slice<T>)((#_readRef returning std::collections::vec::Vec<T>)(self).0, index, elem);
   #_skip
 }
 
 noir_def std::collections::vec::Vec::remove<T: Type>(self: & std::collections::vec::Vec<T>, index: u32) -> T := {
-  let ((new_slice: Slice<T>), (elem: T)) = (std::slice::remove<> as λ(Slice<T>, u32) -> Tuple<Slice<T>, T>)((#_readRef returning std::collections::vec::Vec<T>)(self).0, index);
+  let ((new_slice: Slice<T>), (elem: T)) = (std::slice::remove<T> as λ(Slice<T>, u32) -> Tuple<Slice<T>, T>)((#_readRef returning std::collections::vec::Vec<T>)(self).0, index);
   ((*self: std::collections::vec::Vec<T>).0: Slice<T>) = new_slice;
   elem
 }
@@ -51,29 +51,29 @@ noir_def std::collections::vec::Vec::len<T: Type>(self: std::collections::vec::V
   (#_sliceLen returning u32)(self.0)
 }
 
-noir_def collections::vec::tests::set_updates_values_properly<>() -> Unit := {
+noir_def std::collections::vec::tests::set_updates_values_properly<>() -> Unit := {
   let mut (vec: std::collections::vec::Vec<Field>) = (#_makeData returning std::collections::vec::Vec<Field>)((#_mkSlice returning Slice<Field>)((0: Field), (0: Field), (0: Field), (0: Field), (0: Field)));
-  (std::collections::vec::Vec::set<> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (0: u32), (42: Field));
+  (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (0: u32), (42: Field));
   (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (0: Field), (0: Field), (0: Field), (0: Field))));
-  (std::collections::vec::Vec::set<> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (1: u32), (43: Field));
+  (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (1: u32), (43: Field));
   (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (43: Field), (0: Field), (0: Field), (0: Field))));
-  (std::collections::vec::Vec::set<> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (2: u32), (44: Field));
+  (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (2: u32), (44: Field));
   (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (43: Field), (44: Field), (0: Field), (0: Field))));
-  (std::collections::vec::Vec::set<> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (1: u32), (10: Field));
+  (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (1: u32), (10: Field));
   (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (10: Field), (44: Field), (0: Field), (0: Field))));
-  (std::collections::vec::Vec::set<> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (0: u32), (0: Field));
+  (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (0: u32), (0: Field));
   (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((0: Field), (10: Field), (44: Field), (0: Field), (0: Field))));
   #_skip
 }
 
-noir_def collections::vec::tests::panics_when_writing_elements_past_end_of_vec<>() -> Unit := {
-  let mut (vec: std::collections::vec::Vec<Field>) = (std::collections::vec::Vec::new<> as λ() -> std::collections::vec::Vec<Field>)();
-  (std::collections::vec::Vec::set<> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (0: u32), (42: Field));
-  let (_: Field) = (std::collections::vec::Vec::get<> as λ(std::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32));
+noir_def std::collections::vec::tests::panics_when_writing_elements_past_end_of_vec<>() -> Unit := {
+  let mut (vec: std::collections::vec::Vec<Field>) = (std::collections::vec::Vec::new<Field> as λ() -> std::collections::vec::Vec<Field>)();
+  (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (0: u32), (42: Field));
+  let (_: Field) = (std::collections::vec::Vec::get<Field> as λ(std::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32));
   #_skip
 }
 
 
 def Collections.Vec.env : Env := Env.mk
-  [«std::collections::vec::Vec::new», «std::collections::vec::Vec::from_slice», «std::collections::vec::Vec::get», «std::collections::vec::Vec::set», «std::collections::vec::Vec::push», «std::collections::vec::Vec::pop», «std::collections::vec::Vec::insert», «std::collections::vec::Vec::remove», «std::collections::vec::Vec::len», «collections::vec::tests::set_updates_values_properly», «collections::vec::tests::panics_when_writing_elements_past_end_of_vec»]
+  [«std::collections::vec::Vec::new», «std::collections::vec::Vec::from_slice», «std::collections::vec::Vec::get», «std::collections::vec::Vec::set», «std::collections::vec::Vec::push», «std::collections::vec::Vec::pop», «std::collections::vec::Vec::insert», «std::collections::vec::Vec::remove», «std::collections::vec::Vec::len», «std::collections::vec::tests::set_updates_values_properly», «std::collections::vec::tests::panics_when_writing_elements_past_end_of_vec»]
   []

@@ -8,35 +8,35 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def field::__assert_max_bit_size<>(value: Field, bit_size: u32) -> Unit := {
+noir_def std::field::__assert_max_bit_size<>(value: Field, bit_size: u32) -> Unit := {
   (#_apply_range_constraint returning Unit)(value, bit_size)
 }
 
-noir_def field::__to_le_radix<N: u32>(value: Field, radix: u32) -> Array<u8, N: u32> := {
+noir_def std::field::__to_le_radix<N: u32>(value: Field, radix: u32) -> Array<u8, N: u32> := {
   (#_to_le_radix returning Array<u8, N: u32>)(value, radix)
 }
 
-noir_def field::__to_be_radix<N: u32>(value: Field, radix: u32) -> Array<u8, N: u32> := {
+noir_def std::field::__to_be_radix<N: u32>(value: Field, radix: u32) -> Array<u8, N: u32> := {
   (#_to_be_radix returning Array<u8, N: u32>)(value, radix)
 }
 
-noir_def field::__to_le_bits<N: u32>(value: Field) -> Array<u1, N: u32> := {
+noir_def std::field::__to_le_bits<N: u32>(value: Field) -> Array<u1, N: u32> := {
   (#_to_le_bits returning Array<u1, N: u32>)(value)
 }
 
-noir_def field::__to_be_bits<N: u32>(value: Field) -> Array<u1, N: u32> := {
+noir_def std::field::__to_be_bits<N: u32>(value: Field) -> Array<u1, N: u32> := {
   (#_to_be_bits returning Array<u1, N: u32>)(value)
 }
 
-noir_def field::__field_less_than<>(x: Field, y: Field) -> bool := {
+noir_def std::field::__field_less_than<>(x: Field, y: Field) -> bool := {
   (#_fresh returning bool)()
 }
 
-noir_def field::field_less_than<>(x: Field, y: Field) -> bool := {
+noir_def std::field::field_less_than<>(x: Field, y: Field) -> bool := {
   (#_fresh returning bool)()
 }
 
-noir_def field::bytes32_to_field<>(bytes32: Array<u8, 32: u32>) -> Field := {
+noir_def std::field::bytes32_to_field<>(bytes32: Array<u8, 32: u32>) -> Field := {
   let mut (v: Field) = (1: Field);
   let mut (high: Field) = (#_cast returning Field)((0: Field));
   let mut (low: Field) = (#_cast returning Field)((0: Field));
@@ -49,7 +49,7 @@ noir_def field::bytes32_to_field<>(bytes32: Array<u8, 32: u32>) -> Field := {
   (#_fAdd returning Field)(low, (#_fMul returning Field)(high, v))
 }
 
-noir_def field::lt_fallback<>(x: Field, y: Field) -> bool := {
+noir_def std::field::lt_fallback<>(x: Field, y: Field) -> bool := {
   if (runtime::is_unconstrained<> as λ() -> bool)() then {
     (field::field_less_than<> as λ(Field, Field) -> bool)(x, y)
   } else {
@@ -73,21 +73,21 @@ noir_def field::lt_fallback<>(x: Field, y: Field) -> bool := {
   }
 }
 
-noir_def field::tests::test_to_be_bits<>() -> Unit := {
+noir_def std::field::tests::test_to_be_bits<>() -> Unit := {
   let (field: Field) = (2: Field);
   let (bits: Array<u1, 8: u32>) = (std::field::to_be_bits<8: u32> as λ(Field) -> Array<u1, 8: u32>)(field);
   (#_assert returning Unit)(((Array<u1, 8: u32> as Eq<>)::eq<> as λ(Array<u1, 8: u32>, Array<u1, 8: u32>) -> bool)(bits, (#_mkArray returning Array<u1, 8: u32>)((0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (1: u1), (0: u1))));
   #_skip
 }
 
-noir_def field::tests::test_to_le_bits<>() -> Unit := {
+noir_def std::field::tests::test_to_le_bits<>() -> Unit := {
   let (field: Field) = (2: Field);
   let (bits: Array<u1, 8: u32>) = (std::field::to_le_bits<8: u32> as λ(Field) -> Array<u1, 8: u32>)(field);
   (#_assert returning Unit)(((Array<u1, 8: u32> as Eq<>)::eq<> as λ(Array<u1, 8: u32>, Array<u1, 8: u32>) -> bool)(bits, (#_mkArray returning Array<u1, 8: u32>)((0: u1), (1: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1))));
   #_skip
 }
 
-noir_def field::tests::test_to_be_bytes<>() -> Unit := {
+noir_def std::field::tests::test_to_be_bytes<>() -> Unit := {
   let (field: Field) = (2: Field);
   let (bytes: Array<u8, 8: u32>) = (std::field::to_be_bytes<8: u32> as λ(Field) -> Array<u8, 8: u32>)(field);
   (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (2: u8))));
@@ -95,7 +95,7 @@ noir_def field::tests::test_to_be_bytes<>() -> Unit := {
   #_skip
 }
 
-noir_def field::tests::test_to_le_bytes<>() -> Unit := {
+noir_def std::field::tests::test_to_le_bytes<>() -> Unit := {
   let (field: Field) = (2: Field);
   let (bytes: Array<u8, 8: u32>) = (std::field::to_le_bytes<8: u32> as λ(Field) -> Array<u8, 8: u32>)(field);
   (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((2: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8))));
@@ -103,7 +103,7 @@ noir_def field::tests::test_to_le_bytes<>() -> Unit := {
   #_skip
 }
 
-noir_def field::tests::test_to_be_radix<>() -> Unit := {
+noir_def std::field::tests::test_to_be_radix<>() -> Unit := {
   let (field: Field) = (259: Field);
   let (bytes: Array<u8, 8: u32>) = (std::field::to_be_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (256: u32));
   (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (1: u8), (3: u8))));
@@ -111,7 +111,7 @@ noir_def field::tests::test_to_be_radix<>() -> Unit := {
   #_skip
 }
 
-noir_def field::tests::test_to_le_radix<>() -> Unit := {
+noir_def std::field::tests::test_to_le_radix<>() -> Unit := {
   let (field: Field) = (259: Field);
   let (bytes: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (256: u32));
   (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((3: u8), (1: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8))));
@@ -119,7 +119,7 @@ noir_def field::tests::test_to_le_radix<>() -> Unit := {
   #_skip
 }
 
-noir_def field::tests::test_to_le_radix_1<>() -> Unit := {
+noir_def std::field::tests::test_to_le_radix_1<>() -> Unit := {
   if (#_bNot returning bool)((runtime::is_unconstrained<> as λ() -> bool)()) then {
     let (field: Field) = (2: Field);
     let (_: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (1: u32));
@@ -130,7 +130,7 @@ noir_def field::tests::test_to_le_radix_1<>() -> Unit := {
   }
 }
 
-noir_def field::tests::test_to_le_radix_3<>() -> Unit := {
+noir_def std::field::tests::test_to_le_radix_3<>() -> Unit := {
   if (#_bNot returning bool)((runtime::is_unconstrained<> as λ() -> bool)()) then {
     let (field: Field) = (2: Field);
     let (_: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (3: u32));
@@ -141,7 +141,7 @@ noir_def field::tests::test_to_le_radix_3<>() -> Unit := {
   }
 }
 
-noir_def field::tests::test_to_le_radix_brillig_3<>() -> Unit := {
+noir_def std::field::tests::test_to_le_radix_brillig_3<>() -> Unit := {
   if (runtime::is_unconstrained<> as λ() -> bool)() then {
     let (field: Field) = (1: Field);
     let (out: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (3: u32));
@@ -152,7 +152,7 @@ noir_def field::tests::test_to_le_radix_brillig_3<>() -> Unit := {
   }
 }
 
-noir_def field::tests::test_to_le_radix_512<>() -> Unit := {
+noir_def std::field::tests::test_to_le_radix_512<>() -> Unit := {
   if (#_bNot returning bool)((runtime::is_unconstrained<> as λ() -> bool)()) then {
     let (field: Field) = (2: Field);
     let (_: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (512: u32));
@@ -162,20 +162,20 @@ noir_def field::tests::test_to_le_radix_512<>() -> Unit := {
   }
 }
 
-noir_def field::tests::not_enough_limbs_brillig<>() -> Unit := {
+noir_def std::field::tests::not_enough_limbs_brillig<>() -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def field::tests::not_enough_limbs<>() -> Unit := {
+noir_def std::field::tests::not_enough_limbs<>() -> Unit := {
   let (_: Array<u8, 16: u32>) = (std::field::to_le_bytes<16: u32> as λ(Field) -> Array<u8, 16: u32>)((340282366920938463463374607431768211456: Field));
   #_skip
 }
 
-noir_def field::tests::test_field_less_than<>() -> Unit := {
+noir_def std::field::tests::test_field_less_than<>() -> Unit := {
   (#_fresh returning Unit)()
 }
 
 
 def Field.Mod.env : Env := Env.mk
-  [«field::__assert_max_bit_size», «field::__to_le_radix», «field::__to_be_radix», «field::__to_le_bits», «field::__to_be_bits», «field::__field_less_than», «field::field_less_than», «field::bytes32_to_field», «field::lt_fallback», «field::tests::test_to_be_bits», «field::tests::test_to_le_bits», «field::tests::test_to_be_bytes», «field::tests::test_to_le_bytes», «field::tests::test_to_be_radix», «field::tests::test_to_le_radix», «field::tests::test_to_le_radix_1», «field::tests::test_to_le_radix_3», «field::tests::test_to_le_radix_brillig_3», «field::tests::test_to_le_radix_512», «field::tests::not_enough_limbs_brillig», «field::tests::not_enough_limbs», «field::tests::test_field_less_than»]
+  [«std::field::__assert_max_bit_size», «std::field::__to_le_radix», «std::field::__to_be_radix», «std::field::__to_le_bits», «std::field::__to_be_bits», «std::field::__field_less_than», «std::field::field_less_than», «std::field::bytes32_to_field», «std::field::lt_fallback», «std::field::tests::test_to_be_bits», «std::field::tests::test_to_le_bits», «std::field::tests::test_to_be_bytes», «std::field::tests::test_to_le_bytes», «std::field::tests::test_to_be_radix», «std::field::tests::test_to_le_radix», «std::field::tests::test_to_le_radix_1», «std::field::tests::test_to_le_radix_3», «std::field::tests::test_to_le_radix_brillig_3», «std::field::tests::test_to_le_radix_512», «std::field::tests::not_enough_limbs_brillig», «std::field::tests::not_enough_limbs», «std::field::tests::test_field_less_than»]
   []

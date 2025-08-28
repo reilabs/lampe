@@ -8,31 +8,31 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def test::create_mock_oracle<N: u32>(name: String<N: u32>) -> Field := {
+noir_def std::test::create_mock_oracle<N: u32>(name: String<N: u32>) -> Field := {
   (#_fresh returning Field)()
 }
 
-noir_def test::set_mock_params_oracle<P: Type>(id: Field, params: P) -> Unit := {
+noir_def std::test::set_mock_params_oracle<P: Type>(id: Field, params: P) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def test::get_mock_last_params_oracle<P: Type>(id: Field) -> P := {
+noir_def std::test::get_mock_last_params_oracle<P: Type>(id: Field) -> P := {
   (#_fresh returning P)()
 }
 
-noir_def test::set_mock_returns_oracle<R: Type>(id: Field, returns: R) -> Unit := {
+noir_def std::test::set_mock_returns_oracle<R: Type>(id: Field, returns: R) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def test::set_mock_times_oracle<>(id: Field, times: u64) -> Unit := {
+noir_def std::test::set_mock_times_oracle<>(id: Field, times: u64) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def test::clear_mock_oracle<>(id: Field) -> Unit := {
+noir_def std::test::clear_mock_oracle<>(id: Field) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def test::get_times_mock_called<>(id: Field) -> Field := {
+noir_def std::test::get_times_mock_called<>(id: Field) -> Field := {
   (#_fresh returning Field)()
 }
 
@@ -66,5 +66,5 @@ noir_def std::test::OracleMock::times_called<>(self: std::test::OracleMock<>) ->
 
 
 def Test.env : Env := Env.mk
-  [«test::create_mock_oracle», «test::set_mock_params_oracle», «test::get_mock_last_params_oracle», «test::set_mock_returns_oracle», «test::set_mock_times_oracle», «test::clear_mock_oracle», «test::get_times_mock_called», «std::test::OracleMock::mock», «std::test::OracleMock::with_params», «std::test::OracleMock::get_last_params», «std::test::OracleMock::returns», «std::test::OracleMock::times», «std::test::OracleMock::clear», «std::test::OracleMock::times_called»]
+  [«std::test::create_mock_oracle», «std::test::set_mock_params_oracle», «std::test::get_mock_last_params_oracle», «std::test::set_mock_returns_oracle», «std::test::set_mock_times_oracle», «std::test::clear_mock_oracle», «std::test::get_times_mock_called», «std::test::OracleMock::mock», «std::test::OracleMock::with_params», «std::test::OracleMock::get_last_params», «std::test::OracleMock::returns», «std::test::OracleMock::times», «std::test::OracleMock::clear», «std::test::OracleMock::times_called»]
   []

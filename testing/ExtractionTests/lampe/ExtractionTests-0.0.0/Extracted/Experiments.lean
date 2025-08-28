@@ -72,7 +72,7 @@ noir_def experiments::check<>(x: u8) -> Unit := {
 
 noir_trait_impl[impl_431]<T: Type> std::default::Default<> for experiments::Option2<T> where [] := {
   noir_def default<>() -> experiments::Option2<T> := {
-    (experiments::Option2::none<> as λ() -> experiments::Option2<T>)()
+    (experiments::Option2::none<T> as λ() -> experiments::Option2<T>)()
   };
 }
 
@@ -85,7 +85,7 @@ noir_def experiments::Option2::some<T: Type>(_value: T) -> experiments::Option2<
 }
 
 noir_def experiments::Option2::is_none<T: Type>(self: experiments::Option2<T>) -> bool := {
-  (#_bNot returning bool)((experiments::Option2::is_some<> as λ(experiments::Option2<T>) -> bool)(self))
+  (#_bNot returning bool)((experiments::Option2::is_some<T> as λ(experiments::Option2<T>) -> bool)(self))
 }
 
 noir_def experiments::Option2::is_some<T: Type>(self: experiments::Option2<T>) -> bool := {
@@ -116,18 +116,18 @@ noir_def experiments::fmtstr_test<>(x: Field, y: Field) -> Field := {
 }
 
 noir_def experiments::is_alias_some<T: Type>(x: @AliasedOpt<T>) -> bool := {
-  (experiments::Option2::is_some<> as λ(experiments::Option2<T>) -> bool)(x)
+  (experiments::Option2::is_some<T> as λ(experiments::Option2<T>) -> bool)(x)
 }
 
 noir_def experiments::main<>() -> Unit := {
-  let mut (op1: experiments::Option2<Field>) = (experiments::Option2::some<> as λ(Field) -> experiments::Option2<Field>)((5: Field));
+  let mut (op1: experiments::Option2<Field>) = (experiments::Option2::some<Field> as λ(Field) -> experiments::Option2<Field>)((5: Field));
   let (op2: experiments::Option2<Field>) = ((experiments::Option2<Field> as std::default::Default<>)::default<> as λ() -> experiments::Option2<Field>)();
   let (_op3: experiments::Option2<Field>) = ((experiments::Option2<Field> as experiments::MyTrait<>)::foo<> as λ(experiments::Option2<Field>) -> experiments::Option2<Field>)(if #_true then {
     op1
   } else {
     op2
   });
-  let (_: bool) = (experiments::Option2::is_some<> as λ(experiments::Option2<Field>) -> bool)(op1);
+  let (_: bool) = (experiments::Option2::is_some<Field> as λ(experiments::Option2<Field>) -> bool)(op1);
   let mut (l: Array<Field, 3: u32>) = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
   let (_: Field) = (#_arrayIndex returning Field)(l, (0: u32));
   let (t: Tuple<Field, bool, Field>) = (#_makeData returning Tuple<Field, bool, Field>)((1: Field), #_true, (3: Field));
