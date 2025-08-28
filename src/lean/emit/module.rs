@@ -45,7 +45,6 @@ impl ModuleEmitter {
         }
 
         // Emit the environment
-        self.context.end_line();
         self.emit_environment();
 
         self.context.consume()

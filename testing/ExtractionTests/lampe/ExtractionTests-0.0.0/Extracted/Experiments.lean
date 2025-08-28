@@ -139,7 +139,6 @@ noir_def experiments::main<>() -> Unit := {
   #_skip
 }
 
-
 def Experiments.env : Env := Env.mk
   [«experiments::my_func3», «experiments::my_func», «experiments::my_func2», «experiments::get_unchecked», «experiments::my_fn», «experiments::cast_test», «experiments::tuple_test», «experiments::literal_test», «experiments::assigns», «experiments::uncons», «experiments::check», «experiments::Option2::none», «experiments::Option2::some», «experiments::Option2::is_none», «experiments::Option2::is_some», «experiments::string_test», «experiments::fmtstr_test», «experiments::is_alias_some», «experiments::main»]
   [impl_431, impl_432, impl_433]

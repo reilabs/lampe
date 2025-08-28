@@ -164,7 +164,7 @@ theorem arrayLen_intro : STHoarePureBuiltin p Γ Builtin.arrayLen (by tauto) h![
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
-theorem arrayAsSlice_intro : STHoarePureBuiltin p Γ Builtin.arrayAsSlice (by tauto) h![arr] (a := (tp, n)) := by
+theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![arr] (a := (tp, n)) := by
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 

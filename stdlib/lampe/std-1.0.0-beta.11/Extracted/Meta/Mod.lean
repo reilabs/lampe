@@ -32,14 +32,13 @@ noir_def std::meta::tests::remove_unused_warnings<>() -> Unit := {
   let (_: std::meta::tests::Bar<>) = (#_makeData returning std::meta::tests::Bar<>)((1: Field), (#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)));
   let (_: std::meta::tests::MyStruct<>) = (#_makeData returning std::meta::tests::MyStruct<>)((1: i32));
   let (_: std::meta::tests::MyOtherStruct<>) = (#_makeData returning std::meta::tests::MyOtherStruct<>)((2: u32));
-  let (_: Unit) = (meta::tests::derive_do_nothing<> as λ(Unit) -> Unit)((panic::panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
-  let (_: Unit) = (meta::tests::derive_do_nothing_alt<> as λ(Unit) -> Unit)((panic::panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
+  let (_: Unit) = (std::meta::tests::derive_do_nothing<> as λ(Unit) -> Unit)((std::panic::panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
+  let (_: Unit) = (std::meta::tests::derive_do_nothing_alt<> as λ(Unit) -> Unit)((std::panic::panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
   if #_false then {
-    (meta::tests::remove_unused_warnings<> as λ() -> Unit)();
+    (std::meta::tests::remove_unused_warnings<> as λ() -> Unit)();
     #_skip
   }
 }
-
 
 def Meta.Mod.env : Env := Env.mk
   [«std::meta::tests::returning_versus_macro_insertion», «std::meta::tests::concatenate_test», «std::meta::tests::remove_unused_warnings»]

@@ -12,7 +12,6 @@ noir_global_def RC: Array<Field, 8: u32> = (#_mkArray returning Array<Field, 8: 
 
 noir_global_def SIGMA: Field = (9915499612839321149637521777990102151350674507940716049588462388200839649614: Field);
 
-
 def Globals.Mod.env : Env := Env.mk
   [RC, SIGMA]
   []

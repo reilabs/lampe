@@ -9,7 +9,7 @@ namespace «std-1.0.0-beta.11»
 namespace Extracted
 
 noir_def std::embedded_curve_ops::EmbeddedCurvePoint::double<>(self: std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
-  (embedded_curve_ops::embedded_curve_add<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(self, self)
+  (std::embedded_curve_ops::embedded_curve_add<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(self, self)
 }
 
 noir_def std::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity<>() -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
@@ -22,7 +22,7 @@ noir_def std::embedded_curve_ops::EmbeddedCurvePoint::generator<>() -> std::embe
 
 noir_trait_impl[impl_25]<> std::ops::arith::Add<> for std::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
   noir_def add<>(self: std::embedded_curve_ops::EmbeddedCurvePoint<>, other: std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
-    (embedded_curve_ops::embedded_curve_add<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(self, other)
+    (std::embedded_curve_ops::embedded_curve_add<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(self, other)
   };
 }
 
@@ -62,7 +62,7 @@ noir_def std::embedded_curve_ops::EmbeddedCurveScalar::new<>(lo: Field, hi: Fiel
 }
 
 noir_def std::embedded_curve_ops::EmbeddedCurveScalar::from_field<>(scalar: Field) -> std::embedded_curve_ops::EmbeddedCurveScalar<> := {
-  let ((a: Field), (b: Field)) = (field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)(scalar);
+  let ((a: Field), (b: Field)) = (std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)(scalar);
   (#_makeData returning std::embedded_curve_ops::EmbeddedCurveScalar<>)(a, b)
 }
 
@@ -95,25 +95,21 @@ noir_trait_impl[impl_31]<> std::hash::Hash<> for std::embedded_curve_ops::Embedd
 }
 
 noir_def std::embedded_curve_ops::multi_scalar_mul<N: u32>(points: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>, scalars: Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
-  (#_arrayIndex returning std::embedded_curve_ops::EmbeddedCurvePoint<>)((embedded_curve_ops::multi_scalar_mul_array_return<N: u32> as λ(Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>, Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(points, scalars), (0: u32))
-}
-
-noir_def std::embedded_curve_ops::multi_scalar_mul_array_return<N: u32>(points: Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>, scalars: Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32> := {
-  (#_multi_scalar_mul returning Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(points, scalars)
+  (#_arrayIndex returning std::embedded_curve_ops::EmbeddedCurvePoint<>)((#_multiScalarMul returning Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(points, scalars), (0: u32))
 }
 
 noir_def std::embedded_curve_ops::fixed_base_scalar_mul<>(scalar: std::embedded_curve_ops::EmbeddedCurveScalar<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
-  (embedded_curve_ops::multi_scalar_mul<1: u32> as λ(Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>, Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, 1: u32>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)((#_mkArray returning Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)((std::embedded_curve_ops::EmbeddedCurvePoint::generator<> as λ() -> std::embedded_curve_ops::EmbeddedCurvePoint<>)()), (#_mkArray returning Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, 1: u32>)(scalar))
+  (std::embedded_curve_ops::multi_scalar_mul<1: u32> as λ(Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>, Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, 1: u32>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)((#_mkArray returning Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)((std::embedded_curve_ops::EmbeddedCurvePoint::generator<> as λ() -> std::embedded_curve_ops::EmbeddedCurvePoint<>)()), (#_mkArray returning Array<std::embedded_curve_ops::EmbeddedCurveScalar<>, 1: u32>)(scalar))
 }
 
 noir_def std::embedded_curve_ops::embedded_curve_add<>(point1: std::embedded_curve_ops::EmbeddedCurvePoint<>, point2: std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
-  if (runtime::is_unconstrained<> as λ() -> bool)() then {
+  if (#_isUnconstrained returning bool)() then {
     if point1.2 then {
       point2
     } else if point2.2 then {
       point1
     } else {
-      (embedded_curve_ops::embedded_curve_add_unsafe<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1, point2)
+      (std::embedded_curve_ops::embedded_curve_add_unsafe<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1, point2)
     }
   } else {
     let (x_coordinates_match: bool) = (#_fEq returning bool)(point1.0, point2.0);
@@ -122,8 +118,8 @@ noir_def std::embedded_curve_ops::embedded_curve_add<>(point1: std::embedded_cur
     let (infinity_predicate: bool) = (#_bAnd returning bool)(x_coordinates_match, (#_bNot returning bool)(y_coordinates_match));
     let (point1_1: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (#_makeData returning std::embedded_curve_ops::EmbeddedCurvePoint<>)((#_fAdd returning Field)(point1.0, (#_cast returning Field)(x_coordinates_match)), point1.1, #_false);
     let (point2_1: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (#_makeData returning std::embedded_curve_ops::EmbeddedCurvePoint<>)(point2.0, point2.1, #_false);
-    let mut (result: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (embedded_curve_ops::embedded_curve_add_unsafe<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1_1, point2_1);
-    let (double: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (embedded_curve_ops::embedded_curve_add_unsafe<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1, point1);
+    let mut (result: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (std::embedded_curve_ops::embedded_curve_add_unsafe<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1_1, point2_1);
+    let (double: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (std::embedded_curve_ops::embedded_curve_add_unsafe<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1, point1);
     result = if double_predicate then {
       double
     } else {
@@ -143,24 +139,19 @@ noir_def std::embedded_curve_ops::embedded_curve_add<>(point1: std::embedded_cur
   }
 }
 
-noir_def std::embedded_curve_ops::embedded_curve_add_array_return<>(_point1: std::embedded_curve_ops::EmbeddedCurvePoint<>, _point2: std::embedded_curve_ops::EmbeddedCurvePoint<>) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32> := {
-  (#_embedded_curve_add returning Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(_point1, _point2)
-}
-
 noir_def std::embedded_curve_ops::embedded_curve_add_not_nul<>(point1: std::embedded_curve_ops::EmbeddedCurvePoint<>, point2: std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
   (#_assert returning Unit)((#_fNeq returning bool)(point1.0, point2.0));
   (#_assert returning Unit)((#_bNot returning bool)(point1.2));
   (#_assert returning Unit)((#_bNot returning bool)(point2.2));
   let (point1_1: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (#_makeData returning std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1.0, point1.1, #_false);
   let (point2_1: std::embedded_curve_ops::EmbeddedCurvePoint<>) = (#_makeData returning std::embedded_curve_ops::EmbeddedCurvePoint<>)(point2.0, point2.1, #_false);
-  (embedded_curve_ops::embedded_curve_add_unsafe<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1_1, point2_1)
+  (std::embedded_curve_ops::embedded_curve_add_unsafe<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(point1_1, point2_1)
 }
 
 noir_def std::embedded_curve_ops::embedded_curve_add_unsafe<>(point1: std::embedded_curve_ops::EmbeddedCurvePoint<>, point2: std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
-  (#_arrayIndex returning std::embedded_curve_ops::EmbeddedCurvePoint<>)((embedded_curve_ops::embedded_curve_add_array_return<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(point1, point2), (0: u32))
+  (#_arrayIndex returning std::embedded_curve_ops::EmbeddedCurvePoint<>)((#_embeddedCurveAdd returning Array<std::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(point1, point2), (0: u32))
 }
 
-
 def EmbeddedCurveOps.env : Env := Env.mk
-  [«std::embedded_curve_ops::EmbeddedCurvePoint::double», «std::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity», «std::embedded_curve_ops::EmbeddedCurvePoint::generator», «std::embedded_curve_ops::EmbeddedCurveScalar::new», «std::embedded_curve_ops::EmbeddedCurveScalar::from_field», «std::embedded_curve_ops::EmbeddedCurveScalar::from_bytes», «std::embedded_curve_ops::multi_scalar_mul», «std::embedded_curve_ops::multi_scalar_mul_array_return», «std::embedded_curve_ops::fixed_base_scalar_mul», «std::embedded_curve_ops::embedded_curve_add», «std::embedded_curve_ops::embedded_curve_add_array_return», «std::embedded_curve_ops::embedded_curve_add_not_nul», «std::embedded_curve_ops::embedded_curve_add_unsafe»]
+  [«std::embedded_curve_ops::EmbeddedCurvePoint::double», «std::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity», «std::embedded_curve_ops::EmbeddedCurvePoint::generator», «std::embedded_curve_ops::EmbeddedCurveScalar::new», «std::embedded_curve_ops::EmbeddedCurveScalar::from_field», «std::embedded_curve_ops::EmbeddedCurveScalar::from_bytes», «std::embedded_curve_ops::multi_scalar_mul», «std::embedded_curve_ops::fixed_base_scalar_mul», «std::embedded_curve_ops::embedded_curve_add», «std::embedded_curve_ops::embedded_curve_add_not_nul», «std::embedded_curve_ops::embedded_curve_add_unsafe»]
   [impl_25, impl_26, impl_27, impl_28, impl_29, impl_30, impl_31]

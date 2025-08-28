@@ -392,7 +392,6 @@ noir_trait_impl[impl_271]<> std::ops::bit::Shr<> for i64 where [] := {
   };
 }
 
-
 def Ops.Bit.env : Env := Env.mk
   []
   [impl_208, impl_209, impl_210, impl_211, impl_212, impl_213, impl_214, impl_215, impl_216, impl_217, impl_218, impl_219, impl_220, impl_221, impl_222, impl_223, impl_224, impl_225, impl_226, impl_227, impl_228, impl_229, impl_230, impl_231, impl_232, impl_233, impl_234, impl_235, impl_236, impl_237, impl_238, impl_239, impl_240, impl_241, impl_242, impl_243, impl_244, impl_245, impl_246, impl_247, impl_248, impl_249, impl_250, impl_251, impl_252, impl_253, impl_254, impl_255, impl_256, impl_257, impl_258, impl_259, impl_260, impl_261, impl_262, impl_263, impl_264, impl_265, impl_266, impl_267, impl_268, impl_269, impl_270, impl_271]

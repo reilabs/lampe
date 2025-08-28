@@ -8,13 +8,16 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
+noir_def std::string::as_bytes_vec<N: u32>(self: String<N: u32>) -> std::collections::vec::Vec<u8> := {
+  (std::collections::vec::Vec::from_slice<u8> as λ(Slice<u8>) -> std::collections::vec::Vec<u8>)((#_asSlice returning Slice<u8>)((#_strAsBytes returning Array<u8, N: u32>)(self)))
+}
+
 noir_trait_impl[impl_77]<N: u32> std::convert::From<Array<u8, N: u32> > for String<N: u32> where [] := {
   noir_def from<>(bytes: Array<u8, N: u32>) -> String<N: u32> := {
-    (std::array::as_str_unchecked<N: u32> as λ(Array<u8, N: u32>) -> String<N: u32>)(bytes)
+    (#_arrayAsStrUnchecked returning String<N: u32>)(bytes)
   };
 }
 
-
 def String.env : Env := Env.mk
-  []
+  [«std::string::as_bytes_vec»]
   [impl_77]

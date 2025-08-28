@@ -37,18 +37,18 @@ noir_def std::collections::vec::Vec::pop<T: Type>(self: & std::collections::vec:
 }
 
 noir_def std::collections::vec::Vec::insert<T: Type>(self: & std::collections::vec::Vec<T>, index: u32, elem: T) -> Unit := {
-  ((*self: std::collections::vec::Vec<T>).0: Slice<T>) = (std::slice::insert<T> as λ(Slice<T>, u32, T) -> Slice<T>)((#_readRef returning std::collections::vec::Vec<T>)(self).0, index, elem);
+  ((*self: std::collections::vec::Vec<T>).0: Slice<T>) = (#_sliceInsert returning Slice<T>)((#_readRef returning std::collections::vec::Vec<T>)(self).0, index, elem);
   #_skip
 }
 
 noir_def std::collections::vec::Vec::remove<T: Type>(self: & std::collections::vec::Vec<T>, index: u32) -> T := {
-  let ((new_slice: Slice<T>), (elem: T)) = (std::slice::remove<T> as λ(Slice<T>, u32) -> Tuple<Slice<T>, T>)((#_readRef returning std::collections::vec::Vec<T>)(self).0, index);
+  let ((new_slice: Slice<T>), (elem: T)) = (#_sliceRemove returning Tuple<Slice<T>, T>)((#_readRef returning std::collections::vec::Vec<T>)(self).0, index);
   ((*self: std::collections::vec::Vec<T>).0: Slice<T>) = new_slice;
   elem
 }
 
 noir_def std::collections::vec::Vec::len<T: Type>(self: std::collections::vec::Vec<T>) -> u32 := {
-  (#_sliceLen returning u32)(self.0)
+  (#_arrayLen returning u32)(self.0)
 }
 
 noir_def std::collections::vec::tests::set_updates_values_properly<>() -> Unit := {
@@ -72,7 +72,6 @@ noir_def std::collections::vec::tests::panics_when_writing_elements_past_end_of_
   let (_: Field) = (std::collections::vec::Vec::get<Field> as λ(std::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32));
   #_skip
 }
-
 
 def Collections.Vec.env : Env := Env.mk
   [«std::collections::vec::Vec::new», «std::collections::vec::Vec::from_slice», «std::collections::vec::Vec::get», «std::collections::vec::Vec::set», «std::collections::vec::Vec::push», «std::collections::vec::Vec::pop», «std::collections::vec::Vec::insert», «std::collections::vec::Vec::remove», «std::collections::vec::Vec::len», «std::collections::vec::tests::set_updates_values_properly», «std::collections::vec::tests::panics_when_writing_elements_past_end_of_vec»]

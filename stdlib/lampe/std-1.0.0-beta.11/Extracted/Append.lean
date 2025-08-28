@@ -18,7 +18,6 @@ noir_trait_impl[impl_315]<T: Type> std::append::Append<> for Slice<T> where [] :
   };
 }
 
-
 def Append.env : Env := Env.mk
   []
   [impl_315]

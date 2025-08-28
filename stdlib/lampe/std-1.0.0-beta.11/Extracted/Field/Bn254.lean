@@ -32,7 +32,7 @@ noir_def std::field::bn254::assert_gt_limbs<>(a: Tuple<Field, Field>, b: Tuple<F
   let ((alo: Field), (ahi: Field)) = a;
   let ((blo: Field), (bhi: Field)) = b;
   {
-    let (borrow: bool) = (field::bn254::lte_hint<> as λ(Field, Field) -> bool)(alo, blo);
+    let (borrow: bool) = (std::field::bn254::lte_hint<> as λ(Field, Field) -> bool)(alo, blo);
     let (rlo: Field) = (#_fAdd returning Field)((#_fSub returning Field)((#_fSub returning Field)(alo, blo), (1: Field)), (#_fMul returning Field)((#_cast returning Field)(borrow), (TWO_POW_128<> as λ() -> Field)()));
     let (rhi: Field) = (#_fSub returning Field)((#_fSub returning Field)(ahi, bhi), (#_cast returning Field)(borrow));
     (std::field::assert_max_bit_size<128: u32> as λ(Field) -> Unit)(rlo);
@@ -42,60 +42,60 @@ noir_def std::field::bn254::assert_gt_limbs<>(a: Tuple<Field, Field>, b: Tuple<F
 }
 
 noir_def std::field::bn254::decompose<>(x: Field) -> Tuple<Field, Field> := {
-  if (runtime::is_unconstrained<> as λ() -> bool)() then {
-    (field::bn254::compute_decomposition<> as λ(Field) -> Tuple<Field, Field>)(x)
+  if (#_isUnconstrained returning bool)() then {
+    (std::field::bn254::compute_decomposition<> as λ(Field) -> Tuple<Field, Field>)(x)
   } else {
-    let ((xlo: Field), (xhi: Field)) = (field::bn254::decompose_hint<> as λ(Field) -> Tuple<Field, Field>)(x);
+    let ((xlo: Field), (xhi: Field)) = (std::field::bn254::decompose_hint<> as λ(Field) -> Tuple<Field, Field>)(x);
     (std::field::assert_max_bit_size<128: u32> as λ(Field) -> Unit)(xlo);
     (std::field::assert_max_bit_size<128: u32> as λ(Field) -> Unit)(xhi);
     (#_assert returning Unit)((#_fEq returning bool)(x, (#_fAdd returning Field)(xlo, (#_fMul returning Field)((TWO_POW_128<> as λ() -> Field)(), xhi))));
-    (field::bn254::assert_gt_limbs<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> Unit)((#_makeData returning Tuple<Field, Field>)((PLO<> as λ() -> Field)(), (PHI<> as λ() -> Field)()), (#_makeData returning Tuple<Field, Field>)(xlo, xhi));
+    (std::field::bn254::assert_gt_limbs<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> Unit)((#_makeData returning Tuple<Field, Field>)((PLO<> as λ() -> Field)(), (PHI<> as λ() -> Field)()), (#_makeData returning Tuple<Field, Field>)(xlo, xhi));
     (#_makeData returning Tuple<Field, Field>)(xlo, xhi)
   }
 }
 
 noir_def std::field::bn254::assert_gt<>(a: Field, b: Field) -> Unit := {
-  if (runtime::is_unconstrained<> as λ() -> bool)() then {
+  if (#_isUnconstrained returning bool)() then {
     (#_assert returning Unit)({
-      (field::field_less_than<> as λ(Field, Field) -> bool)(b, a)
+      (std::field::field_less_than<> as λ(Field, Field) -> bool)(b, a)
     });
     #_skip
   } else {
-    let (a_limbs: Tuple<Field, Field>) = (field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)(a);
-    let (b_limbs: Tuple<Field, Field>) = (field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)(b);
-    (field::bn254::assert_gt_limbs<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> Unit)(a_limbs, b_limbs)
+    let (a_limbs: Tuple<Field, Field>) = (std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)(a);
+    let (b_limbs: Tuple<Field, Field>) = (std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)(b);
+    (std::field::bn254::assert_gt_limbs<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> Unit)(a_limbs, b_limbs)
   }
 }
 
 noir_def std::field::bn254::assert_lt<>(a: Field, b: Field) -> Unit := {
-  (field::bn254::assert_gt<> as λ(Field, Field) -> Unit)(b, a);
+  (std::field::bn254::assert_gt<> as λ(Field, Field) -> Unit)(b, a);
   #_skip
 }
 
 noir_def std::field::bn254::gt<>(a: Field, b: Field) -> bool := {
-  if (runtime::is_unconstrained<> as λ() -> bool)() then {
-    (field::field_less_than<> as λ(Field, Field) -> bool)(b, a)
+  if (#_isUnconstrained returning bool)() then {
+    (std::field::field_less_than<> as λ(Field, Field) -> bool)(b, a)
   } else if (#_fEq returning bool)(a, b) then {
     #_false
   } else {
-    if (field::field_less_than<> as λ(Field, Field) -> bool)(a, b) then {
-      (field::bn254::assert_gt<> as λ(Field, Field) -> Unit)(b, a);
+    if (std::field::field_less_than<> as λ(Field, Field) -> bool)(a, b) then {
+      (std::field::bn254::assert_gt<> as λ(Field, Field) -> Unit)(b, a);
       #_false
     } else {
-      (field::bn254::assert_gt<> as λ(Field, Field) -> Unit)(a, b);
+      (std::field::bn254::assert_gt<> as λ(Field, Field) -> Unit)(a, b);
       #_true
     }
   }
 }
 
 noir_def std::field::bn254::lt<>(a: Field, b: Field) -> bool := {
-  (field::bn254::gt<> as λ(Field, Field) -> bool)(b, a)
+  (std::field::bn254::gt<> as λ(Field, Field) -> bool)(b, a)
 }
 
 noir_def std::field::bn254::tests::check_decompose<>() -> Unit := {
-  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((TWO_POW_128<> as λ() -> Field)()), (#_makeData returning Tuple<Field, Field>)((0: Field), (1: Field))));
-  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((#_fAdd returning Field)((TWO_POW_128<> as λ() -> Field)(), (78187493520: Field))), (#_makeData returning Tuple<Field, Field>)((78187493520: Field), (1: Field))));
-  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((78187493520: Field)), (#_makeData returning Tuple<Field, Field>)((78187493520: Field), (0: Field))));
+  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((TWO_POW_128<> as λ() -> Field)()), (#_makeData returning Tuple<Field, Field>)((0: Field), (1: Field))));
+  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((#_fAdd returning Field)((TWO_POW_128<> as λ() -> Field)(), (78187493520: Field))), (#_makeData returning Tuple<Field, Field>)((78187493520: Field), (1: Field))));
+  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((78187493520: Field)), (#_makeData returning Tuple<Field, Field>)((78187493520: Field), (0: Field))));
   #_skip
 }
 
@@ -108,11 +108,11 @@ noir_def std::field::bn254::tests::check_lte_hint<>() -> Unit := {
 }
 
 noir_def std::field::bn254::tests::check_assert_gt<>() -> Unit := {
-  (field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((1: Field), (0: Field));
-  (field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((256: Field), (0: Field));
-  (field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((#_fSub returning Field)((0: Field), (1: Field)), (#_fSub returning Field)((0: Field), (2: Field)));
-  (field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((TWO_POW_128<> as λ() -> Field)(), (0: Field));
-  (field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((#_fSub returning Field)((0: Field), (1: Field)), (0: Field));
+  (std::field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((1: Field), (0: Field));
+  (std::field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((256: Field), (0: Field));
+  (std::field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((#_fSub returning Field)((0: Field), (1: Field)), (#_fSub returning Field)((0: Field), (2: Field)));
+  (std::field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((TWO_POW_128<> as λ() -> Field)(), (0: Field));
+  (std::field::bn254::assert_gt<> as λ(Field, Field) -> Unit)((#_fSub returning Field)((0: Field), (1: Field)), (0: Field));
   #_skip
 }
 
@@ -121,14 +121,14 @@ noir_def std::field::bn254::tests::check_assert_gt_unconstrained<>() -> Unit := 
 }
 
 noir_def std::field::bn254::tests::check_gt<>() -> Unit := {
-  (#_assert returning Unit)((field::bn254::gt<> as λ(Field, Field) -> bool)((1: Field), (0: Field)));
-  (#_assert returning Unit)((field::bn254::gt<> as λ(Field, Field) -> bool)((256: Field), (0: Field)));
-  (#_assert returning Unit)((field::bn254::gt<> as λ(Field, Field) -> bool)((#_fSub returning Field)((0: Field), (1: Field)), (#_fSub returning Field)((0: Field), (2: Field))));
-  (#_assert returning Unit)((field::bn254::gt<> as λ(Field, Field) -> bool)((TWO_POW_128<> as λ() -> Field)(), (0: Field)));
-  (#_assert returning Unit)((#_bNot returning bool)((field::bn254::gt<> as λ(Field, Field) -> bool)((0: Field), (0: Field))));
-  (#_assert returning Unit)((#_bNot returning bool)((field::bn254::gt<> as λ(Field, Field) -> bool)((0: Field), (256: Field))));
-  (#_assert returning Unit)((field::bn254::gt<> as λ(Field, Field) -> bool)((#_fSub returning Field)((0: Field), (1: Field)), (#_fSub returning Field)((0: Field), (2: Field))));
-  (#_assert returning Unit)((#_bNot returning bool)((field::bn254::gt<> as λ(Field, Field) -> bool)((#_fSub returning Field)((0: Field), (2: Field)), (#_fSub returning Field)((0: Field), (1: Field)))));
+  (#_assert returning Unit)((std::field::bn254::gt<> as λ(Field, Field) -> bool)((1: Field), (0: Field)));
+  (#_assert returning Unit)((std::field::bn254::gt<> as λ(Field, Field) -> bool)((256: Field), (0: Field)));
+  (#_assert returning Unit)((std::field::bn254::gt<> as λ(Field, Field) -> bool)((#_fSub returning Field)((0: Field), (1: Field)), (#_fSub returning Field)((0: Field), (2: Field))));
+  (#_assert returning Unit)((std::field::bn254::gt<> as λ(Field, Field) -> bool)((TWO_POW_128<> as λ() -> Field)(), (0: Field)));
+  (#_assert returning Unit)((#_bNot returning bool)((std::field::bn254::gt<> as λ(Field, Field) -> bool)((0: Field), (0: Field))));
+  (#_assert returning Unit)((#_bNot returning bool)((std::field::bn254::gt<> as λ(Field, Field) -> bool)((0: Field), (256: Field))));
+  (#_assert returning Unit)((std::field::bn254::gt<> as λ(Field, Field) -> bool)((#_fSub returning Field)((0: Field), (1: Field)), (#_fSub returning Field)((0: Field), (2: Field))));
+  (#_assert returning Unit)((#_bNot returning bool)((std::field::bn254::gt<> as λ(Field, Field) -> bool)((#_fSub returning Field)((0: Field), (2: Field)), (#_fSub returning Field)((0: Field), (1: Field)))));
   #_skip
 }
 
@@ -138,7 +138,7 @@ noir_def std::field::bn254::tests::check_gt_unconstrained<>() -> Unit := {
 
 noir_def std::field::bn254::tests::check_plo_phi<>() -> Unit := {
   (#_assert returning Unit)((#_fEq returning bool)((#_fAdd returning Field)((PLO<> as λ() -> Field)(), (#_fMul returning Field)((PHI<> as λ() -> Field)(), (TWO_POW_128<> as λ() -> Field)())), (0: Field)));
-  let (p_bytes: Slice<u8>) = (field::modulus_le_bytes<> as λ() -> Slice<u8>)();
+  let (p_bytes: Slice<u8>) = (#_modulusLeBytes returning Slice<u8>)();
   let mut (p_low: Field) = (0: Field);
   let mut (p_high: Field) = (0: Field);
   let mut (offset: Field) = (1: Field);
@@ -152,7 +152,6 @@ noir_def std::field::bn254::tests::check_plo_phi<>() -> Unit := {
   (#_assert returning Unit)((#_fEq returning bool)(p_high, (PHI<> as λ() -> Field)()));
   #_skip
 }
-
 
 def Field.Bn254.env : Env := Env.mk
   [PLO, PHI, TWO_POW_128, «std::field::bn254::compute_decomposition», «std::field::bn254::decompose_hint», «std::field::bn254::lte_hint», «std::field::bn254::assert_gt_limbs», «std::field::bn254::decompose», «std::field::bn254::assert_gt», «std::field::bn254::assert_lt», «std::field::bn254::gt», «std::field::bn254::lt», «std::field::bn254::tests::check_decompose», «std::field::bn254::tests::check_decompose_unconstrained», «std::field::bn254::tests::check_lte_hint», «std::field::bn254::tests::check_assert_gt», «std::field::bn254::tests::check_assert_gt_unconstrained», «std::field::bn254::tests::check_gt», «std::field::bn254::tests::check_gt_unconstrained», «std::field::bn254::tests::check_plo_phi»]

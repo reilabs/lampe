@@ -18,7 +18,6 @@ noir_def test_main<>() -> Unit := {
   #_skip
 }
 
-
 def Main.env : Env := Env.mk
   [main, test_main]
   []

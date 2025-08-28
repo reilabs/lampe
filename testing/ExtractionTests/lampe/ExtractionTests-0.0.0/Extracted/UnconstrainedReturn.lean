@@ -16,7 +16,6 @@ noir_def unconstrained_return::main<>() -> Unit := {
   #_skip
 }
 
-
 def UnconstrainedReturn.env : Env := Env.mk
   [«unconstrained_return::f», «unconstrained_return::main»]
   []

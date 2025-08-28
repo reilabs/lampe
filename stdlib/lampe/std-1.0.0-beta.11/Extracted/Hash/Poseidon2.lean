@@ -25,7 +25,7 @@ noir_def std::hash::poseidon2::Poseidon2::perform_duplex<>(self: & std::hash::po
       #_skip
     }
   };
-  ((*self: std::hash::poseidon2::Poseidon2<>).1: Array<Field, 4: u32>) = (hash::poseidon2_permutation<4: u32> as λ(Array<Field, 4: u32>, u32) -> Array<Field, 4: u32>)((#_readRef returning std::hash::poseidon2::Poseidon2<>)(self).1, (4: u32));
+  ((*self: std::hash::poseidon2::Poseidon2<>).1: Array<Field, 4: u32>) = (#_poseidon2Permutation returning Array<Field, 4: u32>)((#_readRef returning std::hash::poseidon2::Poseidon2<>)(self).1, (4: u32));
   #_skip
 }
 
@@ -73,9 +73,9 @@ noir_def std::hash::poseidon2::Poseidon2::hash_internal<N: u32>(input: Array<Fie
 
 noir_trait_impl[impl_0]<> std::hash::Hasher<> for std::hash::poseidon2::Poseidon2Hasher<> where [] := {
   noir_def finish<>(self: std::hash::poseidon2::Poseidon2Hasher<>) -> Field := {
-    let (iv: Field) = (#_fMul returning Field)((#_cast returning Field)((#_sliceLen returning u32)(self.0)), (18446744073709551616: Field));
+    let (iv: Field) = (#_fMul returning Field)((#_cast returning Field)((#_arrayLen returning u32)(self.0)), (18446744073709551616: Field));
     let mut (sponge: std::hash::poseidon2::Poseidon2<>) = (std::hash::poseidon2::Poseidon2::new<> as λ(Field) -> std::hash::poseidon2::Poseidon2<>)(iv);
-    for i in (0: u32) .. (#_sliceLen returning u32)(self.0) do {
+    for i in (0: u32) .. (#_arrayLen returning u32)(self.0) do {
       (std::hash::poseidon2::Poseidon2::absorb<> as λ(& std::hash::poseidon2::Poseidon2<>, Field) -> Unit)((#_ref returning & std::hash::poseidon2::Poseidon2<>)(sponge), (#_sliceIndex returning Field)(self.0, (#_cast returning u32)(i)));
       #_skip
     };
@@ -93,7 +93,6 @@ noir_trait_impl[impl_1]<> std::default::Default<> for std::hash::poseidon2::Pose
     (#_makeData returning std::hash::poseidon2::Poseidon2Hasher<>)((#_mkSlice returning Slice<Field>)())
   };
 }
-
 
 def Hash.Poseidon2.env : Env := Env.mk
   [«std::hash::poseidon2::Poseidon2::hash», «std::hash::poseidon2::Poseidon2::new», «std::hash::poseidon2::Poseidon2::perform_duplex», «std::hash::poseidon2::Poseidon2::absorb», «std::hash::poseidon2::Poseidon2::squeeze», «std::hash::poseidon2::Poseidon2::hash_internal»]

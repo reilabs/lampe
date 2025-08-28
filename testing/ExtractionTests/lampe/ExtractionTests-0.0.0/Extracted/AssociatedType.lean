@@ -14,7 +14,6 @@ noir_trait_impl[impl_430]<> associated_type::Foo<> for associated_type::Pair<> w
   };
 }
 
-
 def AssociatedType.env : Env := Env.mk
   []
   [impl_430]

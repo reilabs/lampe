@@ -122,7 +122,6 @@ noir_trait_impl[impl_290]<A: Type, B: Type, C: Type, D: Type, E: Type> std::defa
   };
 }
 
-
 def Default.env : Env := Env.mk
   []
   [impl_272, impl_273, impl_274, impl_275, impl_276, impl_277, impl_278, impl_279, impl_280, impl_281, impl_282, impl_283, impl_284, impl_285, impl_286, impl_287, impl_288, impl_289, impl_290]

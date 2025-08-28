@@ -17,7 +17,6 @@ noir_def witness::weird_assert_eq<>(a: Field, b: Field) -> Unit := {
   #_skip
 }
 
-
 def Witness.Mod.env : Env := Env.mk
   [«witness::weird_assert_eq»]
   []

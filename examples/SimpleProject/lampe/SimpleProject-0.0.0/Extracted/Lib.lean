@@ -17,7 +17,6 @@ noir_def test_equal_one<>() -> Unit := {
   #_skip
 }
 
-
 def Lib.env : Env := Env.mk
   [return_one, test_equal_one]
   []

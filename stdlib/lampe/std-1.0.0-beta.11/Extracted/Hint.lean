@@ -8,11 +8,6 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def std::hint::black_box<T: Type>(value: T) -> T := {
-  (#_black_box returning T)(value)
-}
-
-
 def Hint.env : Env := Env.mk
-  [«std::hint::black_box»]
+  []
   []

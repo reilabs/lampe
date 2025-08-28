@@ -12,7 +12,6 @@ noir_def std::compat::is_bn254<>() -> bool := {
   #_true
 }
 
-
 def Compat.env : Env := Env.mk
   [«std::compat::is_bn254»]
   []

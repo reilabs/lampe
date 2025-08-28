@@ -10,20 +10,19 @@ namespace Extracted
 
 noir_trait_impl[impl_292]<N: u32> std::meta::ctstring::AsCtString<> for String<N: u32> where [] := {
   noir_def as_ctstring<>(self: String<N: u32>) -> Unit := {
-    (meta::ctstring::str_as_ctstring<N: u32> as λ(String<N: u32>) -> Unit)(self)
+    (#_strAsCtstring returning Unit)(self)
   };
 }
 
 noir_trait_impl[impl_293]<N: u32, T: Type> std::meta::ctstring::AsCtString<> for FmtString<N: u32, T> where [] := {
   noir_def as_ctstring<>(self: FmtString<N: u32, T>) -> Unit := {
-    (meta::ctstring::fmtstr_as_ctstring<N: u32, T> as λ(FmtString<N: u32, T>) -> Unit)(self)
+    (#_fmtstrAsCtstring returning Unit)(self)
   };
 }
 
 noir_def std::meta::ctstring::test::as_quoted_str_example<>() -> Unit := {
   #_unit
 }
-
 
 def Meta.Ctstring.env : Env := Env.mk
   [«std::meta::ctstring::test::as_quoted_str_example»]

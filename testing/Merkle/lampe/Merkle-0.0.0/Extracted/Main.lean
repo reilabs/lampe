@@ -30,7 +30,6 @@ noir_def main<>(root: Field, proof: Array<Field, 32: u32>, item: Field, idx: Arr
   #_skip
 }
 
-
 def Main.env : Env := Env.mk
   [mtree_recover, main]
   []

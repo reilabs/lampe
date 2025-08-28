@@ -8,23 +8,6 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def std::mem::zeroed<T: Type>() -> T := {
-  (#_zeroed returning T)()
-}
-
-noir_def std::mem::checked_transmute<T: Type, U: Type>(value: T) -> U := {
-  (#_checked_transmute returning U)(value)
-}
-
-noir_def std::mem::array_refcount<T: Type, N: u32>(array: Array<T, N: u32>) -> u32 := {
-  (#_array_refcount returning u32)(array)
-}
-
-noir_def std::mem::slice_refcount<T: Type>(slice: Slice<T>) -> u32 := {
-  (#_slice_refcount returning u32)(slice)
-}
-
-
 def Mem.env : Env := Env.mk
-  [«std::mem::zeroed», «std::mem::checked_transmute», «std::mem::array_refcount», «std::mem::slice_refcount»]
+  []
   []

@@ -12,7 +12,6 @@ noir_def bar::bar<>(x: Field) -> Field := {
   (#_fAdd returning Field)(x, (1: Field))
 }
 
-
 def Bar.Mod.env : Env := Env.mk
   [«bar::bar»]
   []

@@ -336,7 +336,6 @@ noir_trait_impl[impl_36]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: 
   };
 }
 
-
 def Collections.Map.env : Env := Env.mk
   [MAX_LOAD_FACTOR_NUMERATOR, MAX_LOAD_FACTOR_DEN0MINATOR, «std::collections::map::Slot::is_valid», «std::collections::map::Slot::is_available», «std::collections::map::Slot::key_value», «std::collections::map::Slot::key_value_unchecked», «std::collections::map::Slot::set», «std::collections::map::Slot::mark_deleted», «std::collections::map::HashMap::with_hasher», «std::collections::map::HashMap::clear», «std::collections::map::HashMap::contains_key», «std::collections::map::HashMap::is_empty», «std::collections::map::HashMap::entries», «std::collections::map::HashMap::keys», «std::collections::map::HashMap::values», «std::collections::map::HashMap::iter_mut», «std::collections::map::HashMap::iter_keys_mut», «std::collections::map::HashMap::iter_values_mut», «std::collections::map::HashMap::retain», «std::collections::map::HashMap::len», «std::collections::map::HashMap::capacity», «std::collections::map::HashMap::get», «std::collections::map::HashMap::insert», «std::collections::map::HashMap::remove», «std::collections::map::HashMap::hash», «std::collections::map::HashMap::quadratic_probe», «std::collections::map::HashMap::assert_load_factor»]
   [impl_34, impl_35, impl_36]
