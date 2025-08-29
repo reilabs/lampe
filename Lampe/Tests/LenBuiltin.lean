@@ -37,7 +37,7 @@ example (hLen : s₂.length < 2 ^ 32) : STHoare p thmEnv ⟦⟧ («std::slice::a
     fun v => v = s₁ ++ s₂ := by
   enter_decl
   steps
-  step_as ([self ↦ ⟨Tp.slice T, s₁⟩]) (fun v => ⟦v = ()⟧⋆[self ↦ ⟨Tp.slice T, s₁ ++ s₂⟩])
+  step_as ([self ↦ ⟨Tp.slice T, s₁⟩]) (fun (v : Tp.denote p Tp.unit) => ⟦v = ()⟧ ⋆ [self ↦ ⟨Tp.slice T, s₁ ++ s₂⟩])
   · steps
     subst_vars; assumption
     loop_inv nat (fun i _ _ => [self ↦ ⟨Tp.slice T, s₁ ++ (s₂.take i)⟩])
@@ -62,22 +62,27 @@ example (hLen : s₂.length < 2 ^ 32) : STHoare p thmEnv ⟦⟧ («std::slice::a
   steps
   assumption
 
-lemma innercast : (Tp.denote p (Tp.array T (N + M))) = List.Vector (Tp.denote p T) (N.toNat + M.toNat) := by
-  sorry
+lemma innercast (hSize : N.toNat + M.toNat < 4294967296): (Tp.denote p (Tp.array T (N + M))) = List.Vector (Tp.denote p T) (N.toNat + M.toNat) := by
+  conv_lhs => unfold Tp.denote
+  congr
+  simp [hSize]
 
 lemma outercast : («std::array::concat».fn.body (Tp.denote p) h![T, N, M]).outTp = (Tp.array T (N + M)) := by
-  sorry
+  unfold «std::array::concat»
+  simp
 
+-- set_option Lampe.pp.Expr true
+-- set_option Lampe.pp.STHoare true
 set_option trace.Lampe.STHoare.Helpers true
 
-example : STHoare p thmEnv ⟦⟧ («std::array::concat».call h![T, N, M] h![arr₁, arr₂])
-    fun v => v = outercast ▸ innercast ▸ (arr₁ ++ arr₂) := by
+example (hSize : N.toNat + M.toNat < 4294967296) : STHoare p thmEnv ⟦⟧ («std::array::concat».call h![T, N, M] h![arr₁, arr₂])
+    fun v => v = outercast ▸ (innercast (by exact hSize)) ▸ (arr₁ ++ arr₂) := by
   enter_decl
   steps
   let x := List.Vector.replicate (N + M).toNat (Tp.zero p T) -- not right, but testing for now
-  loop_inv nat fun i hlo hhi => [result ↦ ⟨Tp.array T (BitVec.add N M), x⟩]
+  loop_inv nat (fun i hlo hhi => [result ↦ ⟨Tp.array T (N + M), x⟩])
   · sorry
   -- apply STHoare.letIn_trivial_intro
-  -- -- let h := @STHoare.loop_inv_intro 32 0 (N + M).toNat p Tp.unit thmEnv
-  -- --   fun i _ _ => [result ↦ ⟨Tp.array T (N + M), x⟩]
+  -- let h := @STHoare.loop_inv_intro 32 0 (N + M).toNat p Tp.unit thmEnv
+  --   fun i _ _ => [result ↦ ⟨Tp.array T (N + M), x⟩]
   -- apply STHoare.loop_inv_intro (fun i _ _ => [result ↦ ⟨Tp.array T (N + M), x⟩])
