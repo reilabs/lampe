@@ -134,7 +134,7 @@ noir_def std::array::sort_via<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>
 }
 
 noir_trait_impl[impl_24]<N: u32> std::convert::From<String<N: u32> > for Array<u8, N: u32> where [] := {
-  noir_def from<>(s: String<N: u32>) -> Array<u8, N: u32> := {
+  noir_def «from»<>(s: String<N: u32>) -> Array<u8, N: u32> := {
     (#_strAsBytes returning Array<u8, N: u32>)(s)
   };
 }

@@ -55,7 +55,6 @@ syntax noir_trait_impl := "<" noir_gen_def,* ">" noir_ident "<" noir_gen_val,* "
 -- IDENTIFIERS ------------------------------------------------------------------------------------
 
 syntax "_" : noir_ident -- An ignored identifier.
-syntax "from" : noir_ident -- The 'from' special form.
 syntax ident : noir_ident -- Bare identifiers.
 syntax ident "::" noir_ident : noir_ident -- Path identifiers.
 
