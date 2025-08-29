@@ -37,7 +37,6 @@ def getLetInVarName (e : Expr) : TacticM (Option Name) := do
   | Lean.Expr.lam n _ _ _ => return some n
   | _ => return none
 
-#check Lampe.Expr.callBuiltin
 /--
 Attempts to get a term that can close the goal, returning the result and whether the resultant
 variable should be substituted (akin to `subst_vars`).
