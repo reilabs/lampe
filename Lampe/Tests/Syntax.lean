@@ -285,7 +285,7 @@ example : STHoare p ⟨[add_two_fields], []⟩ ⟦⟧
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [call_decl]
   steps
-  step_as (⟦⟧) (fun v => v = 3)
+  step_as (⟦⟧) (fun (v : Fp p) => v = 3)
   . assumption
   · enter_decl
     simp only [add_two_fields]
@@ -488,12 +488,12 @@ example : STHoare p ⟨[return_ten, call_function], []⟩ ⟦⟧ (simple_hof.fn.
   apply pluck_final_pure_destructively
   rintro rfl
 
-  step_as (⟦⟧) (fun v => v = 10)
+  step_as (⟦⟧) (fun (v : Fp p) => v = 10)
   . assumption
   . enter_decl
     simp only [call_function]
 
-    step_as (⟦⟧) (fun v => v = 10)
+    step_as (⟦⟧) (fun (v : Fp p) => v = 10)
     . assumption
     . enter_decl
       steps

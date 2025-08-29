@@ -31,7 +31,7 @@ Additional diagnostic information may be available using the `set_option diagnos
 theorem enter_block_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
     fun output => (String.mk output.toList) = "hello" := by
   enter_decl
-  enter_block_as (⟦⟧) (fun (v : Tp.denote p (Tp.str 5)) => (String.mk v.toList) = 5)
+  step_as (⟦⟧) (fun (v : Tp.denote p (Tp.str 5)) => (String.mk v.toList) = 5)
   sorry
 
 /- testing steps error messaging -/

@@ -376,13 +376,50 @@ partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit :
     | none => return goals
   | none => return goals
 
+structure StepsConfig where
+  limit : Nat
+  addLemmas : List AddLemma
+  strict : Bool
+
 /--
 Takes a sequence of at most `limit` steps to attempt to advance the proof state by continually
 simplifying the goal.
 -/
-partial def steps (mvar : MVarId) (config : StepsConfig) (limit : Nat) (addLemmas : List AddLemma) : TacticM (List MVarId) := do
+partial def steps (mvar : MVarId) (config : StepsConfig)  : TacticM (List MVarId) := do
   let goals ← stepsLoop (TripleGoals.mk mvar [] []) config.addLemmas config.limit config.strict
   return goals.flatten
+
+
+lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
+  intro h
+  simp_all [STHoare, THoare, SLP.pure_star_iff_and]
+
+theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
+    (h_found : (Γ.functions.find? (fun ⟨n, _⟩ => n = fnName)) = some ⟨fnName, func⟩)
+    (hkc : func.generics = kinds)
+    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
+    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
+    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) (htco ▸ Q)) :
+    STHoare p Γ H (Expr.call argTps outTp (.decl fnName kinds generics) args) Q := by
+  apply STHoare.callDecl_intro (fnName := fnName) (outTp := outTp) (generics := generics)
+  · exact func
+  · simp [SLP.entails_top]
+  · simp only [Option.eq_some_iff_get_eq] at h_found
+    cases h_found
+    rename_i h
+    rw [←h]
+    simp [List.get_find?_mem]
+  · assumption
+  · assumption
+  · assumption
+  · convert h_hoare
+    cases hkc
+    cases htco
+    cases htci
+    rfl
+theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
+  apply hp v
+theorem step_as H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
 
 declare_syntax_cat steps_items
 
@@ -419,53 +456,6 @@ def parseStepsConfig (limit : Option (TSyntax `num))
 
   return { limit, addLemmas, strict }
 
-elab "steps" limit:optional(num) lemmas:optional(steps_items) config:optConfig : tactic => do
-  let config ← parseStepsConfig limit lemmas config
-  let goals ← getMainGoal
-  let goals ← steps goals config
-  replaceMainGoal goals
-
-lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
-  intro h
-  simp_all [STHoare, THoare, SLP.pure_star_iff_and]
-
-elab "loop_inv" p:optional("nat") inv:term : tactic => do
-  let solver ← if p.isSome then ``(loop_inv_intro' _ $inv) else ``(loop_inv_intro $inv)
-  let loopInvConfig := {
-    limit := 1,
-    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm solver none) solver (generalizeEnv := false)],
-    strict := true
-  }
-  let goals ← steps (← getMainGoal) loopInvConfig
-  replaceMainGoal goals
-
-theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
-    (h_found : (Γ.functions.find? (fun ⟨n, _⟩ => n = fnName)) = some ⟨fnName, func⟩)
-    (hkc : func.generics = kinds)
-    (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
-    (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
-    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) (htco ▸ Q)) :
-    STHoare p Γ H (Expr.call argTps outTp (.decl fnName kinds generics) args) Q := by
-  apply STHoare.callDecl_intro (fnName := fnName) (outTp := outTp) (generics := generics)
-  · exact func
-  · simp [SLP.entails_top]
-  · simp only [Option.eq_some_iff_get_eq] at h_found
-    cases h_found
-    rename_i h
-    rw [←h]
-    simp [List.get_find?_mem]
-  · assumption
-  · assumption
-  · assumption
-  · convert h_hoare
-    cases hkc
-    cases htco
-    cases htci
-    rfl
-theorem bindVar {v : α} { P : α → Prop } (hp: ∀v, P v) : P v := by
-  apply hp v
-theorem step_as H Q : STHoare p Γ H e Q → STHoare p Γ H e Q := by simp
-
 /--
 Takes a sequence of steps to attempt to advance the proof state by continually simplifying the goal.
 
@@ -487,6 +477,11 @@ It can be called in three main ways:
   addition to its inbuilt rules to advance the goal state. This version can be combined with the
   explicit limit case to combine the behaviors in the obvious way `steps n [lemmas,*]`.
 -/
+elab "steps" limit:optional(num) lemmas:optional(steps_items) config:optConfig : tactic => do
+  let config ← parseStepsConfig limit lemmas config
+  let goals ← getMainGoal
+  let goals ← steps goals config
+  replaceMainGoal goals
 
 /--
 Performs the next step of a program proof, manually providing the pre- and post-conditions.
@@ -503,42 +498,24 @@ It can be called in two main ways:
   binding to a term in the precondition such that it is available under that name in the
   postcondition. In all other ways it operates as the previous form.
 -/
-
-syntax (name := enterDecl) "enter_decl" : tactic
-
-@[tactic enterDecl]
-def elabEnterDecl : Tactic := fun _ => do
+elab "step_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
   let goal ← getMainGoal
-  let newGoals ← goal.applyConst ``callDecl_direct_intro
+  trace[Lampe.STHoare.Helpers] "step_as {n}"
+  let enterer ← match n with
+  | some n => ``(bindVar (fun $n => step_as $pre $post))
+  | none => ``(step_as $pre $post)
+  let stepAsConfig := {
+    limit := 1,
+    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm enterer none) enterer (generalizeEnv := false)],
+    strict := true
+  }
+  let newGoals ← try steps goal stepAsConfig catch e =>
+    throwError "step_as failed:
+    This may be because the goal is not a `letIn` the pre and post conditions are not well-formed.
 
-  -- Note: newGoals[1] is the data of the `Function` which is unified from goal 0
-  let (some nameGoal, some continuationGoal,some genericsGoal, some argTypeGoal, some outTypeGoal) :=
-    (newGoals[0]?, newGoals[1]?, newGoals[3]?, newGoals[4]?, newGoals[5]?) |
-      throwError "enter_decl generated unexpected goals, expected 6 goals, got {newGoals.length}"
-
-  pushGoal continuationGoal
-
-  try nameGoal.refl catch _ => throwError "Unable to find a declaration in the environment with the right name"
-  try genericsGoal.refl catch _ => throwError "Found declaration has the wrong generics"
-  try argTypeGoal.refl catch _ => throwError "Found declaration has the wrong arguments"
-  try outTypeGoal.refl catch _ => throwError "Found declaration has the wrong output type"
-
-  evalTactic (←`(tactic|simp only))syntax "enter_decl" : tactic
-macro_rules | `(tactic|enter_decl) => `(tactic|
-  apply callDecl_direct_intro (by rfl) (by rfl) (by rfl) (by rfl); simp only)
-
-/--
-Enters the body of a locally-defined lambda, allowing the proof to reason about its behavior using
-the manually-provided pre- and post-conditions.
-
-It can be called in two main ways:
-
-- `step_as (precondition) (postcondition)`: Generates proof goals to verify the behavior of the
-  lambda function based on the provided pre- and post-conditions.
-- `step_as name => (precondition) (postcondition)`: The provided `name` acts like a metavariable,
-  binding to a term in the precondition such that it is available under that name in the
-  postcondition. In all other ways it operates as the previous form.
--/
+    Exception returned:
+    {e.toMessageData}"
+  replaceMainGoal newGoals
 
 /--
 States the invariants that hold for a loop, and then creates goals that need to be proved to prove
@@ -552,6 +529,18 @@ It can be called in two main ways:
    that is a natural number ℕ. This variant can sometimes produce fewer proof goals that will need
    to be manually discharged.
 -/
+elab "loop_inv" p:optional("nat") inv:term : tactic => do
+  let solver ← if p.isSome then ``(loop_inv_intro' $inv) else ``(loop_inv_intro $inv)
+  let loopInvConfig := {
+    limit := 1,
+    addLemmas := [AddLemma.mk (← withMainContext <| elabTerm solver none) solver (generalizeEnv := false)],
+    strict := true
+  }
+  let goals ← steps (← getMainGoal) loopInvConfig
+  replaceMainGoal goals
+
+
+syntax (name := enterDecl) "enter_decl" : tactic
 
 /--
 Enters the declaration of a function as given by the theorem statement and unfolds the body of the
@@ -560,6 +549,24 @@ function to enable reasoning.
 It is almost always the first tactic that should be run when aiming to prove a theorem about the
 semantics of a piece of code.
 -/
+@[tactic enterDecl]
+def elabEnterDecl : Tactic := fun _ => do
+  let goal ← getMainGoal
+  let newGoals ← goal.applyConst ``callDecl_direct_intro
+
+  -- Note: newGoals[2] is the data of the `Function` which is unified from goal 0
+  let (some nameGoal, some continuationGoal,some genericsGoal, some argTypeGoal, some outTypeGoal) :=
+    (newGoals[0]?, newGoals[1]?, newGoals[3]?, newGoals[4]?, newGoals[5]?) |
+      throwError "enter_decl generated unexpected goals, expected 6 goals, got {newGoals.length}"
+
+  pushGoal continuationGoal
+
+  try nameGoal.refl catch _ => throwError "Unable to find a declaration in the environment with the right name"
+  try genericsGoal.refl catch _ => throwError "Found declaration has the wrong generics"
+  try argTypeGoal.refl catch _ => throwError "Found declaration has the wrong arguments"
+  try outTypeGoal.refl catch _ => throwError "Found declaration has the wrong output type"
+
+  evalTactic (←`(tactic|simp only))
 
 /--
 Enters the body of a locally-defined lambda, allowing the proof to reason about its behavior using
@@ -567,25 +574,25 @@ the manually-provided pre- and post-conditions.
 
 It can be called in two main ways:
 
-- `step_as (precondition) (postcondition)`: Generates proof goals to verify the behavior of the
-  lambda function based on the provided pre- and post-conditions.
-- `step_as name => (precondition) (postcondition)`: The provided `name` acts like a metavariable,
-  binding to a term in the precondition such that it is available under that name in the
-  postcondition. In all other ways it operates as the previous form.
+- `enter_lambda_as (precondition) (postcondition)`: Generates proof goals to verify the behavior of
+  the lambda function based on the provided pre- and post-conditions.
+- `enter_lambda_as name => (precondition) (postcondition)`: The provided `name` acts like a
+  metavariable, binding to a term in the precondition such that it is available under that name in
+  the postcondition. In all other ways it operates as the previous form.
 -/
 elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : tactic => do
   let goal ← getMainGoal
   trace[Lampe.STHoare.Helpers] "enter_lambda_as {n}"
   let enterer ← match n with
-  | some n => ``(bindVar (fun $n => enter_block $pre $post))
-  | none => ``(enter_block $pre $post)
-  let enterBlockConfig := {
+  | some n => ``(bindVar (fun $n => STHoare.callLambda_intro (P := $pre) (Q := $post)))
+  | none => ``(STHoare.callLambda_intro (P := $pre) (Q := $post))
+  let enterLambdaConfig := {
     limit := 1,
     addLemmas := [AddLemma.mk (← withMainContext <| elabTerm enterer none) enterer (generalizeEnv := false)],
     strict := true
   }
-  let newGoals ← try steps goal enterBlockConfig catch e =>
+  let newGoals ← try steps goal enterLambdaConfig catch e =>
     throwError
-    m!"enter_block_as has encountered an error in proceeding.
+    m!"steps has encountered an error in proceeding.
     The returned exception is {e.toMessageData}"
   replaceMainGoal newGoals

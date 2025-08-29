@@ -80,9 +80,7 @@ example {p} {fieldArg : Fp p}:
     ring
 
   steps
-  step_as (⟦z = 2 * u8Arg⟧) (fun v => v = (2 * fieldArg : Tp.denote p Tp.field))
-  · assumption
-  · enter_decl
-    steps
-    subst_vars
-    rfl
+  enter_decl
+  steps
+  subst_vars
+  rfl
