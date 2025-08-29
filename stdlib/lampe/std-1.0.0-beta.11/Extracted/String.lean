@@ -13,7 +13,7 @@ noir_def std::string::as_bytes_vec<N: u32>(self: String<N: u32>) -> std::collect
 }
 
 noir_trait_impl[impl_77]<N: u32> std::convert::From<Array<u8, N: u32> > for String<N: u32> where [] := {
-  noir_def from<>(bytes: Array<u8, N: u32>) -> String<N: u32> := {
+  noir_def «from»<>(bytes: Array<u8, N: u32>) -> String<N: u32> := {
     (#_arrayAsStrUnchecked returning String<N: u32>)(bytes)
   };
 }
