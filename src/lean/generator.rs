@@ -657,7 +657,8 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_alias(&self, id: TypeAliasId) -> TypeAlias {
         let alias_data = self.context.def_interner.get_type_alias(id);
         let alias_data = alias_data.borrow();
-        let name = quote_lean_keywords(&alias_data.to_string());
+        let name = &alias_data.to_string();
+        let name = quote_lean_keywords(name);
         let generics = self.gather_lean_type_patterns_from_resolved_generics(&alias_data.generics);
         let aliased_type = self.generate_lean_type_value(&alias_data.typ, None);
         TypeAlias {
@@ -995,6 +996,7 @@ impl LeanGenerator<'_, '_> {
         } else {
             self.fully_qualified_function_name(&function_meta.source_crate, id)
         };
+        let name = quote_lean_keywords(&name);
 
         let generics = self.gather_function_generic_patterns(function_meta);
         let parameters = self.generate_function_parameters(function_meta);
