@@ -164,33 +164,29 @@ theorem array_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.array tp N]
     fun v => v = x.length := by
   unfold STHoare
   unfold THoare
-  intros H st Q
-  constructor
-  constructor
+  intros _ st Q
+  apply Omni.callBuiltin
+  apply Builtin.arrayLenOmni.mkArray
   unfold mapToValHeapCondition
   simp
-  simp at Q
-  unfold SLP.star
-  use st
-  use ∅
-  simp
+  rw [SLP.true_star] at Q
+  refine ⟨st, ∅, ?_⟩
+  simp only [LawfulHeap.disjoint_empty, LawfulHeap.union_empty, SLP.apply_top, and_true, true_and]
   assumption
 
 theorem slice_arrayLen_intro (hLen : x.length < 2^32) : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (Tp.u 32) Builtin.arrayLen h![x])
     fun v => v = x.length := by
   unfold STHoare
   unfold THoare
-  intros H st Q
-  constructor
-  constructor
-  assumption
+  intros _ st Q
+  apply Omni.callBuiltin
+  apply Builtin.arrayLenOmni.mkSlice
+  · exact hLen
   unfold mapToValHeapCondition
   simp
-  simp at Q
-  unfold SLP.star
-  use st
-  use ∅
-  simp
+  rw [SLP.true_star] at Q
+  refine ⟨st, ∅, ?_⟩
+  simp only [LawfulHeap.disjoint_empty, LawfulHeap.union_empty, SLP.apply_top, and_true, true_and]
   assumption
 
 theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![arr] (a := (tp, n)) := by

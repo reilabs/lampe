@@ -204,18 +204,20 @@ def arrayLen : Builtin := {
     unfold omni_conseq
     intros
     cases_type arrayLenOmni
-    · next h₁ h₂ => constructor; assumption; tauto
-    · next h => constructor; tauto
+    · apply arrayLenOmni.mkSlice
+      assumption
+      tauto
+    · apply arrayLenOmni.mkArray
+      tauto
   frame := by
     unfold omni_frame
     intros
     cases_type arrayLenOmni
-    · next h₁ h₂ =>
-      constructor <;> try assumption
+    · apply arrayLenOmni.mkSlice
+      assumption
       unfold SLP.star
       tauto
-    · next h =>
-      constructor ; try assumption
+    · apply arrayLenOmni.mkArray
       unfold SLP.star
       tauto
 }
