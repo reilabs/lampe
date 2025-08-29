@@ -37,6 +37,7 @@ def getLetInVarName (e : Expr) : TacticM (Option Name) := do
   | Lean.Expr.lam n _ _ _ => return some n
   | _ => return none
 
+#check Lampe.Expr.callBuiltin
 /--
 Attempts to get a term that can close the goal, returning the result and whether the resultant
 variable should be substituted (akin to `subst_vars`).
@@ -116,8 +117,14 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.mkRepeatedArray =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedArray (a := (_, _)) rfl), true)
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)
-        | ``Lampe.Builtin.arrayLen => sorry
-          -- return some (←``(genericTotalPureBuiltin_intro Builtin.arrayLen (a := (_,_)) rfl), true)
+        | ``Lampe.Builtin.arrayLen =>
+          let some argTps :=  val.getAppArgs[1]? | throwError "malformed arrayLen"
+          let some (_, argTps) := argTps.listLit? | throwError "malformed arrayLen"
+          let some argTp := argTps.head? | throwError "malformed arrayLen"
+          match_expr argTp with
+          | Tp.slice _ => return some (←``(slice_arrayLen_intro), false)
+          | Tp.array _ _ => return some (←``(array_arrayLen_intro), false)
+          | _ => return none
         | ``Lampe.Builtin.asSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.asSlice (a := (_,_)) rfl), true)
 
         -- Slice builtins
