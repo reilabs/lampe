@@ -17,21 +17,11 @@ noir_def std::slice::append<T: Type>(mut self: Slice<T>, other: Slice<T>) -> Sli
   self
 }
 
-noir_def std::array::concat<T: Type, N: u32, M: u32>(self: Array<T, N: u32>, array2: Array<T, M: u32>) -> Array<T, (N + M): u32> := {
-  let mut (result: Array<T, (N + M): u32>) = (#_mkRepeatedArray returning Array<T, (N + M): u32>)((#_zeroed returning T)());
-  for i in (0: u32) .. uConst!(N: u32) do {
-    (result[i]: T) = (#_arrayIndex returning T)(self, (#_cast returning u32)(i));
-    #_skip
-  };
-  for i in (0: u32) .. uConst!(M: u32) do {
-    let (i_3606: Unit) = (#_uAdd returning u32)(i, uConst!(N: u32));
-    (result[i_3606]: T) = (#_arrayIndex returning T)(array2, (#_cast returning u32)(i));
-    #_skip
-  };
-  result
+noir_def simple_array<T: Type, N: u32>(x: Array<T, N: u32>) -> u32 := {
+  (#_arrayLen returning u32)(x)
 }
 
-def thmEnv : Env := .mk [«std::slice::append», «std::array::concat»] []
+def thmEnv : Env := .mk [«std::slice::append», simple_array] []
 
 example (hLen : s₂.length < 2 ^ 32) : STHoare p thmEnv ⟦⟧ («std::slice::append».call h![T] h![s₁, s₂])
     fun v => v = s₁ ++ s₂ := by
@@ -62,27 +52,9 @@ example (hLen : s₂.length < 2 ^ 32) : STHoare p thmEnv ⟦⟧ («std::slice::a
   steps
   assumption
 
-lemma innercast (hSize : N.toNat + M.toNat < 4294967296): (Tp.denote p (Tp.array T (N + M))) = List.Vector (Tp.denote p T) (N.toNat + M.toNat) := by
-  conv_lhs => unfold Tp.denote
-  congr
-  simp [hSize]
-
-lemma outercast : («std::array::concat».fn.body (Tp.denote p) h![T, N, M]).outTp = (Tp.array T (N + M)) := by
-  unfold «std::array::concat»
-  simp
-
--- set_option Lampe.pp.Expr true
--- set_option Lampe.pp.STHoare true
-set_option trace.Lampe.STHoare.Helpers true
-
-example (hSize : N.toNat + M.toNat < 4294967296) : STHoare p thmEnv ⟦⟧ («std::array::concat».call h![T, N, M] h![arr₁, arr₂])
-    fun v => v = outercast ▸ (innercast (by exact hSize)) ▸ (arr₁ ++ arr₂) := by
+example: STHoare p thmEnv ⟦⟧ (simple_array.call h![T, N] h![arr])
+    fun v => v = BitVec.ofNat 32 arr.length := by
   enter_decl
   steps
-  let x := List.Vector.replicate (N + M).toNat (Tp.zero p T) -- not right, but testing for now
-  loop_inv nat (fun i hlo hhi => [result ↦ ⟨Tp.array T (N + M), x⟩])
-  · sorry
-  -- apply STHoare.letIn_trivial_intro
-  -- let h := @STHoare.loop_inv_intro 32 0 (N + M).toNat p Tp.unit thmEnv
-  --   fun i _ _ => [result ↦ ⟨Tp.array T (N + M), x⟩]
-  -- apply STHoare.loop_inv_intro (fun i _ _ => [result ↦ ⟨Tp.array T (N + M), x⟩])
+  subst_vars
+  rfl
