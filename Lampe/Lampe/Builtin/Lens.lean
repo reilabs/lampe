@@ -54,7 +54,7 @@ namespace Lampe.Builtin
       . apply And.intro
         . simp [Finmap.union_assoc, Finmap.insert_eq_singleton_union]
         . apply And.intro ?_ (by rfl)
-          simp_all [Finmap.insert_union, Finmap.insert_eq_singleton_union]
+          simp_all [Finmap.insert_eq_singleton_union]
     . apply modifyLensOmni.err <;> try tauto
       rw [Finmap.lookup_union_left] <;> try tauto
       apply Finmap.mem_of_lookup_eq_some <;> tauto

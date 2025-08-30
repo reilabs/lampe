@@ -214,15 +214,15 @@ lemma STHoare.pure_left_star {p tp} {E : Expr (Tp.denote p) tp} {Γ P₁ P₂ Q}
   intro H st Hh
   unfold STHoare THoare at h
   apply h
-  · simp [SLP.star, SLP.lift, SLP.entails] at Hh
+  · simp [SLP.star, SLP.lift] at Hh
     casesm* ∃_,_, _∧_
     assumption
-  · simp only [SLP.star, SLP.lift, SLP.entails] at Hh
+  · simp only [SLP.star, SLP.lift] at Hh
     rcases Hh with ⟨s₁, s₂, hdss, rfl, ⟨s₃, s₄, hdsss, rfl, ⟨⟨hp, rfl⟩⟩⟩, _⟩
     unfold SLP.star
     exists s₄
     exists s₂
-    simp_all [LawfulHeap.union_empty, LawfulHeap.empty_union]
+    simp_all [LawfulHeap.empty_union]
 
 
 lemma STHoare.letIn_trivial_intro {p tp₁ tp₂} {P Q} {E : Expr (Tp.denote p) tp₁} {v'} {cont : Tp.denote p tp₁ → Expr (Tp.denote p) tp₂}

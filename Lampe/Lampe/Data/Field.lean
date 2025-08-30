@@ -97,7 +97,7 @@ theorem toBaseLE_succ_snoc : toBaseLE B (n + 1) v = toBaseLE B n v ++ [(v / B^n)
 theorem toBaseLE_take : (toBaseLE B n v).take m = toBaseLE B (min m n) v := by
   induction m generalizing v n with
   | zero =>
-    simp [Nat.zero_min, toBaseLE]
+    simp [toBaseLE]
   | succ m ih =>
     cases n
     · simp [toBaseLE]
@@ -150,7 +150,7 @@ theorem toBaseLE_pow {B D K N} : toBaseLE (B^D) K N = (toBaseLE B (K*D) N |>.chu
   | zero =>
     simp [toBaseLE, List.chunksExact]
   | succ K ih =>
-    simp only [toBaseLE, ih, List.Vector.map_cons, Nat.succ_mul]
+    simp only [toBaseLE, ih, Nat.succ_mul]
     congr 1
     · simp [toBaseLE_take, ofBaseLE_toBaseLE]
     · congr
@@ -175,7 +175,7 @@ lemma ofBaseLE_append : ofBaseLE B (a ++ b) = ofBaseLE B a + B^a.length * ofBase
   | nil => simp [ofBaseLE]
   | cons h t ih =>
     simp only [ofBaseLE] at ih
-    simp only [ofBaseLE, List.map, List.cons_append, List.foldr_cons, ih, List.length_cons, pow_succ]
+    simp only [ofBaseLE, List.cons_append, List.foldr_cons, ih, List.length_cons, pow_succ]
     ring
 
 theorem Fp.cast_self {P} {p : Fp P} : (p.cast : Fp P) = p := by

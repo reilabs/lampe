@@ -30,7 +30,7 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   constructor
   cases em (desc a args).fst
   . apply Builtin.genericPureOmni.ok
-    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+    . simp_all only [mapToValHeapCondition, SLP.true_star]
       apply SLP.ent_star_top
       simp_all only [SLP.true_star, exists_const]
     . tauto
@@ -359,7 +359,7 @@ theorem ref_intro :
   exists (⟨Finmap.singleton r ⟨tp, v⟩, st.lambdas⟩ ∪ st), ∅
   apply And.intro (by rw [LawfulHeap.disjoint_symm_iff]; apply LawfulHeap.empty_disjoint)
   constructor
-  . simp only [State.insertVal, Finmap.insert_eq_singleton_union, LawfulHeap.union_empty]
+  . simp only [Finmap.insert_eq_singleton_union, LawfulHeap.union_empty]
     simp only [State.union_parts_left, Finmap.union_self]
   . apply And.intro ?_ (by simp)
     exists (⟨Finmap.singleton r ⟨tp, v⟩, ∅⟩), st
@@ -419,7 +419,7 @@ theorem writeRef_intro :
   . rename_i st₁ st₂ _ _
     have _ : r ∈ st₁.vals := by rw [hs]; tauto
     simp_all [State.membership_in_val]
-  simp only [Finmap.insert_eq_singleton_union, ←Finmap.union_assoc, Finmap.union_singleton, SLP.star_assoc]
+  simp only [Finmap.insert_eq_singleton_union, SLP.star_assoc]
   rename_i st₁ st₂ _ _
   exists (⟨Finmap.singleton r ⟨tp, v'⟩, st₁.lambdas⟩), ?_
   refine ⟨?_, ?_, ?_, (by apply SLP.ent_star_top; assumption)⟩
@@ -472,7 +472,7 @@ theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by ta
     . unfold SLP.star State.valSingleton at *
       aesop
     . unfold mapToValHeapCondition
-      simp_all only [Option.map_some, SLP.true_star, SLP.star_assoc]
+      simp_all only [Option.map_some, SLP.star_assoc]
       obtain ⟨st₁, st₂, ⟨h₁, _⟩, h₂, h₃, h₄⟩ := h
       simp only [State.valSingleton] at h₃
       rename (Tp.denote p tp₁) => s'
@@ -482,7 +482,7 @@ theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by ta
         apply And.intro ?_ (by tauto)
         aesop
       apply And.intro
-      . simp only [State.union_parts, State.mk.injEq, and_true]
+      . simp only [State.union_parts, State.mk.injEq]
         apply And.intro ?_ (by simp_all)
         rw [Finmap.insert_eq_singleton_union]
         simp_all only [State.union_parts]
@@ -505,7 +505,7 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
   . apply Builtin.getLensOmni.err <;> tauto
   . apply Builtin.getLensOmni.ok <;> try tauto
     . unfold mapToValHeapCondition
-      simp_all only [Option.map_some, SLP.true_star, SLP.star_assoc]
+      simp_all only [Option.map_some, SLP.true_star]
       apply SLP.ent_star_top at h
       simp_all
 
