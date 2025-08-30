@@ -162,32 +162,19 @@ theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto)
 
 theorem array_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.array tp N] (Tp.u 32) Builtin.arrayLen h![x])
     fun v => v = x.length := by
-  unfold STHoare
-  unfold THoare
-  intros _ st Q
-  apply Omni.callBuiltin
-  apply Builtin.arrayLenOmni.mkArray
-  unfold mapToValHeapCondition
-  simp
-  rw [SLP.true_star] at Q
-  refine ⟨st, ∅, ?_⟩
-  simp only [LawfulHeap.disjoint_empty, LawfulHeap.union_empty, SLP.apply_top, and_true, true_and]
-  assumption
+  apply pureBuiltin_intro_consequence (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) rfl rfl ?_
+    (a := Builtin.ArrayLenCase.array tp N)
+  intro h
+  simp [Builtin.arrayLenDesc]
 
-theorem slice_arrayLen_intro (hLen : x.length < 2^32) : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (Tp.u 32) Builtin.arrayLen h![x])
-    fun v => v = x.length := by
-  unfold STHoare
-  unfold THoare
-  intros _ st Q
-  apply Omni.callBuiltin
-  apply Builtin.arrayLenOmni.mkSlice
-  · exact hLen
-  unfold mapToValHeapCondition
+theorem slice_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (Tp.u 32) Builtin.arrayLen h![x])
+    fun v => ⟦v = x.length⟧ ⋆ ⟦x.length < 2^32⟧ := by
+  simp only [SLP.lift_star_lift]
+  apply pureBuiltin_intro_consequence (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) (a := Builtin.ArrayLenCase.slice tp) rfl rfl
+  intro h
+  simp [Builtin.arrayLenDesc] at h
   simp
-  rw [SLP.true_star] at Q
-  refine ⟨st, ∅, ?_⟩
-  simp only [LawfulHeap.disjoint_empty, LawfulHeap.union_empty, SLP.apply_top, and_true, true_and]
-  assumption
+  refine ⟨rfl, h⟩
 
 theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![arr] (a := (tp, n)) := by
   apply pureBuiltin_intro_consequence <;> try tauto

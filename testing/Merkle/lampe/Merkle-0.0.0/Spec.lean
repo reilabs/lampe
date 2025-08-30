@@ -550,7 +550,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
   steps
 
   · loop_inv fun i _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ ζi0.toList.take i.toNat⟩]
-    · decide
+    · subst_vars; simp
     · congr 1
       simp [Int.cast, IntCast.intCast]
     · intro i _ hlt
@@ -564,9 +564,12 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
       conv at hlt => congr <;> whnf
       casesm* ∃_,_
       subst «#v_32» elem
-      have : i + 1 < 4294967296 := by linarith
+      have : i + 1 < 4294967296 := by
+        simp_all
+        linarith
       simp [Nat.mod_eq_of_lt, this, List.take_succ]
-      simp [List.Vector.toList_length, hlt, ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true]
+      have hlt' : i < 16 := by simp_all
+      simp [List.Vector.toList_length, hlt', ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true]
       rfl
     · subst_vars
       steps
@@ -574,7 +577,6 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
   rotate_left
   · subst_vars; rfl
   · subst_vars; rfl
-
 
 theorem sigma_intro : STHoare lp env (⟦⟧)
     (Extracted.SIGMA.call h![] h![])
