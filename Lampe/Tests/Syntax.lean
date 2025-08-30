@@ -71,7 +71,6 @@ example {selfV that : Tp.denote p (.slice tp)} (hLen : that.length < 2 ^ 32)
     fun v => v = selfV ++ that := by
   simp only [slice_append]
   steps
-  assumption
   loop_inv nat (fun i _ _ => [self ↦ ⟨.slice tp, selfV ++ that.take i⟩])
   . simp_all
   . simp

@@ -23,13 +23,12 @@ noir_def simple_array<T: Type, N: u32>(x: Array<T, N: u32>) -> u32 := {
 
 def thmEnv : Env := .mk [«std::slice::append», simple_array] []
 
-example (hLen : s₂.length < 2 ^ 32) : STHoare p thmEnv ⟦⟧ («std::slice::append».call h![T] h![s₁, s₂])
+example  : STHoare p thmEnv ⟦⟧ («std::slice::append».call h![T] h![s₁, s₂])
     fun v => v = s₁ ++ s₂ := by
   enter_decl
   steps
   step_as ([self ↦ ⟨Tp.slice T, s₁⟩]) (fun (v : Tp.denote p Tp.unit) => ⟦v = ()⟧ ⋆ [self ↦ ⟨Tp.slice T, s₁ ++ s₂⟩])
   · steps
-    subst_vars; assumption
     loop_inv nat (fun i _ _ => [self ↦ ⟨Tp.slice T, s₁ ++ (s₂.take i)⟩])
     · simp
     · congr; simp

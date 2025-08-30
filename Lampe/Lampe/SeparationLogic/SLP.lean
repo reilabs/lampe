@@ -324,4 +324,10 @@ theorem exists_star [LawfulHeap α] {P : SLP α} {Q : β → SLP α} : (∃∃x,
   conv => lhs; arg 1; ext x; rw [SLP.star_comm]
   simp [star_exists]
 
+theorem lift_star_lift [LawfulHeap α] {P Q : Prop} : (⟦P⟧ ⋆ ⟦Q⟧) = (⟦P ∧ Q⟧ : SLP α) := by
+  funext st
+  unfold star lift
+  simp
+  tauto
+
 end Lampe.SLP
