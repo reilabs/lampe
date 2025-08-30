@@ -195,7 +195,7 @@ theorem solve_exi_prop_l [LawfulHeap α] {P : Prop} {H : P → SLP α} {Q : SLP 
   use ∅, st
   refine ⟨?_, ?_, ?_, ?_⟩
   apply LawfulHeap.empty_disjoint
-  all_goals simp_all [LawfulHeap.disjoint_empty, SLP.lift]
+  all_goals simp_all [SLP.lift]
 
 theorem star_top_of_star_mvar [LawfulHeap α] {H Q R : SLP α} : (H ⊢ Q ⋆ R) → (H ⊢ Q ⋆ ⊤) := by
   intro h
@@ -217,7 +217,7 @@ theorem solve_exi_prop [LawfulHeap α] {P : Prop} {H : SLP α} {Q : P → SLP α
   assumption
 
 lemma solve_exi_prop_star_mv {p} {P R : SLP (State p)} {Q : H → SLP (State p)} : (P ⊢ ⟦H⟧ ⋆ ⊤) → (∀(h : H), P ⊢ Q h ⋆ R) → (P ⊢ (∃∃h, Q h) ⋆ R) := by
-  simp only [←SLP.exists_star, ←SLP.star_exists]
+  simp only [←SLP.exists_star]
   intros
   apply solve_exi_prop
   assumption

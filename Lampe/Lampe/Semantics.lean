@@ -12,7 +12,7 @@ namespace Lampe
 -- The value of the field prime under which the semantics are operating.
 variable (p : Prime)
 
-/-- 
+/--
 Omni provides our implementation of the program semantics for Noir, demonstrating how state
 transitions can occur within the program.
 
@@ -20,7 +20,7 @@ It effectively says that if the program with the environment `Γ` begins in stat
 program fragment `expr` is executed, then execution succeeds and the postcondition `Q` holds, or
 execution has failed.
 
-Noir as a language exhibits explicitly nondeterministic behavior, which we want to capture in our 
+Noir as a language exhibits explicitly nondeterministic behavior, which we want to capture in our
 semantics explicitly. The type of `Q` represents this through making the postcondition into a _set_,
 modeled explicitly as a selector function. This is wrapped in an `Option`, where a value of `some`
 implies a successful execution, while `none` suggests a failure. The interpretation is that, if
@@ -253,14 +253,14 @@ theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} 
       refine ⟨by tauto, ?_⟩
       simp only [Finmap.insert_eq_singleton_union]
       simp only [Finmap.union_comm_of_disjoint hd₁, Finmap.union_assoc]
-    . simp [Finmap.union_comm_of_disjoint, Finmap.insert_eq_singleton_union]
+    . simp only
       rename (∀ref ∉ lmbs, _) => hQ
       rw [hL] at hQ
       simp only [Finmap.insert_eq_singleton_union] at hQ
       rw [Finmap.union_comm_of_disjoint hd₁]
       tauto
 
-/-- 
+/--
 Any theorem over our Omnisemantics that is proved for an environment Γ₁ is also valid for Γ₂, where
 Γ₁ ⊆ Γ₂.
 

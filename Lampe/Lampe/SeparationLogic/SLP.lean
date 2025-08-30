@@ -273,7 +273,7 @@ theorem wand_self_star [LawfulHeap α] {H : SLP α}: (H -⋆ H ⋆ top) = top :=
   apply eq_iff_iff.mpr
   apply Iff.intro
   · intro
-    simp [lift]
+    simp only [apply_top]
   · intros
     repeat apply Exists.intro
     apply And.intro ?_

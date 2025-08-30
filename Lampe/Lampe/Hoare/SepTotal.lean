@@ -215,7 +215,7 @@ theorem fresh_intro :
   unfold STHoare
   intro H
   apply THoare.consequence ?_ THoare.fresh_intro (fun _ => SLP.entails_self)
-  simp [SLP.entails_self, SLP.forall_right]
+  simp [SLP.forall_right]
 
 lemma eq (a b : Tp.denote p tp)
   (_ : BEq (Tp.denote p tp))
@@ -226,7 +226,7 @@ lemma eq (a b : Tp.denote p tp)
 -- [TODO] BitVec should be a `Preorder` but it isn't?
 lemma BitVec.le_refl {a : BitVec w} : a ≤ a := by
   cases a
-  simp [BitVec.le_def]
+  simp only [_root_.BitVec.le_refl]
 
 -- [TODO] BitVec should be a `Preorder` but it isn't?
 lemma BitVec.le_trans {a b c : BitVec w}: a ≤ b → b ≤ c → a ≤ c := by
@@ -466,9 +466,9 @@ theorem lam_intro :
     have hd : Finmap.Disjoint st.lambdas (Finmap.singleton r ⟨argTps, outTp, lambdaBody⟩) := by
       rw [Finmap.Disjoint.symm_iff]
       apply Finmap.singleton_disjoint_of_not_mem (by assumption)
-    simp only [Finmap.insert_eq_singleton_union, Finmap.union_comm_of_disjoint hd]
+    simp only [Finmap.insert_eq_singleton_union]
   . unfold State.lmbSingleton
-    simp [FuncRef.isLambda]
+    simp only [FuncRef.lambda.injEq, exists_eq_left']
   . apply SLP.ent_star_top
     tauto
 
@@ -482,7 +482,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
   unfold STHoare THoare
   intros H st h
   have h₁ : ∃ r, fnRef = .lambda r := by
-    simp only [SLP.star, SLP.exists', SLP.lift] at h
+    simp only [SLP.star] at h
     tauto
   obtain ⟨r, _⟩ := h₁
   apply Omni.callLambda (ref := r) (lambdaBody := lambdaBody)
@@ -493,7 +493,7 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
     subst_vars
     simp only [State.union_parts]
     rw [Finmap.lookup_union_left, Finmap.lookup_union_right]
-    <;> simp only [State.lmbSingleton, LawfulHeap.disjoint, State.union_parts] at *
+    <;> simp only [LawfulHeap.disjoint, State.union_parts] at *
     . simp_all
     . apply Finmap.singleton_disjoint_iff_not_mem.mp
       simp_all only

@@ -14,7 +14,7 @@ theorem replaceSlice_length_eq_length :
 @[simp]
 theorem index_replaced_slice :
     (replaceSlice' s idx v).get ⟨idx.val, h⟩ = v := by
-  simp_all [List.modify_eq_set_getElem?, List.getElem_eq_iff]
+  simp_all [List.modify_eq_set_getElem?]
 
 /--
 Defines the builtin slice constructor.
