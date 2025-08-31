@@ -19,6 +19,8 @@ def to_option {p t}: («struct#std::option::Option».tp h![t] |>.denote p) -> Op
 lemma from_option_to_option_id : to_option (from_option v) = v := by
   cases v <;> rfl
 
+set_option trace.Lampe.SL true
+
 lemma none_spec {p T} : Lampe.STHoare p env ⟦⟧ («std::option::Option::none».call h![T] h![]) (fun v => v = from_option none) := by
   enter_decl
   steps
@@ -60,6 +62,8 @@ lemma map_none_spec {p T U E f} : Lampe.STHoare p env ⟦⟧ («std::option::Opt
   steps [none_spec]
   assumption
 
+set_option trace.Lampe.SL true
+
 lemma map_some_spec {p T U E f fb v P Q}
     (h_lam : Lampe.STHoare p env P (fb h![v]) Q):
     Lampe.STHoare p env
@@ -68,14 +72,10 @@ lemma map_some_spec {p T U E f fb v P Q}
       (fun v => (∃∃(h: (to_option v).isSome), Q ((to_option v).get h)) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  apply Lampe.STHoare.iteTrue_intro
-  steps
-  apply Lampe.STHoare.letIn_intro
-  apply Lampe.STHoare.callLambda_intro
-  assumption
-  intro _
-  apply Lampe.STHoare.ramified_frame_top
-  with_unfolding_all apply some_spec
+  steps [Lampe.STHoare.iteTrue_intro]
+  steps allow_sl [Lampe.STHoare.callLambda_intro (hlam := h_lam), some_spec]
+
+  sl
   sorry -- SL needs work
 
 lemma map_pure_spec {p T U E f fb v f_emb}

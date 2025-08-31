@@ -27,6 +27,28 @@ theorem rot_exists_pure_star {P : Prop} {Q : SLP (State p)} : (SLP.exists' f ⋆
   rw [SLP.star_comm, SLP.star_assoc]
   apply SLP.eq_of_iff <;> {apply SLP.star_mono_l; rw [SLP.star_comm]; apply SLP.entails_self}
 
+theorem exi_test! {P : α → SLP (State p)} {Q : SLP (State p)}: (∃∃x, P x ⋆ Q) = ((∃∃x, P x) ⋆ Q) := by
+  apply SLP.eq_of_iff
+  · unfold SLP.exists' SLP.star
+    rintro st ⟨v, ⟨st₁, st₂, stdisj, stsum, P, Q⟩⟩
+    exists st₁, st₂, stdisj, stsum
+    apply And.intro _ Q
+    exists v
+  · unfold SLP.exists' SLP.star
+    rintro st ⟨st₁, st₂, stdisj, stsum, ⟨v, P⟩, Q⟩
+    exists v, st₁, st₂
+
+theorem exi_test2 {P : α → SLP (State p)} {Q : SLP (State p)}: ((∃∃v, P v) ⊢ Q) ↔ (∀v, (P v ⊢ Q)) := by
+  apply Iff.intro
+  · unfold SLP.exists' SLP.entails
+    intro hp v st P
+    apply hp
+    exists v
+  · unfold SLP.exists' SLP.entails
+    rintro h st ⟨v, P⟩
+    apply h
+    apply P
+
 end Internal
 
 macro "sl_norm" : tactic => `(tactic|(

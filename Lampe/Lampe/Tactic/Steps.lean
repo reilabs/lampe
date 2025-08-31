@@ -252,18 +252,19 @@ lemma STHoare.letIn_trivial_intro {p tp₁ tp₂} {P Q} {E : Expr (Tp.denote p) 
 
 structure TripleGoals where
   triple : Option MVarId
+  entailments : List MVarId
   props : List MVarId
   implicits : List MVarId
 
 instance : HAppend TripleGoals SLGoals TripleGoals where
-  hAppend g₁ g₂ := ⟨g₁.triple, g₁.props ++ g₂.props, g₁.implicits ++ g₂.implicits⟩
+  hAppend g₁ g₂ := ⟨g₁.triple, g₁.entailments, g₁.props ++ g₂.props, g₁.implicits ++ g₂.implicits⟩
 
 instance : HAppend SLGoals TripleGoals TripleGoals where
-  hAppend g₁ g₂ := ⟨g₂.triple, g₁.props ++ g₂.props, g₁.implicits ++ g₂.implicits⟩
+  hAppend g₁ g₂ := ⟨g₂.triple, g₂.entailments, g₁.props ++ g₂.props, g₁.implicits ++ g₂.implicits⟩
 
-instance : Coe SLGoals TripleGoals := ⟨fun g => ⟨none, g.props, g.implicits⟩⟩
+instance : Coe SLGoals TripleGoals := ⟨fun g => ⟨none, [], g.props, g.implicits⟩⟩
 
-def TripleGoals.flatten (g : TripleGoals) : List MVarId := g.props ++ g.implicits ++ g.triple.toList
+def TripleGoals.flatten (g : TripleGoals) : List MVarId := g.props ++ g.implicits ++ g.entailments ++ g.triple.toList
 
 lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by
   simp [SLP.star, SLP.lift]
@@ -287,22 +288,22 @@ partial def pluckPures (goal : MVarId) : TacticM TripleGoals := do
     let goal :: impls ← goal.apply (←mkConstWithFreshMVarLevels ``pluck_pures_destructively) | throwError "pluck_pures_destructively failed"
     let (_, goal) ← goal.intro1
     pure $ (goal, impls)
-  catch _ => return TripleGoals.mk goal [] []
+  catch _ => return TripleGoals.mk goal [] [] []
   let goal ← pluckPures goal
-  return TripleGoals.mk goal.triple (goal.props ++ impls) goal.implicits
+  return TripleGoals.mk goal.triple goal.entailments (goal.props ++ impls) goal.implicits
 
 def normalizeGoals (goals : TripleGoals) : TacticM TripleGoals := do
   match goals with
-  | .mk (some trp) ps is =>
+  | .mk (some trp) ents ps is =>
     let trp :: is₂ ← evalTacticAt (←`(tactic|sl_norm)) trp | throwError "sl_norm failed"
     let g ← pluckPures trp
-    return TripleGoals.mk g.triple (g.props ++ ps) (g.implicits ++ is ++ is₂)
+    return TripleGoals.mk g.triple g.entailments (g.props ++ ps) (g.implicits ++ is ++ is₂)
   | r => return r
 
 syntax "triple_norm" : tactic
 elab "triple_norm" : tactic => do
   let goals ← getMainGoal
-  let goals ← normalizeGoals $ TripleGoals.mk goals [] []
+  let goals ← normalizeGoals $ TripleGoals.mk goals [] [] []
   replaceMainGoal goals.flatten
 
 /--
@@ -314,7 +315,7 @@ entailments found in the goal.
 
 It throws an exception if it cannot make progress or close any subsequent SL goal(s).
 -/
-partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoals := do
+partial def step (mvar : MVarId) (addLemmas : List AddLemma) (allowUnsolvedEntailment: Bool) : TacticM TripleGoals := do
   let target ← mvar.instantiateMVarsInType
   let some (_, body, _) ← parseTriple target | throwError "not a triple"
   if isLetIn body then
@@ -325,50 +326,74 @@ partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoa
     match closer, isInternal with
     | some (cl, true), true =>
       let nextTriple :: impls ← evalTacticAt (←`(tactic|apply STHoare.letIn_trivial_intro; apply $cl)) mvar | throwError "bad application"
-      return TripleGoals.mk nextTriple [] impls
+      return TripleGoals.mk nextTriple [] [] impls
     | some (cl, _), _ =>
       let hHead :: hNext :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
       let (_, hNext) ← hNext.intro (vname.getD `v)
       let hHead :: hEnt :: impls₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
       let impls₃ ← evalTacticAt (←`(tactic|apply $cl)) hHead
-      let rEnt ← solveEntailment hEnt
-      return TripleGoals.mk hNext [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
+      if allowUnsolvedEntailment then try
+          let rEnt ← solveEntailment hEnt
+          return TripleGoals.mk hNext [] [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
+        catch _ => return TripleGoals.mk hNext [hEnt] [] (impls₁ ++ impls₂ ++ impls₃)
+      else
+        let rEnt ← solveEntailment hEnt
+        return TripleGoals.mk hNext [] [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
     | none, _ =>
       let hHead :: hNext :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
       let (_, hNext) ← hNext.intro (vname.getD `v)
       let hHead :: hEnt :: impls₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
       let impls₃ ← tryApplySyntaxes hHead addLemmas
-      let rEnt ← solveEntailment hEnt
-      return TripleGoals.mk hNext [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
+      if allowUnsolvedEntailment then try
+          let rEnt ← solveEntailment hEnt
+          return TripleGoals.mk hNext [] [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
+        catch _ => return TripleGoals.mk hNext [hEnt] [] (impls₁ ++ impls₂ ++ impls₃)
+      else
+        let rEnt ← solveEntailment hEnt
+        return TripleGoals.mk hNext [] [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
   else
     match (←getClosingTerm body) with
     | some (closer, _) => do
       let hHoare :: hEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "ramified_frame_top failed"
       let impls₂ ← evalTacticAt (←`(tactic|apply $closer)) hHoare
-      let hEnt ← solveEntailment hEnt
-      return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
+      if allowUnsolvedEntailment then try
+          let rEnt ← solveEntailment hEnt
+          return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt
+        catch _ => return TripleGoals.mk none [hEnt] [] (impls₁ ++ impls₂)
+      else
+        let rEnt ← solveEntailment hEnt
+        return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt
+      -- let hEnt ← solveEntailment hEnt
+      -- return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
     | none =>
       let hHead :: hEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "bad application"
       let impls₂ ← tryApplySyntaxes hHead addLemmas
-      let hEnt ← solveEntailment hEnt
-      return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
+      if allowUnsolvedEntailment then try
+          let rEnt ← solveEntailment hEnt
+          return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt
+        catch _ => return TripleGoals.mk none [hEnt] [] (impls₁ ++ impls₂)
+      else
+        let rEnt ← solveEntailment hEnt
+        return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt
+      -- let hEnt ← solveEntailment hEnt
+      -- return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
 
 /--
 Takes `limit` obvious steps, behaving like `repeat step`.
 
 It will never throw exceptions.
 -/
-partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) : TacticM TripleGoals := do
+partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) (allowUnsolvedEntailment : Bool) : TacticM TripleGoals := do
   let goals ← normalizeGoals goals
   if limit == 0 then return goals
 
   match goals.triple with
   | some mvar =>
-    let nextTriple ← try some <$> step mvar addLemmas catch _ => pure none
+    let nextTriple ← try some <$> step mvar addLemmas allowUnsolvedEntailment catch _ => pure none
     match nextTriple with
     | some nextTriple => do
-      let nextGoals := nextTriple ++ SLGoals.mk goals.props goals.implicits
-      stepsLoop nextGoals addLemmas (limit - 1)
+      let nextGoals := nextTriple ++ SLGoals.mk goals.entailments goals.props goals.implicits
+      stepsLoop nextGoals addLemmas (limit - 1) allowUnsolvedEntailment
     | none => return goals
   | none => return goals
 
@@ -377,8 +402,8 @@ partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit :
 Takes a sequence of at most `limit` steps to attempt to advance the proof state by continually
 simplifying the goal.
 -/
-partial def steps (mvar : MVarId) (limit : Nat) (addLemmas : List AddLemma) : TacticM (List MVarId) := do
-  let goals ← stepsLoop (TripleGoals.mk mvar [] []) addLemmas limit
+partial def steps (mvar : MVarId) (limit : Nat) (addLemmas : List AddLemma) (allowUnsolvedEntailment : Bool) : TacticM (List MVarId) := do
+  let goals ← stepsLoop (TripleGoals.mk mvar [] [] []) addLemmas limit allowUnsolvedEntailment
   return goals.flatten
 
 lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
@@ -434,14 +459,14 @@ It can be called in three main ways:
   addition to its inbuilt rules to advance the goal state. This version can be combined with the
   explicit limit case to combine the behaviors in the obvious way `steps n [lemmas,*]`.
 -/
-elab "steps" limit:optional(num) "[" ts:term,*  "]" : tactic => do
+elab "steps" limit:optional(num) allow_sl:optional("allow_sl") "[" ts:term,*  "]" : tactic => do
   let limit := limit.map (fun n => n.getNat) |>.getD 10000
   let addLemmas := ts.getElems.toList
-  let newGoals ← steps (← getMainGoal) limit ((AddLemma.mk (generalizeEnv := true)) <$> addLemmas)
+  let newGoals ← steps (← getMainGoal) limit ((AddLemma.mk (generalizeEnv := true)) <$> addLemmas) allow_sl.isSome
   replaceMainGoal newGoals
-elab "steps" limit:optional(num) : tactic => do
+elab "steps" limit:optional(num) allsl:optional("allow_sl") : tactic => do
   let limit := limit.map (fun n => n.getNat) |>.getD 10000
-  let newGoals ← steps (← getMainGoal) limit []
+  let newGoals ← steps (← getMainGoal) limit [] allsl.isSome
   replaceMainGoal newGoals
 
 /--
@@ -465,7 +490,7 @@ elab "step_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : ta
   let enterer ← match n with
   | some n => ``(bindVar (fun $n => step_as $pre $post))
   | none => ``(step_as $pre $post)
-  let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)]
+  let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)] false
   replaceMainGoal newGoals
 
 /--
@@ -482,7 +507,7 @@ It can be called in two main ways:
 -/
 elab "loop_inv" p:optional("nat") inv:term : tactic => do
   let solver ← if p.isSome then ``(loop_inv_intro' $inv) else ``(loop_inv_intro $inv)
-  let goals ← steps (← getMainGoal) 1 [AddLemma.mk solver (generalizeEnv := false)]
+  let goals ← steps (← getMainGoal) 1 [AddLemma.mk solver (generalizeEnv := false)] false
   replaceMainGoal goals
 
 /--
@@ -514,5 +539,5 @@ elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term 
   let enterer ← match n with
   | some n => ``(bindVar (fun $n => STHoare.callLambda_intro (P := $pre) (Q := $post)))
   | none => ``(STHoare.callLambda_intro (P := $pre) (Q := $post))
-  let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)]
+  let newGoals ← steps goal 1 [AddLemma.mk enterer (generalizeEnv := false)] false
   replaceMainGoal newGoals
