@@ -103,16 +103,6 @@ def arrayIndex := newGenericPureBuiltin
     fun h => l.get (Fin.mk i.toNat h)⟩)
 
 /--
-Defines the function that evaluates to an array's length `n`.
-This builtin evaluates to an `U 32`. Hence, we assume that `n < 2^32`.
-
-In Noir, this corresponds to `fn len(self) -> u32` implemented for `[_; n]`.
--/
-def arrayLen := newGenericTotalPureBuiltin
-  (fun (tp, n) => ⟨[.array tp n], .u 32⟩)
-  (fun (_, n) _ => n)
-
-/--
 Defines the function that converts an array to a slice.
 
 In Noir, this corresponds to `fn as_slice(self) -> [T]` implemented for `[T; n]`.

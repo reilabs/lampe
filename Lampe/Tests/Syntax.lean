@@ -60,19 +60,17 @@ example {x y : Tp.denote p .field} :
 
 noir_def slice_append<I: Type>(x: Slice<I>, y: Slice<I>) → Slice<I> := {
   let mut (self: Slice<I>) = x;
-  for i in (0 : u32) .. (#_sliceLen returning u32)(y) do {
+  for i in (0 : u32) .. (#_arrayLen returning u32)(y) do {
     self = (#_slicePushBack returning Slice<I>)(self, (#_sliceIndex returning I)(y, i));
   };
   self
 }
 
-example {selfV that : Tp.denote p (.slice tp)}
+example {selfV that : Tp.denote p (.slice tp)} (hLen : that.length < 2 ^ 32)
   : STHoare p Γ ⟦⟧ (slice_append.fn.body _ h![tp] |>.body h![selfV, that])
     fun v => v = selfV ++ that := by
   simp only [slice_append]
   steps
-  casesm* ∃ _, _
-  subst_vars
   loop_inv nat (fun i _ _ => [self ↦ ⟨.slice tp, selfV ++ that.take i⟩])
   . simp_all
   . simp

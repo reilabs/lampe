@@ -44,20 +44,6 @@ def sliceIndex := newGenericPureBuiltin
     fun h => l.get (Fin.mk i.toNat h)⟩)
 
 /--
-Defines the builtin that returns the length of a slice `l : List tp`
-We make the following assumptions:
-- If `l.length < 2^32`, then the builtin returns `l.length : U 32`
-- Else (integer overflow), an exception is thrown.
-
-In Noir, this builtin corresponds to `fn len(self) -> u32` implemented for `[T]`.
--/
-def sliceLen := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp], .u 32⟩)
-  (fun _ h![l] => ⟨l.length < 2^32,
-    fun _ => l.length⟩)
-
-
-/--
 Defines the builtin that pushes back an element `e : Tp.denote tp` to a slice `l : List tp`.
 On these inputs, the builtin is assumed to return `l ++ [e]`.
 

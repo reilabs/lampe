@@ -116,7 +116,14 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
         | ``Lampe.Builtin.mkRepeatedArray =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedArray (a := (_, _)) rfl), true)
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)
-        | ``Lampe.Builtin.arrayLen => return some (←``(genericTotalPureBuiltin_intro Builtin.arrayLen (a := (_,_)) rfl), true)
+        | ``Lampe.Builtin.arrayLen =>
+          let some argTps :=  val.getAppArgs[1]? | throwError "malformed arrayLen"
+          let some (_, argTps) := argTps.listLit? | throwError "malformed arrayLen"
+          let some argTp := argTps.head? | throwError "malformed arrayLen"
+          match_expr argTp with
+          | Tp.slice _ => return some (←``(slice_arrayLen_intro), false)
+          | Tp.array _ _ => return some (←``(array_arrayLen_intro), false)
+          | _ => return none
         | ``Lampe.Builtin.asSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.asSlice (a := (_,_)) rfl), true)
 
         -- Slice builtins
@@ -128,7 +135,6 @@ def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := wi
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedSlice (a := _) rfl), true)
         | ``Lampe.Builtin.slicePushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushBack rfl), true)
         | ``Lampe.Builtin.slicePushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushFront rfl), true)
-        | ``Lampe.Builtin.sliceLen => return some (←``(sliceLen_intro), false)
         | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro), false)
         | ``Lampe.Builtin.ref => return some (←``(ref_intro), false)
         | ``Lampe.Builtin.readRef => return some (←``(readRef_intro), false)

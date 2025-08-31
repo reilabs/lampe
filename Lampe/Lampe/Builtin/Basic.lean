@@ -188,4 +188,28 @@ def fresh : Builtin := {
     tauto
 }
 
+inductive ArrayLenCase where
+| slice (tp : Tp)
+| array (tp : Tp) (N : U 32)
+
+def arrayLenSgn : ArrayLenCase → List Tp × Tp
+| .slice tp => ⟨[Tp.slice tp], Tp.u 32⟩
+| .array tp N => ⟨[Tp.array tp N], Tp.u 32⟩
+
+def arrayLenDesc : {p : Prime}
+  → (a : ArrayLenCase)
+  → (args : HList (Tp.denote p) (arrayLenSgn a).fst)
+  → (h : Prop) × (h → Tp.denote p (arrayLenSgn a).snd)
+| _, .slice tp, h![x] => ⟨x.length < 2 ^ 32, fun _ => BitVec.ofNat 32 x.length⟩
+| _, .array tp N, h![_] => ⟨True, fun _ => N⟩
+
+-- /--
+-- Defines the function that evaluates to an array (or slice)'s length `n`.
+-- This builtin evaluates to an `U 32`. Hence, we assume that `n < 2^32`.
+
+-- In Noir, this corresponds to `fn len(self) -> u32` implemented for `[_; n]`.
+-- -/
+def arrayLen : Builtin :=
+  newGenericPureBuiltin arrayLenSgn arrayLenDesc
+
 end Lampe.Builtin
