@@ -313,18 +313,11 @@ theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (S
       cases h
       assumption
     · intro
-      apply SLP.star_mono_r
-      intro st h
-      use (by simp)
+      sl
     induction d generalizing lo with
     | zero =>
       apply ramified_frame_top loopDone_intro
-      -- TODO this should be solved by the SL tactic
-      simp only [SLP.true_star]
-      apply SLP.forall_right
-      intro _
-      apply SLP.wand_intro
-      simp
+      sl
     | succ d ih =>
       apply loopNext_intro
       · simp

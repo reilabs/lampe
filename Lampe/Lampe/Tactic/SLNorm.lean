@@ -49,6 +49,16 @@ theorem exi_test2 {P : α → SLP (State p)} {Q : SLP (State p)}: ((∃∃v, P v
     apply h
     apply P
 
+theorem exi_test3 {P Q : α → SLP (State p)} : (∀v, (P v ⋆ H ⊢ R ⋆ Q v)) → ((∃∃v, P v) ⋆ H ⊢ R ⋆ (∃∃v, Q v)) := by
+  intro
+  conv => rhs; rw [SLP.star_comm]
+  simp only [←SLP.exists_star, ←SLP.star_exists]
+  apply SLP.exists_intro_l
+  intro
+  apply SLP.exists_intro_r
+  rw [SLP.star_comm]
+  apply_assumption
+
 end Internal
 
 macro "sl_norm" : tactic => `(tactic|(

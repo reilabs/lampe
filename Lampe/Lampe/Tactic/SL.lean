@@ -2,6 +2,7 @@ import Lampe.SeparationLogic.State
 import Lampe.SeparationLogic.SLP
 import Lampe.Tactic.SLNorm
 import Lampe.Tactic.SL.Term
+import Lampe.Tactic.SL.Init
 import Lampe.Syntax
 
 import Lean.Meta.Tactic.Simp.Main
@@ -12,10 +13,11 @@ open Lampe.SL
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
-initialize
-  Lean.registerTraceClass `Lampe.SL
-
 namespace Internal
+
+theorem solve_unit_star_mv {P : SLP (State p)} : (P ⊢ ⟦⟧ ⋆ P) := by
+  simp
+  apply SLP.entails_self
 
 theorem singleton_congr_star_mv {p} {r} {v₁ v₂ : AnyValue p}  (heq: v₁ = v₂): ([r ↦ v₁] ⊢ [r ↦ v₂] ⋆ ⟦⟧) := by
   cases heq
@@ -41,6 +43,10 @@ theorem exists_singleton_congr_mv {p} {r} {v₁ : AnyValue p} {v₂ : α → Any
   apply SLP.entails_self
 
 theorem singleton_congr_star {p} {r} {v₁ v₂ : AnyValue p} {R} (h: v₁ = v₂): [r ↦ v₁] ⋆ R ⊢ [r ↦ v₂] ⋆ R := by
+  cases h
+  apply SLP.entails_self
+
+theorem lmbSingleton_congr_star {p} {r : FuncRef i o} {v₁ v₂ : HList (Tp.denote p) i → Lampe.Expr (Tp.denote p) o} {R} (h: v₁ = v₂): [λr ↦ v₁] ⋆ R ⊢ [λr ↦ v₂] ⋆ R := by
   cases h
   apply SLP.entails_self
 
@@ -76,6 +82,15 @@ theorem skip_pure_evidence [LawfulHeap α] {H Q R : SLP α} :
   rw [SLP.star_comm]
   tauto
 
+theorem skip_final_pure_evidence [LawfulHeap α] {Q R : SLP α}:
+  (P → (⟦⟧ ⊢ Q ⋆ R)) → (P ⊢ Q ⋆ P ⋆ R) := by
+  intro
+  have : (P : SLP α) = (P ⋆ ⟦⟧) := by simp
+  rw [this, SLP.star_assoc]
+  apply skip_pure_evidence
+  simp
+  assumption
+
 theorem skip_evidence_and_solve_pure [LawfulHeap α] {H : SLP α} : Q → (H ⊢ Q ⋆ H) := by
   intro
   apply SLP.pure_right
@@ -89,6 +104,21 @@ theorem solve_pure_ent_pure_star_mv [LawfulHeap α] : (P → Q) → ((P : SLP α
   apply SLP.pure_right
   tauto
   simp [*, SLP.entails_self]
+
+theorem apply_exi_star [LawfulHeap α] {P : β → SLP α} {H R Q : SLP α} {v}: (H ⊢ R ⋆ P v ⋆ Q) → (H ⊢ (∃∃v, P v) ⋆ R ⋆ Q) := by
+  intro
+  simp only [←SLP.exists_star]
+  apply SLP.exists_intro_r (a := v)
+  simp only [SLP.star_assoc]
+  conv => rhs; arg 2; rw [SLP.star_comm]
+  assumption
+
+theorem apply_exi [LawfulHeap α] {P : β → SLP α} {H Q: SLP α} {v}: (H ⊢ P v ⋆ Q) → (H ⊢ (∃∃v, P v) ⋆ Q) := by
+  intro h
+  simp only [←SLP.exists_star]
+  apply SLP.exists_intro_r (a := v)
+  rw [SLP.star_comm]
+  assumption
 
 theorem solve_exi_prop_l [LawfulHeap α] {P : Prop} {H : P → SLP α} {Q : SLP α} :
   ((x : P) → ((P ⋆ H x) ⊢ Q)) → ((∃∃x, H x) ⊢ Q) := by
@@ -120,18 +150,26 @@ theorem solve_exi_prop [LawfulHeap α] {P : Prop} {H : SLP α} {Q : P → SLP α
   apply_assumption
   assumption
 
-lemma solve_exi_prop_star_mv {p} {P R : SLP (State p)} {Q : H → SLP (State p)} : (P ⊢ ⟦H⟧ ⋆ ⊤) → (∀(h : H), P ⊢ Q h ⋆ R) → (P ⊢ (∃∃h, Q h) ⋆ R) := by
+lemma solve_exi_prop_star_mv {p} {P R : SLP (State p)} {Q : α → SLP (State p)} {v} : (P ⊢ Q v ⋆ R) → (P ⊢ (∃∃h, Q h) ⋆ R) := by
   simp only [←SLP.exists_star, ←SLP.star_exists]
   intros
-  apply solve_exi_prop
+  apply SLP.exists_intro_r
+  rw [SLP.star_comm]
   assumption
-  simp_all [SLP.star_comm]
 
 lemma solve_compose [LawfulHeap α] {P Q R S : SLP α} (h₁ : P ⊢ Q ⋆ R) (h₂ : R ⊢ S): P ⊢ Q ⋆ S := by
   apply SLP.entails_trans
   assumption
   apply SLP.star_mono_l
   assumption
+
+lemma solve_compose_with_sinks {α} [LawfulHeap α] {P Q R S T : SLP α} (h₁ : P ⊢ Q ⋆ R) (h₂ : R ⊢ S ⋆ T) : P ⊢ (Q ⋆ S) ⋆ T := by
+  simp only [SLP.star_assoc]
+  apply solve_compose <;> assumption
+
+lemma rotate_to_sinks {α} [LawfulHeap α] {P Q R S : SLP α} (h : P ⊢ R ⋆ (Q ⋆ S)): P ⊢ (Q ⋆ R) ⋆ S := by
+  conv => rhs; arg 1; rw [SLP.star_comm]
+  simp_all
 
 theorem solve_pure_ent_pure [LawfulHeap α] {P Q : Prop} :
   (P → Q) → ((⟦P⟧ : SLP α) ⊢ ⟦Q⟧) := by
@@ -143,6 +181,9 @@ theorem ent_congr {p} {P P' Q Q' : SLP (State p)} (h₁ : P = P') (h₂ : Q = Q'
   cases h₁
   cases h₂
   exact id
+
+theorem move_to_sinks {p} {P Q : SLP (State p)} : (P ⊢ Q) → (P ⊢ (⟦⟧ ⋆ Q)) := by
+  simp
 
 end Internal
 
@@ -156,6 +197,9 @@ def SLGoals.flatten (g : SLGoals): List MVarId := g.entailments ++ g.props ++ g.
 instance : Append SLGoals where
   append g₁ g₂ := { entailments := g₁.entailments ++ g₂.entailments, props := g₁.props ++ g₂.props, implicits := g₁.implicits ++ g₂.implicits }
 
+instance : Inhabited SLGoals where
+  default := { entailments := [], props := [], implicits := [] }
+
 def Lean.MVarId.apply' (m: MVarId) (e: Expr): TacticM (List MVarId) := do
   trace[Lampe.SL] "Applying {e}"
   m.apply e
@@ -163,7 +207,7 @@ def Lean.MVarId.apply' (m: MVarId) (e: Expr): TacticM (List MVarId) := do
 /--
 Solves goals of the form `P ⊢ [r ↦ v] ⋆ ?_`, trying to copy as much evidence as possible to the MVar on the right
 -/
-partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): TacticM SLGoals := do
+partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): TacticM SLGoals := goal.withContext $ withTraceNode `Lampe.SL (fun e => return f!"solveSingletonStarMV {Lean.exceptEmoji e}") $ do
   match lhs with
   | SLTerm.singleton _ v _ =>
     if v == rhs then
@@ -173,7 +217,7 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
       pure $ SLGoals.mk [] heq impl
     else throwError "final singleton is not equal"
   | SLTerm.lmbSingleton _ v _ =>
-    if (← goal.withContext $ isDefEq v rhs) then
+    if (←isDefEq v rhs) then
       let impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.lmbSingleton_congr_star_mv)
       pure $ SLGoals.mk [] [] impl
     else throwError "final lmb singleton is not equal"
@@ -190,6 +234,16 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
     | SLTerm.singleton _ v _ => do
       if v == rhs then
         let heq :: impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.singleton_congr_star) | throwError "unexpect goals in singleton_congr_star"
+        let heq ← try heq.refl; pure []
+          catch _ => pure [heq]
+        pure $ SLGoals.mk [] heq impl
+      else
+        let hent :: impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.skip_impure_evidence) | throwError "unexpect goals in skip_impure_evidence"
+        let goals ← solveSingletonStarMV hent r rhs
+        pure $ goals ++ SLGoals.mk [] [] impl
+    | SLTerm.lmbSingleton _ v _ => do
+      if v == rhs then
+        let heq :: impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.lmbSingleton_congr_star) | throwError "unexpect goals in lmbSingleton_congr_star"
         let heq ← try heq.refl; pure []
           catch _ => pure [heq]
         pure $ SLGoals.mk [] heq impl
@@ -216,7 +270,7 @@ partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Expr): Ta
       let hEnt :: impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.skip_impure_evidence) | throwError "unexpect goals in skip_impure_evidence"
       let goals ← solveSingletonStarMV hEnt r rhs
       pure $ goals ++ SLGoals.mk [] [] impl
-  | _ => throwError "unrecognized shape in solveSingletonStarMV"
+  | e => throwError "unrecognized shape in solveSingletonStarMV {e.printShape}"
 
 
 /--
@@ -265,14 +319,14 @@ def solvePureEntailMV (goal : MVarId) (preExpr : Lean.Expr) : TacticM SLGoals :=
 def solveExactStarMV (goal: MVarId) (lhs : SLTerm) (rhs : Expr): TacticM SLGoals := withTraceNode `Lampe.SL (fun e => return f!"solveExactStarMV {Lean.exceptEmoji e}") do
   match lhs with
   | SLTerm.unrecognized expr =>
-    if (←isDefEq expr rhs) then
+    if (←withNewMCtxDepth $ isDefEq expr rhs) then
       let impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.entails_self_true)
       pure $ SLGoals.mk [] [] impl
     else throwError "final unrecognized is not equal"
   | SLTerm.star _ l r => do
     match l with
     | SLTerm.unrecognized expr =>
-      if (←isDefEq expr rhs) then
+      if (←withNewMCtxDepth $ isDefEq expr rhs) then
         let impl ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_self)
         pure $ SLGoals.mk [] [] impl
       else
@@ -290,99 +344,199 @@ def solveExactStarMV (goal: MVarId) (lhs : SLTerm) (rhs : Expr): TacticM SLGoals
       pure $ goals ++ SLGoals.mk [] [] impl
   | _ => throwError "Unrecognized shape in solveExactStarMV"
 
+partial def rewriteSides (goal : MVarId) (newPre newPost : SLTerm) (eqPre eqPost : Expr) : TacticM MVarId := do
+  let newGoalTp ← mkAppM ``SLP.entails #[newPre.expr, newPost.expr]
+  let nextGoal ← mkFreshMVarId
+  let goalExpr ← mkFreshExprMVarWithId nextGoal (some newGoalTp)
+  let congr ← mkAppM ``Internal.ent_congr #[eqPre, eqPost, goalExpr]
+  goal.assign congr
+  pure nextGoal
+
+partial def normalizePre (goal : MVarId) (pre post : SLTerm) : TacticM (SLTerm × MVarId) := do
+  let (pre', preEq) ← Lampe.SL.norm pre
+  let postEq ← mkAppM ``Eq.refl #[post.expr]
+  let goal ← rewriteSides goal pre' post preEq postEq
+  pure (pre', goal)
+
+partial def normalizeSides (goal : MVarId) (pre post : SLTerm) : TacticM (SLTerm × SLTerm × MVarId) := do
+  let (pre', preEq) ← Lampe.SL.norm pre
+  let (post', postEq) ← Lampe.SL.norm post
+  let goal ← rewriteSides goal pre' post' preEq postEq
+  pure (pre', post', goal)
+
+-- partial def exi_no_confusion (exi : Expr): TacticM Bool := do
+--   match exi with
+--   | .lam _ bType _ _ =>
+--     let sub ← mkAppM ``Subsingleton #[bType]
+--     let inst ← synthInstance? sub
+--     -- in the future, we should also do a check for occurences:
+--     -- that is, if the body uses the value unambigously (e.g. only on RHS of a ↦),
+--     -- it is also save to intro without confusion.
+--     pure $ if inst.isSome then true else false
+--   | _ => pure false
+
+partial def solveGoal (goal : MVarId) (pre post : SLTerm) : TacticM SLGoals := withTraceNode `Lampe.SL (tag := "solveGoal") (fun e => return f!"solveGoal {Lean.exceptEmoji e}") do
+  match post with
+  | .singleton _ v _ => solveSingletonStarMV goal pre v
+  | .lmbSingleton _ v _ => solveSingletonStarMV goal pre v
+  | .lift _ => solvePureStarMV goal pre
+  | .unit _ =>
+    let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_unit_star_mv)
+    pure $ SLGoals.mk [] [] impls
+  | .unrecognized expr => solveExactStarMV goal pre expr
+  | _ => throwError "Unrecognized shape in solveGoal"
+
+-- Solves all goals, or moves them to sinks if unable to close.
+-- If this returns (pre, sinks, goal), we have `goal : pre ⊢ sinks`, with both sides normalized
+partial def solveGoals (goal : MVarId) (pre goals sinks : SLTerm) : TacticM (SLGoals × SLTerm × SLTerm × MVarId) := withTraceNode `Lampe.SL (tag := "solveGoals") (fun e => return f!"solveGoals {Lean.exceptEmoji e}") do
+  match goals with
+  | .unit _ =>
+    trace[Lampe.SL] "Finished working through goals"
+    let [goal] ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.move_to_sinks) | throwError "unexpected goals in move_to_sinks"
+    let (pre, post, goal) ← normalizeSides goal pre sinks
+    pure (default, pre, post, goal)
+  | .star _ l r => do
+    try
+      let itemG :: restG :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_compose_with_sinks) | throwError "unexpected goals in solve_compose_with_sinks"
+      let goals ← solveGoal itemG pre l
+      let restGExpr ← restG.instantiateMVarsInType
+      let (pre, post) ← parseEntailment restGExpr
+      let (pre, restG) ← normalizePre restG pre post
+      let (moreGoals, pre, sinks, goal) ← solveGoals restG pre r sinks
+      pure (goals ++ moreGoals ++ SLGoals.mk [] [] impls, pre, sinks, goal)
+    catch e =>
+      trace[Lampe.SL] "{crossEmoji} Failed to solve goal: {l.printShape} with message {←e.toMessageData.toString}"
+      let [restG] ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.rotate_to_sinks) | throwError "unexpected goals in rotate_to_sinks"
+      let newSink ← mkAppM ``SLP.star #[l.expr, sinks.expr]
+      solveGoals restG pre r (SLTerm.star newSink l sinks)
+  | other => do
+    try
+      let itemG :: restG :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_compose) | throwError "unexpected goals in solve_compose"
+      let goals ← solveGoal itemG pre other
+      let restGExpr ← restG.instantiateMVarsInType
+      let (pre, post) ← parseEntailment restGExpr
+      let (pre, post, restG) ← normalizeSides restG pre post
+      pure (goals ++ SLGoals.mk [] [] impls, pre, post, restG)
+    catch e =>
+      trace[Lampe.SL] "{crossEmoji} Failed to solve goal: {other.printShape} with message {←e.toMessageData.toString}"
+      let gExpr ← goal.instantiateMVarsInType
+      let (pre, post) ← parseEntailment gExpr
+      let (pre, post, goal) ← normalizeSides goal pre post
+      trace[Lampe.SL] "Reparsed goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
+      pure (default, pre, post, goal)
+
+partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Expr): TacticM MVarId := do
+  match pre with
+  | .star _ (.lift _) r =>
+    let [goal] ← goal.apply' puller | throwError "unexpected goals in doPullWith"
+    let (fv, goal) ← goal.intro1
+    trace[Lampe.SL] "Pulled out: {fv.name}"
+    doPullWith r goal puller finalPuller
+  | .lift _ =>
+    let goal :: _ ← goal.apply' finalPuller | throwError "unexpected goals in doPullWith"
+    let (_, goal) ← goal.intro1
+    pure goal
+  | _ => pure goal
+
+partial def pullPures (goal : MVarId) (pre post : SLTerm): TacticM MVarId := withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
+  let (goal, puller, finalPuller) ← if post.hasMVars then
+    let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
+      | SLTerm.mvar _ => pure .right
+      | _ => pure .left
+    ) post
+    match pmv with
+    | .mvar _ => pure ()
+    | _ => throwError "unexpected result in pullPures"
+    let newPost ← mkAppM ``SLP.star #[p.expr, pmv.expr]
+    let preEq ← mkAppM ``Eq.refl #[pre.expr]
+    let goal ← rewriteSides goal pre (SLTerm.star newPost p pmv) preEq postEqMVars
+    pure (goal, ←mkConstWithFreshMVarLevels ``Internal.skip_pure_evidence, ←mkConstWithFreshMVarLevels ``Internal.skip_final_pure_evidence)
+  else
+    pure (goal, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left')
+  doPullWith pre goal puller finalPuller
+
+partial def doApplyExis (goal : MVarId) (postExis : SLTerm) : TacticM (MVarId × List MVarId) := do
+  match postExis with
+  | SLTerm.exi _ _ =>
+    let goal :: goals ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.apply_exi) | throwError "unexpected goals in apply_exi"
+    pure (goal, goals)
+  | SLTerm.star _ _ r => do
+    let goal :: goals ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.apply_exi_star) | throwError "unexpected goals in apply_exi_star"
+    let (goal, g₂) ← doApplyExis goal r
+    pure (goal, goals ++ g₂)
+  | _ => pure (goal, [])
+
+partial def applyExis (goal : MVarId) (pre post : SLTerm): TacticM (MVarId × List MVarId) := do
+  let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
+    | SLTerm.exi _ _ => pure .left
+    | _ => pure .right
+  ) post
+  let newPost ← mkAppM ``SLP.star #[p.expr, pmv.expr]
+  let preEq ← mkAppM ``Eq.refl #[pre.expr]
+  let goal ← rewriteSides goal pre (SLTerm.star newPost p pmv) preEq postEqMVars
+  doApplyExis goal p
+
 mutual
 
-/--
-Solves goals of the form `P ⊢ Q ⋆ ?_`, trying to copy as much evidence as possible to the MVar on the right
--/
-partial def solveStarMV (goal : MVarId) (lhs : SLTerm) (rhsNonMv : SLTerm): TacticM SLGoals := withTraceNode `Lampe.SL (fun e => return f!"solveStarMV {Lean.exceptEmoji e}") do
-  match rhsNonMv with
-  | .singleton _ v _ => solveSingletonStarMV goal lhs v
-  | .lmbSingleton _ v _ => solveSingletonStarMV goal lhs v
-  | .lift _ => solvePureStarMV goal lhs
-  | .exi _ _ =>
-    -- solve_exi_prop_star_mv
-    let ent₁ :: ent₂ :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_exi_prop_star_mv) | throwError "unexpected goals in solve_exi_prop_star_mv"
-    let gent₁ ← solveEntailment ent₁
-    let (_, ent₂) ← ent₂.intro1
-    let gent₂ ← solveEntailment ent₂
-    return gent₁ ++ gent₂ ++ SLGoals.mk [] [] impls
-  | .unrecognized expr => solveExactStarMV goal lhs expr
-  | _ => throwError "Unrecognized shape in solveStarMV"
+partial def solveSinks (goal : MVarId) (pre post : SLTerm): TacticM SLGoals := goal.withContext $ withTraceNode `Lampe.SL (tag := "solveSinks") (fun e => return f!"solveSinks {Lean.exceptEmoji e}") do
+  trace[Lampe.SL] "Current goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
+  match post with
+  | .mvar _ =>
+    let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_self)
+    return SLGoals.mk [] [] impls
+  | .top _ =>
+    let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_top)
+    return SLGoals.mk [] [] impls
+  | .all _ _ =>
+    let new ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.forall_right)
+    let new' ← liftOption new[0]?
+    let (_, g) ← new'.intro1
+    solveEntailment g
+  | SLTerm.wand _ _ _ =>
+    let new ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.wand_intro)
+    let new' ← liftOption new[0]?
+    solveEntailment new'
+  -- | SLTerm.star _ (SLTerm.exi _ ex) _ =>
+  --   if ←exi_no_confusion ex then
+  --     let goal :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_exi_star_mv) | throwError "unexpected goals in solve_exi_prop_star_mv"
+  --     let goals ← solveEntailment goal
+  --     pure $ goals ++ SLGoals.mk [] [] impls
+  --   else pure $ SLGoals.mk [goal] [] []
+  | _ => pure $ SLGoals.mk [goal] [] []
 
 partial def solveEntailment (goal : MVarId): TacticM SLGoals := goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
   let target ← goal.instantiateMVarsInType
   let (pre, post) ← parseEntailment target
-  let (pre, preEq) ← Lampe.SL.norm pre
-  let (post, postEq) ← Lampe.SL.norm post
-  let newGoalTp ← mkAppM ``SLP.entails #[pre.expr, post.expr]
-  let nextGoal ← mkFreshMVarId
-  let goalExpr ← mkFreshExprMVarWithId nextGoal (some newGoalTp)
-  let congr ← mkAppM ``Internal.ent_congr #[preEq, postEq, goalExpr]
-  goal.assign congr
-  let goal := nextGoal
-
-  trace[Lampe.SL] "Current goal: {pre.printShape} ⊢ {post.printShape}"
-  trace[Lampe.SL] (←Lean.PrettyPrinter.ppExpr target)
+  let (pre, post, goal) ← normalizeSides goal pre post
+  let goal ← pullPures goal pre post
 
   goal.withContext do
-    match pre with
-    | SLTerm.exi _ _ => do
-    -- solve_exi_prop_l
-      let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_exi_prop_l) | throwError "unexpected goals in solve_exi_prop_l"
-      let (_, g) ← g.intro1
-      let newGoals ← solveEntailment g
-      return newGoals ++ SLGoals.mk [] [] impls
-    | SLTerm.top _ => do
-      let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_top)
-      return SLGoals.mk [] [] impls
-    | SLTerm.lift expr => do
-      if let SLTerm.lift _ := post then
-        return ← solvePureEntailMV goal expr
-    | _ => pure ()
+    let target ← goal.instantiateMVarsInType
+    let (pre, post) ← parseEntailment target
+    let (pre, post, goal) ← normalizeSides goal pre post
+    let (goal, exisG) ← applyExis goal pre post
 
-    match post with
-    | SLTerm.mvar _ =>
-      let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_self)
-      return SLGoals.mk [] [] impls
-    | SLTerm.top _ =>
-      let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_top)
-      return SLGoals.mk [] [] impls
-    | SLTerm.star _ l r =>
-      -- [TODO] left can be mvar – should be rotated back
-      if r.isMVar then
-        let newGoals ← solveStarMV goal pre l
-        return newGoals
-      else if r.isTop then
-        let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.star_top_of_star_mvar) | throwError "unexpected goals in star_top_of_star_mvar"
-        let ng ← solveEntailment g
-        return ng ++ SLGoals.mk [] [] impls
-      else
-        let g₁ :: g₂ :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_compose) | throwError "unexpected goals in solve_compose"
-        let ng₁ ← solveEntailment g₁
-        let ng₂ ← solveEntailment g₂
-        return ng₁ ++ ng₂ ++ SLGoals.mk [] [] impls
-    | SLTerm.singleton _ _ _ =>
-      -- [TODO] handle pure on the left
-      let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_self)
-      return SLGoals.mk [] [] impls
-    | SLTerm.all _ _ => do
-      let new ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.forall_right)
-      let new' ← liftOption new[0]?
-      let (_, g) ← new'.intro1
-      solveEntailment g
-    | SLTerm.wand _ _ _ =>
-      let new ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.wand_intro)
-      let new' ← liftOption new[0]?
-      solveEntailment new'
-    | SLTerm.exi _ _ =>
-      -- [TODO] this only works for prop existential - make the others an error
-      let ent₁ :: ent₂ :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_exi_prop) | throwError "unexpected goals in solve_exi_prop"
-      let gent₁ ← solveEntailment ent₁
-      let (_, ent₂) ← ent₂.intro1
-      let gent₂ ← solveEntailment ent₂
-      return gent₁ ++ gent₂ ++ SLGoals.mk [] [] impls
-    | _ => throwError "unknown rhs {post}"
+    let target ← goal.instantiateMVarsInType
+    let (pre, post) ← parseEntailment target
+    let (pre, preEq) ← Lampe.SL.norm pre
+    let (post, postEq) ← Lampe.SL.norm post
+    let (goals, sinks, postEqSplit) ← Lampe.SL.split_by (fun t => match t with
+      | SLTerm.mvar _ => pure .right
+      | SLTerm.all _ _ => pure .right
+      | SLTerm.wand _ _ _ => pure .right
+      | SLTerm.top _ => pure .right
+      | SLTerm.exi _ _ => pure .right
+      | _ => pure .left
+    ) post
+    let postExpr ← mkAppM ``SLP.star #[goals.expr, sinks.expr]
+    let postEqTotal ← mkAppM ``Eq.trans #[postEq, postEqSplit]
+    let goal ← rewriteSides goal pre (SLTerm.star postExpr goals sinks) preEq postEqTotal
+
+    trace[Lampe.SL] "Current goal: {←ppExpr pre.expr} ⊢ ({←ppExpr goals.expr}) ⋆ ({←ppExpr sinks.expr})"
+
+    let (moreGoals, pre, post, goal) ← solveGoals goal pre goals sinks
+    let res ← solveSinks goal pre post
+    pure $ res ++ moreGoals ++ SLGoals.mk [] exisG []
 
 end
 
@@ -393,9 +547,12 @@ elab "sl" : tactic => do
   replaceMainGoal newGoals.flatten
 
 
--- set_option trace.Lampe.SL true
+set_option trace.Lampe.SL true
 
-example : (⟦⟧ : SLP (State p)) ⊢ ⟦⟧ := by
-  apply SLP.entails_trans
-  sl
-  sl
+-- example : (⟦⟧ : SLP (State p)) ⊢ ⟦⟧ := by
+--   apply SLP.entails_trans
+--   sl
+--   sl
+
+example {Q : α → SLP (State p)} : Q x ⋆ [λ f ↦ fb ] ⊢ ⟦True⟧ ⋆ ∀∀ v, ⟦v = some x⟧ -⋆ ((∃∃h, Q (v.get h)) ⋆ [λ f ↦ fb ]) ⋆ ⊤ := by
+  sl <;> simp_all

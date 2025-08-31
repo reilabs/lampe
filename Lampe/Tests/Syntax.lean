@@ -20,6 +20,9 @@ noir_def basic_fn_call<>() -> u64 := {
 
 def basicFnEnv : Env := .mk [basic_fn, basic_fn_call] []
 
+set_option trace.Lampe.STHoare.Helpers true
+set_option trace.Lampe.SL true
+
 theorem basic_fn_lemma : Lampe.STHoare p basicFnEnv ⟦⟧ (basic_fn.call h![] h![x])
     fun v => v = x := by
   enter_decl
@@ -39,6 +42,9 @@ noir_def basic_muts<>(x: Field) -> Field := {
   y = z;
   y
 }
+
+set_option trace.Lampe.SL true
+set_option trace.Lampe.STHoare.Helpers true
 
 example : Lampe.STHoare p Γ ⟦⟧ (basic_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
   simp only [basic_muts]
@@ -73,12 +79,11 @@ example {selfV that : Tp.denote p (.slice tp)} (hLen : that.length < 2 ^ 32)
   steps
   loop_inv nat (fun i _ _ => [self ↦ ⟨.slice tp, selfV ++ that.take i⟩])
   . simp_all
-  . simp
+  · simp
   . intros i _ _
     steps
     casesm* ∃ _, _
     subst_vars
-    congr 1
     simp only [Lens.modify, Option.get_some]
 
     have : BitVec.toNat (↑i : U 32) = i := by
@@ -89,7 +94,6 @@ example {selfV that : Tp.denote p (.slice tp)} (hLen : that.length < 2 ^ 32)
 
     simp only [this] at *
     simp
-
   . steps
     simp_all [Nat.mod_eq_of_lt]
 
@@ -554,11 +558,11 @@ example : STHoare p constTestEnv ⟦⟧ (const_test.call h![3] h![2])
 
   loop_inv nat (fun i _ _ => [res ↦ ⟨.field, 2^i * 2⟩])
   . simp
-  . congr
-    simp_all
+  . simp_all
   . intros i hlo hhi
     steps
-    simp
+    intro
+    simp_all
     congr
   . steps
     subst_vars

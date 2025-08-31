@@ -1,6 +1,7 @@
 import Lampe.SeparationLogic.State
 import Lampe.SeparationLogic.SLP
 import Lampe.Tactic.SLNorm
+import Lampe.Tactic.SL.Init
 import Lampe.Syntax
 
 import Lean.Meta.Tactic.Simp.Main
@@ -13,6 +14,7 @@ inductive SLTerm where
 | top : Lean.Expr → SLTerm
 | star : Lean.Expr → SLTerm → SLTerm → SLTerm
 | lift : Lean.Expr → SLTerm
+| unit : Lean.Expr → SLTerm
 | singleton : Lean.Expr → Lean.Expr → Lean.Expr → SLTerm
 | lmbSingleton : Lean.Expr → Lean.Expr → Lean.Expr → SLTerm
 | mvar : Lean.Expr → SLTerm
@@ -27,6 +29,7 @@ def SLTerm.toString : SLTerm → String
 | exi _ e => s!"∃∃ {e}"
 | all _ e => s!"∀∀ {e}"
 | star _ a b => s!"({a.toString} ⋆ {b.toString})"
+| unit _ => "⟦⟧"
 | lift e => s!"{e.dbgToString}"
 | singleton _ e₁ _ => s!"[{e₁.dbgToString} ↦ _]"
 | lmbSingleton _ e₁ _ => s!"[λ {e₁.dbgToString} ↦ _]"
@@ -34,12 +37,13 @@ def SLTerm.toString : SLTerm → String
 | unrecognized e => s!"<unrecognized: {e.dbgToString}>"
 
 def SLTerm.printShape : SLTerm → String
-| SLTerm.top _ => "⊤"
+| top _ => "⊤"
+| unit _ => "⟦⟧"
 | wand _ a b => s!"({a.printShape} -⋆ {b.printShape})"
 | exi _ _ => s!"(∃∃)"
 | all _ _ => s!"(∀∀)"
 | star _ a b => s!"({a.printShape} ⋆ {b.printShape})"
-| lift _ => s!"⟦⟧"
+| lift _ => s!"⟦_⟧"
 | singleton _ _ _ => s!"[_ ↦ _]"
 | lmbSingleton _ _ _ => s!"[λ _ ↦ _]"
 | mvar _ => s!"MV"
@@ -47,6 +51,7 @@ def SLTerm.printShape : SLTerm → String
 
 def SLTerm.expr : SLTerm → Lean.Expr
 | SLTerm.top e => e
+| SLTerm.unit e => e
 | SLTerm.star e _ _ => e
 | SLTerm.lift e => e
 | SLTerm.singleton e _ _ => e
@@ -67,6 +72,11 @@ def SLTerm.isTop : SLTerm → Bool
 
 def SLTerm.isForAll : SLTerm → Bool
 | SLTerm.all _ _ => true
+| _ => false
+
+def SLTerm.hasMVars : SLTerm → Bool
+| SLTerm.mvar _ => true
+| SLTerm.star _ l r => l.hasMVars || r.hasMVars
 | _ => false
 
 instance : ToString SLTerm := ⟨SLTerm.toString⟩
@@ -92,7 +102,12 @@ partial def parseSLExpr (e: Lean.Expr): TacticM SLTerm := do
   else if e.isAppOf' ``SLP.top then
     return SLTerm.top e
   else if e.isAppOf' ``SLP.lift then
-    return SLTerm.lift e
+    let args := e.getAppArgs'
+    let prop ← liftOption args[2]?
+    if prop.isAppOf' ``True then
+      return SLTerm.unit e
+    else
+      return SLTerm.lift e
   else if e.getAppFn'.isMVar then
     return SLTerm.mvar e
   else if e.isAppOf' ``SLP.forall' then
@@ -154,28 +169,37 @@ partial def linearize (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
     let eq ← mkAppM ``Eq.refl #[other.expr]
     return (other, eq)
 
-partial def needs_swap (l r : SLTerm): TacticM Bool := do
-  match l, r with
-  | SLTerm.lift _, SLTerm.lift _ => return false
-  | _, SLTerm.lift _ => return true
-  | _, _ => return false
+def get_order : SLTerm → Nat
+| SLTerm.unit _ => 0
+| SLTerm.lift _ => 1
+| SLTerm.singleton _ _ _ => 2
+| SLTerm.lmbSingleton _ _ _ => 3
+| SLTerm.exi _ _ => 4
+| SLTerm.star _ _ _ => 5
+| SLTerm.unrecognized _ => 6
+| SLTerm.wand _ _ _ => 7
+| SLTerm.all _ _ => 8
+| SLTerm.mvar _ => 9
+| SLTerm.top _ => 10
+
+partial def needs_swap (l r : SLTerm): Bool := get_order l > get_order r
 
 partial def insert (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
   match term with
   | SLTerm.star e l (SLTerm.star _ ll r) =>
-    if ←needs_swap l ll then
+    if needs_swap l ll then
       let swapEq ← mkAppM ``do_star_swap #[l.expr, ll.expr, r.expr] -- l ⋆ ll ⋆ r = ll ⋆ l ⋆ r
       let swappedRExpr ← mkAppM ``SLP.star #[l.expr, r.expr]
       let (insertedR, insertedREq) ← insert (SLTerm.star swappedRExpr l r) -- l ⋆ r = inserted(l ⋆ r)
       let finalExpr ← mkAppM ``SLP.star #[ll.expr, insertedR.expr]
       let insertedEq ← mkAppM ``congr_star_r #[ll.expr, swappedRExpr, insertedR.expr, insertedREq] -- ll ⋆ l ⋆ r = ll ⋆ inserted(l ⋆ r)
       let totalEq ← mkAppM ``Eq.trans #[swapEq, insertedEq]
-      return (SLTerm.star finalExpr l insertedR, totalEq)
+      return (SLTerm.star finalExpr ll insertedR, totalEq)
     else
       let eq ← mkAppM ``Eq.refl #[e]
       return (term, eq)
   | SLTerm.star _ l r =>
-    if ←needs_swap l r then
+    if needs_swap l r then
       let swapEq ← mkAppM ``do_star_comm #[l.expr, r.expr]
       let swappedExpr ← mkAppM ``SLP.star #[r.expr, l.expr]
       return (SLTerm.star swappedExpr r l, swapEq)
@@ -199,7 +223,7 @@ partial def sort (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
     return (other, eq)
 
 partial def norm (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
-  let simpResult ← simpOnlyNames [``SLP.star_true, ``SLP.true_star, ``SLP.exists_star, ``SLP.star_exists, ``SLP.exists_pure] term.expr
+  let simpResult ← simpOnlyNames [``SLP.exists_star, ``SLP.star_exists, ``SLP.exists_pure] term.expr
   let simped ← parseSLExpr simpResult.expr
   let (lin, linEq) ← linearize simped
   let eq ← match simpResult.proof? with
@@ -207,5 +231,73 @@ partial def norm (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
   | none => pure linEq
   let (sorted, sortedEq) ← sort lin
   return (sorted, ←mkAppM ``Eq.trans #[eq, sortedEq])
+
+inductive SplitDirection
+| left
+| right
+
+lemma keep_in_left_trivial {p} (l : SLP (State p)) {r rr} (h : r = (⟦⟧ ⋆ rr)) : (l ⋆ r) = (l ⋆ rr) := by
+  cases h
+  simp
+
+lemma keep_in_left_nontrivial {p} (l : SLP (State p)) {r rl rr} (h: r = (rl ⋆ rr)) : (l ⋆ r) = ((l ⋆ rl) ⋆ rr) := by
+  cases h
+  simp
+
+lemma keep_in_right_trivial {p} (l : SLP (State p)) {r rl} (h : r = (rl ⋆ ⟦⟧)) : (l ⋆ r) = (rl ⋆ l) := by
+  cases h
+  simp [SLP.star_comm]
+
+lemma keep_in_right_nontrivial {p} (l : SLP (State p)) {r rl rr} (h : r = (rl ⋆ rr)) : (l ⋆ r) = (rl ⋆ (l ⋆ rr)) := by
+  cases h
+  rw [SLP.star_comm, SLP.star_assoc]
+  apply congr_arg
+  rw [SLP.star_comm]
+
+lemma mk_left {p} (l : SLP (State p)) : l = (l ⋆ ⟦⟧) := by
+  simp
+
+lemma mk_right {p} (r : SLP (State p)) : r = (⟦⟧ ⋆ r) := by
+  simp
+
+-- Splits term into L ⋆ R acording to the predicate and returns L, R and proof of term = L ⋆ R
+-- it preserves the ordering of L and R. If either would be empty, it will be a `.unit`
+partial def split_by (pred : SLTerm → TacticM SplitDirection) (term : SLTerm): TacticM (SLTerm × SLTerm × Lean.Expr) := do
+  match term with
+  | SLTerm.star _ l r =>
+    let (rl, rr, req) ← split_by pred r -- r = rl ⋆ rr
+    match ←pred l with
+    | .left =>
+      match rl with
+      | .unit _ =>
+        let eq ← mkAppM ``keep_in_left_trivial #[l.expr, req]
+        return (l, rr, eq)
+      | _ =>
+        let newL ← mkAppM ``SLP.star #[l.expr, rl.expr]
+        let eq ← mkAppM ``keep_in_left_nontrivial #[l.expr, req]
+        return (SLTerm.star newL l rl, rr, eq)
+    | .right =>
+      match rr with
+      | .unit _ =>
+        let eq ← mkAppM ``keep_in_right_trivial #[l.expr, req]
+        return (rl, l, eq)
+      | _ =>
+        let newR ← mkAppM ``SLP.star #[l.expr, rr.expr]
+        let eq ← mkAppM ``keep_in_right_nontrivial #[l.expr, req]
+        return (rl, SLTerm.star newR l rr, eq)
+  | other =>
+    let otherType ← inferType other.expr
+    let slpArgs := otherType.getAppArgs'
+    let alpha ← liftOption slpArgs[0]?
+    let inst ← liftOption slpArgs[1]?
+    let unit ← mkAppOptM ``SLP.lift #[some alpha, some inst, some $ mkConst ``True [] ]
+    let unit := SLTerm.unit unit
+    match ←pred other with
+    | .left =>
+      let eq ← mkAppM ``mk_left #[other.expr]
+      return (other, unit, eq)
+    | .right =>
+      let eq ← mkAppM ``mk_right #[other.expr]
+      return (unit, other, eq)
 
 end Lampe.SL

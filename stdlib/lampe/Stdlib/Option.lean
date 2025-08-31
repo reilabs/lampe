@@ -69,14 +69,13 @@ lemma map_some_spec {p T U E f fb v P Q}
     Lampe.STHoare p env
       (P ⋆ [λf ↦ fb])
       («std::option::Option::map».call h![T, U, E] h![from_option (some v), f])
-      (fun v => (∃∃(h: (to_option v).isSome), Q ((to_option v).get h)) ⋆ [λf ↦ fb]) := by
+      (fun v => (∃∃vin, v = (from_option (some vin)) ⋆ Q vin) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  steps [Lampe.STHoare.iteTrue_intro]
-  steps allow_sl [Lampe.STHoare.callLambda_intro (hlam := h_lam), some_spec]
-
-  sl
-  sorry -- SL needs work
+  apply Lampe.STHoare.iteTrue_intro
+  steps [Lampe.STHoare.callLambda_intro (hlam := h_lam), some_spec]
+  · simp only [*, from_option_to_option_id]
+    sl
 
 lemma map_pure_spec {p T U E f fb v f_emb}
   (h_f: ∀arg, Lampe.STHoare p env ⟦⟧ (fb h![arg]) (fun r => r = f_emb arg)):
@@ -84,7 +83,9 @@ lemma map_pure_spec {p T U E f fb v f_emb}
   cases v
   · steps [map_none_spec]
     assumption
-  · steps [map_some_spec (h_f _)]
+  · apply Lampe.STHoare.ramified_frame_top map_some_spec (h_f _)
+
+    steps [map_some_spec (h_f _)]
     rename Lampe.Tp.denote _ _ => x
     casesm* ∃_,_
     rcases x with ⟨_|_, _, _⟩
