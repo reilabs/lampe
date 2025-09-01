@@ -17,24 +17,18 @@ lemma for_each_inv {T Env p f fb l}
   · simp
   · intro i ihl ihg
     steps
-    casesm* ∃_,_
-    simp only [Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, BitVec.toNat_ofNatLT, List.get_eq_getElem, *]
+    simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
+      zero_le, Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
+      BitVec.toNat_ofNatLT, List.get_eq_getElem]
     generalize_proofs
     have := h_inv (l.take i) l[i] $ by
       simp [List.take_prefix]
     steps [STHoare.callLambda_intro (hlam := this)]
-    simp
+    simp only [List.take_append_getElem]
     sl
-  casesm* ∃_,_
   steps
   simp_all
   sl
-
-set_option trace.Lampe.STHoare.Helpers true
-set_option trace.Lampe.SL true
-
-lemma STHoare.pull_exi {P : α → SLP (State p)} : (∀v, STHoare p env (P v) e Q) → STHoare p env (∃∃v, P v) e Q := by
-  sorry
 
 lemma slice_map_inv {T U Env p f fb l}
     (Inv: List (Tp.denote p T) → List (Tp.denote p U) → SLP (State p))
@@ -48,30 +42,19 @@ lemma slice_map_inv {T U Env p f fb l}
     · sl
     · simp
     · intro i ihl ihg
-      steps 2
-
-      -- DEMO of steps
-      -- apply STHoare.letIn_intro
-      -- apply STHoare.consequence_frame_left
-      -- apply STHoare.readRef_intro
-
-      -- TODO Ara: fix steps, so that the existential gets pulled in automatically
-      apply STHoare.pull_exi
-      intro v
       steps
-      casesm* ∃_,_
-      simp_all
+      simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
+        zero_le, Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat,
+        BitVec.setWidth_eq, BitVec.toNat_ofNatLT, List.get_eq_getElem]
       generalize_proofs
+      rename U.slice.denote p => v
       have := h_inv (l.take i) v l[i] (by simp [List.take_prefix])
       steps [STHoare.callLambda_intro (hlam := this)]
-      simp_all
+      simp_all only [List.take_append_getElem, Lens.modify, Option.get_some]
       sl
     · steps
-      rename ∃_,_ => hp
-      simp [hp.1, hp.2, *]
+      simp [*]
       sl
-  apply STHoare.pull_exi
-  intro
   steps
   simp_all
   sl

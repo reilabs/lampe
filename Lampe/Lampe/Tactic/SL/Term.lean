@@ -247,7 +247,7 @@ partial def sort (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
     return (other, eq)
 
 partial def norm (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
-  let simpResult ← simpOnlyNames [``SLP.exists_star, ``SLP.star_exists, ``SLP.exists_pure, ``SLP.star_true, ``SLP.true_star] term.expr
+  let simpResult ← simpOnlyNames [``SLP.exists_star, ``SLP.star_exists, ``SLP.star_true, ``SLP.true_star] term.expr
   let simped ← parseSLExpr simpResult.expr
   let (lin, linEq) ← linearize simped
   let eq ← match simpResult.proof? with

@@ -64,7 +64,7 @@ noir_def slice_append<I: Type>(x: Slice<I>, y: Slice<I>) → Slice<I> := {
   self
 }
 
-example {selfV that : Tp.denote p (.slice tp)} (hLen : that.length < 2 ^ 32)
+example {selfV that : Tp.denote p (.slice tp)}
   : STHoare p Γ ⟦⟧ (slice_append.fn.body _ h![tp] |>.body h![selfV, that])
     fun v => v = selfV ++ that := by
   simp only [slice_append]
@@ -74,8 +74,6 @@ example {selfV that : Tp.denote p (.slice tp)} (hLen : that.length < 2 ^ 32)
   · simp
   . intros i _ _
     steps
-    casesm* ∃ _, _
-    subst_vars
     simp
   . steps
     simp_all [Nat.mod_eq_of_lt]
@@ -377,7 +375,8 @@ example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [tuple_lens]
   steps
-  simp_all
+  subst_vars
+  rfl
 
 noir_struct_def Pair<E: Type> {
   E,
@@ -399,7 +398,8 @@ example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 20 := by
   simp only [struct_lens]
   steps
-  simp_all
+  subst_vars
+  rfl
 
 noir_def array_lens<>() → Field := {
   let mut (a: Tuple<Array<Field, 2: u32>, Field>) = (#_makeData returning Tuple<Array<Field, 2: u32>, Field>)(
@@ -447,7 +447,8 @@ example : STHoare p Γ ⟦⟧ (deref_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [deref_lens]
   steps
-  simp_all
+  subst_vars
+  rfl
 
 noir_def return_ten<>() → Field := {
   10: Field
@@ -472,9 +473,7 @@ example : STHoare p ⟨[return_ten, call_function], []⟩ ⟦⟧ (simple_hof.fn.
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [simple_hof]
   steps
-  apply pluck_final_pure_destructively
-  rintro rfl
-
+  subst_vars
   step_as (⟦⟧) (fun v => v = 10)
   . assumption
   . enter_decl
@@ -501,12 +500,7 @@ example : STHoare p createArrEnv ⟦⟧ (create_arr.call h![N] h![])
   enter_decl
   steps
   subst_vars
-  simp_all
-
-  have : (BitVec.ofNat 32 (BitVec.toNat N)).toNat = N.toNat := by
-    simp only [BitVec.ofNat_toNat, BitVec.setWidth_eq]
-
-  apply List.Vector.replicate_to_list
+  rfl
 
 noir_type_alias Arr<T: Type, N: u32> := Array<T, N: u32>;
 
@@ -544,10 +538,7 @@ example : STHoare p constTestEnv ⟦⟧ (const_test.call h![3] h![2])
   . simp_all
   . intros i hlo hhi
     steps
-    simp_all
-    congr
   . steps
-    subst_vars
     simp_all
     norm_num
 

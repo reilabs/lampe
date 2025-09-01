@@ -42,7 +42,7 @@ abbrev STHoarePureBuiltin p (Γ : Env)
   (args : HList (Tp.denote p) (sgn a).fst) : Prop :=
     STHoare p Γ ⟦⟧
       (.callBuiltin (sgn a).fst (sgn a).snd b args)
-      (fun v => ∃h, v = (desc a (args)).snd h)
+      (fun v => ∃∃h, v = (desc a (args)).snd h)
 
 abbrev STHoarePureBuiltin' p (Γ : Env)
   {a : A}

@@ -19,8 +19,6 @@ def to_option {p t}: («struct#std::option::Option».tp h![t] |>.denote p) -> Op
 lemma from_option_to_option_id : to_option (from_option v) = v := by
   cases v <;> rfl
 
-set_option trace.Lampe.SL true
-
 lemma none_spec {p T} : Lampe.STHoare p env ⟦⟧ («std::option::Option::none».call h![T] h![]) (fun v => v = from_option none) := by
   enter_decl
   steps
@@ -49,8 +47,8 @@ lemma unwrap_spec {p T v} : Lampe.STHoare p env ⟦⟧ («std::option::Option::u
   steps
   cases v
   · subst_vars
-    rename ∃_, _ => hp
-    rcases hp with ⟨⟨_⟩, _⟩
+    rename _ = _ => hp
+    cases hp
   · subst_vars
     simp
     rfl
@@ -61,8 +59,6 @@ lemma map_none_spec {p T U E f} : Lampe.STHoare p env ⟦⟧ («std::option::Opt
   apply Lampe.STHoare.iteFalse_intro
   steps [none_spec]
   assumption
-
-set_option trace.Lampe.SL true
 
 lemma map_some_spec {p T U E f fb v P Q}
     (h_lam : Lampe.STHoare p env P (fb h![v]) Q):

@@ -34,10 +34,8 @@ example  : STHoare p thmEnv ⟦⟧ («std::slice::append».call h![T] h![s₁, s
     · simp
     · intros i hlo hhi
       steps
-      casesm* ∃_,_
       simp_all
     steps
-    casesm* ∃_,_
     simp_all
   steps
   assumption
