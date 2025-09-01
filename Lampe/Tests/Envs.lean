@@ -56,7 +56,7 @@ example {p} {fieldArg : Fp p}:
     fun v => v = 2 * fieldArg := by
   simp only [both_trait_call]
   steps
-  step_as (⟦⟧) (fun v => v = (2 * u8Arg : Tp.denote p (Tp.u 8)))
+  step_as (⟦⟧) (fun v => v = (2 * u8Arg : U 8))
   · try_all_traits [] compoundEnv
     steps
     casesm* ∃ _, _
@@ -64,7 +64,7 @@ example {p} {fieldArg : Fp p}:
     bv_decide
 
   steps
-  step_as (⟦z = 2 * u8Arg⟧) (fun v => v = (2 * u8Arg : Tp.denote p (Tp.u 8)))
+  step_as (⟦z = 2 * u8Arg⟧) (fun v => v = (2 * u8Arg : U 8))
   · assumption
   · enter_decl
     steps
@@ -72,7 +72,7 @@ example {p} {fieldArg : Fp p}:
     rfl
 
   steps
-  step_as (⟦z = 2 * u8Arg⟧) (fun v => v = (2 * fieldArg : Tp.denote p Tp.field))
+  step_as (⟦z = 2 * u8Arg⟧) (fun v => v = (2 * fieldArg : Fp p))
   · assumption
   · try_all_traits [] compoundEnv
     steps
