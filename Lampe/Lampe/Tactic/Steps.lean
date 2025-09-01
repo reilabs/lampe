@@ -199,7 +199,7 @@ structure AddLemma where
 def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
 | n::ns => do
-  trace[Lampe.STHoare.Helpers] "trying {← ppExpr n.expr} with generalizeEnv: {n.generalizeEnv}"
+  trace[Lampe.STHoare.Helpers] "trying {←ppExpr n.expr} with generalizeEnv: {n.generalizeEnv}"
   try
     let (subset, goal, others) ← if n.generalizeEnv
       then
