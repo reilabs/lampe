@@ -1,4 +1,4 @@
-import Lampe.Data.Meta
+import Lampe.Syntax.Utils
 import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
@@ -104,7 +104,7 @@ The trait resolution will succeed when:
 elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
   let envExpr ← elabTerm env none
   let impls ← extractAllImpls envExpr
-  let genericsHList ← Lampe.mkHListLit generics.getElems.toList
+  let genericsHList ← Lampe.makeHListLit generics.getElems.toList
   let oldState ← saveState
   let mainGoal ← getMainGoal
 
