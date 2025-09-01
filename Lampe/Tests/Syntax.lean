@@ -2,7 +2,8 @@ import Lampe
 
 open Lampe
 
--- set_option trace.Lampe.STHoare.Helpers true
+set_option Lampe.pp.Expr true
+set_option Lampe.pp.STHoare true
 
 noir_def basic_void_fn<>() -> Unit := {
   #_unit
@@ -308,7 +309,6 @@ noir_def simple_slice<>() -> bool := {
   (#_sliceIndex returning bool)(s, (1: u32))
 }
 
-
 example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .bool) => v = false :=   by
   simp only [simple_slice]
@@ -351,7 +351,7 @@ example : STHoare p Γ ⟦⟧ (repeated_slice.fn.body _ h![] |>.body h![])
   simp_all
 
 noir_def simple_tuple_access<>() → Field := {
-  let (t: Tuple<Field, Boolean, Field>) =
+  let (t: Tuple<Field, bool, Field>) =
     (#_makeData returning Tuple<Field, bool, Field>)(1: Field, #_true, 3: Field);
   t.2
 }

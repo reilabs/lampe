@@ -354,3 +354,16 @@ def makeTraitFunDefOutputIdent (traitName fnName : Lean.Ident) : Lean.Ident :=
 
 def makeTraitFunDefIdent (traitName fnName : Lean.Ident) : Lean.Ident :=
   mkIdent $ traitName.getId ++ fnName.getId
+
+end Lampe
+
+/-- Optionally matches on a `HList` literal, and returns the list of `Lean.Expr` elements -/
+partial def Lean.Expr.hListLit? (e : Lean.Expr) : Option $ List Lean.Expr :=
+  let rec loop (e : Lean.Expr) (acc : List Lean.Expr) :=
+    if e.isAppOfArity' ``HList.nil 2 then
+      some acc.reverse
+    else if e.isAppOfArity' ``HList.cons 6 then
+      loop e.appArg!' (e.appFn!'.appArg!' :: acc)
+    else
+      none
+  loop e []

@@ -10,327 +10,130 @@ register_option Lampe.pp.Expr : Bool := {
   descr := "Pretty print Lampe.Expr using the Lampe syntax"
 }
 
+register_option Lampe.pp.STHoare : Bool := {
+  defValue := false
+  descr := "Pretty print Lampe.STHoare using the Lampe syntax"
+}
+
+namespace Lampe
+
+/-- Switch whether the `Expr` delaborator fires based off the `Lampe.pp.Expr` option -/
 abbrev whenDelabExprOption : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.Expr
 
-syntax "⸨" nr_expr "⸩" : term
+/-- Helper function to delaborate struct types of the form «struct#Name».tp h![⋯] -/
+def delabStructTp (expr : Lean.Expr) : DelabM <| (TSyntax `noir_ident) × Lean.Expr :=
+  whenFullyApplied expr do
+    let struct := expr.getArg! 0
+    let generics := expr.getArg! 1
+    let some (name , _) := struct.const? | failure
+    let nameStr := name.getString! |>.stripPrefix "struct#" -- TODO: This can be deleted once we remove the `struct#` prefix from names
+    return (←`(noir_ident|$(⟨mkIdent $ .mkSimple nameStr⟩)), generics)
 
-def extractInnerLampeExpr (stx : TSyntax `term) : TSyntax `nr_expr :=
+partial def ppTp (expr : Lean.Expr) : DelabM <| TSyntax `noir_type := do
+  match_expr expr with
+  | Tp.u n =>
+    let u := mkIdent <| .mkSimple s!"u{← ppExpr n}"
+    return ← `(noir_type|$(⟨u⟩):noir_type)
+  | Tp.i n =>
+    let i := mkIdent <| .mkSimple s!"i{← ppExpr n}"
+    return ← `(noir_type|$(⟨i⟩):noir_type)
+  | Tp.bi => return ⟨mkIdent `bi⟩
+  | Tp.field => return ⟨mkIdent `Field⟩
+  | Tp.bool => return ⟨mkIdent `bool⟩
+  | Tp.unit => return ⟨mkIdent `Unit⟩
+  | Tp.slice tp => return ←`(noir_type|$(⟨mkIdent `Slice⟩):noir_ident<$(⟨← ppTp tp⟩)>)
+  | Tp.array tp n => return ←`(noir_type|$(⟨mkIdent `Array⟩):noir_ident<$(⟨←ppTp tp⟩), $(⟨← delab n⟩)>)
+  | Tp.tuple _name fields => do
+      let some (_, fields) := fields.listLit? | throwError "fields in `Tp.tuple` expected to be a list lit, got {← ppExpr fields}"
+      let fields ← fields.mapM fun tp => ppTp tp
+      let fields ← fields.toArray.mapM fun tp => `(noir_gen_val|$tp:noir_type)
+      let tupleType ←`(noir_type|$(⟨mkIdent `Tuple⟩):noir_ident <$fields,*>)
+
+      return tupleType
+  | Tp.fn argTps outTp =>
+    let some (_, argTps) := argTps.listLit? | throwError "argTps in `Tp.fn` expected to be a list lit, got {← ppExpr argTps}"
+    let argTps ← argTps.mapM fun tp => ppTp tp
+    `(noir_type|λ($(argTps.toArray),*) → $(←ppTp outTp))
+  | Tp.str n => return ←`(noir_type|String<$(⟨← delab n⟩)>)
+  | Tp.fmtStr n tp =>
+    let n ← delab n
+    let tp ← ppTp tp
+    return ←`(noir_type| FmtString<$(⟨n⟩), $(⟨tp⟩)>)
+  | Tp.ref tp => `(noir_type| & $(←ppTp tp))
+  | _ =>
+    try
+      let (head, generics) ← delabStructTp expr
+      let some generics := generics.hListLit? | throwError "generics in `Tp.struct` expected to be a HList lit, got {← ppExpr generics}"
+      let generics ← generics.toArray.mapM fun g => ppTp g
+      return ←`(noir_type|$(⟨head⟩):noir_ident<$(⟨generics⟩),*>)
+    catch
+      | _ => return ←`(noir_type| $(⟨← delab expr⟩))
+
+syntax "⸨" noir_expr "⸩" : term
+
+/-- Because of the choice to index Lampe.Expr terms with `Prop` types rather than `Bool`s we need to
+match on the `decide True` and `decide False` cases to display booleans correctly in the delaborator -/
+def ppLampeBool (stx : Syntax) : DelabM <| TSyntax `noir_expr := do
+  match stx with
+    | `(decide True) =>
+      return ←`(noir_expr| $(⟨mkIdent $ .mkSimple "#_true"⟩))
+    | `(decide False) =>
+      return ←`(noir_expr| $(⟨mkIdent $ .mkSimple "#_false"⟩))
+    | `($v) =>
+      return ←`(noir_expr|$(⟨v⟩))
+
+/-- Extract the inner Lampe expression from a block or enclosing `⸨⋯⸩` block -/
+def extractInnerLampeExpr (stx : TSyntax `term) : TSyntax `noir_expr :=
   let e := match stx with
   | `(⸨ $e ⸩) => e
   | `($e) => ⟨e⟩
   match e with
-  | `(nr_expr|{$e}) => e
-  | `(nr_expr|$e) => e
+  | `(noir_expr|{$e}) => e
+  | `(noir_expr|$e) => e
 
-def ensureOneBracket (stx : TSyntax `nr_expr) : DelabM <| TSyntax `nr_expr := do
+/-- Used to avoid situations with multiple enclosing blocks in the delaborator -/
+def ensureOneBracket (stx : TSyntax `noir_expr) : DelabM <| TSyntax `noir_expr := do
   match stx with
-  | `(nr_expr|{{$e;*}}) =>
-    return ←`(nr_expr|{$e;*})
-  | `(nr_expr|{$e;*}) =>
-    return ←`(nr_expr|{$e;*})
-  | `(nr_expr|$e) =>
-    return ←`(nr_expr|{$e})
+  | `(noir_expr|{{$e;*}}) =>
+    return ←`(noir_expr|{$e;*})
+  | `(noir_expr|{$e;*}) =>
+    return ←`(noir_expr|{$e;*})
+  | `(noir_expr|$e) =>
+    return ←`(noir_expr|{$e})
 
-def extractBlock? (stx : TSyntax `nr_expr) : Option <| TSyntaxArray `nr_expr :=
+def extractBlock? (stx : TSyntax `noir_expr) : Option <| TSyntaxArray `noir_expr :=
   match stx with
-  | `(nr_expr|{ $e;* }) => some e
+  | `(noir_expr|{ $e;* }) => some e
   | _ => none
 
--- TODO: [#99] This isn't right
-def delabNrConstNum (stx : Syntax) : DelabM <| TSyntax `nr_const_num := do
-  match stx.getKind with
-    | `num => return ←`(nr_const_num|$(⟨stx⟩))
-    | `ident => return ←`(nr_const_num|$(⟨stx⟩))
-    -- TODO: [#99] Need to deal with BitVec applications
-    | _ => return ←`(nr_const_num|$(⟨stx⟩))
-
-def delabGeneric (stx : Syntax) : DelabM <| TSyntax `nr_generic := do
-  match stx with
-    | `(nr_generic| $tp:nr_type) => `(nr_generic|$(⟨tp⟩))
-    | `(nr_generic| $n:ident : $_:ident) => return ⟨n⟩
-    | `(nr_generic| $n:num : $_t:ident) => `(nr_generic|$(⟨n⟩))
-    | _ => failure
-
-partial def ppLampeTp (stx : Syntax) : DelabM <| TSyntax `nr_type := do
-  match stx with
-    | `(Tp.u $n:num) =>
-      let n := n.getNat
-      return ⟨mkIdentFrom stx <| .mkSimple s!"u{n}"⟩
-    | `(Tp.i $n:num) =>
-      let n := n.getNat
-      return ⟨mkIdentFrom stx <| .mkSimple s!"i{n}"⟩
-    | `(Tp.bi) => return ⟨mkIdentFrom stx `bi⟩
-    | `(Tp.bool) => return ⟨mkIdentFrom stx `bool⟩
-    | `(Tp.field) => return ⟨mkIdentFrom stx `Field⟩
-    | `(Tp.str $n) => return ←`(nr_type|str<$(← delabNrConstNum n)>)
-    | `(Tp.fmtStr $n $tp) =>
-      let n ← delabNrConstNum n
-      let _tp ← ppLampeTp tp
-      return ←`(nr_type| fmtstr<$(⟨←delabGeneric n⟩), $(⟨←delabGeneric n⟩)>)
-    | `(Tp.unit) => return ⟨mkIdentFrom stx `Unit⟩
-    | `(Tp.slice $tp) => return ←`(nr_type|[$(←ppLampeTp tp)])
-    | `(Tp.array $tp $n) => return ←`(nr_type|[$(←ppLampeTp tp); $(← delabNrConstNum n)])
-    | `(Tp.tuple $_name [$fields,*]) =>
-      let fields ← fields.getElems.mapM fun tp => ppLampeTp tp
-      return ←`(nr_type|`($fields,*))
-    | `(Tp.ref $tp) => `(nr_type| & $(←ppLampeTp tp))
-    | `(Tp.fn [$argTps,*] $outTp) =>
-      let argTps ← argTps.getElems.mapM fun tp => ppLampeTp tp
-      `(nr_type|λ($argTps,*) → $(←ppLampeTp outTp))
-    | `($id:ident) => `(nr_type|$(⟨id⟩)) -- Type variables?
-    | _ => `(nr_type|$(⟨stx⟩)) -- TODO: [#99] Catch all for other types
-
-def ppLampeNumericKind (stx : Syntax) : DelabM <| TSyntax `ident := do
-  match stx with
-    | `(Kind.u $n:num) =>
-      let n := n.getNat
-      return mkIdentFrom stx <| .mkSimple s!"u{n}"
-    | `(Kind.field) => return mkIdentFrom stx `Field
-    | _ => failure
-
-def mkNrParamDecl (id : Syntax) (tp : TSyntax `nr_type): DelabM <| TSyntax `nr_param_decl := do
-  let id := ⟨id⟩
-  return ←`(nr_param_decl|$id:ident : $tp)
-
-@[app_delab Lampe.Expr.litNum]
-def delabLampeLitNum : Delab := whenDelabExprOption getExpr >>= fun expr =>
+@[app_delab Lampe.Expr.skip]
+def delabSkip : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let args := expr.getAppArgs
-    let tp ← delab args[1]!
-    let num ← delab args[2]!
-    match num with
-      | `(-$n:num) =>
-        return ←`(⸨-$n:num : $(⟨← ppLampeTp tp⟩):nr_type⸩)
-      | `($n:num) =>
-        return ←`(⸨$(⟨n⟩):num : $(⟨← ppLampeTp tp⟩):nr_type⸩)
-      | `($n) =>
-        return ←`(⸨$(⟨n⟩)⸩)
-
-@[app_delab Lampe.Expr.litStr]
-def delabLampeLitStr : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let args := expr.getAppArgs
-    let charListRaw := args[2]!.getAppArgs[2]!
-    let charList  ← delab charListRaw
-    let str := charList.raw[1].getArgs |>.filter (fun x => x.getKind == `char)
-                                      |>.foldl (init := "") fun acc x => acc.push x.isCharLit?.get!
-    return ←`(⸨ $(⟨Syntax.mkStrLit str⟩) ⸩)
-
-@[app_delab Lampe.Expr.constFp]
-def delabLampeConstFp : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let const ← delab <| expr.getArg! 2
-    if let some num := Syntax.isNatLit? const then
-      let const ← `(nr_expr|$(⟨.mkNatLit num⟩):num : Field)
-      return ←`(⸨$const⸩)
-    else
-      let constName := expr.getArg! 2
-      let delabedConstName ← delab constName
-      let const ← `(nr_expr|u@$(⟨delabedConstName⟩))
-      return ←`(⸨$const⸩)
-
-@[app_delab Lampe.Expr.constU]
-def delabLampeConstU : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let const ← delab <| expr.getArg! 2
-    if let some num := Syntax.isNatLit? const then
-      let width := Syntax.isNatLit? (← delab <| expr.getArg! 1) |>.get!
-      let width := mkIdent <| .mkSimple s!"u{width}"
-      let const ← `(nr_expr|$(⟨.mkNatLit num⟩):num : $(width):ident)
-      return ←`(⸨$const⸩)
-    else
-      let constName := expr.getArg! 2
-      let delabedConstName ← delab constName
-      let const ← `(nr_expr|u@$(⟨delabedConstName⟩))
-      return ←`(⸨$const⸩)
-
-@[app_delab Lampe.Expr.fmtStr]
-def delabLampeFmtStr : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let tps := expr.getArg! 2
-    let string := expr.getArg! 3
-    let fmtStr ← `(nr_expr| #format<$(⟨← delab tps⟩)>($(⟨← delab string⟩),))
-    return ←`(⸨$fmtStr⸩)
-
-def delabLampeGeneric (kind gen : TSyntax `term)  : DelabM <| TSyntax `nr_generic := do
-  match kind with
-    | `(Kind.type) =>
-      return ←`(nr_generic|$(⟨←ppLampeTp gen⟩))
-    | _ =>
-      let kind ← ppLampeNumericKind kind
-      return ←`(nr_generic|$(⟨gen⟩):num : $(⟨kind⟩))
-
--- TODO: [#99] Finish this
-def delabLampeFuncRef (stx : Syntax) : DelabM <| TSyntax `nr_funcref := do
-  match stx with
-    | `(FuncRef.lambda $ref) => `(nr_funcref|@ $(⟨ref⟩))
-    | `(FuncRef.decl $s:str [$kinds,*] h![$gens,*]) =>
-      let generics ← kinds.getElems.zip gens.getElems |>.mapM delabLampeGeneric.uncurry
-      let funcName := mkIdent <| .mkSimple s.getString
-      let funcName : TSyntax `nr_ident := ⟨funcName⟩
-      let generics := ⟨generics⟩
-      return ←`(nr_funcref|@ $funcName <$generics,*>)
-    | `(FuncRef.trait $selfTp
-      $traitName:str [$traitKinds,*] h![$traitGenerics,*]
-        $fnName:str [$fnKinds,*] h![$fnGenerics,*]) =>
-      let selfTp ← match selfTp with
-      | `(none) => `(nr_type|_)
-      | `(some $selfTp) => ppLampeTp selfTp
-      | _ => failure
-
-      let traitName := mkIdent <| .mkSimple traitName.getString
-      let traitGenerics ← traitKinds.getElems.zip traitGenerics.getElems |>.mapM
-        delabLampeGeneric.uncurry
-      let traitGenerics := ⟨traitGenerics⟩
-
-      let fnName := mkIdent <| .mkSimple fnName.getString
-      let fnGenerics ← fnKinds.getElems.zip fnGenerics.getElems |>.mapM
-        delabLampeGeneric.uncurry
-      let fnGenerics := ⟨fnGenerics⟩
-
-      return ←`(nr_funcref|($selfTp:nr_type as $(⟨traitName⟩) <$traitGenerics,*>):: $(⟨fnName⟩) <$fnGenerics,*>)
-    | `($v) => return ←`(nr_funcref|$(⟨v⟩)) -- Is this how we should handle already declared refs?
-
-@[app_delab Lampe.Expr.fn]
-def delabLampeFn : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let argTps := expr.getArg! 1
-    let outTp := expr.getArg! 2
-    let funcRef := expr.getArg! 3
-
-    let argTps ← match (← delab argTps) with
-      | `([$tps,*]) =>
-        tps.getElems.mapM fun tp => ppLampeTp tp
-      | _ => pure #[]
-    let outTp ← ppLampeTp (← delab outTp)
-
-    let funcType ← `(nr_type|λ($argTps,*) → $outTp)
-    -- TODO: [#99] This needs to be expanded, probably in its own function
-    let funcRef ← delabLampeFuncRef (← delab funcRef)
-
-    return ←`(⸨$funcRef:nr_funcref as $funcType:nr_type⸩)
+    return ←``(⸨#_skip⸩)
 
 @[app_delab Lampe.Expr.var]
-def delabLampeVar : Delab := whenDelabExprOption getExpr >>= fun expr =>
+def delabVar : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
     let tp := expr.getArg! 1
     if tp.isAppOf ``Lampe.Tp.unit then
-      return ← `(⸨skip⸩)
+      return ← ``(⸨#_skip⸩)
     else
       let val := expr.getArg! 2
-      let var ← `(nr_expr|$(⟨← delab val⟩))
-      return ←`(⸨$var⸩)
+      let var ← `(noir_expr|$(⟨← delab val⟩))
+      return ←``(⸨$var⸩)
 
-@[app_delab Lampe.Expr.call]
-def delabLampeCall : Delab := whenDelabExprOption getExpr >>= fun expr =>
+@[app_delab Lampe.Expr.readRef]
+def delabReadRef : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let funcRef := expr.getArg! 3
-    let args := expr.getArg! 4
-    let args := match (← delab args) with
-      | `(h![$argsss,*]) => argsss.getElems
-      | _ => ⟨[]⟩
-    let args ← args.mapM fun arg => do `(nr_expr|$(⟨arg⟩))
-    let funcRef ← delabLampeFuncRef (← delab funcRef)
-    let callExpr ← `(nr_expr| $(⟨funcRef⟩)($args,*))
-    return ←`(⸨$callExpr⸩)
+    let val := expr.getArg! 2
+    ``(⸨$(⟨← delab val⟩)⸩)
 
-@[app_delab Lampe.Expr.callBuiltin]
-def delabLampeBuiltinCall : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let outTp := expr.getArg! 2
-    let builtin := expr.getArg! 3
-    let args := expr.getArg! 4
-    let args := match (← delab args) with
-      | `(h![$args,*]) => args.getElems
-      | _ => ⟨[]⟩
-    let args ← args.mapM fun arg => do `(nr_expr|$(⟨arg⟩))
-    let builtin ← delab builtin
-    let builtinName := mkIdent <| builtin.raw.getId.components.reverse.head!
-    let callExpr ← `(nr_expr| # $(⟨builtinName⟩)($args,*) : $(← ppLampeTp (← delab outTp)) )
-    return ←`(⸨$callExpr⸩)
+inductive LensStep
+  | tuple (idx : Nat)
+  | array (idx : TSyntax `noir_expr)
+  | slice (idx : TSyntax `noir_expr)
 
-def ppLampeBool (stx : Syntax) : DelabM <| TSyntax `nr_expr := do
-  match stx with
-    | `(decide True) =>
-      return ←`(nr_expr| $(⟨mkIdentFrom stx `true⟩))
-    | `(decide False) =>
-      return ←`(nr_expr| $(⟨mkIdentFrom stx `false⟩))
-    | `($v) =>
-      return ←`(nr_expr|$(⟨v⟩))
-
-@[app_delab Lampe.Expr.ite]
-def delabLampeIte : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let cond ← delab <| expr.getArg! 2
-    let thenBranch ← delab <| expr.getArg! 3
-    let elseBranch ← delab <| expr.getArg! 4
-
-    let ite ← `(nr_expr|
-      if $(← ppLampeBool cond) $(← ensureOneBracket <| extractInnerLampeExpr thenBranch)
-        else $(← ensureOneBracket <| extractInnerLampeExpr elseBranch))
-
-    return ←`(⸨$ite⸩)
-
-@[app_delab Lampe.Expr.skip]
-def delabLampeSkip : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    return ←`(⸨skip⸩)
-
-@[app_delab Lampe.Expr.loop]
-def delabLampeLoop : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let lowerBound ← delab <| expr.getArg! 3
-    let upperBound ← delab <| expr.getArg! 4
-
-    let (var, body) ← match (← delab <| expr.getArg! 5) with
-      | `(fun $var => $body) =>
-        pure (var, body)
-      | _ => failure
-
-    let loop
-      ← `(nr_expr| for $(⟨var⟩) in
-        $(extractInnerLampeExpr lowerBound) .. $(⟨upperBound⟩)
-          $(extractInnerLampeExpr body))
-    return ←`(⸨$loop⸩)
-
-def delabLambda : DelabM <| TSyntax `nr_expr := do
-  whenDelabExprOption getExpr >>= fun expr =>
-    whenFullyApplied expr do
-      let argTps ← delab <| expr.getArg! 1
-      let outTp ← delab <| expr.getArg! 2
-      let body := expr.getArg! 3
-      let argTps ← match argTps with
-        | `([$tps,*]) =>
-          tps.getElems.mapM fun tp => ppLampeTp tp
-        | _ => pure #[]
-      let outTp ← ppLampeTp outTp
-
-      let body ← Meta.lambdaTelescope body fun _ body => pure body
-
-      -- TODO: [#99] No way this is the right way to do this
-      let (args, body) ← match ← delab body with
-        | `(match $_:term with | h![$args,*] => $body) =>
-          pure (args.getElems, body)
-        | _ => failure
-
-      let params ← args.zip argTps |>.mapM fun (arg, tp) => do
-        return ←`(nr_param_decl|$(⟨arg⟩):ident : $tp)
-
-      `(nr_expr||$params,*|-> $outTp $(← ensureOneBracket <| extractInnerLampeExpr body))
-
-@[app_delab Lampe.Expr.lam]
-def delabLampeLam : Delab := delabLambda >>= fun lambda =>
-    return ←`(⸨$lambda⸩)
-
-@[app_delab Lampe.FuncRef.asLambda]
-def delabFuncRefAsLambda : Delab := whenDelabExprOption getExpr >>= fun expr => do
-  let ref ← delab <| expr.getArg! 2
-  return ←`($ref)
-
-@[app_delab Lampe.Lambda.mk]
-def delabLampeLambdaMk : Delab := delabLambda >>= fun lambda =>
-    return ←`(⸨$lambda⸩)
-
+/-- Descends through a `Member.head/tail` access pattern to determine the projection indexes -/
 partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat := do
   let headIdent := mkIdent `Builtin.Member.head
   let tailIdent := mkIdent `tail
@@ -341,9 +144,41 @@ partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat :=
   else
     return none
 
--- TODO: [#99] Need to handle patterns in the let binding
+partial def deconstructLens (lens : Lean.Expr) (acc : List LensStep := []) : DelabM $ List LensStep := do
+  match_expr lens with
+  | Lens.nil _ _ => pure acc
+  | Lens.cons _ _ _ _ lens access =>
+    match_expr access with
+    | Access.tuple _ _ _ _ mem =>
+      let some idx ← getProjNum (← delab mem) | failure
+      deconstructLens lens (.tuple idx :: acc)
+    | Access.array _ _ _ idx =>
+      let idx := extractInnerLampeExpr (← delab idx)
+      deconstructLens lens (.array idx :: acc)
+    | Access.slice _ _ idx =>
+      let idx := extractInnerLampeExpr (← delab idx)
+      deconstructLens lens (.slice idx :: acc)
+    | _ => throwError "Invalid lens access, got {← ppExpr access}"
+  | _ => throwError "Invalid lens access, got {← ppExpr lens}"
+
+/-- Helper function to build a `noir_lval` to build a lens access syntax term -/
+def buildLVal (lval : TSyntax `noir_lval) (lensSteps : List LensStep) (type : TSyntax `noir_type)
+    : DelabM $ TSyntax `noir_lval := do
+  match lensSteps with
+  | [] => pure lval
+  | LensStep.tuple idx :: rest => do
+    let lval ← buildLVal lval rest type
+    let idxStx := Syntax.mkNatLit idx
+    `(noir_lval|($lval . $idxStx : $type))
+  | LensStep.array idx :: rest => do
+    let lval ← buildLVal lval rest type
+    `(noir_lval|($lval[$idx] : $type))
+  | LensStep.slice idx :: rest => do
+    let lval ← buildLVal lval rest type
+    `(noir_lval|($lval[[$idx]]: $type))
+
 @[app_delab Lampe.Expr.letIn]
-def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
+def delabLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
     let bindingType := expr.getArg! 1
     let val := expr.getArg! 3
@@ -352,130 +187,283 @@ def delabLampeLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let (var, body) ← match (← delab binding) with
       | `(fun $var => $body) =>
         pure (var, body)
-      | _ => failure
+      | _ => throwError "letIn binding expected to be a lambda, got {← ppExpr binding}"
 
     let body := extractInnerLampeExpr body
     let morebody := extractBlock? body
 
-    -- TODO: [#99] Should split this into separate functions
     let letBinding ←
       if val.isAppOf ``Lampe.Expr.ref then
         whenFullyApplied val do
+          let type := val.getArg! 1
           let val ← delab <| val.getArg! 2
-          `(nr_expr|let mut $(⟨var⟩) = $(extractInnerLampeExpr val))
+          `(noir_expr|let mut ($(⟨var⟩) : $(← ppTp type)) = $(extractInnerLampeExpr val))
+      else if val.isAppOf ``Lampe.Expr.readRef then
+        whenFullyApplied val do
+          let val := val.getArg! 3
+          `(noir_expr|let $(⟨var⟩) = $(extractInnerLampeExpr (← delab val)))
       else if val.isAppOf ``Lampe.Expr.modifyLens then
         whenFullyApplied val do
           let modifiedVal ← delab <| val.getArg! 3
           let newVal ← delab <| val.getArg! 4
-          `(nr_expr|$(⟨modifiedVal⟩) = $(⟨newVal⟩))
-      -- TODO: [#99] This whole section is cursed
-      else if val.isAppOf ``Lampe.Expr.getLens then
-        whenFullyApplied val do
-          let getType := (← delab <| val.getArg! 1).raw[0]
-          match getType with
-            | `(Tp.tuple) =>
-              let name := (←delab <| val.getArg! 1).raw[1][0]
-              let noneIdent := mkIdent `none
-              if name == noneIdent then
-                let accessData := (← delab <| val.getArg! 4).raw[1][0][1][0]
-                let projNum ← getProjNum accessData
-                let val ← delab <| val.getArg! 3
-                if let some projNum := projNum then
-                  `(nr_expr| let $(⟨var⟩) = $(⟨val⟩) . $(⟨Syntax.mkNatLit projNum⟩))
-                else
-                  failure -- TODO: [#99] Handle this case, I think it's a nested accessor case?
-              else
-                let fieldAccessor := (← delab <| val.getArg! 4).raw[1][0][1][0][0].getId.toString
-                let fieldAccessor := fieldAccessor.stripPrefix "«"
-                                                |>.stripSuffix "»"
-                                                |>.split (fun c => c == '#')
-                let fieldName := mkIdent <| .mkSimple fieldAccessor[2]!
-                let tupleName := mkIdent <| .mkSimple fieldAccessor[1]!
-                let val ← delab <| val.getArg! 3
-                `(nr_expr|let $(⟨var⟩) = ($(extractInnerLampeExpr val) as $(⟨tupleName⟩)<_>).$fieldName)
-            | _ =>
-              let accessType := (← delab <| val.getArg! 4).raw[1][0][0]
-              let accessNum := (← delab <| val.getArg! 4).raw[1][0][1]
-              match accessType with
-                | `(Access.array) =>
-                  let val ← delab <| val.getArg! 3
-                  `(nr_expr|let $(⟨var⟩) = $(⟨val⟩)[$(⟨accessNum[0]⟩)])
-                | `(Access.slice) =>
-                  let val ← delab <| val.getArg! 3
-                  `(nr_expr|let $(⟨var⟩) = $(⟨val⟩)[[$(⟨accessNum[0]⟩)]])
-                | _ => failure
+
+          let lens := val.getArg! 5
+          let lensSteps ← deconstructLens lens
+          let lval ← if lensSteps.isEmpty then
+            `(noir_lval|$(⟨modifiedVal⟩) )
+          else
+            buildLVal ⟨modifiedVal⟩ lensSteps.reverse (← ppTp (val.getArg! 2))
+
+          `(noir_expr|$lval:noir_lval = $(⟨newVal⟩))
       else if val.isAppOf ``Lampe.Expr.readRef then
         whenFullyApplied val do
           let val := val.getArg! 3
-          `(nr_expr|let $(⟨var⟩) = $(extractInnerLampeExpr (← delab val)))
+          `(noir_expr|let $(⟨var⟩) = $(extractInnerLampeExpr (← delab val)))
+      else if val.isAppOf ``Lampe.Expr.loop then
+        whenFullyApplied val do
+          `(noir_expr|$(extractInnerLampeExpr (← delab val)))
       else if val.isAppOf ``Lampe.Expr.ite then
         whenFullyApplied val do
         if bindingType.isAppOf ``Lampe.Tp.unit then
-          `(nr_expr|$(extractInnerLampeExpr (← delab val)))
+          `(noir_expr|$(extractInnerLampeExpr (← delab val)))
         else
-          `(nr_expr|let $(⟨var⟩) = $(extractInnerLampeExpr (← delab val)))
-      else if val.isAppOf ``Lampe.Expr.loop then
-        whenFullyApplied val do
-          `(nr_expr|$(extractInnerLampeExpr (← delab val)))
+          `(noir_expr|let $(⟨var⟩) = $(extractInnerLampeExpr (← delab val)))
       else
-        `(nr_expr|let $(⟨var⟩) = $(extractInnerLampeExpr ⟨← delab val⟩))
-
+        `(noir_expr| let $(⟨var⟩) = $(extractInnerLampeExpr (← delab val)))
     let wholeBlock ← if let some morebody := morebody then
-      `(nr_expr| {$letBinding; $morebody;*})
+      `(noir_expr| {$letBinding; $morebody;*})
     else
-      `(nr_expr| {$letBinding; $body})
-    `(⸨$wholeBlock⸩)
+      `(noir_expr| {$letBinding; $body})
+    ``(⸨$wholeBlock⸩)
 
-@[app_delab Lampe.Expr.mkArray]
-def delabLampeMkArray : Delab := whenDelabExprOption getExpr >>= fun expr =>
+@[app_delab Lampe.FuncRef.lambda]
+def delabFuncRefLambda : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    match ← delab <| expr.getArg! 3 with
-      | `(h![$vals,*]) =>
-        let vals ← vals.getElems.mapM fun val => do
-          return ←`(nr_expr|$(⟨val⟩))
-        `(⸨[$vals,*]⸩)
-      | _ => failure
+    let name ← delab <| expr.getArg! 2
+    let some (_, argTypes) := expr.getArg! 0 |>.listLit? |
+      throwError "arguments to Lambda not a list, got {← ppExpr <| expr.getArg! 0}"
+    let argTypes ← argTypes.mapM (fun n => do ppTp n)
+    let outType ← ppTp <| expr.getArg! 1
+    let funcRef ← `(noir_funcref|($(⟨name⟩) as λ($(⟨argTypes.toArray⟩),*) → $(⟨outType⟩)))
+    return ←``(⸨$(funcRef):noir_funcref⸩)
 
-@[app_delab Lampe.Expr.mkRepArray]
-def delabLampeMkRepArray : Delab := whenDelabExprOption getExpr >>= fun expr =>
+def generateGenerics (kinds generics : Lean.Expr): DelabM <| List Syntax := do
+  let some (_, kinds) := kinds.listLit?
+    | throwError "expected list lit generating generics, got {← ppExpr kinds}"
+  let some generics := generics.hListLit?
+    | throwError "expected HList lit error in generating generics, got {← ppExpr generics}"
+
+  return ← kinds.zip generics |>.mapM fun (kind, gen) =>
+    do `(noir_gen_def|$(⟨← delab gen⟩):ident : $(⟨← delab kind⟩):noir_kind)
+
+@[app_delab Lampe.FuncRef.decl]
+def delabFuncRefDecl : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let repNum ← delab <| expr.getArg! 2
-    let repVal ← delab <| expr.getArg! 4
-    `(⸨[$(⟨repVal⟩);$(⟨repNum⟩)]⸩)
+    let nameExpr := expr.getArg! 2
+    let .strVal nameStr := nameExpr.litValue!
+      | throwError "expected a string literal for function name, got {← ppExpr nameExpr}"
+    let name := mkIdent $ .mkSimple nameStr
+    let some (_, argTypes) := expr.getArg! 0 |>.listLit?
+      | throwError "expected list lit for arg types in FuncRef.decl, got {← ppExpr <| expr.getArg! 0}"
+    let argTypes ← argTypes.mapM (fun n => do ppTp n)
+    let outType ← ppTp (expr.getArg! 1)
 
-@[app_delab Lampe.Expr.mkSlice]
-def delabLampeMkSlice : Delab := whenDelabExprOption getExpr >>= fun expr =>
+    let kinds := expr.getArg! 3
+    let generics := expr.getArg! 4
+
+    let funcGenerics ← generateGenerics kinds generics
+
+    let funcRef ← `(noir_funcref|($(⟨name⟩)<$(⟨funcGenerics.toArray⟩),* > as λ($(argTypes.toArray),*) → $(⟨outType⟩)))
+    return ←``(⸨$(funcRef):noir_funcref⸩)
+
+@[app_delab Lampe.FuncRef.trait]
+def delabFuncRefTrait : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    match ← delab <| expr.getArg! 3 with
-      | `(h![$vals,*]) =>
-        let vals ← vals.getElems.mapM fun val => do
-          return ←`(nr_expr|$(⟨val⟩))
-        `(⸨&[$vals,*]⸩)
-      | _ => failure
+    let argTps := expr.getArg! 0
+    let outTp := expr.getArg! 1
+    let selfTp := expr.getArg! 2
+    let traitName := expr.getArg! 3
+    let traitKinds := expr.getArg! 4
+    let traitGens := expr.getArg! 5
+    let fnName := expr.getArg! 6
+    let fnKinds := expr.getArg! 7
+    let fnGens := expr.getArg! 8
 
-@[app_delab Lampe.Expr.mkRepSlice]
-def delabLampeMkRepSlice : Delab := whenDelabExprOption getExpr >>= fun expr =>
+    let .strVal traitName := traitName.litValue!
+      | throwError "expected a string literal for trait name, got {← ppExpr traitName}"
+    let traitName := mkIdent $ .mkSimple traitName
+
+    let .strVal fnName := fnName.litValue!
+      | throwError "expected a string literal for function name, got {← ppExpr fnName}"
+    let fnName := mkIdent $ .mkSimple fnName
+
+    let selfTp ← ppTp selfTp
+
+    let some (_, argTypes) := argTps |>.listLit?
+      | throwError "expected list lit for arg types in FuncRef.trait, got {← ppExpr argTps}"
+    let argTypes ← argTypes.mapM (fun n => do ppTp n)
+    let funcTp ← `(noir_type|λ($(argTypes.toArray),*) -> $(←ppTp outTp))
+
+    let traitGenerics ← generateGenerics traitKinds traitGens
+    let fnGenerics ← generateGenerics fnKinds fnGens
+
+    let funcRef ← `(noir_funcref|(($selfTp as
+    $(⟨traitName⟩)<$(⟨traitGenerics.toArray⟩),*>)::$(⟨fnName⟩)<$(⟨fnGenerics.toArray⟩),*> as $funcTp))
+    return ←``(⸨$funcRef:noir_funcref⸩)
+
+@[app_delab Lampe.Expr.lam]
+def delabLam : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let repNum ← delab <| expr.getArg! 2
-    let repVal ← delab <| expr.getArg! 4
-    `(⸨&[$(⟨repVal⟩);$(⟨repNum⟩)]⸩)
+    let argTps := expr.getArg! 1
+    let outTp := expr.getArg! 2
+    let data := expr.getArg! 3
 
-@[app_delab Lampe.Expr.mkTuple]
-def delabLampeMkTuple : Delab := whenDelabExprOption getExpr >>= fun expr =>
+    let some (_ , argTps) := argTps.listLit?
+      | throwError "expected list lit for arg types in Lampe.Expr.lam, got {← ppExpr argTps}"
+    let (args, body) ← match (←delab data) with
+    | `(fun $_args:funBinder ↦ match $_args:term with | h![$args,*] => $body) => do
+      pure (args, body)
+    | _ => throwError "unable to parse args of Lambda"
+
+    let funArgs ← args.getElems.zip argTps.toArray |>.mapM fun (arg, tp) => do `(noir_pat| ($(⟨arg⟩) : $(← ppTp tp)))
+
+    return ← ``(⸨fn($funArgs,*) : $(←ppTp outTp) := $(⟨extractInnerLampeExpr body⟩)⸩)
+
+@[app_delab Lampe.Expr.fn]
+def delabFn : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
-    let name? ← delab <| expr.getArg! 2
-    let args ← delab <| expr.getArg! 3
-    let args ← match args with
-      | `(h![$args,*]) => args.getElems.mapM fun arg => do
-        return ←`(nr_expr|$(⟨arg⟩))
-      | _ => failure
+    let funcRef := expr.getArg! 3
+    delab funcRef
 
-    match name? with
-      | `(some $name:str) =>
-        let name := mkIdent <| .mkSimple name.getString
-        return ←`(⸨$name:ident <_> { $args,* }⸩ ) -- Don't have information to fill in generics
-      | `(none) => `(⸨`($args,*)⸩)
-      | _ => failure
+@[app_delab Lampe.Expr.call]
+def delabCall : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let funcRef := expr.getArg! 3
+    let args := expr.getArg! 4
+    let args := match (← delab args) with
+      | `(h![$funcArgs,*]) => funcArgs.getElems
+      | _ => ⟨[]⟩
+    let args ← args.mapM fun arg => do `(noir_expr|$(⟨arg⟩))
+    let funcRef ← delab funcRef
+    let callExpr ← `(noir_expr| $(⟨funcRef⟩):noir_funcref($args,*))
+    return ←``(⸨$callExpr⸩)
+
+@[app_delab Lampe.Expr.litNum]
+def delabLitNum : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let args := expr.getAppArgs
+    let tp := args[1]!
+    let num ← delab args[2]!
+    match num with
+      | `(-$n:num) =>
+        return ←``(⸨-$n:num : $(⟨← ppTp tp⟩):noir_type⸩)
+      | `($n:num) =>
+        return ←``(⸨$n:num : $(⟨← ppTp tp⟩):noir_type⸩)
+      | `($n) =>
+        return ←``(⸨$(⟨n⟩)⸩)
+
+@[app_delab Lampe.Expr.callBuiltin]
+def delabBuiltinCall : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let outTp := expr.getArg! 2
+    let builtin := expr.getArg! 3
+    let args := expr.getArg! 4
+    let args := match (← delab args) with
+      | `(h![$args,*]) => args.getElems
+      | _ => ⟨[]⟩
+    let args ← args.mapM fun arg => do `(noir_expr|$(⟨arg⟩))
+    let builtin ← delab builtin
+    let builtinName := mkIdent <| builtin.raw.getId.components.reverse.head!
+    let callExpr ← `(noir_expr| (#_$(⟨builtinName⟩):ident returning $(←ppTp outTp))($args,*))
+    return ←``(⸨$callExpr⸩)
+
+@[app_delab Lampe.Expr.loop]
+def delabLoop : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let lowerBound ← delab <| expr.getArg! 3
+    let upperBound ← delab <| expr.getArg! 4
+
+    let (var, body) ← match (← delab <| expr.getArg! 5) with
+      | `(fun $var => $body) =>
+        pure (var, body)
+      | _ => throwError "Malformed Lampe.Expr.loop, body is not a lambda, got {← ppExpr <| expr.getArg! 5}"
+
+    let loop
+      ← `(noir_expr| for $(⟨var⟩) in
+        $(extractInnerLampeExpr lowerBound) .. $(⟨upperBound⟩) do
+          $(extractInnerLampeExpr body))
+    return ←``(⸨$loop⸩)
+
+@[app_delab Expr.modifyLens]
+def delabModifyLens : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let modifiedVal ← delab <| expr.getArg! 3
+    let newVal ← delab <| expr.getArg! 4
+    return ←``(⸨$(⟨modifiedVal⟩):noir_lval = $(⟨newVal⟩)⸩)
+
+@[app_delab Lampe.Expr.ite]
+def delabIte : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let cond ← delab <| expr.getArg! 2
+    let thenBranch ← delab <| expr.getArg! 3
+    let elseBranch ← delab <| expr.getArg! 4
+
+    let ite ← `(noir_expr|
+      if $(← ppLampeBool cond) then $(← ensureOneBracket <| extractInnerLampeExpr thenBranch)
+        else $(← ensureOneBracket <| extractInnerLampeExpr elseBranch))
+
+    return ←``(⸨$ite⸩)
+
+@[app_delab Expr.getMember]
+def delabGetMember : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let elem := expr.getArg! 4
+    let member := expr.getArg! 5
+
+    let some idx ← getProjNum (← delab member)
+      | throwError "can't find projection number for {← ppExpr member}"
+    let idxSTx := Syntax.mkNatLit idx
+
+    let acces ← `(noir_expr| $(⟨←delab elem⟩).$(idxSTx))
+    return ←``(⸨$acces⸩)
+
+@[app_delab Lampe.Expr.constFp]
+def delabLampeConstFp : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let const ← delab <| expr.getArg! 2
+    if let some num := Syntax.isNatLit? const then
+      let const ← `(noir_expr|$(⟨.mkNatLit num⟩):num : Field)
+      return ←``(⸨$const⸩)
+    else
+      let constName := expr.getArg! 2
+      let delabedConstName ← delab constName
+      let const ← `(noir_expr|fConst!($(⟨delabedConstName⟩) : $(⟨mkIdent `Field⟩)))
+      return ←``(⸨$const⸩)
+
+@[app_delab Lampe.Expr.constU]
+def delabLampeConstU : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let const ← delab <| expr.getArg! 2
+    let width := Syntax.isNatLit? (← delab <| expr.getArg! 1) |>.get!
+    let width := mkIdent <| .mkSimple s!"u{width}"
+    if let some num := Syntax.isNatLit? const then
+      let const ← `(noir_expr|$(⟨.mkNatLit num⟩):num : $(width):ident)
+      return ←``(⸨$const⸩)
+    else
+      let constName := expr.getArg! 2
+      let delabedConstName ← delab constName
+      let const ← `(noir_expr|uConst!($(⟨delabedConstName⟩) : $(width):ident))
+      return ←``(⸨$const⸩)
+
+@[app_delab Lampe.Expr.litStr]
+def delabLampeLitStr : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let args := expr.getAppArgs
+    let charListRaw := args[2]!.getAppArgs[2]!
+    let charList  ← delab charListRaw
+    let str := charList.raw[1].getArgs |>.filter (fun x => x.getKind == `char)
+                                      |>.foldl (init := "") fun acc x => acc.push x.isCharLit?.get!
+    return ←``(⸨ $(⟨Syntax.mkStrLit str⟩) ⸩)
 
 section STHoare
 
@@ -483,13 +471,9 @@ declare_syntax_cat slp_cond
 declare_syntax_cat sthoare
 
 syntax "⦃" term "⦄" : slp_cond
-syntax slp_cond ppLine ppLine term ppLine ppLine slp_cond : term
+syntax slp_cond ppLine term ppLine slp_cond : term
 
-register_option Lampe.pp.STHoare : Bool := {
-  defValue := false
-  descr := "Pretty print Lampe.STHoare using the Lampe syntax"
-}
-
+/-- Switch whether the `STHoare` delaborator fires based off the `Lampe.pp.STHoare` option -/
 abbrev whenDelabSTHoareOption : DelabM α → DelabM α := whenDelabOptionSet `Lampe.pp.STHoare
 
 @[app_delab Lampe.STHoare]
@@ -499,6 +483,7 @@ def delabSTHoare : Delab := whenDelabSTHoareOption getExpr >>= fun expr =>
     let preCondition ← delab args[3]!
     let lampeExpr ← delab args[4]!
     let postCondition ← delab args[5]!
-    return ←`(⦃$preCondition⦄ $lampeExpr ⦃$postCondition⦄)
+    return ←``(⦃$preCondition⦄ $lampeExpr ⦃$postCondition⦄)
 
 end STHoare
+end Lampe

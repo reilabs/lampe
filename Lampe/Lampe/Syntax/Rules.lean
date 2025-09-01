@@ -67,7 +67,7 @@ syntax "String<" noir_gen_val ">" : noir_type -- The type of strings of a given 
 syntax "FmtString<" noir_gen_val "," noir_gen_val ">" : noir_type -- Format strings of a given length and type.
 syntax noir_ident "<" noir_gen_val,* ">" : noir_type -- Data types (struct-like, incl. array, tuple, slice).
 syntax "&" noir_type : noir_type -- References, both mutable and immutable.
-syntax "λ(" noir_type,* ")" noir_arrow noir_type : noir_type -- Function types.
+syntax "λ(" noir_type,* ")" ppSpace noir_arrow ppSpace noir_type : noir_type -- Function types.
 syntax "_" : noir_type -- Placeholder type.
 syntax "@" noir_ident "<" noir_gen_val,* ">" : noir_type -- Type aliases.
 
@@ -108,7 +108,7 @@ syntax noir_const_num "%" noir_const_num : noir_const_num -- Type-level modulo
 -- FUNCTION PARAMETERS ----------------------------------------------------------------------------
 -- These are not lambda parameters, which accept a much broader pattern language.
 
-syntax ident ":" noir_type : noir_func_param -- Bare function parameters
+syntax ident ppSpace ":" ppSpace noir_type : noir_func_param -- Bare function parameters
 syntax "mut" ident ":" noir_type : noir_func_param -- Mutable function parameters.
 syntax "_" ":" noir_type : noir_func_param -- An ignored function parameter.
 
@@ -116,7 +116,7 @@ syntax "_" ":" noir_type : noir_func_param -- An ignored function parameter.
 -- Literal instances of Noir types. Note that we explicitly use constructor functions for structs,
 -- slices, arrays, and format strings, and hence they are not included here.
 
-syntax ("-" noWs)? num ":" noir_type : noir_expr -- Numeric literals.
+syntax ("-" noWs)? num ppSpace ":" ppSpace noir_type : noir_expr -- Numeric literals.
 syntax str : noir_expr -- String literals.
 syntax "#_true" : noir_expr -- Boolean true.
 syntax "#_false" : noir_expr -- Boolean false.
@@ -133,40 +133,40 @@ syntax "{" sepBy(ppLine noir_expr, ";", ";", allowTrailingSep) ppLine ppDedent("
 -- These are the expression-like expressions.
 syntax "#_skip" : noir_expr -- Simple skips.
 syntax noir_ident : noir_expr -- Bare identifiers.
-syntax "if" noir_expr "then" noir_expr ("else" noir_expr)? : noir_expr -- If-then-(else).
+syntax "if" ppSpace noir_expr ppSpace "then" ppSpace noir_expr ppSpace ("else" ppSpace noir_expr)? : noir_expr -- If-then-(else).
 syntax noir_funcref "(" noir_expr,* ")" : noir_expr -- Function call
 syntax noir_lambda : noir_expr -- Lambdas are expressions.
 syntax noir_funcref : noir_expr -- Bare function references without calls are also expressions.
 syntax noir_expr "." num : noir_expr -- Field access
-syntax "uConst!(" ident ":" noir_kind ")" : noir_expr -- UInt const generics to values.
-syntax "fConst!(" ident ":" noir_kind ")" : noir_expr -- Field const generics to values.
+syntax "uConst!(" ident ppSpace ":" ppSpace noir_kind ")" : noir_expr -- UInt const generics to values.
+syntax "fConst!(" ident ppSpace ":" ppSpace noir_kind ")" : noir_expr -- Field const generics to values.
 syntax "(" noir_expr ")" : noir_expr -- Parenthesized expressions.
 syntax "sorry" : noir_expr -- Sorry, useful for debugging
 
 -- These are the statement-like expressions.
-syntax noir_lval "=" noir_expr : noir_expr -- Assignments.
-syntax "let" noir_pat "=" noir_expr : noir_expr -- Let bindings.
-syntax "for" noir_ident "in" noir_expr ".." noir_expr "do" noir_expr : noir_expr  -- Bounded for loops.
+syntax noir_lval ppSpace "=" ppSpace noir_expr : noir_expr -- Assignments.
+syntax "let" ppSpace noir_pat ppSpace "=" ppSpace noir_expr : noir_expr -- Let bindings.
+syntax "for" ppSpace noir_ident ppSpace "in" ppSpace noir_expr ppSpace ".." ppSpace noir_expr ppSpace "do" ppSpace noir_expr : noir_expr  -- Bounded for loops.
 
 -- FUNCTION REFERENCES ----------------------------------------------------------------------------
 -- These are the different kinds of things that can be called.
 
-syntax "(" noir_ident "as" noir_type ")" : noir_funcref -- An identifier call ref.
+syntax "(" noir_ident ppSpace "as" ppSpace noir_type ")" : noir_funcref -- An identifier call ref.
 syntax "(" noir_lambda ")" : noir_funcref -- A lambda is callable.
-syntax "(" "#_" ident "returning" noir_type ")" : noir_funcref -- A builtin name is callable.
-syntax "(" noir_ident "<" noir_gen_val,* ">" "as" noir_type ")" : noir_funcref -- A function reference is callable.
-syntax "(" "(" noir_type "as" noir_ident "<" noir_gen_val,* ">" ")"
-  "::" noir_ident "<" noir_gen_val,* ">" "as" noir_type ")" : noir_funcref -- A trait method reference is also callable.
+syntax "(" "#_" ident ppSpace "returning" ppSpace noir_type ")" : noir_funcref -- A builtin name is callable.
+syntax "(" noir_ident "<" noir_gen_val,* ">" ppSpace "as" ppSpace noir_type ")" : noir_funcref -- A function reference is callable.
+syntax "(" "(" noir_type ppSpace "as" ppSpace noir_ident "<" noir_gen_val,* ">" ")"
+  "::" noir_ident "<" noir_gen_val,* ">" ppSpace "as" ppSpace noir_type ")" : noir_funcref -- A trait method reference is also callable.
 
 -- LAMBDAS ----------------------------------------------------------------------------------------
 
-syntax "fn" "(" noir_pat,* ")" ":" noir_type ":=" noir_expr : noir_lambda -- Lambda expressions.
+syntax "fn" "(" noir_pat,* ")" ppSpace ":" ppSpace noir_type ppSpace ":=" ppSpace noir_expr : noir_lambda -- Lambda expressions.
 
 -- PATTERNS ---------------------------------------------------------------------------------------
 -- These are used in let bindings and lambda parameters to destructure things.
 
-syntax "(" noir_ident ":" noir_type ")" : noir_pat -- A bare identifier.
-syntax "mut" "(" noir_ident ":" noir_type ")" : noir_pat -- A mutable identifier.
+syntax "(" noir_ident ppSpace ":" ppSpace noir_type ")" : noir_pat -- A bare identifier.
+syntax "mut" ppSpace "(" noir_ident ppSpace ":" ppSpace noir_type ")" : noir_pat -- A mutable identifier.
 syntax "(" noir_pat,* ")" : noir_pat -- A tuple pattern stands in for both tuples and structs.
 
 -- L-VALUES ---------------------------------------------------------------------------------------
@@ -174,9 +174,9 @@ syntax "(" noir_pat,* ")" : noir_pat -- A tuple pattern stands in for both tuple
 -- lenses, but we provide syntax for ease of reading.
 
 syntax ident : noir_lval -- A bare identifier.
-syntax "(" noir_lval "." num ":" noir_type ")" : noir_lval -- A field access with numeric field selection.
-syntax "(" noir_lval "[" noir_expr "]" ":" noir_type ")" : noir_lval -- An array access.
-syntax "(" noir_lval "[[" noir_expr "]]" ":" noir_type ")" : noir_lval -- A slice access
+syntax "(" noir_lval "." num ppSpace ":" ppSpace noir_type ")" : noir_lval -- A field access with numeric field selection.
+syntax "(" noir_lval "[" noir_expr "]" ppSpace ":" ppSpace noir_type ")" : noir_lval -- An array access.
+syntax "(" noir_lval "[[" noir_expr "]]" ppSpace ":" ppSpace noir_type ")" : noir_lval -- A slice access
 syntax "(" "*" noir_expr ":" noir_type ")" : noir_lval -- A dereferenced value.
 
 -- DEBUG ------------------------------------------------------------------------------------------
