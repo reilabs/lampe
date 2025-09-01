@@ -153,10 +153,11 @@ theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
   · steps
     simp_all [Ref.rotateLeft]
 
+set_option trace.Lampe.SL true
+
 theorem sbox_intro : STHoare lp env ⟦⟧ («utils::sbox».call h![] h![input])
     fun output => output = Ref.sbox input := by
   enter_decl
-  simp only [«utils::sbox»]
   steps [rotate_left_intro]
   · subst_vars; rfl
   all_goals decide
@@ -215,8 +216,8 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
       (fun _ => [val ↦ ⟨.field, 0⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE 256 input⟩])
 
     loop_inv nat fun i _ _ => [val ↦ ⟨.field, ↑(input.val / 2^i)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
-    · decide
     · simp [Int.cast, IntCast.intCast, Fp.cast_self]
+    · decide
     · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
         cases input
         conv => lhs; arg 1; whnf
@@ -229,8 +230,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
     · intro i _ hi
       simp [IntCast.intCast, Int.cast] at hi
       steps [sgn0_intro]
-      · let this : i % 4294967296 = i := by rw [Nat.mod_eq_of_lt]; linarith
-        simp [Access.modify, Nat.mod_eq_of_lt, this, hi]
+      · simp [Access.modify, hi]
         rfl
       step_as v =>
         ([val ↦ ⟨.field, v⟩])
@@ -256,8 +256,6 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
         simp [ZMod.val, lp, Prime.natVal]
       · simp only [ZMod.div2_on_vals]
         casesm ∃_, _
-        have : i % 4294967296 = i := by
-          apply Nat.mod_eq_of_lt; linarith
         fin_cases «#v_10»
         · apply STHoare.iteTrue_intro
           steps
@@ -271,7 +269,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
           steps
           casesm* ∃_,_
           subst_vars
-          simp [Fp.cast_self, this] at *
+          simp at *
           rename _ = BitVec.ofNat _ _ => h
           rw [BitVec.ofNat_1_eq_1_iff] at h
           simp [h, Fp.cast_self]
@@ -551,8 +549,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
 
   · loop_inv fun i _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ ζi0.toList.take i.toNat⟩]
     · subst_vars; simp
-    · congr 1
-      simp [Int.cast, IntCast.intCast]
+    · simp [*]
     · intro i _ hlt
       rename bytes = _ => bytes_def
       clear bytes_def

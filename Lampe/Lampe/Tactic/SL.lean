@@ -114,6 +114,12 @@ theorem solve_pure_ent_pure_star_mv [LawfulHeap α] : (P → Q) → ((P : SLP α
   tauto
   simp [*, SLP.entails_self]
 
+theorem solve_pure_of_unit_star_mv [LawfulHeap α] : Q → ((P : SLP α) ⊢ Q ⋆ P) := by
+  intro h
+  apply SLP.pure_right
+  tauto
+  apply SLP.entails_self
+
 theorem apply_exi_star [LawfulHeap α] {P : β → SLP α} {H R Q : SLP α} {v}: (H ⊢ R ⋆ P v ⋆ Q) → (H ⊢ (∃∃v, P v) ⋆ R ⋆ Q) := by
   intro
   simp only [←SLP.exists_star]
@@ -291,6 +297,9 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM SLGoals := w
     let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_pure_ent_pure_star_mv) | throwError "unexpected goals in solve_pure_ent_pure_star_mv"
     let (_, g) ← g.intro1
     pure $ SLGoals.mk [] [g] impls
+  | .unit _ =>
+    let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_pure_of_unit_star_mv) | throwError "unexpected goals in solve_pure_of_unit_star_mv"
+    pure $ SLGoals.mk [] [g] impls
   | .star _ l r => do
     match l with
     | .lift _ =>
@@ -435,20 +444,21 @@ partial def solveGoals (goal : MVarId) (pre goals sinks : SLTerm) : TacticM (SLG
       trace[Lampe.SL] "Reparsed goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
       pure (default, pre, post, goal)
 
-partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Expr): TacticM MVarId := goal.withContext $ do
+partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Expr): TacticM (MVarId × List MVarId) := goal.withContext $ do
   match pre with
   | .star _ (.lift _) r =>
-    let goal :: _ ← goal.apply' puller | throwError "unexpected goals in doPullWith"
+    let goal :: impls ← goal.apply' puller | throwError "unexpected goals in doPullWith"
     let (fv, goal) ← goal.intro1
     trace[Lampe.SL] "Pulled out: {fv.name}"
-    doPullWith r goal puller finalPuller
+    let (g, gs) ← doPullWith r goal puller finalPuller
+    pure (g, impls ++ gs)
   | .lift _ =>
-    let goal :: _ ← goal.apply' finalPuller | throwError "unexpected goals in doPullWith"
+    let goal :: impls ← goal.apply' finalPuller | throwError "unexpected goals in doPullWith"
     let (_, goal) ← goal.intro1
-    pure goal
-  | _ => pure goal
+    pure (goal, impls)
+  | _ => pure (goal, [])
 
-partial def pullPures (goal : MVarId) (pre post : SLTerm): TacticM MVarId := goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
+partial def pullPures (goal : MVarId) (pre post : SLTerm): TacticM (MVarId × List MVarId) := goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
   let (goal, puller, finalPuller) ← if post.hasMVars then
     let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
       | SLTerm.mvar _ => pure .right
@@ -499,19 +509,19 @@ partial def solveSinks (goal : MVarId) (pre post : SLTerm): TacticM SLGoals := g
     return SLGoals.mk [] [] impls
   | _ => pure $ SLGoals.mk [goal] [] []
 
-partial def pullExisLoop (goal : MVarId): TacticM MVarId := goal.withContext do
+partial def pullExisLoop (goal : MVarId): TacticM (MVarId × List MVarId) := goal.withContext do
   let tp ← goal.instantiateMVarsInType
   let (l, _) ← parseEntailment tp
   match l with
   | .exi _ _ =>
     let goal :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.shift_exists_to_mvar) | throwError "unexpected goals in shift_exists_to_mvar"
-    appendGoals impls
     goal.withContext do
       let (_, goal) ← goal.intro1
-      pullExisLoop goal
-  | _ => pure goal
+      let (r, rs) ← pullExisLoop goal
+      pure $ (r, impls ++ rs)
+  | _ => pure (goal, [])
 
-partial def pullExis (pre post : SLTerm) (goal : MVarId): TacticM MVarId := goal.withContext do
+partial def pullExis (pre post : SLTerm) (goal : MVarId): TacticM (MVarId × List MVarId) := goal.withContext do
   let (goals, sink, postEq) ← Lampe.SL.split_by (fun t => match t with
   | SLTerm.mvar _ => pure .right
   | SLTerm.top _ => pure .right
@@ -520,14 +530,14 @@ partial def pullExis (pre post : SLTerm) (goal : MVarId): TacticM MVarId := goal
   let newPost ← mkAppM ``SLP.star #[goals.expr, sink.expr]
   let (pre, preEq) ← Lampe.SL.surfaceExis pre
   let goal ← rewriteSides goal pre newPost preEq postEq
-  let goal ← match sink with
-  | .mvar _ => pure goal
+  let (goal, impls) ← match sink with
+  | .mvar _ => pure (goal, [])
   | .top _ =>
     let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.star_top_of_star_mvar) | throwError "unexpected goals in star_top_of_star_mvar"
-    appendGoals impls
-    pure g
+    pure (g, impls)
   | _ => throwError "unsupported sink shape"
-  pullExisLoop goal
+  let (g, r) ← pullExisLoop goal
+  pure (g, r ++ impls)
 
 partial def parseAndNormalizeEntailment (goal : MVarId): TacticM (SLTerm × SLTerm × MVarId) := goal.withContext do
   let target ← goal.instantiateMVarsInType
@@ -538,9 +548,9 @@ partial def parseAndNormalizeEntailment (goal : MVarId): TacticM (SLTerm × SLTe
 partial def solveEntailment (goal : MVarId): TacticM SLGoals := goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
   let (pre, post, goal) ← parseAndNormalizeEntailment goal
   trace[Lampe.SL] "Initial goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
-  let goal ← pullExis pre post goal
+  let (goal, impls₁) ← pullExis pre post goal
   let (pre, post, goal) ← parseAndNormalizeEntailment goal
-  let goal ← pullPures goal pre post
+  let (goal, impls₂) ← pullPures goal pre post
   let (pre, post, goal) ← parseAndNormalizeEntailment goal
   let (goal, exiGoals) ← applyExis goal pre post
 
@@ -562,7 +572,7 @@ partial def solveEntailment (goal : MVarId): TacticM SLGoals := goal.withContext
 
     let (moreGoals, pre, post, goal) ← solveGoals goal pre goals sinks
     let res ← solveSinks goal pre post
-    pure $ res ++ moreGoals ++ SLGoals.mk [] exiGoals []
+    pure $ res ++ moreGoals ++ SLGoals.mk [] exiGoals (impls₁ ++ impls₂)
 
 end
 

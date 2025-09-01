@@ -49,6 +49,12 @@ lemma slice_map_inv {T U Env p f fb l}
     · simp
     · intro i ihl ihg
       steps 2
+
+      -- DEMO of steps
+      -- apply STHoare.letIn_intro
+      -- apply STHoare.consequence_frame_left
+      -- apply STHoare.readRef_intro
+
       -- TODO Ara: fix steps, so that the existential gets pulled in automatically
       apply STHoare.pull_exi
       intro v
@@ -62,18 +68,9 @@ lemma slice_map_inv {T U Env p f fb l}
       sl
     · steps
       sl
-
-      -- TODO: why does the following fail?
-      -- casesm* ∃_,_
-      -- simp_all
-      -- sl
-
-      rw [SLP.star_comm]
-      apply SLP.star_mono
-      · casesm* ∃_,_
-        simp_all
-        apply SLP.entails_self
-      · apply SLP.entails_self
+      rename ∃_,_ => hp
+      simp [hp.1, hp.2, *]
+      sl
   apply STHoare.pull_exi
   intro
   steps
