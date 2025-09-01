@@ -2235,13 +2235,8 @@ impl LeanGenerator<'_, '_> {
                 let let_stmt = self.context.def_interner.statement(&global_info.let_statement);
                 let (global_name, global_type) = match let_stmt {
                     HirStatement::Let(let_stmt) => {
-                        let ident = match &let_stmt.pattern {
-                            HirPattern::Identifier(hir_ident) => {
-                                self.context.def_interner.definition_name(hir_ident.id).to_string()
-                            }
-                            _ => panic!("Encountered a malformed global"),
-                        };
-                        let ident = quote_lean_keywords(&ident);
+                        let name = self.fully_qualified_global_name(id);
+                        let name = quote_lean_keywords(&name);
                         let typ = self.generate_lean_type_value(&let_stmt.r#type, None);
                         (name, typ)
                     }
