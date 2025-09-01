@@ -218,7 +218,7 @@ impl Project {
         Ok(WithWarnings::new((), warnings))
     }
 
-    pub fn compile_package(
+    fn compile_package(
         noir_project: &noir::Project,
         package: &Package,
     ) -> Result<WithWarnings<Vec<LeanFile>>, Error> {

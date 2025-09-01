@@ -110,7 +110,7 @@ authors = [""]
         );
         let generator = noir_project.compile_package(package)?.take();
 
-        return Ok(generator.generate());
+        Ok(generator.generate())
     }
 
     #[test]
@@ -573,17 +573,17 @@ mod has {
                     // ensure unquoted parts are not lean keywords
                     !LEAN_KEYWORDS.contains(&part)
                 }
-            }))
+            }));
         };
 
         for module in crate_data.modules {
             for item in module.entries {
                 match item {
                     ModuleDefinition::Global(global_definition) => {
-                        assert_good_name(&global_definition.name)
+                        assert_good_name(&global_definition.name);
                     }
                     ModuleDefinition::Function(function_definition) => {
-                        assert_good_name(&function_definition.name)
+                        assert_good_name(&function_definition.name);
                     }
                     ModuleDefinition::TraitImpl(trait_implementation) => {
                         assert_good_name(&trait_implementation.name);
