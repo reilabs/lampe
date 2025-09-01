@@ -18,16 +18,12 @@ inductive SLTerm where
 | singleton : Lean.Expr → Lean.Expr → Lean.Expr → SLTerm
 | lmbSingleton : Lean.Expr → Lean.Expr → Lean.Expr → SLTerm
 | mvar : Lean.Expr → SLTerm
-| all : Lean.Expr → Lean.Expr → SLTerm
 | exi : Lean.Expr → Lean.Expr → SLTerm
-| wand : Lean.Expr → SLTerm → SLTerm → SLTerm
 | unrecognized : Lean.Expr → SLTerm
 
 def SLTerm.toString : SLTerm → String
 | top _ => "⊤"
-| wand _ a b => s!"{a.toString} -⋆ {b.toString}"
 | exi _ e => s!"∃∃ {e}"
-| all _ e => s!"∀∀ {e}"
 | star _ a b => s!"({a.toString} ⋆ {b.toString})"
 | unit _ => "⟦⟧"
 | lift e => s!"{e.dbgToString}"
@@ -39,9 +35,7 @@ def SLTerm.toString : SLTerm → String
 def SLTerm.printShape : SLTerm → String
 | top _ => "⊤"
 | unit _ => "⟦⟧"
-| wand _ a b => s!"({a.printShape} -⋆ {b.printShape})"
 | exi _ _ => s!"(∃∃)"
-| all _ _ => s!"(∀∀)"
 | star _ a b => s!"({a.printShape} ⋆ {b.printShape})"
 | lift _ => s!"⟦_⟧"
 | singleton _ _ _ => s!"[_ ↦ _]"
@@ -58,9 +52,7 @@ def SLTerm.expr : SLTerm → Lean.Expr
 | SLTerm.lmbSingleton e _ _ => e
 | SLTerm.mvar e => e
 | SLTerm.unrecognized e => e
-| SLTerm.wand e _ _ => e
 | SLTerm.exi e _ => e
-| SLTerm.all e _ => e
 
 def SLTerm.isMVar : SLTerm → Bool
 | SLTerm.mvar _ => true
@@ -68,10 +60,6 @@ def SLTerm.isMVar : SLTerm → Bool
 
 def SLTerm.isTop : SLTerm → Bool
 | SLTerm.top _ => true
-| _ => false
-
-def SLTerm.isForAll : SLTerm → Bool
-| SLTerm.all _ _ => true
 | _ => false
 
 def SLTerm.hasMVars : SLTerm → Bool
@@ -111,16 +99,18 @@ partial def parseSLExpr (e: Lean.Expr): TacticM SLTerm := do
   else if e.getAppFn'.isMVar then
     return SLTerm.mvar e
   else if e.isAppOf' ``SLP.forall' then
-    let args := e.getAppArgs'
-    return SLTerm.all e (←liftOption args[3]?)
+    throwError "forall not supported for now"
+    -- let args := e.getAppArgs'
+    -- return SLTerm.all e (←liftOption args[3]?)
   else if e.isAppOf' ``SLP.exists' then
     let args := e.getAppArgs'
     return SLTerm.exi e (←liftOption args[3]?)
   else if e.isAppOf' ``SLP.wand then
-    let args := e.getAppArgs'
-    let lhs ← parseSLExpr (←liftOption args[2]?)
-    let rhs ← parseSLExpr (←liftOption args[3]?)
-    return SLTerm.wand e lhs rhs
+    throwError "wand not supported for now"
+    -- let args := e.getAppArgs'
+    -- let lhs ← parseSLExpr (←liftOption args[2]?)
+    -- let rhs ← parseSLExpr (←liftOption args[3]?)
+    -- return SLTerm.wand e lhs rhs
   else pure $ .unrecognized e
 
 partial def parseEntailment (e: Lean.Expr): TacticM (SLTerm × SLTerm) := do
@@ -177,10 +167,8 @@ def get_order : SLTerm → Nat
 | SLTerm.exi _ _ => 4
 | SLTerm.star _ _ _ => 5
 | SLTerm.unrecognized _ => 6
-| SLTerm.wand _ _ _ => 7
-| SLTerm.all _ _ => 8
-| SLTerm.mvar _ => 9
-| SLTerm.top _ => 10
+| SLTerm.mvar _ => 7
+| SLTerm.top _ => 8
 
 partial def needs_swap (l r : SLTerm): Bool := get_order l > get_order r
 
@@ -231,6 +219,21 @@ partial def norm (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
   | none => pure linEq
   let (sorted, sortedEq) ← sort lin
   return (sorted, ←mkAppM ``Eq.trans #[eq, sortedEq])
+
+lemma pull_exi_left {α p} {P : α → SLP (State p)} {Q : SLP (State p)} : ((∃∃x, P x) ⋆ Q) = ∃∃x, (P x ⋆ Q) := by
+  simp [SLP.exists_star, SLP.star_exists]
+
+lemma pull_exi_right {α p} {P : SLP (State p)} {Q : α → SLP (State p)} : (P ⋆ (∃∃x, Q x)) = ∃∃x, (P ⋆ Q x) := by
+  rw [SLP.star_comm]
+  simp [SLP.exists_star, SLP.star_exists]
+
+
+partial def surfaceExis (term : SLTerm): TacticM (Lean.Expr × Lean.Expr) := do
+  let simpResult ← simpOnlyNames [``pull_exi_left, ``pull_exi_right] term.expr
+  let proof ← match simpResult.proof? with
+  | some proof => pure proof
+  | none => mkAppM ``Eq.refl #[term.expr]
+  pure (simpResult.expr, proof)
 
 inductive SplitDirection
 | left
@@ -288,6 +291,7 @@ partial def split_by (pred : SLTerm → TacticM SplitDirection) (term : SLTerm):
   | other =>
     let otherType ← inferType other.expr
     let slpArgs := otherType.getAppArgs'
+
     let alpha ← liftOption slpArgs[0]?
     let inst ← liftOption slpArgs[1]?
     let unit ← mkAppOptM ``SLP.lift #[some alpha, some inst, some $ mkConst ``True [] ]

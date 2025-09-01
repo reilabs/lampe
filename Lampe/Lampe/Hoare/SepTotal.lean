@@ -97,6 +97,21 @@ theorem ramified_frame_top {Q₁ Q₂ : Tp.denote p tp → SLP (State p)}
     apply SLP.wand_cancel
   simp [SLP.entails_self]
 
+theorem consequence_frame {H H₁ P : SLP (State p)} {Q Q₁ : (Tp.denote p α) → SLP (State p)}
+    (h_hoare: STHoare p Γ H₁ e Q₁)
+    (h_ent : H ⊢ (H₁ ⋆ P))
+    (q_ent : ∀v, Q₁ v ⋆ P ⊢ Q v ⋆ ⊤):
+    STHoare p Γ H e Q := by
+  apply ramified_frame_top h_hoare
+  apply SLP.entails_trans
+  assumption
+  apply SLP.star_mono_l
+  apply SLP.forall_right
+  intro
+  apply SLP.wand_intro
+  rw [SLP.star_comm]
+  apply_assumption
+
 theorem consequence_frame_left {H H₁ H₂ : SLP (State p)}
     (h_hoare: STHoare p Γ H₁ e Q)
     (h_ent : H ⊢ (H₁ ⋆ H₂)):
@@ -316,8 +331,10 @@ theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (S
       sl
     induction d generalizing lo with
     | zero =>
-      apply ramified_frame_top loopDone_intro
-      sl
+      apply consequence_frame loopDone_intro
+      · simp; apply SLP.entails_self
+      · intro; simp;
+
     | succ d ih =>
       apply loopNext_intro
       · simp
@@ -347,20 +364,19 @@ theorem SLP.entails_of_eq [LawfulHeap α] {P Q : SLP α} (h : P = Q) : P ⊢ Q :
   apply SLP.entails_self
 
 theorem loop_inv_intro' {lo hi : U s} (Inv : (i : Nat) → (lo.toNat ≤ i) → (i ≤ hi.toNat) → SLP (State p)) {body : U s → Expr (Tp.denote p) tp}:
-    (∀(i:Nat), (hlo: lo.toNat ≤ i) → (hhi: i < hi.toNat) → STHoare p Γ (Inv i hlo (by linarith)) (body i) (fun _ => Inv (i + 1) (by linarith) (by linarith))) →
+    (∀(i:Nat), (hlo: lo.toNat ≤ i) → (hhi: i < hi.toNat) → STHoare p Γ (Inv i hlo (by linarith)) (body $ BitVec.ofNatLT i (lt_trans hhi hi.toFin.prop)) (fun _ => Inv (i + 1) (by linarith) (by linarith))) →
     STHoare p Γ (∃∃h, Inv lo.toNat BitVec.le_refl h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi.toNat h BitVec.le_refl) := by
   intro hinv
   apply STHoare.ramified_frame_top
   apply loop_inv_intro fun i _ _ => Inv i.toNat (by rw [←BitVec.le_def]; assumption) (by rw [←BitVec.le_def]; assumption)
   · intro i hlo hhi
-    have : i = ↑i.toNat := by simp
+    -- have : i = ↑i.toNat := by simp
     apply consequence
 
     case h_hoare =>
-      rw [this]
       apply hinv
-      · rw [←BitVec.le_def]; assumption
-      · rw [←BitVec.lt_def]; assumption
+      · rw [BitVec.val_toFin, ←BitVec.le_def]; assumption
+      · rw [BitVec.val_toFin, ←BitVec.lt_def]; assumption
     · apply SLP.entails_self
     · intro
       have : BitVec.toNat (i + 1) = i.toNat + 1 := by
@@ -372,9 +388,9 @@ theorem loop_inv_intro' {lo hi : U s} (Inv : (i : Nat) → (lo.toNat ≤ i) → 
         cases hi
         simp
       apply SLP.star_mono
-      · apply SLP.entails_of_eq
-        apply inv_congr (Inv:=Inv)
-        rw [this]
+      · simp only [inv_congr Inv this]
+        simp only [BitVec.val_toFin]
+        apply SLP.entails_self
       · apply SLP.entails_self
   · conv => lhs; rw [←SLP.star_true (H := SLP.exists' _)]
     apply SLP.star_mono

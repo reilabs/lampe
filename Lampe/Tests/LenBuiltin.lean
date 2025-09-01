@@ -31,23 +31,14 @@ example  : STHoare p thmEnv ⟦⟧ («std::slice::append».call h![T] h![s₁, s
   · steps
     loop_inv nat (fun i _ _ => [self ↦ ⟨Tp.slice T, s₁ ++ (s₂.take i)⟩])
     · simp
-    · congr; simp
+    · simp
     · intros i hlo hhi
       steps
+      casesm* ∃_,_
       simp_all
-      subst_vars
-      congr
-      rename_i ha _
-      let ⟨_, h⟩ := ha
-      have : i % 4294967296 = i := by omega
-      simp [this] at h
-      simp [h]
     steps
-    subst_vars
-    congr
-    simp
-    rw [Nat.mod_eq_of_lt]
-    assumption
+    casesm* ∃_,_
+    simp_all
   steps
   assumption
 

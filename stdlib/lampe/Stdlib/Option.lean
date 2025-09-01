@@ -36,7 +36,7 @@ lemma is_none_spec {p T v} : Lampe.STHoare p env ⟦⟧ («std::option::Option::
   steps
   subst_vars
   cases v <;> rfl
-  exact () -- Why?
+  exact ()
 
 lemma is_some_spec {p T v} : Lampe.STHoare p env ⟦⟧ («std::option::Option::is_some».call h![T] h![from_option v]) (fun r => r = v.isSome) := by
   enter_decl
@@ -74,8 +74,8 @@ lemma map_some_spec {p T U E f fb v P Q}
   steps
   apply Lampe.STHoare.iteTrue_intro
   steps [Lampe.STHoare.callLambda_intro (hlam := h_lam), some_spec]
-  · simp only [*, from_option_to_option_id]
-    sl
+  case _ : _ = _ => assumption
+  sl
 
 lemma map_pure_spec {p T U E f fb v f_emb}
   (h_f: ∀arg, Lampe.STHoare p env ⟦⟧ (fb h![arg]) (fun r => r = f_emb arg)):
@@ -83,12 +83,5 @@ lemma map_pure_spec {p T U E f fb v f_emb}
   cases v
   · steps [map_none_spec]
     assumption
-  · apply Lampe.STHoare.ramified_frame_top map_some_spec (h_f _)
-
-    steps [map_some_spec (h_f _)]
-    rename Lampe.Tp.denote _ _ => x
-    casesm* ∃_,_
-    rcases x with ⟨_|_, _, _⟩
-    · rename (to_option _).isSome = _ => hp
-      cases hp
-    · simp_all [to_option, from_option]
+  · steps [map_some_spec (h_f _)]
+    simp_all

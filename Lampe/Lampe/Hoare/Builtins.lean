@@ -168,13 +168,17 @@ theorem array_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.array tp N]
   simp [Builtin.arrayLenDesc]
 
 theorem slice_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (Tp.u 32) Builtin.arrayLen h![x])
-    fun v => ⟦v = x.length⟧ ⋆ ⟦x.length < 2^32⟧ := by
-  simp only [SLP.lift_star_lift]
-  apply pureBuiltin_intro_consequence (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) (a := Builtin.ArrayLenCase.slice tp) rfl rfl
-  intro h
-  simp [Builtin.arrayLenDesc] at h
-  simp
-  refine ⟨rfl, h⟩
+    fun v => ∃∃h, ⟦v = BitVec.ofNatLT x.length h⟧ := by
+  apply STHoare.consequence_frame
+  apply pureBuiltin_intro (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) (a := Builtin.ArrayLenCase.slice tp)
+  sl
+  intro
+  sl
+  casesm ∃_,_
+  subst_vars
+  rename_i h
+  simp [Builtin.arrayLenDesc]
+  exact h
 
 theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![arr] (a := (tp, n)) := by
   apply pureBuiltin_intro_consequence <;> try tauto

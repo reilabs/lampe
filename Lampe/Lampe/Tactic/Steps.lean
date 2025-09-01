@@ -17,21 +17,15 @@ initialize
   Lean.registerTraceClass `Lampe.STHoare.Helpers
 
 def parseTriple (e : Expr) : TacticM (Option (Expr × Expr × Expr)) := do
-  if e.isAppOf ``STHoare then
-    let args := e.getAppArgsN 5
-    return some (args[2]!, args[3]!, args[4]!)
+  if e.isAppOf' ``STHoare then
+    let args := e.getAppArgs'
+    return some (args[3]!, args[4]!, args[5]!)
   else return none
 
-partial def extractTripleExpr (e: Expr): TacticM (Option Expr) := do
-  if e.isAppOf ``STHoare then
-    let args := e.getAppArgsN 5
-    return args[3]?
-  else return none
-
-def isLetIn (e : Expr) : Bool := e.isAppOf ``Lampe.Expr.letIn
+def isLetIn (e : Expr) : Bool := e.isAppOf' ``Lampe.Expr.letIn
 
 def getLetInVarName (e : Expr) : TacticM (Option Name) := do
-  let args := Expr.getAppArgs e
+  let args := Expr.getAppArgs' e
   let body := args[4]!
   match body with
   | Lean.Expr.lam n _ _ _ => return some n
@@ -46,7 +40,7 @@ particular, it should never turn a solvable goal into an unsolvable goal, and sh
 polluting the proof state or blowing up the number of goals.
 -/
 def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"getClosingTerm {Lean.exceptEmoji e}")  do
-  let head := val.getAppFn
+  let head := val.getAppFn'
   match head with
   | Lean.Expr.const n _ =>
     match n with
@@ -197,7 +191,7 @@ structure AddLemma where
 
 def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVarId) := match lemmas with
 | [] => throwError "no lemmas left"
-| n::ns => do
+| n::ns => goal.withContext do
   trace[Lampe.STHoare.Helpers] "trying {n.term} with generalizeEnv: {n.generalizeEnv}"
   try
     let (subset, goal, others) ← if n.generalizeEnv
@@ -315,9 +309,10 @@ entailments found in the goal.
 
 It throws an exception if it cannot make progress or close any subsequent SL goal(s).
 -/
-partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {Lean.exceptEmoji e}") $ do
+partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoals := mvar.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {Lean.exceptEmoji e}") $ do
   let target ← mvar.instantiateMVarsInType
   let some (_, body, _) ← parseTriple target | throwError "not a triple"
+  trace[Lampe.STHoare.Helpers] "body: {body.getAppFn'}"
   if isLetIn body then
     let closer ← getLetInHeadClosingTheorem body
     let vname ← getLetInVarName body
@@ -342,19 +337,30 @@ partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoa
       let rEnt ← solveEntailment hEnt
       return TripleGoals.mk hNext [] [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
   else
+    trace[Lampe.STHoare.Helpers] "not a letIn"
     match (←getClosingTerm body) with
     | some (closer, _) => do
-      let hHoare :: hEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "ramified_frame_top failed"
+      let hHoare :: hEnt :: qEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.consequence_frame) | throwError "ramified_frame_top failed"
       let impls₂ ← evalTacticAt (←`(tactic|apply $closer)) hHoare
       let rEnt ← solveEntailment hEnt
-      return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt
+      let (_, qEnt) ← qEnt.intro1
+      let qEnt ← if rEnt.entailments.isEmpty then
+        solveEntailment qEnt
+      else
+        pure $ SLGoals.mk [qEnt] [] []
+      return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt ++ qEnt
       -- let hEnt ← solveEntailment hEnt
       -- return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
     | none =>
-      let hHead :: hEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "bad application"
+      let hHead :: hEnt :: qEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.consequence_frame) | throwError "bad application"
       let impls₂ ← tryApplySyntaxes hHead addLemmas
       let rEnt ← solveEntailment hEnt
-      return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt
+      let (_, qEnt) ← qEnt.intro1
+      let qEnt ← if rEnt.entailments.isEmpty then
+        solveEntailment qEnt
+      else
+        pure $ SLGoals.mk [qEnt] [] []
+      return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt ++ qEnt
       -- let hEnt ← solveEntailment hEnt
       -- return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
 
@@ -363,13 +369,15 @@ Takes `limit` obvious steps, behaving like `repeat step`.
 
 It will never throw exceptions.
 -/
-partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) : TacticM TripleGoals := do
+partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepsLoop {Lean.exceptEmoji e}") $ do
   let goals ← normalizeGoals goals
   if limit == 0 then return goals
 
   match goals.triple with
   | some mvar =>
-    let nextTriple ← try some <$> step mvar addLemmas catch _ => pure none
+    let nextTriple ← try some <$> step mvar addLemmas catch e =>
+      trace[Lampe.STHoare.Helpers] "step failed with: {←e.toMessageData.toString}"
+      pure none
     match nextTriple with
     | some nextTriple => do
       if !nextTriple.entailments.isEmpty then

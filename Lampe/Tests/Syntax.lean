@@ -84,15 +84,6 @@ example {selfV that : Tp.denote p (.slice tp)} (hLen : that.length < 2 ^ 32)
     steps
     casesm* ∃ _, _
     subst_vars
-    simp only [Lens.modify, Option.get_some]
-
-    have : BitVec.toNat (↑i : U 32) = i := by
-      simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat, Nat.reducePow, Nat.mod_succ_eq_iff_lt,
-                 Nat.succ_eq_add_one, Nat.reduceAdd]
-      apply Nat.lt_trans (by assumption)
-      simp [Nat.mod_lt]
-
-    simp only [this] at *
     simp
   . steps
     simp_all [Nat.mod_eq_of_lt]
@@ -561,7 +552,6 @@ example : STHoare p constTestEnv ⟦⟧ (const_test.call h![3] h![2])
   . simp_all
   . intros i hlo hhi
     steps
-    intro
     simp_all
     congr
   . steps

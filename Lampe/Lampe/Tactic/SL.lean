@@ -15,6 +15,15 @@ open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
 namespace Internal
 
+theorem shift_exists_to_mvar [LawfulHeap β] {P R : α → SLP β}: (∀x, (P x ⊢ Q ⋆ R x)) → ((∃∃x, P x) ⊢ Q ⋆ (∃∃x, R x)) := by
+  intro
+  apply SLP.exists_intro_l
+  intro
+  rw [SLP.star_comm, ←SLP.star_exists]
+  apply SLP.exists_intro_r
+  rw [SLP.star_comm]
+  apply_assumption
+
 theorem solve_unit_star_mv {P : SLP (State p)} : (P ⊢ ⟦⟧ ⋆ P) := by
   simp
   apply SLP.entails_self
@@ -295,7 +304,8 @@ partial def solvePureStarMV (goal : MVarId) (lhs : SLTerm): TacticM SLGoals := w
       pure $ goals ++ SLGoals.mk [] [] impl
   | .singleton _ _ _
   | .lmbSingleton _ _ _
-  | .exi _ _ =>
+  | .exi _ _
+  | .unrecognized _ =>
       let final :: impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.skip_evidence_and_solve_pure) | throwError "unexpected goals in skip_evidence_and_solve_pure"
       pure $ SLGoals.mk [] [final] impl
   | _ => throwError "Unrecognized shape in solvePureStarMV"
@@ -344,8 +354,8 @@ def solveExactStarMV (goal: MVarId) (lhs : SLTerm) (rhs : Expr): TacticM SLGoals
       pure $ goals ++ SLGoals.mk [] [] impl
   | _ => throwError "Unrecognized shape in solveExactStarMV"
 
-partial def rewriteSides (goal : MVarId) (newPre newPost : SLTerm) (eqPre eqPost : Expr) : TacticM MVarId := do
-  let newGoalTp ← mkAppM ``SLP.entails #[newPre.expr, newPost.expr]
+partial def rewriteSides (goal : MVarId) (newPre newPost : Expr) (eqPre eqPost : Expr) : TacticM MVarId := do
+  let newGoalTp ← mkAppM ``SLP.entails #[newPre, newPost]
   let nextGoal ← mkFreshMVarId
   let goalExpr ← mkFreshExprMVarWithId nextGoal (some newGoalTp)
   let congr ← mkAppM ``Internal.ent_congr #[eqPre, eqPost, goalExpr]
@@ -355,13 +365,13 @@ partial def rewriteSides (goal : MVarId) (newPre newPost : SLTerm) (eqPre eqPost
 partial def normalizePre (goal : MVarId) (pre post : SLTerm) : TacticM (SLTerm × MVarId) := do
   let (pre', preEq) ← Lampe.SL.norm pre
   let postEq ← mkAppM ``Eq.refl #[post.expr]
-  let goal ← rewriteSides goal pre' post preEq postEq
+  let goal ← rewriteSides goal pre'.expr post.expr preEq postEq
   pure (pre', goal)
 
 partial def normalizeSides (goal : MVarId) (pre post : SLTerm) : TacticM (SLTerm × SLTerm × MVarId) := do
   let (pre', preEq) ← Lampe.SL.norm pre
   let (post', postEq) ← Lampe.SL.norm post
-  let goal ← rewriteSides goal pre' post' preEq postEq
+  let goal ← rewriteSides goal pre'.expr post'.expr preEq postEq
   pure (pre', post', goal)
 
 -- partial def exi_no_confusion (exi : Expr): TacticM Bool := do
@@ -425,10 +435,10 @@ partial def solveGoals (goal : MVarId) (pre goals sinks : SLTerm) : TacticM (SLG
       trace[Lampe.SL] "Reparsed goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
       pure (default, pre, post, goal)
 
-partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Expr): TacticM MVarId := do
+partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Expr): TacticM MVarId := goal.withContext $ do
   match pre with
   | .star _ (.lift _) r =>
-    let [goal] ← goal.apply' puller | throwError "unexpected goals in doPullWith"
+    let goal :: _ ← goal.apply' puller | throwError "unexpected goals in doPullWith"
     let (fv, goal) ← goal.intro1
     trace[Lampe.SL] "Pulled out: {fv.name}"
     doPullWith r goal puller finalPuller
@@ -438,7 +448,7 @@ partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Expr
     pure goal
   | _ => pure goal
 
-partial def pullPures (goal : MVarId) (pre post : SLTerm): TacticM MVarId := withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
+partial def pullPures (goal : MVarId) (pre post : SLTerm): TacticM MVarId := goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
   let (goal, puller, finalPuller) ← if post.hasMVars then
     let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
       | SLTerm.mvar _ => pure .right
@@ -449,7 +459,7 @@ partial def pullPures (goal : MVarId) (pre post : SLTerm): TacticM MVarId := wit
     | _ => throwError "unexpected result in pullPures"
     let newPost ← mkAppM ``SLP.star #[p.expr, pmv.expr]
     let preEq ← mkAppM ``Eq.refl #[pre.expr]
-    let goal ← rewriteSides goal pre (SLTerm.star newPost p pmv) preEq postEqMVars
+    let goal ← rewriteSides goal pre.expr newPost preEq postEqMVars
     pure (goal, ←mkConstWithFreshMVarLevels ``Internal.skip_pure_evidence, ←mkConstWithFreshMVarLevels ``Internal.skip_final_pure_evidence)
   else
     pure (goal, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left')
@@ -466,14 +476,14 @@ partial def doApplyExis (goal : MVarId) (postExis : SLTerm) : TacticM (MVarId ×
     pure (goal, goals ++ g₂)
   | _ => pure (goal, [])
 
-partial def applyExis (goal : MVarId) (pre post : SLTerm): TacticM (MVarId × List MVarId) := do
+partial def applyExis (goal : MVarId) (pre post : SLTerm): TacticM (MVarId × List MVarId) := goal.withContext do
   let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
     | SLTerm.exi _ _ => pure .left
     | _ => pure .right
   ) post
   let newPost ← mkAppM ``SLP.star #[p.expr, pmv.expr]
   let preEq ← mkAppM ``Eq.refl #[pre.expr]
-  let goal ← rewriteSides goal pre (SLTerm.star newPost p pmv) preEq postEqMVars
+  let goal ← rewriteSides goal pre.expr newPost preEq postEqMVars
   doApplyExis goal p
 
 mutual
@@ -487,56 +497,72 @@ partial def solveSinks (goal : MVarId) (pre post : SLTerm): TacticM SLGoals := g
   | .top _ =>
     let impls ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_top)
     return SLGoals.mk [] [] impls
-  | .all _ _ =>
-    let new ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.forall_right)
-    let new' ← liftOption new[0]?
-    let (_, g) ← new'.intro1
-    solveEntailment g
-  | SLTerm.wand _ _ _ =>
-    let new ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.wand_intro)
-    let new' ← liftOption new[0]?
-    solveEntailment new'
-  -- | SLTerm.star _ (SLTerm.exi _ ex) _ =>
-  --   if ←exi_no_confusion ex then
-  --     let goal :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.solve_exi_star_mv) | throwError "unexpected goals in solve_exi_prop_star_mv"
-  --     let goals ← solveEntailment goal
-  --     pure $ goals ++ SLGoals.mk [] [] impls
-  --   else pure $ SLGoals.mk [goal] [] []
   | _ => pure $ SLGoals.mk [goal] [] []
 
-partial def solveEntailment (goal : MVarId): TacticM SLGoals := goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
+partial def pullExisLoop (goal : MVarId): TacticM MVarId := goal.withContext do
+  let tp ← goal.instantiateMVarsInType
+  let (l, _) ← parseEntailment tp
+  match l with
+  | .exi _ _ =>
+    let goal :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.shift_exists_to_mvar) | throwError "unexpected goals in shift_exists_to_mvar"
+    appendGoals impls
+    goal.withContext do
+      let (_, goal) ← goal.intro1
+      pullExisLoop goal
+  | _ => pure goal
+
+partial def pullExis (pre post : SLTerm) (goal : MVarId): TacticM MVarId := goal.withContext do
+  let (goals, sink, postEq) ← Lampe.SL.split_by (fun t => match t with
+  | SLTerm.mvar _ => pure .right
+  | SLTerm.top _ => pure .right
+  | _ => pure .left
+  ) post
+  let newPost ← mkAppM ``SLP.star #[goals.expr, sink.expr]
+  let (pre, preEq) ← Lampe.SL.surfaceExis pre
+  let goal ← rewriteSides goal pre newPost preEq postEq
+  let goal ← match sink with
+  | .mvar _ => pure goal
+  | .top _ =>
+    let g :: impls ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.star_top_of_star_mvar) | throwError "unexpected goals in star_top_of_star_mvar"
+    appendGoals impls
+    pure g
+  | _ => throwError "unsupported sink shape"
+  pullExisLoop goal
+
+partial def parseAndNormalizeEntailment (goal : MVarId): TacticM (SLTerm × SLTerm × MVarId) := goal.withContext do
   let target ← goal.instantiateMVarsInType
   let (pre, post) ← parseEntailment target
   let (pre, post, goal) ← normalizeSides goal pre post
+  return (pre, post, goal)
+
+partial def solveEntailment (goal : MVarId): TacticM SLGoals := goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
+  let (pre, post, goal) ← parseAndNormalizeEntailment goal
+  trace[Lampe.SL] "Initial goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
+  let goal ← pullExis pre post goal
+  let (pre, post, goal) ← parseAndNormalizeEntailment goal
   let goal ← pullPures goal pre post
+  let (pre, post, goal) ← parseAndNormalizeEntailment goal
+  let (goal, exiGoals) ← applyExis goal pre post
 
   goal.withContext do
-    let target ← goal.instantiateMVarsInType
-    let (pre, post) ← parseEntailment target
-    let (pre, post, goal) ← normalizeSides goal pre post
-    let (goal, exisG) ← applyExis goal pre post
-
     let target ← goal.instantiateMVarsInType
     let (pre, post) ← parseEntailment target
     let (pre, preEq) ← Lampe.SL.norm pre
     let (post, postEq) ← Lampe.SL.norm post
     let (goals, sinks, postEqSplit) ← Lampe.SL.split_by (fun t => match t with
       | SLTerm.mvar _ => pure .right
-      | SLTerm.all _ _ => pure .right
-      | SLTerm.wand _ _ _ => pure .right
       | SLTerm.top _ => pure .right
-      | SLTerm.exi _ _ => pure .right
       | _ => pure .left
     ) post
     let postExpr ← mkAppM ``SLP.star #[goals.expr, sinks.expr]
     let postEqTotal ← mkAppM ``Eq.trans #[postEq, postEqSplit]
-    let goal ← rewriteSides goal pre (SLTerm.star postExpr goals sinks) preEq postEqTotal
+    let goal ← rewriteSides goal pre.expr postExpr preEq postEqTotal
 
     trace[Lampe.SL] "Current goal: {←ppExpr pre.expr} ⊢ ({←ppExpr goals.expr}) ⋆ ({←ppExpr sinks.expr})"
 
     let (moreGoals, pre, post, goal) ← solveGoals goal pre goals sinks
     let res ← solveSinks goal pre post
-    pure $ res ++ moreGoals ++ SLGoals.mk [] exisG []
+    pure $ res ++ moreGoals ++ SLGoals.mk [] exiGoals []
 
 end
 
@@ -554,5 +580,14 @@ set_option trace.Lampe.SL true
 --   sl
 --   sl
 
-example {Q : α → SLP (State p)} : Q x ⋆ [λ f ↦ fb ] ⊢ ⟦True⟧ ⋆ ∀∀ v, ⟦v = some x⟧ -⋆ ((∃∃h, Q (v.get h)) ⋆ [λ f ↦ fb ]) ⋆ ⊤ := by
-  sl <;> simp_all
+-- example {R : α → SLP (State p)} : (Q ⋆ (∃∃x, R x) ⊢ Q ⋆ (∃∃x, R x)) := by
+--   apply SLP.entails_trans
+--   · sl
+--     simp
+--     apply SLP.entails_self
+--   -- ·
+
+
+
+-- example {Q : α → SLP (State p)} : Q x ⋆ [λ f ↦ fb ] ⊢ ⟦True⟧ ⋆ ∀∀ v, ⟦v = some x⟧ -⋆ ((∃∃h, Q (v.get h)) ⋆ [λ f ↦ fb ]) ⋆ ⊤ := by
+--   sl <;> simp_all

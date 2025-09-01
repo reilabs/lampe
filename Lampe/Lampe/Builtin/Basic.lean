@@ -200,7 +200,7 @@ def arrayLenDesc : {p : Prime}
   → (a : ArrayLenCase)
   → (args : HList (Tp.denote p) (arrayLenSgn a).fst)
   → (h : Prop) × (h → Tp.denote p (arrayLenSgn a).snd)
-| _, .slice tp, h![x] => ⟨x.length < 2 ^ 32, fun _ => BitVec.ofNat 32 x.length⟩
+| _, .slice tp, h![x] => ⟨x.length < 2 ^ 32, fun h => BitVec.ofNatLT x.length h⟩
 | _, .array tp N, h![_] => ⟨True, fun _ => N⟩
 
 -- /--
