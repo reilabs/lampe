@@ -584,7 +584,7 @@ noir_def std::ops::arith::wrapping_mul_hlp<T: Type>(x: T, y: T) -> T := {
   ((Field as std::convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fMul returning Field)(((T as std::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), ((T as std::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
-noir_global_def two_pow_64: u128 = (18446744073709551616: u128);
+noir_global_def std::ops::arith::two_pow_64: u128 = (18446744073709551616: u128);
 
 noir_def std::ops::arith::split64<>(x: u128) -> Tuple<u64, u64> := {
   (#_fresh returning Tuple<u64, u64>)()
@@ -610,5 +610,5 @@ noir_def std::ops::arith::wrapping_mul128_hlp<>(x: u128, y: u128) -> u128 := {
 }
 
 def Ops.Arith.env : Env := Env.mk
-  [«std::ops::arith::wrapping_add_hlp», «std::ops::arith::wrapping_sub_hlp», «std::ops::arith::wrapping_mul_hlp», two_pow_64, «std::ops::arith::split64», «std::ops::arith::split_into_64_bit_limbs», «std::ops::arith::wrapping_mul128_hlp»]
+  [«std::ops::arith::wrapping_add_hlp», «std::ops::arith::wrapping_sub_hlp», «std::ops::arith::wrapping_mul_hlp», «std::ops::arith::two_pow_64», «std::ops::arith::split64», «std::ops::arith::split_into_64_bit_limbs», «std::ops::arith::wrapping_mul128_hlp»]
   [impl_116, impl_117, impl_118, impl_119, impl_120, impl_121, impl_122, impl_123, impl_124, impl_125, impl_126, impl_127, impl_128, impl_129, impl_130, impl_131, impl_132, impl_133, impl_134, impl_135, impl_136, impl_137, impl_138, impl_139, impl_140, impl_141, impl_142, impl_143, impl_144, impl_145, impl_146, impl_147, impl_148, impl_149, impl_150, impl_151, impl_152, impl_153, impl_154, impl_155, impl_156, impl_157, impl_158, impl_159, impl_160, impl_161, impl_162, impl_163, impl_164, impl_165, impl_166, impl_167, impl_168, impl_169, impl_170, impl_171, impl_172, impl_173, impl_174, impl_175, impl_176, impl_177, impl_178, impl_179, impl_180, impl_181, impl_182, impl_183, impl_184, impl_185, impl_186, impl_187, impl_188, impl_189, impl_190, impl_191, impl_192, impl_193, impl_194, impl_195, impl_196, impl_197, impl_198, impl_199, impl_200, impl_201, impl_202, impl_203, impl_204, impl_205, impl_206, impl_207]

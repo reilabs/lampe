@@ -8,7 +8,7 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : Merk
         (main.call h![] h![tree.root, proof, item, index])
         (fun _ => item ∈ tree) := by
   enter_decl
-  steps [recover_intro (H:= «struct#skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
+  steps [recover_intro (H:= «skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
   use index.reverse
   subst_vars
   rename tree.root = _ => hroot

@@ -8,11 +8,11 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_global_def PLO: Field = (53438638232309528389504892708671455233: Field);
+noir_global_def std::field::bn254::PLO: Field = (53438638232309528389504892708671455233: Field);
 
-noir_global_def PHI: Field = (64323764613183177041862057485226039389: Field);
+noir_global_def std::field::bn254::PHI: Field = (64323764613183177041862057485226039389: Field);
 
-noir_global_def TWO_POW_128: Field = (340282366920938463463374607431768211456: Field);
+noir_global_def std::field::bn254::TWO_POW_128: Field = (340282366920938463463374607431768211456: Field);
 
 noir_def std::field::bn254::compute_decomposition<>(x: Field) -> Tuple<Field, Field> := {
   let (low: Field) = (#_cast returning Field)((#_cast returning u128)(x));
@@ -154,5 +154,5 @@ noir_def std::field::bn254::tests::check_plo_phi<>() -> Unit := {
 }
 
 def Field.Bn254.env : Env := Env.mk
-  [PLO, PHI, TWO_POW_128, «std::field::bn254::compute_decomposition», «std::field::bn254::decompose_hint», «std::field::bn254::lte_hint», «std::field::bn254::assert_gt_limbs», «std::field::bn254::decompose», «std::field::bn254::assert_gt», «std::field::bn254::assert_lt», «std::field::bn254::gt», «std::field::bn254::lt», «std::field::bn254::tests::check_decompose», «std::field::bn254::tests::check_decompose_unconstrained», «std::field::bn254::tests::check_lte_hint», «std::field::bn254::tests::check_assert_gt», «std::field::bn254::tests::check_assert_gt_unconstrained», «std::field::bn254::tests::check_gt», «std::field::bn254::tests::check_gt_unconstrained», «std::field::bn254::tests::check_plo_phi»]
+  [«std::field::bn254::PLO», «std::field::bn254::PHI», «std::field::bn254::TWO_POW_128», «std::field::bn254::compute_decomposition», «std::field::bn254::decompose_hint», «std::field::bn254::lte_hint», «std::field::bn254::assert_gt_limbs», «std::field::bn254::decompose», «std::field::bn254::assert_gt», «std::field::bn254::assert_lt», «std::field::bn254::gt», «std::field::bn254::lt», «std::field::bn254::tests::check_decompose», «std::field::bn254::tests::check_decompose_unconstrained», «std::field::bn254::tests::check_lte_hint», «std::field::bn254::tests::check_assert_gt», «std::field::bn254::tests::check_assert_gt_unconstrained», «std::field::bn254::tests::check_gt», «std::field::bn254::tests::check_gt_unconstrained», «std::field::bn254::tests::check_plo_phi»]
   []

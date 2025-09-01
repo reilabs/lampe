@@ -46,7 +46,7 @@ noir_def utils::as_array<>(self: Slice<u8>) -> Array<u8, 32: u32> := {
 }
 
 noir_def utils::square<>(a: Field) -> Field := {
-  (#_fMul returning Field)((#_fMul returning Field)(a, a), (SIGMA<> as λ() -> Field)())
+  (#_fMul returning Field)((#_fMul returning Field)(a, a), (globals::SIGMA<> as λ() -> Field)())
 }
 
 def Utils.Mod.env : Env := Env.mk

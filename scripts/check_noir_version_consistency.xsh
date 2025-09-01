@@ -42,7 +42,7 @@ assert noir_version == rust_cargo_toml['dependencies']['noirc_frontend']['rev']
 
 ci_noir_yaml = load_yaml(ci_noir_yaml_path)
 
-assert 'actions/checkout@v4' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['uses']
+assert 'actions/checkout@v5' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['uses']
 assert 'noir-lang/noir' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['with']['repository']
 assert noir_version == ci_noir_yaml['jobs']['run-tests']['steps'][0]['with']['ref']
 assert 'noir' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['with']['path']
@@ -50,7 +50,7 @@ assert 'noir' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['with']['path']
 with tempfile.TemporaryDirectory() as tmpdirname:
     download_noir_stdlib_to_dir(noir_version, tmpdirname)
 
-    stdlib_path = Path(tmpdirname) / 'noir' / 'noir_stdlib'
-    project_stdlib_path = project_root / 'stdlib' / 'noir'
+    stdlib_path = Path(tmpdirname) / 'noir' / 'noir_stdlib' / 'src'
+    project_stdlib_path = project_root / 'stdlib' / 'src'
 
-    diff -x Nargo.toml -r @(stdlib_path) @(project_stdlib_path)
+    diff -r @(stdlib_path) @(project_stdlib_path)

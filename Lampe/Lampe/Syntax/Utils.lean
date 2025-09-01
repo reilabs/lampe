@@ -115,17 +115,13 @@ private partial def makeNoirIdentAux [MonadUtil m] : Syntax → m String
 def makeNoirIdent [MonadUtil m] : Syntax → m Lean.Ident :=
   fun stx => (mkIdent $ .mkSimple ·) <$> makeNoirIdentAux stx
 
-/-- Builds the identifier for a field accessor. -/
-def makeFieldAccessorIdent (structName : Lean.Ident) (fieldName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ .mkSimple $ "field" ++ "#" ++ structName.getId.toString ++ "#" ++ fieldName.getId.toString
-
 /-- Builds the identifier for a struct definition. -/
 def makeStructDefIdent (structName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ .mkSimple $ "struct" ++ "#" ++ (structName.getId.toString false)
+  mkIdent $ .mkSimple $ structName.getId.toString false
 
 /-- Builds the identifier for a type alias. -/
 def makeTypeAliasIdent (aliasName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ .mkSimple $ "alias" ++ "#" ++ aliasName.getId.toString
+  mkIdent $ .mkSimple $ aliasName.getId.toString false
 
 /-- Generates the term corresponding to the kind of a numeric generic. -/
 def matchGenericDefinitions [MonadUtil m] : TSyntax `ident → m (TSyntax `term)
