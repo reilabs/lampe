@@ -214,7 +214,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
       ([val ↦ ⟨.field, input⟩] ⋆ [bits ↦ v])
       (fun _ => [val ↦ ⟨.field, 0⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE 256 input⟩])
 
-    loop_inv nat fun i _ _ => [val ↦ ⟨.field, ↑(input.val / 2^i)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
+    loop_inv nat fun i _ _ => [val ↦ ⟨.field, (↑(input.val / 2^i) : Fp lp)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
     · decide
     · simp [Int.cast, IntCast.intCast, Fp.cast_self]
     · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
@@ -234,7 +234,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
         rfl
       step_as v =>
         ([val ↦ ⟨.field, v⟩])
-        (fun _ => [val ↦ ⟨.field, ↑(v.val / 2)⟩])
+        (fun _ => [val ↦ ⟨.field, (↑(v.val / 2) : Fp lp)⟩])
       · simp only [pow_succ]
         congr 2
         rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
@@ -360,7 +360,7 @@ theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::fro
   enter_decl
   steps
 
-  loop_inv nat fun i _ _ => [v ↦ ⟨.field, 256 ^ i⟩] ⋆ [result ↦ ⟨.field, Lampe.Fp.ofBytesLE $ input.toList.take i⟩]
+  loop_inv nat fun i _ _ => [v ↦ ⟨.field, (256 ^ i : Fp lp)⟩] ⋆ [result ↦ ⟨.field, Lampe.Fp.ofBytesLE $ input.toList.take i⟩]
   · decide
   · intro i _ hhi
     steps
@@ -574,6 +574,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
     · subst_vars
       steps
   steps [as_array_intro, from_le_bytes_intro]
+
   rotate_left
   · subst_vars; rfl
   · subst_vars; rfl
