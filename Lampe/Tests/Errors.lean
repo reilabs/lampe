@@ -2,7 +2,7 @@ import Lampe
 
 open Lampe
 
-nr_def hello<>() -> str<5> {
+noir_def hello<>() -> String<5 : u32> := {
   "hello"
 }
 
@@ -44,11 +44,11 @@ theorem steps_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
   steps [bad_lemma]
   sorry
 
-nr_def loop_fn<>() -> Field {
-  let mut t = (1 : Field);
+noir_def loop_fn<>() -> Field := {
+  let mut (t : Field) = 1 : Field;
 
-  for _i in (0 : u32)..(5 : u32) {
-    t = #fMul(t, 2 : Field) : Field;
+  for _i in (0 : u32)..(5 : u32) do {
+    t = (#_fMul returning Field)(t, 2 : Field);
   } ;
   t
 }
