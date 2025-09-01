@@ -127,6 +127,8 @@ partial def solvesSingleton (lhs : SLTerm) (rhsV : Lean.Expr): TacticM Bool :=
   | SLTerm.exi _ (Lean.Expr.lam _ _ body _) => do solvesSingleton (←parseSLExpr body) rhsV
   | _ => pure false
 
+namespace Internal
+
 theorem do_star_assoc {p} (a b c : SLP (State p)) : ((a ⋆ b) ⋆ c) = (a ⋆ (b ⋆ c)) := by
   rw [SLP.star_assoc]
 
@@ -142,102 +144,6 @@ theorem do_star_swap {p} (a b c : SLP (State p)) : (a ⋆ b ⋆ c) = (b ⋆ a �
   conv => lhs; arg 1; rw [SLP.star_comm]
   rw [SLP.star_assoc]
 
-partial def linearize (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
-  match term with
-  | SLTerm.star _ (SLTerm.star _ l r) rr =>
-    let eq ← mkAppM ``do_star_assoc #[l.expr, r.expr, rr.expr]
-    let inner ← mkAppM ``SLP.star #[r.expr, rr.expr]
-    let outer ← mkAppM ``SLP.star #[l.expr, inner]
-    let newTerm := SLTerm.star outer l (SLTerm.star inner r rr)
-    return (newTerm, eq)
-  | SLTerm.star _ l r =>
-    let (r_norm, r_norm_eq) ← linearize r
-    let newExpr ← mkAppM ``SLP.star #[l.expr, r_norm.expr]
-    let eq ← mkAppM ``congr_star_r #[l.expr, r.expr, r_norm.expr, r_norm_eq]
-    return (SLTerm.star newExpr l r_norm, eq)
-  | other => do
-    let eq ← mkAppM ``Eq.refl #[other.expr]
-    return (other, eq)
-
-def get_order : SLTerm → Nat
-| SLTerm.unit _ => 0
-| SLTerm.lift _ => 1
-| SLTerm.singleton _ _ _ => 2
-| SLTerm.lmbSingleton _ _ _ => 3
-| SLTerm.exi _ _ => 4
-| SLTerm.star _ _ _ => 5
-| SLTerm.unrecognized _ => 6
-| SLTerm.mvar _ => 7
-| SLTerm.top _ => 8
-
-partial def needs_swap (l r : SLTerm): Bool := get_order l > get_order r
-
-partial def insert (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
-  match term with
-  | SLTerm.star e l (SLTerm.star _ ll r) =>
-    if needs_swap l ll then
-      let swapEq ← mkAppM ``do_star_swap #[l.expr, ll.expr, r.expr] -- l ⋆ ll ⋆ r = ll ⋆ l ⋆ r
-      let swappedRExpr ← mkAppM ``SLP.star #[l.expr, r.expr]
-      let (insertedR, insertedREq) ← insert (SLTerm.star swappedRExpr l r) -- l ⋆ r = inserted(l ⋆ r)
-      let finalExpr ← mkAppM ``SLP.star #[ll.expr, insertedR.expr]
-      let insertedEq ← mkAppM ``congr_star_r #[ll.expr, swappedRExpr, insertedR.expr, insertedREq] -- ll ⋆ l ⋆ r = ll ⋆ inserted(l ⋆ r)
-      let totalEq ← mkAppM ``Eq.trans #[swapEq, insertedEq]
-      return (SLTerm.star finalExpr ll insertedR, totalEq)
-    else
-      let eq ← mkAppM ``Eq.refl #[e]
-      return (term, eq)
-  | SLTerm.star _ l r =>
-    if needs_swap l r then
-      let swapEq ← mkAppM ``do_star_comm #[l.expr, r.expr]
-      let swappedExpr ← mkAppM ``SLP.star #[r.expr, l.expr]
-      return (SLTerm.star swappedExpr r l, swapEq)
-    else
-      let eq ← mkAppM ``Eq.refl #[term.expr]
-      return (term, eq)
-  | _ => throwError "shouldn't get here"
-
-partial def sort (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
-  match term with
-  | SLTerm.star _ l r =>
-    let (r_sorted, r_sorted_eq) ← sort r
-    let newExpr ← mkAppM ``SLP.star #[l.expr, r_sorted.expr]
-    let eq ← mkAppM ``congr_star_r #[l.expr, r.expr, r_sorted.expr, r_sorted_eq]
-    let newTerm := SLTerm.star newExpr l r_sorted
-    let (inserted, inserted_eq) ← insert newTerm
-    let eq ← mkAppM ``Eq.trans #[eq, inserted_eq]
-    return (inserted, eq)
-  | other => do
-    let eq ← mkAppM ``Eq.refl #[other.expr]
-    return (other, eq)
-
-partial def norm (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
-  let simpResult ← simpOnlyNames [``SLP.exists_star, ``SLP.star_exists, ``SLP.exists_pure] term.expr
-  let simped ← parseSLExpr simpResult.expr
-  let (lin, linEq) ← linearize simped
-  let eq ← match simpResult.proof? with
-  | some proof => mkAppM ``Eq.trans #[proof, linEq]
-  | none => pure linEq
-  let (sorted, sortedEq) ← sort lin
-  return (sorted, ←mkAppM ``Eq.trans #[eq, sortedEq])
-
-lemma pull_exi_left {α p} {P : α → SLP (State p)} {Q : SLP (State p)} : ((∃∃x, P x) ⋆ Q) = ∃∃x, (P x ⋆ Q) := by
-  simp [SLP.exists_star, SLP.star_exists]
-
-lemma pull_exi_right {α p} {P : SLP (State p)} {Q : α → SLP (State p)} : (P ⋆ (∃∃x, Q x)) = ∃∃x, (P ⋆ Q x) := by
-  rw [SLP.star_comm]
-  simp [SLP.exists_star, SLP.star_exists]
-
-
-partial def surfaceExis (term : SLTerm): TacticM (Lean.Expr × Lean.Expr) := do
-  let simpResult ← simpOnlyNames [``pull_exi_left, ``pull_exi_right] term.expr
-  let proof ← match simpResult.proof? with
-  | some proof => pure proof
-  | none => mkAppM ``Eq.refl #[term.expr]
-  pure (simpResult.expr, proof)
-
-inductive SplitDirection
-| left
-| right
 
 lemma keep_in_left_trivial {p} (l : SLP (State p)) {r rr} (h : r = (⟦⟧ ⋆ rr)) : (l ⋆ r) = (l ⋆ rr) := by
   cases h
@@ -263,6 +169,104 @@ lemma mk_left {p} (l : SLP (State p)) : l = (l ⋆ ⟦⟧) := by
 lemma mk_right {p} (r : SLP (State p)) : r = (⟦⟧ ⋆ r) := by
   simp
 
+lemma pull_exi_left {α p} {P : α → SLP (State p)} {Q : SLP (State p)} : ((∃∃x, P x) ⋆ Q) = ∃∃x, (P x ⋆ Q) := by
+  simp [SLP.exists_star, SLP.star_exists]
+
+lemma pull_exi_right {α p} {P : SLP (State p)} {Q : α → SLP (State p)} : (P ⋆ (∃∃x, Q x)) = ∃∃x, (P ⋆ Q x) := by
+  rw [SLP.star_comm]
+  simp [SLP.exists_star, SLP.star_exists]
+
+end Internal
+
+partial def linearize (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
+  match term with
+  | SLTerm.star _ (SLTerm.star _ l r) rr =>
+    let eq ← mkAppM ``Internal.do_star_assoc #[l.expr, r.expr, rr.expr]
+    let inner ← mkAppM ``SLP.star #[r.expr, rr.expr]
+    let outer ← mkAppM ``SLP.star #[l.expr, inner]
+    let newTerm := SLTerm.star outer l (SLTerm.star inner r rr)
+    return (newTerm, eq)
+  | SLTerm.star _ l r =>
+    let (r_norm, r_norm_eq) ← linearize r
+    let newExpr ← mkAppM ``SLP.star #[l.expr, r_norm.expr]
+    let eq ← mkAppM ``Internal.congr_star_r #[l.expr, r.expr, r_norm.expr, r_norm_eq]
+    return (SLTerm.star newExpr l r_norm, eq)
+  | other => do
+    let eq ← mkAppM ``Eq.refl #[other.expr]
+    return (other, eq)
+
+def get_order : SLTerm → Nat
+| SLTerm.unit _ => 0
+| SLTerm.lift _ => 1
+| SLTerm.singleton _ _ _ => 2
+| SLTerm.lmbSingleton _ _ _ => 3
+| SLTerm.exi _ _ => 4
+| SLTerm.star _ _ _ => 5
+| SLTerm.unrecognized _ => 6
+| SLTerm.mvar _ => 7
+| SLTerm.top _ => 8
+
+partial def needs_swap (l r : SLTerm): Bool := get_order l > get_order r
+
+partial def insert (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
+  match term with
+  | SLTerm.star e l (SLTerm.star _ ll r) =>
+    if needs_swap l ll then
+      let swapEq ← mkAppM ``Internal.do_star_swap #[l.expr, ll.expr, r.expr] -- l ⋆ ll ⋆ r = ll ⋆ l ⋆ r
+      let swappedRExpr ← mkAppM ``SLP.star #[l.expr, r.expr]
+      let (insertedR, insertedREq) ← insert (SLTerm.star swappedRExpr l r) -- l ⋆ r = inserted(l ⋆ r)
+      let finalExpr ← mkAppM ``SLP.star #[ll.expr, insertedR.expr]
+      let insertedEq ← mkAppM ``Internal.congr_star_r #[ll.expr, swappedRExpr, insertedR.expr, insertedREq] -- ll ⋆ l ⋆ r = ll ⋆ inserted(l ⋆ r)
+      let totalEq ← mkAppM ``Eq.trans #[swapEq, insertedEq]
+      return (SLTerm.star finalExpr ll insertedR, totalEq)
+    else
+      let eq ← mkAppM ``Eq.refl #[e]
+      return (term, eq)
+  | SLTerm.star _ l r =>
+    if needs_swap l r then
+      let swapEq ← mkAppM ``Internal.do_star_comm #[l.expr, r.expr]
+      let swappedExpr ← mkAppM ``SLP.star #[r.expr, l.expr]
+      return (SLTerm.star swappedExpr r l, swapEq)
+    else
+      let eq ← mkAppM ``Eq.refl #[term.expr]
+      return (term, eq)
+  | _ => throwError "shouldn't get here"
+
+partial def sort (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
+  match term with
+  | SLTerm.star _ l r =>
+    let (r_sorted, r_sorted_eq) ← sort r
+    let newExpr ← mkAppM ``SLP.star #[l.expr, r_sorted.expr]
+    let eq ← mkAppM ``Internal.congr_star_r #[l.expr, r.expr, r_sorted.expr, r_sorted_eq]
+    let newTerm := SLTerm.star newExpr l r_sorted
+    let (inserted, inserted_eq) ← insert newTerm
+    let eq ← mkAppM ``Eq.trans #[eq, inserted_eq]
+    return (inserted, eq)
+  | other => do
+    let eq ← mkAppM ``Eq.refl #[other.expr]
+    return (other, eq)
+
+partial def norm (term : SLTerm): TacticM (SLTerm × Lean.Expr) := do
+  let simpResult ← simpOnlyNames [``SLP.exists_star, ``SLP.star_exists, ``SLP.exists_pure, ``SLP.star_true, ``SLP.true_star] term.expr
+  let simped ← parseSLExpr simpResult.expr
+  let (lin, linEq) ← linearize simped
+  let eq ← match simpResult.proof? with
+  | some proof => mkAppM ``Eq.trans #[proof, linEq]
+  | none => pure linEq
+  let (sorted, sortedEq) ← sort lin
+  return (sorted, ←mkAppM ``Eq.trans #[eq, sortedEq])
+
+partial def surfaceExis (term : SLTerm): TacticM (Lean.Expr × Lean.Expr) := do
+  let simpResult ← simpOnlyNames [``Internal.pull_exi_left, ``Internal.pull_exi_right] term.expr
+  let proof ← match simpResult.proof? with
+  | some proof => pure proof
+  | none => mkAppM ``Eq.refl #[term.expr]
+  pure (simpResult.expr, proof)
+
+inductive SplitDirection
+| left
+| right
+
 -- Splits term into L ⋆ R acording to the predicate and returns L, R and proof of term = L ⋆ R
 -- it preserves the ordering of L and R. If either would be empty, it will be a `.unit`
 partial def split_by (pred : SLTerm → TacticM SplitDirection) (term : SLTerm): TacticM (SLTerm × SLTerm × Lean.Expr) := do
@@ -273,20 +277,20 @@ partial def split_by (pred : SLTerm → TacticM SplitDirection) (term : SLTerm):
     | .left =>
       match rl with
       | .unit _ =>
-        let eq ← mkAppM ``keep_in_left_trivial #[l.expr, req]
+        let eq ← mkAppM ``Internal.keep_in_left_trivial #[l.expr, req]
         return (l, rr, eq)
       | _ =>
         let newL ← mkAppM ``SLP.star #[l.expr, rl.expr]
-        let eq ← mkAppM ``keep_in_left_nontrivial #[l.expr, req]
+        let eq ← mkAppM ``Internal.keep_in_left_nontrivial #[l.expr, req]
         return (SLTerm.star newL l rl, rr, eq)
     | .right =>
       match rr with
       | .unit _ =>
-        let eq ← mkAppM ``keep_in_right_trivial #[l.expr, req]
+        let eq ← mkAppM ``Internal.keep_in_right_trivial #[l.expr, req]
         return (rl, l, eq)
       | _ =>
         let newR ← mkAppM ``SLP.star #[l.expr, rr.expr]
-        let eq ← mkAppM ``keep_in_right_nontrivial #[l.expr, req]
+        let eq ← mkAppM ``Internal.keep_in_right_nontrivial #[l.expr, req]
         return (rl, SLTerm.star newR l rr, eq)
   | other =>
     let otherType ← inferType other.expr
@@ -298,10 +302,10 @@ partial def split_by (pred : SLTerm → TacticM SplitDirection) (term : SLTerm):
     let unit := SLTerm.unit unit
     match ←pred other with
     | .left =>
-      let eq ← mkAppM ``mk_left #[other.expr]
+      let eq ← mkAppM ``Internal.mk_left #[other.expr]
       return (other, unit, eq)
     | .right =>
-      let eq ← mkAppM ``mk_right #[other.expr]
+      let eq ← mkAppM ``Internal.mk_right #[other.expr]
       return (unit, other, eq)
 
 end Lampe.SL

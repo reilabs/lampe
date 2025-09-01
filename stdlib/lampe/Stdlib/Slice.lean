@@ -67,7 +67,6 @@ lemma slice_map_inv {T U Env p f fb l}
       simp_all
       sl
     · steps
-      sl
       rename ∃_,_ => hp
       simp [hp.1, hp.2, *]
       sl

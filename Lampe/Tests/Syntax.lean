@@ -2,8 +2,6 @@ import Lampe
 
 open Lampe
 
--- set_option trace.Lampe.STHoare.Helpers true
-
 noir_def basic_void_fn<>() -> Unit := {
   #_unit
 }
@@ -19,9 +17,6 @@ noir_def basic_fn_call<>() -> u64 := {
 }
 
 def basicFnEnv : Env := .mk [basic_fn, basic_fn_call] []
-
-set_option trace.Lampe.STHoare.Helpers true
-set_option trace.Lampe.SL true
 
 theorem basic_fn_lemma : Lampe.STHoare p basicFnEnv ⟦⟧ (basic_fn.call h![] h![x])
     fun v => v = x := by
@@ -42,9 +37,6 @@ noir_def basic_muts<>(x: Field) -> Field := {
   y = z;
   y
 }
-
-set_option trace.Lampe.SL true
-set_option trace.Lampe.STHoare.Helpers true
 
 example : Lampe.STHoare p Γ ⟦⟧ (basic_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
   simp only [basic_muts]
@@ -385,7 +377,7 @@ example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [tuple_lens]
   steps
-  aesop
+  simp_all
 
 noir_struct_def Pair<E: Type> {
   E,
@@ -407,7 +399,7 @@ example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 20 := by
   simp only [struct_lens]
   steps
-  aesop
+  simp_all
 
 noir_def array_lens<>() → Field := {
   let mut (a: Tuple<Array<Field, 2: u32>, Field>) = (#_makeData returning Tuple<Array<Field, 2: u32>, Field>)(

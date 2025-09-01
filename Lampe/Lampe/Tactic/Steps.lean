@@ -10,6 +10,7 @@ import Lampe.Tactic.Traits
 import Lean.Meta.Tactic.Simp.Main
 
 open Lampe
+open Lampe.SL
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq Lampe.STHoare
 

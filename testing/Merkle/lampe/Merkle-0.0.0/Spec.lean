@@ -153,8 +153,6 @@ theorem rotate_left_intro : STHoare lp env ⟦N < 254⟧
   · steps
     simp_all [Ref.rotateLeft]
 
-set_option trace.Lampe.SL true
-
 theorem sbox_intro : STHoare lp env ⟦⟧ («utils::sbox».call h![] h![input])
     fun output => output = Ref.sbox input := by
   enter_decl
