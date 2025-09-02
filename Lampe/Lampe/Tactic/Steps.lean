@@ -5,7 +5,6 @@ import Lampe.SeparationLogic.State
 import Lampe.Tactic.EnvSubsetSolver
 import Lampe.Tactic.SL
 import Lampe.Tactic.SL.Term
-import Lampe.Tactic.SLNorm
 import Lampe.Tactic.Traits
 
 import Lean.Meta.Tactic.Simp.Main

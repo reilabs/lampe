@@ -1,6 +1,5 @@
 import Lampe.SeparationLogic.State
 import Lampe.SeparationLogic.SLP
-import Lampe.Tactic.SLNorm
 import Lampe.Tactic.SL.Term
 import Lampe.Tactic.SL.Init
 
