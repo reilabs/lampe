@@ -400,28 +400,28 @@ noir_trait_impl[impl_180]<> std::ops::arith::WrappingAdd<> for u128 where [] := 
 
 noir_trait_impl[impl_181]<> std::ops::arith::WrappingAdd<> for i8 where [] := {
   noir_def wrapping_add<>(self: i8, y: i8) -> i8 := {
-    let (x: u8) = (#_cast returning u8)(self);
+    let x = (#_cast returning u8)(self);
     (#_cast returning i8)(((u8 as std::ops::arith::WrappingAdd<>)::wrapping_add<> as λ(u8, u8) -> u8)(x, (#_cast returning u8)(y)))
   };
 }
 
 noir_trait_impl[impl_182]<> std::ops::arith::WrappingAdd<> for i16 where [] := {
   noir_def wrapping_add<>(self: i16, y: i16) -> i16 := {
-    let (x: u16) = (#_cast returning u16)(self);
+    let x = (#_cast returning u16)(self);
     (#_cast returning i16)(((u16 as std::ops::arith::WrappingAdd<>)::wrapping_add<> as λ(u16, u16) -> u16)(x, (#_cast returning u16)(y)))
   };
 }
 
 noir_trait_impl[impl_183]<> std::ops::arith::WrappingAdd<> for i32 where [] := {
   noir_def wrapping_add<>(self: i32, y: i32) -> i32 := {
-    let (x: u32) = (#_cast returning u32)(self);
+    let x = (#_cast returning u32)(self);
     (#_cast returning i32)(((u32 as std::ops::arith::WrappingAdd<>)::wrapping_add<> as λ(u32, u32) -> u32)(x, (#_cast returning u32)(y)))
   };
 }
 
 noir_trait_impl[impl_184]<> std::ops::arith::WrappingAdd<> for i64 where [] := {
   noir_def wrapping_add<>(self: i64, y: i64) -> i64 := {
-    let (x: u64) = (#_cast returning u64)(self);
+    let x = (#_cast returning u64)(self);
     (#_cast returning i64)(((u64 as std::ops::arith::WrappingAdd<>)::wrapping_add<> as λ(u64, u64) -> u64)(x, (#_cast returning u64)(y)))
   };
 }
@@ -470,28 +470,28 @@ noir_trait_impl[impl_191]<> std::ops::arith::WrappingSub<> for u128 where [] := 
 
 noir_trait_impl[impl_192]<> std::ops::arith::WrappingSub<> for i8 where [] := {
   noir_def wrapping_sub<>(self: i8, y: i8) -> i8 := {
-    let (x: u8) = (#_cast returning u8)(self);
+    let x = (#_cast returning u8)(self);
     (#_cast returning i8)(((u8 as std::ops::arith::WrappingSub<>)::wrapping_sub<> as λ(u8, u8) -> u8)(x, (#_cast returning u8)(y)))
   };
 }
 
 noir_trait_impl[impl_193]<> std::ops::arith::WrappingSub<> for i16 where [] := {
   noir_def wrapping_sub<>(self: i16, y: i16) -> i16 := {
-    let (x: u16) = (#_cast returning u16)(self);
+    let x = (#_cast returning u16)(self);
     (#_cast returning i16)(((u16 as std::ops::arith::WrappingSub<>)::wrapping_sub<> as λ(u16, u16) -> u16)(x, (#_cast returning u16)(y)))
   };
 }
 
 noir_trait_impl[impl_194]<> std::ops::arith::WrappingSub<> for i32 where [] := {
   noir_def wrapping_sub<>(self: i32, y: i32) -> i32 := {
-    let (x: u32) = (#_cast returning u32)(self);
+    let x = (#_cast returning u32)(self);
     (#_cast returning i32)(((u32 as std::ops::arith::WrappingSub<>)::wrapping_sub<> as λ(u32, u32) -> u32)(x, (#_cast returning u32)(y)))
   };
 }
 
 noir_trait_impl[impl_195]<> std::ops::arith::WrappingSub<> for i64 where [] := {
   noir_def wrapping_sub<>(self: i64, y: i64) -> i64 := {
-    let (x: u64) = (#_cast returning u64)(self);
+    let x = (#_cast returning u64)(self);
     (#_cast returning i64)(((u64 as std::ops::arith::WrappingSub<>)::wrapping_sub<> as λ(u64, u64) -> u64)(x, (#_cast returning u64)(y)))
   };
 }
@@ -534,28 +534,28 @@ noir_trait_impl[impl_201]<> std::ops::arith::WrappingMul<> for u64 where [] := {
 
 noir_trait_impl[impl_202]<> std::ops::arith::WrappingMul<> for i8 where [] := {
   noir_def wrapping_mul<>(self: i8, y: i8) -> i8 := {
-    let (x: u8) = (#_cast returning u8)(self);
+    let x = (#_cast returning u8)(self);
     (#_cast returning i8)(((u8 as std::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u8, u8) -> u8)(x, (#_cast returning u8)(y)))
   };
 }
 
 noir_trait_impl[impl_203]<> std::ops::arith::WrappingMul<> for i16 where [] := {
   noir_def wrapping_mul<>(self: i16, y: i16) -> i16 := {
-    let (x: u16) = (#_cast returning u16)(self);
+    let x = (#_cast returning u16)(self);
     (#_cast returning i16)(((u16 as std::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u16, u16) -> u16)(x, (#_cast returning u16)(y)))
   };
 }
 
 noir_trait_impl[impl_204]<> std::ops::arith::WrappingMul<> for i32 where [] := {
   noir_def wrapping_mul<>(self: i32, y: i32) -> i32 := {
-    let (x: u32) = (#_cast returning u32)(self);
+    let x = (#_cast returning u32)(self);
     (#_cast returning i32)(((u32 as std::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u32, u32) -> u32)(x, (#_cast returning u32)(y)))
   };
 }
 
 noir_trait_impl[impl_205]<> std::ops::arith::WrappingMul<> for i64 where [] := {
   noir_def wrapping_mul<>(self: i64, y: i64) -> i64 := {
-    let (x: u64) = (#_cast returning u64)(self);
+    let x = (#_cast returning u64)(self);
     (#_cast returning i64)(((u64 as std::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u64, u64) -> u64)(x, (#_cast returning u64)(y)))
   };
 }
@@ -591,22 +591,22 @@ noir_def std::ops::arith::split64<>(x: u128) -> Tuple<u64, u64> := {
 }
 
 noir_def std::ops::arith::split_into_64_bit_limbs<>(x: u128) -> Tuple<u64, u64> := {
-  let ((x_lo: u64), (x_hi: u64)) = {
+  let (x_lo, x_hi) = {
     (std::ops::arith::split64<> as λ(u128) -> Tuple<u64, u64>)(x)
   };
-  (#_assert returning Unit)((#_fEq returning bool)((#_cast returning Field)(x), (#_fAdd returning Field)((#_cast returning Field)(x_lo), (#_fMul returning Field)((#_cast returning Field)(x_hi), (#_cast returning Field)((two_pow_64<> as λ() -> u128)())))));
+  (#_assert returning Unit)((#_fEq returning bool)((#_cast returning Field)(x), (#_fAdd returning Field)((#_cast returning Field)(x_lo), (#_fMul returning Field)((#_cast returning Field)(x_hi), (#_cast returning Field)((std::ops::arith::two_pow_64<> as λ() -> u128)())))));
   (#_makeData returning Tuple<u64, u64>)(x_lo, x_hi)
 }
 
 noir_def std::ops::arith::wrapping_mul128_hlp<>(x: u128, y: u128) -> u128 := {
-  let ((x_lo: u64), (x_hi: u64)) = (std::ops::arith::split_into_64_bit_limbs<> as λ(u128) -> Tuple<u64, u64>)(x);
-  let ((y_lo: u64), (y_hi: u64)) = (std::ops::arith::split_into_64_bit_limbs<> as λ(u128) -> Tuple<u64, u64>)(y);
-  let (low: Field) = (#_fMul returning Field)((#_cast returning Field)(x_lo), (#_cast returning Field)(y_lo));
-  let (lo: Field) = (#_cast returning Field)((#_cast returning u64)(low));
-  let (carry: Field) = (#_fDiv returning Field)((#_fSub returning Field)(low, lo), (#_cast returning Field)((two_pow_64<> as λ() -> u128)()));
-  let (high: Field) = (#_fAdd returning Field)((#_fAdd returning Field)((#_fMul returning Field)((#_cast returning Field)(x_lo), (#_cast returning Field)(y_hi)), (#_fMul returning Field)((#_cast returning Field)(x_hi), (#_cast returning Field)(y_lo))), carry);
-  let (hi: Field) = (#_cast returning Field)((#_cast returning u64)(high));
-  (#_cast returning u128)((#_fAdd returning Field)(lo, (#_fMul returning Field)((#_cast returning Field)((two_pow_64<> as λ() -> u128)()), hi)))
+  let (x_lo, x_hi) = (std::ops::arith::split_into_64_bit_limbs<> as λ(u128) -> Tuple<u64, u64>)(x);
+  let (y_lo, y_hi) = (std::ops::arith::split_into_64_bit_limbs<> as λ(u128) -> Tuple<u64, u64>)(y);
+  let low = (#_fMul returning Field)((#_cast returning Field)(x_lo), (#_cast returning Field)(y_lo));
+  let lo = (#_cast returning Field)((#_cast returning u64)(low));
+  let carry = (#_fDiv returning Field)((#_fSub returning Field)(low, lo), (#_cast returning Field)((std::ops::arith::two_pow_64<> as λ() -> u128)()));
+  let high = (#_fAdd returning Field)((#_fAdd returning Field)((#_fMul returning Field)((#_cast returning Field)(x_lo), (#_cast returning Field)(y_hi)), (#_fMul returning Field)((#_cast returning Field)(x_hi), (#_cast returning Field)(y_lo))), carry);
+  let hi = (#_cast returning Field)((#_cast returning u64)(high));
+  (#_cast returning u128)((#_fAdd returning Field)(lo, (#_fMul returning Field)((#_cast returning Field)((std::ops::arith::two_pow_64<> as λ() -> u128)()), hi)))
 }
 
 def Ops.Arith.env : Env := Env.mk

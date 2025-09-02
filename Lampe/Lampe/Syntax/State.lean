@@ -9,13 +9,18 @@ open Lampe
 
 /-- Carries information on patterns that can be used for destructuring. -/
 inductive Binder where
-| variable (name : Lean.Ident) (type : TSyntax `noir_type)
-| mutable (name : Lean.Ident) (type : TSyntax `noir_type)
+| variable (name : Lean.Ident)
+| mutable (name : Lean.Ident)
 | tuple (elems : List Binder)
 | invalid
 
 instance : Inhabited Binder where
   default := Binder.invalid
+
+/-- A container for a lambda parameter, including both pattern and type. -/
+structure LambdaParam where
+  binder : Binder
+  type : TSyntax `term
 
 /-- The state for the desugaring process from the DSL syntax into native Lean/lampe constructs. -/
 structure DSLState where

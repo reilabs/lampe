@@ -1539,7 +1539,7 @@ impl LeanGenerator<'_, '_> {
             .parameters
             .iter()
             .map(|(p, t)| {
-                let pat = self.generate_pattern(p);
+                let pat = self.generate_pattern(p, None);
                 let typ = self.generate_lean_type_value(t, None);
                 (pat, typ)
             })
@@ -1566,14 +1566,16 @@ impl LeanGenerator<'_, '_> {
         Expression::Lambda(lambda)
     }
 
-    pub fn generate_pattern(&self, pattern: &HirPattern) -> Pattern {
+    pub fn generate_pattern(&self, pattern: &HirPattern, top_level_type: Option<Type>) -> Pattern {
         match pattern {
             HirPattern::Identifier(ident) => {
                 let def_id = ident.id;
-                let typ = self.generate_lean_type_value(
-                    &self.context.def_interner.definition_type(def_id),
-                    None,
-                );
+                let typ = top_level_type.unwrap_or_else(|| {
+                    self.generate_lean_type_value(
+                        &self.context.def_interner.definition_type(def_id),
+                        None,
+                    )
+                });
                 let name =
                     sanitize_variable_name(self.context.def_interner.definition_name(def_id));
 
@@ -1581,17 +1583,18 @@ impl LeanGenerator<'_, '_> {
 
                 Pattern::Identifier(ident)
             }
-            HirPattern::Mutable(pat, _) => {
-                Pattern::Mutable(Box::new(self.generate_pattern(pat.as_ref())))
-            }
+            HirPattern::Mutable(pat, _) => Pattern::Mutable(Box::new(
+                self.generate_pattern(pat.as_ref(), top_level_type),
+            )),
             HirPattern::Tuple(pats, _) => {
-                Pattern::Tuple(pats.iter().map(|p| self.generate_pattern(p)).collect())
+                Pattern::Tuple(pats.iter().map(|p| self.generate_pattern(p, None)).collect())
             }
             HirPattern::Struct(typ, fields, _) => {
-                let typ = self.generate_lean_type_value(typ, None);
+                let typ =
+                    top_level_type.unwrap_or_else(|| self.generate_lean_type_value(typ, None));
                 let fields = fields
                     .iter()
-                    .map(|(i, p)| (i.to_string(), self.generate_pattern(p)))
+                    .map(|(i, p)| (i.to_string(), self.generate_pattern(p, None)))
                     .collect_vec();
 
                 let struct_pat = StructPattern { typ, fields };
@@ -2474,8 +2477,8 @@ impl LeanGenerator<'_, '_> {
 
     pub fn generate_let_statement(&self, lets: &HirLetStatement) -> Statement {
         let bound_expr = self.generate_expr(lets.expression);
-        let pattern = self.generate_pattern(&lets.pattern);
         let typ = self.generate_lean_type_value(&lets.r#type, None);
+        let pattern = self.generate_pattern(&lets.pattern, Some(typ.clone()));
 
         let stmt = LetStatement {
             pattern,

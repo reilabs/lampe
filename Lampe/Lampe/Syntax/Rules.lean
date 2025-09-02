@@ -159,13 +159,14 @@ syntax "(" "(" noir_type ppSpace "as" ppSpace noir_ident "<" noir_gen_val,* ">" 
 
 -- LAMBDAS ----------------------------------------------------------------------------------------
 
-syntax "fn" "(" noir_pat,* ")" ppSpace ":" ppSpace noir_type ppSpace ":=" ppSpace noir_expr : noir_lambda -- Lambda expressions.
+syntax noir_pat ppSpace ":" ppSpace noir_type : noir_lam_param -- Lambda parameters
+syntax "fn" "(" noir_lam_param,* ")" ppSpace ":" ppSpace noir_type ppSpace ":=" ppSpace noir_expr : noir_lambda -- Lambda expressions.
 
 -- PATTERNS ---------------------------------------------------------------------------------------
 -- These are used in let bindings and lambda parameters to destructure things.
 
-syntax "(" noir_ident ppSpace ":" ppSpace noir_type ")" : noir_pat -- A bare identifier.
-syntax "mut" ppSpace "(" noir_ident ppSpace ":" ppSpace noir_type ")" : noir_pat -- A mutable identifier.
+syntax noir_ident : noir_pat -- A bare identifier.
+syntax "mut" ppSpace noir_ident : noir_pat -- A mutable identifier.
 syntax "(" noir_pat,* ")" : noir_pat -- A tuple pattern stands in for both tuples and structs.
 
 -- L-VALUES ---------------------------------------------------------------------------------------

@@ -9,8 +9,8 @@ namespace «Merkle-0.0.0»
 namespace Extracted
 
 noir_def utils::bits::to_le_bits<>(self: Field) -> Array<u1, 256: u32> := {
-  let mut (val: Field) = self;
-  let mut (bits: Array<u1, 256: u32>) = (#_mkRepeatedArray returning Array<u1, 256: u32>)((0: u1));
+  let mut val = self;
+  let mut bits = (#_mkRepeatedArray returning Array<u1, 256: u32>)((0: u1));
   for i in (0: u32) .. (256: u32) do {
     (bits[i]: u1) = (utils::sgn0<> as λ(Field) -> u1)(val);
     if (#_uEq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)(i)), (0: u1)) then {

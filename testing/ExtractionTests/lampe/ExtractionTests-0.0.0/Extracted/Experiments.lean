@@ -37,26 +37,26 @@ noir_def experiments::cast_test<>(a: u8) -> u64 := {
 }
 
 noir_def experiments::tuple_test<>(a: u8) -> Tuple<u8, u8> := {
-  let (_b: λ(u8) -> u8) = (fn((c: u8)): u8 := (#_uAdd returning u8)((#_uAdd returning u8)(c, a), (10: u8)));
+  let _b = (fn(c: u8): u8 := (#_uAdd returning u8)((#_uAdd returning u8)(c, a), (10: u8)));
   (#_makeData returning Tuple<u8, u8>)(a, a)
 }
 
 noir_def experiments::literal_test<>() -> Unit := {
-  let (_a: Field) = (1: Field);
-  let (b: bool) = #_true;
-  let (_c: bool) = #_false;
-  let (_d: Array<Field, 5: u32>) = (#_mkRepeatedArray returning Array<Field, 5: u32>)((1: Field));
-  let (_e: Slice<Field>) = (#_mkRepeatedSlice returning Slice<Field>)((1: Field), (5: u32));
-  let (_f: Array<Field, 3: u32>) = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
-  let (_h: String<4: u32>) = "asdf";
-  let (_i: FmtString<4: u32, Tuple<bool> >) = (#_mkFormatString returning FmtString<4: u32, Tuple<bool> >)("${}{b}", b);
+  let _a = (1: Field);
+  let b = #_true;
+  let _c = #_false;
+  let _d = (#_mkRepeatedArray returning Array<Field, 5: u32>)((1: Field));
+  let _e = (#_mkRepeatedSlice returning Slice<Field>)((1: Field), (5: u32));
+  let _f = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
+  let _h = "asdf";
+  let _i = (#_mkFormatString returning FmtString<4: u32, Tuple<bool> >)("${}{b}", b);
   #_skip
 }
 
 noir_def experiments::assigns<>(x: u8) -> Unit := {
-  let mut (y: u8) = (3: u8);
+  let mut y = (3: u8);
   y = (#_uAdd returning u8)(y, x);
-  let mut (arr: Array<Field, 2: u32>) = (#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field));
+  let mut arr = (#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field));
   (arr[(0: u32)]: Field) = (10: Field);
   #_skip
 }
@@ -105,13 +105,13 @@ noir_trait_impl[impl_433]<T: Type> experiments::MyTrait<> for Tuple<T, bool> whe
 }
 
 noir_def experiments::string_test<>() -> String<5: u32> := {
-  let (x: String<5: u32>) = "Hello";
+  let x = "Hello";
   x
 }
 
 noir_def experiments::fmtstr_test<>(x: Field, y: Field) -> Field := {
   (#_assert returning Unit)((#_fNeq returning bool)(x, y));
-  let (_a: FmtString<37: u32, Tuple<Field, Field> >) = (#_mkFormatString returning FmtString<37: u32, Tuple<Field, Field> >)("this is first:{}{x}{}  this is second:{}{y}", x, y);
+  let _a = (#_mkFormatString returning FmtString<37: u32, Tuple<Field, Field> >)("this is first:{}{x}{}  this is second:{}{y}", x, y);
   (#_fAdd returning Field)(x, y)
 }
 
@@ -120,21 +120,21 @@ noir_def experiments::is_alias_some<T: Type>(x: @AliasedOpt<T>) -> bool := {
 }
 
 noir_def experiments::main<>() -> Unit := {
-  let mut (op1: experiments::Option2<Field>) = (experiments::Option2::some<Field> as λ(Field) -> experiments::Option2<Field>)((5: Field));
-  let (op2: experiments::Option2<Field>) = ((experiments::Option2<Field> as std::default::Default<>)::default<> as λ() -> experiments::Option2<Field>)();
-  let (_op3: experiments::Option2<Field>) = ((experiments::Option2<Field> as experiments::MyTrait<>)::foo<> as λ(experiments::Option2<Field>) -> experiments::Option2<Field>)(if #_true then {
+  let mut op1 = (experiments::Option2::some<Field> as λ(Field) -> experiments::Option2<Field>)((5: Field));
+  let op2 = ((experiments::Option2<Field> as std::default::Default<>)::default<> as λ() -> experiments::Option2<Field>)();
+  let _op3 = ((experiments::Option2<Field> as experiments::MyTrait<>)::foo<> as λ(experiments::Option2<Field>) -> experiments::Option2<Field>)(if #_true then {
     op1
   } else {
     op2
   });
-  let (_: bool) = (experiments::Option2::is_some<Field> as λ(experiments::Option2<Field>) -> bool)(op1);
-  let mut (l: Array<Field, 3: u32>) = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
-  let (_: Field) = (#_arrayIndex returning Field)(l, (0: u32));
-  let (t: Tuple<Field, bool, Field>) = (#_makeData returning Tuple<Field, bool, Field>)((1: Field), #_true, (3: Field));
-  let (_: Field) = t.2;
+  let _ = (experiments::Option2::is_some<Field> as λ(experiments::Option2<Field>) -> bool)(op1);
+  let mut l = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
+  let _ = (#_arrayIndex returning Field)(l, (0: u32));
+  let t = (#_makeData returning Tuple<Field, bool, Field>)((1: Field), #_true, (3: Field));
+  let _ = t.2;
   (l[(1: u32)]: Field) = (4: Field);
   (op1.0: bool) = #_false;
-  let mut (tpl: Tuple<Field, bool>) = (#_makeData returning Tuple<Field, bool>)((1: Field), #_true);
+  let mut tpl = (#_makeData returning Tuple<Field, bool>)((1: Field), #_true);
   (tpl.0: Field) = (2: Field);
   #_skip
 }

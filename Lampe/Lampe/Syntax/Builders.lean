@@ -75,14 +75,22 @@ partial def extractFuncSignature [MonadDSL m]
 
 /-- Builds a pattern from the provided syntax tree, or errors if it is not a valid pattern. -/
 partial def makePat [MonadDSL m] : TSyntax `noir_pat -> m Binder
-| `(noir_pat|($i:noir_ident : $ty)) => do
+| `(noir_pat|$i:noir_ident) => do
   let name ← makeNoirIdent i
-  pure $ Binder.variable name ty
-| `(noir_pat|mut ($i:noir_ident : $ty)) => do
+  pure $ Binder.variable name
+| `(noir_pat|mut $i:noir_ident) => do
   let name ← makeNoirIdent i
-  pure $ Binder.mutable name ty
+  pure $ Binder.mutable name
 | `(noir_pat|( $pats,* )) => do pure $ Binder.tuple (←pats.getElems.toList.mapM makePat)
 | p => throwError "Invalid pattern syntax {p}"
+
+/-- Makes a lambda parameter from the provided syntax -/
+def makeLambdaParam [MonadDSL m] (p : TSyntax `noir_lam_param) : m LambdaParam := match p with
+| `(noir_lam_param|$pat:noir_pat : $ty) => do
+  let pat ← makePat pat
+  let ty ← makeNoirType ty
+  pure ⟨pat, ty⟩
+| _ => throwUnsupportedSyntax 
 
 mutual
 
@@ -95,7 +103,7 @@ partial def makeBinder [MonadDSL m]
     (rhs : TSyntax `noir_expr)
     (k : m (TSyntax `term))
   : m (TSyntax `term) := match binder with
-| .variable v _ => makeExpr rhs (some v) (some fun _ => k)
+| .variable v => makeExpr rhs (some v) (some fun _ => k)
 | b => do
   makeExpr rhs (none) fun result => makeBinder' b result k
 
@@ -111,7 +119,7 @@ partial def makeBinder' [MonadDSL m]
     (rhsIdent : TSyntax `term)
     (k : m (TSyntax `term))
   : m (TSyntax `term) := match binder with
-| .mutable v _ => do
+| .mutable v => do
   regAutoDeref $ v.getId
   wrapInLet (←``(Expr.ref $rhsIdent)) v (some fun _ => k)
 | .tuple xs => do
@@ -131,7 +139,7 @@ partial def makeTupleBinders [MonadDSL m]
   let member ← makeMember ix
   match binders with
   | [] => k
-  | (Binder.variable v _) :: t => do
+  | (Binder.variable v) :: t => do
     wrapInLet
       (←``(Expr.getMember $rhs $member))
       (some v)
@@ -309,16 +317,12 @@ partial def makeLambda [MonadDSL m]
   → m (TSyntax `term)
 | `(noir_lambda|fn( $params,* ): $retType := $body), binder, k => do
   let retType : TSyntax `term ← makeNoirType retType
-  let paramBinders : List Binder ← params.getElems.toList.mapM makePat
-  let paramTypes : List (TSyntax `term) ← paramBinders.mapM fun b => match b with
-  | .variable _ ty => makeNoirType ty
-  | .mutable _ _ => throwError "Mutable binders not currently supported in lambda parameters"
-  | .tuple _ => throwError "Tuple binders not currently supported in lambda parameters"
-  | .invalid => throwError "Encountered invalid binder"
-  let paramTypes : TSyntax `term ← makeListLit paramTypes
-  let paramNames : List (TSyntax `term) ← paramBinders.mapM fun b => match b with
-  | .variable n _ => ``($n)
-  | .mutable _ _ => throwError "Mutable binders not currently supported in lambda parameters"
+  let params ← params.getElems.toList.mapM makeLambdaParam 
+  let paramTypes := params.map fun p => p.type
+  let paramTypes ← makeListLit paramTypes
+  let paramNames ← params.mapM fun b => match b.binder with
+  | .variable n => ``($n)
+  | .mutable _ => throwError "Mutable binders not currently supported in lambda parameters"
   | .tuple _ => throwError "Tuple binders not currently supported in lambda parameters"
   | .invalid => throwError "Encountered invalid binder"
   let args : TSyntax `term ← makeHListLit paramNames

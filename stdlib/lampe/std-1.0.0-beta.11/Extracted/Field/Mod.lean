@@ -15,11 +15,11 @@ noir_def std::field::assert_max_bit_size<BIT_SIZE: u32>(self: Field) -> Unit := 
 }
 
 noir_def std::field::to_le_bits<N: u32>(self: Field) -> Array<u1, N: u32> := {
-  let (bits: Array<u1, N: u32>) = (#_toLeBits returning Array<u1, N: u32>)(self);
+  let bits = (#_toLeBits returning Array<u1, N: u32>)(self);
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let (p: Slice<u1>) = (#_modulusLeBits returning Slice<u1>)();
+    let p = (#_modulusLeBits returning Slice<u1>)();
     (#_assert returning Unit)((#_uLeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p)));
-    let mut (ok: bool) = (#_uNeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p));
+    let mut ok = (#_uNeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p));
     for i in (0: u32) .. uConst!(N: u32) do {
       if (#_bNot returning bool)(ok) then {
         if (#_uNeq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (#_sliceIndex returning u1)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))) then {
@@ -36,11 +36,11 @@ noir_def std::field::to_le_bits<N: u32>(self: Field) -> Array<u1, N: u32> := {
 }
 
 noir_def std::field::to_be_bits<N: u32>(self: Field) -> Array<u1, N: u32> := {
-  let (bits: Array<u1, N: u32>) = (#_toBeBits returning Array<u1, N: u32>)(self);
+  let bits = (#_toBeBits returning Array<u1, N: u32>)(self);
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let (p: Slice<u1>) = (#_modulusBeBits returning Slice<u1>)();
+    let p = (#_modulusBeBits returning Slice<u1>)();
     (#_assert returning Unit)((#_uLeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p)));
-    let mut (ok: bool) = (#_uNeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p));
+    let mut ok = (#_uNeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p));
     for i in (0: u32) .. uConst!(N: u32) do {
       if (#_bNot returning bool)(ok) then {
         if (#_uNeq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)(i)), (#_sliceIndex returning u1)(p, (#_cast returning u32)(i))) then {
@@ -58,11 +58,11 @@ noir_def std::field::to_be_bits<N: u32>(self: Field) -> Array<u1, N: u32> := {
 
 noir_def std::field::to_le_bytes<N: u32>(self: Field) -> Array<u8, N: u32> := {
   (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Slice<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
-  let (bytes: Array<u8, N: u32>) = (std::field::to_le_radix<N: u32> as λ(Field, u32) -> Array<u8, N: u32>)(self, (256: u32));
+  let bytes = (std::field::to_le_radix<N: u32> as λ(Field, u32) -> Array<u8, N: u32>)(self, (256: u32));
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let (p: Slice<u8>) = (#_modulusLeBytes returning Slice<u8>)();
+    let p = (#_modulusLeBytes returning Slice<u8>)();
     (#_assert returning Unit)((#_uLeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p)));
-    let mut (ok: bool) = (#_uNeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p));
+    let mut ok = (#_uNeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p));
     for i in (0: u32) .. uConst!(N: u32) do {
       if (#_bNot returning bool)(ok) then {
         if (#_uNeq returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (#_sliceIndex returning u8)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))) then {
@@ -80,11 +80,11 @@ noir_def std::field::to_le_bytes<N: u32>(self: Field) -> Array<u8, N: u32> := {
 
 noir_def std::field::to_be_bytes<N: u32>(self: Field) -> Array<u8, N: u32> := {
   (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Slice<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
-  let (bytes: Array<u8, N: u32>) = (std::field::to_be_radix<N: u32> as λ(Field, u32) -> Array<u8, N: u32>)(self, (256: u32));
+  let bytes = (std::field::to_be_radix<N: u32> as λ(Field, u32) -> Array<u8, N: u32>)(self, (256: u32));
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let (p: Slice<u8>) = (#_modulusBeBytes returning Slice<u8>)();
+    let p = (#_modulusBeBytes returning Slice<u8>)();
     (#_assert returning Unit)((#_uLeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p)));
-    let mut (ok: bool) = (#_uNeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p));
+    let mut ok = (#_uNeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p));
     for i in (0: u32) .. uConst!(N: u32) do {
       if (#_bNot returning bool)(ok) then {
         if (#_uNeq returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)), (#_sliceIndex returning u8)(p, (#_cast returning u32)(i))) then {
@@ -121,8 +121,8 @@ noir_def std::field::to_be_radix<N: u32>(self: Field, radix: u32) -> Array<u8, N
 }
 
 noir_def std::field::pow_32<>(self: Field, exponent: Field) -> Field := {
-  let mut (r: Field) = (1: Field);
-  let (b: Array<u1, 32: u32>) = (std::field::to_le_bits<32: u32> as λ(Field) -> Array<u1, 32: u32>)(exponent);
+  let mut r = (1: Field);
+  let b = (std::field::to_le_bits<32: u32> as λ(Field) -> Array<u1, 32: u32>)(exponent);
   for i in (1: u32) .. (33: u32) do {
     r = (#_fMul returning Field)(r, r);
     r = (#_fAdd returning Field)((#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u1)(b, (#_cast returning u32)((#_uSub returning u32)((32: u32), i)))), (#_fMul returning Field)(r, self)), (#_fMul returning Field)((#_fSub returning Field)((1: Field), (#_cast returning Field)((#_arrayIndex returning u1)(b, (#_cast returning u32)((#_uSub returning u32)((32: u32), i))))), r));
@@ -145,8 +145,8 @@ noir_def std::field::lt<>(self: Field, another: Field) -> bool := {
 
 noir_def std::field::from_le_bytes<N: u32>(bytes: Array<u8, N: u32>) -> Field := {
   (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Slice<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
-  let mut (v: Field) = (1: Field);
-  let mut (result: Field) = (0: Field);
+  let mut v = (1: Field);
+  let mut result = (0: Field);
   for i in (0: u32) .. uConst!(N: u32) do {
     result = (#_fAdd returning Field)(result, (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i))), v));
     v = (#_fMul returning Field)(v, (256: Field));
@@ -156,8 +156,8 @@ noir_def std::field::from_le_bytes<N: u32>(bytes: Array<u8, N: u32>) -> Field :=
 }
 
 noir_def std::field::from_be_bytes<N: u32>(bytes: Array<u8, N: u32>) -> Field := {
-  let mut (v: Field) = (1: Field);
-  let mut (result: Field) = (0: Field);
+  let mut v = (1: Field);
+  let mut result = (0: Field);
   for i in (0: u32) .. uConst!(N: u32) do {
     result = (#_fAdd returning Field)(result, (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))), v));
     v = (#_fMul returning Field)(v, (256: Field));
@@ -175,9 +175,9 @@ noir_def std::field::field_less_than<>(x: Field, y: Field) -> bool := {
 }
 
 noir_def std::field::bytes32_to_field<>(bytes32: Array<u8, 32: u32>) -> Field := {
-  let mut (v: Field) = (1: Field);
-  let mut (high: Field) = (#_cast returning Field)((0: Field));
-  let mut (low: Field) = (#_cast returning Field)((0: Field));
+  let mut v = (1: Field);
+  let mut high = (#_cast returning Field)((0: Field));
+  let mut low = (#_cast returning Field)((0: Field));
   for i in (0: u32) .. (16: u32) do {
     high = (#_fAdd returning Field)(high, (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes32, (#_cast returning u32)((#_uSub returning u32)((15: u32), i)))), v));
     low = (#_fAdd returning Field)(low, (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes32, (#_cast returning u32)((#_uSub returning u32)((#_uAdd returning u32)((16: u32), (15: u32)), i)))), v));
@@ -191,15 +191,15 @@ noir_def std::field::lt_fallback<>(x: Field, y: Field) -> bool := {
   if (#_isUnconstrained returning bool)() then {
     (std::field::field_less_than<> as λ(Field, Field) -> bool)(x, y)
   } else {
-    let (x_bytes: Array<u8, 32: u32>) = (std::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(x);
-    let (y_bytes: Array<u8, 32: u32>) = (std::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(y);
-    let mut (x_is_lt: bool) = #_false;
-    let mut (done: bool) = #_false;
+    let x_bytes = (std::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(x);
+    let y_bytes = (std::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(y);
+    let mut x_is_lt = #_false;
+    let mut done = #_false;
     for i in (0: u32) .. (32: u32) do {
       if (#_bNot returning bool)(done) then {
-        let (x_byte: u8) = (#_cast returning u8)((#_arrayIndex returning u8)(x_bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)((32: u32), (1: u32)), i))));
-        let (y_byte: u8) = (#_cast returning u8)((#_arrayIndex returning u8)(y_bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)((32: u32), (1: u32)), i))));
-        let (bytes_match: bool) = (#_uEq returning bool)(x_byte, y_byte);
+        let x_byte = (#_cast returning u8)((#_arrayIndex returning u8)(x_bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)((32: u32), (1: u32)), i))));
+        let y_byte = (#_cast returning u8)((#_arrayIndex returning u8)(y_bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)((32: u32), (1: u32)), i))));
+        let bytes_match = (#_uEq returning bool)(x_byte, y_byte);
         if (#_bNot returning bool)(bytes_match) then {
           x_is_lt = (#_uLt returning bool)(x_byte, y_byte);
           done = #_true;
@@ -212,46 +212,46 @@ noir_def std::field::lt_fallback<>(x: Field, y: Field) -> bool := {
 }
 
 noir_def std::field::tests::test_to_be_bits<>() -> Unit := {
-  let (field: Field) = (2: Field);
-  let (bits: Array<u1, 8: u32>) = (std::field::to_be_bits<8: u32> as λ(Field) -> Array<u1, 8: u32>)(field);
+  let field = (2: Field);
+  let bits = (std::field::to_be_bits<8: u32> as λ(Field) -> Array<u1, 8: u32>)(field);
   (#_assert returning Unit)(((Array<u1, 8: u32> as Eq<>)::eq<> as λ(Array<u1, 8: u32>, Array<u1, 8: u32>) -> bool)(bits, (#_mkArray returning Array<u1, 8: u32>)((0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (1: u1), (0: u1))));
   #_skip
 }
 
 noir_def std::field::tests::test_to_le_bits<>() -> Unit := {
-  let (field: Field) = (2: Field);
-  let (bits: Array<u1, 8: u32>) = (std::field::to_le_bits<8: u32> as λ(Field) -> Array<u1, 8: u32>)(field);
+  let field = (2: Field);
+  let bits = (std::field::to_le_bits<8: u32> as λ(Field) -> Array<u1, 8: u32>)(field);
   (#_assert returning Unit)(((Array<u1, 8: u32> as Eq<>)::eq<> as λ(Array<u1, 8: u32>, Array<u1, 8: u32>) -> bool)(bits, (#_mkArray returning Array<u1, 8: u32>)((0: u1), (1: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1))));
   #_skip
 }
 
 noir_def std::field::tests::test_to_be_bytes<>() -> Unit := {
-  let (field: Field) = (2: Field);
-  let (bytes: Array<u8, 8: u32>) = (std::field::to_be_bytes<8: u32> as λ(Field) -> Array<u8, 8: u32>)(field);
+  let field = (2: Field);
+  let bytes = (std::field::to_be_bytes<8: u32> as λ(Field) -> Array<u8, 8: u32>)(field);
   (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (2: u8))));
   (#_assert returning Unit)((#_fEq returning bool)((std::field::from_be_bytes<8: u32> as λ(Array<u8, 8: u32>) -> Field)(bytes), field));
   #_skip
 }
 
 noir_def std::field::tests::test_to_le_bytes<>() -> Unit := {
-  let (field: Field) = (2: Field);
-  let (bytes: Array<u8, 8: u32>) = (std::field::to_le_bytes<8: u32> as λ(Field) -> Array<u8, 8: u32>)(field);
+  let field = (2: Field);
+  let bytes = (std::field::to_le_bytes<8: u32> as λ(Field) -> Array<u8, 8: u32>)(field);
   (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((2: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8))));
   (#_assert returning Unit)((#_fEq returning bool)((std::field::from_le_bytes<8: u32> as λ(Array<u8, 8: u32>) -> Field)(bytes), field));
   #_skip
 }
 
 noir_def std::field::tests::test_to_be_radix<>() -> Unit := {
-  let (field: Field) = (259: Field);
-  let (bytes: Array<u8, 8: u32>) = (std::field::to_be_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (256: u32));
+  let field = (259: Field);
+  let bytes = (std::field::to_be_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (256: u32));
   (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (1: u8), (3: u8))));
   (#_assert returning Unit)((#_fEq returning bool)((std::field::from_be_bytes<8: u32> as λ(Array<u8, 8: u32>) -> Field)(bytes), field));
   #_skip
 }
 
 noir_def std::field::tests::test_to_le_radix<>() -> Unit := {
-  let (field: Field) = (259: Field);
-  let (bytes: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (256: u32));
+  let field = (259: Field);
+  let bytes = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (256: u32));
   (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((3: u8), (1: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8))));
   (#_assert returning Unit)((#_fEq returning bool)((std::field::from_le_bytes<8: u32> as λ(Array<u8, 8: u32>) -> Field)(bytes), field));
   #_skip
@@ -259,8 +259,8 @@ noir_def std::field::tests::test_to_le_radix<>() -> Unit := {
 
 noir_def std::field::tests::test_to_le_radix_1<>() -> Unit := {
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let (field: Field) = (2: Field);
-    let (_: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (1: u32));
+    let field = (2: Field);
+    let _ = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (1: u32));
     #_skip
   } else {
     (std::panic::panic<Tuple<>, Unit, 28: u32> as λ(FmtString<28: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<28: u32, Tuple<> >)("radix must be greater than 1"));
@@ -270,8 +270,8 @@ noir_def std::field::tests::test_to_le_radix_1<>() -> Unit := {
 
 noir_def std::field::tests::test_to_le_radix_3<>() -> Unit := {
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let (field: Field) = (2: Field);
-    let (_: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (3: u32));
+    let field = (2: Field);
+    let _ = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (3: u32));
     #_skip
   } else {
     (std::panic::panic<Tuple<>, Unit, 26: u32> as λ(FmtString<26: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<26: u32, Tuple<> >)("radix must be a power of 2"));
@@ -281,9 +281,9 @@ noir_def std::field::tests::test_to_le_radix_3<>() -> Unit := {
 
 noir_def std::field::tests::test_to_le_radix_brillig_3<>() -> Unit := {
   if (#_isUnconstrained returning bool)() then {
-    let (field: Field) = (1: Field);
-    let (out: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (3: u32));
-    let mut (expected: Array<u8, 8: u32>) = (#_mkRepeatedArray returning Array<u8, 8: u32>)((0: u8));
+    let field = (1: Field);
+    let out = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (3: u32));
+    let mut expected = (#_mkRepeatedArray returning Array<u8, 8: u32>)((0: u8));
     (expected[(0: u32)]: u8) = (1: u8);
     (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(out, expected));
     #_skip
@@ -292,8 +292,8 @@ noir_def std::field::tests::test_to_le_radix_brillig_3<>() -> Unit := {
 
 noir_def std::field::tests::test_to_le_radix_512<>() -> Unit := {
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let (field: Field) = (2: Field);
-    let (_: Array<u8, 8: u32>) = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (512: u32));
+    let field = (2: Field);
+    let _ = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (512: u32));
     #_skip
   } else {
     (std::panic::panic<Tuple<>, Unit, 39: u32> as λ(FmtString<39: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<39: u32, Tuple<> >)("radix must be less than or equal to 256"))
@@ -305,7 +305,7 @@ noir_def std::field::tests::not_enough_limbs_brillig<>() -> Unit := {
 }
 
 noir_def std::field::tests::not_enough_limbs<>() -> Unit := {
-  let (_: Array<u8, 16: u32>) = (std::field::to_le_bytes<16: u32> as λ(Field) -> Array<u8, 16: u32>)((340282366920938463463374607431768211456: Field));
+  let _ = (std::field::to_le_bytes<16: u32> as λ(Field) -> Array<u8, 16: u32>)((340282366920938463463374607431768211456: Field));
   #_skip
 }
 

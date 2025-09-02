@@ -14,8 +14,8 @@ noir_def basic_fn<>(x: u64) -> u64 := {
 }
 
 noir_def basic_fn_call<>() -> u64 := {
-  let (y: u64) = (basic_fn<> as λ(u64) → u64)(3: u64);
-  let (z: u64) = (basic_fn<> as λ(u64) → u64)(4: u64);
+  let y = (basic_fn<> as λ(u64) → u64)(3: u64);
+  let z = (basic_fn<> as λ(u64) → u64)(4: u64);
   (#_uAdd returning u64)(y, z)
 }
 
@@ -34,8 +34,8 @@ example : Lampe.STHoare p basicFnEnv ⟦⟧ (basic_fn_call.fn.body _ h![] |>.bod
   simp_all; subst_vars; norm_cast
 
 noir_def basic_muts<>(x: Field) -> Field := {
-  let mut (y: Field) = x;
-  let mut (z: Field) = x;
+  let mut y = x;
+  let mut z = x;
   z = z;
   y = z;
   y
@@ -47,7 +47,7 @@ example : Lampe.STHoare p Γ ⟦⟧ (basic_muts.fn.body _ h![] |>.body h![x]) fu
   simp_all
 
 noir_def weird_eq<I: Type>(x: I, y: I) -> Unit := {
-  let (a: I) = (#_fresh returning I)();
+  let a = (#_fresh returning I)();
   (#_fAdd returning I)(x, y);
   (#_assert returning Unit)((#_fEq returning bool)(a, x));
   (#_assert returning Unit)((#_fEq returning bool)(a, y));
@@ -60,7 +60,7 @@ example {x y : Tp.denote p .field} :
   simp_all
 
 noir_def slice_append<I: Type>(x: Slice<I>, y: Slice<I>) → Slice<I> := {
-  let mut (self: Slice<I>) = x;
+  let mut self = x;
   for i in (0 : u32) .. (#_arrayLen returning u32)(y) do {
     self = (#_slicePushBack returning Slice<I>)(self, (#_sliceIndex returning I)(y, i));
   };
@@ -82,7 +82,7 @@ example {selfV that : Tp.denote p (.slice tp)}
     simp_all [Nat.mod_eq_of_lt]
 
 noir_def simple_if<>(x: Field, y: Field) -> Field := {
-  let mut (z: Field) = x;
+  let mut z = x;
   if (#_fEq returning bool)(x, x) then {
     z = y;
   };
@@ -102,7 +102,7 @@ example : STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, y]) fun v 
   simp_all
 
 noir_def simple_if_else<>(x: Field, y: Field) -> Field := {
-  let (z: Field) = if (#_fEq returning bool)(x, x) then { x } else { y };
+  let z = if (#_fEq returning bool)(x, x) then { x } else { y };
   z
 }
 
@@ -119,7 +119,7 @@ example : STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body h![x, y]) f
   simp_all
 
 noir_def simple_lambda<>(x: Field, y: Field) -> Field := {
-  let (add: λ(Field, Field) -> Field) = fn((a: Field), (b: Field)): Field := (#_fAdd returning Field)(a, b);
+  let add = fn(a: Field, b: Field): Field := (#_fAdd returning Field)(a, b);
   (add as λ(Field, Field) -> Field)(x, y);
 }
 
@@ -202,7 +202,7 @@ noir_struct_def FooStruct<I: Type> {
 }
 
 noir_def make_foo_struct<>(x: u32) -> FooStruct<u32> := {
-  let (y: u32) = (#_uMul returning u32)(x, 10: u32);
+  let y = (#_uMul returning u32)(x, 10: u32);
   (#_makeData returning FooStruct<u32>)(x, y)
 }
 
@@ -217,7 +217,7 @@ example : STHoare p Γ ⟦⟧ (make_tuple.fn.body _ h![] |>.body h![x])
   subst_vars; rfl
 
 noir_def get_second_elem<>() -> u32 := {
-  let (v: FooStruct<u32>) = (make_foo_struct<> as λ(u32) → FooStruct<u32>)(10: u32);
+  let v = (make_foo_struct<> as λ(u32) → FooStruct<u32>)(10: u32);
   v.1
 }
 
@@ -244,7 +244,7 @@ noir_def generic_func<I: Type>(a: I) -> I := {
 }
 
 noir_def call_generic_func<>(a: Field) -> Field := {
-  let (x: Field) = (generic_func<Field> as λ(Field) -> Field)(a);
+  let x = (generic_func<Field> as λ(Field) -> Field)(a);
   x
 }
 
@@ -281,7 +281,7 @@ example : STHoare p ⟨[add_two_fields], []⟩ ⟦⟧
     ring
 
 noir_def simple_tuple<>() -> Field := {
-  let (t: Tuple<Field, bool, Field>) = (#_makeData returning Tuple<Field, bool, Field>)(1: Field, #_true, 3: Field);
+  let t = (#_makeData returning Tuple<Field, bool, Field>)(1: Field, #_true, 3: Field);
   t.2
 }
 
@@ -292,7 +292,7 @@ example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![])
   aesop
 
 noir_def simple_slice<>() -> bool := {
-  let (s : Slice<bool>) = (#_mkSlice returning Slice<bool>)(#_true, #_false);
+  let s = (#_mkSlice returning Slice<bool>)(#_true, #_false);
   (#_sliceIndex returning bool)(s, (1: u32))
 }
 
@@ -303,7 +303,7 @@ example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![])
   simp_all
 
 noir_def simple_array<>() -> Field := {
-  let (arr: Array<Field, 2: u32>) = (#_mkArray returning Array<Field, 2: u32>)(1: Field, 2: Field);
+  let arr = (#_mkArray returning Array<Field, 2: u32>)(1: Field, 2: Field);
   (#_arrayIndex returning Field)(arr, 1: u32)
 }
 
@@ -315,7 +315,7 @@ example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![])
   simp_all; aesop
 
 noir_def use_array<>() -> Field := {
-  let (a: Array<Field, 4: u32>) = (#_mkRepeatedArray returning Array<Field, 4: u32>)((1: Field));
+  let a = (#_mkRepeatedArray returning Array<Field, 4: u32>)((1: Field));
   (#_arrayIndex returning Field)(a, ((2: u32)))
 }
 
@@ -327,7 +327,7 @@ example : STHoare p Γ ⟦⟧ (use_array.fn.body _ h![] |>.body h![])
 
 -- Note that repeated slices are not currently supported in the extractor
 noir_def repeated_slice<>() -> Field := {
-  let (a: Slice<Field>) = (#_mkRepeatedSlice returning Slice<Field>)((4: u32), (1: Field));
+  let a = (#_mkRepeatedSlice returning Slice<Field>)((4: u32), (1: Field));
   (#_sliceIndex returning Field)(a, (0: u32))
 }
 
@@ -338,7 +338,7 @@ example : STHoare p Γ ⟦⟧ (repeated_slice.fn.body _ h![] |>.body h![])
   simp_all
 
 noir_def simple_tuple_access<>() → Field := {
-  let (t: Tuple<Field, bool, Field>) =
+  let t =
     (#_makeData returning Tuple<Field, bool, Field>)(1: Field, #_true, 3: Field);
   t.2
 }
@@ -350,7 +350,7 @@ example : STHoare p Γ ⟦⟧ (simple_tuple_access.fn.body _ h![] |>.body h![])
   aesop
 
 noir_def simple_slice_of_values<>() → bool := {
-  let (s: Slice<bool>) = (#_mkSlice returning Slice<bool>)(#_true, #_false);
+  let s = (#_mkSlice returning Slice<bool>)(#_true, #_false);
   (#_sliceIndex returning bool)(s, 1: u32)
 }
 
@@ -361,11 +361,10 @@ example : STHoare p Γ ⟦⟧ (simple_slice_of_values.fn.body _ h![] |>.body h![
   aesop
 
 noir_def tuple_lens<>() → Field := {
-  let mut (p: Tuple<Tuple<Field, Field>, Field>) =
-    (#_makeData returning Tuple<Tuple<Field, Field>, Field>)(
-      (#_makeData returning Tuple<Field, Field>)(1: Field, 2: Field),
-      3: Field
-    );
+  let mut p = (#_makeData returning Tuple<Tuple<Field, Field>, Field>)(
+    (#_makeData returning Tuple<Field, Field>)(1: Field, 2: Field),
+    3: Field
+  );
 
   (p.1: Field) = 5: Field;
   ((p.0: Tuple<Field, Field>).1: Field) = 10: Field;
@@ -386,7 +385,7 @@ noir_struct_def Pair<E: Type> {
 }
 
 noir_def struct_lens<>() → Field := {
-  let mut (p: Tuple<Pair<Field>, Field>) = (#_makeData returning Tuple<Pair<Field>, Field>)(
+  let mut p = (#_makeData returning Tuple<Pair<Field>, Field>)(
     (#_makeData returning Pair<Field>)(1: Field, 2: Field),
     3: Field
   );
@@ -404,7 +403,7 @@ example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![])
   rfl
 
 noir_def array_lens<>() → Field := {
-  let mut (a: Tuple<Array<Field, 2: u32>, Field>) = (#_makeData returning Tuple<Array<Field, 2: u32>, Field>)(
+  let mut a = (#_makeData returning Tuple<Array<Field, 2: u32>, Field>)(
     (#_mkArray returning Array<Field, 2: u32>)(1: Field, 2: Field),
     3: Field
   );
@@ -421,7 +420,7 @@ example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![])
   aesop
 
 noir_def slice_lens<>() → Field := {
-  let mut (a: Tuple<Slice<Field>, Field>) = (#_makeData returning Tuple<Slice<Field>, Field>)(
+  let mut a = (#_makeData returning Tuple<Slice<Field>, Field>)(
     (#_mkSlice returning Slice<Field>)(1: Field, 2: Field),
     3: Field
   );
@@ -438,7 +437,7 @@ example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
   aesop
 
 noir_def deref_lens<>() → Field := {
-  let (r: &Field) = (#_ref returning &Tuple<Field>)((#_makeData returning Tuple<Field>)(5: Field));
+  let r = (#_ref returning &Tuple<Field>)((#_makeData returning Tuple<Field>)(5: Field));
 
   ((*r: Tuple<Field>).0: Field) = 10: Field;
 
@@ -465,7 +464,7 @@ noir_def call_function<>(f: λ() → Field) → Field := {
 }
 
 noir_def simple_hof<>() → Field := {
-  let (func: λ() → Field) = (return_ten<> as λ() → Field);
+  let func = (return_ten<> as λ() → Field);
 
   (call_function<> as λ(λ() → Field) → Field)(func)
 }
@@ -519,7 +518,7 @@ example : STHoare p aliasTestEnv ⟦⟧ (alias_test.call h![] h![⟨[1, 2, 3], b
   aesop
 
 noir_def const_test<N: u8>(x: Field) → Field := {
-  let mut (res: Field) = x;
+  let mut res = x;
 
   for _ in (0: u8) .. uConst!(N: u8) do {
     res = (#_fMul returning Field)(res, 2: Field);
@@ -545,7 +544,7 @@ example : STHoare p constTestEnv ⟦⟧ (const_test.call h![3] h![2])
     norm_num
 
 noir_def tuple_pattern<>(x: Field) → Field := {
-  let (mut (x: Field), (y: Field)) = (#_makeData returning Tuple<Field, Field>)(x, x);
+  let (mut x, y) = (#_makeData returning Tuple<Field, Field>)(x, x);
   x = y;
   x
 }
@@ -560,7 +559,7 @@ example : STHoare p tuplePatternEnv ⟦⟧ (tuple_pattern.call h![] h![x])
   apply_assumption
 
 noir_def test_lam<>(x: Field) -> Field := {
-  let (f: λ(Field) → Field) = (fn((x: Field)): Field := x);
+  let f = fn(x: Field): Field := x;
   (f as λ(Field) → Field)(x)
 }
 
@@ -601,22 +600,22 @@ noir_struct_def «asdf::Other»<> {
 }
 
 noir_def «asdf::colon_test»<>() -> Field := {
-  let (a: Field) = (5: Field);
-  let (b: Field) = (10: Field);
+  let a = (5: Field);
+  let b = (10: Field);
   (#_fAdd returning Field)(a, b)
 }
 
 noir_def «asdf::inner::colon_test_inner»<>() -> @FField<> := {
-  let (a: @FField<>) = (5: Field);
-  let (b: @FField<>) = (10: Field);
-  let (c: «asdf::Other»<>) = (#_makeData returning «asdf::Other»<>)((#_fAdd returning Field)(a, b));
+  let a = (5: Field);
+  let b = (10: Field);
+  let c = (#_makeData returning «asdf::Other»<>)((#_fAdd returning Field)(a, b));
   c.0
 }
 
 noir_def test_blocks<>() -> u32 := {
-  let (s: Field) = (2: Field);
-  let (x: Field) = {
-    let (y: Field) = (9: Field);
+  let s = (2: Field);
+  let x = {
+    let y = (9: Field);
     (2: u32)
   };
   (3: u32)

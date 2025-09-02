@@ -9,12 +9,12 @@ namespace «Merkle-0.0.0»
 namespace Extracted
 
 noir_def utils::rl<>(u: u8) -> u8 := {
-  let (top_bit: u8) = (#_uShr returning u8)(u, (7: u8));
+  let top_bit = (#_uShr returning u8)(u, (7: u8));
   (#_uOr returning u8)((#_uShl returning u8)(u, (1: u8)), top_bit)
 }
 
 noir_def utils::rotate_left<>(u: u8, N: u8) -> u8 := {
-  let mut (result: u8) = u;
+  let mut result = u;
   for _ in (0: u8) .. N do {
     result = (utils::rl<> as λ(u8) -> u8)(result);
     #_skip
@@ -23,12 +23,12 @@ noir_def utils::rotate_left<>(u: u8, N: u8) -> u8 := {
 }
 
 noir_def utils::sbox<>(v: u8) -> u8 := {
-  let (x1: u8) = (#_uNot returning u8)(v);
-  let (x2: u8) = (utils::rotate_left<> as λ(u8, u8) -> u8)(x1, (1: u8));
-  let (x3: u8) = (utils::rotate_left<> as λ(u8, u8) -> u8)(v, (2: u8));
-  let (x4: u8) = (utils::rotate_left<> as λ(u8, u8) -> u8)(v, (3: u8));
-  let (x5: u8) = (#_uAnd returning u8)((#_uAnd returning u8)(x2, x3), x4);
-  let (x6: u8) = (utils::rotate_left<> as λ(u8, u8) -> u8)(x5, (1: u8));
+  let x1 = (#_uNot returning u8)(v);
+  let x2 = (utils::rotate_left<> as λ(u8, u8) -> u8)(x1, (1: u8));
+  let x3 = (utils::rotate_left<> as λ(u8, u8) -> u8)(v, (2: u8));
+  let x4 = (utils::rotate_left<> as λ(u8, u8) -> u8)(v, (3: u8));
+  let x5 = (#_uAnd returning u8)((#_uAnd returning u8)(x2, x3), x4);
+  let x6 = (utils::rotate_left<> as λ(u8, u8) -> u8)(x5, (1: u8));
   (#_uXor returning u8)(v, x6)
 }
 
@@ -37,7 +37,7 @@ noir_def utils::sgn0<>(self: Field) -> u1 := {
 }
 
 noir_def utils::as_array<>(self: Slice<u8>) -> Array<u8, 32: u32> := {
-  let mut (array: Array<u8, 32: u32>) = (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8));
+  let mut array = (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8));
   for i in (0: u32) .. (32: u32) do {
     (array[i]: u8) = (#_sliceIndex returning u8)(self, (#_cast returning u32)(i));
     #_skip

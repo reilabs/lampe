@@ -9,18 +9,18 @@ namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
 noir_def unit_return::foo2<>() -> Unit := {
-  let (_x: Field) = (3: Field);
+  let _x = (3: Field);
   #_skip
 }
 
 noir_def unit_return::bar<>() -> Unit := {
-  let mut (x: Field) = (3: Field);
+  let mut x = (3: Field);
   x = (4: Field);
   #_skip
 }
 
 noir_def unit_return::baz<>() -> Unit := {
-  let (_x: Field) = (3: Field);
+  let _x = (3: Field);
   (unit_return::bar<> as λ() -> Unit)();
   #_skip
 }

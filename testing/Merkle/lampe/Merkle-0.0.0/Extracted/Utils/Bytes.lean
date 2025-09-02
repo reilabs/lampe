@@ -9,8 +9,8 @@ namespace «Merkle-0.0.0»
 namespace Extracted
 
 noir_def utils::bytes::to_le_bytes<>(self: Field) -> Array<u8, 32: u32> := {
-  let (bits: Array<u1, 256: u32>) = (utils::bits::to_le_bits<> as λ(Field) -> Array<u1, 256: u32>)(self);
-  let mut (bytes: Array<u8, 32: u32>) = (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8));
+  let bits = (utils::bits::to_le_bits<> as λ(Field) -> Array<u1, 256: u32>)(self);
+  let mut bytes = (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8));
   for i in (0: u32) .. (32: u32) do {
     (bytes[i]: u8) = (#_uAdd returning u8)((#_uAdd returning u8)((#_uAdd returning u8)((#_uAdd returning u8)((#_uAdd returning u8)((#_uAdd returning u8)((#_uAdd returning u8)((#_cast returning u8)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uMul returning u32)((8: u32), i)))), (#_uMul returning u8)((2: u8), (#_cast returning u8)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uAdd returning u32)((#_uMul returning u32)((8: u32), i), (1: u32))))))), (#_uMul returning u8)((4: u8), (#_cast returning u8)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uAdd returning u32)((#_uMul returning u32)((8: u32), i), (2: u32))))))), (#_uMul returning u8)((8: u8), (#_cast returning u8)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uAdd returning u32)((#_uMul returning u32)((8: u32), i), (3: u32))))))), (#_uMul returning u8)((16: u8), (#_cast returning u8)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uAdd returning u32)((#_uMul returning u32)((8: u32), i), (4: u32))))))), (#_uMul returning u8)((32: u8), (#_cast returning u8)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uAdd returning u32)((#_uMul returning u32)((8: u32), i), (5: u32))))))), (#_uMul returning u8)((64: u8), (#_cast returning u8)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uAdd returning u32)((#_uMul returning u32)((8: u32), i), (6: u32))))))), (#_uMul returning u8)((128: u8), (#_cast returning u8)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uAdd returning u32)((#_uMul returning u32)((8: u32), i), (7: u32)))))));
     #_skip
@@ -19,8 +19,8 @@ noir_def utils::bytes::to_le_bytes<>(self: Field) -> Array<u8, 32: u32> := {
 }
 
 noir_def utils::bytes::from_le_bytes<>(bytes: Array<u8, 32: u32>) -> Field := {
-  let mut (v: Field) = (1: Field);
-  let mut (result: Field) = (0: Field);
+  let mut v = (1: Field);
+  let mut result = (0: Field);
   for i in (0: u32) .. (32: u32) do {
     result = (#_fAdd returning Field)(result, (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i))), v));
     v = (#_fMul returning Field)(v, (256: Field));

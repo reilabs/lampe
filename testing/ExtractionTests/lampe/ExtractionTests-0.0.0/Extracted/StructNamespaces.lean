@@ -17,8 +17,8 @@ noir_def struct_namespaces::test::Foo::bar2<>() -> Field := {
 }
 
 noir_def struct_namespaces::baz<>(a: struct_namespaces::test::Foo<>) -> Field := {
-  let (x: Field) = (struct_namespaces::test::Foo::bar2<> as λ() -> Field)();
-  let (y: Field) = (struct_namespaces::test::Foo::bar<> as λ(struct_namespaces::test::Foo<>) -> Field)(a);
+  let x = (struct_namespaces::test::Foo::bar2<> as λ() -> Field)();
+  let y = (struct_namespaces::test::Foo::bar<> as λ(struct_namespaces::test::Foo<>) -> Field)(a);
   (#_fAdd returning Field)(x, y)
 }
 

@@ -13,9 +13,9 @@ noir_def patterns::Option2::some<T: Type>(value: T) -> patterns::Option2<T> := {
 }
 
 noir_def patterns::pattern_test<>() -> Unit := {
-  let (opt: patterns::Option2<bool>) = (patterns::Option2::some<bool> as λ(bool) -> patterns::Option2<bool>)(#_true);
-  let (t: Tuple<Field, patterns::Option2<bool>, Field>) = (#_makeData returning Tuple<Field, patterns::Option2<bool>, Field>)((1: Field), opt, (3: Field));
-  let ((_x: Field), ((_: bool), (_: bool)), mut (_z: Field)) = t;
+  let opt = (patterns::Option2::some<bool> as λ(bool) -> patterns::Option2<bool>)(#_true);
+  let t = (#_makeData returning Tuple<Field, patterns::Option2<bool>, Field>)((1: Field), opt, (3: Field));
+  let (_x, (_, _), mut _z) = t;
   #_skip
 }
 

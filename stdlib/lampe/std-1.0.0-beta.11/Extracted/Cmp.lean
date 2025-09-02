@@ -88,7 +88,7 @@ noir_trait_impl[impl_90]<> std::cmp::Eq<> for bool where [] := {
 
 noir_trait_impl[impl_91]<N: u32, T: Type> std::cmp::Eq<> for Array<T, N: u32> where [T: std::cmp::Eq<>] := {
   noir_def eq<>(self: Array<T, N: u32>, other: Array<T, N: u32>) -> bool := {
-    let mut (result: bool) = #_true;
+    let mut result = #_true;
     for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
       result = (#_bAnd returning bool)(result, ((T as std::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i))));
       #_skip
@@ -99,7 +99,7 @@ noir_trait_impl[impl_91]<N: u32, T: Type> std::cmp::Eq<> for Array<T, N: u32> wh
 
 noir_trait_impl[impl_92]<T: Type> std::cmp::Eq<> for Slice<T> where [T: std::cmp::Eq<>] := {
   noir_def eq<>(self: Slice<T>, other: Slice<T>) -> bool := {
-    let mut (result: bool) = (#_uEq returning bool)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
+    let mut result = (#_uEq returning bool)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
     if result then {
       for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
         result = (#_bAnd returning bool)(result, ((T as std::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i))));
@@ -113,8 +113,8 @@ noir_trait_impl[impl_92]<T: Type> std::cmp::Eq<> for Slice<T> where [T: std::cmp
 
 noir_trait_impl[impl_93]<N: u32> std::cmp::Eq<> for String<N: u32> where [] := {
   noir_def eq<>(self: String<N: u32>, other: String<N: u32>) -> bool := {
-    let (self_bytes: Array<u8, N: u32>) = (#_strAsBytes returning Array<u8, N: u32>)(self);
-    let (other_bytes: Array<u8, N: u32>) = (#_strAsBytes returning Array<u8, N: u32>)(other);
+    let self_bytes = (#_strAsBytes returning Array<u8, N: u32>)(self);
+    let other_bytes = (#_strAsBytes returning Array<u8, N: u32>)(other);
     ((Array<u8, N: u32> as Eq<>)::eq<> as λ(Array<u8, N: u32>, Array<u8, N: u32>) -> bool)(self_bytes, other_bytes)
   };
 }
@@ -293,7 +293,7 @@ noir_trait_impl[impl_109]<> std::cmp::Ord<> for bool where [] := {
 
 noir_trait_impl[impl_110]<N: u32, T: Type> std::cmp::Ord<> for Array<T, N: u32> where [T: std::cmp::Ord<>] := {
   noir_def cmp<>(self: Array<T, N: u32>, other: Array<T, N: u32>) -> std::cmp::Ordering<> := {
-    let mut (result: std::cmp::Ordering<>) = (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)();
+    let mut result = (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)();
     for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
       if ((std::cmp::Ordering<> as Eq<>)::eq<> as λ(std::cmp::Ordering<>, std::cmp::Ordering<>) -> bool)(result, (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)()) then {
         result = ((T as std::cmp::Ord<>)::cmp<> as λ(T, T) -> std::cmp::Ordering<>)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i)));
@@ -306,7 +306,7 @@ noir_trait_impl[impl_110]<N: u32, T: Type> std::cmp::Ord<> for Array<T, N: u32> 
 
 noir_trait_impl[impl_111]<T: Type> std::cmp::Ord<> for Slice<T> where [T: std::cmp::Ord<>] := {
   noir_def cmp<>(self: Slice<T>, other: Slice<T>) -> std::cmp::Ordering<> := {
-    let mut (result: std::cmp::Ordering<>) = ((u32 as std::cmp::Ord<>)::cmp<> as λ(u32, u32) -> std::cmp::Ordering<>)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
+    let mut result = ((u32 as std::cmp::Ord<>)::cmp<> as λ(u32, u32) -> std::cmp::Ordering<>)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
     for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
       if ((std::cmp::Ordering<> as Eq<>)::eq<> as λ(std::cmp::Ordering<>, std::cmp::Ordering<>) -> bool)(result, (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)()) then {
         result = ((T as std::cmp::Ord<>)::cmp<> as λ(T, T) -> std::cmp::Ordering<>)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i)));
@@ -319,7 +319,7 @@ noir_trait_impl[impl_111]<T: Type> std::cmp::Ord<> for Slice<T> where [T: std::c
 
 noir_trait_impl[impl_112]<A: Type, B: Type> std::cmp::Ord<> for Tuple<A, B> where [A: std::cmp::Ord<>, B: std::cmp::Ord<>] := {
   noir_def cmp<>(self: Tuple<A, B>, other: Tuple<A, B>) -> std::cmp::Ordering<> := {
-    let (result: std::cmp::Ordering<>) = ((A as std::cmp::Ord<>)::cmp<> as λ(A, A) -> std::cmp::Ordering<>)(self.0, other.0);
+    let result = ((A as std::cmp::Ord<>)::cmp<> as λ(A, A) -> std::cmp::Ordering<>)(self.0, other.0);
     if ((std::cmp::Ordering<> as Eq<>)::eq<> as λ(std::cmp::Ordering<>, std::cmp::Ordering<>) -> bool)(result, (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)()) then {
       result
     } else {
@@ -330,7 +330,7 @@ noir_trait_impl[impl_112]<A: Type, B: Type> std::cmp::Ord<> for Tuple<A, B> wher
 
 noir_trait_impl[impl_113]<A: Type, B: Type, C: Type> std::cmp::Ord<> for Tuple<A, B, C> where [A: std::cmp::Ord<>, B: std::cmp::Ord<>, C: std::cmp::Ord<>] := {
   noir_def cmp<>(self: Tuple<A, B, C>, other: Tuple<A, B, C>) -> std::cmp::Ordering<> := {
-    let mut (result: std::cmp::Ordering<>) = ((A as std::cmp::Ord<>)::cmp<> as λ(A, A) -> std::cmp::Ordering<>)(self.0, other.0);
+    let mut result = ((A as std::cmp::Ord<>)::cmp<> as λ(A, A) -> std::cmp::Ordering<>)(self.0, other.0);
     if ((std::cmp::Ordering<> as Eq<>)::eq<> as λ(std::cmp::Ordering<>, std::cmp::Ordering<>) -> bool)(result, (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)()) then {
       result = ((B as std::cmp::Ord<>)::cmp<> as λ(B, B) -> std::cmp::Ordering<>)(self.1, other.1);
       #_skip
@@ -345,7 +345,7 @@ noir_trait_impl[impl_113]<A: Type, B: Type, C: Type> std::cmp::Ord<> for Tuple<A
 
 noir_trait_impl[impl_114]<A: Type, B: Type, C: Type, D: Type> std::cmp::Ord<> for Tuple<A, B, C, D> where [A: std::cmp::Ord<>, B: std::cmp::Ord<>, C: std::cmp::Ord<>, D: std::cmp::Ord<>] := {
   noir_def cmp<>(self: Tuple<A, B, C, D>, other: Tuple<A, B, C, D>) -> std::cmp::Ordering<> := {
-    let mut (result: std::cmp::Ordering<>) = ((A as std::cmp::Ord<>)::cmp<> as λ(A, A) -> std::cmp::Ordering<>)(self.0, other.0);
+    let mut result = ((A as std::cmp::Ord<>)::cmp<> as λ(A, A) -> std::cmp::Ordering<>)(self.0, other.0);
     if ((std::cmp::Ordering<> as Eq<>)::eq<> as λ(std::cmp::Ordering<>, std::cmp::Ordering<>) -> bool)(result, (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)()) then {
       result = ((B as std::cmp::Ord<>)::cmp<> as λ(B, B) -> std::cmp::Ordering<>)(self.1, other.1);
       #_skip
@@ -364,7 +364,7 @@ noir_trait_impl[impl_114]<A: Type, B: Type, C: Type, D: Type> std::cmp::Ord<> fo
 
 noir_trait_impl[impl_115]<A: Type, B: Type, C: Type, D: Type, E: Type> std::cmp::Ord<> for Tuple<A, B, C, D, E> where [A: std::cmp::Ord<>, B: std::cmp::Ord<>, C: std::cmp::Ord<>, D: std::cmp::Ord<>, E: std::cmp::Ord<>] := {
   noir_def cmp<>(self: Tuple<A, B, C, D, E>, other: Tuple<A, B, C, D, E>) -> std::cmp::Ordering<> := {
-    let mut (result: std::cmp::Ordering<>) = ((A as std::cmp::Ord<>)::cmp<> as λ(A, A) -> std::cmp::Ordering<>)(self.0, other.0);
+    let mut result = ((A as std::cmp::Ord<>)::cmp<> as λ(A, A) -> std::cmp::Ordering<>)(self.0, other.0);
     if ((std::cmp::Ordering<> as Eq<>)::eq<> as λ(std::cmp::Ordering<>, std::cmp::Ordering<>) -> bool)(result, (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)()) then {
       result = ((B as std::cmp::Ord<>)::cmp<> as λ(B, B) -> std::cmp::Ordering<>)(self.1, other.1);
       #_skip
@@ -418,8 +418,8 @@ noir_def std::cmp::cmp_tests::sanity_check_max<>() -> Unit := {
 }
 
 noir_def std::cmp::cmp_tests::correctly_handles_unequal_length_slices<>() -> Unit := {
-  let (slice_1: Slice<Field>) = (#_mkSlice returning Slice<Field>)((0: Field), (1: Field), (2: Field), (3: Field));
-  let (slice_2: Slice<Field>) = (#_mkSlice returning Slice<Field>)((0: Field), (1: Field), (2: Field));
+  let slice_1 = (#_mkSlice returning Slice<Field>)((0: Field), (1: Field), (2: Field), (3: Field));
+  let slice_2 = (#_mkSlice returning Slice<Field>)((0: Field), (1: Field), (2: Field));
   (#_assert returning Unit)((#_bNot returning bool)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(slice_1, slice_2)));
   #_skip
 }
