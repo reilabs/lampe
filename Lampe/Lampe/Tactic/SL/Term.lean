@@ -2,7 +2,6 @@ import Lampe.SeparationLogic.State
 import Lampe.SeparationLogic.SLP
 import Lampe.Tactic.SLNorm
 import Lampe.Tactic.SL.Init
-import Lampe.Syntax
 
 import Lean.Meta.Tactic.Simp.Main
 

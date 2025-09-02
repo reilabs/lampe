@@ -476,7 +476,7 @@ example : STHoare p ⟨[return_ten, call_function], []⟩ ⟦⟧ (simple_hof.fn.
   simp only [simple_hof]
   steps
   subst_vars
-  step_as (⟦⟧) (fun v => v = 10)
+  step_as (⟦⟧) (fun v : Fp p => v = 10)
   . assumption
   . enter_decl
     simp only [call_function]

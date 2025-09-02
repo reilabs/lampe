@@ -60,7 +60,7 @@ def loopEnv : Env := .mk [loop_fn] []
 /--
 error: unknown identifier 'u'
 ---
-error: final singleton is not equal
+error: unknown identifier 'u'
 -/
 #guard_msgs in
 theorem loop_inv_error : STHoare p loopEnv ⟦⟧ (loop_fn.call h![] h![])

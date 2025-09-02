@@ -143,7 +143,7 @@ instance : Append SLGoals where
 instance : Inhabited SLGoals where
   default := { entailments := [], props := [], implicits := [] }
 
-def Lean.MVarId.apply' (m: MVarId) (e: Lean.Expr): TacticM (List MVarId) := do
+def _root_.Lean.MVarId.apply' (m: MVarId) (e: Lean.Expr): TacticM (List MVarId) := do
   trace[Lampe.SL] "Applying {e}"
   m.apply e
 

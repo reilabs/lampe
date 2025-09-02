@@ -185,7 +185,7 @@ def getLetInHeadClosingTheorem (e : Lean.Expr) : TacticM (Option (TSyntax `term)
   getClosingTerm val
 
 structure AddLemma where
-  expr : Expr
+  expr : Lean.Expr
   term : Term
   /--
   Controls whether the environment is generalized before applying the lemma.
@@ -432,7 +432,7 @@ Takes a sequence of at most `limit` steps to attempt to advance the proof state 
 simplifying the goal.
 -/
 partial def steps (mvar : MVarId) (config : StepsConfig)  : TacticM (List MVarId) := do
-  let goals ← stepsLoop (TripleGoals.mk mvar [] []) config.addLemmas config.limit config.strict
+  let goals ← stepsLoop (TripleGoals.mk mvar [] [] []) config.addLemmas config.limit config.strict
   return goals.flatten
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
@@ -467,9 +467,10 @@ declare_syntax_cat steps_items
 syntax "[" term,* "]" : steps_items
 syntax "steps" (num)? (steps_items)? optConfig : tactic
 
-def parseStepsConfig (limit : Option (TSyntax `num))
+def parseStepsConfig (goal : MVarId)
+                     (limit : Option (TSyntax `num))
                      (stepsItems : Option (TSyntax `steps_items))
-                     (config : TSyntax `Lean.Parser.Tactic.optConfig) : TacticM StepsConfig := do
+                     (config : TSyntax `Lean.Parser.Tactic.optConfig) : TacticM StepsConfig := goal.withContext do
   -- Parse the limit
   let limit := limit.map (fun n => n.getNat) |>.getD 1000
 
@@ -519,8 +520,8 @@ It can be called in three main ways:
   explicit limit case to combine the behaviors in the obvious way `steps n [lemmas,*]`.
 -/
 elab "steps" limit:optional(num) lemmas:optional(steps_items) config:optConfig : tactic => do
-  let config ← parseStepsConfig limit lemmas config
   let goals ← getMainGoal
+  let config ← parseStepsConfig goals limit lemmas config
   let goals ← steps goals config
   replaceMainGoal goals
 
