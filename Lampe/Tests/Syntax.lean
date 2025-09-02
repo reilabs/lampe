@@ -659,3 +659,33 @@ noir_def generic_fconst<N: Field>() -> Slice<Field> := {
 noir_def generic_uconst<N: u32>() -> Slice<Field> := {
   (#_mkRepeatedSlice returning Slice<Field>)(0: Field, uConst!(N: u32))
 }
+
+noir_struct_def has::«from»::name::«meta»<> {
+  Field
+}
+
+noir_def make::has::«from»::name::«meta»<>(x: Field) -> has::«from»::name::«meta»<> := {
+  (#_makeData returning has::«from»::name::«meta»<>)(x)
+}
+
+noir_def call::make::has::«from»::name::«meta»<>(x : Field) -> Field := {
+  ((make::has::«from»::name::«meta»<> as λ(Field) → has::«from»::name::«meta»<>)(x)).0
+}
+
+def badNameEnv : Env := .mk [«make::has::from::name::meta», «call::make::has::from::name::meta»] []
+
+example : STHoare p badNameEnv ⟦⟧ («make::has::from::name::meta».call h![] h![x]) fun v => v = (x,()) := by
+  enter_decl
+  steps
+  assumption
+
+example : STHoare p badNameEnv ⟦⟧ («call::make::has::from::name::meta».call h![] h![x]) fun v => v = x := by
+  enter_decl
+  steps
+  step_as (⟦⟧) (fun v => v = (x, ()))
+  · enter_decl
+    steps
+    assumption
+  steps
+  subst_vars
+  rfl

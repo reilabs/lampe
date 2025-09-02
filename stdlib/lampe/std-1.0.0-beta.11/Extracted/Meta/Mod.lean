@@ -8,30 +8,30 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_def std::meta::tests::returning_versus_macro_insertion<>() -> Unit := {
+noir_def std::«meta»::tests::returning_versus_macro_insertion<>() -> Unit := {
   #_unit
 }
 
-noir_trait_impl[impl_429]<> std::meta::tests::FieldCount<> for std::meta::tests::Bar<> where [] := {
+noir_trait_impl[impl_429]<> std::«meta»::tests::FieldCount<> for std::«meta»::tests::Bar<> where [] := {
   noir_def field_count<>() -> u32 := {
     (2: u32)
   };
 }
 
-noir_trait_impl[impl_314]<> std::meta::tests::DoNothing<> for std::meta::tests::Bar<> where [] := {
-  noir_def do_nothing<>(_: std::meta::tests::Bar<>) -> Unit := {
+noir_trait_impl[impl_314]<> std::«meta»::tests::DoNothing<> for std::«meta»::tests::Bar<> where [] := {
+  noir_def do_nothing<>(_: std::«meta»::tests::Bar<>) -> Unit := {
     #_skip
   };
 }
 
-noir_def std::meta::tests::concatenate_test<>() -> Unit := {
+noir_def std::«meta»::tests::concatenate_test<>() -> Unit := {
   #_unit
 }
 
-noir_def std::meta::tests::remove_unused_warnings<>() -> Unit := {
-  let (_: std::meta::tests::Bar<>) = (#_makeData returning std::meta::tests::Bar<>)((1: Field), (#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)));
-  let (_: std::meta::tests::MyStruct<>) = (#_makeData returning std::meta::tests::MyStruct<>)((1: i32));
-  let (_: std::meta::tests::MyOtherStruct<>) = (#_makeData returning std::meta::tests::MyOtherStruct<>)((2: u32));
+noir_def std::«meta»::tests::remove_unused_warnings<>() -> Unit := {
+  let (_: std::«meta»::tests::Bar<>) = (#_makeData returning std::«meta»::tests::Bar<>)((1: Field), (#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)));
+  let (_: std::«meta»::tests::MyStruct<>) = (#_makeData returning std::«meta»::tests::MyStruct<>)((1: i32));
+  let (_: std::«meta»::tests::MyOtherStruct<>) = (#_makeData returning std::«meta»::tests::MyOtherStruct<>)((2: u32));
   let (_: Unit) = (std::meta::tests::derive_do_nothing<> as λ(Unit) -> Unit)((std::panic::panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
   let (_: Unit) = (std::meta::tests::derive_do_nothing_alt<> as λ(Unit) -> Unit)((std::panic::panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
   if #_false then {

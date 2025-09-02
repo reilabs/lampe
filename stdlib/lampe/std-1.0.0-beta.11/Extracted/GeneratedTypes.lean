@@ -47,11 +47,11 @@ noir_struct_def std::embedded_curve_ops::EmbeddedCurvePoint<> {
 
 noir_type_alias DeriveFunction<> := λ(Unit) -> Unit;
 
-noir_struct_def std::meta::tests::MyOtherStruct<> {
+noir_struct_def std::«meta»::tests::MyOtherStruct<> {
   u32,
 }
 
-noir_struct_def std::meta::tests::Bar<> {
+noir_struct_def std::«meta»::tests::Bar<> {
   Field,
   Array<Field, 2: u32>,
 }
@@ -67,11 +67,11 @@ noir_struct_def std::embedded_curve_ops::EmbeddedCurveScalar<> {
   Field,
 }
 
-noir_struct_def std::meta::tests::MyStruct<> {
+noir_struct_def std::«meta»::tests::MyStruct<> {
   i32,
 }
 
-noir_struct_def std::meta::op::BinaryOp<> {
+noir_struct_def std::«meta»::op::BinaryOp<> {
   Field,
 }
 
@@ -92,7 +92,7 @@ noir_struct_def std::hash::poseidon2::Poseidon2<> {
 
 noir_struct_def std::hash::BuildHasherDefault<H: Type> {}
 
-noir_struct_def std::meta::op::UnaryOp<> {
+noir_struct_def std::«meta»::op::UnaryOp<> {
   Field,
 }
 
@@ -122,7 +122,7 @@ noir_trait_def std::convert::AsPrimitive<T: Type> [] := {
 }
 
 noir_trait_def std::convert::From<T: Type> [] := {
-  method from<>(T) -> Self;
+  method «from»<>(T) -> Self;
 }
 
 noir_trait_def std::convert::Into<T: Type> [] := {
@@ -144,18 +144,6 @@ noir_trait_def std::hash::Hash<> [] := {
 noir_trait_def std::hash::Hasher<> [] := {
   method finish<>(Self) -> Field;
   method write<>(& Self, Field) -> Unit;
-}
-
-noir_trait_def std::meta::ctstring::AsCtString<> [] := {
-  method as_ctstring<>(Self) -> Unit;
-}
-
-noir_trait_def std::meta::tests::DoNothing<> [] := {
-  method do_nothing<>(Self) -> Unit;
-}
-
-noir_trait_def std::meta::tests::FieldCount<> [] := {
-  method field_count<>() -> u32;
 }
 
 noir_trait_def std::ops::arith::Add<> [] := {
@@ -216,5 +204,17 @@ noir_trait_def std::ops::bit::Shl<> [] := {
 
 noir_trait_def std::ops::bit::Shr<> [] := {
   method shr<>(Self, Self) -> Self;
+}
+
+noir_trait_def std::«meta»::ctstring::AsCtString<> [] := {
+  method as_ctstring<>(Self) -> Unit;
+}
+
+noir_trait_def std::«meta»::tests::DoNothing<> [] := {
+  method do_nothing<>(Self) -> Unit;
+}
+
+noir_trait_def std::«meta»::tests::FieldCount<> [] := {
+  method field_count<>() -> u32;
 }
 

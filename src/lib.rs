@@ -32,12 +32,16 @@ pub use project::Project;
 mod tests {
     use std::fs;
 
-    use tempfile::tempdir;
+    use tempfile::{tempdir, TempDir};
     use walkdir::WalkDir;
 
-    use crate::Project;
+    use crate::{
+        lean::{ast::Crate, LEAN_KEYWORDS, LEAN_QUOTE_END, LEAN_QUOTE_START},
+        Project,
+    };
 
-    fn test_extractor_on(main_source: &str) -> std::io::Result<(Vec<String>, String)> {
+    /// Set up a mock Noir project for extraction
+    fn set_up_project(main_source: &str) -> std::io::Result<(TempDir, Project)> {
         let temp_dir = tempdir().expect("creating temp_dir");
 
         let nargo_toml = r#"
@@ -53,9 +57,19 @@ authors = [""]
         fs::create_dir(temp_dir.path().join("src"))?;
         fs::write(temp_dir.path().join("src").join("lib.nr"), main_source)?;
 
-        let mock_project =
-            Project::new(temp_dir.path().to_path_buf(), temp_dir.path().to_path_buf())
-                .expect("creating mock project");
+        let temp_path = temp_dir.path().to_path_buf();
+
+        Ok((
+            temp_dir,
+            Project::new(temp_path.clone(), temp_path).expect("creating mock project"),
+        ))
+    }
+
+    /// Returns a tuple of warnings and a string representation of the extracted
+    /// files
+    fn display_extraction_results(main_source: &str) -> std::io::Result<(Vec<String>, String)> {
+        let (temp_dir, mock_project) = set_up_project(main_source)?;
+
         let warnings = mock_project
             .extract()
             .expect("getting warnings")
@@ -69,7 +83,7 @@ authors = [""]
         for entry_result in WalkDir::new(temp_dir.path()) {
             let entry = match entry_result {
                 Ok(entry) => entry,
-                Err(err) => panic!("unable to acecss entry: {err}"),
+                Err(err) => panic!("unable to access entry: {err}"),
             };
 
             if entry.file_type().is_file() {
@@ -82,6 +96,21 @@ authors = [""]
         }
 
         Ok((warnings, extracted_files))
+    }
+
+    /// Returns the generated crate data for testing the generator instead of
+    /// the writer.
+    fn get_crate_data(main_source: &str) -> Result<Crate, crate::Error> {
+        let (_, mock_project) = set_up_project(main_source).unwrap();
+
+        let package = &mock_project.nargo_workspace.members[0];
+        let noir_project = crate::noir::Project::new(
+            &mock_project.nargo_file_manager,
+            &mock_project.nargo_parsed_files,
+        );
+        let generator = noir_project.compile_package(package)?.take();
+
+        Ok(generator.generate())
     }
 
     #[test]
@@ -103,7 +132,7 @@ struct BarStruct {
 
 type BarType = BarStruct;
 ";
-        let result = test_extractor_on(type_source);
+        let result = display_extraction_results(type_source);
         assert!(result.is_ok());
     }
 
@@ -116,7 +145,7 @@ fn simple_lambda(x : Field, y : Field) -> Field {
     add(x, y)
 }
 ";
-        let result = test_extractor_on(lambda_function_source);
+        let result = display_extraction_results(lambda_function_source);
 
         assert!(result.is_ok());
 
@@ -139,7 +168,7 @@ impl FooTrait<Field> for FooStruct {
     }
 }
 ";
-        let result = test_extractor_on(trait_source);
+        let result = display_extraction_results(trait_source);
 
         assert!(result.is_ok());
 
@@ -163,7 +192,7 @@ fn create_generic_foo<I>(x: I, y: I) -> GenericFoo<I> {
     GenericFoo { x, y }
 }
 ";
-        let result = test_extractor_on(struct_source);
+        let result = display_extraction_results(struct_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -181,7 +210,7 @@ fn call_generic_func(a : Field) -> Field {
     x
 }
 ";
-        let result = test_extractor_on(generic_function_source);
+        let result = display_extraction_results(generic_function_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -200,7 +229,7 @@ fn use_globals() -> [Field; 2] {
 }
     ";
 
-        let result = test_extractor_on(global_source);
+        let result = display_extraction_results(global_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -215,16 +244,12 @@ fn use_slice() -> Field {
     t[0]
 }
 ";
-        let result = test_extractor_on(slice_source);
+        let result = display_extraction_results(slice_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
     }
 
-    // TODO: Note that in this test we can see all of the weird cases with numeric
-    // generics not being displayed correctly. Once with too many annotations
-    // (ini the #arrayIndex call with (0 : u32) as u32) And again with not
-    // enough (in the `Array<Field, 4>` annotations)
     #[test]
     fn test_arrays() {
         let array_source = r"
@@ -233,7 +258,7 @@ fn use_array() -> Field {
     a[0]
 }
 ";
-        let result = test_extractor_on(array_source);
+        let result = display_extraction_results(array_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -247,7 +272,7 @@ fn repeated_slice() -> Field {
     a[0]
 }
 ";
-        let result = test_extractor_on(repslice_source);
+        let result = display_extraction_results(repslice_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -281,7 +306,7 @@ fn call_trait2_unbound<T>(x : T, y : T) -> Field where T : WeirdAdd {
     3
 }
 ";
-        let result = test_extractor_on(unbound_source);
+        let result = display_extraction_results(unbound_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -311,7 +336,7 @@ fn call_trait2_unbound(x: u64, y: u64) -> Field {
     3
 }
 ";
-        let result = test_extractor_on(unbound_source);
+        let result = display_extraction_results(unbound_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -328,7 +353,7 @@ fn call_trait2_unbound(x: u64, y: u64) -> Field {
         [1; 3]
     }
 ";
-        let result = test_extractor_on(const_generic_source);
+        let result = display_extraction_results(const_generic_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -346,7 +371,7 @@ fn call_trait2_unbound(x: u64, y: u64) -> Field {
         res
     }
     ";
-        let result = test_extractor_on(const_generic_source);
+        let result = display_extraction_results(const_generic_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -360,7 +385,7 @@ pub struct BVec<T, let MaxLen: u32> {
     len: u32,
 }
     ";
-        let result = test_extractor_on(const_generic_source);
+        let result = display_extraction_results(const_generic_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -379,7 +404,7 @@ impl Option2 {
     }
 }
     ";
-        let result = test_extractor_on(const_generic_source);
+        let result = display_extraction_results(const_generic_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -414,7 +439,7 @@ mod asdf {
 }
 
 ";
-        let result = test_extractor_on(colon_source);
+        let result = display_extraction_results(colon_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -437,7 +462,7 @@ fn call_replicate<T, let L: u32>(arr: [T; L]) -> [T; 3 * L] {
     replicate::<T, L, 3>(arr)
 }
 ";
-        let result = test_extractor_on(colon_source);
+        let result = display_extraction_results(colon_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -474,7 +499,7 @@ fn using_eq(a: MyStruct, b: MyStruct) -> bool {
 }
 ";
 
-        let result = test_extractor_on(eq_source);
+        let result = display_extraction_results(eq_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -492,7 +517,7 @@ fn call_binary_hasher<H>() -> Field where H: BinaryHasherIsh<Field> {
 }
 ";
 
-        let result = test_extractor_on(eq_source);
+        let result = display_extraction_results(eq_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
@@ -512,9 +537,66 @@ fn call_binary_hasher_2<H>() -> Field where H: BinaryHasherIsh2<F = Field> {
 }
 ";
 
-        let result = test_extractor_on(eq_source);
+        let result = display_extraction_results(eq_source);
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
+    }
+
+    #[test]
+    fn keyword_conflicts() {
+        use crate::lean::ast::*;
+
+        let keyword_source = r"
+mod has {
+    pub mod meta {
+        pub mod from {
+            pub struct name;
+        }
+    }
+}
+
+    fn from() ->  Field {
+        3
+    }
+";
+        let crate_data = get_crate_data(keyword_source).unwrap();
+
+        let assert_good_name = |name: &str| {
+            assert!(name.split("::").all(|part| {
+                let quoted = part.starts_with(LEAN_QUOTE_START) && part.ends_with(LEAN_QUOTE_END);
+                if quoted {
+                    // ensure quoted parts are lean keywords
+                    let inner = &part[LEAN_QUOTE_START.len()..part.len() - LEAN_QUOTE_END.len()];
+                    LEAN_KEYWORDS.contains(&inner)
+                } else {
+                    // ensure unquoted parts are not lean keywords
+                    !LEAN_KEYWORDS.contains(&part)
+                }
+            }));
+        };
+
+        for module in crate_data.modules {
+            for item in module.entries {
+                match item {
+                    ModuleDefinition::Global(global_definition) => {
+                        assert_good_name(&global_definition.name);
+                    }
+                    ModuleDefinition::Function(function_definition) => {
+                        assert_good_name(&function_definition.name);
+                    }
+                    ModuleDefinition::TraitImpl(trait_implementation) => {
+                        assert_good_name(&trait_implementation.name);
+                        for method in trait_implementation.methods {
+                            assert_good_name(&method.name);
+                        }
+                    }
+                }
+            }
+        }
+
+        for type_data in crate_data.types {
+            assert_good_name(type_data.name());
+        }
     }
 }

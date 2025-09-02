@@ -28,13 +28,13 @@ pub struct Project {
     target_path: PathBuf,
 
     /// Nargo object keeping the workspace data
-    nargo_workspace: Workspace,
+    pub nargo_workspace: Workspace,
 
     /// Nargo object keeping loaded files
-    nargo_file_manager: FileManager,
+    pub nargo_file_manager: FileManager,
 
     /// Nargo object keeping parsed files
-    nargo_parsed_files: ParsedFiles,
+    pub nargo_parsed_files: ParsedFiles,
 }
 
 impl Project {

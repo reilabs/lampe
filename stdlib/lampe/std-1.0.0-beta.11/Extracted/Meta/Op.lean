@@ -8,109 +8,109 @@ open Lampe
 namespace «std-1.0.0-beta.11»
 namespace Extracted
 
-noir_trait_impl[impl_300]<> std::cmp::Eq<> for std::meta::op::UnaryOp<> where [] := {
-  noir_def eq<>(self: std::meta::op::UnaryOp<>, other: std::meta::op::UnaryOp<>) -> bool := {
+noir_trait_impl[impl_300]<> std::cmp::Eq<> for std::«meta»::op::UnaryOp<> where [] := {
+  noir_def eq<>(self: std::«meta»::op::UnaryOp<>, other: std::«meta»::op::UnaryOp<>) -> bool := {
     (#_fEq returning bool)(self.0, other.0)
   };
 }
 
-noir_trait_impl[impl_301]<> std::hash::Hash<> for std::meta::op::UnaryOp<> where [] := {
-  noir_def hash<H: Type>(self: std::meta::op::UnaryOp<>, h: & H) -> Unit := {
+noir_trait_impl[impl_301]<> std::hash::Hash<> for std::«meta»::op::UnaryOp<> where [] := {
+  noir_def hash<H: Type>(self: std::«meta»::op::UnaryOp<>, h: & H) -> Unit := {
     ((Field as std::hash::Hash<>)::hash<H> as λ(Field, & H) -> Unit)(self.0, h);
     #_skip
   };
 }
 
-noir_def std::meta::op::UnaryOp::is_minus<>(self: std::meta::op::UnaryOp<>) -> bool := {
+noir_def std::«meta»::op::UnaryOp::is_minus<>(self: std::«meta»::op::UnaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (0: Field))
 }
 
-noir_def std::meta::op::UnaryOp::is_not<>(self: std::meta::op::UnaryOp<>) -> bool := {
+noir_def std::«meta»::op::UnaryOp::is_not<>(self: std::«meta»::op::UnaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (1: Field))
 }
 
-noir_def std::meta::op::UnaryOp::is_mutable_reference<>(self: std::meta::op::UnaryOp<>) -> bool := {
+noir_def std::«meta»::op::UnaryOp::is_mutable_reference<>(self: std::«meta»::op::UnaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (2: Field))
 }
 
-noir_def std::meta::op::UnaryOp::is_dereference<>(self: std::meta::op::UnaryOp<>) -> bool := {
+noir_def std::«meta»::op::UnaryOp::is_dereference<>(self: std::«meta»::op::UnaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (3: Field))
 }
 
-noir_trait_impl[impl_302]<> std::cmp::Eq<> for std::meta::op::BinaryOp<> where [] := {
-  noir_def eq<>(self: std::meta::op::BinaryOp<>, other: std::meta::op::BinaryOp<>) -> bool := {
+noir_trait_impl[impl_302]<> std::cmp::Eq<> for std::«meta»::op::BinaryOp<> where [] := {
+  noir_def eq<>(self: std::«meta»::op::BinaryOp<>, other: std::«meta»::op::BinaryOp<>) -> bool := {
     (#_fEq returning bool)(self.0, other.0)
   };
 }
 
-noir_trait_impl[impl_303]<> std::hash::Hash<> for std::meta::op::BinaryOp<> where [] := {
-  noir_def hash<H: Type>(self: std::meta::op::BinaryOp<>, h: & H) -> Unit := {
+noir_trait_impl[impl_303]<> std::hash::Hash<> for std::«meta»::op::BinaryOp<> where [] := {
+  noir_def hash<H: Type>(self: std::«meta»::op::BinaryOp<>, h: & H) -> Unit := {
     ((Field as std::hash::Hash<>)::hash<H> as λ(Field, & H) -> Unit)(self.0, h);
     #_skip
   };
 }
 
-noir_def std::meta::op::BinaryOp::is_add<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_add<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (0: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_subtract<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_subtract<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (1: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_multiply<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_multiply<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (2: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_divide<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_divide<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (3: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_equal<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_equal<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (4: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_not_equal<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_not_equal<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (5: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_less_than<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_less_than<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (6: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_less_than_or_equal<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_less_than_or_equal<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (7: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_greater_than<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_greater_than<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (8: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_greater_than_or_equal<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_greater_than_or_equal<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (9: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_and<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_and<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (10: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_or<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_or<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (11: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_xor<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_xor<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (12: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_shift_right<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_shift_right<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (13: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_shift_left<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_shift_left<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (14: Field))
 }
 
-noir_def std::meta::op::BinaryOp::is_modulo<>(self: std::meta::op::BinaryOp<>) -> bool := {
+noir_def std::«meta»::op::BinaryOp::is_modulo<>(self: std::«meta»::op::BinaryOp<>) -> bool := {
   (#_fEq returning bool)(self.0, (15: Field))
 }
 
