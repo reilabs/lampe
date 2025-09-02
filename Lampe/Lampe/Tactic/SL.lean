@@ -3,13 +3,10 @@ import Lampe.SeparationLogic.SLP
 import Lampe.Tactic.SLNorm
 import Lampe.Tactic.SL.Term
 import Lampe.Tactic.SL.Init
-import Lampe.Syntax
 
 import Lean.Meta.Tactic.Simp.Main
 
 open Lampe
-
-open Lampe.SL
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
