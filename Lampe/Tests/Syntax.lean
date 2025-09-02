@@ -67,30 +67,17 @@ noir_def slice_append<I: Type>(x: Slice<I>, y: Slice<I>) → Slice<I> := {
   self
 }
 
-example {selfV that : Tp.denote p (.slice tp)} (hLen : that.length < 2 ^ 32)
+example {selfV that : Tp.denote p (.slice tp)}
   : STHoare p Γ ⟦⟧ (slice_append.fn.body _ h![tp] |>.body h![selfV, that])
     fun v => v = selfV ++ that := by
   simp only [slice_append]
   steps
   loop_inv nat (fun i _ _ => [self ↦ ⟨.slice tp, selfV ++ that.take i⟩])
   . simp_all
-  . simp
+  · simp
   . intros i _ _
     steps
-    casesm* ∃ _, _
-    subst_vars
-    congr 1
-    simp only [Lens.modify, Option.get_some]
-
-    have : BitVec.toNat (↑i : U 32) = i := by
-      simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat, Nat.reducePow, Nat.mod_succ_eq_iff_lt,
-                 Nat.succ_eq_add_one, Nat.reduceAdd]
-      apply Nat.lt_trans (by assumption)
-      simp [Nat.mod_lt]
-
-    simp only [this] at *
     simp
-
   . steps
     simp_all [Nat.mod_eq_of_lt]
 
@@ -390,7 +377,8 @@ example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [tuple_lens]
   steps
-  aesop
+  subst_vars
+  rfl
 
 noir_struct_def Pair<E: Type> {
   E,
@@ -412,7 +400,8 @@ example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 20 := by
   simp only [struct_lens]
   steps
-  aesop
+  subst_vars
+  rfl
 
 noir_def array_lens<>() → Field := {
   let mut (a: Tuple<Array<Field, 2: u32>, Field>) = (#_makeData returning Tuple<Array<Field, 2: u32>, Field>)(
@@ -460,7 +449,8 @@ example : STHoare p Γ ⟦⟧ (deref_lens.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [deref_lens]
   steps
-  simp_all
+  subst_vars
+  rfl
 
 noir_def return_ten<>() → Field := {
   10: Field
@@ -485,10 +475,8 @@ example : STHoare p ⟨[return_ten, call_function], []⟩ ⟦⟧ (simple_hof.fn.
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [simple_hof]
   steps
-  apply pluck_final_pure_destructively
-  rintro rfl
-
-  step_as (⟦⟧) (fun (v : Fp p) => v = 10)
+  subst_vars
+  step_as (⟦⟧) (fun v : Fp p => v = 10)
   . assumption
   . enter_decl
     simp only [call_function]
@@ -514,12 +502,7 @@ example : STHoare p createArrEnv ⟦⟧ (create_arr.call h![N] h![])
   enter_decl
   steps
   subst_vars
-  simp_all
-
-  have : (BitVec.ofNat 32 (BitVec.toNat N)).toNat = N.toNat := by
-    simp only [BitVec.ofNat_toNat, BitVec.setWidth_eq]
-
-  apply List.Vector.replicate_to_list
+  rfl
 
 noir_type_alias Arr<T: Type, N: u32> := Array<T, N: u32>;
 
@@ -554,14 +537,10 @@ example : STHoare p constTestEnv ⟦⟧ (const_test.call h![3] h![2])
 
   loop_inv nat (fun i _ _ => [res ↦ ⟨.field, 2^i * 2⟩])
   . simp
-  . congr
-    simp_all
+  . simp_all
   . intros i hlo hhi
     steps
-    simp
-    congr
   . steps
-    subst_vars
     simp_all
     norm_num
 

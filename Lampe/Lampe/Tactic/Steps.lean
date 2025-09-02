@@ -4,34 +4,31 @@ import Lampe.Hoare.SepTotal
 import Lampe.SeparationLogic.State
 import Lampe.Tactic.EnvSubsetSolver
 import Lampe.Tactic.SL
-import Lampe.Tactic.SLNorm
+import Lampe.Tactic.SL.Term
 import Lampe.Tactic.Traits
 
 import Lean.Meta.Tactic.Simp.Main
 
 open Lampe
+open Lampe.SL
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq Lampe.STHoare
+
+namespace Lampe.Steps
 
 initialize
   Lean.registerTraceClass `Lampe.STHoare.Helpers
 
-def parseTriple (e : Expr) : TacticM (Option (Expr × Expr × Expr)) := do
-  if e.isAppOf ``STHoare then
-    let args := e.getAppArgsN 5
-    return some (args[2]!, args[3]!, args[4]!)
+def parseTriple (e : Lean.Expr) : TacticM (Option (Lean.Expr × Lean.Expr × Lean.Expr)) := do
+  if e.isAppOf' ``STHoare then
+    let args := e.getAppArgs'
+    return some (args[3]!, args[4]!, args[5]!)
   else return none
 
-partial def extractTripleExpr (e: Expr): TacticM (Option Expr) := do
-  if e.isAppOf ``STHoare then
-    let args := e.getAppArgsN 5
-    return args[3]?
-  else return none
+def isLetIn (e : Lean.Expr) : Bool := e.isAppOf' ``Lampe.Expr.letIn
 
-def isLetIn (e : Expr) : Bool := e.isAppOf ``Lampe.Expr.letIn
-
-def getLetInVarName (e : Expr) : TacticM (Option Name) := do
-  let args := Expr.getAppArgs e
+def getLetInVarName (e : Lean.Expr) : TacticM (Option Name) := do
+  let args := Expr.getAppArgs' e
   let body := args[4]!
   match body with
   | Lean.Expr.lam n _ _ _ => return some n
@@ -45,149 +42,149 @@ This function matches the simple things that can be automated while keeping the 
 particular, it should never turn a solvable goal into an unsolvable goal, and should always avoid
 polluting the proof state or blowing up the number of goals.
 -/
-def getClosingTerm (val : Expr) : TacticM (Option (TSyntax `term × Bool)) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"getClosingTerm {Lean.exceptEmoji e}")  do
-  let head := val.getAppFn
+def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"getClosingTerm {Lean.exceptEmoji e}")  do
+  let head := val.getAppFn'
   match head with
   | Lean.Expr.const n _ =>
     match n with
-    | ``Expr.skip => return some (←``(skip_intro), true)
-    | ``Expr.var => return some (←``(var_intro), true)
-    | ``Lampe.Expr.constU => return some (←``(constU_intro), true)
-    | ``Lampe.Expr.constFp => return some (←``(constFp_intro), true)
-    | ``Lampe.Expr.lam => return some (←``(lam_intro), false)
-    | ``Expr.mkTuple => return some (←``(genericTotalPureBuiltin_intro (a := (_,_)) Builtin.mkTuple rfl), true)
+    | ``Expr.skip => return some (←``(skip_intro))
+    | ``Expr.var => return some (←``(var_intro))
+    | ``Lampe.Expr.constU => return some (←``(constU_intro))
+    | ``Lampe.Expr.constFp => return some (←``(constFp_intro))
+    | ``Lampe.Expr.lam => return some (←``(lam_intro))
+    | ``Expr.mkTuple => return some (←``(genericTotalPureBuiltin_intro (a := (_,_)) Builtin.mkTuple rfl))
     | ``Expr.mkArray =>
       let some size := val.getAppArgs[2]? | throwError "malformed mkArray"
       let size ← size.toSyntax
-      return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := ($size, _)) rfl), true)
+      return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := ($size, _)) rfl))
     | ``Expr.mkRepArray =>
       let some size := val.getAppArgs[2]? | throwError "malformed mkArray"
       let size ← size.toSyntax
-      return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := ($size, _)) rfl), true)
+      return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := ($size, _)) rfl))
     | ``Expr.mkSlice =>
       let some size := val.getAppArgs[2]? | throwError "malformed mkSlice"
       let size ← size.toSyntax
-      return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := ($size, _)) rfl), true)
+      return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := ($size, _)) rfl))
     | ``Expr.mkRepSlice =>
       let some size := val.getAppArgs[2]? | throwError "malformed mkArray"
       let size ← size.toSyntax
-      return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := ($size, _)) rfl), true)
-    | ``Expr.getLens => return some (←``(getLens_intro), false)
-    | ``Expr.modifyLens => return some (←``(modifyLens_intro), false)
-    | ``Expr.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl), true)
-    | ``Lampe.Expr.fn => return some (←``(fn_intro), true)
+      return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := ($size, _)) rfl))
+    | ``Expr.getLens => return some (←``(getLens_intro))
+    | ``Expr.modifyLens => return some (←``(modifyLens_intro))
+    | ``Expr.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl))
+    | ``Lampe.Expr.fn => return some (←``(fn_intro))
     | ``Lampe.Expr.callBuiltin =>
       let some builtin := val.getAppArgs[3]? | throwError "malformed builtin"
       let builtinName := builtin.getAppFn
       match builtinName with
       | Lean.Expr.const n _ =>
         match n with
-        | ``Lampe.Builtin.fresh => return some (←``(fresh_intro), false)
-        | ``Lampe.Builtin.assert => return some (←``(assert_intro), false)
+        | ``Lampe.Builtin.fresh => return some (←``(fresh_intro))
+        | ``Lampe.Builtin.assert => return some (←``(assert_intro))
 
-        | ``Lampe.Builtin.bNot => return some (←``(genericTotalPureBuiltin_intro Builtin.bNot rfl), true)
+        | ``Lampe.Builtin.bNot => return some (←``(genericTotalPureBuiltin_intro Builtin.bNot rfl))
 
-        | ``Lampe.Builtin.uNot => return some (←``(genericTotalPureBuiltin_intro Builtin.uNot rfl), true)
-        | ``Lampe.Builtin.uAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.uAnd rfl), true)
-        | ``Lampe.Builtin.uOr => return some (←``(genericTotalPureBuiltin_intro Builtin.uOr rfl), true)
-        | ``Lampe.Builtin.uXor => return some (←``(genericTotalPureBuiltin_intro Builtin.uXor rfl), true)
-        | ``Lampe.Builtin.uShl => return some (←``(genericTotalPureBuiltin_intro Builtin.uShl rfl), true)
-        | ``Lampe.Builtin.uShr => return some (←``(genericTotalPureBuiltin_intro Builtin.uShr rfl), true)
+        | ``Lampe.Builtin.uNot => return some (←``(genericTotalPureBuiltin_intro Builtin.uNot rfl))
+        | ``Lampe.Builtin.uAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.uAnd rfl))
+        | ``Lampe.Builtin.uOr => return some (←``(genericTotalPureBuiltin_intro Builtin.uOr rfl))
+        | ``Lampe.Builtin.uXor => return some (←``(genericTotalPureBuiltin_intro Builtin.uXor rfl))
+        | ``Lampe.Builtin.uShl => return some (←``(genericTotalPureBuiltin_intro Builtin.uShl rfl))
+        | ``Lampe.Builtin.uShr => return some (←``(genericTotalPureBuiltin_intro Builtin.uShr rfl))
 
-        | ``Lampe.Builtin.cast => return some (←``(cast_intro), true)
+        | ``Lampe.Builtin.cast => return some (←``(cast_intro))
 
-        | ``Lampe.Builtin.fAdd => return some (←``(genericTotalPureBuiltin_intro Builtin.fAdd rfl (a := ())), true)
-        | ``Lampe.Builtin.fMul => return some (←``(genericTotalPureBuiltin_intro Builtin.fMul rfl (a := ())), true)
-        | ``Lampe.Builtin.fSub => return some (←``(genericTotalPureBuiltin_intro Builtin.fSub rfl (a := ())), true)
-        | ``Lampe.Builtin.fNeg => return some (←``(genericTotalPureBuiltin_intro Builtin.fNeg rfl (a := ())), true)
-        | ``Lampe.Builtin.fDiv => return some (←``(fDiv_intro), false)
+        | ``Lampe.Builtin.fAdd => return some (←``(genericTotalPureBuiltin_intro Builtin.fAdd rfl (a := ())))
+        | ``Lampe.Builtin.fMul => return some (←``(genericTotalPureBuiltin_intro Builtin.fMul rfl (a := ())))
+        | ``Lampe.Builtin.fSub => return some (←``(genericTotalPureBuiltin_intro Builtin.fSub rfl (a := ())))
+        | ``Lampe.Builtin.fNeg => return some (←``(genericTotalPureBuiltin_intro Builtin.fNeg rfl (a := ())))
+        | ``Lampe.Builtin.fDiv => return some (←``(fDiv_intro))
 
-        | ``Lampe.Builtin.fEq => return some (←``(genericTotalPureBuiltin_intro Builtin.fEq rfl (a := ())), true)
-        | ``Lampe.Builtin.uEq => return some (←``(genericTotalPureBuiltin_intro Builtin.uEq rfl), true)
+        | ``Lampe.Builtin.fEq => return some (←``(genericTotalPureBuiltin_intro Builtin.fEq rfl (a := ())))
+        | ``Lampe.Builtin.uEq => return some (←``(genericTotalPureBuiltin_intro Builtin.uEq rfl))
 
-        | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro), false)
-        | ``Lampe.Builtin.uMul => return some (←``(uMul_intro), false)
+        | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro))
+        | ``Lampe.Builtin.uMul => return some (←``(uMul_intro))
 
         -- Array builtins
         | ``Lampe.Builtin.mkArray =>
           let some argTypes := val.getAppArgs[1]? | throwError "malformed mkSlice"
           let argTypes ← argTypes.toSyntax
-          return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := (List.length $argTypes, _)) rfl), true)
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := (List.length $argTypes, _)) rfl))
         | ``Lampe.Builtin.mkRepeatedArray =>
-          return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedArray (a := (_, _)) rfl), true)
-        | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro), false)
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedArray (a := (_, _)) rfl))
+        | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro))
         | ``Lampe.Builtin.arrayLen =>
           let some argTps :=  val.getAppArgs[1]? | throwError "malformed arrayLen"
           let some (_, argTps) := argTps.listLit? | throwError "malformed arrayLen"
           let some argTp := argTps.head? | throwError "malformed arrayLen"
           match_expr argTp with
-          | Tp.slice _ => return some (←``(slice_arrayLen_intro), false)
-          | Tp.array _ _ => return some (←``(array_arrayLen_intro), false)
+          | Tp.slice _ => return some (←``(slice_arrayLen_intro))
+          | Tp.array _ _ => return some (←``(array_arrayLen_intro))
           | _ => return none
-        | ``Lampe.Builtin.asSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.asSlice (a := (_,_)) rfl), true)
+        | ``Lampe.Builtin.asSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.asSlice (a := (_,_)) rfl))
 
         -- Slice builtins
         | ``Lampe.Builtin.mkSlice =>
           let some argTypes := val.getAppArgs[1]? | throwError "malformed mkSlice"
           let argTypes ← argTypes.toSyntax
-          return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := (List.length $argTypes, _)) rfl), true)
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := (List.length $argTypes, _)) rfl))
         | ``Lampe.Builtin.mkRepeatedSlice =>
-          return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedSlice (a := _) rfl), true)
-        | ``Lampe.Builtin.slicePushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushBack rfl), true)
-        | ``Lampe.Builtin.slicePushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushFront rfl), true)
-        | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro), false)
-        | ``Lampe.Builtin.ref => return some (←``(ref_intro), false)
-        | ``Lampe.Builtin.readRef => return some (←``(readRef_intro), false)
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedSlice (a := _) rfl))
+        | ``Lampe.Builtin.slicePushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushBack rfl))
+        | ``Lampe.Builtin.slicePushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushFront rfl))
+        | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro))
+        | ``Lampe.Builtin.ref => return some (←``(ref_intro))
+        | ``Lampe.Builtin.readRef => return some (←``(readRef_intro))
 
-        | ``Lampe.Builtin.fApplyRangeConstraint => return some (←``(fApplyRangeConstraint_intro), false)
-        | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits rfl), true)
-        | ``Lampe.Builtin.fModBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBytes rfl), true)
-        | ``Lampe.Builtin.fModLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBits rfl), true)
-        | ``Lampe.Builtin.fModLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBytes rfl), true)
-        | ``Lampe.Builtin.fModNumBits => return some (←``(fModNumBits_intro), false)
-        | ``Lampe.Builtin.iAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.iAsField rfl), true)
-        | ``Lampe.Builtin.iFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.iFromField rfl), true)
-        | ``Lampe.Builtin.uAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.uAsField rfl), true)
-        | ``Lampe.Builtin.uFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.uFromField rfl), true)
+        | ``Lampe.Builtin.fApplyRangeConstraint => return some (←``(fApplyRangeConstraint_intro))
+        | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits rfl))
+        | ``Lampe.Builtin.fModBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBytes rfl))
+        | ``Lampe.Builtin.fModLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBits rfl))
+        | ``Lampe.Builtin.fModLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBytes rfl))
+        | ``Lampe.Builtin.fModNumBits => return some (←``(fModNumBits_intro))
+        | ``Lampe.Builtin.iAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.iAsField rfl))
+        | ``Lampe.Builtin.iFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.iFromField rfl))
+        | ``Lampe.Builtin.uAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.uAsField rfl))
+        | ``Lampe.Builtin.uFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.uFromField rfl))
 
         -- Tuple/struct builtins
-        | ``Lampe.Builtin.makeData => return some (← ``(genericTotalPureBuiltin_intro (a := (_, _)) Builtin.makeData rfl), true)
-        | ``Lampe.Builtin.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl), true)
+        | ``Lampe.Builtin.makeData => return some (← ``(genericTotalPureBuiltin_intro (a := (_, _)) Builtin.makeData rfl))
+        | ``Lampe.Builtin.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl))
 
-        | ``Lampe.Builtin.zeroed => return some (←``(genericTotalPureBuiltin_intro Builtin.zeroed rfl), true)
+        | ``Lampe.Builtin.zeroed => return some (←``(genericTotalPureBuiltin_intro Builtin.zeroed rfl))
 
 
         | _ => return none
       | _ => return none
-    | ``Lampe.Expr.ref => return some (←``(ref_intro), false)
-    | ``Lampe.Expr.readRef => return some (←``(readRef_intro), false)
+    | ``Lampe.Expr.ref => return some (←``(ref_intro))
+    | ``Lampe.Expr.readRef => return some (←``(readRef_intro))
     | ``Lampe.Expr.litNum =>
       let some vtp := val.getAppArgs[1]? | throwError "malformed litNum"
       let  Lean.Expr.const vtp _ := vtp.getAppFn | throwError "malformed litNum"
       match vtp with
-      | ``Tp.field => return some (←``(litField_intro), true)
-      | ``Tp.u => return some (←``(litU_intro), true)
+      | ``Tp.field => return some (←``(litField_intro))
+      | ``Tp.u => return some (←``(litU_intro))
       | ``Tp.bool =>
-        let some (v : Expr) := val.getAppArgs[2]? | throwError "malformed litNum"
-        let some (v : Expr) := v.getAppArgs[1]? | throwError "malformed litNum" -- `OfNat.ofNat _ n`
+        let some v := val.getAppArgs[2]? | throwError "malformed litNum"
+        let some (v : Lean.Expr) := v.getAppArgs[1]? | throwError "malformed litNum" -- `OfNat.ofNat _ n`
         trace[Lampe.STHoare.Helpers] "litNum bool {v}"
         match v.natLit! with
-        | 0 => return some (←``(litFalse_intro), true)
-        | 1 => return some (←``(litTrue_intro), true)
+        | 0 => return some (←``(litFalse_intro))
+        | 1 => return some (←``(litTrue_intro))
         | _ => return none
       | _ => return none
-    | ``Lampe.Expr.litStr => return some (←``(litStr_intro), false)
+    | ``Lampe.Expr.litStr => return some (←``(litStr_intro))
     | _ => return none
 
   | _ => pure none
 
-def getLetInHeadClosingTheorem (e : Expr) : TacticM (Option (TSyntax `term × Bool)) := do
+def getLetInHeadClosingTheorem (e : Lean.Expr) : TacticM (Option (TSyntax `term)) := do
   let args := Expr.getAppArgs e
   let some val := args[3]? | throwError "malformed letIn"
   getClosingTerm val
 
 structure AddLemma where
-  expr : Expr
+  expr : Lean.Expr
   term : Term
   /--
   Controls whether the environment is generalized before applying the lemma.
@@ -216,55 +213,21 @@ def tryApplySyntaxes (goal : MVarId) (lemmas : List AddLemma): TacticM (List MVa
     trace[Lampe.STHoare.Helpers] "failed {←ppExpr n.expr} with {e.toMessageData}"
     tryApplySyntaxes goal ns
 
-lemma STHoare.pure_left_star {p tp} {E : Expr (Tp.denote p) tp} {Γ P₁ P₂ Q} : (P₁ → STHoare  p Γ P₂ E Q) → STHoare p Γ (⟦P₁⟧ ⋆ P₂) E Q := by
-  intro h
-  intro H st Hh
-  unfold STHoare THoare at h
-  apply h
-  · simp [SLP.star, SLP.lift, SLP.entails] at Hh
-    casesm* ∃_,_, _∧_
-    assumption
-  · simp only [SLP.star, SLP.lift, SLP.entails] at Hh
-    rcases Hh with ⟨s₁, s₂, hdss, rfl, ⟨s₃, s₄, hdsss, rfl, ⟨⟨hp, rfl⟩⟩⟩, _⟩
-    unfold SLP.star
-    exists s₄
-    exists s₂
-    simp_all [LawfulHeap.union_empty, LawfulHeap.empty_union]
-
-
-lemma STHoare.letIn_trivial_intro {p tp₁ tp₂} {P Q} {E : Expr (Tp.denote p) tp₁} {v'} {cont : Tp.denote p tp₁ → Expr (Tp.denote p) tp₂}
-    (hE : STHoare p Γ ⟦True⟧ E (fun v => v = v'))
-    (hCont : STHoare p Γ P (cont v') Q):
-    STHoare p Γ P (E.letIn cont) Q := by
-  apply STHoare.letIn_intro
-  apply STHoare.ramified_frame_top hE (Q₂:= fun v => ⟦v = v'⟧ ⋆ P)
-  · simp
-    apply SLP.forall_right
-    intro
-    apply SLP.wand_intro
-    rw [SLP.star_comm]
-    apply SLP.pure_left
-    rintro rfl
-    simp
-  · intro
-    apply STHoare.pure_left_star
-    rintro rfl
-    assumption
-
 structure TripleGoals where
   triple : Option MVarId
+  entailments : List MVarId
   props : List MVarId
   implicits : List MVarId
 
 instance : HAppend TripleGoals SLGoals TripleGoals where
-  hAppend g₁ g₂ := ⟨g₁.triple, g₁.props ++ g₂.props, g₁.implicits ++ g₂.implicits⟩
+  hAppend g₁ g₂ := ⟨g₁.triple, g₁.entailments ++ g₂.entailments, g₁.props ++ g₂.props, g₁.implicits ++ g₂.implicits⟩
 
 instance : HAppend SLGoals TripleGoals TripleGoals where
-  hAppend g₁ g₂ := ⟨g₂.triple, g₁.props ++ g₂.props, g₁.implicits ++ g₂.implicits⟩
+  hAppend g₁ g₂ := ⟨g₂.triple, g₁.entailments ++ g₂.entailments, g₁.props ++ g₂.props, g₁.implicits ++ g₂.implicits⟩
 
-instance : Coe SLGoals TripleGoals := ⟨fun g => ⟨none, g.props, g.implicits⟩⟩
+instance : Coe SLGoals TripleGoals := ⟨fun g => ⟨none, g.entailments, g.props, g.implicits⟩⟩
 
-def TripleGoals.flatten (g : TripleGoals) : List MVarId := g.props ++ g.implicits ++ g.triple.toList
+def TripleGoals.flatten (g : TripleGoals) : List MVarId :=  g.entailments ++ g.props ++ g.implicits ++ g.triple.toList
 
 lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by
   simp [SLP.star, SLP.lift]
@@ -283,27 +246,115 @@ lemma pluck_pures_destructively : (P → STHoare lp Γ H e Q) → (STHoare lp Γ
 lemma pluck_final_pure_destructively : (P → STHoare lp Γ ⟦True⟧ e Q) → (STHoare lp Γ P e Q) := by
   simp_all [STHoare, THoare, SLP.pure_star_iff_and]
 
-partial def pluckPures (goal : MVarId) : TacticM TripleGoals := do
-  let (goal, impls) ← try
-    let goal :: impls ← goal.apply (←mkConstWithFreshMVarLevels ``pluck_pures_destructively) | throwError "pluck_pures_destructively failed"
-    let (_, goal) ← goal.intro1
-    pure $ (goal, impls)
-  catch _ => return TripleGoals.mk goal [] []
-  let goal ← pluckPures goal
-  return TripleGoals.mk goal.triple (goal.props ++ impls) goal.implicits
+theorem pre_congr {p} {P₁ P₂ : SLP (State p)} (h : P₁ = P₂) {Γ α} {Q : Tp.denote p α → SLP (State p)} {e} : (STHoare p Γ P₂ e Q) → (STHoare p Γ P₁ e Q) := by
+  cases h
+  exact id
 
-def normalizeGoals (goals : TripleGoals) : TacticM TripleGoals := do
+partial def rewritePre (goal : MVarId) (eq : Lean.Expr) : TacticM (MVarId × List MVarId) := goal.withContext do
+  let thm ← mkAppM ``pre_congr #[eq]
+  let goal :: goals ← goal.apply thm | throwError "unexpected goals in pre_congr"
+  pure (goal, goals)
+
+partial def introPure (goal : MVarId) : TacticM (MVarId) := goal.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"introPure {Lean.exceptEmoji e}") do
+  let (hpFv, goal) ← goal.intro1
+  goal.withContext do
+    let fvTp ← hpFv.getType
+    let fvTp ← instantiateMVars fvTp
+    if fvTp.isAppOf' ``Eq then
+      trace[Lampe.STHoare.Helpers] "hp is an equality"
+      let args := fvTp.getAppArgs'
+      let (lhs : Lean.Expr) ← liftOption args[1]?
+      match lhs with
+      | .fvar fvid =>
+        let name ← fvid.getUserName
+        let isInternal := name.toString (escape := false) |>.startsWith "#"
+        trace[Lampe.STHoare.Helpers] "hp is an equality of fvar {name} {isInternal}"
+        if isInternal then
+          try
+            pure (←substCore goal hpFv (symm := false) (tryToSkip := true)).2
+          catch _ => pure goal
+        else pure goal
+      | _ => pure goal
+    else
+      trace[Lampe.STHoare.Helpers] "hp is not an equality, it's {fvTp.getAppFn'}"
+      pure goal
+
+partial def doPlucks (goal : MVarId) (pre : SLTerm) : TacticM (MVarId × List MVarId) := goal.withContext do
+  match pre with
+  | .star _ (.lift _) r =>
+    let plucker ← mkConstWithFreshMVarLevels ``pluck_pures_destructively
+    let goal :: impls₁ ← goal.apply plucker | throwError "unexpected goals in pluck_pures_destructively"
+    let (goal, impls₂) ← doPlucks goal r
+    let goal ← introPure goal
+    pure (goal, impls₁ ++ impls₂)
+  | .lift _ =>
+    let plucker ← mkConstWithFreshMVarLevels ``pluck_final_pure_destructively
+    let goal :: impls₁ ← goal.apply plucker | throwError "unexpected goals in pluck_final_pure_destructively"
+    let goal ← introPure goal
+    pure (goal, impls₁)
+  | _ => return (goal, [])
+
+partial def pluckPures (goal : MVarId) : TacticM (MVarId × List MVarId) := goal.withContext do
+  let tgt ← goal.instantiateMVarsInType
+  let some (pre, _, _) ← parseTriple tgt | throwError "malformed triple"
+  let pre ← parseSLExpr pre
+  let (pre, preEq) ← Lampe.SL.norm pre
+  let (goal, impls₁) ← rewritePre goal preEq
+  let (goal, impls₂) ← doPlucks goal pre
+  pure (goal, impls₁ ++ impls₂)
+
+lemma pull_exi {P : α → SLP (State p)} : (∀v, STHoare p env (P v) e Q) → STHoare p env (∃∃v, P v) e Q := by
+  intro hp
+  unfold STHoare THoare SLP.exists' SLP.star
+  intro H st hE
+  rcases hE with ⟨st₁, st₂, _, _, ⟨_, _⟩, _⟩
+  apply hp
+  unfold SLP.star
+  exists st₁, st₂
+
+partial def doPluckExis (goal : MVarId) : TacticM (MVarId × List MVarId) := goal.withContext do
+  let tgt ← goal.instantiateMVarsInType
+  let some (pre, _, _) ← parseTriple tgt | throwError "malformed triple"
+  let pre ← parseSLExpr pre
+  match pre with
+  | .exi _ _ =>
+    let puller ← mkConstWithFreshMVarLevels ``pull_exi
+    let goal :: impls ← goal.apply puller | throwError "unexpected goals in pull_exi"
+    goal.withContext do
+      let (_, goal) ← goal.intro1
+      let (goal, impls₂) ← doPluckExis goal
+      pure (goal, impls ++ impls₂)
+  | _ => pure (goal, [])
+
+partial def pluckExis (goal : MVarId) : TacticM (MVarId × List MVarId) := goal.withContext do
+  let tgt ← goal.instantiateMVarsInType
+  let some (pre, _, _) ← parseTriple tgt | throwError "malformed triple"
+  let pre ← parseSLExpr pre
+  let (_, preEq) ← Lampe.SL.surfaceExis pre
+  let (goal, impls₁) ← rewritePre goal preEq
+  let (goal, impls₂) ← doPluckExis goal
+  pure (goal, impls₁ ++ impls₂)
+
+partial def simpOnlyGoal (goal : MVarId) : TacticM MVarId := do
+  let ctx ← Simp.Context.ofNames (config := { failIfUnchanged := false}) (simpOnly := true)
+  let r ← simpGoal goal ctx
+  match r.1 with
+  | some (_, goal) => return goal
+  | none => return goal
+
+def normalizeGoals (goals : TripleGoals) : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"normalizeGoals {Lean.exceptEmoji e}") $ do
   match goals with
-  | .mk (some trp) ps is =>
-    let trp :: is₂ ← evalTacticAt (←`(tactic|sl_norm)) trp | throwError "sl_norm failed"
-    let g ← pluckPures trp
-    return TripleGoals.mk g.triple (g.props ++ ps) (g.implicits ++ is ++ is₂)
+  | .mk (some trp) ents ps is =>
+    let trp ← simpOnlyGoal trp
+    let (trp, impls₁) ← pluckExis trp
+    let (trp, impls₂) ← pluckPures trp
+    return TripleGoals.mk trp ents ps (impls₁ ++ impls₂ ++ is)
   | r => return r
 
 syntax "triple_norm" : tactic
 elab "triple_norm" : tactic => do
   let goals ← getMainGoal
-  let goals ← normalizeGoals $ TripleGoals.mk goals [] []
+  let goals ← normalizeGoals $ TripleGoals.mk goals [] [] []
   replaceMainGoal goals.flatten
 
 /--
@@ -315,64 +366,58 @@ entailments found in the goal.
 
 It throws an exception if it cannot make progress or close any subsequent SL goal(s).
 -/
-partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoals := do
+partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoals := mvar.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {Lean.exceptEmoji e}") $ do
   let target ← mvar.instantiateMVarsInType
   let some (_, body, _) ← parseTriple target | throwError "not a triple"
   if isLetIn body then
     let closer ← getLetInHeadClosingTheorem body
     let vname ← getLetInVarName body
-    let isInternal := vname.map (·.toString.startsWith "#") |>.getD true
-    trace[Lampe.STHoare.Helpers] "letIn {closer} {vname} {isInternal}"
-    match closer, isInternal with
-    | some (cl, true), true =>
-      let nextTriple :: impls ← evalTacticAt (←`(tactic|apply STHoare.letIn_trivial_intro; apply $cl)) mvar | throwError "bad application"
-      return TripleGoals.mk nextTriple [] impls
-    | some (cl, _), _ =>
-      let hHead :: hNext :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
-      let (_, hNext) ← hNext.intro (vname.getD `v)
-      let hHead :: hEnt :: impls₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
-      let impls₃ ← evalTacticAt (←`(tactic|apply $cl)) hHead
-      let rEnt ← solveEntailment hEnt
-      return TripleGoals.mk hNext [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
-    | none, _ =>
-      let hHead :: hNext :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
-      let (_, hNext) ← hNext.intro (vname.getD `v)
-      let hHead :: hEnt :: impls₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
-      let impls₃ ← tryApplySyntaxes hHead addLemmas
-      let rEnt ← solveEntailment hEnt
-      return TripleGoals.mk hNext [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
+    trace[Lampe.STHoare.Helpers] "letIn {closer} {vname}"
+    let closer := match closer with
+    | some cl => fun goal => do evalTacticAt (←`(tactic|apply $cl)) goal
+    | none => fun goal => tryApplySyntaxes goal addLemmas
+    let hHead :: hNext :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``letIn_intro) | throwError "bad application"
+    let (_, hNext) ← hNext.intro (vname.getD `v)
+    let hHead :: hEnt :: impls₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
+    let impls₃ ← closer hHead
+    let rEnt ← solveEntailment hEnt
+    return TripleGoals.mk hNext [] [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
   else
-    match (←getClosingTerm body) with
-    | some (closer, _) => do
-      let hHoare :: hEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "ramified_frame_top failed"
-      let impls₂ ← evalTacticAt (←`(tactic|apply $closer)) hHoare
-      let hEnt ← solveEntailment hEnt
-      return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
-    | none =>
-      let hHead :: hEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.ramified_frame_top) | throwError "bad application"
-      let impls₂ ← tryApplySyntaxes hHead addLemmas
-      let hEnt ← solveEntailment hEnt
-      return hEnt ++ SLGoals.mk [] (impls₁ ++ impls₂)
+    let closer ← getClosingTerm body
+    let closer := match closer with
+    | some cl => fun goal => do evalTacticAt (←`(tactic|apply $cl)) goal
+    | none => fun goal => tryApplySyntaxes goal addLemmas
+    let hHoare :: hEnt :: qEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.consequence_frame) | throwError "ramified_frame_top failed"
+    let impls₂ ← closer hHoare
+    let rEnt ← solveEntailment hEnt
+    let (_, qEnt) ← qEnt.intro1
+    let qEnt ← if rEnt.entailments.isEmpty then
+      solveEntailment qEnt
+    else
+      pure $ SLGoals.mk [qEnt] [] []
+    return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt ++ qEnt
 
 /--
 Takes `limit` obvious steps, behaving like `repeat step`.
 
 It will never throw exceptions.
 -/
-partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat)
-    (strict : Bool := false) : TacticM TripleGoals := do
+partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) (strict : Bool := false) : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepsLoop {Lean.exceptEmoji e}") $ do
   let goals ← normalizeGoals goals
   if limit == 0 then return goals
 
   match goals.triple with
   | some mvar =>
-    let nextTriple ← try some <$> step mvar addLemmas
-    catch e =>
+    let nextTriple ← try some <$> step mvar addLemmas catch e =>
+      trace[Lampe.STHoare.Helpers] "step failed with: {←e.toMessageData.toString}"
       if strict then throw e else pure none
     match nextTriple with
     | some nextTriple => do
-      let nextGoals := nextTriple ++ SLGoals.mk goals.props goals.implicits
-      stepsLoop nextGoals addLemmas (limit - 1)
+      if !nextTriple.entailments.isEmpty then
+       return nextTriple ++ SLGoals.mk goals.entailments goals.props goals.implicits
+      else
+        let nextGoals := nextTriple ++ SLGoals.mk goals.entailments goals.props goals.implicits
+        stepsLoop nextGoals addLemmas (limit - 1)
     | none => return goals
   | none => return goals
 
@@ -386,13 +431,8 @@ Takes a sequence of at most `limit` steps to attempt to advance the proof state 
 simplifying the goal.
 -/
 partial def steps (mvar : MVarId) (config : StepsConfig)  : TacticM (List MVarId) := do
-  let goals ← stepsLoop (TripleGoals.mk mvar [] []) config.addLemmas config.limit config.strict
+  let goals ← stepsLoop (TripleGoals.mk mvar [] [] []) config.addLemmas config.limit config.strict
   return goals.flatten
-
-
-lemma STHoare.pluck_pures : (P → STHoare lp Γ H e Q) → (STHoare lp Γ (P ⋆ H) e (fun v => P ⋆ Q v)) := by
-  intro h
-  simp_all [STHoare, THoare, SLP.pure_star_iff_and]
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}
     (h_found : (Γ.functions.find? (fun ⟨n, _⟩ => n = fnName)) = some ⟨fnName, func⟩)
@@ -426,9 +466,10 @@ declare_syntax_cat steps_items
 syntax "[" term,* "]" : steps_items
 syntax "steps" (num)? (steps_items)? optConfig : tactic
 
-def parseStepsConfig (limit : Option (TSyntax `num))
+def parseStepsConfig (goal : MVarId)
+                     (limit : Option (TSyntax `num))
                      (stepsItems : Option (TSyntax `steps_items))
-                     (config : TSyntax `Lean.Parser.Tactic.optConfig) : TacticM StepsConfig := do
+                     (config : TSyntax `Lean.Parser.Tactic.optConfig) : TacticM StepsConfig := goal.withContext do
   -- Parse the limit
   let limit := limit.map (fun n => n.getNat) |>.getD 1000
 
@@ -478,8 +519,8 @@ It can be called in three main ways:
   explicit limit case to combine the behaviors in the obvious way `steps n [lemmas,*]`.
 -/
 elab "steps" limit:optional(num) lemmas:optional(steps_items) config:optConfig : tactic => do
-  let config ← parseStepsConfig limit lemmas config
   let goals ← getMainGoal
+  let config ← parseStepsConfig goals limit lemmas config
   let goals ← steps goals config
   replaceMainGoal goals
 
@@ -596,3 +637,5 @@ elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term 
     m!"steps has encountered an error in proceeding.
     The returned exception is {e.toMessageData}"
   replaceMainGoal newGoals
+
+end Lampe.Steps

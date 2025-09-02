@@ -40,7 +40,8 @@ import Lampe.Syntax.Utils
 import Lampe.Tactic.EnvSubsetSolver
 import Lampe.Tactic.IntroCases
 import Lampe.Tactic.SL
-import Lampe.Tactic.SLNorm
+import Lampe.Tactic.SL.Init
+import Lampe.Tactic.SL.Term
 import Lampe.Tactic.Steps
 import Lampe.Tactic.Traits
 import Lampe.Tp

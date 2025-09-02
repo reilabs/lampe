@@ -22,7 +22,7 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   STHoare p Γ
     ⟦⟧
     (.callBuiltin (sgn a).fst (sgn a).snd (Builtin.newGenericPureBuiltin sgn desc) args)
-    (fun v => ∃h, (v = (desc a args).snd h)) := by
+    (fun v => ∃∃h, v = (desc a args).snd h) := by
   unfold STHoare
   intro H
   unfold THoare
@@ -30,7 +30,7 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   constructor
   cases em (desc a args).fst
   . apply Builtin.genericPureOmni.ok
-    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const]
+    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const, SLP.exists_pure]
       apply SLP.ent_star_top
       simp_all only [SLP.true_star, exists_const]
     . tauto
@@ -54,7 +54,7 @@ lemma pureBuiltin_intro_consequence
   apply SLP.forall_right
   intro
   apply SLP.wand_intro
-  simp only [SLP.true_star]
+  simp only [SLP.true_star, SLP.exists_pure]
   apply SLP.pure_left'
   rintro ⟨_, _⟩
   simp_all [SLP.entails_top]
@@ -75,66 +75,82 @@ def genericTotalPureBuiltin_intro {A : Type} {sgn : A → List Tp × Tp} {desc}
 -- Arithmetics
 
  theorem uAdd_intro : STHoarePureBuiltin p Γ Builtin.uAdd (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem uSub_intro : STHoarePureBuiltin p Γ Builtin.uSub (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem uMul_intro : STHoarePureBuiltin p Γ Builtin.uMul (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem uDiv_intro : STHoarePureBuiltin p Γ Builtin.uDiv (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem uRem_intro : STHoarePureBuiltin p Γ Builtin.uRem (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem iAdd_intro : STHoarePureBuiltin p Γ Builtin.iAdd (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem iSub_intro : STHoarePureBuiltin p Γ Builtin.iSub (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem iMul_intro : STHoarePureBuiltin p Γ Builtin.iMul (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem iDiv_intro : STHoarePureBuiltin p Γ Builtin.iDiv (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem iRem_intro : STHoarePureBuiltin p Γ Builtin.iRem (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem iNeg_intro : STHoarePureBuiltin p Γ Builtin.iNeg (by tauto) h![a] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try rfl
    tauto
 
  theorem fAdd_intro : STHoarePureBuiltin p Γ Builtin.fAdd (by tauto) h![a, b] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
  theorem fSub_intro : STHoarePureBuiltin p Γ Builtin.fSub (by tauto) h![a, b] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
  theorem fMul_intro : STHoarePureBuiltin p Γ Builtin.fMul (by tauto) h![a, b] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
  theorem fDiv_intro : STHoarePureBuiltin p Γ Builtin.fDiv (by tauto) h![a, b] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
  theorem fNeg_intro : STHoarePureBuiltin p Γ Builtin.fNeg (by tauto) h![a] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
@@ -157,6 +173,7 @@ theorem PureTotalBuiltinTriple_intro
   tauto
 
 theorem arrayIndex_intro : STHoarePureBuiltin p Γ Builtin.arrayIndex (by tauto) h![arr, i] (a := (tp, n)) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
@@ -168,45 +185,53 @@ theorem array_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.array tp N]
   simp [Builtin.arrayLenDesc]
 
 theorem slice_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (Tp.u 32) Builtin.arrayLen h![x])
-    fun v => ⟦v = x.length⟧ ⋆ ⟦x.length < 2^32⟧ := by
-  simp only [SLP.lift_star_lift]
-  apply pureBuiltin_intro_consequence (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) (a := Builtin.ArrayLenCase.slice tp) rfl rfl
-  intro h
-  simp [Builtin.arrayLenDesc] at h
-  simp
-  refine ⟨rfl, h⟩
+    fun v => ∃∃h, ⟦v = BitVec.ofNatLT x.length h⟧ := by
+  apply STHoare.consequence_frame
+  apply pureBuiltin_intro (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) (a := Builtin.ArrayLenCase.slice tp)
+  sl
+  intro
+  sl
+  assumption
 
 theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![arr] (a := (tp, n)) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 -- BigInt
 
 theorem bigIntEq_intro : STHoarePureBuiltin p Γ Builtin.bigIntEq (by tauto) h![a, b] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
 theorem bigIntAdd_intro : STHoarePureBuiltin p Γ Builtin.bigIntAdd (by tauto) h![a, b] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem bigIntSub_intro : STHoarePureBuiltin p Γ Builtin.bigIntSub (by tauto) h![a, b] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem bigIntMul_intro : STHoarePureBuiltin p Γ Builtin.bigIntMul (by tauto) h![a, b] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem bigIntDiv_intro : STHoarePureBuiltin p Γ Builtin.bigIntDiv (by tauto) h![a, b] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem bigIntFromLeBytes_intro : STHoarePureBuiltin p Γ Builtin.bigIntFromLeBytes (by tauto) h![bs, mbs] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem bigIntToLeBytes_intro : STHoarePureBuiltin p Γ Builtin.bigIntToLeBytes (by tauto) h![a] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   . dsimp only
     intro h
@@ -235,41 +260,51 @@ def iShr_intro := genericTotalPureBuiltin_intro Builtin.iShr rfl
 -- Comparison
 
 theorem unitEq_intro : STHoarePureBuiltin p Γ Builtin.unitEq (by tauto) h![a, b] (a := ()) := by
-   apply pureBuiltin_intro_consequence <;> tauto
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
+   apply pureBuiltin_intro_consequence <;> try tauto
 
 theorem bEq_intro : STHoarePureBuiltin p Γ Builtin.bEq (by tauto) h![a, b] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
 theorem fEq_intro : STHoarePureBuiltin p Γ Builtin.fEq (by tauto) h![a, b] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
 theorem uEq_intro : STHoarePureBuiltin p Γ Builtin.uEq (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
 theorem iEq_intro : STHoarePureBuiltin p Γ Builtin.uEq (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
 theorem strEq_intro : STHoarePureBuiltin p Γ Builtin.strEq (by tauto) h![a, b] := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
 theorem uLt_intro : STHoarePureBuiltin p Γ Builtin.uLt (by tauto) h![a, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem iLt_intro : STHoarePureBuiltin p Γ Builtin.iLt (by tauto) h![a, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem uGt_intro : STHoarePureBuiltin p Γ Builtin.uGt (by tauto) h![a, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem iGt_intro : STHoarePureBuiltin p Γ Builtin.iGt (by tauto) h![a, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
@@ -277,78 +312,96 @@ theorem iGt_intro : STHoarePureBuiltin p Γ Builtin.iGt (by tauto) h![a, b] := b
 
 theorem fApplyRangeConstraint_intro :
   STHoarePureBuiltin p Γ Builtin.fApplyRangeConstraint (by tauto) h![f, c] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem fModNumBits_intro : STHoarePureBuiltin p Γ Builtin.fModNumBits (by tauto) h![f] (a := ())  := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem fModLeBits_intro : STHoarePureBuiltin p Γ Builtin.fModLeBits (by tauto) h![f] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem fModBeBits_intro : STHoarePureBuiltin p Γ Builtin.fModLeBits (by tauto) h![f] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem fModLeBytes_intro : STHoarePureBuiltin p Γ Builtin.fModLeBytes (by tauto) h![f] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem fModBeBytes_intro : STHoarePureBuiltin p Γ Builtin.fModLeBytes (by tauto) h![f] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem uFromField_intro : STHoarePureBuiltin p Γ Builtin.uFromField (by tauto) h![f] (a := s) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem iFromField_intro : STHoarePureBuiltin p Γ Builtin.iFromField (by tauto) h![f] (a := s) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem uAsField_intro {p Γ s f} : STHoarePureBuiltin p Γ Builtin.uAsField (by tauto) h![f] (a := s) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem iAsField_intro {p Γ s f} : STHoarePureBuiltin p Γ Builtin.iAsField (by tauto) h![f] (a := s) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 -- Slice
 
 theorem sliceIndex_intro : STHoarePureBuiltin p Γ Builtin.sliceIndex (by tauto) h![sl, i] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 theorem slicePushBack_intro : STHoarePureBuiltin p Γ Builtin.slicePushBack (by tauto) h![sl, e] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 theorem slicePushFront_intro : STHoarePureBuiltin p Γ Builtin.slicePushFront (by tauto) h![sl, e] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 theorem sliceInsert_intro : STHoarePureBuiltin p Γ Builtin.sliceInsert (by tauto) h![sl, i, e] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 theorem slicePopFront_intro : STHoarePureBuiltin p Γ Builtin.slicePopFront (by tauto) h![sl] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 theorem slicePopBack_intro : STHoarePureBuiltin p Γ Builtin.slicePopBack (by tauto) h![sl] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by tauto) h![sl, i]  := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
 -- String
 
 theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto) h![s] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
@@ -448,18 +501,22 @@ theorem writeRef_intro :
 
 -- TODO maybe these can be removed as `steps` automates it and the compound construction is still usable manually.
 theorem mkTuple_intro : STHoarePureBuiltin p Γ Builtin.mkTuple (by tauto) fieldExprs (a := (name, fieldTps)) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem makeData_intro : STHoarePureBuiltin p Γ Builtin.makeData (by tauto) fieldExprs (a := (name, fieldTps)) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem projectTuple_intro : STHoarePureBuiltin p Γ (Builtin.projectTuple mem) (by tauto) h![tpl] (a := name) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
 theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by tauto) fieldExprs (a := name) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
 
 -- Lens
@@ -520,6 +577,7 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
 -- Misc
 
 theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 

@@ -19,6 +19,7 @@ def Access.get (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) 
 | .array (n := n) idx => if h : idx.toNat < n.toNat then s.get ⟨idx.toNat, h⟩ else none
 | .slice idx => if h : idx.toNat < s.length then s.get ⟨idx.toNat, h⟩ else none
 
+@[simp]
 def Access.modify (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Option $ Tp.denote p tp₁ := match acc with
 | .tuple mem => Builtin.replaceTuple' s mem v'
 | .array (n := n) idx => if h : idx.toNat < n.toNat then s.set ⟨idx.toNat, h⟩ v' else none

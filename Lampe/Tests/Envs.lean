@@ -59,7 +59,6 @@ example {p} {fieldArg : Fp p}:
   step_as (⟦⟧) (fun v => v = (2 * u8Arg : U 8))
   · try_all_traits [] compoundEnv
     steps
-    casesm* ∃ _, _
     subst_vars
     bv_decide
 
@@ -80,7 +79,11 @@ example {p} {fieldArg : Fp p}:
     ring
 
   steps
-  enter_decl
-  steps
-  subst_vars
-  rfl
+  step_as (⟦w = 2 * fieldArg⟧) (fun v => v = 2 * fieldArg)
+  . assumption
+  . subst_vars
+    rfl
+  . enter_decl
+    steps
+    subst_vars
+    rfl
