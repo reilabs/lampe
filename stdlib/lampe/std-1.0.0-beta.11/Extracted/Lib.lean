@@ -53,10 +53,10 @@ noir_def std::tests::test_static_assert_custom_message<>() -> Unit := {
 }
 
 noir_def std::tests::test_wrapping_mul<>() -> Unit := {
-  let (zero: u128) = (0: u128);
-  let (one: u128) = (1: u128);
-  let (two_pow_64: u128) = (18446744073709551616: u128);
-  let (u128_max: u128) = (340282366920938463463374607431768211455: u128);
+  let zero = (0: u128);
+  let one = (1: u128);
+  let two_pow_64 = (18446744073709551616: u128);
+  let u128_max = (340282366920938463463374607431768211455: u128);
   (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as std::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(zero, one)));
   (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as std::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(one, zero)));
   (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as std::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(one, one)));

@@ -36,9 +36,9 @@ noir_trait_impl[trait1u8]<> Trait1<> for u8 where [] := {
 }
 
 noir_def both_trait_call<>(x: Field, y: u8) → Field := {
-  let (z: u8) = ((u8 as Trait1<>)::function<> as λ(u8) -> u8)(y);
-  let (_t: u8) = (foo<u8> as λ(u8) → u8)(z);
-  let (w: Field) = ((Field as Trait1<>)::function<> as λ(Field) → Field)(x);
+  let z = ((u8 as Trait1<>)::function<> as λ(u8) -> u8)(y);
+  let _t = (foo<u8> as λ(u8) → u8)(z);
+  let w = ((Field as Trait1<>)::function<> as λ(Field) → Field)(x);
   (foo<Field> as λ(Field) → Field)(w)
 }
 

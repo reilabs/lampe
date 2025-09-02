@@ -26,7 +26,7 @@ def delabStructTp (expr : Lean.Expr) : DelabM <| (TSyntax `noir_ident) × Lean.E
     let struct := expr.getArg! 0
     let generics := expr.getArg! 1
     let some (name , _) := struct.const? | failure
-    let nameStr := name.getString! |>.stripPrefix "struct#" -- TODO: This can be deleted once we remove the `struct#` prefix from names
+    let nameStr := name.getString!
     return (←`(noir_ident|$(⟨mkIdent $ .mkSimple nameStr⟩)), generics)
 
 partial def ppTp (expr : Lean.Expr) : DelabM <| TSyntax `noir_type := do
@@ -195,9 +195,8 @@ def delabLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let letBinding ←
       if val.isAppOf ``Lampe.Expr.ref then
         whenFullyApplied val do
-          let type := val.getArg! 1
           let val ← delab <| val.getArg! 2
-          `(noir_expr|let mut ($(⟨var⟩) : $(← ppTp type)) = $(extractInnerLampeExpr val))
+          `(noir_expr|let mut $(⟨var⟩) = $(extractInnerLampeExpr val))
       else if val.isAppOf ``Lampe.Expr.readRef then
         whenFullyApplied val do
           let val := val.getArg! 3
@@ -325,7 +324,8 @@ def delabLam : Delab := whenDelabExprOption getExpr >>= fun expr =>
       pure (args, body)
     | _ => throwError "unable to parse args of Lambda"
 
-    let funArgs ← args.getElems.zip argTps.toArray |>.mapM fun (arg, tp) => do `(noir_pat| ($(⟨arg⟩) : $(← ppTp tp)))
+    let funArgs ← args.getElems.zip argTps.toArray |>.mapM fun (arg, tp) => do 
+      `(noir_lam_param|$(⟨arg⟩):noir_pat : $(← ppTp tp))
 
     return ← ``(⸨fn($funArgs,*) : $(←ppTp outTp) := $(⟨extractInnerLampeExpr body⟩)⸩)
 

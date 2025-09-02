@@ -9,10 +9,10 @@ namespace «Merkle-0.0.0»
 namespace Extracted
 
 noir_def mtree_recover<H: Type, N: u32>(idx: Array<bool, N: u32>, p: Array<Field, N: u32>, item: Field) -> Field := {
-  let mut (curr_h: Field) = item;
+  let mut curr_h = item;
   for i in (0: u32) .. uConst!(N: u32) do {
-    let (dir: bool) = (#_arrayIndex returning bool)(idx, (#_cast returning u32)(i));
-    let (sibling_root: Field) = (#_arrayIndex returning Field)(p, (#_cast returning u32)(i));
+    let dir = (#_arrayIndex returning bool)(idx, (#_cast returning u32)(i));
+    let sibling_root = (#_arrayIndex returning Field)(p, (#_cast returning u32)(i));
     if dir then {
       curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(sibling_root, curr_h);
       #_skip
@@ -25,7 +25,7 @@ noir_def mtree_recover<H: Type, N: u32>(idx: Array<bool, N: u32>, p: Array<Field
 }
 
 noir_def main<>(root: Field, proof: Array<Field, 32: u32>, item: Field, idx: Array<bool, 32: u32>) -> Unit := {
-  let (calculated_root: Field) = (mtree_recover<skyscraper::Skyscraper<>, 32: u32> as λ(Array<bool, 32: u32>, Array<Field, 32: u32>, Field) -> Field)(idx, proof, item);
+  let calculated_root = (mtree_recover<skyscraper::Skyscraper<>, 32: u32> as λ(Array<bool, 32: u32>, Array<Field, 32: u32>, Field) -> Field)(idx, proof, item);
   (witness::weird_assert_eq<> as λ(Field, Field) -> Unit)(root, calculated_root);
   #_skip
 }

@@ -11,7 +11,7 @@ noir_def foo<A: Field>() → Field := {
 }
 
 noir_def test<>() → Field := {
-  let (a: Field) = (foo<4294967297: Field> as λ() → Field)();
+  let a = (foo<4294967297: Field> as λ() → Field)();
   a
 }
 

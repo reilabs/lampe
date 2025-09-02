@@ -61,8 +61,8 @@ theorem add_one_correct
 -- Finally, we define a slightly more complex function that will rely on the proofs of correctness
 -- for both of the above functions.
 noir_def add_one_to_three_and_n<>(n: Field) → Field := {
-  let (three: Field) = (return_three<> as λ() → Field)();
-  let (added_one: Field) = (add_one<> as λ(Field) → Field)(three);
+  let three = (return_three<> as λ() → Field)();
+  let added_one = (add_one<> as λ(Field) → Field)(three);
   (#_fAdd returning Field)(added_one, n)
 }
 
@@ -188,8 +188,8 @@ theorem default_u8_correct
 -- With both of our trait implementations proved to do the right thing, let's define a function that
 -- uses both trait implementations at once, along with an environment for it and the traits.
 noir_def call_trait_impls_and_add<>(n: Field) → Field := {
-  let (_default_u8: u8) = ((u8 as Default<>)::default<> as λ() → u8)();
-  let (default_field: Field) = ((Field as Default<>)::default<> as λ() → Field)();
+  let _default_u8 = ((u8 as Default<>)::default<> as λ() → u8)();
+  let default_field = ((Field as Default<>)::default<> as λ() → Field)();
   (#_fAdd returning Field)(default_field, n)
 }
 
@@ -215,8 +215,8 @@ theorem call_trait_impls_and_add_correct
 -- that the monotonicity works. We define a function that uses both already-composed environments,
 -- along with its accompanying env.
 noir_def combining_everything<>(n: Field) → Field := {
-  let (added_4: Field) = (add_one_to_three_and_n<> as λ(Field) → Field)(n);
-  let (added_42: Field) = (call_trait_impls_and_add<> as λ(Field) → Field)(n);
+  let added_4 = (add_one_to_three_and_n<> as λ(Field) → Field)(n);
+  let added_42 = (call_trait_impls_and_add<> as λ(Field) → Field)(n);
   (#_fAdd returning Field)(added_4, added_42)
 }
 

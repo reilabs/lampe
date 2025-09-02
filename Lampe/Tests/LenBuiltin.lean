@@ -4,9 +4,9 @@ open Lampe
 
 noir_def std::slice::append<T: Type>(mut self: Slice<T>, other: Slice<T>) -> Slice<T> := {
   {
-    let (ζi0: Slice<T>) = other;
+    let ζi0 = other;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let (elem: T) = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
         self = (#_slicePushBack returning Slice<T>)(self, elem);
         #_skip

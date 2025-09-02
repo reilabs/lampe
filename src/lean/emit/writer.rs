@@ -405,15 +405,15 @@ impl Writer<'_> {
     /// Directly writes the contents of the lambda parameter into the builder.
     pub fn write_lambda_parameter(&mut self, param: &(Pattern, Type)) {
         self.write_pattern(&param.0);
+        self.append_to_line(": ");
+        self.write_type_value(&param.1, false);
     }
 
     /// Directly writes the contents of the pattern into the builder.
     pub fn write_pattern(&mut self, pattern: &Pattern) {
         match pattern {
             Pattern::Identifier(ident) => {
-                self.append_to_line("(");
-                self.write_identifier(ident, true);
-                self.append_to_line(")");
+                self.write_identifier(ident, false);
             }
             Pattern::Mutable(ident) => {
                 self.append_to_line("mut ");

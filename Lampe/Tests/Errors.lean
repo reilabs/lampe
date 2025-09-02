@@ -45,7 +45,7 @@ theorem steps_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
   sorry
 
 noir_def loop_fn<>() -> Field := {
-  let mut (t : Field) = 1 : Field;
+  let mut t = 1 : Field;
 
   for _i in (0 : u32)..(5 : u32) do {
     t = (#_fMul returning Field)(t, 2 : Field);

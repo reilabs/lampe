@@ -9,7 +9,7 @@ namespace «Multiple-0.0.0»
 namespace Extracted
 
 noir_def main<>(x: Field) -> Field := {
-  let mut (x: Field) = x;
+  let mut x = x;
   x = (foo::foo<> as λ(Field) -> Field)(x);
   x = (bar::bar<> as λ(Field) -> Field)(x);
   x = (baz::bang::bang<> as λ(Field) -> Field)(x);

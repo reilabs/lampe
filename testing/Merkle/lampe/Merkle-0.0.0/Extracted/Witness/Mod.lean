@@ -9,7 +9,7 @@ namespace «Merkle-0.0.0»
 namespace Extracted
 
 noir_def witness::weird_assert_eq<>(a: Field, b: Field) -> Unit := {
-  let (wit: Field) = {
+  let wit = {
     (witness::uncons::weird_eq_witness<> as λ(Field, Field) -> Field)(a, b)
   };
   (#_assert returning Unit)((#_fEq returning bool)(wit, a));
