@@ -154,7 +154,7 @@ noir_trait_impl[impl_74]<T: Type> std::cmp::Eq<> for std::option::Option<T> wher
   noir_def eq<>(self: std::option::Option<T>, other: std::option::Option<T>) -> bool := {
     if (#_bEq returning bool)(self.0, other.0) then {
       if self.0 then {
-        ((T as Eq<>)::eq<> as λ(T, T) -> bool)(self.1, other.1)
+        ((T as std::cmp::Eq<>)::eq<> as λ(T, T) -> bool)(self.1, other.1)
       } else {
         #_true
       }

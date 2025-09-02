@@ -213,7 +213,7 @@ noir_def std::collections::map::HashMap::get<K: Type, V: Type, N: u32, B: Type, 
       let slot = (#_arrayIndex returning std::collections::map::Slot<K, V>)(self.0, (#_cast returning u32)(index));
       if (std::collections::map::Slot::is_valid<K, V> as λ(std::collections::map::Slot<K, V>) -> bool)(slot) then {
         let (current_key, value) = (std::collections::map::Slot::key_value_unchecked<K, V> as λ(std::collections::map::Slot<K, V>) -> Tuple<K, V>)(slot);
-        if ((K as Eq<>)::eq<> as λ(K, K) -> bool)(current_key, key) then {
+        if ((K as std::cmp::Eq<>)::eq<> as λ(K, K) -> bool)(current_key, key) then {
           result = (std::option::Option::some<V> as λ(V) -> std::option::Option<V>)(value);
           should_break = #_true;
           #_skip
@@ -239,7 +239,7 @@ noir_def std::collections::map::HashMap::insert<K: Type, V: Type, N: u32, B: Typ
         #_skip
       } else {
         let (current_key, _) = (std::collections::map::Slot::key_value_unchecked<K, V> as λ(std::collections::map::Slot<K, V>) -> Tuple<K, V>)(slot);
-        if ((K as Eq<>)::eq<> as λ(K, K) -> bool)(current_key, key) then {
+        if ((K as std::cmp::Eq<>)::eq<> as λ(K, K) -> bool)(current_key, key) then {
           insert = #_true;
           #_skip
         }
@@ -264,7 +264,7 @@ noir_def std::collections::map::HashMap::remove<K: Type, V: Type, N: u32, B: Typ
       let mut slot = (#_arrayIndex returning std::collections::map::Slot<K, V>)((#_readRef returning std::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(index));
       if (std::collections::map::Slot::is_valid<K, V> as λ(std::collections::map::Slot<K, V>) -> bool)(slot) then {
         let (current_key, _) = (std::collections::map::Slot::key_value_unchecked<K, V> as λ(std::collections::map::Slot<K, V>) -> Tuple<K, V>)(slot);
-        if ((K as Eq<>)::eq<> as λ(K, K) -> bool)(current_key, key) then {
+        if ((K as std::cmp::Eq<>)::eq<> as λ(K, K) -> bool)(current_key, key) then {
           (std::collections::map::Slot::mark_deleted<K, V> as λ(& std::collections::map::Slot<K, V>) -> Unit)((#_ref returning & std::collections::map::Slot<K, V>)(slot));
           (((*self: std::collections::map::HashMap<K, V, N: u32, B>).0: Array<std::collections::map::Slot<K, V>, N: u32>)[index]: std::collections::map::Slot<K, V>) = slot;
           ((*self: std::collections::map::HashMap<K, V, N: u32, B>).1: u32) = (#_uSub returning u32)((#_readRef returning std::collections::map::HashMap<K, V, N: u32, B>)(self).1, (1: u32));
@@ -313,7 +313,7 @@ noir_trait_impl[impl_35]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: 
                 #_skip
               } else {
                 let other_value = (std::option::Option::unwrap_unchecked<V> as λ(std::option::Option<V>) -> V)(other_value);
-                if ((V as Eq<>)::eq<> as λ(V, V) -> bool)(value, other_value) then {
+                if ((V as std::cmp::Eq<>)::eq<> as λ(V, V) -> bool)(value, other_value) then {
                   equal = #_false;
                   #_skip
                 }

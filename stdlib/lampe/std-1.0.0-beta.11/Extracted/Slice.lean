@@ -183,12 +183,12 @@ noir_def std::slice::any<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) ->
 }
 
 noir_def std::slice::test::map_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)((std::slice::map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)((#_mkSlice returning Slice<Field>)(), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkSlice returning Slice<Field>)()));
+  (#_assert returning Unit)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)((std::slice::map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)((#_mkSlice returning Slice<Field>)(), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkSlice returning Slice<Field>)()));
   #_skip
 }
 
 noir_def std::slice::test::mapi_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Slice<u32> as Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)((std::slice::mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)((#_mkSlice returning Slice<u32>)(), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_mkSlice returning Slice<u32>)()));
+  (#_assert returning Unit)(((Slice<u32> as std::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)((std::slice::mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)((#_mkSlice returning Slice<u32>)(), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_mkSlice returning Slice<u32>)()));
   #_skip
 }
 
@@ -207,14 +207,14 @@ noir_def std::slice::test::for_eachi_empty<>() -> Unit := {
 noir_def std::slice::test::map_example<>() -> Unit := {
   let a = (#_mkSlice returning Slice<Field>)((1: Field), (2: Field), (3: Field));
   let b = (std::slice::map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
-  (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_mkSlice returning Slice<Field>)((2: Field), (4: Field), (6: Field))));
+  (#_assert returning Unit)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_mkSlice returning Slice<Field>)((2: Field), (4: Field), (6: Field))));
   #_skip
 }
 
 noir_def std::slice::test::mapi_example<>() -> Unit := {
   let a = (#_mkSlice returning Slice<u32>)((1: u32), (2: u32), (3: u32));
   let b = (std::slice::mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
-  (#_assert returning Unit)(((Slice<u32> as Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_mkSlice returning Slice<u32>)((2: u32), (5: u32), (8: u32))));
+  (#_assert returning Unit)(((Slice<u32> as std::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_mkSlice returning Slice<u32>)((2: u32), (5: u32), (8: u32))));
   #_skip
 }
 
@@ -226,7 +226,7 @@ noir_def std::slice::test::for_each_example<>() -> Unit := {
     (*b_ref: Slice<Field>) = (#_slicePushBack returning Slice<Field>)((#_readRef returning Slice<Field>)(b_ref), (#_fMul returning Field)(a, (2: Field)));
     #_skip
   }));
-  (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_mkSlice returning Slice<Field>)((2: Field), (4: Field), (6: Field))));
+  (#_assert returning Unit)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_mkSlice returning Slice<Field>)((2: Field), (4: Field), (6: Field))));
   #_skip
 }
 
@@ -238,7 +238,7 @@ noir_def std::slice::test::for_eachi_example<>() -> Unit := {
     (*b_ref: Slice<u32>) = (#_slicePushBack returning Slice<u32>)((#_readRef returning Slice<u32>)(b_ref), (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32))));
     #_skip
   }));
-  (#_assert returning Unit)(((Slice<u32> as Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_mkSlice returning Slice<u32>)((2: u32), (5: u32), (8: u32))));
+  (#_assert returning Unit)(((Slice<u32> as std::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_mkSlice returning Slice<u32>)((2: u32), (5: u32), (8: u32))));
   #_skip
 }
 

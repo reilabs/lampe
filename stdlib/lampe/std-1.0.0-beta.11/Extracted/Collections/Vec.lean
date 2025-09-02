@@ -54,15 +54,15 @@ noir_def std::collections::vec::Vec::len<T: Type>(self: std::collections::vec::V
 noir_def std::collections::vec::tests::set_updates_values_properly<>() -> Unit := {
   let mut vec = (#_makeData returning std::collections::vec::Vec<Field>)((#_mkSlice returning Slice<Field>)((0: Field), (0: Field), (0: Field), (0: Field), (0: Field)));
   (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (0: u32), (42: Field));
-  (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (0: Field), (0: Field), (0: Field), (0: Field))));
+  (#_assert returning Unit)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (0: Field), (0: Field), (0: Field), (0: Field))));
   (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (1: u32), (43: Field));
-  (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (43: Field), (0: Field), (0: Field), (0: Field))));
+  (#_assert returning Unit)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (43: Field), (0: Field), (0: Field), (0: Field))));
   (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (2: u32), (44: Field));
-  (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (43: Field), (44: Field), (0: Field), (0: Field))));
+  (#_assert returning Unit)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (43: Field), (44: Field), (0: Field), (0: Field))));
   (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (1: u32), (10: Field));
-  (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (10: Field), (44: Field), (0: Field), (0: Field))));
+  (#_assert returning Unit)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((42: Field), (10: Field), (44: Field), (0: Field), (0: Field))));
   (std::collections::vec::Vec::set<Field> as λ(& std::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & std::collections::vec::Vec<Field>)(vec), (0: u32), (0: Field));
-  (#_assert returning Unit)(((Slice<Field> as Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((0: Field), (10: Field), (44: Field), (0: Field), (0: Field))));
+  (#_assert returning Unit)(((Slice<Field> as std::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_mkSlice returning Slice<Field>)((0: Field), (10: Field), (44: Field), (0: Field), (0: Field))));
   #_skip
 }
 

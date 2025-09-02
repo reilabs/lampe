@@ -115,7 +115,7 @@ noir_def std::array::concat<T: Type, N: u32, M: u32>(self: Array<T, N: u32>, arr
 }
 
 noir_def std::array::sort<T: Type, N: u32>(self: Array<T, N: u32>) -> Array<T, N: u32> := {
-  (std::array::sort_via<T, N: u32, Unit> as λ(Array<T, N: u32>, λ(T, T) -> bool) -> Array<T, N: u32>)(self, (fn(a: T, b: T): bool := ((T as Ord<>)::cmp<> as λ(T, T) -> bool)(a, b)))
+  (std::array::sort_via<T, N: u32, Unit> as λ(Array<T, N: u32>, λ(T, T) -> bool) -> Array<T, N: u32>)(self, (fn(a: T, b: T): bool := ((T as std::cmp::Ord<>)::cmp<> as λ(T, T) -> bool)(a, b)))
 }
 
 noir_def std::array::sort_via<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>, ordering: λ(T, T) -> bool) -> Array<T, N: u32> := {
@@ -140,7 +140,7 @@ noir_trait_impl[impl_24]<N: u32> std::convert::From<String<N: u32> > for Array<u
 }
 
 noir_def std::array::test::map_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Array<Field, 0: u32> as Eq<>)::eq<> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> bool)((std::array::map<Field, 0: u32, Unit> as λ(Array<Field, 0: u32>, λ(Field) -> Field) -> Array<Field, 0: u32>)((#_mkArray returning Array<Field, 0: u32>)(), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkArray returning Array<Field, 0: u32>)()));
+  (#_assert returning Unit)(((Array<Field, 0: u32> as std::cmp::Eq<>)::eq<> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> bool)((std::array::map<Field, 0: u32, Unit> as λ(Array<Field, 0: u32>, λ(Field) -> Field) -> Array<Field, 0: u32>)((#_mkArray returning Array<Field, 0: u32>)(), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkArray returning Array<Field, 0: u32>)()));
   #_skip
 }
 
@@ -156,7 +156,7 @@ noir_def std::array::test::test_sort<>() -> Unit := {
   let mut arr = (#_mkArray returning Array<u32, 7: u32>)((3: u32), (6: u32), (8: u32), (10: u32), (1: u32), (2: u32), (1: u32));
   let sorted = (std::array::sort<u32, 7: u32> as λ(Array<u32, 7: u32>) -> Array<u32, 7: u32>)(arr);
   let expected = (#_mkArray returning Array<u32, 7: u32>)((1: u32), (1: u32), (2: u32), (3: u32), (6: u32), (8: u32), (10: u32));
-  (#_assert returning Unit)(((Array<u32, 7: u32> as Eq<>)::eq<> as λ(Array<u32, 7: u32>, Array<u32, 7: u32>) -> bool)(sorted, expected));
+  (#_assert returning Unit)(((Array<u32, 7: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u32, 7: u32>, Array<u32, 7: u32>) -> bool)(sorted, expected));
   #_skip
 }
 
@@ -164,13 +164,13 @@ noir_def std::array::test::test_sort_100_values<>() -> Unit := {
   let mut arr = (#_mkArray returning Array<u32, 100: u32>)((42: u32), (123: u32), (87: u32), (93: u32), (48: u32), (80: u32), (50: u32), (5: u32), (104: u32), (84: u32), (70: u32), (47: u32), (119: u32), (66: u32), (71: u32), (121: u32), (3: u32), (29: u32), (42: u32), (118: u32), (2: u32), (54: u32), (89: u32), (44: u32), (81: u32), (0: u32), (26: u32), (106: u32), (68: u32), (96: u32), (84: u32), (48: u32), (95: u32), (54: u32), (45: u32), (32: u32), (89: u32), (100: u32), (109: u32), (19: u32), (37: u32), (41: u32), (19: u32), (98: u32), (53: u32), (114: u32), (107: u32), (66: u32), (6: u32), (74: u32), (13: u32), (19: u32), (105: u32), (64: u32), (123: u32), (28: u32), (44: u32), (50: u32), (89: u32), (58: u32), (123: u32), (126: u32), (21: u32), (43: u32), (86: u32), (35: u32), (21: u32), (62: u32), (82: u32), (0: u32), (108: u32), (120: u32), (72: u32), (72: u32), (62: u32), (80: u32), (12: u32), (71: u32), (70: u32), (86: u32), (116: u32), (73: u32), (38: u32), (15: u32), (127: u32), (81: u32), (30: u32), (8: u32), (125: u32), (28: u32), (26: u32), (69: u32), (114: u32), (63: u32), (27: u32), (28: u32), (61: u32), (42: u32), (13: u32), (32: u32));
   let sorted = (std::array::sort<u32, 100: u32> as λ(Array<u32, 100: u32>) -> Array<u32, 100: u32>)(arr);
   let expected = (#_mkArray returning Array<u32, 100: u32>)((0: u32), (0: u32), (2: u32), (3: u32), (5: u32), (6: u32), (8: u32), (12: u32), (13: u32), (13: u32), (15: u32), (19: u32), (19: u32), (19: u32), (21: u32), (21: u32), (26: u32), (26: u32), (27: u32), (28: u32), (28: u32), (28: u32), (29: u32), (30: u32), (32: u32), (32: u32), (35: u32), (37: u32), (38: u32), (41: u32), (42: u32), (42: u32), (42: u32), (43: u32), (44: u32), (44: u32), (45: u32), (47: u32), (48: u32), (48: u32), (50: u32), (50: u32), (53: u32), (54: u32), (54: u32), (58: u32), (61: u32), (62: u32), (62: u32), (63: u32), (64: u32), (66: u32), (66: u32), (68: u32), (69: u32), (70: u32), (70: u32), (71: u32), (71: u32), (72: u32), (72: u32), (73: u32), (74: u32), (80: u32), (80: u32), (81: u32), (81: u32), (82: u32), (84: u32), (84: u32), (86: u32), (86: u32), (87: u32), (89: u32), (89: u32), (89: u32), (93: u32), (95: u32), (96: u32), (98: u32), (100: u32), (104: u32), (105: u32), (106: u32), (107: u32), (108: u32), (109: u32), (114: u32), (114: u32), (116: u32), (118: u32), (119: u32), (120: u32), (121: u32), (123: u32), (123: u32), (123: u32), (125: u32), (126: u32), (127: u32));
-  (#_assert returning Unit)(((Array<u32, 100: u32> as Eq<>)::eq<> as λ(Array<u32, 100: u32>, Array<u32, 100: u32>) -> bool)(sorted, expected));
+  (#_assert returning Unit)(((Array<u32, 100: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u32, 100: u32>, Array<u32, 100: u32>) -> bool)(sorted, expected));
   #_skip
 }
 
 noir_def std::array::test::test_sort_100_values_comptime<>() -> Unit := {
   let sorted = (std::array::sort<u32, 100: u32> as λ(Array<u32, 100: u32>) -> Array<u32, 100: u32>)((std::array::test::arr_with_100_values<> as λ() -> Array<u32, 100: u32>)());
-  (#_assert returning Unit)(((Array<u32, 100: u32> as Eq<>)::eq<> as λ(Array<u32, 100: u32>, Array<u32, 100: u32>) -> bool)(sorted, (std::array::test::expected_with_100_values<> as λ() -> Array<u32, 100: u32>)()));
+  (#_assert returning Unit)(((Array<u32, 100: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u32, 100: u32>, Array<u32, 100: u32>) -> bool)(sorted, (std::array::test::expected_with_100_values<> as λ() -> Array<u32, 100: u32>)()));
   #_skip
 }
 
@@ -178,7 +178,7 @@ noir_def std::array::test::test_sort_via<>() -> Unit := {
   let mut arr = (#_mkArray returning Array<u32, 7: u32>)((3: u32), (6: u32), (8: u32), (10: u32), (1: u32), (2: u32), (1: u32));
   let sorted = (std::array::sort_via<u32, 7: u32, Unit> as λ(Array<u32, 7: u32>, λ(u32, u32) -> bool) -> Array<u32, 7: u32>)(arr, (std::array::test::sort_u32<> as λ(u32, u32) -> bool));
   let expected = (#_mkArray returning Array<u32, 7: u32>)((1: u32), (1: u32), (2: u32), (3: u32), (6: u32), (8: u32), (10: u32));
-  (#_assert returning Unit)(((Array<u32, 7: u32> as Eq<>)::eq<> as λ(Array<u32, 7: u32>, Array<u32, 7: u32>) -> bool)(sorted, expected));
+  (#_assert returning Unit)(((Array<u32, 7: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u32, 7: u32>, Array<u32, 7: u32>) -> bool)(sorted, expected));
   #_skip
 }
 
@@ -186,12 +186,12 @@ noir_def std::array::test::test_sort_via_100_values<>() -> Unit := {
   let mut arr = (#_mkArray returning Array<u32, 100: u32>)((42: u32), (123: u32), (87: u32), (93: u32), (48: u32), (80: u32), (50: u32), (5: u32), (104: u32), (84: u32), (70: u32), (47: u32), (119: u32), (66: u32), (71: u32), (121: u32), (3: u32), (29: u32), (42: u32), (118: u32), (2: u32), (54: u32), (89: u32), (44: u32), (81: u32), (0: u32), (26: u32), (106: u32), (68: u32), (96: u32), (84: u32), (48: u32), (95: u32), (54: u32), (45: u32), (32: u32), (89: u32), (100: u32), (109: u32), (19: u32), (37: u32), (41: u32), (19: u32), (98: u32), (53: u32), (114: u32), (107: u32), (66: u32), (6: u32), (74: u32), (13: u32), (19: u32), (105: u32), (64: u32), (123: u32), (28: u32), (44: u32), (50: u32), (89: u32), (58: u32), (123: u32), (126: u32), (21: u32), (43: u32), (86: u32), (35: u32), (21: u32), (62: u32), (82: u32), (0: u32), (108: u32), (120: u32), (72: u32), (72: u32), (62: u32), (80: u32), (12: u32), (71: u32), (70: u32), (86: u32), (116: u32), (73: u32), (38: u32), (15: u32), (127: u32), (81: u32), (30: u32), (8: u32), (125: u32), (28: u32), (26: u32), (69: u32), (114: u32), (63: u32), (27: u32), (28: u32), (61: u32), (42: u32), (13: u32), (32: u32));
   let sorted = (std::array::sort_via<u32, 100: u32, Unit> as λ(Array<u32, 100: u32>, λ(u32, u32) -> bool) -> Array<u32, 100: u32>)(arr, (std::array::test::sort_u32<> as λ(u32, u32) -> bool));
   let expected = (#_mkArray returning Array<u32, 100: u32>)((0: u32), (0: u32), (2: u32), (3: u32), (5: u32), (6: u32), (8: u32), (12: u32), (13: u32), (13: u32), (15: u32), (19: u32), (19: u32), (19: u32), (21: u32), (21: u32), (26: u32), (26: u32), (27: u32), (28: u32), (28: u32), (28: u32), (29: u32), (30: u32), (32: u32), (32: u32), (35: u32), (37: u32), (38: u32), (41: u32), (42: u32), (42: u32), (42: u32), (43: u32), (44: u32), (44: u32), (45: u32), (47: u32), (48: u32), (48: u32), (50: u32), (50: u32), (53: u32), (54: u32), (54: u32), (58: u32), (61: u32), (62: u32), (62: u32), (63: u32), (64: u32), (66: u32), (66: u32), (68: u32), (69: u32), (70: u32), (70: u32), (71: u32), (71: u32), (72: u32), (72: u32), (73: u32), (74: u32), (80: u32), (80: u32), (81: u32), (81: u32), (82: u32), (84: u32), (84: u32), (86: u32), (86: u32), (87: u32), (89: u32), (89: u32), (89: u32), (93: u32), (95: u32), (96: u32), (98: u32), (100: u32), (104: u32), (105: u32), (106: u32), (107: u32), (108: u32), (109: u32), (114: u32), (114: u32), (116: u32), (118: u32), (119: u32), (120: u32), (121: u32), (123: u32), (123: u32), (123: u32), (125: u32), (126: u32), (127: u32));
-  (#_assert returning Unit)(((Array<u32, 100: u32> as Eq<>)::eq<> as λ(Array<u32, 100: u32>, Array<u32, 100: u32>) -> bool)(sorted, expected));
+  (#_assert returning Unit)(((Array<u32, 100: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u32, 100: u32>, Array<u32, 100: u32>) -> bool)(sorted, expected));
   #_skip
 }
 
 noir_def std::array::test::mapi_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Array<u32, 0: u32> as Eq<>)::eq<> as λ(Array<u32, 0: u32>, Array<u32, 0: u32>) -> bool)((std::array::mapi<u32, 0: u32, Unit> as λ(Array<u32, 0: u32>, λ(u32, u32) -> u32) -> Array<u32, 0: u32>)((#_mkArray returning Array<u32, 0: u32>)(), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_mkArray returning Array<u32, 0: u32>)()));
+  (#_assert returning Unit)(((Array<u32, 0: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u32, 0: u32>, Array<u32, 0: u32>) -> bool)((std::array::mapi<u32, 0: u32, Unit> as λ(Array<u32, 0: u32>, λ(u32, u32) -> u32) -> Array<u32, 0: u32>)((#_mkArray returning Array<u32, 0: u32>)(), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_mkArray returning Array<u32, 0: u32>)()));
   #_skip
 }
 
@@ -210,14 +210,14 @@ noir_def std::array::test::for_eachi_empty<>() -> Unit := {
 noir_def std::array::test::map_example<>() -> Unit := {
   let a = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
   let b = (std::array::map<Field, 3: u32, Unit> as λ(Array<Field, 3: u32>, λ(Field) -> Field) -> Array<Field, 3: u32>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
-  (#_assert returning Unit)(((Array<Field, 3: u32> as Eq<>)::eq<> as λ(Array<Field, 3: u32>, Array<Field, 3: u32>) -> bool)(b, (#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field))));
+  (#_assert returning Unit)(((Array<Field, 3: u32> as std::cmp::Eq<>)::eq<> as λ(Array<Field, 3: u32>, Array<Field, 3: u32>) -> bool)(b, (#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field))));
   #_skip
 }
 
 noir_def std::array::test::mapi_example<>() -> Unit := {
   let a = (#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32));
   let b = (std::array::mapi<u32, 3: u32, Unit> as λ(Array<u32, 3: u32>, λ(u32, u32) -> u32) -> Array<u32, 3: u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
-  (#_assert returning Unit)(((Array<u32, 3: u32> as Eq<>)::eq<> as λ(Array<u32, 3: u32>, Array<u32, 3: u32>) -> bool)(b, (#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32))));
+  (#_assert returning Unit)(((Array<u32, 3: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u32, 3: u32>, Array<u32, 3: u32>) -> bool)(b, (#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32))));
   #_skip
 }
 
@@ -236,7 +236,7 @@ noir_def std::array::test::for_each_example<>() -> Unit := {
     (*i_ref: u32) = (#_uAdd returning u32)((#_readRef returning u32)(i_ref), (1: u32));
     #_skip
   }));
-  (#_assert returning Unit)(((Array<Field, 3: u32> as Eq<>)::eq<> as λ(Array<Field, 3: u32>, Array<Field, 3: u32>) -> bool)(b, (#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field))));
+  (#_assert returning Unit)(((Array<Field, 3: u32> as std::cmp::Eq<>)::eq<> as λ(Array<Field, 3: u32>, Array<Field, 3: u32>) -> bool)(b, (#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field))));
   (#_assert returning Unit)((#_uEq returning bool)(i, (3: u32)));
   #_skip
 }
@@ -249,7 +249,7 @@ noir_def std::array::test::for_eachi_example<>() -> Unit := {
     ((*b_ref: Array<u32, 3: u32>)[i]: u32) = (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)));
     #_skip
   }));
-  (#_assert returning Unit)(((Array<u32, 3: u32> as Eq<>)::eq<> as λ(Array<u32, 3: u32>, Array<u32, 3: u32>) -> bool)(b, (#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32))));
+  (#_assert returning Unit)(((Array<u32, 3: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u32, 3: u32>, Array<u32, 3: u32>) -> bool)(b, (#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32))));
   #_skip
 }
 
@@ -257,7 +257,7 @@ noir_def std::array::test::concat<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field));
   let arr2 = (#_mkArray returning Array<Field, 6: u32>)((6: Field), (7: Field), (8: Field), (9: Field), (10: Field), (11: Field));
   let concatenated_arr = (std::array::concat<Field, 4: u32, 6: u32> as λ(Array<Field, 4: u32>, Array<Field, 6: u32>) -> Array<Field, (4 + 6): u32>)(arr1, arr2);
-  (#_assert returning Unit)(((Array<Field, (4 + 6): u32> as Eq<>)::eq<> as λ(Array<Field, (4 + 6): u32>, Array<Field, 10: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 10: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (6: Field), (7: Field), (8: Field), (9: Field), (10: Field), (11: Field))));
+  (#_assert returning Unit)(((Array<Field, (4 + 6): u32> as std::cmp::Eq<>)::eq<> as λ(Array<Field, (4 + 6): u32>, Array<Field, 10: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 10: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (6: Field), (7: Field), (8: Field), (9: Field), (10: Field), (11: Field))));
   #_skip
 }
 
@@ -265,7 +265,7 @@ noir_def std::array::test::concat_zero_length_with_something<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 0: u32>)();
   let arr2 = (#_mkArray returning Array<Field, 1: u32>)((1: Field));
   let concatenated_arr = (std::array::concat<Field, 0: u32, 1: u32> as λ(Array<Field, 0: u32>, Array<Field, 1: u32>) -> Array<Field, (0 + 1): u32>)(arr1, arr2);
-  (#_assert returning Unit)(((Array<Field, (0 + 1): u32> as Eq<>)::eq<> as λ(Array<Field, (0 + 1): u32>, Array<Field, 1: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 1: u32>)((1: Field))));
+  (#_assert returning Unit)(((Array<Field, (0 + 1): u32> as std::cmp::Eq<>)::eq<> as λ(Array<Field, (0 + 1): u32>, Array<Field, 1: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 1: u32>)((1: Field))));
   #_skip
 }
 
@@ -273,7 +273,7 @@ noir_def std::array::test::concat_something_with_zero_length<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 1: u32>)((1: Field));
   let arr2 = (#_mkArray returning Array<Field, 0: u32>)();
   let concatenated_arr = (std::array::concat<Field, 1: u32, 0: u32> as λ(Array<Field, 1: u32>, Array<Field, 0: u32>) -> Array<Field, (1 + 0): u32>)(arr1, arr2);
-  (#_assert returning Unit)(((Array<Field, (1 + 0): u32> as Eq<>)::eq<> as λ(Array<Field, (1 + 0): u32>, Array<Field, 1: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 1: u32>)((1: Field))));
+  (#_assert returning Unit)(((Array<Field, (1 + 0): u32> as std::cmp::Eq<>)::eq<> as λ(Array<Field, (1 + 0): u32>, Array<Field, 1: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 1: u32>)((1: Field))));
   #_skip
 }
 
@@ -281,7 +281,7 @@ noir_def std::array::test::concat_zero_lengths<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 0: u32>)();
   let arr2 = (#_mkArray returning Array<Field, 0: u32>)();
   let concatenated_arr = (std::array::concat<Field, 0: u32> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> Array<Field, (0 + 0): u32>)(arr1, arr2);
-  (#_assert returning Unit)(((Array<Field, (0 + 0): u32> as Eq<>)::eq<> as λ(Array<Field, (0 + 0): u32>, Array<Field, 0: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 0: u32>)()));
+  (#_assert returning Unit)(((Array<Field, (0 + 0): u32> as std::cmp::Eq<>)::eq<> as λ(Array<Field, (0 + 0): u32>, Array<Field, 0: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 0: u32>)()));
   #_skip
 }
 

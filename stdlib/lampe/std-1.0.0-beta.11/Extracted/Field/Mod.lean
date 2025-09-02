@@ -214,21 +214,21 @@ noir_def std::field::lt_fallback<>(x: Field, y: Field) -> bool := {
 noir_def std::field::tests::test_to_be_bits<>() -> Unit := {
   let field = (2: Field);
   let bits = (std::field::to_be_bits<8: u32> as λ(Field) -> Array<u1, 8: u32>)(field);
-  (#_assert returning Unit)(((Array<u1, 8: u32> as Eq<>)::eq<> as λ(Array<u1, 8: u32>, Array<u1, 8: u32>) -> bool)(bits, (#_mkArray returning Array<u1, 8: u32>)((0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (1: u1), (0: u1))));
+  (#_assert returning Unit)(((Array<u1, 8: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u1, 8: u32>, Array<u1, 8: u32>) -> bool)(bits, (#_mkArray returning Array<u1, 8: u32>)((0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (1: u1), (0: u1))));
   #_skip
 }
 
 noir_def std::field::tests::test_to_le_bits<>() -> Unit := {
   let field = (2: Field);
   let bits = (std::field::to_le_bits<8: u32> as λ(Field) -> Array<u1, 8: u32>)(field);
-  (#_assert returning Unit)(((Array<u1, 8: u32> as Eq<>)::eq<> as λ(Array<u1, 8: u32>, Array<u1, 8: u32>) -> bool)(bits, (#_mkArray returning Array<u1, 8: u32>)((0: u1), (1: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1))));
+  (#_assert returning Unit)(((Array<u1, 8: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u1, 8: u32>, Array<u1, 8: u32>) -> bool)(bits, (#_mkArray returning Array<u1, 8: u32>)((0: u1), (1: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1), (0: u1))));
   #_skip
 }
 
 noir_def std::field::tests::test_to_be_bytes<>() -> Unit := {
   let field = (2: Field);
   let bytes = (std::field::to_be_bytes<8: u32> as λ(Field) -> Array<u8, 8: u32>)(field);
-  (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (2: u8))));
+  (#_assert returning Unit)(((Array<u8, 8: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (2: u8))));
   (#_assert returning Unit)((#_fEq returning bool)((std::field::from_be_bytes<8: u32> as λ(Array<u8, 8: u32>) -> Field)(bytes), field));
   #_skip
 }
@@ -236,7 +236,7 @@ noir_def std::field::tests::test_to_be_bytes<>() -> Unit := {
 noir_def std::field::tests::test_to_le_bytes<>() -> Unit := {
   let field = (2: Field);
   let bytes = (std::field::to_le_bytes<8: u32> as λ(Field) -> Array<u8, 8: u32>)(field);
-  (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((2: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8))));
+  (#_assert returning Unit)(((Array<u8, 8: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((2: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8))));
   (#_assert returning Unit)((#_fEq returning bool)((std::field::from_le_bytes<8: u32> as λ(Array<u8, 8: u32>) -> Field)(bytes), field));
   #_skip
 }
@@ -244,7 +244,7 @@ noir_def std::field::tests::test_to_le_bytes<>() -> Unit := {
 noir_def std::field::tests::test_to_be_radix<>() -> Unit := {
   let field = (259: Field);
   let bytes = (std::field::to_be_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (256: u32));
-  (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (1: u8), (3: u8))));
+  (#_assert returning Unit)(((Array<u8, 8: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (1: u8), (3: u8))));
   (#_assert returning Unit)((#_fEq returning bool)((std::field::from_be_bytes<8: u32> as λ(Array<u8, 8: u32>) -> Field)(bytes), field));
   #_skip
 }
@@ -252,7 +252,7 @@ noir_def std::field::tests::test_to_be_radix<>() -> Unit := {
 noir_def std::field::tests::test_to_le_radix<>() -> Unit := {
   let field = (259: Field);
   let bytes = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (256: u32));
-  (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((3: u8), (1: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8))));
+  (#_assert returning Unit)(((Array<u8, 8: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(bytes, (#_mkArray returning Array<u8, 8: u32>)((3: u8), (1: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8), (0: u8))));
   (#_assert returning Unit)((#_fEq returning bool)((std::field::from_le_bytes<8: u32> as λ(Array<u8, 8: u32>) -> Field)(bytes), field));
   #_skip
 }
@@ -285,7 +285,7 @@ noir_def std::field::tests::test_to_le_radix_brillig_3<>() -> Unit := {
     let out = (std::field::to_le_radix<8: u32> as λ(Field, u32) -> Array<u8, 8: u32>)(field, (3: u32));
     let mut expected = (#_mkRepeatedArray returning Array<u8, 8: u32>)((0: u8));
     (expected[(0: u32)]: u8) = (1: u8);
-    (#_assert returning Unit)(((Array<u8, 8: u32> as Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(out, expected));
+    (#_assert returning Unit)(((Array<u8, 8: u32> as std::cmp::Eq<>)::eq<> as λ(Array<u8, 8: u32>, Array<u8, 8: u32>) -> bool)(out, expected));
     #_skip
   }
 }
