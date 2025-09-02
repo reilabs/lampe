@@ -215,7 +215,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
       ([val ↦ ⟨.field, input⟩] ⋆ [bits ↦ v])
       (fun _ => [val ↦ ⟨.field, 0⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE 256 input⟩])
 
-    loop_inv nat fun i _ _ => [val ↦ ⟨.field, ↑(input.val / 2^i)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
+    loop_inv nat fun i _ _ => [val ↦ ⟨.field, (↑(input.val / 2^i) : Fp lp)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
     · decide
     · simp [Int.cast, IntCast.intCast, Fp.cast_self]
     · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
@@ -235,7 +235,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
         rfl
       step_as v =>
         ([val ↦ ⟨.field, v⟩])
-        (fun _ => [val ↦ ⟨.field, ↑(v.val / 2)⟩])
+        (fun _ => [val ↦ ⟨.field, (↑(v.val / 2) : Fp lp)⟩])
       · simp only [pow_succ]
         congr 2
         rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
@@ -361,7 +361,7 @@ theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ («utils::bytes::fro
   enter_decl
   steps
 
-  loop_inv nat fun i _ _ => [v ↦ ⟨.field, 256 ^ i⟩] ⋆ [result ↦ ⟨.field, Lampe.Fp.ofBytesLE $ input.toList.take i⟩]
+  loop_inv nat fun i _ _ => [v ↦ ⟨.field, (256 ^ i : Fp lp)⟩] ⋆ [result ↦ ⟨.field, Lampe.Fp.ofBytesLE $ input.toList.take i⟩]
   · decide
   · intro i _ hhi
     steps
@@ -429,6 +429,7 @@ theorem as_array_intro input (hi : input.length = 32) : STHoare lp env ⟦⟧
   conv => enter [1,2,1]; whnf
   have : input.length ≤ input.length := by linarith
   simp only [←hi, Int.cast, IntCast.intCast, BitVec.ofInt, List.takeD_eq_take, this, List.take_length]
+
 
 set_option maxHeartbeats 3000000000000
 theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
@@ -578,35 +579,32 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
   · subst_vars; rfl
   · subst_vars; rfl
 
-
-theorem sigma_intro : STHoare lp env (⟦⟧)
-    (Extracted.SIGMA.call h![] h![])
-      fun output => output = Ref.SIGMA := by
+theorem sigma_intro : STHoare lp env (⟦⟧) («globals::SIGMA».call h![] h![])
+    fun output => output = Ref.SIGMA := by
   enter_decl
-  simp only [Extracted.SIGMA]
+  simp only [Extracted.«globals::SIGMA»]
   steps []
   unfold Ref.SIGMA
   assumption
 
-theorem rc_intro : STHoare lp env (⟦⟧)
-    (Expr.call [] (Tp.field.array 8) (FuncRef.decl "RC" [] HList.nil) h![])
-      fun output => output = ⟨Ref.RC.toList, by rfl⟩ := by
+theorem rc_intro : STHoare lp env (⟦⟧) («globals::RC».call h![] h![])
+    fun output => output = ⟨Ref.RC.toList, by rfl⟩ := by
   enter_decl
   steps []
   subst_vars
   unfold Ref.RC
   rfl
 
-theorem square_intro : STHoare lp env (⟦⟧)
-    (Expr.call [Tp.field] Tp.field (FuncRef.decl "«utils::square»" [] HList.nil) h![input])
-      fun output => output = Ref.square input := by
+theorem square_intro : STHoare lp env (⟦⟧) («utils::square».call h![] h![input])
+    fun output => output = Ref.square input := by
   enter_decl
   steps [sigma_intro]
   unfold Ref.square
   subst_vars
   rfl
 
-theorem permute_intro : STHoare lp env ⟦⟧ (Expr.call [Tp.field.array 2] (Tp.field.array 2) (FuncRef.decl "«permute::permute»" [] HList.nil) h![i])
+theorem permute_intro : STHoare lp env ⟦⟧
+    («permute::permute».call h![] h![i])
     fun output => output = (Ref.State.permute ⟨i[0], i[1]⟩).1 ::ᵥ (Ref.State.permute ⟨i[0], i[1]⟩).2 ::ᵥ List.Vector.nil := by
   enter_decl
   cases i using List.Vector.casesOn with | cons _ i =>
@@ -622,7 +620,7 @@ instance {α H n} : Membership α (MerkleTree α H n) where
   mem t e := ∃p, e = MerkleTree.itemAt t p
 
 lemma SkyscraperHash_correct: STHoare lp env ⟦⟧
-      («hasher::BinaryHasher».hash h![.field] («struct#skyscraper::Skyscraper».tp h![]) h![] h![] h![a,b])
+      («hasher::BinaryHasher».hash h![.field] («skyscraper::Skyscraper».tp h![]) h![] h![] h![a,b])
       (fun v => v = Ref.State.compress ⟨[a, b], rfl⟩) := by
   try_all_traits [] env
   steps [permute_intro]
@@ -645,7 +643,7 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : Merk
         (main.call h![] h![tree.root, proof, item, index])
         (fun _ => item ∈ tree) := by
   enter_decl
-  steps [recover_intro (H:= «struct#skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
+  steps [recover_intro (H:= «skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
   use index.reverse
   subst_vars
   rename tree.root = _ => hroot

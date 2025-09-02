@@ -6,6 +6,9 @@ defaultTargets = ["std-1.0.0-beta.11"]
 [[lean_lib]]
 name = "«std-1.0.0-beta.11»"
 
+[[lean_lib]]
+name = "Stdlib"
+
 [leanOptions]
 maxRecDepth = 1000
 linter.unusedVariables = false

@@ -89,7 +89,7 @@ pub fn generate_lakefile_toml(
     let stdlib_info = if noir_package_identifier.name == NOIR_STDLIB_PACKAGE_NAME {
         None
     } else {
-        let stdlib_toml = include_str!("../../../stdlib/noir/Nargo.toml");
+        let stdlib_toml = include_str!("../../../stdlib/Nargo.toml");
         if let Ok(toml_content) = stdlib_toml.parse::<toml::Table>() {
             if let toml::Value::Table(package_info) = &toml_content["package"] {
                 if let toml::Value::String(name) = &package_info["name"] {

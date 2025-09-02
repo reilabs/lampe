@@ -31,7 +31,6 @@ import Lampe.SeparationLogic.LawfulHeap
 import Lampe.SeparationLogic.SLP
 import Lampe.SeparationLogic.State
 import Lampe.SeparationLogic.ValHeap
-import Lampe.Syntax
 import Lampe.Syntax.Builders
 import Lampe.Syntax.Delab
 import Lampe.Syntax.Elab

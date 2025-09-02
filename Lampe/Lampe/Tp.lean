@@ -251,4 +251,52 @@ match tp with
 
 end
 
+/- In this section we provide unification hints to assist with the ergonomics of stating theorems -/
+section unificationHints
+
+/-- This is slightly dangerous, as it could conflict with the unification with `Tp.i n` -/
+unif_hint (p : Prime) (n : Nat) (tp : Tp) where
+  Tp.u n =?= tp
+  ⊢ Tp.denote p tp =?= BitVec n
+
+unif_hint (p : Prime) (tp : Tp) where
+  Tp.bool =?= tp
+  ⊢ Tp.denote p tp =?= Bool
+
+unif_hint (p q : Prime) (tp : Tp) where
+  p =?= q
+  Tp.field =?= tp
+  ⊢ Tp.denote p tp =?= Fin (q.val + 1)
+
+unif_hint (p : Prime) (tp tp' : Tp) where
+  Tp.slice tp' =?= tp
+  ⊢ Tp.denote p tp =?= List (Tp.denote p tp')
+
+unif_hint (n : U 32) (p : Prime) (tp tp' : Tp) where
+  Tp.array tp' n =?= tp
+  ⊢ Tp.denote p tp =?= List.Vector (Tp.denote p tp') (n.toNat)
+
+elab "tuple_unif_hints" : command => do
+  for maxNum in [0:5] do
+    let tpHole := Lean.mkIdent `tp
+
+    let tpIdents := List.range maxNum |>.map (fun n => Lean.mkIdent $ .mkSimple s!"tp{n}")
+    let tpBinder ← `(bracketedBinder|($(tpIdents.toArray)* : Tp))
+
+    let listType ← `([$(tpIdents.toArray),*])
+    let productType ← tpIdents.foldlM (init := ←`(Unit)) fun acc tpIdent => do
+      `((Tp.denote p $tpIdent) × $acc)
+
+    let tupleHint ←`(
+    unif_hint (p : Prime) (name? : Option String) ($tpHole : Tp) $tpBinder where
+      Tp.tuple name? $listType =?= $tpHole
+      ⊢ Tp.denote p $tpHole =?= $productType
+    )
+
+    Lean.Elab.Command.elabCommand tupleHint
+
+tuple_unif_hints
+
+end unificationHints
+
 end Lampe

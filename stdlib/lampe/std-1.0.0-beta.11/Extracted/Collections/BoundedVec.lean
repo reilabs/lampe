@@ -262,7 +262,7 @@ noir_trait_impl[impl_32]<T: Type, MaxLen: u32> std::cmp::Eq<> for std::collectio
 }
 
 noir_trait_impl[impl_33]<Len: u32, T: Type, MaxLen: u32> std::convert::From<Array<T, Len: u32> > for std::collections::bounded_vec::BoundedVec<T, MaxLen: u32> where [] := {
-  noir_def from<>(array: Array<T, Len: u32>) -> std::collections::bounded_vec::BoundedVec<T, MaxLen: u32> := {
+  noir_def «from»<>(array: Array<T, Len: u32>) -> std::collections::bounded_vec::BoundedVec<T, MaxLen: u32> := {
     (std::collections::bounded_vec::BoundedVec::from_array<T, MaxLen: u32, Len: u32> as λ(Array<T, Len: u32>) -> std::collections::bounded_vec::BoundedVec<T, MaxLen: u32>)(array)
   };
 }
@@ -505,7 +505,7 @@ noir_def std::collections::bounded_vec::bounded_vec_tests::from_array::max_len_l
 
 noir_def std::collections::bounded_vec::bounded_vec_tests::trait_from::simple<>() -> Unit := {
   let (array: Array<Field, 2: u32>) = (#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field));
-  let (bounded_vec: std::collections::bounded_vec::BoundedVec<Field, 10: u32>) = ((std::collections::bounded_vec::BoundedVec<Field, 10: u32> as std::convert::From<Array<Field, 2: u32> >)::from<> as λ(Array<Field, 2: u32>) -> std::collections::bounded_vec::BoundedVec<Field, 10: u32>)(array);
+  let (bounded_vec: std::collections::bounded_vec::BoundedVec<Field, 10: u32>) = ((std::collections::bounded_vec::BoundedVec<Field, 10: u32> as std::convert::From<Array<Field, 2: u32> >)::«from»<> as λ(Array<Field, 2: u32>) -> std::collections::bounded_vec::BoundedVec<Field, 10: u32>)(array);
   (#_assert returning Unit)((#_uEq returning bool)((std::collections::bounded_vec::BoundedVec::max_len<Field, 10: u32> as λ(std::collections::bounded_vec::BoundedVec<Field, 10: u32>) -> u32)(bounded_vec), (10: u32)));
   (#_assert returning Unit)((#_uEq returning bool)((std::collections::bounded_vec::BoundedVec::len<Field, 10: u32> as λ(std::collections::bounded_vec::BoundedVec<Field, 10: u32>) -> u32)(bounded_vec), (2: u32)));
   (#_assert returning Unit)((#_fEq returning bool)((std::collections::bounded_vec::BoundedVec::get<Field, 10: u32> as λ(std::collections::bounded_vec::BoundedVec<Field, 10: u32>, u32) -> Field)(bounded_vec, (0: u32)), (1: Field)));

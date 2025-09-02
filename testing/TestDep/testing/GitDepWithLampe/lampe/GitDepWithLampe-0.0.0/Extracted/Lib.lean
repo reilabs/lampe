@@ -8,22 +8,19 @@ open Lampe
 namespace «GitDepWithLampe-0.0.0»
 namespace Extracted
 
-nr_def «not_equal»<>(x : Field, y : Field) -> bool {
-    #fNeq(x, y) : bool;
+noir_def not_equal<>(x: Field, y: Field) -> bool := {
+  (#_fNeq returning bool)(x, y)
 }
 
-nr_def «hello»<>() -> str<24> {
-    "hello-git-dep-with-lampe"
+noir_global_def hello: String<24: u32> = "hello-git-dep-with-lampe";
+
+noir_global_def hello_git_dep_with_lampe: String<24: u32> = "hello-git-dep-with-lampe";
+
+noir_def test_not_equal<>() -> Unit := {
+  (#_assert returning Unit)((not_equal<> as λ(Field, Field) -> bool)((1: Field), (2: Field)));
+  #_skip
 }
 
-nr_def «hello_git_dep_with_lampe»<>() -> str<24> {
-    "hello-git-dep-with-lampe"
-}
-
-nr_def «test_not_equal»<>() -> Unit {
-    #assert((@not_equal<> as λ(Field, Field) → bool)(1 : Field, 2 : Field)) : Unit;
-    skip;
-}
-
-
-def Lib.env := Lampe.Env.mk [«hello_git_dep_with_lampe», «hello», «not_equal», «test_not_equal»] []
+def Lib.env : Env := Env.mk
+  [not_equal, hello, hello_git_dep_with_lampe, test_not_equal]
+  []

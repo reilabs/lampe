@@ -1,6 +1,9 @@
 import Lean
+import Lampe.Data.HList
 
 open Lean PrettyPrinter Delaborator
+
+namespace Lampe
 
 /-- Disable a delaborator unless an option is set to true. Used in Lampe to disable pretty printers
 until they are stabilized. -/
@@ -15,4 +18,3 @@ def whenFullyApplied (expr : Expr) (f : DelabM α) : DelabM α := do
   let arity := fType.getNumHeadForalls
   let arity2 := fType.getNumHeadLambdas
   if numArgs == arity + arity2 then f else failure
-

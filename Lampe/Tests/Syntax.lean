@@ -2,6 +2,9 @@ import Lampe
 
 open Lampe
 
+set_option Lampe.pp.Expr true
+set_option Lampe.pp.STHoare true
+
 noir_def basic_void_fn<>() -> Unit := {
   #_unit
 }
@@ -269,7 +272,7 @@ example : STHoare p ⟨[add_two_fields], []⟩ ⟦⟧
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [call_decl]
   steps
-  step_as (⟦⟧) (fun v => v = 3)
+  step_as (⟦⟧) (fun (v : Fp p) => v = 3)
   . assumption
   · enter_decl
     simp only [add_two_fields]
@@ -292,7 +295,6 @@ noir_def simple_slice<>() -> bool := {
   let (s : Slice<bool>) = (#_mkSlice returning Slice<bool>)(#_true, #_false);
   (#_sliceIndex returning bool)(s, (1: u32))
 }
-
 
 example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .bool) => v = false :=   by
@@ -336,7 +338,7 @@ example : STHoare p Γ ⟦⟧ (repeated_slice.fn.body _ h![] |>.body h![])
   simp_all
 
 noir_def simple_tuple_access<>() → Field := {
-  let (t: Tuple<Field, Boolean, Field>) =
+  let (t: Tuple<Field, bool, Field>) =
     (#_makeData returning Tuple<Field, bool, Field>)(1: Field, #_true, 3: Field);
   t.2
 }
@@ -479,7 +481,7 @@ example : STHoare p ⟨[return_ten, call_function], []⟩ ⟦⟧ (simple_hof.fn.
   . enter_decl
     simp only [call_function]
 
-    step_as (⟦⟧) (fun v => v = 10)
+    step_as (⟦⟧) (fun (v : Fp p) => v = 10)
     . assumption
     . enter_decl
       steps
@@ -636,3 +638,33 @@ noir_def generic_fconst<N: Field>() -> Slice<Field> := {
 noir_def generic_uconst<N: u32>() -> Slice<Field> := {
   (#_mkRepeatedSlice returning Slice<Field>)(0: Field, uConst!(N: u32))
 }
+
+noir_struct_def has::«from»::name::«meta»<> {
+  Field
+}
+
+noir_def make::has::«from»::name::«meta»<>(x: Field) -> has::«from»::name::«meta»<> := {
+  (#_makeData returning has::«from»::name::«meta»<>)(x)
+}
+
+noir_def call::make::has::«from»::name::«meta»<>(x : Field) -> Field := {
+  ((make::has::«from»::name::«meta»<> as λ(Field) → has::«from»::name::«meta»<>)(x)).0
+}
+
+def badNameEnv : Env := .mk [«make::has::from::name::meta», «call::make::has::from::name::meta»] []
+
+example : STHoare p badNameEnv ⟦⟧ («make::has::from::name::meta».call h![] h![x]) fun v => v = (x,()) := by
+  enter_decl
+  steps
+  assumption
+
+example : STHoare p badNameEnv ⟦⟧ («call::make::has::from::name::meta».call h![] h![x]) fun v => v = x := by
+  enter_decl
+  steps
+  step_as (⟦⟧) (fun v => v = (x, ()))
+  · enter_decl
+    steps
+    assumption
+  steps
+  subst_vars
+  rfl

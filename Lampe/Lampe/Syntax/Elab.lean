@@ -24,8 +24,8 @@ elab "noir_trait_impl[" defName:ident "]" impl:noir_trait_impl : command => do
   Elab.Command.elabCommand decl
 
 /-- Elaborates a global definition written in the Noir eDSL. -/
-macro "noir_global_def" name:ident ":" type:noir_type "=" value:noir_expr ";" : command => do
-  let globalDecl ← `(noir_fn_def| $name:ident <> () -> $type:noir_type := $value:noir_expr)
+macro "noir_global_def" name:noir_ident ":" type:noir_type "=" value:noir_expr ";" : command => do
+  let globalDecl ← `(noir_fn_def| $name:noir_ident <> () -> $type:noir_type := $value:noir_expr)
   return ←`(noir_def $globalDecl:noir_fn_def)
 
 -- DSL: TYPES -------------------------------------------------------------------------------------

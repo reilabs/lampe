@@ -107,7 +107,6 @@ partial def makeConstNum [MonadUtil m] : TSyntax `noir_const_num → m (TSyntax 
 private partial def makeNoirIdentAux [MonadUtil m] : Syntax → m String
 | `(ident|$i:ident) => pure i.getId.toString
 | `(noir_ident|$i:ident) => pure i.getId.toString
-| `(noir_ident|from) => pure "from"
 | `(noir_ident|$i:ident :: $j:noir_ident) => do pure s!"{i.getId}::{←makeNoirIdentAux j}"
 | `(noir_ident|_) => pure "_"
 | i => throwError "Invalid identifier `{i}`"
@@ -115,17 +114,13 @@ private partial def makeNoirIdentAux [MonadUtil m] : Syntax → m String
 def makeNoirIdent [MonadUtil m] : Syntax → m Lean.Ident :=
   fun stx => (mkIdent $ .mkSimple ·) <$> makeNoirIdentAux stx
 
-/-- Builds the identifier for a field accessor. -/
-def makeFieldAccessorIdent (structName : Lean.Ident) (fieldName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ .mkSimple $ "field" ++ "#" ++ structName.getId.toString ++ "#" ++ fieldName.getId.toString
-
 /-- Builds the identifier for a struct definition. -/
 def makeStructDefIdent (structName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ .mkSimple $ "struct" ++ "#" ++ (structName.getId.toString false)
+  mkIdent $ .mkSimple $ structName.getId.toString false
 
 /-- Builds the identifier for a type alias. -/
 def makeTypeAliasIdent (aliasName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ .mkSimple $ "alias" ++ "#" ++ aliasName.getId.toString
+  mkIdent $ .mkSimple $ aliasName.getId.toString false
 
 /-- Generates the term corresponding to the kind of a numeric generic. -/
 def matchGenericDefinitions [MonadUtil m] : TSyntax `ident → m (TSyntax `term)
@@ -354,3 +349,16 @@ def makeTraitFunDefOutputIdent (traitName fnName : Lean.Ident) : Lean.Ident :=
 
 def makeTraitFunDefIdent (traitName fnName : Lean.Ident) : Lean.Ident :=
   mkIdent $ traitName.getId ++ fnName.getId
+
+end Lampe
+
+/-- Optionally matches on a `HList` literal, and returns the list of `Lean.Expr` elements -/
+partial def Lean.Expr.hListLit? (e : Lean.Expr) : Option $ List Lean.Expr :=
+  let rec loop (e : Lean.Expr) (acc : List Lean.Expr) :=
+    if e.isAppOfArity' ``HList.nil 2 then
+      some acc.reverse
+    else if e.isAppOfArity' ``HList.cons 6 then
+      loop e.appArg!' (e.appFn!'.appArg!' :: acc)
+    else
+      none
+  loop e []
