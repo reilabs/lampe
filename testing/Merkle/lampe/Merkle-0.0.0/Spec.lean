@@ -196,7 +196,7 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
       ([val ↦ ⟨.field, input⟩] ⋆ [bits ↦ v])
       (fun _ => [val ↦ ⟨.field, 0⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE 256 input⟩])
 
-    loop_inv nat fun i _ _ => [val ↦ ⟨.field, ↑(input.val / 2^i)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
+    loop_inv nat fun i _ _ => [val ↦ ⟨.field, (↑(input.val / 2^i) : Fp lp)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
     · simp [Int.cast, IntCast.intCast, Fp.cast_self]
     · decide
     · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
@@ -211,11 +211,9 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
     · intro i _ hi
       simp [IntCast.intCast, Int.cast] at hi
       steps [sgn0_intro]
-      -- · simp [Access.modify, hi]
-      --   rfl
       step_as v =>
         ([val ↦ ⟨.field, v⟩])
-        (fun _ => [val ↦ ⟨.field, ↑(v.val / 2)⟩])
+        (fun _ => [val ↦ ⟨.field, (↑(v.val / 2) : Fp lp)⟩])
       · simp only [pow_succ]
         congr 2
         rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
@@ -223,7 +221,6 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
         · cases input
           apply lt_of_le_of_lt (Nat.div_le_self _ _) (by assumption)
       · congr 1
-        subst_vars
         apply List.Vector.eq
         simp [-List.takeD_succ, Fp.toBitsLE, toBaseLE_succ_snoc, List.takeD_eq_take_append, hi, Nat.le_of_lt]
         rw [List.take_of_length_le (by simp_all [Nat.le_of_lt]), List.take_of_length_le (by simp_all [Nat.le_of_lt_succ])]
@@ -235,21 +232,23 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («utils::bits::to_le_b
         apply lt_of_le_of_lt (Nat.div_le_self _ _)
         simp [ZMod.val, lp, Prime.natVal]
       · simp only [ZMod.div2_on_vals]
+        have : i % 4294967296 = i := by
+          apply Nat.mod_eq_of_lt; linarith
+        simp
         apply STHoare.ite_intro
         · intro h
+          simp at h
           steps
-          subst_vars
-          -- rename 0#1 = _ => h
-          simp [*] at *
-          -- rw [BitVec.ofNat_1_eq_0_iff] at h
+          simp [*, Access.modify] at *
+          rw [Eq.comm, BitVec.ofNat_1_eq_0_iff] at h
           simp [Fp.cast_self, h]
-        · apply STHoare.iteFalse_intro
+        · intro h
+          have bitvec_ne_zero_iff_eq_one {bv : BitVec 1}: (¬bv = 0#1) ↔ bv = 1#1 := by
+            rcases bv with ⟨bv⟩
+            fin_cases bv <;> simp
+          simp [*, BitVec.ofNat_1_eq_0_iff] at h
+          rw [Eq.comm, BitVec.ofNat_1_eq_1_iff] at h
           steps
-          casesm* ∃_,_
-          subst_vars
-          simp at *
-          rename _ = BitVec.ofNat _ _ => h
-          rw [BitVec.ofNat_1_eq_1_iff] at h
           simp [h, Fp.cast_self]
     steps
     simp_all
@@ -453,7 +452,6 @@ theorem bar_intro : STHoare lp env ⟦⟧ («bar::bar».call h![] h![input])
       rename bytes = _ => bytes_def
       clear bytes_def
       steps [sbox_intro]
-      subst_vars
       rcases i with ⟨i, hi⟩
       rw [BitVec.lt_def] at hlt
       conv at hlt => congr <;> whnf
