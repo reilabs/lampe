@@ -45,13 +45,19 @@ abbrev STHoarePureBuiltin p (Γ : Env)
       (fun v => ∃∃h, v = (desc a (args)).snd h)
 
 abbrev STHoarePureBuiltin' p (Γ : Env)
-  {a : A}
-  {sgn: A → List Tp × Tp}
-  {desc : {p : Prime} → (a : A) → (args : HList (Tp.denote p) (sgn a).fst) → (Tp.denote p (sgn a).snd)}
-  (args : HList (Tp.denote p) (sgn a).fst) : Prop :=
-    STHoare p Γ ⟦⟧
-      (.callBuiltin (sgn a).fst (sgn a).snd (@Builtin.newGenericPureBuiltin A sgn (@fun p a args => ⟨True, fun _ => @desc p a args⟩)) args)
-      (fun v => v = desc a args)
+    {a : A}
+    {sgn: A → List Tp × Tp}
+    {desc : {p : Prime}
+          → (a : A)
+          → (args : HList (Tp.denote p) (sgn a).fst)
+          → (Tp.denote p (sgn a).snd)}
+    (args : HList (Tp.denote p) (sgn a).fst) : Prop :=
+  STHoare p Γ ⟦⟧
+    (.callBuiltin (sgn a).fst (sgn a).snd
+      (@Builtin.newGenericPureBuiltin A sgn (@fun p a args => ⟨True, fun _ => @desc p a args⟩))
+      args
+    )
+    (fun v => v = desc a args)
 
 namespace STHoare
 
@@ -59,11 +65,15 @@ theorem frame (h_hoare: STHoare p Γ P e Q): STHoare p Γ (P ⋆ H) e (fun v => 
   unfold STHoare
   intro H'
   apply THoare.consequence ?_ (h_hoare (H ⋆ H')) ?_ <;> {
-    simp_all only [SLP.star_assoc] -- [TODO] use SL-normalizer
+    simp_all only [SLP.star_assoc]
     tauto
   }
 
-theorem consequence {p tp} {e : Expr (Tp.denote p) tp} {H₁ H₂} {Q₁ Q₂ : Tp.denote p tp → SLP (State p)}
+theorem consequence
+    {p tp}
+    {e : Expr (Tp.denote p) tp}
+    {H₁ H₂}
+    {Q₁ Q₂ : Tp.denote p tp → SLP (State p)}
     (h_pre_conseq : H₂ ⊢ H₁)
     (h_post_conseq : ∀ v, Q₁ v ⋆ ⊤ ⊢ Q₂ v ⋆ ⊤)
     (h_hoare: STHoare p Γ H₁ e Q₁):
@@ -114,8 +124,8 @@ theorem consequence_frame {H H₁ P : SLP (State p)} {Q Q₁ : (Tp.denote p α) 
 
 theorem consequence_frame_left {H H₁ H₂ : SLP (State p)}
     (h_hoare: STHoare p Γ H₁ e Q)
-    (h_ent : H ⊢ (H₁ ⋆ H₂)):
-    STHoare p Γ H e (fun v => Q v ⋆ H₂) := by
+    (h_ent : H ⊢ (H₁ ⋆ H₂))
+  : STHoare p Γ H e (fun v => Q v ⋆ H₂) := by
   apply ramified_frame_top h_hoare
   apply SLP.entails_trans
   · use h_ent
@@ -132,7 +142,6 @@ theorem var_intro {v : Tp.denote p tp}:
   intro H
   apply THoare.consequence ?_ THoare.var_intro (fun _ => SLP.entails_self)
   simp
-
 
 theorem litU_intro: STHoare p Γ ⟦⟧ (.litNum (.u s) n) fun v => v = n := by
   unfold STHoare THoare
@@ -192,8 +201,8 @@ theorem litUnit_intro: STHoare p Γ ⟦⟧ (.litNum .unit n) fun v => v = unit :
 
 theorem letIn_intro {tp} {P} {Q : Tp.denote p tp → SLP (State p)} {e₁ e₂}
     (h_first: STHoare p Γ P e₁ Q)
-    (h_rest: ∀v, STHoare p Γ (Q v) (e₂ v) R):
-    STHoare p Γ P (Expr.letIn e₁ e₂) R := by
+    (h_rest: ∀v, STHoare p Γ (Q v) (e₂ v) R)
+  : STHoare p Γ P (Expr.letIn e₁ e₂) R := by
   unfold STHoare at *
   intro H
   apply THoare.letIn_intro
@@ -210,8 +219,8 @@ lemma Finmap.empty_disjoint: Finmap.Disjoint st ∅ := by
   rw [Finmap.Disjoint.symm_iff]
   simp [Finmap.disjoint_empty]
 
-lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v' : β r} :
-  Finmap.singleton r v ∪ Finmap.singleton r v' = Finmap.singleton r v := by
+lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v' : β r}
+  : Finmap.singleton r v ∪ Finmap.singleton r v' = Finmap.singleton r v := by
   apply Finmap.ext_lookup
   intro x
   cases Decidable.em (r = x)
@@ -222,11 +231,7 @@ lemma Finmap.union_singleton [DecidableEq α] {β : α → Type u} {r : α} {v v
     · simp_all [Finmap.lookup_eq_none, eq_comm]
     simp_all [eq_comm]
 
-theorem fresh_intro :
-  STHoare p Γ
-      ⟦⟧
-      (.callBuiltin [] tp .fresh h![])
-      (fun _ => ⟦⟧) := by
+theorem fresh_intro : STHoare p Γ ⟦⟧ (.callBuiltin [] tp .fresh h![]) (fun _ => ⟦⟧) := by
   unfold STHoare
   intro H
   apply THoare.consequence ?_ THoare.fresh_intro (fun _ => SLP.entails_self)
@@ -236,7 +241,6 @@ lemma eq (a b : Tp.denote p tp)
   (_ : BEq (Tp.denote p tp))
   (h1 : LawfulBEq (Tp.denote p tp))
   : (a == b) = true → a = b := h1.eq_of_beq
-
 
 -- [TODO] BitVec should be a `Preorder` but it isn't?
 lemma BitVec.le_refl {a : BitVec w} : a ≤ a := by
@@ -273,8 +277,8 @@ theorem loopDone_intro : STHoare p Γ ⟦⟧ (.loop lo lo body) (fun _ => ⟦⟧
   apply Omni.loopDone
   apply BitVec.le_refl
 
-theorem loopNext_intro {lo hi : U s} :
-    lo < hi →
+theorem loopNext_intro {lo hi : U s}
+  : lo < hi →
     STHoare p Γ P (body lo) (fun _ => Q) →
     STHoare p Γ Q (.loop (lo + 1) hi body) R →
     STHoare p Γ P (.loop lo hi body) R := by
@@ -284,8 +288,11 @@ theorem loopNext_intro {lo hi : U s} :
   apply letIn_intro
   all_goals tauto
 
-lemma inv_congr {h₁ h₂ : α → Prop} (Inv : (i : α) → h₁ i → h₂ i → SLP (State p)) {i j hlo hhi} (hEq : i = j):
-    Inv i hlo hhi = Inv j (hEq ▸ hlo) (hEq ▸ hhi) := by
+lemma inv_congr
+    {h₁ h₂ : α → Prop}
+    (Inv : (i : α) → h₁ i → h₂ i → SLP (State p))
+    {i j hlo hhi}
+    (hEq : i = j): Inv i hlo hhi = Inv j (hEq ▸ hlo) (hEq ▸ hhi) := by
   cases hEq
   rfl
 
@@ -300,15 +307,26 @@ lemma U.le_add_one_of_exists_lt {i : U s}  (h: i < j) : i ≤ i + 1 := by
 lemma U.le_plus_one_of_lt {i j : U s} (h: i < j): i + 1 ≤ j := by
   rcases i with ⟨⟨_, _⟩⟩
   rcases j with ⟨⟨_, _⟩⟩
-  simp only [BitVec.le_def, BitVec.lt_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat, Fin.ofNat] at *
+  simp only [BitVec.le_def, BitVec.lt_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat,
+             Fin.ofNat] at *
   rw [Nat.mod_eq_of_lt] <;> (
     have : 1 % 2^s ≤ 1 := by apply Nat.mod_le;
     linarith
   )
 
-theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (State p)) {body : U s → Expr (Tp.denote p) tp}:
-    (∀i, (hlo: lo ≤ i) → (hhi: i < hi) → STHoare p Γ (Inv i hlo (BitVec.le_of_lt hhi)) (body i) (fun _ => Inv (i + 1) (BitVec.le_trans hlo (U.le_add_one_of_exists_lt hhi)) (U.le_plus_one_of_lt hhi))) →
-    STHoare p Γ (∃∃h, Inv lo BitVec.le_refl h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi h BitVec.le_refl) := by
+theorem loop_inv_intro
+    (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (State p))
+    {body : U s → Expr (Tp.denote p) tp}
+  : (∀i, (hlo: lo ≤ i) → (hhi: i < hi) → STHoare p Γ (Inv i hlo (BitVec.le_of_lt hhi))
+    (body i)
+    (fun _ => Inv
+      (i + 1)
+      (BitVec.le_trans hlo (U.le_add_one_of_exists_lt hhi))
+      (U.le_plus_one_of_lt hhi))) 
+    → STHoare p Γ
+      (∃∃h, Inv lo BitVec.le_refl h)
+      (.loop lo hi body)
+      (fun _ => ∃∃h, Inv hi h BitVec.le_refl) := by
   cases BitVec.le_or_lt lo hi with
   | inr =>
     intro _ H st h
@@ -323,7 +341,9 @@ theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (S
     generalize h : hi - lo = d at *
     cases this
     intro h
-    apply consequence (H₁ := Inv ⟨lo, by assumption⟩ (by simp) (by simp)) (Q₁ := fun _ => Inv ⟨lo + d, by assumption⟩ (by simp) (by simp))
+    apply consequence
+      (H₁ := Inv ⟨lo, by assumption⟩ (by simp) (by simp))
+      (Q₁ := fun _ => Inv ⟨lo + d, by assumption⟩ (by simp) (by simp))
     · intro st h
       cases h
       assumption
@@ -340,13 +360,15 @@ theorem loop_inv_intro (Inv : (i : U s) → (lo ≤ i) → (i ≤ hi) → SLP (S
       · simp
       · apply_assumption
         simp
-      · have : BitVec.ofFin (Fin.mk lo (by assumption)) + 1 = BitVec.ofFin (Fin.mk (lo + 1) (by linarith)) := by
+      · have : BitVec.ofFin (Fin.mk lo (by assumption)) + 1
+          = BitVec.ofFin (Fin.mk (lo + 1) (by linarith)) := by
           simp [Fin.add_def]
           rw [Nat.mod_eq_of_lt]
           · linarith
         rw [inv_congr Inv this]
         simp_rw [this]
-        have : BitVec.ofFin (Fin.mk (lo + (d + 1)) (by assumption)) = BitVec.ofFin (Fin.mk ((lo + 1) + d) (by linarith)) := by
+        have : BitVec.ofFin (Fin.mk (lo + (d + 1)) (by assumption))
+          = BitVec.ofFin (Fin.mk ((lo + 1) + d) (by linarith)) := by
           simp +arith +decide
         rw [inv_congr Inv this]
         simp_rw [this]
@@ -363,14 +385,24 @@ theorem SLP.entails_of_eq [LawfulHeap α] {P Q : SLP α} (h : P = Q) : P ⊢ Q :
   cases h
   apply SLP.entails_self
 
-theorem loop_inv_intro' {lo hi : U s} (Inv : (i : Nat) → (lo.toNat ≤ i) → (i ≤ hi.toNat) → SLP (State p)) {body : U s → Expr (Tp.denote p) tp}:
-    (∀(i:Nat), (hlo: lo.toNat ≤ i) → (hhi: i < hi.toNat) → STHoare p Γ (Inv i hlo (by linarith)) (body $ BitVec.ofNatLT i (lt_trans hhi hi.toFin.prop)) (fun _ => Inv (i + 1) (by linarith) (by linarith))) →
-    STHoare p Γ (∃∃h, Inv lo.toNat BitVec.le_refl h) (.loop lo hi body) (fun _ => ∃∃h, Inv hi.toNat h BitVec.le_refl) := by
+theorem loop_inv_intro'
+    {lo hi : U s}
+    (Inv : (i : Nat) → (lo.toNat ≤ i) → (i ≤ hi.toNat) → SLP (State p))
+    {body : U s → Expr (Tp.denote p) tp}
+  : (∀(i:Nat),
+      (hlo: lo.toNat ≤ i) → (hhi: i < hi.toNat) → STHoare p Γ (Inv i hlo (by linarith))
+      (body $ BitVec.ofNatLT i (lt_trans hhi hi.toFin.prop))
+      (fun _ => Inv (i + 1) (by linarith) (by linarith))) 
+    → STHoare p Γ
+      (∃∃h, Inv lo.toNat BitVec.le_refl h)
+      (.loop lo hi body)
+      (fun _ => ∃∃h, Inv hi.toNat h BitVec.le_refl) := by
   intro hinv
   apply STHoare.ramified_frame_top
-  apply loop_inv_intro fun i _ _ => Inv i.toNat (by rw [←BitVec.le_def]; assumption) (by rw [←BitVec.le_def]; assumption)
+  apply loop_inv_intro fun i _ _ => Inv i.toNat
+    (by rw [←BitVec.le_def]; assumption)
+    (by rw [←BitVec.le_def]; assumption)
   · intro i hlo hhi
-    -- have : i = ↑i.toNat := by simp
     apply consequence
 
     case h_hoare =>
@@ -416,9 +448,9 @@ theorem iteFalse_intro :
   tauto
 
 theorem ite_intro {cnd : Bool}
-  (h₁ : cnd = true → STHoare p Γ P mainBody Q)
-  (h₂ : cnd = false → STHoare p Γ P elseBody Q) :
-  STHoare p Γ P (.ite cnd mainBody elseBody) Q := by
+    (h₁ : cnd = true → STHoare p Γ P mainBody Q)
+    (h₂ : cnd = false → STHoare p Γ P elseBody Q)
+  : STHoare p Γ P (.ite cnd mainBody elseBody) Q := by
   unfold STHoare
   intros
   cases cnd
@@ -443,8 +475,7 @@ theorem constFp_intro: STHoare p Γ ⟦⟧ (.constFp c) fun v => v = c := by
   apply SLP.ent_star_top
   assumption
 
-theorem skip_intro :
-  STHoare p Γ ⟦⟧ (.skip) (fun v => v = ()) := by
+theorem skip_intro : STHoare p Γ ⟦⟧ (.skip) (fun v => v = ()) := by
   unfold STHoare
   intros
   simp only [SLP.true_star]
@@ -455,8 +486,7 @@ theorem skip_intro :
   . apply SLP.ent_star_top
     tauto
 
-theorem lam_intro :
-  STHoare p Γ ⟦⟧ (.lam argTps outTp lambdaBody)
+theorem lam_intro : STHoare p Γ ⟦⟧ (.lam argTps outTp lambdaBody)
     fun v => [λv ↦ lambdaBody] := by
   unfold STHoare THoare
   intros H st h
@@ -482,12 +512,12 @@ theorem lam_intro :
     tauto
 
 theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
-  {Q : Tp.denote p outTp → SLP (State p)}
-  {fnRef : Tp.denote p (.fn argTps outTp)}
-  {hlam : STHoare p Γ P (lambdaBody args) Q} :
-  STHoare p Γ (P ⋆ [λfnRef ↦ lambdaBody])
-    (Expr.call argTps outTp fnRef args)
-    (fun v => (Q v) ⋆ [λfnRef ↦ lambdaBody]) := by
+    {Q : Tp.denote p outTp → SLP (State p)}
+    {fnRef : Tp.denote p (.fn argTps outTp)}
+    {hlam : STHoare p Γ P (lambdaBody args) Q}
+  : STHoare p Γ (P ⋆ [λfnRef ↦ lambdaBody])
+      (Expr.call argTps outTp fnRef args)
+      (fun v => (Q v) ⋆ [λfnRef ↦ lambdaBody]) := by
   unfold STHoare THoare
   intros H st h
   have h₁ : ∃ r, fnRef = .lambda r := by
@@ -510,14 +540,15 @@ theorem callLambda_intro {lambdaBody} {P : SLP $ State p}
     . simp_all
   · apply STHoare.consequence_frame_left <;> tauto
 
-theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
+theorem callDecl_intro
+    {fnRef : Tp.denote p (.fn argTps outTp)}
     {href : H ⊢ ⟦fnRef = (.decl fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p)}
     {h_fn : ⟨fnName, func⟩ ∈ Γ.functions}
     {hkc : func.generics = kinds}
     {htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps}
     {htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp}
-    {h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q} :
-    STHoare p Γ H (Expr.call argTps outTp fnRef args) Q := by
+    {h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q}
+  : STHoare p Γ H (Expr.call argTps outTp fnRef args) Q := by
   unfold STHoare THoare
   intros
   have _ : fnRef = (.decl fnName kinds generics) := by
@@ -526,17 +557,17 @@ theorem callDecl_intro {fnRef : Tp.denote p (.fn argTps outTp)}
   apply Omni.callDecl <;> tauto
 
 
-theorem callTrait_intro {impls : List $ Ident × Function} {fnRef : Tp.denote p (.fn argTps outTp)}
+theorem callTrait_intro
+    {impls : List $ Ident × Function}
+    {fnRef : Tp.denote p (.fn argTps outTp)}
     (href : H ⊢  ⟦fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics)⟧ ⋆ (⊤ : SLP $ State p))
     (h_trait : TraitResolution Γ ⟨⟨traitName, traitKinds, traitGenerics⟩, selfTp⟩ impls)
     (h_fn : (fnName, func) ∈ impls)
     (hkc : func.generics = kinds)
     (htci : (func.body _ (hkc ▸ generics) |>.argTps) = argTps)
     (htco : (func.body _ (hkc ▸ generics) |>.outTp) = outTp)
-    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q) :
-    STHoare p Γ H
-      (Expr.call argTps outTp fnRef args)
-      Q := by
+    (h_hoare: STHoare p Γ H (htco ▸ (func.body _ (hkc ▸ generics) |>.body (htci ▸ args))) Q)
+  : STHoare p Γ H (Expr.call argTps outTp fnRef args) Q := by
   unfold STHoare THoare
   intros
   have _ : fnRef = (.trait selfTp traitName traitKinds traitGenerics fnName kinds generics) := by
