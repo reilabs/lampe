@@ -27,7 +27,7 @@ noir_def std::array::check_shuffle::check_shuffle<T: Type, N: u32>(lhs: Array<T,
     let idx = (#_arrayIndex returning u32)(shuffle_indices, (#_cast returning u32)(i));
     let expected = (#_arrayIndex returning T)(rhs, (#_cast returning u32)(idx));
     let result = (#_arrayIndex returning T)(lhs, (#_cast returning u32)(i));
-    (#_assert returning Unit)(((T as Eq<>)::eq<> as λ(T, T) -> bool)(expected, result));
+    (#_assert returning Unit)(((T as std::cmp::Eq<>)::eq<> as λ(T, T) -> bool)(expected, result));
     #_skip
   };
   #_skip

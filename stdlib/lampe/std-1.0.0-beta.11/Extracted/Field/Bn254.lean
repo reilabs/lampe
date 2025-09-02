@@ -93,9 +93,9 @@ noir_def std::field::bn254::lt<>(a: Field, b: Field) -> bool := {
 }
 
 noir_def std::field::bn254::tests::check_decompose<>() -> Unit := {
-  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((std::field::bn254::TWO_POW_128<> as λ() -> Field)()), (#_makeData returning Tuple<Field, Field>)((0: Field), (1: Field))));
-  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((#_fAdd returning Field)((std::field::bn254::TWO_POW_128<> as λ() -> Field)(), (78187493520: Field))), (#_makeData returning Tuple<Field, Field>)((78187493520: Field), (1: Field))));
-  (#_assert returning Unit)(((Tuple<Field, Field> as Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((78187493520: Field)), (#_makeData returning Tuple<Field, Field>)((78187493520: Field), (0: Field))));
+  (#_assert returning Unit)(((Tuple<Field, Field> as std::cmp::Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((std::field::bn254::TWO_POW_128<> as λ() -> Field)()), (#_makeData returning Tuple<Field, Field>)((0: Field), (1: Field))));
+  (#_assert returning Unit)(((Tuple<Field, Field> as std::cmp::Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((#_fAdd returning Field)((std::field::bn254::TWO_POW_128<> as λ() -> Field)(), (78187493520: Field))), (#_makeData returning Tuple<Field, Field>)((78187493520: Field), (1: Field))));
+  (#_assert returning Unit)(((Tuple<Field, Field> as std::cmp::Eq<>)::eq<> as λ(Tuple<Field, Field>, Tuple<Field, Field>) -> bool)((std::field::bn254::decompose<> as λ(Field) -> Tuple<Field, Field>)((78187493520: Field)), (#_makeData returning Tuple<Field, Field>)((78187493520: Field), (0: Field))));
   #_skip
 }
 

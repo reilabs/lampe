@@ -233,7 +233,7 @@ noir_trait_impl[impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> st
                 #_skip
               } else {
                 let other_value = (std::option::Option::unwrap_unchecked<V> as λ(std::option::Option<V>) -> V)(other_value);
-                if ((V as Eq<>)::eq<> as λ(V, V) -> bool)(value, other_value) then {
+                if ((V as std::cmp::Eq<>)::eq<> as λ(V, V) -> bool)(value, other_value) then {
                   equal = #_false;
                   #_skip
                 }

@@ -1861,17 +1861,16 @@ impl LeanGenerator<'_, '_> {
                 .def_interner
                 .get_operator_trait_method(infix.operator.kind);
 
+            let trait_data = self.context.def_interner.get_trait(trait_method_id.trait_id);
+
             let function_name = self
                 .context
                 .def_interner
                 .definition_name(trait_method_id.item_id)
                 .to_string();
-            let trait_name = self
-                .context
-                .def_interner
-                .get_trait(trait_method_id.trait_id)
-                .name
-                .to_string();
+            let trait_name = quote_lean_keywords(
+                &self.resolve_fq_trait_name_from_crate_id(trait_data.crate_id, trait_data.id),
+            );
 
             let call_target = TraitCallRef {
                 trait_name,
@@ -1920,13 +1919,16 @@ impl LeanGenerator<'_, '_> {
                 .def_interner
                 .get_prefix_operator_trait_method(&prefix.operator)
                 .unwrap_or_else(|| panic!("Found no trait corresponding to {:?}", prefix.operator));
+
+            let trait_data = self.context.def_interner.get_trait(trait_method_id.trait_id);
             let function_name = self
                 .context
                 .def_interner
                 .definition_name(trait_method_id.item_id)
                 .to_string();
-            let corresponding_trait = self.context.def_interner.get_trait(trait_method_id.trait_id);
-            let trait_name = corresponding_trait.name.to_string();
+            let trait_name = quote_lean_keywords(
+                &self.resolve_fq_trait_name_from_crate_id(trait_data.crate_id, trait_data.id),
+            );
 
             let call_target = TraitCallRef {
                 trait_name,

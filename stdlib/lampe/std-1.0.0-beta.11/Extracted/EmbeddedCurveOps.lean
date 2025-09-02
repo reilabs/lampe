@@ -28,7 +28,7 @@ noir_trait_impl[impl_25]<> std::ops::arith::Add<> for std::embedded_curve_ops::E
 
 noir_trait_impl[impl_26]<> std::ops::arith::Sub<> for std::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
   noir_def sub<>(self: std::embedded_curve_ops::EmbeddedCurvePoint<>, other: std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<> := {
-    ((std::embedded_curve_ops::EmbeddedCurvePoint<> as Add<>)::add<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(self, ((std::embedded_curve_ops::EmbeddedCurvePoint<> as std::ops::arith::Neg<>)::neg<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(other))
+    ((std::embedded_curve_ops::EmbeddedCurvePoint<> as std::ops::arith::Add<>)::add<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>, std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(self, ((std::embedded_curve_ops::EmbeddedCurvePoint<> as std::ops::arith::Neg<>)::neg<> as λ(std::embedded_curve_ops::EmbeddedCurvePoint<>) -> std::embedded_curve_ops::EmbeddedCurvePoint<>)(other))
   };
 }
 
