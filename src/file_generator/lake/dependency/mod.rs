@@ -18,7 +18,6 @@ pub use reservoir_git::LeanDependencyReservoirGit;
 
 use crate::{
     file_generator::{self, NoirPackageIdentifier},
-    lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
 };
 
 pub trait LeanDependency {
