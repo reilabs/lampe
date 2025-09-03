@@ -383,7 +383,7 @@ partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoa
     let (_, hNext) ← hNext.intro (vname.getD `v)
     let hHead :: hEnt :: impls₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
     let impls₃ ← closer hHead
-    let rEnt ← solveEntailment hEnt
+    let rEnt ← solveEntailment hEnt SLConfig.default
     return TripleGoals.mk hNext [] [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
   else
     let closer ← getClosingTerm body
@@ -392,10 +392,10 @@ partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoa
     | none => fun goal => tryApplySyntaxes goal addLemmas
     let hHoare :: hEnt :: qEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.consequence_frame) | throwError "ramified_frame_top failed"
     let impls₂ ← closer hHoare
-    let rEnt ← solveEntailment hEnt
+    let rEnt ← solveEntailment hEnt SLConfig.default
     let (_, qEnt) ← qEnt.intro1
     let qEnt ← if rEnt.entailments.isEmpty then
-      solveEntailment qEnt
+      solveEntailment qEnt SLConfig.default
     else
       pure $ SLGoals.mk [qEnt] [] []
     return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt ++ qEnt
@@ -428,6 +428,7 @@ structure StepsConfig where
   limit : Nat
   addLemmas : List AddLemma
   strict : Bool
+  unsafeUnifySL : Bool
 
 /--
 Takes a sequence of at most `limit` steps to attempt to advance the proof state by continually
@@ -469,10 +470,13 @@ declare_syntax_cat steps_items
 syntax "[" term,* "]" : steps_items
 syntax "steps" (num)? (steps_items)? optConfig : tactic
 
-def parseStepsConfig (goal : MVarId)
-                     (limit : Option (TSyntax `num))
-                     (stepsItems : Option (TSyntax `steps_items))
-                     (config : TSyntax `Lean.Parser.Tactic.optConfig) : TacticM StepsConfig := goal.withContext do
+def parseStepsConfig 
+    (goal : MVarId)
+    (unsafeUnifySL : Bool)
+    (limit : Option (TSyntax `num))
+    (stepsItems : Option (TSyntax `steps_items))
+    (config : TSyntax `Lean.Parser.Tactic.optConfig) 
+  : TacticM StepsConfig := goal.withContext do
   -- Parse the limit
   let limit := limit.map (fun n => n.getNat) |>.getD 1000
 
@@ -498,7 +502,7 @@ def parseStepsConfig (goal : MVarId)
   -- Get the `strict` config item
   let strict := configItems.contains (`strict, true)
 
-  return { limit, addLemmas, strict }
+  return { limit, addLemmas, strict, unsafeUnifySL }
 
 /--
 Takes a sequence of steps to attempt to advance the proof state by continually simplifying the goal.
@@ -516,14 +520,16 @@ It can be called in three main ways:
 - `steps`: A bare call to the tactic will simply try to advance the goal by performing as many steps
   as it can without blowing up the proof state or failing. This version can take a maximum of 10000
   steps before failing.
+- `steps unsafe`: A more aggressive version of the tactic that is capable of closing more goals but
+  comes with the risk that it may get stuck.
 - `steps n`: As above, except that it will take at most n : ℕ steps before terminating.
 - `steps [lemmas,*]`: As for `steps`, except that it will specifically use the provided lemmas in
   addition to its inbuilt rules to advance the goal state. This version can be combined with the
   explicit limit case to combine the behaviors in the obvious way `steps n [lemmas,*]`.
 -/
-elab "steps" limit:optional(num) lemmas:optional(steps_items) config:optConfig : tactic => do
+elab "steps" u:"unsafe"? limit:optional(num) lemmas:optional(steps_items) config:optConfig : tactic => do
   let goals ← getMainGoal
-  let config ← parseStepsConfig goals limit lemmas config
+  let config ← parseStepsConfig goals u.isSome limit lemmas config
   let goals ← steps goals config
   replaceMainGoal goals
 
@@ -551,7 +557,8 @@ elab "step_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : ta
   let stepAsConfig := {
     limit := 1,
     addLemmas := [AddLemma.mk (← withMainContext <| elabTerm enterer none) enterer (generalizeEnv := false)],
-    strict := true
+    strict := true,
+    unsafeUnifySL := false
   }
   let newGoals ← try steps goal stepAsConfig catch e =>
     throwError "step_as failed:
@@ -578,7 +585,8 @@ elab "loop_inv" p:optional("nat") inv:term : tactic => do
   let loopInvConfig := {
     limit := 1,
     addLemmas := [AddLemma.mk (← withMainContext <| elabTerm solver none) solver (generalizeEnv := false)],
-    strict := true
+    strict := true,
+    unsafeUnifySL := false
   }
   let goals ← steps (← getMainGoal) loopInvConfig
   replaceMainGoal goals
@@ -634,6 +642,7 @@ elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term 
     limit := 1,
     addLemmas := [AddLemma.mk (← withMainContext <| elabTerm enterer none) enterer (generalizeEnv := false)],
     strict := true
+    unsafeUnifySL := false
   }
   let newGoals ← try steps goal enterLambdaConfig catch e =>
     throwError

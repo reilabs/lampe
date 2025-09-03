@@ -442,10 +442,22 @@ theorem iteTrue_intro :
     STHoare p Γ P (.ite true mainBody elseBody) Q := by
   tauto
 
+lemma ite_intro_of_true {cond : Bool} (h : cond = true) :
+    STHoare p Γ P mainBody Q →
+    STHoare p Γ P (.ite cond mainBody elseBody) Q := by
+  cases h
+  apply STHoare.iteTrue_intro
+
 theorem iteFalse_intro :
     STHoare p Γ P elseBody Q →
     STHoare p Γ P (.ite false mainBody elseBody) Q := by
   tauto
+
+lemma ite_intro_of_false {cond : Bool} (h : cond = false) :
+    STHoare p Γ P elseBody Q →
+    STHoare p Γ P (.ite cond mainBody elseBody) Q := by
+  cases h
+  apply STHoare.iteFalse_intro
 
 theorem ite_intro {cnd : Bool}
     (h₁ : cnd = true → STHoare p Γ P mainBody Q)

@@ -150,10 +150,23 @@ theorem move_to_sinks {p} {P Q : SLP (State p)} : (P ⊢ Q) → (P ⊢ (⟦⟧ �
 
 end Internal
 
+structure SLConfig where
+  isUnsafe : Bool
+
+def SLConfig.default : SLConfig := { isUnsafe := false }
+
+instance : Inhabited SLConfig where
+  default := SLConfig.default
+
 structure SLGoals where
   entailments : List MVarId
   props : List MVarId
   implicits : List MVarId
+
+abbrev SLM := ReaderT SLConfig TacticM 
+
+def SLM.run {α} (x : SLM α) (r : SLConfig) : TacticM α :=
+  ReaderT.run x r
 
 def SLGoals.flatten (g : SLGoals) : List MVarId := g.entailments ++ g.props ++ g.implicits
 
@@ -174,7 +187,7 @@ def _root_.Lean.MVarId.apply' (m: MVarId) (e: Lean.Expr): TacticM (List MVarId) 
 /--
 Solves goals of the form `P ⊢ [r ↦ v] ⋆ ?_`, trying to copy as much evidence as possible to the MVar on the right
 -/
-partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : TacticM SLGoals := 
+partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGoals := 
   goal.withContext $ withTraceNode `Lampe.SL (fun e => return f!"solveSingletonStarMV {Lean.exceptEmoji e}") $ do
   match lhs with
   | SLTerm.singleton _ v _ =>
@@ -226,18 +239,21 @@ For example, if the original goal is `P x ⋆ P y ⊢ (∃∃z, P z) ⋆ P x`, a
 look like `P x ⋆ P y ⊢ P ?v ⋆ P x` and we'd use `P x` to solve `P ?v` and then we're left with
 unsolvable `P y ⊢ P x`. So `?v` cannot be unified by this tactic.
 -/
-def solveExactStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : TacticM SLGoals := 
+def solveExactStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGoals := 
   withTraceNode `Lampe.SL (fun e => return f!"solveExactStarMV {Lean.exceptEmoji e}") do
+  let isUnsafe := (←read).isUnsafe
   match lhs with
   | SLTerm.unrecognized expr =>
-    if (←withNewMCtxDepth $ isDefEq expr rhs) then
+    let mvarGuard := if isUnsafe then id else withNewMCtxDepth
+    if ←mvarGuard $ isDefEq expr rhs then
       let impl ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.entails_self_true)
       pure $ SLGoals.mk [] [] impl
     else throwError "final unrecognized is not equal"
   | SLTerm.star _ l r => do
     match l with
-    | SLTerm.unrecognized expr =>
-      if (←withNewMCtxDepth $ isDefEq expr rhs) then
+    | SLTerm.unrecognized expr => do
+    let mvarGuard := if isUnsafe then id else withNewMCtxDepth
+    if ←mvarGuard $ isDefEq expr rhs then
         let impl ← goal.apply' (←mkConstWithFreshMVarLevels ``SLP.entails_self)
         pure $ SLGoals.mk [] [] impl
       else
@@ -251,7 +267,7 @@ def solveExactStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : TacticM 
   | _ => throwError "Unrecognized shape in solveExactStarMV"
 
 partial def rewriteSides (goal : MVarId) (newPre newPost : Lean.Expr) (eqPre eqPost : Lean.Expr) 
-  : TacticM MVarId := do
+  : SLM MVarId := do
   let newGoalTp ← mkAppM ``SLP.entails #[newPre, newPost]
   let nextGoal ← mkFreshMVarId
   let goalExpr ← mkFreshExprMVarWithId nextGoal (some newGoalTp)
@@ -259,20 +275,20 @@ partial def rewriteSides (goal : MVarId) (newPre newPost : Lean.Expr) (eqPre eqP
   goal.assign congr
   pure nextGoal
 
-partial def normalizePre (goal : MVarId) (pre post : SLTerm) : TacticM (SLTerm × MVarId) := do
+partial def normalizePre (goal : MVarId) (pre post : SLTerm) : SLM (SLTerm × MVarId) := do
   let (pre', preEq) ← Lampe.SL.norm pre
   let postEq ← mkAppM ``Eq.refl #[post.expr]
   let goal ← rewriteSides goal pre'.expr post.expr preEq postEq
   pure (pre', goal)
 
 partial def normalizeSides (goal : MVarId) (pre post : SLTerm) 
-  : TacticM (SLTerm × SLTerm × MVarId) := do
+  : SLM (SLTerm × SLTerm × MVarId) := do
   let (pre', preEq) ← Lampe.SL.norm pre
   let (post', postEq) ← Lampe.SL.norm post
   let goal ← rewriteSides goal pre'.expr post'.expr preEq postEq
   pure (pre', post', goal)
 
-partial def solveGoal (goal : MVarId) (pre post : SLTerm) : TacticM SLGoals := 
+partial def solveGoal (goal : MVarId) (pre post : SLTerm) : SLM SLGoals := 
   withTraceNode `Lampe.SL (tag := "solveGoal") (fun e => return f!"solveGoal {Lean.exceptEmoji e}") do
   match post with
   | .singleton _ v _ => solveSingletonStarMV goal pre v
@@ -289,7 +305,7 @@ partial def solveGoal (goal : MVarId) (pre post : SLTerm) : TacticM SLGoals :=
 -- Solves all goals, or moves them to sinks if unable to close.
 -- If this returns (pre, sinks, goal), we have `goal : pre ⊢ sinks`, with both sides normalized
 partial def solveGoals (goal : MVarId) (pre goals sinks : SLTerm) 
-  : TacticM (SLGoals × SLTerm × SLTerm × MVarId) := 
+  : SLM (SLGoals × SLTerm × SLTerm × MVarId) := 
   withTraceNode `Lampe.SL (tag := "solveGoals") (fun e => return f!"solveGoals {Lean.exceptEmoji e}") do
   match goals with
   | .unit _ =>
@@ -328,7 +344,7 @@ partial def solveGoals (goal : MVarId) (pre goals sinks : SLTerm)
       pure (default, pre, post, goal)
 
 partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Lean.Expr)
-  : TacticM (MVarId × List MVarId) := goal.withContext $ do
+  : SLM (MVarId × List MVarId) := goal.withContext $ do
   match pre with
   | .star _ (.lift _) r =>
     let goal :: impls ← goal.apply' puller | throwError "unexpected goals in doPullWith"
@@ -342,7 +358,7 @@ partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Lean
     pure (goal, impls)
   | _ => pure (goal, [])
 
-partial def pullPures (goal : MVarId) (pre post : SLTerm) : TacticM (MVarId × List MVarId) := 
+partial def pullPures (goal : MVarId) (pre post : SLTerm) : SLM (MVarId × List MVarId) := 
   goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
   let (goal, puller, finalPuller) ← if post.hasMVars then
     let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
@@ -360,7 +376,7 @@ partial def pullPures (goal : MVarId) (pre post : SLTerm) : TacticM (MVarId × L
     pure (goal, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left')
   doPullWith pre goal puller finalPuller
 
-partial def doApplyExis (goal : MVarId) (postExis : SLTerm) : TacticM (MVarId × List MVarId) := do
+partial def doApplyExis (goal : MVarId) (postExis : SLTerm) : SLM (MVarId × List MVarId) := do
   match postExis with
   | SLTerm.exi _ _ =>
     let goal :: goals ← goal.apply' (←mkConstWithFreshMVarLevels ``Internal.apply_exi) | throwError "unexpected goals in apply_exi"
@@ -371,7 +387,7 @@ partial def doApplyExis (goal : MVarId) (postExis : SLTerm) : TacticM (MVarId ×
     pure (goal, goals ++ g₂)
   | _ => pure (goal, [])
 
-partial def applyExis (goal : MVarId) (pre post : SLTerm): TacticM (MVarId × List MVarId) := 
+partial def applyExis (goal : MVarId) (pre post : SLTerm): SLM (MVarId × List MVarId) := 
   goal.withContext do
   let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
     | SLTerm.exi _ _ => pure .left
@@ -382,7 +398,7 @@ partial def applyExis (goal : MVarId) (pre post : SLTerm): TacticM (MVarId × Li
   let goal ← rewriteSides goal pre.expr newPost preEq postEqMVars
   doApplyExis goal p
 
-partial def solveSinks (goal : MVarId) (pre post : SLTerm): TacticM SLGoals := 
+partial def solveSinks (goal : MVarId) (pre post : SLTerm): SLM SLGoals := 
   goal.withContext $ withTraceNode `Lampe.SL (tag := "solveSinks") (fun e => return f!"solveSinks {Lean.exceptEmoji e}") do
   trace[Lampe.SL] "Current goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
   match post with
@@ -394,7 +410,7 @@ partial def solveSinks (goal : MVarId) (pre post : SLTerm): TacticM SLGoals :=
     return SLGoals.mk [] [] impls
   | _ => pure $ SLGoals.mk [goal] [] []
 
-partial def pullExisLoop (goal : MVarId): TacticM (MVarId × List MVarId) := goal.withContext do
+partial def pullExisLoop (goal : MVarId): SLM (MVarId × List MVarId) := goal.withContext do
   let tp ← goal.instantiateMVarsInType
   let (l, _) ← parseEntailment tp
   match l with
@@ -406,7 +422,7 @@ partial def pullExisLoop (goal : MVarId): TacticM (MVarId × List MVarId) := goa
       pure $ (r, impls ++ rs)
   | _ => pure (goal, [])
 
-partial def pullExis (pre post : SLTerm) (goal : MVarId): TacticM (MVarId × List MVarId) := 
+partial def pullExis (pre post : SLTerm) (goal : MVarId): SLM (MVarId × List MVarId) := 
   goal.withContext do
   let (goals, sink, postEq) ← Lampe.SL.split_by (fun t => match t with
   | SLTerm.mvar _ => pure .right
@@ -425,7 +441,7 @@ partial def pullExis (pre post : SLTerm) (goal : MVarId): TacticM (MVarId × Lis
   let (g, r) ← pullExisLoop goal
   pure (g, r ++ impls)
 
-partial def parseAndNormalizeEntailment (goal : MVarId): TacticM (SLTerm × SLTerm × MVarId) := 
+partial def parseAndNormalizeEntailment (goal : MVarId): SLM (SLTerm × SLTerm × MVarId) := 
   goal.withContext do
   let target ← goal.instantiateMVarsInType
   let (pre, post) ← parseEntailment target
@@ -438,7 +454,7 @@ Solves an entailment of the form `P ⊢ Q ⋆ ⊤` or `P ⊢ Q ⋆ ?M`.
 It pushes all clonable information into the `?M` part to strengthen it for further goals. See how
 it handles pulling pures and existentials to understand.
 -/
-partial def solveEntailment (goal : MVarId): TacticM SLGoals := 
+partial def solveEntailment' (goal : MVarId): SLM SLGoals := 
   goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
   let (pre, post, goal) ← parseAndNormalizeEntailment goal
   trace[Lampe.SL] "Initial goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
@@ -471,10 +487,32 @@ partial def solveEntailment (goal : MVarId): TacticM SLGoals :=
     let res ← solveSinks goal pre post
     pure $ res ++ moreGoals ++ SLGoals.mk [] exiGoals (impls₁ ++ impls₂)
 
-syntax "sl" : tactic
-elab "sl" : tactic => do
+/--
+Solves an entailment of the form `P ⊢ Q ⋆ ⊤` or `P ⊢ Q ⋆ ?M`. 
+
+It pushes all clonable information into the `?M` part to strengthen it for further goals. See how
+it handles pulling pures and existentials to understand.
+-/
+partial def solveEntailment (goal : MVarId) (config : SLConfig) : TacticM SLGoals := 
+  SLM.run (solveEntailment' goal) config
+
+/--
+Solves separation logic entailments of the form `P ⊢ Q ⋆ ⊤` or `P ⊢ Q ⋆ ?M`.
+
+It pushes all clonable information into the metavariable `?M` in order to strengthen it for usage in
+discharging further goals.
+
+It can be called in two ways:
+
+- `sl`: A safe tactic that will make whatever progress that it can while ensuring that it does not
+  turn a solvable goal into an unsolvable one.
+- `sl unsafe`: This is more aggressive and hence may be able to close more goals, but comes with the
+  risk that it might get you stuck.
+-/
+elab "sl" m:"unsafe"? : tactic => do
+  let config : SLConfig := ⟨m.isSome⟩
   let target ← getMainGoal
-  let newGoals ← solveEntailment target
+  let newGoals ← solveEntailment target config
   replaceMainGoal newGoals.flatten
 
 end Lampe.SL

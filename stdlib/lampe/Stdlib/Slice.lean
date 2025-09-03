@@ -25,6 +25,8 @@ open «std-1.0.0-beta.11».Extracted
 
 set_option maxRecDepth 10000
 
+namespace Slice
+
 lemma for_each_inv {T Env p f fb l}
     (Inv: List (Tp.denote p T) → SLP (State p))
     (h_inv: ∀(lp: List (Tp.denote p T)) (e: T.denote p), ((lp ++ [e]) <+: l) → STHoare p env (Inv lp) (fb h![e]) (fun _ => Inv (lp ++ [e]))):
