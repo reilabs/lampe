@@ -11,7 +11,7 @@ In Noir, this builtin corresponds to `a + b` for uints `a`, `b` of bit size `s`.
 -/
 def uAdd := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
-  (fun s h![a, b] => ⟨(a.toInt + b.toInt) < 2^s,
+  (fun s h![a, b] => ⟨(a.toNat + b.toNat) < 2^s,
     fun _ => a + b⟩)
 
 /--
@@ -24,7 +24,7 @@ In Noir, this builtin corresponds to `a * b` for uints `a`, `b` of bit size `s`.
 -/
 def uMul := newGenericPureBuiltin
   (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
-  (fun s h![a, b] => ⟨(a.toInt * b.toInt) < 2^s,
+  (fun s h![a, b] => ⟨(a.toNat * b.toNat) < 2^s,
     fun _ => a * b⟩)
 
 /--
