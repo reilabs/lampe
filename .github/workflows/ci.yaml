@@ -60,6 +60,14 @@ jobs:
     steps:
       - name: Checkout current branch (sparse)
         uses: actions/checkout@v5
+      - name: Install xonsh
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update
+          sudo apt-get install -yq python3 pipx
+          pipx install 'xonsh[full]'
+      - name: Install xonsh (python) dependencies
+        run: xonsh -c 'xpip install -r scripts/requirements.txt'
       - name: Set up Lean 4
         uses: leanprover/lean-action@v1
         with:
@@ -69,15 +77,8 @@ jobs:
           lint: false
           use-mathlib-cache: true
           lake-package-directory: Lampe
-      - name: Check Stdlib Extraction
-        working-directory: stdlib/lampe
-        run: echo "TODO"
-      - name: Download Mathlib
-        working-directory: stdlib/lampe
-        run: lake exe cache get
-      - name: Build Stdlib
-        working-directory: stdlib/lampe
-        run: lake build
+      - name: Test Stdlib Extraction
+        run: ./stdlib/test.xsh
 
   build-cargo:
     name: "Build Rust"

@@ -13,7 +13,7 @@ name = "Stdlib"
 maxRecDepth = 1000
 linter.unusedVariables = false
 
+
 [[require]]
 name = "Lampe"
-path = "../../Lampe/"
-
+path = "../../Lampe"
