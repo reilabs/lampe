@@ -7,15 +7,14 @@ defaultTargets = ["Merkle-0.0.0"]
 name = "«Merkle-0.0.0»"
 
 [[require]]
-name = "proven-zk"
-git = "https://github.com/reilabs/proven-zk"
-rev = "45b4de912bf9ae37f0a42df4d4adcf24c8348fb3"
-
-[[require]]
 name = "Lampe"
 path = "../../../Lampe"
 
 [[require]]
 name = "std-1.0.0-beta.11"
-path = "../../../stdlib/lampe/"
+path = "../../../stdlib/lampe"
 
+[[require]]
+name = "proven-zk"
+git = "https://github.com/reilabs/proven-zk"
+rev = "45b4de912bf9ae37f0a42df4d4adcf24c8348fb3"
