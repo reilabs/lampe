@@ -2,7 +2,7 @@ import Lampe.Semantics.Env
 
 namespace Lampe
 
-/-- 
+/--
 Having an instance of this type indicates that in the environment `Γ` we are able to resolve a trait
 implementation that matches the provided `TraitImplRef`.
 -/
@@ -16,7 +16,7 @@ inductive TraitResolvable (Γ : Env) : TraitImplRef → Prop where
   (∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) →
   TraitResolvable Γ ref
 
-/-- 
+/--
 Any theorem involving `TraitResolvable` that is proven for some environment Γ₁ is is also valid for
 an environment Γ₂ where Γ₁ ⊆ Γ₂.
 -/
@@ -33,7 +33,7 @@ theorem TraitResolvable.env_mono
 
   all_goals assumption
 
-/-- 
+/--
 Having an instance of this type indicates a successful trait resolution for the provided
 `TraitImplRef` in the environment `Γ`, yielding the methods available in said trait implementation.
 -/
@@ -47,7 +47,7 @@ inductive TraitResolution (Γ : Env) : TraitImplRef → List (Ident × Function)
   (_ : ∀constraint ∈ impl.constraints implGenerics, TraitResolvable Γ constraint) :
   TraitResolution Γ ref (impl.impl implGenerics)
 
-/-- 
+/--
 Any theorem involving `TraitResolution` that is proven for some environment Γ₁ is is also valid for
 an environment Γ₂ where Γ₁ ⊆ Γ₂.
 -/
@@ -68,4 +68,3 @@ theorem TraitResolution.env_mono
     tauto
 
 end Lampe
-

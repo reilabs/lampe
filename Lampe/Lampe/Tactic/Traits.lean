@@ -30,144 +30,304 @@ theorem STHoare.callTrait_direct_intro {impls : List $ Lampe.Ident × Function}
   · assumption
   · assumption
 
-/-- Extract all the `TraitImpl`s from a `Lampe.Env` -/
-partial def extractAllImpls (envExpr : Lean.Expr) : TacticM $ List (Lean.Expr × Lean.Expr) := do
-  let traitsListExpr ← mkAppM `Lampe.Env.traits #[envExpr]
-  let reducedTraitsListExpr ← withAtLeastTransparency .all (whnf traitsListExpr)
+structure ResolutionGoal where
+  goal : MVarId
+  env : Lean.Expr
+  traitName : Lean.Expr
+  genericKinds : Lean.Expr
+  generics : Lean.Expr
+  self : Lean.Expr
+  impl : Lean.Expr
 
-  let rec go (listExpr : Lean.Expr) : TacticM $ List (Lean.Expr × Lean.Expr) := do
-    let currentExpr ← withAtLeastTransparency .all <| whnf listExpr
+def ResolutionGoal.traitRef (r : ResolutionGoal): Lean.Expr :=
+  cons.app r.traitName |>.app r.genericKinds |>.app r.generics where
+  cons := Lean.Expr.const ``Lampe.TraitRef.mk []
 
-    if currentExpr.isAppOfArity ``List.cons 3 then
-      let args := currentExpr.getAppArgs
-      let headExpr ← whnf args[1]!
-      let tailExpr := args[2]!
-      let_expr Prod.mk _ _ name impl := headExpr
-        | throwError m!"unable to extract {← ppExpr headExpr} from environment {← ppExpr envExpr}"
-      let restImpls ← go tailExpr
-      return (name, impl) :: restImpls
+def ResolutionGoal.traitImplRef (r : ResolutionGoal): Lean.Expr :=
+  cons.app r.traitRef |>.app r.self where
+  cons := Lean.Expr.const ``Lampe.TraitImplRef.mk []
 
-    else if currentExpr.isAppOfArity ``List.nil 1 then
-      return []
+def ResolutionGoal.traitResolution (r: ResolutionGoal): Lean.Expr :=
+  cons.app r.env |>.app r.traitImplRef |>.app r.impl where
+  cons := Lean.Expr.const ``Lampe.TraitResolution []
 
-    else if currentExpr.isAppOfArity ``List.append 3 then
-      let args := currentExpr.getAppArgs
-      let list1Expr := args[1]!
-      let list2Expr := args[2]!
-      let impls1 ← go list1Expr
-      let impls2 ← go list2Expr
-      return impls1 ++ impls2
+def ResolutionGoal.instantiateMVars (r : ResolutionGoal): TacticM ResolutionGoal := do
+  return {
+    goal := r.goal
+    env := ←Lean.instantiateMVars r.env
+    traitName := ←Lean.instantiateMVars r.traitName
+    genericKinds := ←Lean.instantiateMVars r.genericKinds
+    generics := ←Lean.instantiateMVars r.generics
+    self := ←Lean.instantiateMVars r.self
+    impl := ←Lean.instantiateMVars r.impl
+  }
 
+def ResolutionGoal.ofGoal (goal : MVarId) : TacticM ResolutionGoal := goal.withContext $ withNewMCtxDepth do
+  let goal := ResolutionGoal.mk
+    (goal := goal)
+    (env := ←mkFreshExprMVar none)
+    (traitName := ←mkFreshExprMVar none)
+    (genericKinds := ←mkFreshExprMVar none)
+    (generics := ←mkFreshExprMVar none)
+    (self := ←mkFreshExprMVar none)
+    (impl := ←mkFreshExprMVar none)
+  let target ← goal.goal.instantiateMVarsInType
+  if !(←isDefEq goal.traitResolution target) then
+    throwError "cannot parse a trait resolution goal {←ppExpr target}"
+  goal.instantiateMVars
+
+def peekFirstTrait (goal : MVarId) (env: Lean.Expr): TacticM (Option (Lean.Expr × Lean.Expr × Lean.Expr)) :=
+  goal.withContext $ withNewMCtxDepth do
+    let fns ← mkFreshExprMVar none
+    let firstName ← mkFreshExprMVar none
+    let firstImpl ← mkFreshExprMVar none
+    let prodα ← mkFreshExprMVar none
+    let prodβ ← mkFreshExprMVar none
+    let mkProd ← mkConstWithFreshMVarLevels ``Prod.mk
+    let first := mkProd.app prodα |>.app prodβ |>.app firstName |>.app firstImpl
+    let rest ← mkFreshExprMVar none
+    let cons ← mkConstWithFreshMVarLevels ``List.cons
+    let consα ← mkFreshExprMVar none
+    let cons := cons.app consα |>.app first |>.app rest
+    let cons := (Lean.Expr.const ``Env.mk []).app fns |>.app cons
+    if ←withTransparency .all $ isDefEq cons env then
+      let firstName ← Lean.instantiateExprMVars firstName
+      let firstImpl ← Lean.instantiateExprMVars firstImpl
+      let nextEnv ← Lean.instantiateExprMVars $ (Lean.Expr.const ``Env.mk []).app fns |>.app rest
+      return some (firstName, firstImpl, nextEnv)
+    else return none
+
+partial def destructCons (xs : Lean.Expr): TacticM (Option (Lean.Expr × Lean.Expr)) := do
+  let tp ← mkFreshExprMVar none
+  let head ← mkFreshExprMVar none
+  let tail ← mkFreshExprMVar none
+  let cons ← mkConstWithFreshMVarLevels ``List.cons
+  if ←withTransparency .all $ isDefEq xs (cons.app tp |>.app head |>.app tail) then
+    return some (head, tail)
+  else
+    return none
+
+partial def isNil (xs : Lean.Expr): TacticM Bool := do
+  let nil ← mkConstWithFreshMVarLevels ``List.nil
+  let tp ← mkFreshExprMVar none
+  withTransparency .all $ isDefEq xs (nil.app tp)
+
+/-
+The universe levels here need to be shared, otherwise we run into a weird
+situation, where we end up with things like `HList.cons{1,1} _ HList.nil{?_, ?_}`
+with the universe mvars in tail not being assigned, even though logically they
+should?
+-/
+partial def mkFreeHListForListLoop (xs : Lean.Expr) (uα uβ : Level) (α β : Lean.Expr): TacticM Lean.Expr := do
+  match ←destructCons xs with
+  | some (h, t) =>
+    let hCons := .const ``HList.cons [uα, uβ]
+    let hh ← mkFreshExprMVar none
+    let ht ← mkFreeHListForListLoop t uα uβ α β
+    let r := mkAppN hCons #[α, β, h, t, hh, ht]
+    return r
+  | none =>
+    if ←isNil xs then
+      let hnil := Expr.const ``HList.nil [uα, uβ]
+      return hnil.app α |>.app β
     else
-      throwError m!"unable to match on {← ppExpr currentExpr} in environment {← ppExpr envExpr}"
+      throwError "cannot construct HList"
 
-  go reducedTraitsListExpr
+partial def mkFreeHListForList (xs : Lean.Expr): TacticM Lean.Expr := do
+  let uα ← mkFreshLevelMVar
+  let α ← mkFreshExprMVar none
+  let uβ ← mkFreshLevelMVar
+  let β ← mkFreshExprMVar none
+  mkFreeHListForListLoop xs uα uβ α β
 
-/-- Make a list literal of type `List Kind` from a list of generic kinds -/
-def mkListExpr (elems : List Lean.Expr) : MetaM Lean.Expr :=
-  match elems with
-  | [] => return ← mkAppOptM `List.nil #[← mkAppM `Lampe.Kind #[] ]
-  | head :: tail => return ← mkAppM `List.cons #[head, ← mkListExpr tail]
+lemma resolution_mem_cons_of_mem (env: Env) (a : TraitImplRef) (l : List TraitImplRef) (ha: TraitResolvable env a) (hl : ∀x ∈ l, TraitResolvable env x):
+    ∀x ∈ (a :: l), TraitResolvable env x := by
+  simp_all
 
-/-- Make an HList of of type `Hlist {rep : Kind → Type} Kind`. This is used to construct the HList
-of generics to match on in the `TraitImpl`.
--/
-def mkHListExpr (repExpr : Lean.Expr) (elems listExprs : List Lean.Expr) : MetaM Lean.Expr := do
-  match elems with
-  | [] =>
-    return ← mkAppOptM `HList.nil #[(← mkAppM `Lampe.Kind #[]), some repExpr]
-  | head :: tail =>
-    return ← mkAppOptM `HList.cons
-      #[← mkAppM `Lampe.Kind #[], repExpr, listExprs.head!, ← mkListExpr listExprs.tail, head,
-        ← mkHListExpr repExpr tail listExprs.tail]
+lemma resolution_mem_nil (env: Env): ∀x ∈ [], TraitResolvable env x := by
+  simp_all
 
-/--
-Tactic to make progress on goals of the form `Expr.call (FuncRef.trait ...)` by trying all of the
-trait implementations in a given environment
+lemma resolvable_of_resolution {ref impl} (hp : TraitResolution Γ ref impl): TraitResolvable Γ ref := by
+  cases hp
+  apply TraitResolvable.ok <;> assumption
 
-Usage: `try_all_traits <generics> <environment>`
-* generics: A list of values to instantiate the generic type parameters
-* environment: The environment to search the trait implementation
+mutual
 
-Implementation: The tactic tries to apply the lemma `STHoare.callTrait_direct_intro` with every
-trait in the environment until the first trait that matches the requirement. The order of the traits
-is determined by the order they are defined in the environment.
+partial def proveConstraint (goal : MVarId): TacticM Unit := do
+  try
+    goal.assumption
+  catch _ =>
+    try
+      let traitGoal :: _ ← goal.apply (mkConst ``resolvable_of_resolution []) | throwError "unexpected goals in resolvable_of_resolution"
+      let goal ← ResolutionGoal.ofGoal traitGoal
+      trace[Lampe.Traits] "resolving trait {← ppExpr goal.traitResolution}"
+      let _ ← doResolve goal goal.env
+    catch _ => pure ()
 
-The trait resolution will succeed when:
-    * The trait has the right name
-    * The trait function has the right name
-    * The trait function has the right generic kinds
-    * The trait function has the right type
--/
--- NOTE: The order that all these metavariables get instantiated needs to happen in a fairly precise
--- sequence for unification to work, that is why this function looks somewhat complicated
-elab "try_all_traits" "[" generics:term,* "]" env:term : tactic => do
-  let envExpr ← elabTerm env none
-  let impls ← extractAllImpls envExpr
-  let genericsHList ← Lampe.makeHListLit generics.getElems.toList
-  let oldState ← saveState
+partial def proveConstraints (env : Lean.Expr) (constraintsExpr : Lean.Expr): TacticM (Option Lean.Expr) := do
+  match ←destructCons constraintsExpr with
+  | some (h, t) =>
+    let some next ← proveConstraints env t | return none
+    let fstGoalType := (Lean.Expr.const ``TraitResolvable []).app env |>.app h
+    let fstGoalExpr ← mkFreshExprMVar fstGoalType
+    proveConstraint fstGoalExpr.mvarId!
+    if !(←fstGoalExpr.mvarId!.isAssigned) then
+      trace[Lampe.Traits] "could not resolve {←ppExpr fstGoalType}"
+      return none
+    return mkAppN (mkConst ``resolution_mem_cons_of_mem []) #[env, h, t, fstGoalExpr, next]
+  | none =>
+    if ←isNil constraintsExpr then
+      return mkAppN (mkConst ``resolution_mem_nil []) #[env]
+    else
+      return none
+
+partial def matchTraitSignature (resolutionGoal : ResolutionGoal) (traitDef : Lean.Expr): TacticM (Option (Lean.Expr × Lean.Expr)) :=
+  withTraceNode `Lampe.Traits (fun e => return f!"matchTraitSignature {Lean.exceptEmoji e}") $ do
+    let defTraitGenericKinds ← mkFreshExprMVar none
+    let defImplGenericKinds ← mkFreshExprMVar none
+    let defTraitGenerics ← mkFreshExprMVar none
+    let defConstraints ← mkFreshExprMVar none
+    let defSelf ← mkFreshExprMVar none
+    let defImpl ← mkFreshExprMVar none
+    let defExpr := (Lean.Expr.const ``TraitImpl.mk [])
+      |>.app defTraitGenericKinds
+      |>.app defImplGenericKinds
+      |>.app defTraitGenerics
+      |>.app defConstraints
+      |>.app defSelf
+      |>.app defImpl
+
+    if !(←isDefEq defExpr traitDef) then
+      trace[Lampe.Traits] "Could not destructure the definition, skipping"
+      return none
+
+    if !(←isDefEq defTraitGenericKinds resolutionGoal.genericKinds) then
+      trace[Lampe.Traits] "Trait generic kinds do not match, skipping"
+      return none
+
+    let implGenerics ← mkFreeHListForList defImplGenericKinds
+
+    let traitGenerics := defTraitGenerics.app implGenerics
+
+    if !(←withTransparency .all $ isDefEq traitGenerics resolutionGoal.generics) then
+      trace[Lampe.Traits] "Trait generics do not match, skipping"
+      return none
+
+    let self := defSelf.app implGenerics
+    if !(←withTransparency .all $ isDefEq self resolutionGoal.self) then
+      trace[Lampe.Traits] "Trait self ({←ppExpr self}) does not match the goal, skipping"
+      return none
+
+    let constraints := defConstraints.app implGenerics
+    let some constraintsProof ← withTraceNode `Lampe.Traits (fun e => return f!"solveConstraints {Lean.exceptEmoji e}") $
+        proveConstraints resolutionGoal.env constraints
+      | trace[Lampe.Traits] "Trait signature matched, but couldn't resolve constraints"
+        return none
+
+    pure $ some (implGenerics, constraintsProof)
+
+partial def resolutionLoop (resolutionGoal : ResolutionGoal) (env : Lean.Expr) (depth : Nat): TacticM (List MVarId) := resolutionGoal.goal.withContext do
+  let first ← peekFirstTrait resolutionGoal.goal env
+  match first with
+  | some (name, impl, nextEnv) =>
+    if ←isDefEq name resolutionGoal.traitName then
+      trace[Lampe.Traits] "Candidate name matches, trying to match signature"
+      let result ← matchTraitSignature resolutionGoal impl
+      match result with
+      | some (assignments, constraints) =>
+        trace[Lampe.Traits] "Successfully matched trait signature"
+
+        let ok ← mkConstWithFreshMVarLevels ``TraitResolution.ok
+        let ok := ok.app resolutionGoal.env |>.app resolutionGoal.traitImplRef |>.app impl
+        let okTp ← inferType ok
+        let (mvars, _, closer) ← forallMetaTelescopeReducing okTp
+        let target ← resolutionGoal.goal.instantiateMVarsInType
+
+        if !(←isDefEq target closer) then
+          throwError "Couldn't close goal {←ppExpr target} {←ppExpr closer}"
+        resolutionGoal.goal.assign (mkAppN ok mvars)
+
+        let some implsGoal := mvars[2]? | throwError "unexpected goal in trait resolution"
+        if !(←withTransparency .all $ isDefEq implsGoal assignments) then
+          throwError "Couldn't close impl generics goal"
+
+        let some ktcGoal := mvars[1]? | throwError "unexpected goal in trait resolution"
+        ktcGoal.mvarId!.refl
+
+        let some gensEqGoal := mvars[3]? | throwError "unexpected goal in trait resolution"
+        withTransparency .all $ gensEqGoal.mvarId!.refl
+
+        let some selfEqGoal := mvars[4]? | throwError "unexpected goal in trait resolution"
+        withTransparency .all $ selfEqGoal.mvarId!.refl
+
+        let mut moreGoals : List MVarId := []
+
+        let some constraintsGoal := mvars[5]? | throwError "unexpected goal in trait resolution"
+        if !(←isDefEq constraintsGoal constraints) then
+          throwError "Couldn't close constraints goal"
+
+        let some h_memG := mvars[0]? | throwError "unexpected goal in trait resolution"
+        let mut h_memG := h_memG.mvarId!
+        for _ in [0:depth] do
+          let newH_memG :: mg ← h_memG.apply (←mkConstWithFreshMVarLevels ``List.mem_of_mem_tail)
+            | throwError "unexpected goal in trait resolution"
+          moreGoals := mg ++ moreGoals
+          h_memG := newH_memG
+        let mg := ← h_memG.apply (←mkConstWithFreshMVarLevels ``List.Mem.head)
+        moreGoals := mg ++ moreGoals
+
+        pure $ mvars.toList.map (·.mvarId!) ++ moreGoals
+      | none =>
+        trace[Lampe.Traits] "Failed to match trait signature"
+        resolutionLoop resolutionGoal nextEnv (depth + 1)
+    else
+      trace[Lampe.Traits] "Candidate name ({←ppExpr name}) does not match, skipping"
+      resolutionLoop resolutionGoal nextEnv (depth + 1)
+  | none => throwError "trait not found"
+
+partial def doResolve (resolutionGoal : ResolutionGoal) (env : Lean.Expr): TacticM (List MVarId) :=
+  withTraceNode `Lampe.Traits (fun e => return f!"doResolve {Lean.exceptEmoji e}") $ do
+    resolutionLoop resolutionGoal env 0
+
+end
+
+elab "resolve_trait" : tactic => do
   let mainGoal ← getMainGoal
+  let target ← mainGoal.instantiateMVarsInType
 
-  for (name, impl) in impls do
-    trace[Lampe.Traits] m!"attempting trait {← ppExpr name}"
+  let ng ← mainGoal.withContext $ do
 
-    let implExprImpls ← mkAppM `Lampe.TraitImpl.impl #[impl]
+    let intro ← mkConstWithFreshMVarLevels ``STHoare.callTrait_direct_intro
+    let introTp ← inferType intro
+    let (mvars, _, closer) ← forallMetaTelescope introTp
+    if !(←withTransparency .all $ isDefEq target closer) then
+      throwError "Couldn't close STHoare goal ({← ppExpr target}) ({← ppExpr closer})"
+    mainGoal.assign (mkAppN intro mvars)
 
-    -- Need to construct the HList of generic bindings from scratch with no metavariables
-    let repExpr ← mkAppM `Lampe.Kind.denote #[]
-    let listExpr ← whnf (← mkAppM `Lampe.TraitImpl.implGenericKinds #[impl])
-    let some (_, listExprs) := listExpr.listLit? | failure
-    let elems ← generics.getElems.toList.mapM (elabTerm · none)
-    let hlistExpr ← mkHListExpr repExpr elems listExprs
+    let some traitGoal := mvars[16]? | throwError "unexpected goal in STHoare application (resolution)"
+    let traitGoal := traitGoal.mvarId!
+    let goal ← ResolutionGoal.ofGoal traitGoal
+    trace[Lampe.Traits] "resolving trait {← ppExpr goal.traitResolution}"
+    let r ← doResolve goal goal.env
 
-    let funcList ← (withAtLeastTransparency .all (whnf (.app implExprImpls hlistExpr)))
+    let some findFnGoal := mvars[17]? | throwError "unexpected goal in STHoare application (find fn)"
+    let findFnGoal := findFnGoal.mvarId!
+    withTransparency .all $ findFnGoal.refl
 
-    let some (_, funcs) := funcList.listLit? |
-      throwError m!"unable to match on {← ppExpr funcList} in trait implementation {← ppExpr impl}"
+    let some h_kinds_eq := mvars[18]? | throwError "unexpected goal in STHoare application (h_kinds_eq)"
+    let h_kinds_eq := h_kinds_eq.mvarId!
+    withTransparency .all $ h_kinds_eq.refl
 
-    for func in funcs do
-      let funcArgs := func.getAppArgs
-      let funcFunc := funcArgs.reverse[0]!
-      let funcName := funcArgs.reverse[1]!
+    let some h_args_eq := mvars[19]? | throwError "unexpected goal in STHoare application (h_args_eq)"
+    let h_args_eq := h_args_eq.mvarId!
+    withTransparency .all $ h_args_eq.refl
 
-      trace[Lampe.Traits] m!"  attempting function {← ppExpr funcName}"
-      -- In order for the metavariables to unify in the right way, we need to run these
-      -- tactics in this order as otherwise `tauto` is overly eager to fill in data
-      -- incorrectly
-      -- In particular: `tauto` is happy to fill in a goal of type `List α` with `[]` when
-      -- this particular goal needs to be filled in by hand.
-      try
-        -- `callTrait_direct_intro` on the main goal
-        let callDirectGoals ← evalTacticAt (←`(tactic|
-          apply Lampe.STHoare.callTrait_direct_intro (func := $(←funcFunc.toSyntax))
-        )) mainGoal
+    let some h_out_eq := mvars[20]? | throwError "unexpected goal in STHoare application (h_out_eq)"
+    let h_out_eq := h_out_eq.mvarId!
+    withTransparency .all $ h_out_eq.refl
+    pure $ r ++ (mvars.toList.map (·.mvarId!))
 
-        let traitResGoal := callDirectGoals[0]!
-         -- start filling in the `TraitResolution` goal
-        let traitResGoals ← evalTacticAt (←`(tactic|
-          apply Lampe.TraitResolution.ok (impl := $(← impl.toSyntax)) (implGenerics := $genericsHList) (h_mem := by tauto)
-        )) traitResGoal
+  let mgAss ← instantiateMVars (.mvar mainGoal)
+  trace[Lampe.Traits] "Main mvars: {←Lean.Meta.getMVars mgAss}"
 
-        -- solve the `callTrait_direct_intro` goals first
-        for goal in callDirectGoals.drop 1 do
-          let newGoals ← evalTacticAt (← `(tactic|
-            first | try tauto | try with_unfolding_all rfl
-          )) goal
-          pushGoals newGoals
-
-        -- finally solve the `TraitResolution` goals
-        for goal in traitResGoals do
-          let goals ← evalTacticAt (←`(tactic| first | try tauto | with_unfolding_all rfl)) goal
-          pushGoals goals
-
-        if (← getUnsolvedGoals).length == 1 then
-          -- one last `simp only` call to clean up the goal state
-          evalTactic (← `(tactic| simp only))
-          return
-        else
-          oldState.restore
-      catch _ =>
-        oldState.restore
-
-  oldState.restore
-  throwError m!"no matching trait implementation found in environment {← ppExpr envExpr}"
+  replaceMainGoal ng

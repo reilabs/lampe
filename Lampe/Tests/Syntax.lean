@@ -165,7 +165,7 @@ example {p} {arg: Tp.denote p Tp.field} :
   steps
   step_as (⟦⟧) (fun v => v = 2 * arg)
   . assumption
-  · try_all_traits [] simpleTraitEnv
+  · resolve_trait
     steps
     subst_vars
     ring
@@ -192,7 +192,7 @@ example {p} {x : Tp.denote p Tp.field} :
   steps
   step_as (⟦⟧) (fun v => v = x)
   . assumption
-  · try_all_traits [Tp.field] genericTraitEnv
+  · resolve_trait
     steps
     assumption
 
