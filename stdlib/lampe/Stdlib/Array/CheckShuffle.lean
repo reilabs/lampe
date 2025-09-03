@@ -143,7 +143,7 @@ lemma get_index_spec: STHoare p env ⟦⟧
   steps
 
 theorem check_shuffle_spec
-    (h_eq : ∀(a b : T.denote p), STHoare p env ⟦⟧ ((Expr.call [T, T] Tp.bool (FuncRef.trait T "Eq" [] h![] "eq" [] h![]) h![a, b])/-«std::cmp::Eq».eq h![] T h![] h![] h![a, b]-/) fun r: Bool => ⟦if r then a = b else a ≠ b⟧)
+    (h_eq : ∀(a b : T.denote p), STHoare p env ⟦⟧ («std::cmp::Eq».eq h![] T h![] h![] h![a, b]) fun r: Bool => ⟦if r then a = b else a ≠ b⟧)
     : STHoare p env ⟦⟧
     («std::array::check_shuffle::check_shuffle».call h![T, N] h![lhs, rhs])
     (fun _ => List.Perm lhs.toList rhs.toList) := by
