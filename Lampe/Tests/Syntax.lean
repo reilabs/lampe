@@ -2,9 +2,6 @@ import Lampe
 
 open Lampe
 
-set_option Lampe.pp.Expr true
-set_option Lampe.pp.STHoare true
-
 noir_def basic_void_fn<>() -> Unit := {
   #_unit
 }
@@ -574,17 +571,19 @@ example : STHoare p testLamEnv ⟦⟧ (test_lam.call h![] h![x])
   steps
   simp_all
 
-noir_def has::colons<>(x: Field) -> Field := {
+noir_def has.colons<>(x: Field) -> Field := {
   x
 }
 
-noir_def has::colons::two<>(x: Field) -> Field := {
-  (has::colons<> as λ(Field) → Field)(x)
+noir_def has.colons.two<>(x: Field) -> Field := {
+  (has.colons<> as λ(Field) → Field)(x)
 }
 
-def hasColonsEnv : Env := .mk [«has::colons», «has::colons::two»] []
+#check has.colons
 
-example : STHoare p hasColonsEnv ⟦⟧ («has::colons::two».call h![] h![x]) fun v => v = x := by
+def hasColonsEnv : Env := .mk [has.colons, has.colons.two] []
+
+example : STHoare p hasColonsEnv ⟦⟧ (has.colons.two.call h![] h![x]) fun v => v = x := by
   enter_decl
   steps
   step_as (⟦⟧) (fun v => v = x)
@@ -595,20 +594,22 @@ example : STHoare p hasColonsEnv ⟦⟧ («has::colons::two».call h![] h![x]) f
 
 noir_type_alias FField<> := Field;
 
-noir_struct_def «asdf::Other»<> {
+noir_struct_def asdf.Other<> {
   @FField<>,
 }
 
-noir_def «asdf::colon_test»<>() -> Field := {
+#check asdf.Other
+
+noir_def asdf.colon_test<>() -> Field := {
   let a = (5: Field);
   let b = (10: Field);
   (#_fAdd returning Field)(a, b)
 }
 
-noir_def «asdf::inner::colon_test_inner»<>() -> @FField<> := {
+noir_def asdf.inner.colon_test_inner<>() -> @FField<> := {
   let a = (5: Field);
   let b = (10: Field);
-  let c = (#_makeData returning «asdf::Other»<>)((#_fAdd returning Field)(a, b));
+  let c = (#_makeData returning asdf.Other<>)((#_fAdd returning Field)(a, b));
   c.0
 }
 
@@ -638,26 +639,26 @@ noir_def generic_uconst<N: u32>() -> Slice<Field> := {
   (#_mkRepeatedSlice returning Slice<Field>)(0: Field, uConst!(N: u32))
 }
 
-noir_struct_def has::«from»::name::«meta»<> {
+noir_struct_def has.«from».name.«meta»<> {
   Field
 }
 
-noir_def make::has::«from»::name::«meta»<>(x: Field) -> has::«from»::name::«meta»<> := {
-  (#_makeData returning has::«from»::name::«meta»<>)(x)
+noir_def has.«from».name.«meta».make<>(x: Field) -> has.«from».name.«meta»<> := {
+  (#_makeData returning has.«from».name.«meta»<>)(x)
 }
 
-noir_def call::make::has::«from»::name::«meta»<>(x : Field) -> Field := {
-  ((make::has::«from»::name::«meta»<> as λ(Field) → has::«from»::name::«meta»<>)(x)).0
+noir_def call.has.«from».name.«meta».make<>(x : Field) -> Field := {
+  ((has.«from».name.«meta».make<> as λ(Field) → has.«from».name.«meta»<>)(x)).0
 }
 
-def badNameEnv : Env := .mk [«make::has::from::name::meta», «call::make::has::from::name::meta»] []
+def badNameEnv : Env := .mk [has.«from».name.«meta».make, call.has.«from».name.«meta».make] []
 
-example : STHoare p badNameEnv ⟦⟧ («make::has::from::name::meta».call h![] h![x]) fun v => v = (x,()) := by
+example : STHoare p badNameEnv ⟦⟧ (has.«from».name.«meta».make.call h![] h![x]) fun v => v = (x,()) := by
   enter_decl
   steps
   assumption
 
-example : STHoare p badNameEnv ⟦⟧ («call::make::has::from::name::meta».call h![] h![x]) fun v => v = x := by
+example : STHoare p badNameEnv ⟦⟧ (call.has.«from».name.«meta».make.call h![] h![x]) fun v => v = x := by
   enter_decl
   steps
   step_as (⟦⟧) (fun v => v = (x, ()))

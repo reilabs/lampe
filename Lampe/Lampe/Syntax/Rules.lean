@@ -54,9 +54,8 @@ syntax noir_trait_impl := "<" noir_gen_def,* ">" noir_ident "<" noir_gen_val,* "
 
 -- IDENTIFIERS ------------------------------------------------------------------------------------
 
-syntax "_" : noir_ident -- An ignored identifier.
+syntax hole : noir_ident -- An ignored identifier.
 syntax ident : noir_ident -- Bare identifiers.
-syntax ident "::" noir_ident : noir_ident -- Path identifiers.
 
 -- TYPES ------------------------------------------------------------------------------------------
 -- This is the language of terms that are syntactically allowable in place of a `noir_type`.
