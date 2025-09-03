@@ -34,6 +34,7 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
     noir_package_identifier: &NoirPackageIdentifier,
     extracted_code: &[LeanFile],
     extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
+    external_dependencies: &[NoirPackageIdentifier],
 ) -> Result<(), Error> {
     generate_lib_file(lampe_root_dir, noir_package_identifier, false)?;
 
@@ -48,6 +49,7 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
     generate_extracted_file(
         &lib_dir,
         noir_package_identifier,
+        extracted_code,
         &extracted_dependencies
             .keys()
             .cloned()
@@ -60,29 +62,31 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
         fs::create_dir(&extracted_lib_dir)?;
     }
 
-    generate_extracted_module_version_file(
-        &extracted_lib_dir,
-        noir_package_identifier,
-        extracted_code,
-        true,
-    )?;
+    // TODO: Maybe a better way to do this
+    let local_dependencies = extracted_dependencies.keys().cloned().collect::<Vec<_>>();
 
     generate_extracted_module_version_extracted_files(
         &extracted_lib_dir,
         noir_package_identifier,
         extracted_code,
+        &local_dependencies,
+        external_dependencies,
         true,
     )?;
 
     if !extracted_dependencies.is_empty() {
-        let extracted_dep_lib_dir = extracted_lib_dir.join(DEPENDENCIES_MODULE_NAME);
-        if !extracted_dep_lib_dir.exists() {
-            fs::create_dir(&extracted_dep_lib_dir)?;
-        }
-
         for (extracted_dependency, lean_files) in extracted_dependencies {
+            let extracted_dep_lib_dir = lampe_root_dir.join(format!(
+                "{}-{}",
+                &extracted_dependency.name, &extracted_dependency.version
+            ));
+
+            if !extracted_dep_lib_dir.exists() {
+                fs::create_dir(&extracted_dep_lib_dir)?;
+            }
+
             generate_extracted_dep_module_version_file(
-                &extracted_dep_lib_dir,
+                &lampe_root_dir,
                 noir_package_identifier,
                 &extracted_dependency,
                 &lean_files,
@@ -91,7 +95,6 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
 
             generate_extracted_dep_module_version_extracted_files(
                 &extracted_dep_lib_dir,
-                noir_package_identifier,
                 &extracted_dependency,
                 &lean_files,
                 true,
@@ -127,13 +130,6 @@ fn generate_lib_file(
         &noir_package_identifier.name, &noir_package_identifier.version, EXTRACTED_MODULE_NAME
     )?;
     writeln!(result)?;
-    writeln!(
-        result,
-        "namespace «{}-{}»",
-        &noir_package_identifier.name, &noir_package_identifier.version
-    )?;
-    writeln!(result)?;
-    writeln!(result, "open Lampe")?;
 
     fs::write(output_file, result)?;
 
@@ -146,6 +142,7 @@ fn generate_lib_file(
 fn generate_extracted_file(
     lib_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
+    extracted_code: &[LeanFile],
     extracted_modules: &[NoirPackageIdentifier],
     overwrite: bool,
 ) -> Result<(), Error> {
@@ -177,54 +174,8 @@ fn generate_extracted_file(
 
     writeln!(result, "-- {LAMPE_GENERATED_COMMENT}")?;
     writeln!(result)?;
-    writeln!(
-        result,
-        "import «{}-{}».{}.«{}-{}»",
-        &noir_package_identifier.name,
-        &noir_package_identifier.version,
-        EXTRACTED_MODULE_NAME,
-        &noir_package_identifier.name,
-        &noir_package_identifier.version,
-    )?;
-    for extracted_module in extracted_modules.iter().sorted() {
-        writeln!(
-            result,
-            "import «{}-{}».{}.{}.«{}-{}»",
-            &noir_package_identifier.name,
-            &noir_package_identifier.version,
-            EXTRACTED_MODULE_NAME,
-            DEPENDENCIES_MODULE_NAME,
-            &extracted_module.name,
-            &extracted_module.version,
-        )?;
-    }
 
-    fs::write(output_file, result)?;
-
-    Ok(())
-}
-
-/// Generates main extracted project Lean's module file that is used later to
-/// import everything easily.
-/// Example path: $(project)/lampe/Example-0.0.0/Extracted/Example-0.0.0.lean
-fn generate_extracted_module_version_file(
-    extracted_lib_dir: &Path,
-    noir_package_identifier: &NoirPackageIdentifier,
-    extracted_code: &[LeanFile],
-    overwrite: bool,
-) -> Result<(), Error> {
-    let output_file = extracted_lib_dir.join(format!(
-        "{}-{}.lean",
-        &noir_package_identifier.name, &noir_package_identifier.version
-    ));
-    if output_file.exists() && !overwrite {
-        return Ok(());
-    }
-
-    let mut result = String::new();
-
-    writeln!(result, "-- {LAMPE_GENERATED_COMMENT}")?;
-    writeln!(result)?;
+    // Import all the files in this project
     for import in extracted_code
         .iter()
         .map(|file| file.file_path.to_lean_import())
@@ -239,15 +190,25 @@ fn generate_extracted_module_version_file(
             import
         )?;
     }
-    writeln!(result)?;
+
+    // Import the `Extracted` file for each of the dependencies
+    for extracted_module in extracted_modules.iter().sorted() {
+        writeln!(
+            result,
+            "import «{}-{}».{}",
+            &extracted_module.name, &extracted_module.version, EXTRACTED_MODULE_NAME,
+        )?;
+    }
+
+    result.push('\n');
     writeln!(
         result,
         "namespace «{}-{}»",
         &noir_package_identifier.name, &noir_package_identifier.version
     )?;
-    writeln!(result, "namespace {EXTRACTED_MODULE_NAME}")?;
-    writeln!(result)?;
+    result.push('\n');
 
+    // Print the concatenated env
     if !extracted_code.is_empty() {
         write!(result, "def env := ")?;
         let env = extracted_code
@@ -255,15 +216,7 @@ fn generate_extracted_module_version_file(
             .filter(|file| !file.is_generated_types())
             .map(|file| file.file_path.to_lean_import())
             .sorted()
-            .map(|import| {
-                format!(
-                    "«{}-{}».{}.{}.env",
-                    &noir_package_identifier.name,
-                    &noir_package_identifier.version,
-                    EXTRACTED_MODULE_NAME,
-                    import,
-                )
-            })
+            .map(|import| format!("{import}.env"))
             .join("\n  ++ ");
         result.push_str(&env);
     }
@@ -282,6 +235,8 @@ fn generate_extracted_module_version_extracted_files(
     extracted_module_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
     extracted_code: &[LeanFile],
+    local_dependencies: &[NoirPackageIdentifier],
+    external_dependencies: &[NoirPackageIdentifier],
     overwrite: bool,
 ) -> Result<(), Error> {
     for lean_file in extracted_code {
@@ -289,6 +244,8 @@ fn generate_extracted_module_version_extracted_files(
             extracted_module_dir,
             noir_package_identifier,
             lean_file,
+            local_dependencies,
+            external_dependencies,
             overwrite,
         )?;
     }
@@ -306,6 +263,8 @@ fn generate_extracted_module_version_extracted_file(
     extracted_module_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
     extracted_code: &LeanFile,
+    local_dependencies: &[NoirPackageIdentifier],
+    external_dependencies: &[NoirPackageIdentifier],
     overwrite: bool,
 ) -> Result<(), Error> {
     let output_file = extracted_module_dir.join(extracted_code.file_path.to_lean_path());
@@ -328,6 +287,12 @@ fn generate_extracted_module_version_extracted_file(
             "import «{}-{}».{}.GeneratedTypes",
             &noir_package_identifier.name, &noir_package_identifier.version, EXTRACTED_MODULE_NAME,
         )?;
+    } else {
+        let generated_types_imports =
+            get_generated_types_imports(local_dependencies, external_dependencies);
+        for import in generated_types_imports {
+            writeln!(result, "import {}", import)?;
+        }
     }
 
     writeln!(result, "import Lampe")?;
@@ -339,7 +304,6 @@ fn generate_extracted_module_version_extracted_file(
         "namespace «{}-{}»",
         &noir_package_identifier.name, &noir_package_identifier.version
     )?;
-    writeln!(result, "namespace {EXTRACTED_MODULE_NAME}")?;
     writeln!(result)?;
     result.push_str(&extracted_code.content);
 
@@ -348,18 +312,31 @@ fn generate_extracted_module_version_extracted_file(
     Ok(())
 }
 
+fn get_generated_types_imports(
+    local_dependencies: &[NoirPackageIdentifier],
+    external_dependencies: &[NoirPackageIdentifier],
+) -> Vec<String> {
+    let mut imports = vec![];
+
+    for dep in local_dependencies.iter().chain(external_dependencies) {
+        imports.push(format!("«{}-{}».GeneratedTypes", dep.name, dep.version));
+    }
+
+    imports
+}
+
 /// Generates extracted dependency's Lean's module file that is used later to
 /// import everything easily.
 /// Example path:
 /// $(project)/lampe/Example-0.0.0/Extracted/Dependencies/ExampleDep-0.0.0.lean
 fn generate_extracted_dep_module_version_file(
-    extracted_dep_module_dir: &Path,
+    lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
     extracted_module: &NoirPackageIdentifier,
     extracted_code: &[LeanFile],
     overwrite: bool,
 ) -> Result<(), Error> {
-    let output_file = extracted_dep_module_dir.join(format!(
+    let output_file = lampe_root_dir.join(format!(
         "{}-{}.lean",
         &extracted_module.name, &extracted_module.version
     ));
@@ -378,24 +355,11 @@ fn generate_extracted_dep_module_version_file(
     {
         writeln!(
             result,
-            "import «{}-{}».{}.{}.«{}-{}».{}",
-            &noir_package_identifier.name,
-            &noir_package_identifier.version,
-            EXTRACTED_MODULE_NAME,
-            DEPENDENCIES_MODULE_NAME,
-            &extracted_module.name,
-            &extracted_module.version,
-            import
+            "import «{}-{}».{}",
+            &extracted_module.name, &extracted_module.version, import
         )?;
     }
     writeln!(result)?;
-    writeln!(
-        result,
-        "namespace «{}-{}»",
-        &noir_package_identifier.name, &noir_package_identifier.version
-    )?;
-    writeln!(result, "namespace {EXTRACTED_MODULE_NAME}")?;
-    writeln!(result, "namespace {DEPENDENCIES_MODULE_NAME}")?;
     writeln!(
         result,
         "namespace «{}-{}»",
@@ -438,7 +402,6 @@ fn generate_extracted_dep_module_version_file(
 /// $(project)/lampe/Example-0.0.0/Extracted/Dependencies/ExampleDep-0.0.0/*
 fn generate_extracted_dep_module_version_extracted_files(
     extracted_dep_module_dir: &Path,
-    noir_package_identifier: &NoirPackageIdentifier,
     extracted_module: &NoirPackageIdentifier,
     extracted_code: &Vec<LeanFile>,
     overwrite: bool,
@@ -454,7 +417,6 @@ fn generate_extracted_dep_module_version_extracted_files(
     for lean_file in extracted_code {
         generate_extracted_dep_module_version_extracted_file(
             &extracted_dep_module_dir,
-            noir_package_identifier,
             extracted_module,
             lean_file,
             overwrite,
@@ -478,7 +440,6 @@ fn generate_extracted_dep_module_version_extracted_files(
 /// CustomDir/CustomUserFileInDir.lean
 fn generate_extracted_dep_module_version_extracted_file(
     extracted_dep_module_dir: &Path,
-    noir_package_identifier: &NoirPackageIdentifier,
     extracted_module: &NoirPackageIdentifier,
     extracted_code: &LeanFile,
     overwrite: bool,
@@ -500,13 +461,8 @@ fn generate_extracted_dep_module_version_extracted_file(
     if !extracted_code.is_generated_types() {
         writeln!(
             result,
-            "import «{}-{}».{}.{}.«{}-{}».GeneratedTypes",
-            &noir_package_identifier.name,
-            &noir_package_identifier.version,
-            EXTRACTED_MODULE_NAME,
-            DEPENDENCIES_MODULE_NAME,
-            &extracted_module.name,
-            &extracted_module.version,
+            "import «{}-{}».GeneratedTypes",
+            &extracted_module.name, &extracted_module.version,
         )?;
     }
 
@@ -514,13 +470,6 @@ fn generate_extracted_dep_module_version_extracted_file(
     writeln!(result)?;
     writeln!(result, "open Lampe")?;
     writeln!(result)?;
-    writeln!(
-        result,
-        "namespace «{}-{}»",
-        &noir_package_identifier.name, &noir_package_identifier.version
-    )?;
-    writeln!(result, "namespace {EXTRACTED_MODULE_NAME}")?;
-    writeln!(result, "namespace {DEPENDENCIES_MODULE_NAME}")?;
     writeln!(
         result,
         "namespace «{}-{}»",

@@ -54,14 +54,22 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
         &lampe_root_dir,
         noir_package_identifier,
         additional_dependencies,
+        extracted_dependencies.keys().cloned(),
         false,
     )?;
     lean_toolchain::generate_lean_toolchain(&lampe_root_dir, false)?;
+
+    let external_dependencies = additional_dependencies
+        .iter()
+        .map(|x| x.noir_package_identifier())
+        .collect::<Result<Vec<_>>>()?;
+
     lean::generate_lean_files(
         &lampe_root_dir,
         noir_package_identifier,
         extracted_code,
         extracted_dependencies,
+        &external_dependencies,
     )?;
 
     Ok(())

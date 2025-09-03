@@ -1,6 +1,6 @@
 use std::{fmt, fmt::Write};
 
-use crate::file_generator::lake::dependency::LeanDependency;
+use crate::file_generator::{lake::dependency::LeanDependency};
 
 /// This is Lean's git dependency.
 #[derive(Debug, Clone)]
@@ -83,5 +83,9 @@ impl LeanDependency for LeanDependencyGit {
         }
 
         Ok(result)
+    }
+
+    fn name(&self) -> &str {
+        &self.name
     }
 }
