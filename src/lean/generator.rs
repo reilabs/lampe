@@ -5,6 +5,7 @@ use std::{
     cell::{Ref, RefCell},
     cmp::Ordering,
     collections::{HashMap, HashSet},
+    ops::Index,
     ops::AddAssign,
     rc::Rc,
     str::FromStr,
@@ -12,6 +13,7 @@ use std::{
 
 use fm::FileId;
 use itertools::Itertools;
+use nargo::workspace::Workspace;
 use noirc_errors::Location;
 use noirc_frontend::{
     ast::{FunctionKind, Ident, IntegerBitSize},
@@ -80,6 +82,7 @@ use noirc_frontend::{
 use petgraph::data::DataMap;
 
 use crate::{
+    constants::{LAMPE_PATH_SEPARATOR, NOIR_PATH_SEPARATOR, NONE_DEPENDENCY_VERSION, STDLIB_TOML},
     file_generator::to_import_from_noir_path,
     lean::{
         ast::{
@@ -146,9 +149,12 @@ use crate::{
 
 /// A generator for Lean definitions that correspond to the Noir project in
 /// question.
-pub struct LeanGenerator<'file_manager, 'parsed_files> {
+pub struct LeanGenerator<'file_manager, 'parsed_files, 'workspace> {
     /// The compilation context for the Noir project.
     pub context: Context<'file_manager, 'parsed_files>,
+
+    /// The workspace containing the crate which the generator is compiling.
+    pub workspace: &'workspace Workspace,
 
     /// The identifier for the root crate in the Noir compilation context.
     root_crate: CrateId,
@@ -162,14 +168,20 @@ pub struct LeanGenerator<'file_manager, 'parsed_files> {
 }
 
 /// Utility functions for the Lean generator.
-impl<'file_manager, 'parsed_files> LeanGenerator<'file_manager, 'parsed_files> {
+impl<'file_manager, 'parsed_files, 'workspace>
+    LeanGenerator<'file_manager, 'parsed_files, 'workspace>
+{
     /// Constructs a new lean generator from the provided compiler `context`.
     ///
     /// # Panics
     ///
     /// - If the provided `root_crate` is not available in the compilation
     ///   context.
-    pub fn new(context: Context<'file_manager, 'parsed_files>, root_crate: CrateId) -> Self {
+    pub fn new(
+        context: Context<'file_manager, 'parsed_files>,
+        root_crate: CrateId,
+        workspace: &'workspace Workspace,
+    ) -> Self {
         let known_files = context
             .def_map(&root_crate)
             .expect("Root crate was missing in compilation context")
@@ -180,6 +192,7 @@ impl<'file_manager, 'parsed_files> LeanGenerator<'file_manager, 'parsed_files> {
 
         Self {
             context,
+            workspace,
             root_crate,
             known_files,
             name_supply: FreshNameSupply::new(),
@@ -197,7 +210,7 @@ impl<'file_manager, 'parsed_files> LeanGenerator<'file_manager, 'parsed_files> {
     }
 }
 
-impl LeanGenerator<'_, '_> {
+impl LeanGenerator<'_, '_, '_> {
     /// Generates the set of Lean definitions that correspond to the Noir
     /// definitions in the compilation context.
     ///
@@ -352,10 +365,7 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_struct_def(&self, id: TypeId) -> StructDefinition {
         let struct_data = self.context.def_interner.get_type(id);
         let struct_data = struct_data.borrow();
-        let qualified_path =
-            self.fully_qualified_struct_path(&struct_data.id.module_id().krate, &id);
-
-        let name = quote_lean_keywords(&qualified_path);
+        let name = self.fully_qualified_struct_path(&struct_data.id.module_id().krate, &id);
 
         // We always need the generics to be in a consistent order, otherwise we would
         // potentially break user code. Unfortunately, they do not _come_ in a
@@ -442,13 +452,12 @@ impl LeanGenerator<'_, '_> {
             }
             NoirType::Alias(alias, generics) => {
                 let alias = alias.borrow();
-                let name = alias.name.as_str();
-                let name = &quote_lean_keywords(name);
+                let name = self.fully_qualified_alias_name(alias.id);
                 let generics = generics
                     .iter()
                     .map(|g| self.generate_lean_type_value(g, bindings))
                     .collect_vec();
-                Type::alias(name, generics)
+                Type::alias(&name, generics)
             }
             NoirType::TypeVariable(tv) => {
                 if let Some(bindings) = bindings {
@@ -576,6 +585,7 @@ impl LeanGenerator<'_, '_> {
         )
     }
 
+    /// Generates a type pattern from the provided resolved generic.
     pub fn generate_lean_type_pattern_from_resolved_generic(
         &self,
         rg: &ResolvedGeneric,
@@ -665,8 +675,7 @@ impl LeanGenerator<'_, '_> {
     pub fn generate_alias(&self, id: TypeAliasId) -> TypeAlias {
         let alias_data = self.context.def_interner.get_type_alias(id);
         let alias_data = alias_data.borrow();
-        let name = &alias_data.to_string();
-        let name = quote_lean_keywords(name);
+        let name = self.fully_qualified_alias_name(id);
         let generics = self.gather_lean_type_patterns_from_resolved_generics(&alias_data.generics);
         let aliased_type = self.generate_lean_type_value(&alias_data.typ, None);
         TypeAlias {
@@ -678,8 +687,7 @@ impl LeanGenerator<'_, '_> {
 
     pub fn generate_trait_definition(&self, id: TraitId) -> TraitDefinition {
         let trait_def = self.context.def_interner.get_trait(id);
-        let name = self.resolve_fq_trait_name_from_crate_id(trait_def.crate_id, id);
-        let name = quote_lean_keywords(&name);
+        let name = self.fully_qualified_trait_name(trait_def.crate_id, id);
         let trait_generics =
             self.gather_lean_type_patterns_from_resolved_generics(&trait_def.generics);
         let associated_types =
@@ -689,8 +697,7 @@ impl LeanGenerator<'_, '_> {
             .methods
             .iter()
             .map(|method| {
-                let method_name = method.name.to_string();
-                let method_name = quote_lean_keywords(&method_name);
+                let method_name = quote_lean_keywords(method.name.as_str());
                 let method_generics = self
                     .gather_lean_type_patterns_from_resolved_generics(&method.direct_generics)
                     .into_iter()
@@ -769,9 +776,9 @@ impl LeanGenerator<'_, '_> {
             .unique()
             .collect_vec();
 
-        // FIXME: unwrap here is a bit scary, but all the files we're extracting should
-        // have a path?
-        let name = to_import_from_noir_path(self.context.file_manager.path(id).unwrap());
+        let name = to_import_from_noir_path(
+            self.context.file_manager.path(id).expect("File did not have a path"),
+        );
 
         Module {
             name,
@@ -983,22 +990,7 @@ impl LeanGenerator<'_, '_> {
             let ty = self.generate_lean_type_value(ty, None).expr;
             let self_ty_name = match ty {
                 TypeExpr::Struct(s) => s.name,
-                TypeExpr::Builtin(e) => match e.tag {
-                    BuiltinTag::Array => "std::array".to_string(),
-                    BuiltinTag::Bool => "std::bool".to_string(),
-                    BuiltinTag::Field => "std::field".to_string(),
-                    BuiltinTag::FmtString => "std::fmt_string".to_string(),
-                    BuiltinTag::I(w) => format!("i{w}"),
-                    BuiltinTag::Slice => "std::slice".to_string(),
-                    BuiltinTag::String => "std::string".to_string(),
-                    BuiltinTag::Tuple => "std::tuple".to_string(),
-                    BuiltinTag::U(w) => format!("u{w}").to_string(),
-                    BuiltinTag::Unit => UNIT_TYPE_NAME.to_string(),
-                    _ => panic!(
-                        "Invalid builtin {:?} used as `Self` type in function",
-                        e.tag
-                    ),
-                },
+                TypeExpr::Builtin(e) => self.fully_qualified_builtin_type(e.tag),
                 _ => panic!("Invalid `Self` type {ty:?} for function"),
             };
 
@@ -1405,8 +1397,7 @@ impl LeanGenerator<'_, '_> {
     ) -> TraitImplementation {
         let trait_def_id = trait_impl.trait_id;
         let trait_def_data = self.context.def_interner.get_trait(trait_def_id);
-        let trait_name =
-            self.resolve_fq_trait_name_from_crate_id(trait_def_data.crate_id, trait_def_id);
+        let trait_name = self.fully_qualified_trait_name(trait_def_data.crate_id, trait_def_id);
         let trait_name = quote_lean_keywords(&trait_name);
         let self_type = self.generate_lean_type_value(&trait_impl.typ, None);
 
@@ -1415,10 +1406,6 @@ impl LeanGenerator<'_, '_> {
             .iter()
             .map(|cons| {
                 let var = self.generate_lean_type_value(&cons.typ, None);
-                let trait_data = self.context.def_interner.get_trait(cons.trait_bound.trait_id);
-                let trait_name =
-                    &self.resolve_fq_trait_name_from_crate_id(trait_data.crate_id, trait_data.id);
-                let trait_name = &quote_lean_keywords(trait_name);
                 let generics = &cons.trait_bound.trait_generics;
                 let generics = generics
                     .ordered
@@ -1426,7 +1413,7 @@ impl LeanGenerator<'_, '_> {
                     .chain(generics.named.iter().map(|g| &g.typ))
                     .map(|g| self.generate_lean_type_value(g, None))
                     .collect_vec();
-                let bound = Type::data_type(trait_name, generics.clone());
+                let bound = Type::data_type(&trait_name, generics.clone());
 
                 WhereClause {
                     var,
@@ -1489,8 +1476,7 @@ impl LeanGenerator<'_, '_> {
     ) -> FunctionDefinition {
         // Note that we NEVER want to qualify the name of the trait function.
         let function_meta = self.context.function_meta(&id);
-        let name = self.context.function_name(&id).to_string();
-        let name = quote_lean_keywords(&name);
+        let name = quote_lean_keywords(self.context.function_name(&id));
 
         let parameters = self.generate_function_parameters(function_meta);
         let return_type = self.generate_lean_type_value(function_meta.return_type(), None);
@@ -1757,7 +1743,6 @@ impl LeanGenerator<'_, '_> {
         let struct_def = struct_def.borrow();
         let crate_id = self.root_crate;
         let name = self.fully_qualified_struct_path(&crate_id, &struct_def.id);
-        let name = quote_lean_keywords(&name);
         let fields = &constructor.fields;
 
         // We work with fields in _order_, so we need to turn these into orders.
@@ -1898,9 +1883,7 @@ impl LeanGenerator<'_, '_> {
                 .def_interner
                 .definition_name(trait_method_id.item_id)
                 .to_string();
-            let trait_name = quote_lean_keywords(
-                &self.resolve_fq_trait_name_from_crate_id(trait_data.crate_id, trait_data.id),
-            );
+            let trait_name = self.fully_qualified_trait_name(trait_data.crate_id, trait_data.id);
 
             let call_target = TraitCallRef {
                 trait_name,
@@ -1956,9 +1939,7 @@ impl LeanGenerator<'_, '_> {
                 .def_interner
                 .definition_name(trait_method_id.item_id)
                 .to_string();
-            let trait_name = quote_lean_keywords(
-                &self.resolve_fq_trait_name_from_crate_id(trait_data.crate_id, trait_data.id),
-            );
+            let trait_name = self.fully_qualified_trait_name(trait_data.crate_id, trait_data.id);
 
             let call_target = TraitCallRef {
                 trait_name,
@@ -2088,7 +2069,7 @@ impl LeanGenerator<'_, '_> {
             HirLiteral::Str(value) => Expression::Literal(Literal::String(value.clone())),
             HirLiteral::FmtStr(parts, vars, _) => {
                 let template = Expression::Literal(Literal::String(
-                    parts.iter().map(std::string::ToString::to_string).join("{}"),
+                    parts.iter().map(ToString::to_string).join("{}"),
                 ));
                 let vars = vars.iter().map(|e| self.generate_expr(*e));
                 let all_vars = vec![template].into_iter().chain(vars).collect_vec();
@@ -2123,8 +2104,7 @@ impl LeanGenerator<'_, '_> {
         ident: &HirIdent,
         output_type: &Type,
     ) -> Expression {
-        let name = self.context.def_interner.definition_name(ident.id).to_string();
-        let name = quote_lean_keywords(&name);
+        let name = quote_lean_keywords(self.context.def_interner.definition_name(ident.id));
         let ident_def = self.context.def_interner.definition(ident.id);
         let default: TypeBindings = HashMap::default();
         let bindings = self
@@ -2152,8 +2132,8 @@ impl LeanGenerator<'_, '_> {
                     };
 
                     let trait_data = self.context.def_interner.get_trait(trait_id);
-                    let trait_name = self
-                        .resolve_fq_trait_name_from_crate_id(trait_data.crate_id, trait_data.id);
+                    let trait_name =
+                        self.fully_qualified_trait_name(trait_data.crate_id, trait_data.id);
                     let self_type = func_meta.self_type.as_ref().map_or_else(
                         || panic!("Trait function {name} missing Self type"),
                         |t| self.generate_lean_type_value(t, Some(bindings)),
@@ -2271,7 +2251,6 @@ impl LeanGenerator<'_, '_> {
                 let (global_name, global_type) = match let_stmt {
                     HirStatement::Let(let_stmt) => {
                         let name = self.fully_qualified_global_name(id);
-                        let name = quote_lean_keywords(&name);
                         let typ = self.generate_lean_type_value(&let_stmt.r#type, None);
                         (name, typ)
                     }
@@ -2523,7 +2502,7 @@ impl LeanGenerator<'_, '_> {
 }
 
 /// Functionality for basic resolution of names and other utility functions.
-impl LeanGenerator<'_, '_> {
+impl LeanGenerator<'_, '_, '_> {
     /// Substitutes all bindings recursively in the provided `typ`.
     #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity.
     pub fn substitute_bindings(&self, typ: &NoirType, bindings: &TypeBindings) -> NoirType {
@@ -2626,48 +2605,6 @@ impl LeanGenerator<'_, '_> {
         }
     }
 
-    /// Resolves a fully-qualified trait name given the crate and trait.
-    ///
-    /// # Panics
-    ///
-    /// - If the provided module does not exist in the compilation context.
-    pub fn resolve_fq_trait_name_from_crate_id(
-        &self,
-        crate_id: CrateId,
-        trait_id: TraitId,
-    ) -> String {
-        let krate = self
-            .context
-            .def_map(&crate_id)
-            .expect("Module should exist in context");
-        let trait_def = self.context.def_interner.get_trait(trait_id);
-        let name = trait_def.name.to_string();
-        let path = if let Some((ix, data)) = krate.modules().iter().find(|(_, m)| {
-            let mut type_defs = m.type_definitions();
-            type_defs.any(|item| match item {
-                ModuleDefId::TraitId(trait_id_inner) => trait_id == trait_id_inner,
-                _ => false,
-            })
-        }) {
-            let module_path =
-                krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");
-
-            if crate_id.is_stdlib() {
-                format!("std::{module_path}")
-            } else {
-                module_path
-            }
-        } else {
-            String::default()
-        };
-
-        if path.is_empty() {
-            name
-        } else {
-            format!("{path}::{name}")
-        }
-    }
-
     #[must_use]
     #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
     pub fn is_function_unconstrained(&self, tp: &NoirType) -> bool {
@@ -2690,18 +2627,104 @@ impl LeanGenerator<'_, '_> {
         }
     }
 
+    /// Resolves the fully-qualified name for the provided type alias.
+    ///
+    /// # Panics
+    ///
+    /// - If the type alias' associated crate cannot be found in the compilation
+    ///   context.
+    pub fn fully_qualified_alias_name(&self, id: TypeAliasId) -> String {
+        let alias_data = self.context.def_interner.get_type_alias(id);
+        let alias_data = alias_data.borrow();
+        let mod_id = alias_data.module_id;
+        let mod_data = self.context.module(mod_id);
+        let crate_id = mod_id.krate;
+        let krate = self.context.def_map(&crate_id).unwrap_or_else(|| {
+            panic!("The provided crate {crate_id:?} does not exist in the context")
+        });
+        let crate_name = self.crate_name(&crate_id);
+        let module_path =
+            krate.get_module_path_with_separator(mod_id.local_id, mod_data.parent, "::");
+        let def_name = alias_data.name.to_string();
+
+        let fq_with_noir_seps = if module_path.is_empty() {
+            format!("{crate_name}{NOIR_PATH_SEPARATOR}{def_name}")
+        } else {
+            format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
+        };
+
+        quote_lean_keywords(&fq_with_noir_seps.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
+    }
+
+    /// Resolves the fully-qualified name for a builtin type.
+    pub fn fully_qualified_builtin_type(&self, tag: BuiltinTag) -> String {
+        let std_crate_name = self.crate_name(self.context.stdlib_crate_id());
+        let tag_str = match tag {
+            BuiltinTag::Array => "array".to_string(),
+            BuiltinTag::Bool => "bool".to_string(),
+            BuiltinTag::Field => "field".to_string(),
+            BuiltinTag::FmtString => "fmt_string".to_string(),
+            BuiltinTag::I(w) => format!("i{w}"),
+            BuiltinTag::Quoted(a) => format!("quoted<{a}>"),
+            BuiltinTag::Reference(_) => "ref".to_string(),
+            BuiltinTag::Slice => "slice".to_string(),
+            BuiltinTag::String => "string".to_string(),
+            BuiltinTag::Tuple => "tuple".to_string(),
+            BuiltinTag::U(w) => format!("u{w}"),
+            BuiltinTag::Unit => UNIT_TYPE_NAME.to_string(),
+        };
+
+        quote_lean_keywords(&format!("{std_crate_name}{LAMPE_PATH_SEPARATOR}{tag_str}"))
+    }
+
+    /// Resolves a fully-qualified trait name given the crate and trait.
+    ///
+    /// # Panics
+    ///
+    /// - If the provided module does not exist in the compilation context.
+    pub fn fully_qualified_trait_name(&self, crate_id: CrateId, trait_id: TraitId) -> String {
+        let krate = self
+            .context
+            .def_map(&crate_id)
+            .expect("Module should exist in context");
+        let trait_def = self.context.def_interner.get_trait(trait_id);
+        let name = trait_def.name.to_string();
+        let path = if let Some((ix, data)) = krate.modules().iter().find(|(_, m)| {
+            let mut type_defs = m.type_definitions();
+            type_defs.any(|item| match item {
+                ModuleDefId::TraitId(trait_id_inner) => trait_id == trait_id_inner,
+                _ => false,
+            })
+        }) {
+            let module_path =
+                krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");
+            let crate_name = self.crate_name(&crate_id);
+
+            format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}")
+        } else {
+            String::default()
+        };
+
+        let full_path = if path.is_empty() {
+            name
+        } else {
+            format!("{path}::{name}")
+        };
+
+        quote_lean_keywords(&full_path.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
+    }
+
     /// Returns the fully-qualified struct path for the described struct.
     pub fn fully_qualified_struct_path(
         &self,
         source_crate: &CrateId,
         struct_id: &TypeId,
     ) -> String {
-        let fq_name = self.context.fully_qualified_struct_path(source_crate, *struct_id);
-        if source_crate.is_stdlib() {
-            format!("std::{fq_name}")
-        } else {
-            fq_name
-        }
+        let crate_name = self.crate_name(source_crate);
+        let fq_name_in_crate = self.context.fully_qualified_struct_path(source_crate, *struct_id);
+        let fq_name_with_crate = format!("{crate_name}{NOIR_PATH_SEPARATOR}{fq_name_in_crate}");
+
+        quote_lean_keywords(&fq_name_with_crate.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
     }
 
     /// Returns the fully-qualified function name for the described function.
@@ -2710,12 +2733,11 @@ impl LeanGenerator<'_, '_> {
         source_crate: &CrateId,
         func_id: &FuncId,
     ) -> String {
-        let fq_name = self.context.fully_qualified_function_name(source_crate, func_id);
-        if source_crate.is_stdlib() {
-            format!("std::{fq_name}")
-        } else {
-            fq_name
-        }
+        let crate_name = self.crate_name(source_crate);
+        let fq_name_in_crate = self.context.fully_qualified_function_name(source_crate, func_id);
+        let fq_name_with_crate = format!("{crate_name}{NOIR_PATH_SEPARATOR}{fq_name_in_crate}");
+
+        quote_lean_keywords(&fq_name_with_crate.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
     }
 
     /// Returns the fully-qualified global name for the described global.
@@ -2730,42 +2752,97 @@ impl LeanGenerator<'_, '_> {
         match statement {
             HirStatement::Let(binding) => match binding.pattern {
                 HirPattern::Identifier(hir_ident) => {
-                    let def_name =
-                        self.context.def_interner.definition_name(hir_ident.id).to_string();
+                    let crate_id = global_data.crate_id;
+                    let def = hir_ident.id;
+                    let crate_name = self.crate_name(&crate_id);
+                    let def_name = self.context.def_interner.definition_name(def).to_string();
+                    let krate = self.context.def_map(&crate_id).unwrap_or_else(|| {
+                        panic!("The provided crate {crate_id:?} does not exist in the context")
+                    });
 
-                    let krate = self
-                        .context
-                        .def_map(&global_data.crate_id)
-                        .expect("module should exist in context");
-                    if let Some((id, mod_data)) = krate.modules().iter().find(|(_, m)| {
-                        m.value_definitions()
-                            .any(|i| matches!(i, ModuleDefId::GlobalId(inner) if *id == inner))
-                    }) {
-                        let module_path = krate.get_module_path_with_separator(
-                            LocalModuleId::new(id),
-                            mod_data.parent,
-                            "::",
-                        );
+                    let Some((mod_ix, mod_data)) = krate.modules().iter().find(|(_, m)| {
+                        m.definitions()
+                            .definitions()
+                            .iter()
+                            .any(|i| matches!(i, ModuleDefId::GlobalId(ident) if id == ident))
+                    }) else {
+                        panic!("No module found for the provided definition")
+                    };
 
-                        if self.root_crate_is_stdlib() {
-                            if module_path.is_empty() {
-                                format!("std::{def_name}")
-                            } else {
-                                format!("std::{module_path}::{def_name}")
-                            }
-                        } else if module_path.is_empty() {
-                            def_name.to_string()
-                        } else {
-                            format!("{module_path}::{def_name}")
-                        }
+                    let module_path = krate.get_module_path_with_separator(
+                        LocalModuleId::new(mod_ix),
+                        mod_data.parent,
+                        "::",
+                    );
+
+                    let fq_with_noir_seps = if module_path.is_empty() {
+                        format!("{crate_name}{NOIR_PATH_SEPARATOR}{def_name}")
                     } else {
-                        def_name.to_string()
-                    }
+                        format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
+                    };
+
+                    quote_lean_keywords(
+                        &fq_with_noir_seps.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR),
+                    )
                 }
                 _ => panic!("Encountered a malformed global"),
             },
             _ => panic!("Encountered a malformed global"),
         }
+    }
+
+    /// Resolves the `name-version` string for the specified crate.
+    ///
+    /// # Panics
+    ///
+    /// - If the crate has a root file without a path.
+    /// - If there is no package corresponding to the crate in the workspace.
+    pub fn crate_name(&self, crate_id: &CrateId) -> String {
+        // We always want to pull the name and version for the stdlib from our
+        // embedded copy of the library, so we have to special case on its ID.
+        if crate_id.is_stdlib() {
+            let Ok(toml_content) = STDLIB_TOML.parse::<toml::Table>() else {
+                panic!("Unable to load embedded stdlib Nargo.toml")
+            };
+
+            let toml::Value::Table(package_info) = &toml_content["package"] else {
+                panic!("Embedded toml content did not contain 'package' table")
+            };
+
+            let toml::Value::String(name) = &package_info["name"] else {
+                panic!("Embedded toml content did not contain package 'name'")
+            };
+
+            let version = package_info["version"].as_str().unwrap_or(NONE_DEPENDENCY_VERSION);
+
+            return quote_lean_keywords(&format!("{name}-{version}"));
+        }
+
+        let crate_data = self.context.crate_graph.index(crate_id);
+        let root_file_path = self
+            .context
+            .file_manager
+            .path(crate_data.root_file_id)
+            .unwrap_or_else(|| panic!("Root file {:?} had no known path", crate_data.root_file_id));
+        let package_data = self
+            .workspace
+            .members
+            .iter()
+            .find(|p| p.entry_path == root_file_path)
+            .unwrap_or_else(|| {
+                panic!(
+                    "No crate found corresponding to root file {}",
+                    root_file_path.display()
+                )
+            });
+
+        let name = package_data.name.to_string();
+        let version = package_data
+            .version
+            .clone()
+            .unwrap_or_else(|| NONE_DEPENDENCY_VERSION.to_string());
+
+        quote_lean_keywords(&format!("{name}-{version}"))
     }
 }
 

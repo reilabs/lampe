@@ -1,6 +1,6 @@
 use std::{fmt, fmt::Write};
 
-use crate::file_generator::{lake::dependency::LeanDependency};
+use crate::file_generator::lake::dependency::LeanDependency;
 
 /// This is Lean's local dependency.
 #[derive(Debug, Clone)]
