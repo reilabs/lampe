@@ -82,7 +82,13 @@ use noirc_frontend::{
 use petgraph::data::DataMap;
 
 use crate::{
-    constants::{LAMPE_PATH_SEPARATOR, NOIR_PATH_SEPARATOR, NONE_DEPENDENCY_VERSION, STDLIB_TOML},
+    constants::{
+        LAMPE_PATH_SEPARATOR,
+        LAMPE_STRUCT_METHOD_SEPARATOR,
+        NOIR_PATH_SEPARATOR,
+        NONE_DEPENDENCY_VERSION,
+        STDLIB_TOML,
+    },
     file_generator::to_import_from_noir_path,
     lean::{
         ast::{
@@ -994,7 +1000,7 @@ impl LeanGenerator<'_, '_, '_> {
                 _ => panic!("Invalid `Self` type {ty:?} for function"),
             };
 
-            format!("{self_ty_name}::{func_name_bare}")
+            format!("{self_ty_name}{LAMPE_STRUCT_METHOD_SEPARATOR}{func_name_bare}")
         } else {
             self.fully_qualified_function_name(&function_meta.source_crate, id)
         };
@@ -2211,7 +2217,9 @@ impl LeanGenerator<'_, '_, '_> {
                                         self.generate_lean_type_value(self_type, None);
                                     if let TypeExpr::Struct(s) = maybe_self_type.expr {
                                         let struct_path = s.name;
-                                        format!("{struct_path}::{name}")
+                                        format!(
+                                            "{struct_path}{LAMPE_STRUCT_METHOD_SEPARATOR}{name}"
+                                        )
                                     } else {
                                         self.fully_qualified_function_name(
                                             &func_meta.source_crate,
@@ -2642,15 +2650,23 @@ impl LeanGenerator<'_, '_, '_> {
         let krate = self.context.def_map(&crate_id).unwrap_or_else(|| {
             panic!("The provided crate {crate_id:?} does not exist in the context")
         });
-        let crate_name = self.crate_name(&crate_id);
         let module_path =
             krate.get_module_path_with_separator(mod_id.local_id, mod_data.parent, "::");
         let def_name = alias_data.name.to_string();
-
-        let fq_with_noir_seps = if module_path.is_empty() {
-            format!("{crate_name}{NOIR_PATH_SEPARATOR}{def_name}")
+        let fq_with_noir_seps = if let Some(crate_name) = self.crate_name(&crate_id, false) {
+            if module_path.is_empty() {
+                format!("{crate_name}{NOIR_PATH_SEPARATOR}{def_name}")
+            } else {
+                format!(
+                    "{crate_name}{NOIR_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}"
+                )
+            }
         } else {
-            format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
+            if module_path.is_empty() {
+                def_name
+            } else {
+                format!("{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
+            }
         };
 
         quote_lean_keywords(&fq_with_noir_seps.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
@@ -2658,7 +2674,6 @@ impl LeanGenerator<'_, '_, '_> {
 
     /// Resolves the fully-qualified name for a builtin type.
     pub fn fully_qualified_builtin_type(&self, tag: BuiltinTag) -> String {
-        let std_crate_name = self.crate_name(self.context.stdlib_crate_id());
         let tag_str = match tag {
             BuiltinTag::Array => "array".to_string(),
             BuiltinTag::Bool => "bool".to_string(),
@@ -2674,7 +2689,11 @@ impl LeanGenerator<'_, '_, '_> {
             BuiltinTag::Unit => UNIT_TYPE_NAME.to_string(),
         };
 
-        quote_lean_keywords(&format!("{std_crate_name}{LAMPE_PATH_SEPARATOR}{tag_str}"))
+        if let Some(std_crate_name) = self.crate_name(self.context.stdlib_crate_id(), false) {
+            quote_lean_keywords(&format!("{std_crate_name}{LAMPE_PATH_SEPARATOR}{tag_str}"))
+        } else {
+            tag_str
+        }
     }
 
     /// Resolves a fully-qualified trait name given the crate and trait.
@@ -2689,6 +2708,7 @@ impl LeanGenerator<'_, '_, '_> {
             .expect("Module should exist in context");
         let trait_def = self.context.def_interner.get_trait(trait_id);
         let name = trait_def.name.to_string();
+
         let path = if let Some((ix, data)) = krate.modules().iter().find(|(_, m)| {
             let mut type_defs = m.type_definitions();
             type_defs.any(|item| match item {
@@ -2698,9 +2718,12 @@ impl LeanGenerator<'_, '_, '_> {
         }) {
             let module_path =
                 krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");
-            let crate_name = self.crate_name(&crate_id);
 
-            format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}")
+            if let Some(crate_name) = self.crate_name(&crate_id, false) {
+                format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}")
+            } else {
+                module_path
+            }
         } else {
             String::default()
         };
@@ -2720,9 +2743,13 @@ impl LeanGenerator<'_, '_, '_> {
         source_crate: &CrateId,
         struct_id: &TypeId,
     ) -> String {
-        let crate_name = self.crate_name(source_crate);
         let fq_name_in_crate = self.context.fully_qualified_struct_path(source_crate, *struct_id);
-        let fq_name_with_crate = format!("{crate_name}{NOIR_PATH_SEPARATOR}{fq_name_in_crate}");
+
+        let fq_name_with_crate = if let Some(crate_name) = self.crate_name(source_crate, false) {
+            format!("{crate_name}{NOIR_PATH_SEPARATOR}{fq_name_in_crate}")
+        } else {
+            fq_name_in_crate
+        };
 
         quote_lean_keywords(&fq_name_with_crate.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
     }
@@ -2733,9 +2760,13 @@ impl LeanGenerator<'_, '_, '_> {
         source_crate: &CrateId,
         func_id: &FuncId,
     ) -> String {
-        let crate_name = self.crate_name(source_crate);
         let fq_name_in_crate = self.context.fully_qualified_function_name(source_crate, func_id);
-        let fq_name_with_crate = format!("{crate_name}{NOIR_PATH_SEPARATOR}{fq_name_in_crate}");
+
+        let fq_name_with_crate = if let Some(crate_name) = self.crate_name(source_crate, false) {
+            format!("{crate_name}{NOIR_PATH_SEPARATOR}{fq_name_in_crate}")
+        } else {
+            fq_name_in_crate
+        };
 
         quote_lean_keywords(&fq_name_with_crate.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
     }
@@ -2754,7 +2785,6 @@ impl LeanGenerator<'_, '_, '_> {
                 HirPattern::Identifier(hir_ident) => {
                     let crate_id = global_data.crate_id;
                     let def = hir_ident.id;
-                    let crate_name = self.crate_name(&crate_id);
                     let def_name = self.context.def_interner.definition_name(def).to_string();
                     let krate = self.context.def_map(&crate_id).unwrap_or_else(|| {
                         panic!("The provided crate {crate_id:?} does not exist in the context")
@@ -2775,10 +2805,20 @@ impl LeanGenerator<'_, '_, '_> {
                         "::",
                     );
 
-                    let fq_with_noir_seps = if module_path.is_empty() {
-                        format!("{crate_name}{NOIR_PATH_SEPARATOR}{def_name}")
+                    let fq_with_noir_seps = if let Some(crate_name) =
+                        self.crate_name(&crate_id, false)
+                    {
+                        if module_path.is_empty() {
+                            format!("{crate_name}{NOIR_PATH_SEPARATOR}{def_name}")
+                        } else {
+                            format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
+                        }
                     } else {
-                        format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
+                        if module_path.is_empty() {
+                            def_name
+                        } else {
+                            format!("{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
+                        }
                     };
 
                     quote_lean_keywords(
@@ -2793,11 +2833,19 @@ impl LeanGenerator<'_, '_, '_> {
 
     /// Resolves the `name-version` string for the specified crate.
     ///
+    /// It returns [`None`] if the crate is the crate currently being extracted
+    /// to make the namespace strings easier to read. If you set `force` then it
+    /// will always generate the name without the shortening effect.
+    ///
     /// # Panics
     ///
     /// - If the crate has a root file without a path.
     /// - If there is no package corresponding to the crate in the workspace.
-    pub fn crate_name(&self, crate_id: &CrateId) -> String {
+    pub fn crate_name(&self, crate_id: &CrateId, force: bool) -> Option<String> {
+        if *crate_id == self.root_crate() && !force {
+            return None;
+        }
+
         // We always want to pull the name and version for the stdlib from our
         // embedded copy of the library, so we have to special case on its ID.
         if crate_id.is_stdlib() {
@@ -2815,7 +2863,9 @@ impl LeanGenerator<'_, '_, '_> {
 
             let version = package_info["version"].as_str().unwrap_or(NONE_DEPENDENCY_VERSION);
 
-            return quote_lean_keywords(&format!("{name}-{version}"));
+            return Some(format!(
+                "{LEAN_QUOTE_START}{name}-{version}{LEAN_QUOTE_END}"
+            ));
         }
 
         let crate_data = self.context.crate_graph.index(crate_id);
@@ -2842,7 +2892,9 @@ impl LeanGenerator<'_, '_, '_> {
             .clone()
             .unwrap_or_else(|| NONE_DEPENDENCY_VERSION.to_string());
 
-        quote_lean_keywords(&format!("{name}-{version}"))
+        Some(format!(
+            "{LEAN_QUOTE_START}{name}-{version}{LEAN_QUOTE_END}"
+        ))
     }
 }
 
@@ -2863,7 +2915,7 @@ pub fn sanitize_variable_name(name: &str) -> String {
 /// Quotes the Lean keywords in the fully qualified name to avoid conflicts with
 /// the Lean parser
 fn quote_lean_keywords(text: &str) -> String {
-    text.split("::")
+    text.split(LAMPE_PATH_SEPARATOR)
         .map(|part| {
             if conflicts_with_lean_keyword(part) {
                 format!("{LEAN_QUOTE_START}{part}{LEAN_QUOTE_END}")
@@ -2871,7 +2923,7 @@ fn quote_lean_keywords(text: &str) -> String {
                 part.to_string()
             }
         })
-        .join("::")
+        .join(LAMPE_PATH_SEPARATOR)
 }
 
 /// A container for top-level non-type definitions in a module.
