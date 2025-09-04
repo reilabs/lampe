@@ -16,6 +16,7 @@ use crate::{
         NoirPackageIdentifier,
         LAMPE_GENERATED_COMMENT,
     },
+    lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
 };
 
 pub mod constants;
@@ -85,8 +86,11 @@ pub fn generate_lakefile_toml(
     result.push_str("[[lean_lib]]\n");
     writeln!(
         result,
-        "name = \"«{}-{}»\"",
-        noir_package_identifier.name, noir_package_identifier.version
+        "name = \"{}{}-{}{}\"",
+        LEAN_QUOTE_START,
+        noir_package_identifier.name,
+        noir_package_identifier.version,
+        LEAN_QUOTE_END,
     )?;
     result.push('\n');
 
@@ -117,7 +121,7 @@ pub fn generate_lakefile_toml(
     for extracted_dependency in extracted_dependencies {
         let dep_name = format!(
             "{}-{}",
-            extracted_dependency.name, extracted_dependency.version
+            extracted_dependency.name, extracted_dependency.version,
         );
         writeln!(result, "[[lean_lib]]")?;
         writeln!(result, "name = \"{dep_name}\"")?;
