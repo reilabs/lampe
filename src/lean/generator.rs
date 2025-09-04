@@ -2842,9 +2842,9 @@ impl LeanGenerator<'_, '_, '_> {
     /// - If the crate has a root file without a path.
     /// - If there is no package corresponding to the crate in the workspace.
     pub fn crate_name(&self, crate_id: &CrateId, force: bool) -> Option<String> {
-        if *crate_id == self.root_crate() && !force {
-            return None;
-        }
+        // if *crate_id == self.root_crate() && !force {
+        //     return None;
+        // }
 
         // We always want to pull the name and version for the stdlib from our
         // embedded copy of the library, so we have to special case on its ID.
