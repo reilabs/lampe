@@ -15,3 +15,6 @@ pub const LAMPE_PATH_SEPARATOR: &str = ".";
 /// The key needed to access the root namespace in Lean, allowing unambiguous
 /// use of namespace-qualified names.
 pub const LEAN_ROOT_NAMESPACE_KEY: &str = "_root_";
+
+/// Separates the name of the self type and the method defined on it.
+pub const LAMPE_STRUCT_METHOD_SEPARATOR: &str = ".";

@@ -201,12 +201,12 @@ fn generate_extracted_file(
     }
 
     result.push('\n');
-    writeln!(
-        result,
-        "namespace «{}-{}»",
-        &noir_package_identifier.name, &noir_package_identifier.version
-    )?;
-    result.push('\n');
+    // writeln!(
+    //     result,
+    //     "namespace «{}-{}»",
+    //     &noir_package_identifier.name, &noir_package_identifier.version
+    // )?;
+    // result.push('\n');
 
     // Print the concatenated env
     if !extracted_code.is_empty() {
