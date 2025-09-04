@@ -86,7 +86,7 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
             }
 
             generate_extracted_dep_module_version_file(
-                &lampe_root_dir,
+                lampe_root_dir,
                 noir_package_identifier,
                 &extracted_dependency,
                 &lean_files,
@@ -281,18 +281,18 @@ fn generate_extracted_module_version_extracted_file(
     writeln!(result, "-- {LAMPE_GENERATED_COMMENT}")?;
     writeln!(result)?;
 
-    if !extracted_code.is_generated_types() {
+    if extracted_code.is_generated_types() {
+        let generated_types_imports =
+            get_generated_types_imports(local_dependencies, external_dependencies);
+        for import in generated_types_imports {
+            writeln!(result, "import {import}")?;
+        }
+    } else {
         writeln!(
             result,
             "import «{}-{}».{}.GeneratedTypes",
             &noir_package_identifier.name, &noir_package_identifier.version, EXTRACTED_MODULE_NAME,
         )?;
-    } else {
-        let generated_types_imports =
-            get_generated_types_imports(local_dependencies, external_dependencies);
-        for import in generated_types_imports {
-            writeln!(result, "import {}", import)?;
-        }
     }
 
     writeln!(result, "import Lampe")?;

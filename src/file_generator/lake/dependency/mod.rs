@@ -16,9 +16,7 @@ pub use reservoir::LeanDependencyReservoir;
 #[allow(unused_imports)]
 pub use reservoir_git::LeanDependencyReservoirGit;
 
-use crate::{
-    file_generator::{self, NoirPackageIdentifier},
-};
+use crate::file_generator::{self, NoirPackageIdentifier};
 
 pub trait LeanDependency {
     /// Generates the lean dependency.
@@ -30,8 +28,13 @@ pub trait LeanDependency {
 
     fn name(&self) -> &str;
 
-    /// This is the best effort way to generate a NoirPackageIdentifier from a
+    /// This is the best effort way to generate a `NoirPackageIdentifier` from a
     /// name assuming everything is extracted as expected by Lampe
+    ///
+    /// # Errors
+    ///
+    /// - [`file_generator::Error::LakeRequireGeneration`], if the dependency is
+    ///   in an unexpected form.
     fn noir_package_identifier(&self) -> Result<NoirPackageIdentifier, file_generator::Error> {
         // let stripped_name = self.name().strip_prefix(LEAN_QUOTE_START).ok_or(
         //     file_generator::Error::LakeRequireGeneration(
@@ -46,7 +49,7 @@ pub trait LeanDependency {
 
         let (name, version) =
             self.name()
-                .split_once("-")
+                .split_once('-')
                 .ok_or(file_generator::Error::LakeRequireGeneration(
                     "Lean dependency was in an unexpected form".to_string(),
                 ))?;
