@@ -2836,7 +2836,13 @@ impl LeanGenerator<'_, '_, '_> {
             .workspace
             .members
             .iter()
-            .find(|p| p.entry_path == root_file_path)
+            .find(|p| {
+                let lhs = &p.root_dir;
+                let lhss = &p.entry_path.parent().unwrap().parent().unwrap();
+                let rhs = root_file_path.parent().unwrap().parent().unwrap();
+                println!("root_dir:{:?} entry_path_parents:{:?} root_file_parents:{:?}", lhs, lhss, rhs);
+                lhs == rhs
+            })
             .unwrap_or_else(|| {
                 panic!(
                     "No crate found corresponding to root file {}",
