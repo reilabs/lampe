@@ -2,6 +2,10 @@ import Lampe
 
 open Lampe
 
+def Foo.bar := "String"
+
+def Foo.baz: String := Foo.bar
+
 noir_def basic_void_fn<>() -> Unit := {
   #_unit
 }

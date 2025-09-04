@@ -19,6 +19,7 @@
 pub mod lean;
 pub mod noir;
 
+pub mod constants;
 pub mod error;
 pub mod file_generator;
 pub mod project;
@@ -108,7 +109,9 @@ authors = [""]
             &mock_project.nargo_file_manager,
             &mock_project.nargo_parsed_files,
         );
-        let generator = noir_project.compile_package(package)?.take();
+        let generator = noir_project
+            .compile_package(package, &mock_project.nargo_workspace)?
+            .take();
 
         Ok(generator.generate())
     }
