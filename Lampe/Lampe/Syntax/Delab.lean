@@ -307,7 +307,7 @@ def delabFuncRefTrait : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let fnGenerics ← generateGenerics fnKinds fnGens
 
     let funcRef ← `(noir_funcref|(($selfTp as
-    $(⟨traitName⟩)<$(⟨traitGenerics.toArray⟩),*>)::$(⟨fnName⟩)<$(⟨fnGenerics.toArray⟩),*> as $funcTp))
+    $(⟨traitName⟩)<$(⟨traitGenerics.toArray⟩),*>).$(⟨fnName⟩)<$(⟨fnGenerics.toArray⟩),*> as $funcTp))
     return ←``(⸨$funcRef:noir_funcref⸩)
 
 @[app_delab Lampe.Expr.lam]

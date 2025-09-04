@@ -7,385 +7,385 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_trait_impl[impl_208]<> ops.bit.Not<> for bool where [] := {
+noir_trait_impl[impl_208]<> «std-1.0.0-beta.11».ops.bit.Not<> for bool where [] := {
   noir_def not<>(self: bool) -> bool := {
     (#_bNot returning bool)(self)
   };
 }
 
-noir_trait_impl[impl_209]<> ops.bit.Not<> for u128 where [] := {
+noir_trait_impl[impl_209]<> «std-1.0.0-beta.11».ops.bit.Not<> for u128 where [] := {
   noir_def not<>(self: u128) -> u128 := {
     (#_uNot returning u128)(self)
   };
 }
 
-noir_trait_impl[impl_210]<> ops.bit.Not<> for u64 where [] := {
+noir_trait_impl[impl_210]<> «std-1.0.0-beta.11».ops.bit.Not<> for u64 where [] := {
   noir_def not<>(self: u64) -> u64 := {
     (#_uNot returning u64)(self)
   };
 }
 
-noir_trait_impl[impl_211]<> ops.bit.Not<> for u32 where [] := {
+noir_trait_impl[impl_211]<> «std-1.0.0-beta.11».ops.bit.Not<> for u32 where [] := {
   noir_def not<>(self: u32) -> u32 := {
     (#_uNot returning u32)(self)
   };
 }
 
-noir_trait_impl[impl_212]<> ops.bit.Not<> for u16 where [] := {
+noir_trait_impl[impl_212]<> «std-1.0.0-beta.11».ops.bit.Not<> for u16 where [] := {
   noir_def not<>(self: u16) -> u16 := {
     (#_uNot returning u16)(self)
   };
 }
 
-noir_trait_impl[impl_213]<> ops.bit.Not<> for u8 where [] := {
+noir_trait_impl[impl_213]<> «std-1.0.0-beta.11».ops.bit.Not<> for u8 where [] := {
   noir_def not<>(self: u8) -> u8 := {
     (#_uNot returning u8)(self)
   };
 }
 
-noir_trait_impl[impl_214]<> ops.bit.Not<> for u1 where [] := {
+noir_trait_impl[impl_214]<> «std-1.0.0-beta.11».ops.bit.Not<> for u1 where [] := {
   noir_def not<>(self: u1) -> u1 := {
     (#_uNot returning u1)(self)
   };
 }
 
-noir_trait_impl[impl_215]<> ops.bit.Not<> for i8 where [] := {
+noir_trait_impl[impl_215]<> «std-1.0.0-beta.11».ops.bit.Not<> for i8 where [] := {
   noir_def not<>(self: i8) -> i8 := {
     (#_iNot returning i8)(self)
   };
 }
 
-noir_trait_impl[impl_216]<> ops.bit.Not<> for i16 where [] := {
+noir_trait_impl[impl_216]<> «std-1.0.0-beta.11».ops.bit.Not<> for i16 where [] := {
   noir_def not<>(self: i16) -> i16 := {
     (#_iNot returning i16)(self)
   };
 }
 
-noir_trait_impl[impl_217]<> ops.bit.Not<> for i32 where [] := {
+noir_trait_impl[impl_217]<> «std-1.0.0-beta.11».ops.bit.Not<> for i32 where [] := {
   noir_def not<>(self: i32) -> i32 := {
     (#_iNot returning i32)(self)
   };
 }
 
-noir_trait_impl[impl_218]<> ops.bit.Not<> for i64 where [] := {
+noir_trait_impl[impl_218]<> «std-1.0.0-beta.11».ops.bit.Not<> for i64 where [] := {
   noir_def not<>(self: i64) -> i64 := {
     (#_iNot returning i64)(self)
   };
 }
 
-noir_trait_impl[impl_219]<> ops.bit.BitOr<> for bool where [] := {
+noir_trait_impl[impl_219]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for bool where [] := {
   noir_def bitor<>(self: bool, other: bool) -> bool := {
     (#_bOr returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_220]<> ops.bit.BitOr<> for u128 where [] := {
+noir_trait_impl[impl_220]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for u128 where [] := {
   noir_def bitor<>(self: u128, other: u128) -> u128 := {
     (#_uOr returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_221]<> ops.bit.BitOr<> for u64 where [] := {
+noir_trait_impl[impl_221]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for u64 where [] := {
   noir_def bitor<>(self: u64, other: u64) -> u64 := {
     (#_uOr returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_222]<> ops.bit.BitOr<> for u32 where [] := {
+noir_trait_impl[impl_222]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for u32 where [] := {
   noir_def bitor<>(self: u32, other: u32) -> u32 := {
     (#_uOr returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_223]<> ops.bit.BitOr<> for u16 where [] := {
+noir_trait_impl[impl_223]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for u16 where [] := {
   noir_def bitor<>(self: u16, other: u16) -> u16 := {
     (#_uOr returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_224]<> ops.bit.BitOr<> for u8 where [] := {
+noir_trait_impl[impl_224]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for u8 where [] := {
   noir_def bitor<>(self: u8, other: u8) -> u8 := {
     (#_uOr returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_225]<> ops.bit.BitOr<> for u1 where [] := {
+noir_trait_impl[impl_225]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for u1 where [] := {
   noir_def bitor<>(self: u1, other: u1) -> u1 := {
     (#_uOr returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_226]<> ops.bit.BitOr<> for i8 where [] := {
+noir_trait_impl[impl_226]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for i8 where [] := {
   noir_def bitor<>(self: i8, other: i8) -> i8 := {
     (#_iOr returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_227]<> ops.bit.BitOr<> for i16 where [] := {
+noir_trait_impl[impl_227]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for i16 where [] := {
   noir_def bitor<>(self: i16, other: i16) -> i16 := {
     (#_iOr returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_228]<> ops.bit.BitOr<> for i32 where [] := {
+noir_trait_impl[impl_228]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for i32 where [] := {
   noir_def bitor<>(self: i32, other: i32) -> i32 := {
     (#_iOr returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_229]<> ops.bit.BitOr<> for i64 where [] := {
+noir_trait_impl[impl_229]<> «std-1.0.0-beta.11».ops.bit.BitOr<> for i64 where [] := {
   noir_def bitor<>(self: i64, other: i64) -> i64 := {
     (#_iOr returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_230]<> ops.bit.BitAnd<> for bool where [] := {
+noir_trait_impl[impl_230]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for bool where [] := {
   noir_def bitand<>(self: bool, other: bool) -> bool := {
     (#_bAnd returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_231]<> ops.bit.BitAnd<> for u128 where [] := {
+noir_trait_impl[impl_231]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for u128 where [] := {
   noir_def bitand<>(self: u128, other: u128) -> u128 := {
     (#_uAnd returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_232]<> ops.bit.BitAnd<> for u64 where [] := {
+noir_trait_impl[impl_232]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for u64 where [] := {
   noir_def bitand<>(self: u64, other: u64) -> u64 := {
     (#_uAnd returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_233]<> ops.bit.BitAnd<> for u32 where [] := {
+noir_trait_impl[impl_233]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for u32 where [] := {
   noir_def bitand<>(self: u32, other: u32) -> u32 := {
     (#_uAnd returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_234]<> ops.bit.BitAnd<> for u16 where [] := {
+noir_trait_impl[impl_234]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for u16 where [] := {
   noir_def bitand<>(self: u16, other: u16) -> u16 := {
     (#_uAnd returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_235]<> ops.bit.BitAnd<> for u8 where [] := {
+noir_trait_impl[impl_235]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for u8 where [] := {
   noir_def bitand<>(self: u8, other: u8) -> u8 := {
     (#_uAnd returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_236]<> ops.bit.BitAnd<> for u1 where [] := {
+noir_trait_impl[impl_236]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for u1 where [] := {
   noir_def bitand<>(self: u1, other: u1) -> u1 := {
     (#_uAnd returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_237]<> ops.bit.BitAnd<> for i8 where [] := {
+noir_trait_impl[impl_237]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for i8 where [] := {
   noir_def bitand<>(self: i8, other: i8) -> i8 := {
     (#_iAnd returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_238]<> ops.bit.BitAnd<> for i16 where [] := {
+noir_trait_impl[impl_238]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for i16 where [] := {
   noir_def bitand<>(self: i16, other: i16) -> i16 := {
     (#_iAnd returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_239]<> ops.bit.BitAnd<> for i32 where [] := {
+noir_trait_impl[impl_239]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for i32 where [] := {
   noir_def bitand<>(self: i32, other: i32) -> i32 := {
     (#_iAnd returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_240]<> ops.bit.BitAnd<> for i64 where [] := {
+noir_trait_impl[impl_240]<> «std-1.0.0-beta.11».ops.bit.BitAnd<> for i64 where [] := {
   noir_def bitand<>(self: i64, other: i64) -> i64 := {
     (#_iAnd returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_241]<> ops.bit.BitXor<> for bool where [] := {
+noir_trait_impl[impl_241]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for bool where [] := {
   noir_def bitxor<>(self: bool, other: bool) -> bool := {
     (#_bXor returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_242]<> ops.bit.BitXor<> for u128 where [] := {
+noir_trait_impl[impl_242]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for u128 where [] := {
   noir_def bitxor<>(self: u128, other: u128) -> u128 := {
     (#_uXor returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_243]<> ops.bit.BitXor<> for u64 where [] := {
+noir_trait_impl[impl_243]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for u64 where [] := {
   noir_def bitxor<>(self: u64, other: u64) -> u64 := {
     (#_uXor returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_244]<> ops.bit.BitXor<> for u32 where [] := {
+noir_trait_impl[impl_244]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for u32 where [] := {
   noir_def bitxor<>(self: u32, other: u32) -> u32 := {
     (#_uXor returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_245]<> ops.bit.BitXor<> for u16 where [] := {
+noir_trait_impl[impl_245]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for u16 where [] := {
   noir_def bitxor<>(self: u16, other: u16) -> u16 := {
     (#_uXor returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_246]<> ops.bit.BitXor<> for u8 where [] := {
+noir_trait_impl[impl_246]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for u8 where [] := {
   noir_def bitxor<>(self: u8, other: u8) -> u8 := {
     (#_uXor returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_247]<> ops.bit.BitXor<> for u1 where [] := {
+noir_trait_impl[impl_247]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for u1 where [] := {
   noir_def bitxor<>(self: u1, other: u1) -> u1 := {
     (#_uXor returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_248]<> ops.bit.BitXor<> for i8 where [] := {
+noir_trait_impl[impl_248]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for i8 where [] := {
   noir_def bitxor<>(self: i8, other: i8) -> i8 := {
     (#_iXor returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_249]<> ops.bit.BitXor<> for i16 where [] := {
+noir_trait_impl[impl_249]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for i16 where [] := {
   noir_def bitxor<>(self: i16, other: i16) -> i16 := {
     (#_iXor returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_250]<> ops.bit.BitXor<> for i32 where [] := {
+noir_trait_impl[impl_250]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for i32 where [] := {
   noir_def bitxor<>(self: i32, other: i32) -> i32 := {
     (#_iXor returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_251]<> ops.bit.BitXor<> for i64 where [] := {
+noir_trait_impl[impl_251]<> «std-1.0.0-beta.11».ops.bit.BitXor<> for i64 where [] := {
   noir_def bitxor<>(self: i64, other: i64) -> i64 := {
     (#_iXor returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_252]<> ops.bit.Shl<> for u128 where [] := {
+noir_trait_impl[impl_252]<> «std-1.0.0-beta.11».ops.bit.Shl<> for u128 where [] := {
   noir_def shl<>(self: u128, other: u128) -> u128 := {
     (#_uShl returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_253]<> ops.bit.Shl<> for u64 where [] := {
+noir_trait_impl[impl_253]<> «std-1.0.0-beta.11».ops.bit.Shl<> for u64 where [] := {
   noir_def shl<>(self: u64, other: u64) -> u64 := {
     (#_uShl returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_254]<> ops.bit.Shl<> for u32 where [] := {
+noir_trait_impl[impl_254]<> «std-1.0.0-beta.11».ops.bit.Shl<> for u32 where [] := {
   noir_def shl<>(self: u32, other: u32) -> u32 := {
     (#_uShl returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_255]<> ops.bit.Shl<> for u16 where [] := {
+noir_trait_impl[impl_255]<> «std-1.0.0-beta.11».ops.bit.Shl<> for u16 where [] := {
   noir_def shl<>(self: u16, other: u16) -> u16 := {
     (#_uShl returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_256]<> ops.bit.Shl<> for u8 where [] := {
+noir_trait_impl[impl_256]<> «std-1.0.0-beta.11».ops.bit.Shl<> for u8 where [] := {
   noir_def shl<>(self: u8, other: u8) -> u8 := {
     (#_uShl returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_257]<> ops.bit.Shl<> for u1 where [] := {
+noir_trait_impl[impl_257]<> «std-1.0.0-beta.11».ops.bit.Shl<> for u1 where [] := {
   noir_def shl<>(self: u1, other: u1) -> u1 := {
     (#_uShl returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_258]<> ops.bit.Shl<> for i8 where [] := {
+noir_trait_impl[impl_258]<> «std-1.0.0-beta.11».ops.bit.Shl<> for i8 where [] := {
   noir_def shl<>(self: i8, other: i8) -> i8 := {
     (#_iShl returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_259]<> ops.bit.Shl<> for i16 where [] := {
+noir_trait_impl[impl_259]<> «std-1.0.0-beta.11».ops.bit.Shl<> for i16 where [] := {
   noir_def shl<>(self: i16, other: i16) -> i16 := {
     (#_iShl returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_260]<> ops.bit.Shl<> for i32 where [] := {
+noir_trait_impl[impl_260]<> «std-1.0.0-beta.11».ops.bit.Shl<> for i32 where [] := {
   noir_def shl<>(self: i32, other: i32) -> i32 := {
     (#_iShl returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_261]<> ops.bit.Shl<> for i64 where [] := {
+noir_trait_impl[impl_261]<> «std-1.0.0-beta.11».ops.bit.Shl<> for i64 where [] := {
   noir_def shl<>(self: i64, other: i64) -> i64 := {
     (#_iShl returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_262]<> ops.bit.Shr<> for u128 where [] := {
+noir_trait_impl[impl_262]<> «std-1.0.0-beta.11».ops.bit.Shr<> for u128 where [] := {
   noir_def shr<>(self: u128, other: u128) -> u128 := {
     (#_uShr returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_263]<> ops.bit.Shr<> for u64 where [] := {
+noir_trait_impl[impl_263]<> «std-1.0.0-beta.11».ops.bit.Shr<> for u64 where [] := {
   noir_def shr<>(self: u64, other: u64) -> u64 := {
     (#_uShr returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_264]<> ops.bit.Shr<> for u32 where [] := {
+noir_trait_impl[impl_264]<> «std-1.0.0-beta.11».ops.bit.Shr<> for u32 where [] := {
   noir_def shr<>(self: u32, other: u32) -> u32 := {
     (#_uShr returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_265]<> ops.bit.Shr<> for u16 where [] := {
+noir_trait_impl[impl_265]<> «std-1.0.0-beta.11».ops.bit.Shr<> for u16 where [] := {
   noir_def shr<>(self: u16, other: u16) -> u16 := {
     (#_uShr returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_266]<> ops.bit.Shr<> for u8 where [] := {
+noir_trait_impl[impl_266]<> «std-1.0.0-beta.11».ops.bit.Shr<> for u8 where [] := {
   noir_def shr<>(self: u8, other: u8) -> u8 := {
     (#_uShr returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_267]<> ops.bit.Shr<> for u1 where [] := {
+noir_trait_impl[impl_267]<> «std-1.0.0-beta.11».ops.bit.Shr<> for u1 where [] := {
   noir_def shr<>(self: u1, other: u1) -> u1 := {
     (#_uShr returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_268]<> ops.bit.Shr<> for i8 where [] := {
+noir_trait_impl[impl_268]<> «std-1.0.0-beta.11».ops.bit.Shr<> for i8 where [] := {
   noir_def shr<>(self: i8, other: i8) -> i8 := {
     (#_iShr returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_269]<> ops.bit.Shr<> for i16 where [] := {
+noir_trait_impl[impl_269]<> «std-1.0.0-beta.11».ops.bit.Shr<> for i16 where [] := {
   noir_def shr<>(self: i16, other: i16) -> i16 := {
     (#_iShr returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_270]<> ops.bit.Shr<> for i32 where [] := {
+noir_trait_impl[impl_270]<> «std-1.0.0-beta.11».ops.bit.Shr<> for i32 where [] := {
   noir_def shr<>(self: i32, other: i32) -> i32 := {
     (#_iShr returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_271]<> ops.bit.Shr<> for i64 where [] := {
+noir_trait_impl[impl_271]<> «std-1.0.0-beta.11».ops.bit.Shr<> for i64 where [] := {
   noir_def shr<>(self: i64, other: i64) -> i64 := {
     (#_iShr returning i64)(self, other)
   };

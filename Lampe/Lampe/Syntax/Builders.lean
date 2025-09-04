@@ -239,7 +239,7 @@ partial def makeExpr [MonadDSL m]
       k
 
   -- Calls to trait methods
-  | `(noir_funcref|(($selfTp as $tName< $traitGens,* >)::$fName< $funcGens,* > as $tp)) => do
+  | `(noir_funcref|(($selfTp as $tName< $traitGens,* >).$fName< $funcGens,* > as $tp)) => do
     let (traitGenKinds, traitGenVals) ← makeGenericValTerms traitGens.getElems.toList
     let (funcGenKinds, funcGenVals) ← makeGenericValTerms funcGens.getElems.toList
     let traitName := Syntax.mkStrLit tName.getId.toString

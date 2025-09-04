@@ -7,38 +7,38 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_def «meta».tests.returning_versus_macro_insertion<>() -> Unit := {
+noir_def «std-1.0.0-beta.11».«meta».tests.returning_versus_macro_insertion<>() -> Unit := {
   #_unit
 }
 
-noir_trait_impl[impl_429]<> «meta».tests.FieldCount<> for «meta».tests.Bar<> where [] := {
+noir_trait_impl[impl_429]<> «std-1.0.0-beta.11».«meta».tests.FieldCount<> for «std-1.0.0-beta.11».«meta».tests.Bar<> where [] := {
   noir_def field_count<>() -> u32 := {
     (2: u32)
   };
 }
 
-noir_trait_impl[impl_314]<> «meta».tests.DoNothing<> for «meta».tests.Bar<> where [] := {
-  noir_def do_nothing<>(_: «meta».tests.Bar<>) -> Unit := {
+noir_trait_impl[impl_314]<> «std-1.0.0-beta.11».«meta».tests.DoNothing<> for «std-1.0.0-beta.11».«meta».tests.Bar<> where [] := {
+  noir_def do_nothing<>(_: «std-1.0.0-beta.11».«meta».tests.Bar<>) -> Unit := {
     #_skip
   };
 }
 
-noir_def «meta».tests.concatenate_test<>() -> Unit := {
+noir_def «std-1.0.0-beta.11».«meta».tests.concatenate_test<>() -> Unit := {
   #_unit
 }
 
-noir_def «meta».tests.remove_unused_warnings<>() -> Unit := {
-  let _ = (#_makeData returning «meta».tests.Bar<>)((1: Field), (#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)));
-  let _ = (#_makeData returning «meta».tests.MyStruct<>)((1: i32));
-  let _ = (#_makeData returning «meta».tests.MyOtherStruct<>)((2: u32));
-  let _ = («meta».tests.derive_do_nothing<> as λ(Unit) -> Unit)((panic.panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
-  let _ = («meta».tests.derive_do_nothing_alt<> as λ(Unit) -> Unit)((panic.panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
+noir_def «std-1.0.0-beta.11».«meta».tests.remove_unused_warnings<>() -> Unit := {
+  let _ = (#_makeData returning «std-1.0.0-beta.11».«meta».tests.Bar<>)((1: Field), (#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)));
+  let _ = (#_makeData returning «std-1.0.0-beta.11».«meta».tests.MyStruct<>)((1: i32));
+  let _ = (#_makeData returning «std-1.0.0-beta.11».«meta».tests.MyOtherStruct<>)((2: u32));
+  let _ = («std-1.0.0-beta.11».«meta».tests.derive_do_nothing<> as λ(Unit) -> Unit)((«std-1.0.0-beta.11».panic.panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
+  let _ = («std-1.0.0-beta.11».«meta».tests.derive_do_nothing_alt<> as λ(Unit) -> Unit)((«std-1.0.0-beta.11».panic.panic<Tuple<>, Unit, 0: u32> as λ(FmtString<0: u32, Tuple<> >) -> Unit)((#_mkFormatString returning FmtString<0: u32, Tuple<> >)("")));
   if #_false then {
-    («meta».tests.remove_unused_warnings<> as λ() -> Unit)();
+    («std-1.0.0-beta.11».«meta».tests.remove_unused_warnings<> as λ() -> Unit)();
     #_skip
   }
 }
 
 def Meta.Mod.env : Env := Env.mk
-  [«meta».tests.returning_versus_macro_insertion, «meta».tests.concatenate_test, «meta».tests.remove_unused_warnings]
+  [«std-1.0.0-beta.11».«meta».tests.returning_versus_macro_insertion, «std-1.0.0-beta.11».«meta».tests.concatenate_test, «std-1.0.0-beta.11».«meta».tests.remove_unused_warnings]
   [impl_429, impl_314]
