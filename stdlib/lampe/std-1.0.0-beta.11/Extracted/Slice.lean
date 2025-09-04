@@ -7,7 +7,7 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_def «std-1.0.0-beta.11».slice.append<T: Type>(mut self: Slice<T>, other: Slice<T>) -> Slice<T> := {
+noir_def slice.append<T: Type>(mut self: Slice<T>, other: Slice<T>) -> Slice<T> := {
   {
     let ζi0 = other;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
@@ -22,7 +22,7 @@ noir_def «std-1.0.0-beta.11».slice.append<T: Type>(mut self: Slice<T>, other: 
   self
 }
 
-noir_def «std-1.0.0-beta.11».slice.as_array<T: Type, N: u32>(self: Slice<T>) -> Array<T, N: u32> := {
+noir_def slice.as_array<T: Type, N: u32>(self: Slice<T>) -> Array<T, N: u32> := {
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(self), uConst!(N: u32)));
   let mut array = (#_mkRepeatedArray returning Array<T, N: u32>)((#_zeroed returning T)());
   for i in (0: u32) .. uConst!(N: u32) do {
@@ -32,7 +32,7 @@ noir_def «std-1.0.0-beta.11».slice.as_array<T: Type, N: u32>(self: Slice<T>) -
   array
 }
 
-noir_def «std-1.0.0-beta.11».slice.map<T: Type, U: Type, Env: Type>(self: Slice<T>, f: λ(T) -> U) -> Slice<U> := {
+noir_def slice.map<T: Type, U: Type, Env: Type>(self: Slice<T>, f: λ(T) -> U) -> Slice<U> := {
   let mut ret = (#_mkSlice returning Slice<U>)();
   {
     let ζi0 = self;
@@ -48,7 +48,7 @@ noir_def «std-1.0.0-beta.11».slice.map<T: Type, U: Type, Env: Type>(self: Slic
   ret
 }
 
-noir_def «std-1.0.0-beta.11».slice.mapi<T: Type, U: Type, Env: Type>(self: Slice<T>, f: λ(u32, T) -> U) -> Slice<U> := {
+noir_def slice.mapi<T: Type, U: Type, Env: Type>(self: Slice<T>, f: λ(u32, T) -> U) -> Slice<U> := {
   let mut ret = (#_mkSlice returning Slice<U>)();
   let mut index = (0: u32);
   {
@@ -66,7 +66,7 @@ noir_def «std-1.0.0-beta.11».slice.mapi<T: Type, U: Type, Env: Type>(self: Sli
   ret
 }
 
-noir_def «std-1.0.0-beta.11».slice.for_each<T: Type, Env: Type>(self: Slice<T>, f: λ(T) -> Unit) -> Unit := {
+noir_def slice.for_each<T: Type, Env: Type>(self: Slice<T>, f: λ(T) -> Unit) -> Unit := {
   let ζi0 = self;
   for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
     let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
@@ -78,7 +78,7 @@ noir_def «std-1.0.0-beta.11».slice.for_each<T: Type, Env: Type>(self: Slice<T>
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».slice.for_eachi<T: Type, Env: Type>(self: Slice<T>, f: λ(u32, T) -> Unit) -> Unit := {
+noir_def slice.for_eachi<T: Type, Env: Type>(self: Slice<T>, f: λ(u32, T) -> Unit) -> Unit := {
   let mut index = (0: u32);
   {
     let ζi0 = self;
@@ -94,7 +94,7 @@ noir_def «std-1.0.0-beta.11».slice.for_eachi<T: Type, Env: Type>(self: Slice<T
   }
 }
 
-noir_def «std-1.0.0-beta.11».slice.fold<T: Type, U: Type, Env: Type>(self: Slice<T>, mut accumulator: U, f: λ(U, T) -> U) -> U := {
+noir_def slice.fold<T: Type, U: Type, Env: Type>(self: Slice<T>, mut accumulator: U, f: λ(U, T) -> U) -> U := {
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
@@ -109,7 +109,7 @@ noir_def «std-1.0.0-beta.11».slice.fold<T: Type, U: Type, Env: Type>(self: Sli
   accumulator
 }
 
-noir_def «std-1.0.0-beta.11».slice.reduce<T: Type, Env: Type>(self: Slice<T>, f: λ(T, T) -> T) -> T := {
+noir_def slice.reduce<T: Type, Env: Type>(self: Slice<T>, f: λ(T, T) -> T) -> T := {
   let mut accumulator = (#_sliceIndex returning T)(self, (0: u32));
   for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
     accumulator = (f as λ(T, T) -> T)(accumulator, (#_sliceIndex returning T)(self, (#_cast returning u32)(i)));
@@ -118,7 +118,7 @@ noir_def «std-1.0.0-beta.11».slice.reduce<T: Type, Env: Type>(self: Slice<T>, 
   accumulator
 }
 
-noir_def «std-1.0.0-beta.11».slice.filter<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> Slice<T> := {
+noir_def slice.filter<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> Slice<T> := {
   let mut ret = (#_mkSlice returning Slice<T>)();
   {
     let ζi0 = self;
@@ -136,12 +136,12 @@ noir_def «std-1.0.0-beta.11».slice.filter<T: Type, Env: Type>(self: Slice<T>, 
   ret
 }
 
-noir_def «std-1.0.0-beta.11».slice.join<T: Type>(self: Slice<T>, separator: T) -> T := {
-  let mut ret = ((T as «std-1.0.0-beta.11».append.Append<>).empty<> as λ() -> T)();
+noir_def slice.join<T: Type>(self: Slice<T>, separator: T) -> T := {
+  let mut ret = ((T as append.Append<>).empty<> as λ() -> T)();
   if (#_uNeq returning bool)((#_arrayLen returning u32)(self), (0: u32)) then {
     ret = (#_sliceIndex returning T)(self, (0: u32));
     for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
-      ret = ((T as «std-1.0.0-beta.11».append.Append<>).append<> as λ(T, T) -> T)(((T as «std-1.0.0-beta.11».append.Append<>).append<> as λ(T, T) -> T)(ret, separator), (#_sliceIndex returning T)(self, (#_cast returning u32)(i)));
+      ret = ((T as append.Append<>).append<> as λ(T, T) -> T)(((T as append.Append<>).append<> as λ(T, T) -> T)(ret, separator), (#_sliceIndex returning T)(self, (#_cast returning u32)(i)));
       #_skip
     };
     #_skip
@@ -149,7 +149,7 @@ noir_def «std-1.0.0-beta.11».slice.join<T: Type>(self: Slice<T>, separator: T)
   ret
 }
 
-noir_def «std-1.0.0-beta.11».slice.all<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
+noir_def slice.all<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
   let mut ret = #_true;
   {
     let ζi0 = self;
@@ -165,7 +165,7 @@ noir_def «std-1.0.0-beta.11».slice.all<T: Type, Env: Type>(self: Slice<T>, pre
   ret
 }
 
-noir_def «std-1.0.0-beta.11».slice.any<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
+noir_def slice.any<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
   let mut ret = #_false;
   {
     let ζi0 = self;
@@ -181,66 +181,66 @@ noir_def «std-1.0.0-beta.11».slice.any<T: Type, Env: Type>(self: Slice<T>, pre
   ret
 }
 
-noir_def «std-1.0.0-beta.11».slice.test.map_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.11».cmp.Eq<>).eq<> as λ(Slice<Field>, Slice<Field>) -> bool)((«std-1.0.0-beta.11».slice.map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)((#_mkSlice returning Slice<Field>)(), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkSlice returning Slice<Field>)()));
+noir_def slice.test.map_empty<>() -> Unit := {
+  (#_assert returning Unit)(((Slice<Field> as cmp.Eq<>).eq<> as λ(Slice<Field>, Slice<Field>) -> bool)((slice.map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)((#_mkSlice returning Slice<Field>)(), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkSlice returning Slice<Field>)()));
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».slice.test.mapi_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.11».cmp.Eq<>).eq<> as λ(Slice<u32>, Slice<u32>) -> bool)((«std-1.0.0-beta.11».slice.mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)((#_mkSlice returning Slice<u32>)(), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_mkSlice returning Slice<u32>)()));
+noir_def slice.test.mapi_empty<>() -> Unit := {
+  (#_assert returning Unit)(((Slice<u32> as cmp.Eq<>).eq<> as λ(Slice<u32>, Slice<u32>) -> bool)((slice.mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)((#_mkSlice returning Slice<u32>)(), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_mkSlice returning Slice<u32>)()));
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».slice.test.for_each_empty<>() -> Unit := {
+noir_def slice.test.for_each_empty<>() -> Unit := {
   let empty_slice = (#_mkSlice returning Slice<Field>)();
-  («std-1.0.0-beta.11».slice.for_each<Field, Unit> as λ(Slice<Field>, λ(Field) -> Unit) -> Unit)(empty_slice, (fn(_x: Field): Unit := (#_assert returning Unit)(#_false)));
+  (slice.for_each<Field, Unit> as λ(Slice<Field>, λ(Field) -> Unit) -> Unit)(empty_slice, (fn(_x: Field): Unit := (#_assert returning Unit)(#_false)));
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».slice.test.for_eachi_empty<>() -> Unit := {
+noir_def slice.test.for_eachi_empty<>() -> Unit := {
   let empty_slice = (#_mkSlice returning Slice<Field>)();
-  («std-1.0.0-beta.11».slice.for_eachi<Field, Unit> as λ(Slice<Field>, λ(u32, Field) -> Unit) -> Unit)(empty_slice, (fn(_i: u32, _x: Field): Unit := (#_assert returning Unit)(#_false)));
+  (slice.for_eachi<Field, Unit> as λ(Slice<Field>, λ(u32, Field) -> Unit) -> Unit)(empty_slice, (fn(_i: u32, _x: Field): Unit := (#_assert returning Unit)(#_false)));
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».slice.test.map_example<>() -> Unit := {
+noir_def slice.test.map_example<>() -> Unit := {
   let a = (#_mkSlice returning Slice<Field>)((1: Field), (2: Field), (3: Field));
-  let b = («std-1.0.0-beta.11».slice.map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.11».cmp.Eq<>).eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_mkSlice returning Slice<Field>)((2: Field), (4: Field), (6: Field))));
+  let b = (slice.map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
+  (#_assert returning Unit)(((Slice<Field> as cmp.Eq<>).eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_mkSlice returning Slice<Field>)((2: Field), (4: Field), (6: Field))));
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».slice.test.mapi_example<>() -> Unit := {
+noir_def slice.test.mapi_example<>() -> Unit := {
   let a = (#_mkSlice returning Slice<u32>)((1: u32), (2: u32), (3: u32));
-  let b = («std-1.0.0-beta.11».slice.mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.11».cmp.Eq<>).eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_mkSlice returning Slice<u32>)((2: u32), (5: u32), (8: u32))));
+  let b = (slice.mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
+  (#_assert returning Unit)(((Slice<u32> as cmp.Eq<>).eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_mkSlice returning Slice<u32>)((2: u32), (5: u32), (8: u32))));
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».slice.test.for_each_example<>() -> Unit := {
+noir_def slice.test.for_each_example<>() -> Unit := {
   let a = (#_mkSlice returning Slice<Field>)((1: Field), (2: Field), (3: Field));
   let mut b = (#_mkSlice returning Slice<Field>)();
   let b_ref = (#_ref returning & Slice<Field>)(b);
-  («std-1.0.0-beta.11».slice.for_each<Field, Tuple<& Slice<Field> > > as λ(Slice<Field>, λ(Field) -> Unit) -> Unit)(a, (fn(a: Field): Unit := {
+  (slice.for_each<Field, Tuple<& Slice<Field> > > as λ(Slice<Field>, λ(Field) -> Unit) -> Unit)(a, (fn(a: Field): Unit := {
     (*b_ref: Slice<Field>) = (#_slicePushBack returning Slice<Field>)((#_readRef returning Slice<Field>)(b_ref), (#_fMul returning Field)(a, (2: Field)));
     #_skip
   }));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.11».cmp.Eq<>).eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_mkSlice returning Slice<Field>)((2: Field), (4: Field), (6: Field))));
+  (#_assert returning Unit)(((Slice<Field> as cmp.Eq<>).eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_mkSlice returning Slice<Field>)((2: Field), (4: Field), (6: Field))));
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».slice.test.for_eachi_example<>() -> Unit := {
+noir_def slice.test.for_eachi_example<>() -> Unit := {
   let a = (#_mkSlice returning Slice<u32>)((1: u32), (2: u32), (3: u32));
   let mut b = (#_mkSlice returning Slice<u32>)();
   let b_ref = (#_ref returning & Slice<u32>)(b);
-  («std-1.0.0-beta.11».slice.for_eachi<u32, Tuple<& Slice<u32> > > as λ(Slice<u32>, λ(u32, u32) -> Unit) -> Unit)(a, (fn(i: u32, a: u32): Unit := {
+  (slice.for_eachi<u32, Tuple<& Slice<u32> > > as λ(Slice<u32>, λ(u32, u32) -> Unit) -> Unit)(a, (fn(i: u32, a: u32): Unit := {
     (*b_ref: Slice<u32>) = (#_slicePushBack returning Slice<u32>)((#_readRef returning Slice<u32>)(b_ref), (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32))));
     #_skip
   }));
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.11».cmp.Eq<>).eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_mkSlice returning Slice<u32>)((2: u32), (5: u32), (8: u32))));
+  (#_assert returning Unit)(((Slice<u32> as cmp.Eq<>).eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_mkSlice returning Slice<u32>)((2: u32), (5: u32), (8: u32))));
   #_skip
 }
 
 def Slice.env : Env := Env.mk
-  [«std-1.0.0-beta.11».slice.append, «std-1.0.0-beta.11».slice.as_array, «std-1.0.0-beta.11».slice.map, «std-1.0.0-beta.11».slice.mapi, «std-1.0.0-beta.11».slice.for_each, «std-1.0.0-beta.11».slice.for_eachi, «std-1.0.0-beta.11».slice.fold, «std-1.0.0-beta.11».slice.reduce, «std-1.0.0-beta.11».slice.filter, «std-1.0.0-beta.11».slice.join, «std-1.0.0-beta.11».slice.all, «std-1.0.0-beta.11».slice.any, «std-1.0.0-beta.11».slice.test.map_empty, «std-1.0.0-beta.11».slice.test.mapi_empty, «std-1.0.0-beta.11».slice.test.for_each_empty, «std-1.0.0-beta.11».slice.test.for_eachi_empty, «std-1.0.0-beta.11».slice.test.map_example, «std-1.0.0-beta.11».slice.test.mapi_example, «std-1.0.0-beta.11».slice.test.for_each_example, «std-1.0.0-beta.11».slice.test.for_eachi_example]
+  [slice.append, slice.as_array, slice.map, slice.mapi, slice.for_each, slice.for_eachi, slice.fold, slice.reduce, slice.filter, slice.join, slice.all, slice.any, slice.test.map_empty, slice.test.mapi_empty, slice.test.for_each_empty, slice.test.for_eachi_empty, slice.test.map_example, slice.test.mapi_example, slice.test.for_each_example, slice.test.for_eachi_example]
   []

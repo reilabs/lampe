@@ -7,92 +7,92 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_def «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.hash<N: u32>(input: Array<Field, N: u32>, message_size: u32) -> Field := {
-  («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.hash_internal<N: u32> as λ(Array<Field, N: u32>, u32, bool) -> Field)(input, message_size, (#_uNeq returning bool)(message_size, uConst!(N: u32)))
+noir_def hash.poseidon2.Poseidon2.hash<N: u32>(input: Array<Field, N: u32>, message_size: u32) -> Field := {
+  (hash.poseidon2.Poseidon2.hash_internal<N: u32> as λ(Array<Field, N: u32>, u32, bool) -> Field)(input, message_size, (#_uNeq returning bool)(message_size, uConst!(N: u32)))
 }
 
-noir_def «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.new<>(iv: Field) -> «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<> := {
-  let mut result = (#_makeData returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)((#_mkRepeatedArray returning Array<Field, 3: u32>)((0: Field)), (#_mkRepeatedArray returning Array<Field, 4: u32>)((0: Field)), (0: u32), #_false);
-  ((result.1: Array<Field, 4: u32>)[(«std-1.0.0-beta.11».hash.poseidon2.RATE<> as λ() -> u32)()]: Field) = iv;
+noir_def hash.poseidon2.Poseidon2.new<>(iv: Field) -> hash.poseidon2.Poseidon2<> := {
+  let mut result = (#_makeData returning hash.poseidon2.Poseidon2<>)((#_mkRepeatedArray returning Array<Field, 3: u32>)((0: Field)), (#_mkRepeatedArray returning Array<Field, 4: u32>)((0: Field)), (0: u32), #_false);
+  ((result.1: Array<Field, 4: u32>)[(hash.poseidon2.RATE<> as λ() -> u32)()]: Field) = iv;
   result
 }
 
-noir_def «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.perform_duplex<>(self: & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>) -> Unit := {
-  for i in (0: u32) .. («std-1.0.0-beta.11».hash.poseidon2.RATE<> as λ() -> u32)() do {
-    if (#_uLt returning bool)(i, (#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).2) then {
-      (((*self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>).1: Array<Field, 4: u32>)[i]: Field) = (#_fAdd returning Field)((#_arrayIndex returning Field)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).1, (#_cast returning u32)(i)), (#_arrayIndex returning Field)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).0, (#_cast returning u32)(i)));
+noir_def hash.poseidon2.Poseidon2.perform_duplex<>(self: & hash.poseidon2.Poseidon2<>) -> Unit := {
+  for i in (0: u32) .. (hash.poseidon2.RATE<> as λ() -> u32)() do {
+    if (#_uLt returning bool)(i, (#_readRef returning hash.poseidon2.Poseidon2<>)(self).2) then {
+      (((*self: hash.poseidon2.Poseidon2<>).1: Array<Field, 4: u32>)[i]: Field) = (#_fAdd returning Field)((#_arrayIndex returning Field)((#_readRef returning hash.poseidon2.Poseidon2<>)(self).1, (#_cast returning u32)(i)), (#_arrayIndex returning Field)((#_readRef returning hash.poseidon2.Poseidon2<>)(self).0, (#_cast returning u32)(i)));
       #_skip
     }
   };
-  ((*self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>).1: Array<Field, 4: u32>) = (#_poseidon2Permutation returning Array<Field, 4: u32>)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).1, (4: u32));
+  ((*self: hash.poseidon2.Poseidon2<>).1: Array<Field, 4: u32>) = (#_poseidon2Permutation returning Array<Field, 4: u32>)((#_readRef returning hash.poseidon2.Poseidon2<>)(self).1, (4: u32));
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.absorb<>(self: & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>, input: Field) -> Unit := {
-  (#_assert returning Unit)((#_bNot returning bool)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).3));
-  if (#_uEq returning bool)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).2, («std-1.0.0-beta.11».hash.poseidon2.RATE<> as λ() -> u32)()) then {
-    («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.perform_duplex<> as λ(& «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>) -> Unit)(self);
-    (((*self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>).0: Array<Field, 3: u32>)[(0: u32)]: Field) = input;
-    ((*self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>).2: u32) = (1: u32);
+noir_def hash.poseidon2.Poseidon2.absorb<>(self: & hash.poseidon2.Poseidon2<>, input: Field) -> Unit := {
+  (#_assert returning Unit)((#_bNot returning bool)((#_readRef returning hash.poseidon2.Poseidon2<>)(self).3));
+  if (#_uEq returning bool)((#_readRef returning hash.poseidon2.Poseidon2<>)(self).2, (hash.poseidon2.RATE<> as λ() -> u32)()) then {
+    (hash.poseidon2.Poseidon2.perform_duplex<> as λ(& hash.poseidon2.Poseidon2<>) -> Unit)(self);
+    (((*self: hash.poseidon2.Poseidon2<>).0: Array<Field, 3: u32>)[(0: u32)]: Field) = input;
+    ((*self: hash.poseidon2.Poseidon2<>).2: u32) = (1: u32);
     #_skip
   } else {
     {
-      let i_2571 = (#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).2;
-      (((*self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>).0: Array<Field, 3: u32>)[i_2571]: Field) = input;
+      let i_2571 = (#_readRef returning hash.poseidon2.Poseidon2<>)(self).2;
+      (((*self: hash.poseidon2.Poseidon2<>).0: Array<Field, 3: u32>)[i_2571]: Field) = input;
       #_skip
     };
-    ((*self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>).2: u32) = (#_uAdd returning u32)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).2, (1: u32));
+    ((*self: hash.poseidon2.Poseidon2<>).2: u32) = (#_uAdd returning u32)((#_readRef returning hash.poseidon2.Poseidon2<>)(self).2, (1: u32));
     #_skip
   }
 }
 
-noir_def «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.squeeze<>(self: & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>) -> Field := {
-  (#_assert returning Unit)((#_bNot returning bool)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).3));
-  («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.perform_duplex<> as λ(& «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>) -> Unit)(self);
-  ((*self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>).3: bool) = #_true;
-  (#_arrayIndex returning Field)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(self).1, (0: u32))
+noir_def hash.poseidon2.Poseidon2.squeeze<>(self: & hash.poseidon2.Poseidon2<>) -> Field := {
+  (#_assert returning Unit)((#_bNot returning bool)((#_readRef returning hash.poseidon2.Poseidon2<>)(self).3));
+  (hash.poseidon2.Poseidon2.perform_duplex<> as λ(& hash.poseidon2.Poseidon2<>) -> Unit)(self);
+  ((*self: hash.poseidon2.Poseidon2<>).3: bool) = #_true;
+  (#_arrayIndex returning Field)((#_readRef returning hash.poseidon2.Poseidon2<>)(self).1, (0: u32))
 }
 
-noir_def «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.hash_internal<N: u32>(input: Array<Field, N: u32>, in_len: u32, is_variable_length: bool) -> Field := {
+noir_def hash.poseidon2.Poseidon2.hash_internal<N: u32>(input: Array<Field, N: u32>, in_len: u32, is_variable_length: bool) -> Field := {
   let two_pow_64 = (18446744073709551616: Field);
   let iv = (#_fMul returning Field)((#_cast returning Field)(in_len), two_pow_64);
-  let mut sponge = («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.new<> as λ(Field) -> «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(iv);
+  let mut sponge = (hash.poseidon2.Poseidon2.new<> as λ(Field) -> hash.poseidon2.Poseidon2<>)(iv);
   for i in (0: u32) .. (#_arrayLen returning u32)(input) do {
     if (#_uLt returning bool)(i, in_len) then {
-      («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.absorb<> as λ(& «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(sponge), (#_arrayIndex returning Field)(input, (#_cast returning u32)(i)));
+      (hash.poseidon2.Poseidon2.absorb<> as λ(& hash.poseidon2.Poseidon2<>, Field) -> Unit)((#_ref returning & hash.poseidon2.Poseidon2<>)(sponge), (#_arrayIndex returning Field)(input, (#_cast returning u32)(i)));
       #_skip
     }
   };
   if is_variable_length then {
-    («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.absorb<> as λ(& «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(sponge), (1: Field));
+    (hash.poseidon2.Poseidon2.absorb<> as λ(& hash.poseidon2.Poseidon2<>, Field) -> Unit)((#_ref returning & hash.poseidon2.Poseidon2<>)(sponge), (1: Field));
     #_skip
   };
-  («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.squeeze<> as λ(& «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>) -> Field)((#_ref returning & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(sponge))
+  (hash.poseidon2.Poseidon2.squeeze<> as λ(& hash.poseidon2.Poseidon2<>) -> Field)((#_ref returning & hash.poseidon2.Poseidon2<>)(sponge))
 }
 
-noir_trait_impl[impl_0]<> «std-1.0.0-beta.11».hash.Hasher<> for «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<> where [] := {
-  noir_def finish<>(self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<>) -> Field := {
+noir_trait_impl[impl_0]<> hash.Hasher<> for hash.poseidon2.Poseidon2Hasher<> where [] := {
+  noir_def finish<>(self: hash.poseidon2.Poseidon2Hasher<>) -> Field := {
     let iv = (#_fMul returning Field)((#_cast returning Field)((#_arrayLen returning u32)(self.0)), (18446744073709551616: Field));
-    let mut sponge = («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.new<> as λ(Field) -> «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(iv);
+    let mut sponge = (hash.poseidon2.Poseidon2.new<> as λ(Field) -> hash.poseidon2.Poseidon2<>)(iv);
     for i in (0: u32) .. (#_arrayLen returning u32)(self.0) do {
-      («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.absorb<> as λ(& «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(sponge), (#_sliceIndex returning Field)(self.0, (#_cast returning u32)(i)));
+      (hash.poseidon2.Poseidon2.absorb<> as λ(& hash.poseidon2.Poseidon2<>, Field) -> Unit)((#_ref returning & hash.poseidon2.Poseidon2<>)(sponge), (#_sliceIndex returning Field)(self.0, (#_cast returning u32)(i)));
       #_skip
     };
-    («std-1.0.0-beta.11».hash.poseidon2.Poseidon2.squeeze<> as λ(& «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>) -> Field)((#_ref returning & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<>)(sponge))
+    (hash.poseidon2.Poseidon2.squeeze<> as λ(& hash.poseidon2.Poseidon2<>) -> Field)((#_ref returning & hash.poseidon2.Poseidon2<>)(sponge))
   };
   
-  noir_def write<>(self: & «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<>, input: Field) -> Unit := {
-    ((*self: «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<>).0: Slice<Field>) = (#_slicePushBack returning Slice<Field>)((#_readRef returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<>)(self).0, input);
+  noir_def write<>(self: & hash.poseidon2.Poseidon2Hasher<>, input: Field) -> Unit := {
+    ((*self: hash.poseidon2.Poseidon2Hasher<>).0: Slice<Field>) = (#_slicePushBack returning Slice<Field>)((#_readRef returning hash.poseidon2.Poseidon2Hasher<>)(self).0, input);
     #_skip
   };
 }
 
-noir_trait_impl[impl_1]<> «std-1.0.0-beta.11».default.Default<> for «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<> where [] := {
-  noir_def default<>() -> «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<> := {
-    (#_makeData returning «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<>)((#_mkSlice returning Slice<Field>)())
+noir_trait_impl[impl_1]<> default.Default<> for hash.poseidon2.Poseidon2Hasher<> where [] := {
+  noir_def default<>() -> hash.poseidon2.Poseidon2Hasher<> := {
+    (#_makeData returning hash.poseidon2.Poseidon2Hasher<>)((#_mkSlice returning Slice<Field>)())
   };
 }
 
 def Hash.Poseidon2.env : Env := Env.mk
-  [«std-1.0.0-beta.11».hash.poseidon2.Poseidon2.hash, «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.new, «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.perform_duplex, «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.absorb, «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.squeeze, «std-1.0.0-beta.11».hash.poseidon2.Poseidon2.hash_internal]
+  [hash.poseidon2.Poseidon2.hash, hash.poseidon2.Poseidon2.new, hash.poseidon2.Poseidon2.perform_duplex, hash.poseidon2.Poseidon2.absorb, hash.poseidon2.Poseidon2.squeeze, hash.poseidon2.Poseidon2.hash_internal]
   [impl_0, impl_1]

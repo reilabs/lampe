@@ -7,25 +7,25 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_def «std-1.0.0-beta.11».print_oracle<T: Type>(with_newline: bool, input: T) -> Unit := {
+noir_def print_oracle<T: Type>(with_newline: bool, input: T) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def «std-1.0.0-beta.11».print_unconstrained<T: Type>(with_newline: bool, input: T) -> Unit := {
+noir_def print_unconstrained<T: Type>(with_newline: bool, input: T) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def «std-1.0.0-beta.11».println<T: Type>(input: T) -> Unit := {
-  («std-1.0.0-beta.11».print_unconstrained<T> as λ(bool, T) -> Unit)(#_true, input);
+noir_def println<T: Type>(input: T) -> Unit := {
+  (print_unconstrained<T> as λ(bool, T) -> Unit)(#_true, input);
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».print<T: Type>(input: T) -> Unit := {
-  («std-1.0.0-beta.11».print_unconstrained<T> as λ(bool, T) -> Unit)(#_false, input);
+noir_def print<T: Type>(input: T) -> Unit := {
+  (print_unconstrained<T> as λ(bool, T) -> Unit)(#_false, input);
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».verify_proof_with_type<N: u32, M: u32, K: u32>(verification_key: Array<Field, N: u32>, proof: Array<Field, M: u32>, public_inputs: Array<Field, K: u32>, key_hash: Field, proof_type: u32) -> Unit := {
+noir_def verify_proof_with_type<N: u32, M: u32, K: u32>(verification_key: Array<Field, N: u32>, proof: Array<Field, M: u32>, public_inputs: Array<Field, K: u32>, key_hash: Field, proof_type: u32) -> Unit := {
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
     (#_assertConstant returning Unit)(proof_type);
     #_skip
@@ -34,40 +34,40 @@ noir_def «std-1.0.0-beta.11».verify_proof_with_type<N: u32, M: u32, K: u32>(ve
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».wrapping_add<T: Type>(x: T, y: T) -> T := {
-  ((Field as «std-1.0.0-beta.11».convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fAdd returning Field)(((T as «std-1.0.0-beta.11».convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), ((T as «std-1.0.0-beta.11».convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
+noir_def wrapping_add<T: Type>(x: T, y: T) -> T := {
+  ((Field as convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fAdd returning Field)(((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), ((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
 }
 
-noir_def «std-1.0.0-beta.11».wrapping_sub<T: Type>(x: T, y: T) -> T := {
-  ((Field as «std-1.0.0-beta.11».convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fSub returning Field)((#_fAdd returning Field)(((T as «std-1.0.0-beta.11».convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), (340282366920938463463374607431768211456: Field)), ((T as «std-1.0.0-beta.11».convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
+noir_def wrapping_sub<T: Type>(x: T, y: T) -> T := {
+  ((Field as convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fSub returning Field)((#_fAdd returning Field)(((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), (340282366920938463463374607431768211456: Field)), ((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
 }
 
-noir_def «std-1.0.0-beta.11».wrapping_mul<T: Type>(x: T, y: T) -> T := {
-  ((Field as «std-1.0.0-beta.11».convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fMul returning Field)(((T as «std-1.0.0-beta.11».convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), ((T as «std-1.0.0-beta.11».convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
+noir_def wrapping_mul<T: Type>(x: T, y: T) -> T := {
+  ((Field as convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fMul returning Field)(((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), ((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
 }
 
-noir_def «std-1.0.0-beta.11».tests.test_static_assert_custom_message<>() -> Unit := {
+noir_def tests.test_static_assert_custom_message<>() -> Unit := {
   (#_staticAssert returning Unit)((#_fEq returning bool)((1: Field), (2: Field)), "custom message");
   #_skip
 }
 
-noir_def «std-1.0.0-beta.11».tests.test_wrapping_mul<>() -> Unit := {
+noir_def tests.test_wrapping_mul<>() -> Unit := {
   let zero = (0: u128);
   let one = (1: u128);
   let two_pow_64 = (18446744073709551616: u128);
   let u128_max = (340282366920938463463374607431768211455: u128);
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(zero, one)));
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, zero)));
-  (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, one)));
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(zero, two_pow_64)));
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, zero)));
-  (#_assert returning Unit)((#_uEq returning bool)(two_pow_64, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, one)));
-  (#_assert returning Unit)((#_uEq returning bool)(two_pow_64, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, two_pow_64)));
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, two_pow_64)));
-  (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as «std-1.0.0-beta.11».ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(u128_max, u128_max)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(zero, one)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, zero)));
+  (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, one)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(zero, two_pow_64)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, zero)));
+  (#_assert returning Unit)((#_uEq returning bool)(two_pow_64, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, one)));
+  (#_assert returning Unit)((#_uEq returning bool)(two_pow_64, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, two_pow_64)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, two_pow_64)));
+  (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(u128_max, u128_max)));
   #_skip
 }
 
 def Lib.env : Env := Env.mk
-  [«std-1.0.0-beta.11».print_oracle, «std-1.0.0-beta.11».print_unconstrained, «std-1.0.0-beta.11».println, «std-1.0.0-beta.11».print, «std-1.0.0-beta.11».verify_proof_with_type, «std-1.0.0-beta.11».wrapping_add, «std-1.0.0-beta.11».wrapping_sub, «std-1.0.0-beta.11».wrapping_mul, «std-1.0.0-beta.11».tests.test_static_assert_custom_message, «std-1.0.0-beta.11».tests.test_wrapping_mul]
+  [print_oracle, print_unconstrained, println, print, verify_proof_with_type, wrapping_add, wrapping_sub, wrapping_mul, tests.test_static_assert_custom_message, tests.test_wrapping_mul]
   []
