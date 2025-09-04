@@ -156,7 +156,7 @@ def simpleTraitEnv : Env := {
 }
 
 noir_def simple_trait_call<I: Type> (x: I) -> I := {
-  ((I as Bulbulize<>)::bulbulize<> as λ(I) → I)(x)
+  ((I as Bulbulize<>).bulbulize<> as λ(I) → I)(x)
 }
 
 example {p} {arg: Tp.denote p Tp.field} :
@@ -183,7 +183,7 @@ def genericTraitEnv : Env := {
 }
 
 noir_def generic_trait_call<>(x: Field) -> Field := {
-  ((Field as Me<>)::me<> as λ(Field) → Field)(x)
+  ((Field as Me<>).me<> as λ(Field) → Field)(x)
 }
 
 example {p} {x : Tp.denote p Tp.field} :
