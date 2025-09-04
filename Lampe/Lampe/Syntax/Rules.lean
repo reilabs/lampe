@@ -54,8 +54,9 @@ syntax noir_trait_impl := "<" noir_gen_def,* ">" noir_ident "<" noir_gen_val,* "
 
 -- IDENTIFIERS ------------------------------------------------------------------------------------
 
-syntax hole : noir_ident -- An ignored identifier.
+syntax "_" : noir_ident -- An ignored identifier.
 syntax ident : noir_ident -- Bare identifiers.
+syntax ident "::" noir_ident : noir_ident -- Path identifiers.
 
 -- TYPES ------------------------------------------------------------------------------------------
 -- This is the language of terms that are syntactically allowable in place of a `noir_type`.
@@ -154,7 +155,7 @@ syntax "(" noir_lambda ")" : noir_funcref -- A lambda is callable.
 syntax "(" "#_" ident ppSpace "returning" ppSpace noir_type ")" : noir_funcref -- A builtin name is callable.
 syntax "(" noir_ident "<" noir_gen_val,* ">" ppSpace "as" ppSpace noir_type ")" : noir_funcref -- A function reference is callable.
 syntax "(" "(" noir_type ppSpace "as" ppSpace noir_ident "<" noir_gen_val,* ">" ")"
-  "." noir_ident "<" noir_gen_val,* ">" ppSpace "as" ppSpace noir_type ")" : noir_funcref -- A trait method reference is also callable.
+  "::" noir_ident "<" noir_gen_val,* ">" ppSpace "as" ppSpace noir_type ")" : noir_funcref -- A trait method reference is also callable.
 
 -- LAMBDAS ----------------------------------------------------------------------------------------
 

@@ -2655,10 +2655,10 @@ impl LeanGenerator<'_, '_, '_> {
         let def_name = alias_data.name.to_string();
         let fq_with_noir_seps = if let Some(crate_name) = self.crate_name(&crate_id, false) {
             if module_path.is_empty() {
-                format!("{crate_name}{NOIR_PATH_SEPARATOR}{def_name}")
+                format!("{crate_name}{LAMPE_PATH_SEPARATOR}{def_name}")
             } else {
                 format!(
-                    "{crate_name}{NOIR_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}"
+                    "{crate_name}{LAMPE_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}"
                 )
             }
         } else {
@@ -2669,7 +2669,7 @@ impl LeanGenerator<'_, '_, '_> {
             }
         };
 
-        quote_lean_keywords(&fq_with_noir_seps.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
+        quote_lean_keywords(&fq_with_noir_seps)
     }
 
     /// Resolves the fully-qualified name for a builtin type.
@@ -2720,7 +2720,7 @@ impl LeanGenerator<'_, '_, '_> {
                 krate.get_module_path_with_separator(LocalModuleId::new(ix), data.parent, "::");
 
             if let Some(crate_name) = self.crate_name(&crate_id, false) {
-                format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}")
+                format!("{crate_name}{LAMPE_PATH_SEPARATOR}{module_path}")
             } else {
                 module_path
             }
@@ -2734,7 +2734,7 @@ impl LeanGenerator<'_, '_, '_> {
             format!("{path}::{name}")
         };
 
-        quote_lean_keywords(&full_path.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
+        quote_lean_keywords(&full_path)
     }
 
     /// Returns the fully-qualified struct path for the described struct.
@@ -2746,12 +2746,12 @@ impl LeanGenerator<'_, '_, '_> {
         let fq_name_in_crate = self.context.fully_qualified_struct_path(source_crate, *struct_id);
 
         let fq_name_with_crate = if let Some(crate_name) = self.crate_name(source_crate, false) {
-            format!("{crate_name}{NOIR_PATH_SEPARATOR}{fq_name_in_crate}")
+            format!("{crate_name}{LAMPE_PATH_SEPARATOR}{fq_name_in_crate}")
         } else {
             fq_name_in_crate
         };
 
-        quote_lean_keywords(&fq_name_with_crate.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
+        quote_lean_keywords(&fq_name_with_crate)
     }
 
     /// Returns the fully-qualified function name for the described function.
@@ -2763,12 +2763,12 @@ impl LeanGenerator<'_, '_, '_> {
         let fq_name_in_crate = self.context.fully_qualified_function_name(source_crate, func_id);
 
         let fq_name_with_crate = if let Some(crate_name) = self.crate_name(source_crate, false) {
-            format!("{crate_name}{NOIR_PATH_SEPARATOR}{fq_name_in_crate}")
+            format!("{crate_name}{LAMPE_PATH_SEPARATOR}{fq_name_in_crate}")
         } else {
             fq_name_in_crate
         };
 
-        quote_lean_keywords(&fq_name_with_crate.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR))
+        quote_lean_keywords(&fq_name_with_crate)
     }
 
     /// Returns the fully-qualified global name for the described global.
@@ -2809,9 +2809,9 @@ impl LeanGenerator<'_, '_, '_> {
                         self.crate_name(&crate_id, false)
                     {
                         if module_path.is_empty() {
-                            format!("{crate_name}{NOIR_PATH_SEPARATOR}{def_name}")
+                            format!("{crate_name}{LAMPE_PATH_SEPARATOR}{def_name}")
                         } else {
-                            format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
+                            format!("{crate_name}{LAMPE_PATH_SEPARATOR}{module_path}{NOIR_PATH_SEPARATOR}{def_name}")
                         }
                     } else {
                         if module_path.is_empty() {
@@ -2821,9 +2821,7 @@ impl LeanGenerator<'_, '_, '_> {
                         }
                     };
 
-                    quote_lean_keywords(
-                        &fq_with_noir_seps.replace(NOIR_PATH_SEPARATOR, LAMPE_PATH_SEPARATOR),
-                    )
+                    quote_lean_keywords(&fq_with_noir_seps)
                 }
                 _ => panic!("Encountered a malformed global"),
             },
