@@ -6,214 +6,214 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_struct_def «std-1.0.0-beta.11».option.Option<T: Type> {
+noir_struct_def option.Option<T: Type> {
   bool,
   T,
 }
 
-noir_struct_def «std-1.0.0-beta.11».collections.map.Slot<K: Type, V: Type> {
-  «std-1.0.0-beta.11».option.Option<Tuple<K, V> >,
+noir_struct_def collections.map.Slot<K: Type, V: Type> {
+  option.Option<Tuple<K, V> >,
   bool,
 }
 
-noir_struct_def «std-1.0.0-beta.11».collections.map.HashMap<K: Type, V: Type, N: u32, B: Type> {
-  Array<«std-1.0.0-beta.11».collections.map.Slot<K, V>, N: u32>,
+noir_struct_def collections.map.HashMap<K: Type, V: Type, N: u32, B: Type> {
+  Array<collections.map.Slot<K, V>, N: u32>,
   u32,
   B,
 }
 
-noir_struct_def «std-1.0.0-beta.11».collections.umap.Slot<K: Type, V: Type> {
-  «std-1.0.0-beta.11».option.Option<Tuple<K, V> >,
+noir_struct_def collections.umap.Slot<K: Type, V: Type> {
+  option.Option<Tuple<K, V> >,
   bool,
 }
 
-noir_struct_def «std-1.0.0-beta.11».collections.umap.UHashMap<K: Type, V: Type, B: Type> {
-  Slice<«std-1.0.0-beta.11».collections.umap.Slot<K, V> >,
+noir_struct_def collections.umap.UHashMap<K: Type, V: Type, B: Type> {
+  Slice<collections.umap.Slot<K, V> >,
   u32,
   B,
 }
 
-noir_struct_def «std-1.0.0-beta.11».collections.bounded_vec.BoundedVec<T: Type, MaxLen: u32> {
+noir_struct_def collections.bounded_vec.BoundedVec<T: Type, MaxLen: u32> {
   Array<T, MaxLen: u32>,
   u32,
 }
 
-noir_struct_def «std-1.0.0-beta.11».embedded_curve_ops.EmbeddedCurvePoint<> {
+noir_struct_def embedded_curve_ops.EmbeddedCurvePoint<> {
   Field,
   Field,
   bool,
 }
 
-noir_type_alias «std-1.0.0-beta.11».«meta».DeriveFunction<> := λ(Unit) -> Unit;
+noir_type_alias «meta».DeriveFunction<> := λ(Unit) -> Unit;
 
-noir_struct_def «std-1.0.0-beta.11».«meta».tests.MyOtherStruct<> {
+noir_struct_def «meta».tests.MyOtherStruct<> {
   u32,
 }
 
-noir_struct_def «std-1.0.0-beta.11».«meta».tests.Bar<> {
+noir_struct_def «meta».tests.Bar<> {
   Field,
   Array<Field, 2: u32>,
 }
 
-noir_struct_def «std-1.0.0-beta.11».array.check_shuffle.test.CompoundStruct<> {
+noir_struct_def array.check_shuffle.test.CompoundStruct<> {
   bool,
   Field,
   u64,
 }
 
-noir_struct_def «std-1.0.0-beta.11».embedded_curve_ops.EmbeddedCurveScalar<> {
+noir_struct_def embedded_curve_ops.EmbeddedCurveScalar<> {
   Field,
   Field,
 }
 
-noir_struct_def «std-1.0.0-beta.11».«meta».tests.MyStruct<> {
+noir_struct_def «meta».tests.MyStruct<> {
   i32,
 }
 
-noir_struct_def «std-1.0.0-beta.11».«meta».op.BinaryOp<> {
+noir_struct_def «meta».op.BinaryOp<> {
   Field,
 }
 
-noir_struct_def «std-1.0.0-beta.11».cmp.Ordering<> {
+noir_struct_def cmp.Ordering<> {
   Field,
 }
 
-noir_struct_def «std-1.0.0-beta.11».hash.poseidon2.Poseidon2Hasher<> {
+noir_struct_def hash.poseidon2.Poseidon2Hasher<> {
   Slice<Field>,
 }
 
-noir_struct_def «std-1.0.0-beta.11».hash.poseidon2.Poseidon2<> {
+noir_struct_def hash.poseidon2.Poseidon2<> {
   Array<Field, 3: u32>,
   Array<Field, 4: u32>,
   u32,
   bool,
 }
 
-noir_struct_def «std-1.0.0-beta.11».hash.BuildHasherDefault<H: Type> {}
+noir_struct_def hash.BuildHasherDefault<H: Type> {}
 
-noir_struct_def «std-1.0.0-beta.11».«meta».op.UnaryOp<> {
+noir_struct_def «meta».op.UnaryOp<> {
   Field,
 }
 
-noir_struct_def «std-1.0.0-beta.11».collections.vec.Vec<T: Type> {
+noir_struct_def collections.vec.Vec<T: Type> {
   Slice<T>,
 }
 
-noir_struct_def «std-1.0.0-beta.11».test.OracleMock<> {
+noir_struct_def test.OracleMock<> {
   Field,
 }
 
-noir_trait_def «std-1.0.0-beta.11».append.Append<> [] := {
+noir_trait_def append.Append<> [] := {
   method empty<>() -> Self;
   method append<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».cmp.Eq<> [] := {
+noir_trait_def cmp.Eq<> [] := {
   method eq<>(Self, Self) -> bool;
 }
 
-noir_trait_def «std-1.0.0-beta.11».cmp.Ord<> [] := {
-  method cmp<>(Self, Self) -> «std-1.0.0-beta.11».cmp.Ordering<>;
+noir_trait_def cmp.Ord<> [] := {
+  method cmp<>(Self, Self) -> cmp.Ordering<>;
 }
 
-noir_trait_def «std-1.0.0-beta.11».convert.AsPrimitive<T: Type> [] := {
+noir_trait_def convert.AsPrimitive<T: Type> [] := {
   method as_<>(Self) -> T;
 }
 
-noir_trait_def «std-1.0.0-beta.11».convert.From<T: Type> [] := {
+noir_trait_def convert.From<T: Type> [] := {
   method «from»<>(T) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».convert.Into<T: Type> [] := {
+noir_trait_def convert.Into<T: Type> [] := {
   method into<>(Self) -> T;
 }
 
-noir_trait_def «std-1.0.0-beta.11».default.Default<> [] := {
+noir_trait_def default.Default<> [] := {
   method default<>() -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».hash.BuildHasher<> [H: Type] := {
+noir_trait_def hash.BuildHasher<> [H: Type] := {
   method build_hasher<>(Self) -> H;
 }
 
-noir_trait_def «std-1.0.0-beta.11».hash.Hash<> [] := {
+noir_trait_def hash.Hash<> [] := {
   method hash<H: Type>(Self, & H) -> Unit;
 }
 
-noir_trait_def «std-1.0.0-beta.11».hash.Hasher<> [] := {
+noir_trait_def hash.Hasher<> [] := {
   method finish<>(Self) -> Field;
   method write<>(& Self, Field) -> Unit;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.Add<> [] := {
+noir_trait_def ops.arith.Add<> [] := {
   method add<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.Div<> [] := {
+noir_trait_def ops.arith.Div<> [] := {
   method div<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.Mul<> [] := {
+noir_trait_def ops.arith.Mul<> [] := {
   method mul<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.Neg<> [] := {
+noir_trait_def ops.arith.Neg<> [] := {
   method neg<>(Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.Rem<> [] := {
+noir_trait_def ops.arith.Rem<> [] := {
   method rem<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.Sub<> [] := {
+noir_trait_def ops.arith.Sub<> [] := {
   method sub<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.WrappingAdd<> [] := {
+noir_trait_def ops.arith.WrappingAdd<> [] := {
   method wrapping_add<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.WrappingMul<> [] := {
+noir_trait_def ops.arith.WrappingMul<> [] := {
   method wrapping_mul<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.arith.WrappingSub<> [] := {
+noir_trait_def ops.arith.WrappingSub<> [] := {
   method wrapping_sub<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.bit.BitAnd<> [] := {
+noir_trait_def ops.bit.BitAnd<> [] := {
   method bitand<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.bit.BitOr<> [] := {
+noir_trait_def ops.bit.BitOr<> [] := {
   method bitor<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.bit.BitXor<> [] := {
+noir_trait_def ops.bit.BitXor<> [] := {
   method bitxor<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.bit.Not<> [] := {
+noir_trait_def ops.bit.Not<> [] := {
   method not<>(Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.bit.Shl<> [] := {
+noir_trait_def ops.bit.Shl<> [] := {
   method shl<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».ops.bit.Shr<> [] := {
+noir_trait_def ops.bit.Shr<> [] := {
   method shr<>(Self, Self) -> Self;
 }
 
-noir_trait_def «std-1.0.0-beta.11».«meta».ctstring.AsCtString<> [] := {
+noir_trait_def «meta».ctstring.AsCtString<> [] := {
   method as_ctstring<>(Self) -> Unit;
 }
 
-noir_trait_def «std-1.0.0-beta.11».«meta».tests.DoNothing<> [] := {
+noir_trait_def «meta».tests.DoNothing<> [] := {
   method do_nothing<>(Self) -> Unit;
 }
 
-noir_trait_def «std-1.0.0-beta.11».«meta».tests.FieldCount<> [] := {
+noir_trait_def «meta».tests.FieldCount<> [] := {
   method field_count<>() -> u32;
 }
 
