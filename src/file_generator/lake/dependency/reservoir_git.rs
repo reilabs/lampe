@@ -1,6 +1,6 @@
 use std::{fmt, fmt::Write};
 
-use crate::file_generator::{lake::dependency::LeanDependency};
+use crate::file_generator::lake::dependency::LeanDependency;
 
 /// This is Lean's dependency from Reservoir (Lean's package manager) with git
 /// rev.

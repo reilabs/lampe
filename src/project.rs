@@ -10,6 +10,7 @@ use nargo_toml::{Config, PackageSelection::All};
 use noirc_frontend::hir::ParsedFiles;
 
 use crate::{
+    constants::NONE_DEPENDENCY_VERSION,
     error::Error,
     file_generator,
     file_generator::{lake::dependency::LeanDependency, LeanFile, NoirPackageIdentifier},
@@ -17,8 +18,6 @@ use crate::{
     noir,
     noir::WithWarnings,
 };
-
-const NONE_DEPENDENCY_VERSION: &str = "0.0.0";
 
 pub struct Project {
     /// The root directory of the Noir project
@@ -78,7 +77,7 @@ impl Project {
                 warnings.extend(with_warnings.warnings);
             }
 
-            let with_warnings = Self::extract_dependencies_without_lampe(&noir_project, package)?;
+            let with_warnings = self.extract_dependencies_without_lampe(&noir_project, package)?;
             if with_warnings.has_warnings() {
                 warnings.extend(with_warnings.warnings);
             }
@@ -97,13 +96,13 @@ impl Project {
 
         let mut warnings = vec![];
 
-        let res = Self::compile_package(noir_project, package)?;
+        let res = self.compile_package(noir_project, package)?;
         warnings.extend(res.warnings);
         let extracted_code = res.data;
 
         let additional_dependencies = Self::get_dependencies_with_lampe(package)?;
 
-        let res = Self::extract_dependencies_without_lampe(noir_project, package)?;
+        let res = self.extract_dependencies_without_lampe(noir_project, package)?;
         warnings.extend(res.warnings);
         let extracted_dependencies = res.data;
 
@@ -165,19 +164,21 @@ impl Project {
     }
 
     fn extract_dependencies_without_lampe(
+        &self,
         noir_project: &noir::Project,
         package: &Package,
     ) -> Result<WithWarnings<HashMap<NoirPackageIdentifier, Vec<LeanFile>>>, Error> {
         let mut warnings = vec![];
         let mut result = HashMap::new();
 
-        let res = Self::do_extract_dependencies_without_lampe(noir_project, package, &mut result)?;
+        let res = self.do_extract_dependencies_without_lampe(noir_project, package, &mut result)?;
         warnings.extend(res.warnings);
 
         Ok(WithWarnings::new(result, warnings))
     }
 
     fn do_extract_dependencies_without_lampe(
+        &self,
         noir_project: &noir::Project,
         package: &Package,
         extracted_dependencies: &mut HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
@@ -202,12 +203,12 @@ impl Project {
                 continue;
             }
 
-            let res = Self::compile_package(noir_project, package)?;
+            let res = self.compile_package(noir_project, package)?;
             warnings.extend(res.warnings);
 
             extracted_dependencies.insert(package_identitifer, res.data);
 
-            let res = Self::do_extract_dependencies_without_lampe(
+            let res = self.do_extract_dependencies_without_lampe(
                 noir_project,
                 package,
                 extracted_dependencies,
@@ -219,10 +220,11 @@ impl Project {
     }
 
     fn compile_package(
+        &self,
         noir_project: &noir::Project,
         package: &Package,
     ) -> Result<WithWarnings<Vec<LeanFile>>, Error> {
-        let compile_result = noir_project.compile_package(package)?;
+        let compile_result = noir_project.compile_package(package, &self.nargo_workspace)?;
         let warnings = compile_result.warnings.clone();
         let lean_generator = compile_result.take();
         let generated_program = lean_generator.generate();
