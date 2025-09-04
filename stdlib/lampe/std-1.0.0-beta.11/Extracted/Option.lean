@@ -7,32 +7,32 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_def option.Option.none<T: Type>() -> option.Option<T> := {
-  (#_makeData returning option.Option<T>)(#_false, (#_zeroed returning T)())
+noir_def option::Option::none<T: Type>() -> option::Option<T> := {
+  (#_makeData returning option::Option<T>)(#_false, (#_zeroed returning T)())
 }
 
-noir_def option.Option.some<T: Type>(_value: T) -> option.Option<T> := {
-  (#_makeData returning option.Option<T>)(#_true, _value)
+noir_def option::Option::some<T: Type>(_value: T) -> option::Option<T> := {
+  (#_makeData returning option::Option<T>)(#_true, _value)
 }
 
-noir_def option.Option.is_none<T: Type>(self: option.Option<T>) -> bool := {
+noir_def option::Option::is_none<T: Type>(self: option::Option<T>) -> bool := {
   (#_bNot returning bool)(self.0)
 }
 
-noir_def option.Option.is_some<T: Type>(self: option.Option<T>) -> bool := {
+noir_def option::Option::is_some<T: Type>(self: option::Option<T>) -> bool := {
   self.0
 }
 
-noir_def option.Option.unwrap<T: Type>(self: option.Option<T>) -> T := {
+noir_def option::Option::unwrap<T: Type>(self: option::Option<T>) -> T := {
   (#_assert returning Unit)(self.0);
   self.1
 }
 
-noir_def option.Option.unwrap_unchecked<T: Type>(self: option.Option<T>) -> T := {
+noir_def option::Option::unwrap_unchecked<T: Type>(self: option::Option<T>) -> T := {
   self.1
 }
 
-noir_def option.Option.unwrap_or<T: Type>(self: option.Option<T>, default: T) -> T := {
+noir_def option::Option::unwrap_or<T: Type>(self: option::Option<T>, default: T) -> T := {
   if self.0 then {
     self.1
   } else {
@@ -40,7 +40,7 @@ noir_def option.Option.unwrap_or<T: Type>(self: option.Option<T>, default: T) ->
   }
 }
 
-noir_def option.Option.unwrap_or_else<T: Type, Env: Type>(self: option.Option<T>, default: λ() -> T) -> T := {
+noir_def option::Option::unwrap_or_else<T: Type, Env: Type>(self: option::Option<T>, default: λ() -> T) -> T := {
   if self.0 then {
     self.1
   } else {
@@ -48,20 +48,20 @@ noir_def option.Option.unwrap_or_else<T: Type, Env: Type>(self: option.Option<T>
   }
 }
 
-noir_def option.Option.expect<T: Type, N: u32, MessageTypes: Type>(self: option.Option<T>, message: FmtString<N: u32, MessageTypes>) -> T := {
-  (#_assert returning Unit)((option.Option.is_some<T> as λ(option.Option<T>) -> bool)(self));
+noir_def option::Option::expect<T: Type, N: u32, MessageTypes: Type>(self: option::Option<T>, message: FmtString<N: u32, MessageTypes>) -> T := {
+  (#_assert returning Unit)((option::Option::is_some<T> as λ(option::Option<T>) -> bool)(self));
   self.1
 }
 
-noir_def option.Option.map<T: Type, U: Type, Env: Type>(self: option.Option<T>, f: λ(T) -> U) -> option.Option<U> := {
+noir_def option::Option::map<T: Type, U: Type, Env: Type>(self: option::Option<T>, f: λ(T) -> U) -> option::Option<U> := {
   if self.0 then {
-    (option.Option.some<U> as λ(U) -> option.Option<U>)((f as λ(T) -> U)(self.1))
+    (option::Option::some<U> as λ(U) -> option::Option<U>)((f as λ(T) -> U)(self.1))
   } else {
-    (option.Option.none<U> as λ() -> option.Option<U>)()
+    (option::Option::none<U> as λ() -> option::Option<U>)()
   }
 }
 
-noir_def option.Option.map_or<T: Type, U: Type, Env: Type>(self: option.Option<T>, default: U, f: λ(T) -> U) -> U := {
+noir_def option::Option::map_or<T: Type, U: Type, Env: Type>(self: option::Option<T>, default: U, f: λ(T) -> U) -> U := {
   if self.0 then {
     (f as λ(T) -> U)(self.1)
   } else {
@@ -69,7 +69,7 @@ noir_def option.Option.map_or<T: Type, U: Type, Env: Type>(self: option.Option<T
   }
 }
 
-noir_def option.Option.map_or_else<T: Type, U: Type, Env1: Type, Env2: Type>(self: option.Option<T>, default: λ() -> U, f: λ(T) -> U) -> U := {
+noir_def option::Option::map_or_else<T: Type, U: Type, Env1: Type, Env2: Type>(self: option::Option<T>, default: λ() -> U, f: λ(T) -> U) -> U := {
   if self.0 then {
     (f as λ(T) -> U)(self.1)
   } else {
@@ -77,23 +77,23 @@ noir_def option.Option.map_or_else<T: Type, U: Type, Env1: Type, Env2: Type>(sel
   }
 }
 
-noir_def option.Option.and<T: Type>(self: option.Option<T>, other: option.Option<T>) -> option.Option<T> := {
-  if (option.Option.is_none<T> as λ(option.Option<T>) -> bool)(self) then {
-    (option.Option.none<T> as λ() -> option.Option<T>)()
+noir_def option::Option::and<T: Type>(self: option::Option<T>, other: option::Option<T>) -> option::Option<T> := {
+  if (option::Option::is_none<T> as λ(option::Option<T>) -> bool)(self) then {
+    (option::Option::none<T> as λ() -> option::Option<T>)()
   } else {
     other
   }
 }
 
-noir_def option.Option.and_then<T: Type, U: Type, Env: Type>(self: option.Option<T>, f: λ(T) -> option.Option<U>) -> option.Option<U> := {
+noir_def option::Option::and_then<T: Type, U: Type, Env: Type>(self: option::Option<T>, f: λ(T) -> option::Option<U>) -> option::Option<U> := {
   if self.0 then {
-    (f as λ(T) -> option.Option<U>)(self.1)
+    (f as λ(T) -> option::Option<U>)(self.1)
   } else {
-    (option.Option.none<U> as λ() -> option.Option<U>)()
+    (option::Option::none<U> as λ() -> option::Option<U>)()
   }
 }
 
-noir_def option.Option.or<T: Type>(self: option.Option<T>, other: option.Option<T>) -> option.Option<T> := {
+noir_def option::Option::or<T: Type>(self: option::Option<T>, other: option::Option<T>) -> option::Option<T> := {
   if self.0 then {
     self
   } else {
@@ -101,59 +101,59 @@ noir_def option.Option.or<T: Type>(self: option.Option<T>, other: option.Option<
   }
 }
 
-noir_def option.Option.or_else<T: Type, Env: Type>(self: option.Option<T>, default: λ() -> option.Option<T>) -> option.Option<T> := {
+noir_def option::Option::or_else<T: Type, Env: Type>(self: option::Option<T>, default: λ() -> option::Option<T>) -> option::Option<T> := {
   if self.0 then {
     self
   } else {
-    (default as λ() -> option.Option<T>)()
+    (default as λ() -> option::Option<T>)()
   }
 }
 
-noir_def option.Option.xor<T: Type>(self: option.Option<T>, other: option.Option<T>) -> option.Option<T> := {
+noir_def option::Option::xor<T: Type>(self: option::Option<T>, other: option::Option<T>) -> option::Option<T> := {
   if self.0 then {
     if other.0 then {
-      (option.Option.none<T> as λ() -> option.Option<T>)()
+      (option::Option::none<T> as λ() -> option::Option<T>)()
     } else {
       self
     }
   } else if other.0 then {
     other
   } else {
-    (option.Option.none<T> as λ() -> option.Option<T>)()
+    (option::Option::none<T> as λ() -> option::Option<T>)()
   }
 }
 
-noir_def option.Option.filter<T: Type, Env: Type>(self: option.Option<T>, predicate: λ(T) -> bool) -> option.Option<T> := {
+noir_def option::Option::filter<T: Type, Env: Type>(self: option::Option<T>, predicate: λ(T) -> bool) -> option::Option<T> := {
   if self.0 then {
     if (predicate as λ(T) -> bool)(self.1) then {
       self
     } else {
-      (option.Option.none<T> as λ() -> option.Option<T>)()
+      (option::Option::none<T> as λ() -> option::Option<T>)()
     }
   } else {
-    (option.Option.none<T> as λ() -> option.Option<T>)()
+    (option::Option::none<T> as λ() -> option::Option<T>)()
   }
 }
 
-noir_def option.Option.flatten<T: Type>(option: option.Option<option.Option<T> >) -> option.Option<T> := {
+noir_def option::Option::flatten<T: Type>(option: option::Option<option::Option<T> >) -> option::Option<T> := {
   if option.0 then {
     option.1
   } else {
-    (option.Option.none<T> as λ() -> option.Option<T>)()
+    (option::Option::none<T> as λ() -> option::Option<T>)()
   }
 }
 
-noir_trait_impl[impl_73]<T: Type> default.Default<> for option.Option<T> where [] := {
-  noir_def default<>() -> option.Option<T> := {
-    (option.Option.none<T> as λ() -> option.Option<T>)()
+noir_trait_impl[impl_73]<T: Type> default::Default<> for option::Option<T> where [] := {
+  noir_def default<>() -> option::Option<T> := {
+    (option::Option::none<T> as λ() -> option::Option<T>)()
   };
 }
 
-noir_trait_impl[impl_74]<T: Type> cmp.Eq<> for option.Option<T> where [T: cmp.Eq<>] := {
-  noir_def eq<>(self: option.Option<T>, other: option.Option<T>) -> bool := {
+noir_trait_impl[impl_74]<T: Type> cmp::Eq<> for option::Option<T> where [T: cmp::Eq<>] := {
+  noir_def eq<>(self: option::Option<T>, other: option::Option<T>) -> bool := {
     if (#_bEq returning bool)(self.0, other.0) then {
       if self.0 then {
-        ((T as cmp.Eq<>).eq<> as λ(T, T) -> bool)(self.1, other.1)
+        ((T as cmp::Eq<>)::eq<> as λ(T, T) -> bool)(self.1, other.1)
       } else {
         #_true
       }
@@ -163,32 +163,32 @@ noir_trait_impl[impl_74]<T: Type> cmp.Eq<> for option.Option<T> where [T: cmp.Eq
   };
 }
 
-noir_trait_impl[impl_75]<T: Type> hash.Hash<> for option.Option<T> where [T: hash.Hash<>] := {
-  noir_def hash<H: Type>(self: option.Option<T>, state: & H) -> Unit := {
-    ((bool as hash.Hash<>).hash<H> as λ(bool, & H) -> Unit)(self.0, state);
+noir_trait_impl[impl_75]<T: Type> hash::Hash<> for option::Option<T> where [T: hash::Hash<>] := {
+  noir_def hash<H: Type>(self: option::Option<T>, state: & H) -> Unit := {
+    ((bool as hash::Hash<>)::hash<H> as λ(bool, & H) -> Unit)(self.0, state);
     if self.0 then {
-      ((T as hash.Hash<>).hash<H> as λ(T, & H) -> Unit)(self.1, state);
+      ((T as hash::Hash<>)::hash<H> as λ(T, & H) -> Unit)(self.1, state);
       #_skip
     }
   };
 }
 
-noir_trait_impl[impl_76]<T: Type> cmp.Ord<> for option.Option<T> where [T: cmp.Ord<>] := {
-  noir_def cmp<>(self: option.Option<T>, other: option.Option<T>) -> cmp.Ordering<> := {
+noir_trait_impl[impl_76]<T: Type> cmp::Ord<> for option::Option<T> where [T: cmp::Ord<>] := {
+  noir_def cmp<>(self: option::Option<T>, other: option::Option<T>) -> cmp::Ordering<> := {
     if self.0 then {
       if other.0 then {
-        ((T as cmp.Ord<>).cmp<> as λ(T, T) -> cmp.Ordering<>)(self.1, other.1)
+        ((T as cmp::Ord<>)::cmp<> as λ(T, T) -> cmp::Ordering<>)(self.1, other.1)
       } else {
-        (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+        (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
       }
     } else if other.0 then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
 def Option.env : Env := Env.mk
-  [option.Option.none, option.Option.some, option.Option.is_none, option.Option.is_some, option.Option.unwrap, option.Option.unwrap_unchecked, option.Option.unwrap_or, option.Option.unwrap_or_else, option.Option.expect, option.Option.map, option.Option.map_or, option.Option.map_or_else, option.Option.and, option.Option.and_then, option.Option.or, option.Option.or_else, option.Option.xor, option.Option.filter, option.Option.flatten]
+  [«option::Option::none», «option::Option::some», «option::Option::is_none», «option::Option::is_some», «option::Option::unwrap», «option::Option::unwrap_unchecked», «option::Option::unwrap_or», «option::Option::unwrap_or_else», «option::Option::expect», «option::Option::map», «option::Option::map_or», «option::Option::map_or_else», «option::Option::and», «option::Option::and_then», «option::Option::or», «option::Option::or_else», «option::Option::xor», «option::Option::filter», «option::Option::flatten»]
   [impl_73, impl_74, impl_75, impl_76]

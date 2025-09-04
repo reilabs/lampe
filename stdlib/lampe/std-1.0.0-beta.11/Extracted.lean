@@ -51,7 +51,7 @@ import «std-1.0.0-beta.11».Extracted.Slice
 import «std-1.0.0-beta.11».Extracted.String
 import «std-1.0.0-beta.11».Extracted.Test
 
-namespace «std-1.0.0-beta.11»
+namespace «std-1.0.0-beta.11» 
 
 def env := Aes128.env
   ++ Append.env

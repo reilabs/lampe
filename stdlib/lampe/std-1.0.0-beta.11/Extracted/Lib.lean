@@ -35,39 +35,39 @@ noir_def verify_proof_with_type<N: u32, M: u32, K: u32>(verification_key: Array<
 }
 
 noir_def wrapping_add<T: Type>(x: T, y: T) -> T := {
-  ((Field as convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fAdd returning Field)(((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), ((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
+  ((Field as convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fAdd returning Field)(((T as convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), ((T as convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
 noir_def wrapping_sub<T: Type>(x: T, y: T) -> T := {
-  ((Field as convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fSub returning Field)((#_fAdd returning Field)(((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), (340282366920938463463374607431768211456: Field)), ((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
+  ((Field as convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fSub returning Field)((#_fAdd returning Field)(((T as convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), (340282366920938463463374607431768211456: Field)), ((T as convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
 noir_def wrapping_mul<T: Type>(x: T, y: T) -> T := {
-  ((Field as convert.AsPrimitive<T>).as_<> as λ(Field) -> T)((#_fMul returning Field)(((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(x), ((T as convert.AsPrimitive<Field>).as_<> as λ(T) -> Field)(y)))
+  ((Field as convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fMul returning Field)(((T as convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), ((T as convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
-noir_def tests.test_static_assert_custom_message<>() -> Unit := {
+noir_def tests::test_static_assert_custom_message<>() -> Unit := {
   (#_staticAssert returning Unit)((#_fEq returning bool)((1: Field), (2: Field)), "custom message");
   #_skip
 }
 
-noir_def tests.test_wrapping_mul<>() -> Unit := {
+noir_def tests::test_wrapping_mul<>() -> Unit := {
   let zero = (0: u128);
   let one = (1: u128);
   let two_pow_64 = (18446744073709551616: u128);
   let u128_max = (340282366920938463463374607431768211455: u128);
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(zero, one)));
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, zero)));
-  (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, one)));
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(zero, two_pow_64)));
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, zero)));
-  (#_assert returning Unit)((#_uEq returning bool)(two_pow_64, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, one)));
-  (#_assert returning Unit)((#_uEq returning bool)(two_pow_64, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(one, two_pow_64)));
-  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, two_pow_64)));
-  (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as ops.arith.WrappingMul<>).wrapping_mul<> as λ(u128, u128) -> u128)(u128_max, u128_max)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(zero, one)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(one, zero)));
+  (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(one, one)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(zero, two_pow_64)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, zero)));
+  (#_assert returning Unit)((#_uEq returning bool)(two_pow_64, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, one)));
+  (#_assert returning Unit)((#_uEq returning bool)(two_pow_64, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(one, two_pow_64)));
+  (#_assert returning Unit)((#_uEq returning bool)(zero, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(two_pow_64, two_pow_64)));
+  (#_assert returning Unit)((#_uEq returning bool)(one, ((u128 as ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u128, u128) -> u128)(u128_max, u128_max)));
   #_skip
 }
 
 def Lib.env : Env := Env.mk
-  [print_oracle, print_unconstrained, println, print, verify_proof_with_type, wrapping_add, wrapping_sub, wrapping_mul, tests.test_static_assert_custom_message, tests.test_wrapping_mul]
+  [print_oracle, print_unconstrained, println, print, verify_proof_with_type, wrapping_add, wrapping_sub, wrapping_mul, «tests::test_static_assert_custom_message», «tests::test_wrapping_mul»]
   []

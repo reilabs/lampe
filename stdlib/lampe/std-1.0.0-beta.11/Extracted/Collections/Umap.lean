@@ -7,80 +7,80 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_trait_impl[impl_37]<K: Type, V: Type> default.Default<> for collections.umap.Slot<K, V> where [] := {
-  noir_def default<>() -> collections.umap.Slot<K, V> := {
-    (#_makeData returning collections.umap.Slot<K, V>)((option.Option.none<Tuple<K, V> > as λ() -> option.Option<Tuple<K, V> >)(), #_false)
+noir_trait_impl[impl_37]<K: Type, V: Type> default::Default<> for collections::umap::Slot<K, V> where [] := {
+  noir_def default<>() -> collections::umap::Slot<K, V> := {
+    (#_makeData returning collections::umap::Slot<K, V>)((option::Option::none<Tuple<K, V> > as λ() -> option::Option<Tuple<K, V> >)(), #_false)
   };
 }
 
-noir_def collections.umap.Slot.is_valid<K: Type, V: Type>(self: collections.umap.Slot<K, V>) -> bool := {
-  (#_bAnd returning bool)((#_bNot returning bool)(self.1), (option.Option.is_some<Tuple<K, V> > as λ(option.Option<Tuple<K, V> >) -> bool)(self.0))
+noir_def collections::umap::Slot::is_valid<K: Type, V: Type>(self: collections::umap::Slot<K, V>) -> bool := {
+  (#_bAnd returning bool)((#_bNot returning bool)(self.1), (option::Option::is_some<Tuple<K, V> > as λ(option::Option<Tuple<K, V> >) -> bool)(self.0))
 }
 
-noir_def collections.umap.Slot.is_available<K: Type, V: Type>(self: collections.umap.Slot<K, V>) -> bool := {
-  (#_bOr returning bool)(self.1, (option.Option.is_none<Tuple<K, V> > as λ(option.Option<Tuple<K, V> >) -> bool)(self.0))
+noir_def collections::umap::Slot::is_available<K: Type, V: Type>(self: collections::umap::Slot<K, V>) -> bool := {
+  (#_bOr returning bool)(self.1, (option::Option::is_none<Tuple<K, V> > as λ(option::Option<Tuple<K, V> >) -> bool)(self.0))
 }
 
-noir_def collections.umap.Slot.key_value<K: Type, V: Type>(self: collections.umap.Slot<K, V>) -> option.Option<Tuple<K, V> > := {
+noir_def collections::umap::Slot::key_value<K: Type, V: Type>(self: collections::umap::Slot<K, V>) -> option::Option<Tuple<K, V> > := {
   self.0
 }
 
-noir_def collections.umap.Slot.key_value_unchecked<K: Type, V: Type>(self: collections.umap.Slot<K, V>) -> Tuple<K, V> := {
-  (option.Option.unwrap_unchecked<Tuple<K, V> > as λ(option.Option<Tuple<K, V> >) -> Tuple<K, V>)(self.0)
+noir_def collections::umap::Slot::key_value_unchecked<K: Type, V: Type>(self: collections::umap::Slot<K, V>) -> Tuple<K, V> := {
+  (option::Option::unwrap_unchecked<Tuple<K, V> > as λ(option::Option<Tuple<K, V> >) -> Tuple<K, V>)(self.0)
 }
 
-noir_def collections.umap.Slot.set<K: Type, V: Type>(self: & collections.umap.Slot<K, V>, key: K, value: V) -> Unit := {
-  ((*self: collections.umap.Slot<K, V>).0: option.Option<Tuple<K, V> >) = (option.Option.some<Tuple<K, V> > as λ(Tuple<K, V>) -> option.Option<Tuple<K, V> >)((#_makeData returning Tuple<K, V>)(key, value));
-  ((*self: collections.umap.Slot<K, V>).1: bool) = #_false;
+noir_def collections::umap::Slot::set<K: Type, V: Type>(self: & collections::umap::Slot<K, V>, key: K, value: V) -> Unit := {
+  ((*self: collections::umap::Slot<K, V>).0: option::Option<Tuple<K, V> >) = (option::Option::some<Tuple<K, V> > as λ(Tuple<K, V>) -> option::Option<Tuple<K, V> >)((#_makeData returning Tuple<K, V>)(key, value));
+  ((*self: collections::umap::Slot<K, V>).1: bool) = #_false;
   #_skip
 }
 
-noir_def collections.umap.Slot.mark_deleted<K: Type, V: Type>(self: & collections.umap.Slot<K, V>) -> Unit := {
-  ((*self: collections.umap.Slot<K, V>).1: bool) = #_true;
+noir_def collections::umap::Slot::mark_deleted<K: Type, V: Type>(self: & collections::umap::Slot<K, V>) -> Unit := {
+  ((*self: collections::umap::Slot<K, V>).1: bool) = #_true;
   #_skip
 }
 
-noir_def collections.umap.UHashMap.with_hasher<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(_build_hasher: B) -> collections.umap.UHashMap<K, V, B> := {
-  let _table = (#_mkSlice returning Slice<collections.umap.Slot<K, V> >)(((collections.umap.Slot<K, V> as default.Default<>).default<> as λ() -> collections.umap.Slot<K, V>)());
+noir_def collections::umap::UHashMap::with_hasher<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(_build_hasher: B) -> collections::umap::UHashMap<K, V, B> := {
+  let _table = (#_mkSlice returning Slice<collections::umap::Slot<K, V> >)(((collections::umap::Slot<K, V> as default::Default<>)::default<> as λ() -> collections::umap::Slot<K, V>)());
   let _len = (0: u32);
-  (#_makeData returning collections.umap.UHashMap<K, V, B>)(_table, _len, _build_hasher)
+  (#_makeData returning collections::umap::UHashMap<K, V, B>)(_table, _len, _build_hasher)
 }
 
-noir_def collections.umap.UHashMap.with_hasher_and_capacity<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(_build_hasher: B, capacity: u32) -> collections.umap.UHashMap<K, V, B> := {
-  let mut _table = (#_mkSlice returning Slice<collections.umap.Slot<K, V> >)();
+noir_def collections::umap::UHashMap::with_hasher_and_capacity<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(_build_hasher: B, capacity: u32) -> collections::umap::UHashMap<K, V, B> := {
+  let mut _table = (#_mkSlice returning Slice<collections::umap::Slot<K, V> >)();
   for _ in (0: u32) .. capacity do {
-    _table = (#_slicePushBack returning Slice<collections.umap.Slot<K, V> >)(_table, ((collections.umap.Slot<K, V> as default.Default<>).default<> as λ() -> collections.umap.Slot<K, V>)());
+    _table = (#_slicePushBack returning Slice<collections::umap::Slot<K, V> >)(_table, ((collections::umap::Slot<K, V> as default::Default<>)::default<> as λ() -> collections::umap::Slot<K, V>)());
     #_skip
   };
   let _len = (0: u32);
-  (#_makeData returning collections.umap.UHashMap<K, V, B>)(_table, _len, _build_hasher)
+  (#_makeData returning collections::umap::UHashMap<K, V, B>)(_table, _len, _build_hasher)
 }
 
-noir_def collections.umap.UHashMap.clear<K: Type, V: Type, B: Type>(self: & collections.umap.UHashMap<K, V, B>) -> Unit := {
-  ((*self: collections.umap.UHashMap<K, V, B>).0: Slice<collections.umap.Slot<K, V> >) = (#_mkSlice returning Slice<collections.umap.Slot<K, V> >)(((collections.umap.Slot<K, V> as default.Default<>).default<> as λ() -> collections.umap.Slot<K, V>)());
-  ((*self: collections.umap.UHashMap<K, V, B>).1: u32) = (0: u32);
+noir_def collections::umap::UHashMap::clear<K: Type, V: Type, B: Type>(self: & collections::umap::UHashMap<K, V, B>) -> Unit := {
+  ((*self: collections::umap::UHashMap<K, V, B>).0: Slice<collections::umap::Slot<K, V> >) = (#_mkSlice returning Slice<collections::umap::Slot<K, V> >)(((collections::umap::Slot<K, V> as default::Default<>)::default<> as λ() -> collections::umap::Slot<K, V>)());
+  ((*self: collections::umap::UHashMap<K, V, B>).1: u32) = (0: u32);
   #_skip
 }
 
-noir_def collections.umap.UHashMap.contains_key<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: collections.umap.UHashMap<K, V, B>, key: K) -> bool := {
-  (option.Option.is_some<V> as λ(option.Option<V>) -> bool)({
-    (collections.umap.UHashMap.get<K, V, B> as λ(collections.umap.UHashMap<K, V, B>, K) -> option.Option<V>)(self, key)
+noir_def collections::umap::UHashMap::contains_key<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: collections::umap::UHashMap<K, V, B>, key: K) -> bool := {
+  (option::Option::is_some<V> as λ(option::Option<V>) -> bool)({
+    (collections::umap::UHashMap::get<K, V, B> as λ(collections::umap::UHashMap<K, V, B>, K) -> option::Option<V>)(self, key)
   })
 }
 
-noir_def collections.umap.UHashMap.is_empty<K: Type, V: Type, B: Type>(self: collections.umap.UHashMap<K, V, B>) -> bool := {
+noir_def collections::umap::UHashMap::is_empty<K: Type, V: Type, B: Type>(self: collections::umap::UHashMap<K, V, B>) -> bool := {
   (#_uEq returning bool)(self.1, (0: u32))
 }
 
-noir_def collections.umap.UHashMap.entries<K: Type, V: Type, B: Type>(self: collections.umap.UHashMap<K, V, B>) -> Slice<Tuple<K, V> > := {
+noir_def collections::umap::UHashMap::entries<K: Type, V: Type, B: Type>(self: collections::umap::UHashMap<K, V, B>) -> Slice<Tuple<K, V> > := {
   let mut entries = (#_mkSlice returning Slice<Tuple<K, V> >)();
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let slot = (#_sliceIndex returning collections.umap.Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
+      let slot = (#_sliceIndex returning collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
-        if (collections.umap.Slot.is_valid<K, V> as λ(collections.umap.Slot<K, V>) -> bool)(slot) then {
-          let key_value = (option.Option.unwrap_unchecked<Tuple<K, V> > as λ(option.Option<Tuple<K, V> >) -> Tuple<K, V>)((collections.umap.Slot.key_value<K, V> as λ(collections.umap.Slot<K, V>) -> option.Option<Tuple<K, V> >)(slot));
+        if (collections::umap::Slot::is_valid<K, V> as λ(collections::umap::Slot<K, V>) -> bool)(slot) then {
+          let key_value = (option::Option::unwrap_unchecked<Tuple<K, V> > as λ(option::Option<Tuple<K, V> >) -> Tuple<K, V>)((collections::umap::Slot::key_value<K, V> as λ(collections::umap::Slot<K, V>) -> option::Option<Tuple<K, V> >)(slot));
           entries = (#_slicePushBack returning Slice<Tuple<K, V> >)(entries, key_value);
           #_skip
         }
@@ -95,15 +95,15 @@ noir_def collections.umap.UHashMap.entries<K: Type, V: Type, B: Type>(self: coll
   entries
 }
 
-noir_def collections.umap.UHashMap.keys<K: Type, V: Type, B: Type>(self: collections.umap.UHashMap<K, V, B>) -> Slice<K> := {
+noir_def collections::umap::UHashMap::keys<K: Type, V: Type, B: Type>(self: collections::umap::UHashMap<K, V, B>) -> Slice<K> := {
   let mut keys = (#_mkSlice returning Slice<K>)();
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let slot = (#_sliceIndex returning collections.umap.Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
+      let slot = (#_sliceIndex returning collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
-        if (collections.umap.Slot.is_valid<K, V> as λ(collections.umap.Slot<K, V>) -> bool)(slot) then {
-          let (key, _) = (collections.umap.Slot.key_value_unchecked<K, V> as λ(collections.umap.Slot<K, V>) -> Tuple<K, V>)(slot);
+        if (collections::umap::Slot::is_valid<K, V> as λ(collections::umap::Slot<K, V>) -> bool)(slot) then {
+          let (key, _) = (collections::umap::Slot::key_value_unchecked<K, V> as λ(collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
           keys = (#_slicePushBack returning Slice<K>)(keys, key);
           #_skip
         }
@@ -118,15 +118,15 @@ noir_def collections.umap.UHashMap.keys<K: Type, V: Type, B: Type>(self: collect
   keys
 }
 
-noir_def collections.umap.UHashMap.values<K: Type, V: Type, B: Type>(self: collections.umap.UHashMap<K, V, B>) -> Slice<V> := {
+noir_def collections::umap::UHashMap::values<K: Type, V: Type, B: Type>(self: collections::umap::UHashMap<K, V, B>) -> Slice<V> := {
   let mut values = (#_mkSlice returning Slice<V>)();
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let slot = (#_sliceIndex returning collections.umap.Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
+      let slot = (#_sliceIndex returning collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
-        if (collections.umap.Slot.is_valid<K, V> as λ(collections.umap.Slot<K, V>) -> bool)(slot) then {
-          let (_, value) = (collections.umap.Slot.key_value_unchecked<K, V> as λ(collections.umap.Slot<K, V>) -> Tuple<K, V>)(slot);
+        if (collections::umap::Slot::is_valid<K, V> as λ(collections::umap::Slot<K, V>) -> bool)(slot) then {
+          let (_, value) = (collections::umap::Slot::key_value_unchecked<K, V> as λ(collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
           values = (#_slicePushBack returning Slice<V>)(values, value);
           #_skip
         }
@@ -141,36 +141,36 @@ noir_def collections.umap.UHashMap.values<K: Type, V: Type, B: Type>(self: colle
   values
 }
 
-noir_def collections.umap.UHashMap.iter_mut<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections.umap.UHashMap<K, V, B>, f: λ(K, V) -> Tuple<K, V>) -> Unit := {
+noir_def collections::umap::UHashMap::iter_mut<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections::umap::UHashMap<K, V, B>, f: λ(K, V) -> Tuple<K, V>) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def collections.umap.UHashMap.iter_keys_mut<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections.umap.UHashMap<K, V, B>, f: λ(K) -> K) -> Unit := {
+noir_def collections::umap::UHashMap::iter_keys_mut<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections::umap::UHashMap<K, V, B>, f: λ(K) -> K) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def collections.umap.UHashMap.iter_values_mut<K: Type, V: Type, B: Type>(self: & collections.umap.UHashMap<K, V, B>, f: λ(V) -> V) -> Unit := {
-  for i in (0: u32) .. (#_arrayLen returning u32)((#_readRef returning collections.umap.UHashMap<K, V, B>)(self).0) do {
-    let mut slot = (#_sliceIndex returning collections.umap.Slot<K, V>)((#_readRef returning collections.umap.UHashMap<K, V, B>)(self).0, (#_cast returning u32)(i));
-    if (collections.umap.Slot.is_valid<K, V> as λ(collections.umap.Slot<K, V>) -> bool)(slot) then {
-      let (key, value) = (collections.umap.Slot.key_value_unchecked<K, V> as λ(collections.umap.Slot<K, V>) -> Tuple<K, V>)(slot);
-      (collections.umap.Slot.set<K, V> as λ(& collections.umap.Slot<K, V>, K, V) -> Unit)((#_ref returning & collections.umap.Slot<K, V>)(slot), key, (f as λ(V) -> V)(value));
-      (((*self: collections.umap.UHashMap<K, V, B>).0: Slice<collections.umap.Slot<K, V> >)[[i]]: collections.umap.Slot<K, V>) = slot;
+noir_def collections::umap::UHashMap::iter_values_mut<K: Type, V: Type, B: Type>(self: & collections::umap::UHashMap<K, V, B>, f: λ(V) -> V) -> Unit := {
+  for i in (0: u32) .. (#_arrayLen returning u32)((#_readRef returning collections::umap::UHashMap<K, V, B>)(self).0) do {
+    let mut slot = (#_sliceIndex returning collections::umap::Slot<K, V>)((#_readRef returning collections::umap::UHashMap<K, V, B>)(self).0, (#_cast returning u32)(i));
+    if (collections::umap::Slot::is_valid<K, V> as λ(collections::umap::Slot<K, V>) -> bool)(slot) then {
+      let (key, value) = (collections::umap::Slot::key_value_unchecked<K, V> as λ(collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
+      (collections::umap::Slot::set<K, V> as λ(& collections::umap::Slot<K, V>, K, V) -> Unit)((#_ref returning & collections::umap::Slot<K, V>)(slot), key, (f as λ(V) -> V)(value));
+      (((*self: collections::umap::UHashMap<K, V, B>).0: Slice<collections::umap::Slot<K, V> >)[[i]]: collections::umap::Slot<K, V>) = slot;
       #_skip
     }
   };
   #_skip
 }
 
-noir_def collections.umap.UHashMap.retain<K: Type, V: Type, B: Type>(self: & collections.umap.UHashMap<K, V, B>, f: λ(K, V) -> bool) -> Unit := {
-  for index in (0: u32) .. (#_arrayLen returning u32)((#_readRef returning collections.umap.UHashMap<K, V, B>)(self).0) do {
-    let mut slot = (#_sliceIndex returning collections.umap.Slot<K, V>)((#_readRef returning collections.umap.UHashMap<K, V, B>)(self).0, (#_cast returning u32)(index));
-    if (collections.umap.Slot.is_valid<K, V> as λ(collections.umap.Slot<K, V>) -> bool)(slot) then {
-      let (key, value) = (collections.umap.Slot.key_value_unchecked<K, V> as λ(collections.umap.Slot<K, V>) -> Tuple<K, V>)(slot);
+noir_def collections::umap::UHashMap::retain<K: Type, V: Type, B: Type>(self: & collections::umap::UHashMap<K, V, B>, f: λ(K, V) -> bool) -> Unit := {
+  for index in (0: u32) .. (#_arrayLen returning u32)((#_readRef returning collections::umap::UHashMap<K, V, B>)(self).0) do {
+    let mut slot = (#_sliceIndex returning collections::umap::Slot<K, V>)((#_readRef returning collections::umap::UHashMap<K, V, B>)(self).0, (#_cast returning u32)(index));
+    if (collections::umap::Slot::is_valid<K, V> as λ(collections::umap::Slot<K, V>) -> bool)(slot) then {
+      let (key, value) = (collections::umap::Slot::key_value_unchecked<K, V> as λ(collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
       if (#_bNot returning bool)((f as λ(K, V) -> bool)(key, value)) then {
-        (collections.umap.Slot.mark_deleted<K, V> as λ(& collections.umap.Slot<K, V>) -> Unit)((#_ref returning & collections.umap.Slot<K, V>)(slot));
-        ((*self: collections.umap.UHashMap<K, V, B>).1: u32) = (#_uSub returning u32)((#_readRef returning collections.umap.UHashMap<K, V, B>)(self).1, (1: u32));
-        (((*self: collections.umap.UHashMap<K, V, B>).0: Slice<collections.umap.Slot<K, V> >)[[index]]: collections.umap.Slot<K, V>) = slot;
+        (collections::umap::Slot::mark_deleted<K, V> as λ(& collections::umap::Slot<K, V>) -> Unit)((#_ref returning & collections::umap::Slot<K, V>)(slot));
+        ((*self: collections::umap::UHashMap<K, V, B>).1: u32) = (#_uSub returning u32)((#_readRef returning collections::umap::UHashMap<K, V, B>)(self).1, (1: u32));
+        (((*self: collections::umap::UHashMap<K, V, B>).0: Slice<collections::umap::Slot<K, V> >)[[index]]: collections::umap::Slot<K, V>) = slot;
         #_skip
       }
     }
@@ -178,61 +178,61 @@ noir_def collections.umap.UHashMap.retain<K: Type, V: Type, B: Type>(self: & col
   #_skip
 }
 
-noir_def collections.umap.UHashMap.len<K: Type, V: Type, B: Type>(self: collections.umap.UHashMap<K, V, B>) -> u32 := {
+noir_def collections::umap::UHashMap::len<K: Type, V: Type, B: Type>(self: collections::umap::UHashMap<K, V, B>) -> u32 := {
   self.1
 }
 
-noir_def collections.umap.UHashMap.capacity<K: Type, V: Type, B: Type>(self: collections.umap.UHashMap<K, V, B>) -> u32 := {
+noir_def collections::umap::UHashMap::capacity<K: Type, V: Type, B: Type>(self: collections::umap::UHashMap<K, V, B>) -> u32 := {
   (#_arrayLen returning u32)(self.0)
 }
 
-noir_def collections.umap.UHashMap.get<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: collections.umap.UHashMap<K, V, B>, key: K) -> option.Option<V> := {
-  (#_fresh returning option.Option<V>)()
+noir_def collections::umap::UHashMap::get<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: collections::umap::UHashMap<K, V, B>, key: K) -> option::Option<V> := {
+  (#_fresh returning option::Option<V>)()
 }
 
-noir_def collections.umap.UHashMap.insert<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections.umap.UHashMap<K, V, B>, key: K, value: V) -> Unit := {
+noir_def collections::umap::UHashMap::insert<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections::umap::UHashMap<K, V, B>, key: K, value: V) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def collections.umap.UHashMap.try_resize<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections.umap.UHashMap<K, V, B>) -> Unit := {
+noir_def collections::umap::UHashMap::try_resize<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections::umap::UHashMap<K, V, B>) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def collections.umap.UHashMap.remove<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections.umap.UHashMap<K, V, B>, key: K) -> Unit := {
+noir_def collections::umap::UHashMap::remove<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: & collections::umap::UHashMap<K, V, B>, key: K) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def collections.umap.UHashMap.hash<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: collections.umap.UHashMap<K, V, B>, key: K) -> u32 := {
-  let mut hasher = ((B as hash.BuildHasher<>).build_hasher<> as λ(B) -> B_as_BuildHasher_H)(self.2);
-  ((K as hash.Hash<>).hash<B_as_BuildHasher_H> as λ(K, & B_as_BuildHasher_H) -> Unit)(key, (#_ref returning & B_as_BuildHasher_H)(hasher));
-  (#_cast returning u32)(((B_as_BuildHasher_H as hash.Hasher<>).finish<> as λ(B_as_BuildHasher_H) -> Field)(hasher))
+noir_def collections::umap::UHashMap::hash<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: collections::umap::UHashMap<K, V, B>, key: K) -> u32 := {
+  let mut hasher = ((B as hash::BuildHasher<>)::build_hasher<> as λ(B) -> B_as_BuildHasher_H)(self.2);
+  ((K as hash::Hash<>)::hash<B_as_BuildHasher_H> as λ(K, & B_as_BuildHasher_H) -> Unit)(key, (#_ref returning & B_as_BuildHasher_H)(hasher));
+  (#_cast returning u32)(((B_as_BuildHasher_H as hash::Hasher<>)::finish<> as λ(B_as_BuildHasher_H) -> Field)(hasher))
 }
 
-noir_def collections.umap.UHashMap.quadratic_probe<K: Type, V: Type, B: Type>(self: collections.umap.UHashMap<K, V, B>, hash: u32, attempt: u32) -> u32 := {
+noir_def collections::umap::UHashMap::quadratic_probe<K: Type, V: Type, B: Type>(self: collections::umap::UHashMap<K, V, B>, hash: u32, attempt: u32) -> u32 := {
   (#_uRem returning u32)((#_uAdd returning u32)(hash, (#_uDiv returning u32)((#_uAdd returning u32)(attempt, (#_uMul returning u32)(attempt, attempt)), (2: u32))), (#_arrayLen returning u32)(self.0))
 }
 
-noir_trait_impl[impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> cmp.Eq<> for collections.umap.UHashMap<K, V, B> where [K: cmp.Eq<>, K: cmp.Eq<>, V: cmp.Eq<>, B: cmp.Eq<B_as_BuildHasher_H>] := {
-  noir_def eq<>(self: collections.umap.UHashMap<K, V, B>, other: collections.umap.UHashMap<K, V, B>) -> bool := {
+noir_trait_impl[impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> cmp::Eq<> for collections::umap::UHashMap<K, V, B> where [K: cmp::Eq<>, K: cmp::Eq<>, V: cmp::Eq<>, B: cmp::Eq<B_as_BuildHasher_H>] := {
+  noir_def eq<>(self: collections::umap::UHashMap<K, V, B>, other: collections::umap::UHashMap<K, V, B>) -> bool := {
     let mut equal = #_false;
-    if (#_uEq returning bool)((collections.umap.UHashMap.len<K, V, B> as λ(collections.umap.UHashMap<K, V, B>) -> u32)(self), (collections.umap.UHashMap.len<K, V, B> as λ(collections.umap.UHashMap<K, V, B>) -> u32)(other)) then {
+    if (#_uEq returning bool)((collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) -> u32)(self), (collections::umap::UHashMap::len<K, V, B> as λ(collections::umap::UHashMap<K, V, B>) -> u32)(other)) then {
       equal = #_true;
       {
         let ζi0 = self.0;
         for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-          let slot = (#_sliceIndex returning collections.umap.Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
+          let slot = (#_sliceIndex returning collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
           {
-            if (#_bAnd returning bool)(equal, (collections.umap.Slot.is_valid<K, V> as λ(collections.umap.Slot<K, V>) -> bool)(slot)) then {
-              let (key, value) = (collections.umap.Slot.key_value_unchecked<K, V> as λ(collections.umap.Slot<K, V>) -> Tuple<K, V>)(slot);
+            if (#_bAnd returning bool)(equal, (collections::umap::Slot::is_valid<K, V> as λ(collections::umap::Slot<K, V>) -> bool)(slot)) then {
+              let (key, value) = (collections::umap::Slot::key_value_unchecked<K, V> as λ(collections::umap::Slot<K, V>) -> Tuple<K, V>)(slot);
               let other_value = {
-                (collections.umap.UHashMap.get<K, V, B> as λ(collections.umap.UHashMap<K, V, B>, K) -> option.Option<V>)(other, key)
+                (collections::umap::UHashMap::get<K, V, B> as λ(collections::umap::UHashMap<K, V, B>, K) -> option::Option<V>)(other, key)
               };
-              if (option.Option.is_none<V> as λ(option.Option<V>) -> bool)(other_value) then {
+              if (option::Option::is_none<V> as λ(option::Option<V>) -> bool)(other_value) then {
                 equal = #_false;
                 #_skip
               } else {
-                let other_value = (option.Option.unwrap_unchecked<V> as λ(option.Option<V>) -> V)(other_value);
-                if ((V as cmp.Eq<>).eq<> as λ(V, V) -> bool)(value, other_value) then {
+                let other_value = (option::Option::unwrap_unchecked<V> as λ(option::Option<V>) -> V)(other_value);
+                if ((V as cmp::Eq<>)::eq<> as λ(V, V) -> bool)(value, other_value) then {
                   equal = #_false;
                   #_skip
                 }
@@ -247,12 +247,12 @@ noir_trait_impl[impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> cm
   };
 }
 
-noir_trait_impl[impl_39]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> default.Default<> for collections.umap.UHashMap<K, V, B> where [B: default.Default<B_as_BuildHasher_H>, B: default.Default<>] := {
-  noir_def default<>() -> collections.umap.UHashMap<K, V, B> := {
-    (collections.umap.UHashMap.with_hasher<K, V, B> as λ(B) -> collections.umap.UHashMap<K, V, B>)(((B as default.Default<>).default<> as λ() -> B)())
+noir_trait_impl[impl_39]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> default::Default<> for collections::umap::UHashMap<K, V, B> where [B: default::Default<B_as_BuildHasher_H>, B: default::Default<>] := {
+  noir_def default<>() -> collections::umap::UHashMap<K, V, B> := {
+    (collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) -> collections::umap::UHashMap<K, V, B>)(((B as default::Default<>)::default<> as λ() -> B)())
   };
 }
 
 def Collections.Umap.env : Env := Env.mk
-  [collections.umap.Slot.is_valid, collections.umap.Slot.is_available, collections.umap.Slot.key_value, collections.umap.Slot.key_value_unchecked, collections.umap.Slot.set, collections.umap.Slot.mark_deleted, collections.umap.UHashMap.with_hasher, collections.umap.UHashMap.with_hasher_and_capacity, collections.umap.UHashMap.clear, collections.umap.UHashMap.contains_key, collections.umap.UHashMap.is_empty, collections.umap.UHashMap.entries, collections.umap.UHashMap.keys, collections.umap.UHashMap.values, collections.umap.UHashMap.iter_mut, collections.umap.UHashMap.iter_keys_mut, collections.umap.UHashMap.iter_values_mut, collections.umap.UHashMap.retain, collections.umap.UHashMap.len, collections.umap.UHashMap.capacity, collections.umap.UHashMap.get, collections.umap.UHashMap.insert, collections.umap.UHashMap.try_resize, collections.umap.UHashMap.remove, collections.umap.UHashMap.hash, collections.umap.UHashMap.quadratic_probe]
+  [«collections::umap::Slot::is_valid», «collections::umap::Slot::is_available», «collections::umap::Slot::key_value», «collections::umap::Slot::key_value_unchecked», «collections::umap::Slot::set», «collections::umap::Slot::mark_deleted», «collections::umap::UHashMap::with_hasher», «collections::umap::UHashMap::with_hasher_and_capacity», «collections::umap::UHashMap::clear», «collections::umap::UHashMap::contains_key», «collections::umap::UHashMap::is_empty», «collections::umap::UHashMap::entries», «collections::umap::UHashMap::keys», «collections::umap::UHashMap::values», «collections::umap::UHashMap::iter_mut», «collections::umap::UHashMap::iter_keys_mut», «collections::umap::UHashMap::iter_values_mut», «collections::umap::UHashMap::retain», «collections::umap::UHashMap::len», «collections::umap::UHashMap::capacity», «collections::umap::UHashMap::get», «collections::umap::UHashMap::insert», «collections::umap::UHashMap::try_resize», «collections::umap::UHashMap::remove», «collections::umap::UHashMap::hash», «collections::umap::UHashMap::quadratic_probe»]
   [impl_37, impl_38, impl_39]
