@@ -135,8 +135,8 @@ use crate::{
             TypePattern,
             WhereClause,
         },
-        builtin,
         builtin::{
+            self,
             BuiltinType,
             ASSERT_BUILTIN_NAME,
             MAKE_ARRAY_BUILTIN_NAME,
@@ -167,6 +167,9 @@ pub struct LeanGenerator<'file_manager, 'parsed_files, 'workspace> {
     /// The files contained in the root crate, used to filter out `std` and
     /// other crate files during generation.
     known_files: HashSet<FileId>,
+
+    /// A cache of resolved names for `CrateId`s of dependencies
+    resolved_crate_names: RefCell<HashMap<CrateId, String>>,
 
     /// A supply of fresh names.
     name_supply: FreshNameSupply,
@@ -200,6 +203,7 @@ impl<'file_manager, 'parsed_files, 'workspace>
             workspace,
             root_crate,
             known_files,
+            resolved_crate_names: RefCell::new(HashMap::new()),
             name_supply: FreshNameSupply::new(),
         }
     }
@@ -2708,7 +2712,8 @@ impl LeanGenerator<'_, '_, '_> {
 
             let crate_name = self.crate_name(&crate_id);
 
-            format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}")
+            let path = format!("{crate_name}{NOIR_PATH_SEPARATOR}{module_path}");
+            path.strip_suffix("::").unwrap_or(&path).to_string()
         } else {
             String::default()
         };
@@ -2806,9 +2811,14 @@ impl LeanGenerator<'_, '_, '_> {
     /// - If the crate has a root file without a path.
     /// - If there is no package corresponding to the crate in the workspace.
     pub fn crate_name(&self, crate_id: &CrateId) -> String {
+        // Check if the crate name is already cached
+        if let Some(cached_name) = self.resolved_crate_names.borrow().get(crate_id) {
+            return cached_name.clone();
+        }
+
         // We always want to pull the name and version for the stdlib from our
         // embedded copy of the library, so we have to special case on its ID.
-        if crate_id.is_stdlib() {
+        let name = if crate_id.is_stdlib() {
             let Ok(toml_content) = STDLIB_TOML.parse::<toml::Table>() else {
                 panic!("Unable to load embedded stdlib Nargo.toml")
             };
@@ -2823,40 +2833,63 @@ impl LeanGenerator<'_, '_, '_> {
 
             let version = package_info["version"].as_str().unwrap_or(NONE_DEPENDENCY_VERSION);
 
-            return format!("{LEAN_QUOTE_START}{name}-{version}{LEAN_QUOTE_END}");
-        }
+            format!("{LEAN_QUOTE_START}{name}-{version}{LEAN_QUOTE_END}")
+        } else {
+            // Get the TOML file for the crate
+            let crate_data = self.context.crate_graph.index(crate_id);
+            let root_file_path = self
+                .context
+                .file_manager
+                .path(crate_data.root_file_id)
+                .unwrap_or_else(|| {
+                    panic!("Root file {:?} has no known path", crate_data.root_file_id)
+                });
+            let toml_path = root_file_path.parent().unwrap().parent().unwrap().join("Nargo.toml");
 
-        let crate_data = self.context.crate_graph.index(crate_id);
-        let root_file_path = self
-            .context
-            .file_manager
-            .path(crate_data.root_file_id)
-            .unwrap_or_else(|| panic!("Root file {:?} had no known path", crate_data.root_file_id));
-        let package_data = self
-            .workspace
-            .members
-            .iter()
-            .find(|p| {
-                let lhs = &p.root_dir;
-                let lhss = &p.entry_path.parent().unwrap().parent().unwrap();
-                let rhs = root_file_path.parent().unwrap().parent().unwrap();
-                println!("root_dir:{:?} entry_path_parents:{:?} root_file_parents:{:?}", lhs, lhss, rhs);
-                lhs == rhs
-            })
-            .unwrap_or_else(|| {
+            // get its content
+            let toml_content = std::fs::read_to_string(&toml_path).unwrap_or_else(|_| {
                 panic!(
-                    "No crate found corresponding to root file {}",
-                    root_file_path.display()
+                    "Unable to read Nargo.toml file at path {}",
+                    toml_path.display()
                 )
             });
 
-        let name = package_data.name.to_string();
-        let version = package_data
-            .version
-            .clone()
-            .unwrap_or_else(|| NONE_DEPENDENCY_VERSION.to_string());
+            // parse it
+            let toml_content = toml_content.parse::<toml::Table>().unwrap_or_else(|_| {
+                panic!(
+                    "Unable to parse Nargo.toml file at path {}",
+                    toml_path.display()
+                )
+            });
 
-        format!("{LEAN_QUOTE_START}{name}-{version}{LEAN_QUOTE_END}")
+            // get the name of the package
+            let name = if let toml::Value::Table(package_info) = &toml_content["package"] {
+                if let toml::Value::String(name) = &package_info["name"] {
+                    name.clone()
+                } else {
+                    panic!("Nargo.toml package section did not contain a valid 'name' field")
+                }
+            } else {
+                panic!("Nargo.toml did not contain a 'package' table")
+            };
+
+            // and the version if it has it
+            let version = if let toml::Value::Table(package_info) = &toml_content["package"] {
+                if let Some(toml::Value::String(version)) = package_info.get("version") {
+                    version.clone()
+                } else {
+                    NONE_DEPENDENCY_VERSION.to_string()
+                }
+            } else {
+                NONE_DEPENDENCY_VERSION.to_string()
+            };
+
+            format!("{LEAN_QUOTE_START}{name}-{version}{LEAN_QUOTE_END}")
+        };
+
+        self.resolved_crate_names.borrow_mut().insert(*crate_id, name.clone());
+
+        name
     }
 }
 

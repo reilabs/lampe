@@ -164,7 +164,14 @@ impl FileGenerator {
             })
             .join("\n  ++ ");
 
-        result.push_str(&[&extracted_env, &dependency_env].iter().join("\n  ++ "));
+        if dependency_env.is_empty() {
+            result.push_str(&extracted_env);
+        } else {
+            result.push_str(&format!(
+                "{}\n  ++ {}",
+                extracted_env, dependency_env
+            ));
+        }
 
         writeln!(result)?;
 
@@ -231,12 +238,12 @@ impl FileGenerator {
         writeln!(result, "import Lampe")?;
         writeln!(result)?;
         writeln!(result, "open Lampe")?;
-        writeln!(result)?;
-        writeln!(
-            result,
-            "namespace «{}-{}»",
-            &self.noir_package_identifier.name, &self.noir_package_identifier.version
-        )?;
+        // writeln!(result)?;
+        // writeln!(
+        //     result,
+        //     "namespace «{}-{}»",
+        //     &self.noir_package_identifier.name, &self.noir_package_identifier.version
+        // )?;
         writeln!(result)?;
         result.push_str(&extracted_code.content);
 
@@ -249,7 +256,7 @@ impl FileGenerator {
         let mut imports = vec![];
 
         for dep in self.local_dependencies.iter().chain(&self.external_dependencies) {
-            imports.push(format!("«{}-{}».GeneratedTypes", dep.name, dep.version));
+            imports.push(format!("«{}-{}».{EXTRACTED_MODULE_NAME}.GeneratedTypes", dep.name, dep.version));
         }
 
         imports
@@ -288,12 +295,12 @@ impl FileGenerator {
             )?;
         }
         writeln!(result)?;
-        writeln!(
-            result,
-            "namespace «{}-{}»",
-            &extracted_module.name, &extracted_module.version
-        )?;
-        writeln!(result)?;
+        // writeln!(
+        //     result,
+        //     "namespace «{}-{}»",
+        //     &extracted_module.name, &extracted_module.version
+        // )?;
+        // writeln!(result)?;
 
         if !extracted_code.is_empty() {
             write!(result, "def env := ")?;
@@ -334,10 +341,6 @@ impl FileGenerator {
         extracted_module: &NoirPackageIdentifier,
         extracted_code: &Vec<LeanFile>,
     ) -> Result<(), Error> {
-        let extracted_dep_module_dir = extracted_dep_module_dir.join(format!(
-            "{}-{}",
-            &extracted_module.name, &extracted_module.version
-        ));
         if !extracted_dep_module_dir.exists() {
             fs::create_dir(&extracted_dep_module_dir)?;
         }
@@ -391,12 +394,12 @@ impl FileGenerator {
         writeln!(result, "import Lampe")?;
         writeln!(result)?;
         writeln!(result, "open Lampe")?;
-        writeln!(result)?;
-        writeln!(
-            result,
-            "namespace «{}-{}»",
-            &extracted_module.name, &extracted_module.version
-        )?;
+        // writeln!(result)?;
+        // writeln!(
+        //     result,
+        //     "namespace «{}-{}»",
+        //     &extracted_module.name, &extracted_module.version
+        // )?;
         writeln!(result)?;
         result.push_str(&extracted_code.content);
 
