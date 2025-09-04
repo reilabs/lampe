@@ -4,7 +4,7 @@ use convert_case::{Case, Casing};
 use itertools::Itertools;
 
 use crate::{
-    constants::LAMPE_PATH_SEPARATOR,
+    constants::LAMPE_STRUCT_METHOD_SEPARATOR,
     lean::{
         ast::{
             AssignStatement,
@@ -263,7 +263,7 @@ impl Writer<'_> {
         self.append_to_line(">");
         self.append_to_line(")");
 
-        self.append_to_line(LAMPE_PATH_SEPARATOR);
+        self.append_to_line(LAMPE_STRUCT_METHOD_SEPARATOR);
         self.append_to_line(&call_ref.function_name);
 
         self.append_to_line("<");

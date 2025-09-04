@@ -38,7 +38,7 @@ elab "noir_type_alias" defn:noir_alias : command => do
 
 /-- Elaborates a struct definition written in the Noir eDSL. -/
 elab "noir_struct_def" defName:noir_ident defn:noir_type_def : command => do
-  let cmd ← `(def $defName := $(←makeStructDef defName defn))
+  let cmd ← `(def $(makeStructDefIdent (←makeNoirIdent defName)) := $(←makeStructDef defName defn))
   Elab.Command.elabCommand cmd
 
 /-- Elaborates a trait definition written in the Noir eDSL. -/

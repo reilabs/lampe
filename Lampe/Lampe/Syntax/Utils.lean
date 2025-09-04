@@ -103,8 +103,24 @@ partial def makeConstNum [MonadUtil m] : TSyntax `noir_const_num → m (TSyntax 
   ``(BitVec.umod $n1 $n2)
 | n => throwError "Unexpected numeric syntax {n}"
 
-instance : Coe (TSyntax `noir_ident) Lean.Ident where
-  coe noirIdent := ⟨noirIdent.raw[0]⟩
+/-- Builds a noir identifier from the provided syntax tree, or throws an error. -/
+private partial def makeNoirIdentAux [MonadUtil m] : Syntax → m String
+| `(ident|$i:ident) => pure i.getId.toString
+| `(noir_ident|$i:ident) => pure i.getId.toString
+| `(noir_ident|$i:ident :: $j:noir_ident) => do pure s!"{i.getId}::{←makeNoirIdentAux j}"
+| `(noir_ident|_) => pure "_"
+| i => throwError "Invalid identifier `{i}`"
+
+def makeNoirIdent [MonadUtil m] : Syntax → m Lean.Ident :=
+  fun stx => (mkIdent $ .mkSimple ·) <$> makeNoirIdentAux stx
+
+/-- Builds the identifier for a struct definition. -/
+def makeStructDefIdent (structName : Lean.Ident) : Lean.Ident :=
+  mkIdent $ .mkSimple $ structName.getId.toString false
+
+/-- Builds the identifier for a type alias. -/
+def makeTypeAliasIdent (aliasName : Lean.Ident) : Lean.Ident :=
+  mkIdent $ .mkSimple $ aliasName.getId.toString false
 
 /-- Generates the term corresponding to the kind of a numeric generic. -/
 def matchGenericDefinitions [MonadUtil m] : TSyntax `ident → m (TSyntax `term)
@@ -249,11 +265,12 @@ partial def makeNoirType [MonadUtil m] : TSyntax `noir_type → m (TSyntax `term
 | `(noir_type|$i:ident) => ``($i)
 | `(noir_type|&$tp) => do ``(Lampe.Tp.ref $(←makeNoirType tp))
 | `(noir_type|$structName:noir_ident < $generics,* >) => do
+  let nameIdent ← makeNoirIdent structName
   let genericsList := generics.getElems.toList
   let gensLen := genericsList.length
 
   -- Certain builtin types fall into this case and have to be handled specially.
-  match structName.getId.toString with
+  match nameIdent.getId.toString with
   | "Array" => do
       if gensLen != 2 then
         throwError "Array had wrong number of generic args {gensLen}"
@@ -276,8 +293,9 @@ partial def makeNoirType [MonadUtil m] : TSyntax `noir_type → m (TSyntax `term
     let generics := (←makeGenericVals genericsList).map fun g => g.value
     ``(Lampe.Tp.tuple none $(←makeListLit generics))
   | _ => do
+    let structIdent := makeStructDefIdent (←makeNoirIdent structName)
     let generics := (←makeGenericVals genericsList).map fun g => g.value
-    return ←``(Lampe.Struct.tp $structName:ident $(←makeHListLit generics))
+    ``(Lampe.Struct.tp $structIdent $(←makeHListLit generics))
 | `(noir_type|${ $i }) => pure i
 | `(noir_type|λ( $param_types,* ) -> $ret:noir_type)
 | `(noir_type|λ( $param_types,* ) → $ret:noir_type) => do
@@ -287,7 +305,8 @@ partial def makeNoirType [MonadUtil m] : TSyntax `noir_type → m (TSyntax `term
 | `(noir_type|@ $aliasName < $generics,* >) => do
   let generics ← makeGenericVals generics.getElems.toList
   let genericVals ← makeHListLit $ generics.map fun g => g.value
-  ``($aliasName $genericVals)
+  let aliasFunc := makeTypeAliasIdent (←makeNoirIdent aliasName)
+  ``($aliasFunc $genericVals)
 | `(noir_type|_) => ``(_)
 | t => throwError "Unsupported type syntax {t}"
 
@@ -317,22 +336,22 @@ def makeTraitDefHasImplIdent (traitName : Lean.Ident) : Lean.Ident :=
   mkIdent $ traitName.getId ++ (.mkSimple "hasImpl")
 
 def makeTraitDefGenericKindsIdent (traitName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ `_root_ ++ traitName.getId ++ (.mkSimple "#genericKinds")
+  mkIdent $ traitName.getId ++ (.mkSimple "#genericKinds")
 
 def makeTraitDefAssociatedTypesKindsIdent (traitName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ `_root_ ++ traitName.getId ++ (.mkSimple "#associatedTypesKinds")
+  mkIdent $ traitName.getId ++ (.mkSimple "#associatedTypesKinds")
 
 def makeTraitFunDefGenericKindsIdent (traitName fnName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ `_root_ ++ traitName.getId ++ fnName.getId ++ (.mkSimple "#genericKinds")
+  mkIdent $ traitName.getId ++ fnName.getId ++ (.mkSimple "#genericKinds")
 
 def makeTraitFunDefInputsIdent (traitName fnName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ `_root_ ++ traitName.getId ++ fnName.getId ++ (.mkSimple "#inputs")
+  mkIdent $ traitName.getId ++ fnName.getId ++ (.mkSimple "#inputs")
 
 def makeTraitFunDefOutputIdent (traitName fnName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ `_root_ ++ traitName.getId ++ fnName.getId ++ (.mkSimple "#output")
+  mkIdent $ traitName.getId ++ fnName.getId ++ (.mkSimple "#output")
 
 def makeTraitFunDefIdent (traitName fnName : Lean.Ident) : Lean.Ident :=
-  mkIdent $ `_root_ ++ traitName.getId ++ fnName.getId
+  mkIdent $ traitName.getId ++ fnName.getId
 
 end Lampe
 

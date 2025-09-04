@@ -17,4 +17,4 @@ pub const LAMPE_PATH_SEPARATOR: &str = ".";
 pub const LEAN_ROOT_NAMESPACE_KEY: &str = "_root_";
 
 /// Separates the name of the self type and the method defined on it.
-pub const LAMPE_STRUCT_METHOD_SEPARATOR: &str = ".";
+pub const LAMPE_STRUCT_METHOD_SEPARATOR: &str = "::";
