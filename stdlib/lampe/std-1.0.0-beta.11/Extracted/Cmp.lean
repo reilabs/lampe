@@ -7,101 +7,101 @@ open Lampe
 
 namespace «std-1.0.0-beta.11»
 
-noir_trait_impl[impl_78]<> cmp.Eq<> for Field where [] := {
+noir_trait_impl[impl_78]<> cmp::Eq<> for Field where [] := {
   noir_def eq<>(self: Field, other: Field) -> bool := {
     (#_fEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_79]<> cmp.Eq<> for u128 where [] := {
+noir_trait_impl[impl_79]<> cmp::Eq<> for u128 where [] := {
   noir_def eq<>(self: u128, other: u128) -> bool := {
     (#_uEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_80]<> cmp.Eq<> for u64 where [] := {
+noir_trait_impl[impl_80]<> cmp::Eq<> for u64 where [] := {
   noir_def eq<>(self: u64, other: u64) -> bool := {
     (#_uEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_81]<> cmp.Eq<> for u32 where [] := {
+noir_trait_impl[impl_81]<> cmp::Eq<> for u32 where [] := {
   noir_def eq<>(self: u32, other: u32) -> bool := {
     (#_uEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_82]<> cmp.Eq<> for u16 where [] := {
+noir_trait_impl[impl_82]<> cmp::Eq<> for u16 where [] := {
   noir_def eq<>(self: u16, other: u16) -> bool := {
     (#_uEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_83]<> cmp.Eq<> for u8 where [] := {
+noir_trait_impl[impl_83]<> cmp::Eq<> for u8 where [] := {
   noir_def eq<>(self: u8, other: u8) -> bool := {
     (#_uEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_84]<> cmp.Eq<> for u1 where [] := {
+noir_trait_impl[impl_84]<> cmp::Eq<> for u1 where [] := {
   noir_def eq<>(self: u1, other: u1) -> bool := {
     (#_uEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_85]<> cmp.Eq<> for i8 where [] := {
+noir_trait_impl[impl_85]<> cmp::Eq<> for i8 where [] := {
   noir_def eq<>(self: i8, other: i8) -> bool := {
     (#_iEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_86]<> cmp.Eq<> for i16 where [] := {
+noir_trait_impl[impl_86]<> cmp::Eq<> for i16 where [] := {
   noir_def eq<>(self: i16, other: i16) -> bool := {
     (#_iEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_87]<> cmp.Eq<> for i32 where [] := {
+noir_trait_impl[impl_87]<> cmp::Eq<> for i32 where [] := {
   noir_def eq<>(self: i32, other: i32) -> bool := {
     (#_iEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_88]<> cmp.Eq<> for i64 where [] := {
+noir_trait_impl[impl_88]<> cmp::Eq<> for i64 where [] := {
   noir_def eq<>(self: i64, other: i64) -> bool := {
     (#_iEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_89]<> cmp.Eq<> for Unit where [] := {
+noir_trait_impl[impl_89]<> cmp::Eq<> for Unit where [] := {
   noir_def eq<>(_self: Unit, _other: Unit) -> bool := {
     #_true
   };
 }
 
-noir_trait_impl[impl_90]<> cmp.Eq<> for bool where [] := {
+noir_trait_impl[impl_90]<> cmp::Eq<> for bool where [] := {
   noir_def eq<>(self: bool, other: bool) -> bool := {
     (#_bEq returning bool)(self, other)
   };
 }
 
-noir_trait_impl[impl_91]<N: u32, T: Type> cmp.Eq<> for Array<T, N: u32> where [T: cmp.Eq<>] := {
+noir_trait_impl[impl_91]<N: u32, T: Type> cmp::Eq<> for Array<T, N: u32> where [T: cmp::Eq<>] := {
   noir_def eq<>(self: Array<T, N: u32>, other: Array<T, N: u32>) -> bool := {
     let mut result = #_true;
     for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
-      result = (#_bAnd returning bool)(result, ((T as cmp.Eq<>).eq<> as λ(T, T) -> bool)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i))));
+      result = (#_bAnd returning bool)(result, ((T as cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i))));
       #_skip
     };
     result
   };
 }
 
-noir_trait_impl[impl_92]<T: Type> cmp.Eq<> for Slice<T> where [T: cmp.Eq<>] := {
+noir_trait_impl[impl_92]<T: Type> cmp::Eq<> for Slice<T> where [T: cmp::Eq<>] := {
   noir_def eq<>(self: Slice<T>, other: Slice<T>) -> bool := {
     let mut result = (#_uEq returning bool)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
     if result then {
       for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
-        result = (#_bAnd returning bool)(result, ((T as cmp.Eq<>).eq<> as λ(T, T) -> bool)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i))));
+        result = (#_bAnd returning bool)(result, ((T as cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i))));
         #_skip
       };
       #_skip
@@ -110,192 +110,192 @@ noir_trait_impl[impl_92]<T: Type> cmp.Eq<> for Slice<T> where [T: cmp.Eq<>] := {
   };
 }
 
-noir_trait_impl[impl_93]<N: u32> cmp.Eq<> for String<N: u32> where [] := {
+noir_trait_impl[impl_93]<N: u32> cmp::Eq<> for String<N: u32> where [] := {
   noir_def eq<>(self: String<N: u32>, other: String<N: u32>) -> bool := {
     let self_bytes = (#_strAsBytes returning Array<u8, N: u32>)(self);
     let other_bytes = (#_strAsBytes returning Array<u8, N: u32>)(other);
-    ((Array<u8, N: u32> as cmp.Eq<>).eq<> as λ(Array<u8, N: u32>, Array<u8, N: u32>) -> bool)(self_bytes, other_bytes)
+    ((Array<u8, N: u32> as cmp::Eq<>)::eq<> as λ(Array<u8, N: u32>, Array<u8, N: u32>) -> bool)(self_bytes, other_bytes)
   };
 }
 
-noir_trait_impl[impl_94]<A: Type, B: Type> cmp.Eq<> for Tuple<A, B> where [A: cmp.Eq<>, B: cmp.Eq<>] := {
+noir_trait_impl[impl_94]<A: Type, B: Type> cmp::Eq<> for Tuple<A, B> where [A: cmp::Eq<>, B: cmp::Eq<>] := {
   noir_def eq<>(self: Tuple<A, B>, other: Tuple<A, B>) -> bool := {
-    (#_bAnd returning bool)(((A as cmp.Eq<>).eq<> as λ(A, A) -> bool)(self.0, other.0), ((B as cmp.Eq<>).eq<> as λ(B, B) -> bool)(self.1, other.1))
+    (#_bAnd returning bool)(((A as cmp::Eq<>)::eq<> as λ(A, A) -> bool)(self.0, other.0), ((B as cmp::Eq<>)::eq<> as λ(B, B) -> bool)(self.1, other.1))
   };
 }
 
-noir_trait_impl[impl_95]<A: Type, B: Type, C: Type> cmp.Eq<> for Tuple<A, B, C> where [A: cmp.Eq<>, B: cmp.Eq<>, C: cmp.Eq<>] := {
+noir_trait_impl[impl_95]<A: Type, B: Type, C: Type> cmp::Eq<> for Tuple<A, B, C> where [A: cmp::Eq<>, B: cmp::Eq<>, C: cmp::Eq<>] := {
   noir_def eq<>(self: Tuple<A, B, C>, other: Tuple<A, B, C>) -> bool := {
-    (#_bAnd returning bool)((#_bAnd returning bool)(((A as cmp.Eq<>).eq<> as λ(A, A) -> bool)(self.0, other.0), ((B as cmp.Eq<>).eq<> as λ(B, B) -> bool)(self.1, other.1)), ((C as cmp.Eq<>).eq<> as λ(C, C) -> bool)(self.2, other.2))
+    (#_bAnd returning bool)((#_bAnd returning bool)(((A as cmp::Eq<>)::eq<> as λ(A, A) -> bool)(self.0, other.0), ((B as cmp::Eq<>)::eq<> as λ(B, B) -> bool)(self.1, other.1)), ((C as cmp::Eq<>)::eq<> as λ(C, C) -> bool)(self.2, other.2))
   };
 }
 
-noir_trait_impl[impl_96]<A: Type, B: Type, C: Type, D: Type> cmp.Eq<> for Tuple<A, B, C, D> where [A: cmp.Eq<>, B: cmp.Eq<>, C: cmp.Eq<>, D: cmp.Eq<>] := {
+noir_trait_impl[impl_96]<A: Type, B: Type, C: Type, D: Type> cmp::Eq<> for Tuple<A, B, C, D> where [A: cmp::Eq<>, B: cmp::Eq<>, C: cmp::Eq<>, D: cmp::Eq<>] := {
   noir_def eq<>(self: Tuple<A, B, C, D>, other: Tuple<A, B, C, D>) -> bool := {
-    (#_bAnd returning bool)((#_bAnd returning bool)((#_bAnd returning bool)(((A as cmp.Eq<>).eq<> as λ(A, A) -> bool)(self.0, other.0), ((B as cmp.Eq<>).eq<> as λ(B, B) -> bool)(self.1, other.1)), ((C as cmp.Eq<>).eq<> as λ(C, C) -> bool)(self.2, other.2)), ((D as cmp.Eq<>).eq<> as λ(D, D) -> bool)(self.3, other.3))
+    (#_bAnd returning bool)((#_bAnd returning bool)((#_bAnd returning bool)(((A as cmp::Eq<>)::eq<> as λ(A, A) -> bool)(self.0, other.0), ((B as cmp::Eq<>)::eq<> as λ(B, B) -> bool)(self.1, other.1)), ((C as cmp::Eq<>)::eq<> as λ(C, C) -> bool)(self.2, other.2)), ((D as cmp::Eq<>)::eq<> as λ(D, D) -> bool)(self.3, other.3))
   };
 }
 
-noir_trait_impl[impl_97]<A: Type, B: Type, C: Type, D: Type, E: Type> cmp.Eq<> for Tuple<A, B, C, D, E> where [A: cmp.Eq<>, B: cmp.Eq<>, C: cmp.Eq<>, D: cmp.Eq<>, E: cmp.Eq<>] := {
+noir_trait_impl[impl_97]<A: Type, B: Type, C: Type, D: Type, E: Type> cmp::Eq<> for Tuple<A, B, C, D, E> where [A: cmp::Eq<>, B: cmp::Eq<>, C: cmp::Eq<>, D: cmp::Eq<>, E: cmp::Eq<>] := {
   noir_def eq<>(self: Tuple<A, B, C, D, E>, other: Tuple<A, B, C, D, E>) -> bool := {
-    (#_bAnd returning bool)((#_bAnd returning bool)((#_bAnd returning bool)((#_bAnd returning bool)(((A as cmp.Eq<>).eq<> as λ(A, A) -> bool)(self.0, other.0), ((B as cmp.Eq<>).eq<> as λ(B, B) -> bool)(self.1, other.1)), ((C as cmp.Eq<>).eq<> as λ(C, C) -> bool)(self.2, other.2)), ((D as cmp.Eq<>).eq<> as λ(D, D) -> bool)(self.3, other.3)), ((E as cmp.Eq<>).eq<> as λ(E, E) -> bool)(self.4, other.4))
+    (#_bAnd returning bool)((#_bAnd returning bool)((#_bAnd returning bool)((#_bAnd returning bool)(((A as cmp::Eq<>)::eq<> as λ(A, A) -> bool)(self.0, other.0), ((B as cmp::Eq<>)::eq<> as λ(B, B) -> bool)(self.1, other.1)), ((C as cmp::Eq<>)::eq<> as λ(C, C) -> bool)(self.2, other.2)), ((D as cmp::Eq<>)::eq<> as λ(D, D) -> bool)(self.3, other.3)), ((E as cmp::Eq<>)::eq<> as λ(E, E) -> bool)(self.4, other.4))
   };
 }
 
-noir_trait_impl[impl_98]<> cmp.Eq<> for cmp.Ordering<> where [] := {
-  noir_def eq<>(self: cmp.Ordering<>, other: cmp.Ordering<>) -> bool := {
+noir_trait_impl[impl_98]<> cmp::Eq<> for cmp::Ordering<> where [] := {
+  noir_def eq<>(self: cmp::Ordering<>, other: cmp::Ordering<>) -> bool := {
     (#_fEq returning bool)(self.0, other.0)
   };
 }
 
-noir_def cmp.Ordering.less<>() -> cmp.Ordering<> := {
-  (#_makeData returning cmp.Ordering<>)((0: Field))
+noir_def cmp::Ordering::less<>() -> cmp::Ordering<> := {
+  (#_makeData returning cmp::Ordering<>)((0: Field))
 }
 
-noir_def cmp.Ordering.equal<>() -> cmp.Ordering<> := {
-  (#_makeData returning cmp.Ordering<>)((1: Field))
+noir_def cmp::Ordering::equal<>() -> cmp::Ordering<> := {
+  (#_makeData returning cmp::Ordering<>)((1: Field))
 }
 
-noir_def cmp.Ordering.greater<>() -> cmp.Ordering<> := {
-  (#_makeData returning cmp.Ordering<>)((2: Field))
+noir_def cmp::Ordering::greater<>() -> cmp::Ordering<> := {
+  (#_makeData returning cmp::Ordering<>)((2: Field))
 }
 
-noir_trait_impl[impl_99]<> cmp.Ord<> for u128 where [] := {
-  noir_def cmp<>(self: u128, other: u128) -> cmp.Ordering<> := {
+noir_trait_impl[impl_99]<> cmp::Ord<> for u128 where [] := {
+  noir_def cmp<>(self: u128, other: u128) -> cmp::Ordering<> := {
     if (#_uLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_uGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_100]<> cmp.Ord<> for u64 where [] := {
-  noir_def cmp<>(self: u64, other: u64) -> cmp.Ordering<> := {
+noir_trait_impl[impl_100]<> cmp::Ord<> for u64 where [] := {
+  noir_def cmp<>(self: u64, other: u64) -> cmp::Ordering<> := {
     if (#_uLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_uGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_101]<> cmp.Ord<> for u32 where [] := {
-  noir_def cmp<>(self: u32, other: u32) -> cmp.Ordering<> := {
+noir_trait_impl[impl_101]<> cmp::Ord<> for u32 where [] := {
+  noir_def cmp<>(self: u32, other: u32) -> cmp::Ordering<> := {
     if (#_uLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_uGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_102]<> cmp.Ord<> for u16 where [] := {
-  noir_def cmp<>(self: u16, other: u16) -> cmp.Ordering<> := {
+noir_trait_impl[impl_102]<> cmp::Ord<> for u16 where [] := {
+  noir_def cmp<>(self: u16, other: u16) -> cmp::Ordering<> := {
     if (#_uLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_uGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_103]<> cmp.Ord<> for u8 where [] := {
-  noir_def cmp<>(self: u8, other: u8) -> cmp.Ordering<> := {
+noir_trait_impl[impl_103]<> cmp::Ord<> for u8 where [] := {
+  noir_def cmp<>(self: u8, other: u8) -> cmp::Ordering<> := {
     if (#_uLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_uGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_104]<> cmp.Ord<> for i8 where [] := {
-  noir_def cmp<>(self: i8, other: i8) -> cmp.Ordering<> := {
+noir_trait_impl[impl_104]<> cmp::Ord<> for i8 where [] := {
+  noir_def cmp<>(self: i8, other: i8) -> cmp::Ordering<> := {
     if (#_iLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_iGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_105]<> cmp.Ord<> for i16 where [] := {
-  noir_def cmp<>(self: i16, other: i16) -> cmp.Ordering<> := {
+noir_trait_impl[impl_105]<> cmp::Ord<> for i16 where [] := {
+  noir_def cmp<>(self: i16, other: i16) -> cmp::Ordering<> := {
     if (#_iLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_iGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_106]<> cmp.Ord<> for i32 where [] := {
-  noir_def cmp<>(self: i32, other: i32) -> cmp.Ordering<> := {
+noir_trait_impl[impl_106]<> cmp::Ord<> for i32 where [] := {
+  noir_def cmp<>(self: i32, other: i32) -> cmp::Ordering<> := {
     if (#_iLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_iGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_107]<> cmp.Ord<> for i64 where [] := {
-  noir_def cmp<>(self: i64, other: i64) -> cmp.Ordering<> := {
+noir_trait_impl[impl_107]<> cmp::Ord<> for i64 where [] := {
+  noir_def cmp<>(self: i64, other: i64) -> cmp::Ordering<> := {
     if (#_iLt returning bool)(self, other) then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else if (#_iGt returning bool)(self, other) then {
-      (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_108]<> cmp.Ord<> for Unit where [] := {
-  noir_def cmp<>(_self: Unit, _other: Unit) -> cmp.Ordering<> := {
-    (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+noir_trait_impl[impl_108]<> cmp::Ord<> for Unit where [] := {
+  noir_def cmp<>(_self: Unit, _other: Unit) -> cmp::Ordering<> := {
+    (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
   };
 }
 
-noir_trait_impl[impl_109]<> cmp.Ord<> for bool where [] := {
-  noir_def cmp<>(self: bool, other: bool) -> cmp.Ordering<> := {
+noir_trait_impl[impl_109]<> cmp::Ord<> for bool where [] := {
+  noir_def cmp<>(self: bool, other: bool) -> cmp::Ordering<> := {
     if self then {
       if other then {
-        (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+        (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
       } else {
-        (cmp.Ordering.greater<> as λ() -> cmp.Ordering<>)()
+        (cmp::Ordering::greater<> as λ() -> cmp::Ordering<>)()
       }
     } else if other then {
-      (cmp.Ordering.less<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::less<> as λ() -> cmp::Ordering<>)()
     } else {
-      (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()
+      (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()
     }
   };
 }
 
-noir_trait_impl[impl_110]<N: u32, T: Type> cmp.Ord<> for Array<T, N: u32> where [T: cmp.Ord<>] := {
-  noir_def cmp<>(self: Array<T, N: u32>, other: Array<T, N: u32>) -> cmp.Ordering<> := {
-    let mut result = (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)();
+noir_trait_impl[impl_110]<N: u32, T: Type> cmp::Ord<> for Array<T, N: u32> where [T: cmp::Ord<>] := {
+  noir_def cmp<>(self: Array<T, N: u32>, other: Array<T, N: u32>) -> cmp::Ordering<> := {
+    let mut result = (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)();
     for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
-      if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-        result = ((T as cmp.Ord<>).cmp<> as λ(T, T) -> cmp.Ordering<>)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i)));
+      if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+        result = ((T as cmp::Ord<>)::cmp<> as λ(T, T) -> cmp::Ordering<>)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i)));
         #_skip
       }
     };
@@ -303,12 +303,12 @@ noir_trait_impl[impl_110]<N: u32, T: Type> cmp.Ord<> for Array<T, N: u32> where 
   };
 }
 
-noir_trait_impl[impl_111]<T: Type> cmp.Ord<> for Slice<T> where [T: cmp.Ord<>] := {
-  noir_def cmp<>(self: Slice<T>, other: Slice<T>) -> cmp.Ordering<> := {
-    let mut result = ((u32 as cmp.Ord<>).cmp<> as λ(u32, u32) -> cmp.Ordering<>)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
+noir_trait_impl[impl_111]<T: Type> cmp::Ord<> for Slice<T> where [T: cmp::Ord<>] := {
+  noir_def cmp<>(self: Slice<T>, other: Slice<T>) -> cmp::Ordering<> := {
+    let mut result = ((u32 as cmp::Ord<>)::cmp<> as λ(u32, u32) -> cmp::Ordering<>)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
     for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
-      if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-        result = ((T as cmp.Ord<>).cmp<> as λ(T, T) -> cmp.Ordering<>)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i)));
+      if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+        result = ((T as cmp::Ord<>)::cmp<> as λ(T, T) -> cmp::Ordering<>)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i)));
         #_skip
       }
     };
@@ -316,113 +316,113 @@ noir_trait_impl[impl_111]<T: Type> cmp.Ord<> for Slice<T> where [T: cmp.Ord<>] :
   };
 }
 
-noir_trait_impl[impl_112]<A: Type, B: Type> cmp.Ord<> for Tuple<A, B> where [A: cmp.Ord<>, B: cmp.Ord<>] := {
-  noir_def cmp<>(self: Tuple<A, B>, other: Tuple<A, B>) -> cmp.Ordering<> := {
-    let result = ((A as cmp.Ord<>).cmp<> as λ(A, A) -> cmp.Ordering<>)(self.0, other.0);
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
+noir_trait_impl[impl_112]<A: Type, B: Type> cmp::Ord<> for Tuple<A, B> where [A: cmp::Ord<>, B: cmp::Ord<>] := {
+  noir_def cmp<>(self: Tuple<A, B>, other: Tuple<A, B>) -> cmp::Ordering<> := {
+    let result = ((A as cmp::Ord<>)::cmp<> as λ(A, A) -> cmp::Ordering<>)(self.0, other.0);
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
       result
     } else {
-      ((B as cmp.Ord<>).cmp<> as λ(B, B) -> cmp.Ordering<>)(self.1, other.1)
+      ((B as cmp::Ord<>)::cmp<> as λ(B, B) -> cmp::Ordering<>)(self.1, other.1)
     }
   };
 }
 
-noir_trait_impl[impl_113]<A: Type, B: Type, C: Type> cmp.Ord<> for Tuple<A, B, C> where [A: cmp.Ord<>, B: cmp.Ord<>, C: cmp.Ord<>] := {
-  noir_def cmp<>(self: Tuple<A, B, C>, other: Tuple<A, B, C>) -> cmp.Ordering<> := {
-    let mut result = ((A as cmp.Ord<>).cmp<> as λ(A, A) -> cmp.Ordering<>)(self.0, other.0);
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((B as cmp.Ord<>).cmp<> as λ(B, B) -> cmp.Ordering<>)(self.1, other.1);
+noir_trait_impl[impl_113]<A: Type, B: Type, C: Type> cmp::Ord<> for Tuple<A, B, C> where [A: cmp::Ord<>, B: cmp::Ord<>, C: cmp::Ord<>] := {
+  noir_def cmp<>(self: Tuple<A, B, C>, other: Tuple<A, B, C>) -> cmp::Ordering<> := {
+    let mut result = ((A as cmp::Ord<>)::cmp<> as λ(A, A) -> cmp::Ordering<>)(self.0, other.0);
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((B as cmp::Ord<>)::cmp<> as λ(B, B) -> cmp::Ordering<>)(self.1, other.1);
       #_skip
     };
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((C as cmp.Ord<>).cmp<> as λ(C, C) -> cmp.Ordering<>)(self.2, other.2);
-      #_skip
-    };
-    result
-  };
-}
-
-noir_trait_impl[impl_114]<A: Type, B: Type, C: Type, D: Type> cmp.Ord<> for Tuple<A, B, C, D> where [A: cmp.Ord<>, B: cmp.Ord<>, C: cmp.Ord<>, D: cmp.Ord<>] := {
-  noir_def cmp<>(self: Tuple<A, B, C, D>, other: Tuple<A, B, C, D>) -> cmp.Ordering<> := {
-    let mut result = ((A as cmp.Ord<>).cmp<> as λ(A, A) -> cmp.Ordering<>)(self.0, other.0);
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((B as cmp.Ord<>).cmp<> as λ(B, B) -> cmp.Ordering<>)(self.1, other.1);
-      #_skip
-    };
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((C as cmp.Ord<>).cmp<> as λ(C, C) -> cmp.Ordering<>)(self.2, other.2);
-      #_skip
-    };
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((D as cmp.Ord<>).cmp<> as λ(D, D) -> cmp.Ordering<>)(self.3, other.3);
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((C as cmp::Ord<>)::cmp<> as λ(C, C) -> cmp::Ordering<>)(self.2, other.2);
       #_skip
     };
     result
   };
 }
 
-noir_trait_impl[impl_115]<A: Type, B: Type, C: Type, D: Type, E: Type> cmp.Ord<> for Tuple<A, B, C, D, E> where [A: cmp.Ord<>, B: cmp.Ord<>, C: cmp.Ord<>, D: cmp.Ord<>, E: cmp.Ord<>] := {
-  noir_def cmp<>(self: Tuple<A, B, C, D, E>, other: Tuple<A, B, C, D, E>) -> cmp.Ordering<> := {
-    let mut result = ((A as cmp.Ord<>).cmp<> as λ(A, A) -> cmp.Ordering<>)(self.0, other.0);
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((B as cmp.Ord<>).cmp<> as λ(B, B) -> cmp.Ordering<>)(self.1, other.1);
+noir_trait_impl[impl_114]<A: Type, B: Type, C: Type, D: Type> cmp::Ord<> for Tuple<A, B, C, D> where [A: cmp::Ord<>, B: cmp::Ord<>, C: cmp::Ord<>, D: cmp::Ord<>] := {
+  noir_def cmp<>(self: Tuple<A, B, C, D>, other: Tuple<A, B, C, D>) -> cmp::Ordering<> := {
+    let mut result = ((A as cmp::Ord<>)::cmp<> as λ(A, A) -> cmp::Ordering<>)(self.0, other.0);
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((B as cmp::Ord<>)::cmp<> as λ(B, B) -> cmp::Ordering<>)(self.1, other.1);
       #_skip
     };
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((C as cmp.Ord<>).cmp<> as λ(C, C) -> cmp.Ordering<>)(self.2, other.2);
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((C as cmp::Ord<>)::cmp<> as λ(C, C) -> cmp::Ordering<>)(self.2, other.2);
       #_skip
     };
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((D as cmp.Ord<>).cmp<> as λ(D, D) -> cmp.Ordering<>)(self.3, other.3);
-      #_skip
-    };
-    if ((cmp.Ordering<> as cmp.Eq<>).eq<> as λ(cmp.Ordering<>, cmp.Ordering<>) -> bool)(result, (cmp.Ordering.equal<> as λ() -> cmp.Ordering<>)()) then {
-      result = ((E as cmp.Ord<>).cmp<> as λ(E, E) -> cmp.Ordering<>)(self.4, other.4);
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((D as cmp::Ord<>)::cmp<> as λ(D, D) -> cmp::Ordering<>)(self.3, other.3);
       #_skip
     };
     result
   };
 }
 
-noir_def cmp.max<T: Type>(v1: T, v2: T) -> T := {
-  if ((T as cmp.Ord<>).cmp<> as λ(T, T) -> bool)(v1, v2) then {
+noir_trait_impl[impl_115]<A: Type, B: Type, C: Type, D: Type, E: Type> cmp::Ord<> for Tuple<A, B, C, D, E> where [A: cmp::Ord<>, B: cmp::Ord<>, C: cmp::Ord<>, D: cmp::Ord<>, E: cmp::Ord<>] := {
+  noir_def cmp<>(self: Tuple<A, B, C, D, E>, other: Tuple<A, B, C, D, E>) -> cmp::Ordering<> := {
+    let mut result = ((A as cmp::Ord<>)::cmp<> as λ(A, A) -> cmp::Ordering<>)(self.0, other.0);
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((B as cmp::Ord<>)::cmp<> as λ(B, B) -> cmp::Ordering<>)(self.1, other.1);
+      #_skip
+    };
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((C as cmp::Ord<>)::cmp<> as λ(C, C) -> cmp::Ordering<>)(self.2, other.2);
+      #_skip
+    };
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((D as cmp::Ord<>)::cmp<> as λ(D, D) -> cmp::Ordering<>)(self.3, other.3);
+      #_skip
+    };
+    if ((cmp::Ordering<> as cmp::Eq<>)::eq<> as λ(cmp::Ordering<>, cmp::Ordering<>) -> bool)(result, (cmp::Ordering::equal<> as λ() -> cmp::Ordering<>)()) then {
+      result = ((E as cmp::Ord<>)::cmp<> as λ(E, E) -> cmp::Ordering<>)(self.4, other.4);
+      #_skip
+    };
+    result
+  };
+}
+
+noir_def cmp::max<T: Type>(v1: T, v2: T) -> T := {
+  if ((T as cmp::Ord<>)::cmp<> as λ(T, T) -> bool)(v1, v2) then {
     v1
   } else {
     v2
   }
 }
 
-noir_def cmp.min<T: Type>(v1: T, v2: T) -> T := {
-  if ((T as cmp.Ord<>).cmp<> as λ(T, T) -> bool)(v1, v2) then {
+noir_def cmp::min<T: Type>(v1: T, v2: T) -> T := {
+  if ((T as cmp::Ord<>)::cmp<> as λ(T, T) -> bool)(v1, v2) then {
     v2
   } else {
     v1
   }
 }
 
-noir_def cmp.cmp_tests.sanity_check_min<>() -> Unit := {
-  (#_assert returning Unit)((#_uEq returning bool)((cmp.min<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (0: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp.min<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp.min<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp.min<u8> as λ(u8, u8) -> u8)((255: u8), (0: u8)), (0: u8)));
+noir_def cmp::cmp_tests::sanity_check_min<>() -> Unit := {
+  (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (0: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((cmp::min<u8> as λ(u8, u8) -> u8)((255: u8), (0: u8)), (0: u8)));
   #_skip
 }
 
-noir_def cmp.cmp_tests.sanity_check_max<>() -> Unit := {
-  (#_assert returning Unit)((#_uEq returning bool)((cmp.max<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (1: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp.max<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp.max<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
-  (#_assert returning Unit)((#_uEq returning bool)((cmp.max<u8> as λ(u8, u8) -> u8)((255: u8), (0: u8)), (255: u8)));
+noir_def cmp::cmp_tests::sanity_check_max<>() -> Unit := {
+  (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((0: u64), (1: u64)), (1: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((0: u64), (0: u64)), (0: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u64> as λ(u64, u64) -> u64)((1: u64), (1: u64)), (1: u64)));
+  (#_assert returning Unit)((#_uEq returning bool)((cmp::max<u8> as λ(u8, u8) -> u8)((255: u8), (0: u8)), (255: u8)));
   #_skip
 }
 
-noir_def cmp.cmp_tests.correctly_handles_unequal_length_slices<>() -> Unit := {
+noir_def cmp::cmp_tests::correctly_handles_unequal_length_slices<>() -> Unit := {
   let slice_1 = (#_mkSlice returning Slice<Field>)((0: Field), (1: Field), (2: Field), (3: Field));
   let slice_2 = (#_mkSlice returning Slice<Field>)((0: Field), (1: Field), (2: Field));
-  (#_assert returning Unit)((#_bNot returning bool)(((Slice<Field> as cmp.Eq<>).eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(slice_1, slice_2)));
+  (#_assert returning Unit)((#_bNot returning bool)(((Slice<Field> as cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(slice_1, slice_2)));
   #_skip
 }
 
 def Cmp.env : Env := Env.mk
-  [cmp.Ordering.less, cmp.Ordering.equal, cmp.Ordering.greater, cmp.max, cmp.min, cmp.cmp_tests.sanity_check_min, cmp.cmp_tests.sanity_check_max, cmp.cmp_tests.correctly_handles_unequal_length_slices]
+  [«cmp::Ordering::less», «cmp::Ordering::equal», «cmp::Ordering::greater», «cmp::max», «cmp::min», «cmp::cmp_tests::sanity_check_min», «cmp::cmp_tests::sanity_check_max», «cmp::cmp_tests::correctly_handles_unequal_length_slices»]
   [impl_78, impl_79, impl_80, impl_81, impl_82, impl_83, impl_84, impl_85, impl_86, impl_87, impl_88, impl_89, impl_90, impl_91, impl_92, impl_93, impl_94, impl_95, impl_96, impl_97, impl_98, impl_99, impl_100, impl_101, impl_102, impl_103, impl_104, impl_105, impl_106, impl_107, impl_108, impl_109, impl_110, impl_111, impl_112, impl_113, impl_114, impl_115]
