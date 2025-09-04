@@ -105,9 +105,13 @@ partial def makeConstNum [MonadUtil m] : TSyntax `noir_const_num → m (TSyntax 
 
 /-- Builds a noir identifier from the provided syntax tree, or throws an error. -/
 private partial def makeNoirIdentAux [MonadUtil m] : Syntax → m String
-| `(ident|$i:ident) => pure i.getId.toString
-| `(noir_ident|$i:ident) => pure i.getId.toString
-| `(noir_ident|$i:ident :: $j:noir_ident) => do pure s!"{i.getId}::{←makeNoirIdentAux j}"
+| `(ident|$i:ident) | `(noir_ident|$i:ident) => do
+  let identStr := i.getId.toString
+  let identStr := identStr.replace "«" ""
+  let identStr := identStr.replace "»" ""
+  pure identStr
+| `(noir_ident|$i:ident :: $j:noir_ident) => do 
+  pure s!"{←makeNoirIdentAux i}::{←makeNoirIdentAux j}"
 | `(noir_ident|_) => pure "_"
 | i => throwError "Invalid identifier `{i}`"
 
