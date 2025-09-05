@@ -1,6 +1,7 @@
 import «std-1.0.0-beta.11».Extracted.Array.CheckShuffle
 import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
 import Lampe
+import Stdlib.Cmp
 
 namespace Lampe
 namespace Stdlib
@@ -143,7 +144,7 @@ lemma get_index_spec: STHoare p env ⟦⟧
   steps
 
 theorem check_shuffle_spec
-    (h_eq : ∀(a b : T.denote p), STHoare p env ⟦⟧ («std::cmp::Eq».eq h![] T h![] h![] h![a, b]) fun r: Bool => ⟦if r then a = b else a ≠ b⟧)
+    (h_eq : ∀(a b : T.denote p), STHoare p env ⟦⟧ («std::cmp::Eq».eq h![] T h![] h![] h![a, b]) fun r: Bool => ⟦r ↔ a = b⟧)
     : STHoare p env ⟦⟧
     («std::array::check_shuffle::check_shuffle».call h![T, N] h![lhs, rhs])
     (fun _ => List.Perm lhs.toList rhs.toList) := by
@@ -184,8 +185,9 @@ theorem check_shuffle_spec
     simp only [beq_true] at hp1
     cases hp1
 
-    rename (if _ = _ then _ else _) => hp
-    simp only [↓reduceIte] at hp
+
+    rename (_ = _ ↔ _) => hp
+    simp only [true_iff] at hp
     cases hp
 
     intro k
@@ -236,3 +238,18 @@ theorem check_shuffle_spec
     rfl
 
   exact List.perm_of_index_bijection f f_bij (List.Vector.toList_length _) (List.Vector.toList_length _) same_elems
+
+/--
+Shows that the shuffle check cannot succeed with the given inputs.
+-/
+example :
+    STHoare p env ⟦⟧
+      («std::array::check_shuffle::check_shuffle».call h![.u 8, 3] h![⟨[1, 2, 3], by simp⟩, ⟨[1, 2, 2], by simp⟩])
+      (fun _ => False) := by
+  steps [check_shuffle_spec]
+  · simp_all
+  intros
+  apply u8_eq_spec
+
+end Stdlib
+end Lampe

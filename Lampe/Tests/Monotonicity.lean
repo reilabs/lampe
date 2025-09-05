@@ -168,7 +168,7 @@ theorem default_field_correct
       (⟦⟧)
       (Default.default h![] .field h![] h![] h![])
       fun out => out = (42 : Fp p) := by
-  try_all_traits [] TraitsEnv
+  resolve_trait
   steps
   apply_assumption
 
@@ -181,7 +181,7 @@ theorem default_u8_correct
       (⟦⟧)
       (Default.default h![] (.u 8) h![] h![] h![])
       fun out => out = (255 : BitVec 8) := by
-  try_all_traits [] TraitsEnv
+  resolve_trait
   steps
   apply_assumption
 

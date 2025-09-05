@@ -17,6 +17,16 @@ noir_trait_def Trait2<> [] := {
   method other_function<>(Self) → Self;
 }
 
+noir_trait_def Trait3<> [] := {
+  method other_function<>(Self) → Field;
+}
+
+noir_trait_impl[trait3All]<A: Type> Trait3<> for A where [A: Trait1<>] := {
+  noir_def other_function<>(_x: A) → Field := {
+    5: Field
+  }
+}
+
 noir_trait_impl[trait1Field]<> Trait1<> for Field where [] := {
   noir_def function<>(x: Field) → Field := {
     (#_fAdd returning Field)(x, x)
@@ -35,10 +45,11 @@ noir_trait_impl[trait1u8]<> Trait1<> for u8 where [] := {
   }
 }
 
-noir_def both_trait_call<>(x: Field, y: u8) → Field := {
+noir_def all_trait_call<>(x: Field, y: u8) → Field := {
   let z = ((u8 as Trait1<>)::function<> as λ(u8) -> u8)(y);
   let _t = (foo<u8> as λ(u8) → u8)(z);
   let w = ((Field as Trait1<>)::function<> as λ(Field) → Field)(x);
+  let z = ((Field as Trait3<>)::other_function<> as λ(Field) → Field)(x);
   (foo<Field> as λ(Field) → Field)(w)
 }
 
@@ -46,18 +57,23 @@ def traitEnv : Env := ⟨[], [trait1Field]⟩
 def funcEnv : Env := ⟨[foo], []⟩
 def traitEnv2 : Env := ⟨[], [trait2u8]⟩
 def emptyEnv : Env := ⟨[], []⟩
-def finalEnv : Env := ⟨[both_trait_call], [trait1u8]⟩
+def finalEnv : Env := ⟨[all_trait_call], [trait3All, trait1u8]⟩
 def containerEnv : Env := finalEnv
 
 def compoundEnv : Env := funcEnv ++ traitEnv ++ emptyEnv ++ containerEnv ++ traitEnv2
 
+example : STHoare p compoundEnv ⟦⟧ (Trait3.other_function h![] .field h![] h![] h![v]) (fun x: Fp p => x = 5) := by
+  resolve_trait
+  steps
+  assumption
+
 example {p} {fieldArg : Fp p}:
-    STHoare p compoundEnv ⟦⟧ (both_trait_call.fn.body _ h![] |>.body h![fieldArg, u8Arg])
+    STHoare p compoundEnv ⟦⟧ (all_trait_call.fn.body _ h![] |>.body h![fieldArg, u8Arg])
     fun v => v = 2 * fieldArg := by
-  simp only [both_trait_call]
+  simp only [all_trait_call]
   steps
   step_as (⟦⟧) (fun v => v = (2 * u8Arg : U 8))
-  · try_all_traits [] compoundEnv
+  · resolve_trait
     steps
     subst_vars
     bv_decide
@@ -73,11 +89,16 @@ example {p} {fieldArg : Fp p}:
   steps
   step_as (⟦z = 2 * u8Arg⟧) (fun v => v = (2 * fieldArg : Fp p))
   · assumption
-  · try_all_traits [] compoundEnv
+  · resolve_trait
     steps
     subst_vars
     ring
 
+  steps
+  step_as (⟦⟧) (fun v: Fp p => v = 5)
+  · resolve_trait
+    steps
+    assumption
   steps
   step_as (⟦w = 2 * fieldArg⟧) (fun v => v = 2 * fieldArg)
   . assumption
