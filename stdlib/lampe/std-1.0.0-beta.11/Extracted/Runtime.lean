@@ -6,7 +6,6 @@ import Lampe
 open Lampe
 
 namespace «std-1.0.0-beta.11»
-namespace Extracted
 
 def Runtime.env : Env := Env.mk
   []
