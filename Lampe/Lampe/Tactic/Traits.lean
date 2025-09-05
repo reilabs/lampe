@@ -78,39 +78,16 @@ def ResolutionGoal.ofGoal (goal : MVarId) : TacticM ResolutionGoal := goal.withC
 
 def peekFirstTrait (goal : MVarId) (env: Lean.Expr): TacticM (Option (Lean.Expr × Lean.Expr × Lean.Expr)) :=
   goal.withContext $ withNewMCtxDepth do
-    let fns ← mkFreshExprMVar none
-    let firstName ← mkFreshExprMVar none
-    let firstImpl ← mkFreshExprMVar none
-    let prodα ← mkFreshExprMVar none
-    let prodβ ← mkFreshExprMVar none
-    let mkProd ← mkConstWithFreshMVarLevels ``Prod.mk
-    let first := mkProd.app prodα |>.app prodβ |>.app firstName |>.app firstImpl
-    let rest ← mkFreshExprMVar none
-    let cons ← mkConstWithFreshMVarLevels ``List.cons
-    let consα ← mkFreshExprMVar none
-    let cons := cons.app consα |>.app first |>.app rest
-    let cons := (Lean.Expr.const ``Env.mk []).app fns |>.app cons
-    if ←withTransparency .all $ isDefEq cons env then
-      let firstName ← Lean.instantiateExprMVars firstName
-      let firstImpl ← Lean.instantiateExprMVars firstImpl
-      let nextEnv ← Lean.instantiateExprMVars $ (Lean.Expr.const ``Env.mk []).app fns |>.app rest
-      return some (firstName, firstImpl, nextEnv)
-    else return none
-
-partial def destructCons (xs : Lean.Expr): TacticM (Option (Lean.Expr × Lean.Expr)) := do
-  let tp ← mkFreshExprMVar none
-  let head ← mkFreshExprMVar none
-  let tail ← mkFreshExprMVar none
-  let cons ← mkConstWithFreshMVarLevels ``List.cons
-  if ←withTransparency .all $ isDefEq xs (cons.app tp |>.app head |>.app tail) then
-    return some (head, tail)
-  else
-    return none
-
-partial def isNil (xs : Lean.Expr): TacticM Bool := do
-  let nil ← mkConstWithFreshMVarLevels ``List.nil
-  let tp ← mkFreshExprMVar none
-  withTransparency .all $ isDefEq xs (nil.app tp)
+    let env ← withTransparency .all $ whnf env
+    let_expr Env.mk _ traits ← env
+      | return none
+    let traits ← withTransparency .all $ whnf traits
+    let_expr List.cons _ fst rest ← traits
+      | return none
+    let fst ← withTransparency .all $ whnf fst
+    let_expr Prod.mk _ _ name impl ← fst
+      | return none
+    return some (name, impl, rest)
 
 /-
 The universe levels here need to be shared, otherwise we run into a weird
@@ -119,19 +96,19 @@ with the universe mvars in tail not being assigned, even though logically they
 should?
 -/
 partial def mkFreeHListForListLoop (xs : Lean.Expr) (uα uβ : Level) (α β : Lean.Expr): TacticM Lean.Expr := do
-  match ←destructCons xs with
-  | some (h, t) =>
+  let xs ← withTransparency .all $ whnf xs
+  match_expr xs with
+  | List.cons _ h t =>
     let hCons := .const ``HList.cons [uα, uβ]
     let hh ← mkFreshExprMVar none
     let ht ← mkFreeHListForListLoop t uα uβ α β
     let r := mkAppN hCons #[α, β, h, t, hh, ht]
     return r
-  | none =>
-    if ←isNil xs then
-      let hnil := Expr.const ``HList.nil [uα, uβ]
-      return hnil.app α |>.app β
-    else
-      throwError "cannot construct HList"
+  | List.nil _ =>
+    let hnil := Expr.const ``HList.nil [uα, uβ]
+    return hnil.app α |>.app β
+  | _ =>
+    throwError "cannot construct HList"
 
 partial def mkFreeHListForList (xs : Lean.Expr): TacticM Lean.Expr := do
   let uα ← mkFreshLevelMVar
@@ -165,8 +142,9 @@ partial def proveConstraint (goal : MVarId): TacticM Unit := do
     catch _ => pure ()
 
 partial def proveConstraints (env : Lean.Expr) (constraintsExpr : Lean.Expr): TacticM (Option Lean.Expr) := do
-  match ←destructCons constraintsExpr with
-  | some (h, t) =>
+  let constraints ← withTransparency .all $ whnf constraintsExpr
+  match_expr constraints with
+  | List.cons _ h t =>
     let some next ← proveConstraints env t | return none
     let fstGoalType := (Lean.Expr.const ``TraitResolvable []).app env |>.app h
     let fstGoalExpr ← mkFreshExprMVar fstGoalType
@@ -175,31 +153,15 @@ partial def proveConstraints (env : Lean.Expr) (constraintsExpr : Lean.Expr): Ta
       trace[Lampe.Traits] "could not resolve {←ppExpr fstGoalType}"
       return none
     return mkAppN (mkConst ``resolution_mem_cons_of_mem []) #[env, h, t, fstGoalExpr, next]
-  | none =>
-    if ←isNil constraintsExpr then
-      return mkAppN (mkConst ``resolution_mem_nil []) #[env]
-    else
-      return none
+  | List.nil _ => return mkAppN (mkConst ``resolution_mem_nil []) #[env]
+  | _ => return none
 
 partial def matchTraitSignature (resolutionGoal : ResolutionGoal) (traitDef : Lean.Expr): TacticM (Option (Lean.Expr × Lean.Expr)) :=
   withTraceNode `Lampe.Traits (fun e => return f!"matchTraitSignature {Lean.exceptEmoji e}") $ do
-    let defTraitGenericKinds ← mkFreshExprMVar none
-    let defImplGenericKinds ← mkFreshExprMVar none
-    let defTraitGenerics ← mkFreshExprMVar none
-    let defConstraints ← mkFreshExprMVar none
-    let defSelf ← mkFreshExprMVar none
-    let defImpl ← mkFreshExprMVar none
-    let defExpr := (Lean.Expr.const ``TraitImpl.mk [])
-      |>.app defTraitGenericKinds
-      |>.app defImplGenericKinds
-      |>.app defTraitGenerics
-      |>.app defConstraints
-      |>.app defSelf
-      |>.app defImpl
-
-    if !(←isDefEq defExpr traitDef) then
-      trace[Lampe.Traits] "Could not destructure the definition, skipping"
-      return none
+    let traitDef ← withTransparency .all $ whnf traitDef
+    let_expr TraitImpl.mk defTraitGenericKinds defImplGenericKinds defTraitGenerics defConstraints defSelf _ := traitDef
+      | trace[Lampe.Traits] "Could not destructure the definition, skipping"
+        return none
 
     if !(←isDefEq defTraitGenericKinds resolutionGoal.genericKinds) then
       trace[Lampe.Traits] "Trait generic kinds do not match, skipping"
