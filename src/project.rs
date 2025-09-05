@@ -72,6 +72,8 @@ impl Project {
 
         let mut warnings = vec![];
         for package in &self.nargo_workspace.members {
+            let all_deps = self.generate_dependency_list(package);
+
             let with_warnings = self.extract_package(&noir_project, package)?;
             if with_warnings.has_warnings() {
                 warnings.extend(with_warnings.warnings);
@@ -83,6 +85,31 @@ impl Project {
             }
         }
         Ok(WithWarnings::new((), warnings))
+    }
+
+    /// Generates a full list of _all_ dependencies of the provided package.
+    ///
+    /// This list is constructed in depth-first order to ensure that the
+    /// dependencies can be compiled in depth-first order, and contain each
+    /// dependency only once.
+    fn generate_dependency_list(&self, package: &Package) -> Vec<Dependency> {
+        package
+            .dependencies
+            .values()
+            .cloned()
+            .flat_map(|d| {
+                let package = match &d {
+                    Dependency::Local { package } => package,
+                    Dependency::Remote { package } => package,
+                };
+
+                let mut transitive_deps = self.generate_dependency_list(&package);
+                transitive_deps.push(d.clone());
+                transitive_deps
+            })
+            // FIXME This is not actually correct as it doesn't account for _versions_ only names.
+            .unique_by(|d| d.package_name().clone())
+            .collect()
     }
 
     fn extract_package(
@@ -194,19 +221,19 @@ impl Project {
                 continue;
             }
 
-            let package_identitifer = NoirPackageIdentifier {
+            let package_identifier = NoirPackageIdentifier {
                 name:    package.name.to_string(),
                 version: package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
             };
 
-            if extracted_dependencies.contains_key(&package_identitifer) {
+            if extracted_dependencies.contains_key(&package_identifier) {
                 continue;
             }
 
             let res = self.compile_package(noir_project, package)?;
             warnings.extend(res.warnings);
 
-            extracted_dependencies.insert(package_identitifer, res.data);
+            extracted_dependencies.insert(package_identifier, res.data);
 
             let res = self.do_extract_dependencies_without_lampe(
                 noir_project,
