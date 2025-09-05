@@ -79,7 +79,7 @@ def ResolutionGoal.ofGoal (goal : MVarId) : TacticM ResolutionGoal := goal.withC
 def peekFirstTrait (goal : MVarId) (env: Lean.Expr): TacticM (Option (Lean.Expr × Lean.Expr × Lean.Expr)) :=
   goal.withContext $ withNewMCtxDepth do
     let env ← withTransparency .all $ whnf env
-    let_expr Env.mk _ traits ← env
+    let_expr Env.mk fns traits ← env
       | return none
     let traits ← withTransparency .all $ whnf traits
     let_expr List.cons _ fst rest ← traits
@@ -87,7 +87,7 @@ def peekFirstTrait (goal : MVarId) (env: Lean.Expr): TacticM (Option (Lean.Expr 
     let fst ← withTransparency .all $ whnf fst
     let_expr Prod.mk _ _ name impl ← fst
       | return none
-    return some (name, impl, rest)
+    return some (name, impl, mkAppN (.const ``Env.mk []) #[fns, rest])
 
 /-
 The universe levels here need to be shared, otherwise we run into a weird
