@@ -61,7 +61,6 @@ pub fn generate_lakefile_toml(
     lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
     additional_dependencies: &[Box<dyn LeanDependency>],
-    extracted_dependencies: impl Iterator<Item = NoirPackageIdentifier>,
     overwrite: bool,
 ) -> Result<(), Error> {
     let output_file = lampe_root_dir.join("lakefile.toml");
@@ -118,15 +117,8 @@ pub fn generate_lakefile_toml(
         None
     };
 
-    for extracted_dependency in extracted_dependencies {
-        let dep_name = format!(
-            "{}-{}",
-            extracted_dependency.name, extracted_dependency.version,
-        );
-        writeln!(result, "[[lean_lib]]")?;
-        writeln!(result, "name = \"{dep_name}\"")?;
-        result.push('\n');
-    }
+    // Note: We don't generate [[lean_lib]] sections for extracted dependencies
+    // as they are handled differently in the lean file structure
 
     for dependency in default_lean_dependencies(stdlib_info) {
         result.push_str(&dependency.generate()?);

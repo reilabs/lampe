@@ -72,14 +72,7 @@ impl Project {
 
         let mut warnings = vec![];
         for package in &self.nargo_workspace.members {
-            let all_deps = self.generate_dependency_list(package);
-
-            let with_warnings = self.extract_package(&noir_project, package)?;
-            if with_warnings.has_warnings() {
-                warnings.extend(with_warnings.warnings);
-            }
-
-            let with_warnings = self.extract_dependencies_without_lampe(&noir_project, package)?;
+            let with_warnings = self.extract_package_with_all_dependencies(&noir_project, package)?;
             if with_warnings.has_warnings() {
                 warnings.extend(with_warnings.warnings);
             }
@@ -87,35 +80,50 @@ impl Project {
         Ok(WithWarnings::new((), warnings))
     }
 
-    /// Generates a full list of _all_ dependencies of the provided package.
-    ///
-    /// This list is constructed in depth-first order to ensure that the
-    /// dependencies can be compiled in depth-first order, and contain each
-    /// dependency only once.
-    fn generate_dependency_list(&self, package: &Package) -> Vec<Dependency> {
-        package
-            .dependencies
-            .values()
-            .cloned()
-            .flat_map(|d| {
-                let package = match &d {
-                    Dependency::Local { package } => package,
-                    Dependency::Remote { package } => package,
-                };
-
-                let mut transitive_deps = self.generate_dependency_list(&package);
-                transitive_deps.push(d.clone());
-                transitive_deps
-            })
-            // FIXME This is not actually correct as it doesn't account for _versions_ only names.
-            .unique_by(|d| d.package_name().clone())
-            .collect()
-    }
-
-    fn extract_package(
+    /// Extracts a package along with all its transitive dependencies that don't have lampe directories.
+    /// Dependencies are extracted to the deps/ subdirectory.
+    fn extract_package_with_all_dependencies(
         &self,
         noir_project: &noir::Project,
         package: &Package,
+    ) -> Result<WithWarnings<()>, Error> {
+        let mut warnings = vec![];
+
+        // Collect all dependencies and their relationships in one pass
+        let mut all_dependencies_to_extract = HashMap::new();
+        let mut direct_dependencies_to_extract = HashMap::new();
+        let mut dependency_relationships = HashMap::new();
+
+        let res = self.collect_all_dependencies_with_relationships(
+            noir_project,
+            package,
+            &mut all_dependencies_to_extract,
+            &mut direct_dependencies_to_extract,
+            &mut dependency_relationships,
+        )?;
+        warnings.extend(res.warnings);
+
+        // Extract the main package with all collected dependencies
+        let res = self.extract_package_with_deps(
+            noir_project,
+            package,
+            &all_dependencies_to_extract,
+            &direct_dependencies_to_extract,
+            dependency_relationships,
+        )?;
+        warnings.extend(res.warnings);
+
+        Ok(WithWarnings::new((), warnings))
+    }
+
+    /// Extracts a package with pre-collected dependencies
+    fn extract_package_with_deps(
+        &self,
+        noir_project: &noir::Project,
+        package: &Package,
+        all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+        direct_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+        dependency_relationships: HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
     ) -> Result<WithWarnings<()>, Error> {
         let package_name = &package.name.to_string();
         let package_version =
@@ -129,9 +137,13 @@ impl Project {
 
         let additional_dependencies = Self::get_dependencies_with_lampe(package)?;
 
-        let res = self.extract_dependencies_without_lampe(noir_project, package)?;
-        warnings.extend(res.warnings);
-        let extracted_dependencies = res.data;
+        // Collect direct dependencies that already have lampe
+        let direct_dependencies_with_lampe = self.collect_direct_dependencies_with_lampe(package)?;
+
+        // Add path-based dependencies for the direct extracted dependencies only
+        let path_dependencies = self.create_path_dependencies_for_extracted_deps(direct_dependencies)?;
+        let mut all_additional_deps = additional_dependencies;
+        all_additional_deps.extend(path_dependencies);
 
         file_generator::lampe_project(
             &self.target_path,
@@ -139,10 +151,246 @@ impl Project {
                 name:    package_name.clone(),
                 version: package_version.clone(),
             },
-            &additional_dependencies,
+            &all_additional_deps,
             &extracted_code,
-            extracted_dependencies,
+            all_dependencies.clone(),
+            direct_dependencies.clone(),
+            direct_dependencies_with_lampe,
+            dependency_relationships,
         )?;
+
+        Ok(WithWarnings::new((), warnings))
+    }
+
+    /// Creates path-based lean dependencies for the extracted dependencies
+    fn create_path_dependencies_for_extracted_deps(
+        &self,
+        all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+    ) -> Result<Vec<Box<dyn LeanDependency>>, Error> {
+        let mut result = vec![];
+
+        for dep_identifier in all_dependencies.keys() {
+            let dep_name = format!("{}-{}", dep_identifier.name, dep_identifier.version);
+            let dep_path = format!("deps/{}/lampe", dep_name);
+
+            result.push(Box::new(
+                file_generator::lake::dependency::LeanDependencyPath::builder(&dep_name)
+                    .path(&dep_path)
+                    .build(),
+            ) as Box<dyn LeanDependency>);
+        }
+
+        Ok(result)
+    }
+
+    /// Collects all dependencies and their relationships
+    fn collect_all_dependencies_with_relationships(
+        &self,
+        noir_project: &noir::Project,
+        package: &Package,
+        all_dependencies: &mut HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+        direct_dependencies: &mut HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+        dependency_relationships: &mut HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+    ) -> Result<WithWarnings<()>, Error> {
+        let mut warnings = vec![];
+
+        let res = self.collect_direct_dependencies_without_lampe(noir_project, package, direct_dependencies)?;
+        warnings.extend(res.warnings);
+
+        let res = self.collect_all_dependencies_without_lampe(noir_project, package, all_dependencies)?;
+        warnings.extend(res.warnings);
+
+        let res = self.collect_dependencies_relationships_recursive(
+            noir_project,
+            package,
+            all_dependencies,
+            dependency_relationships,
+        )?;
+        warnings.extend(res.warnings);
+
+        Ok(WithWarnings::new((), warnings))
+    }
+
+    /// Collect dependency relationships by traversing the dependency graph
+    fn collect_dependencies_relationships_recursive(
+        &self,
+        noir_project: &noir::Project,
+        root_package: &Package,
+        all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+        dependency_relationships: &mut HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+    ) -> Result<WithWarnings<()>, Error> {
+        let mut warnings = vec![];
+        let mut visited = std::collections::HashSet::new();
+
+        let res = self.collect_package_dependencies(
+            noir_project,
+            root_package,
+            all_dependencies,
+            dependency_relationships,
+            &mut visited,
+        )?;
+        warnings.extend(res.warnings);
+
+        Ok(WithWarnings::new((), warnings))
+    }
+
+    /// Collects dependencies for a package
+    fn collect_package_dependencies(
+        &self,
+        noir_project: &noir::Project,
+        package: &Package,
+        all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+        dependency_relationships: &mut HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+        visited: &mut std::collections::HashSet<NoirPackageIdentifier>,
+    ) -> Result<WithWarnings<()>, Error> {
+        let mut warnings = vec![];
+
+        for dependency in package.dependencies.values() {
+            let dep_package = match dependency {
+                Dependency::Local { package } | Dependency::Remote { package } => package,
+            };
+
+            let dep_id = NoirPackageIdentifier {
+                name: dep_package.name.to_string(),
+                version: dep_package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+            };
+
+            if all_dependencies.contains_key(&dep_id) && !visited.contains(&dep_id) {
+                visited.insert(dep_id.clone());
+
+                let mut direct_deps_without_lampe = HashMap::new();
+                let res = self.collect_direct_dependencies_without_lampe(
+                    noir_project,
+                    dep_package,
+                    &mut direct_deps_without_lampe,
+                )?;
+                warnings.extend(res.warnings);
+
+                let direct_deps_with_lampe = self.collect_direct_dependencies_with_lampe(dep_package)?;
+
+                let direct_deps_ids: Vec<NoirPackageIdentifier> = direct_deps_without_lampe.keys().cloned().collect();
+
+                dependency_relationships.insert(dep_id.clone(), (direct_deps_ids, direct_deps_with_lampe));
+
+                let res = self.collect_package_dependencies(
+                    noir_project,
+                    dep_package,
+                    all_dependencies,
+                    dependency_relationships,
+                    visited,
+                )?;
+                warnings.extend(res.warnings);
+            }
+        }
+
+        Ok(WithWarnings::new((), warnings))
+    }
+
+    /// Collects direct dependencies that already have lampe directories
+    fn collect_direct_dependencies_with_lampe(
+        &self,
+        package: &Package,
+    ) -> Result<Vec<NoirPackageIdentifier>, Error> {
+        let mut result = vec![];
+
+        for dependency in package.dependencies.values() {
+            let dep_package = match dependency {
+                Dependency::Local { package } | Dependency::Remote { package } => package,
+            };
+
+            if !file_generator::has_lampe(dep_package) {
+                continue;
+            }
+
+            let package_identifier = NoirPackageIdentifier {
+                name: dep_package.name.to_string(),
+                version: dep_package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+            };
+
+            result.push(package_identifier);
+        }
+
+        Ok(result)
+    }
+
+    /// Collects only direct dependencies that don't have lampe directories
+    fn collect_direct_dependencies_without_lampe(
+        &self,
+        noir_project: &noir::Project,
+        package: &Package,
+        direct_dependencies: &mut HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+    ) -> Result<WithWarnings<()>, Error> {
+        let mut warnings = vec![];
+
+        for dependency in package.dependencies.values() {
+            let dep_package = match dependency {
+                Dependency::Local { package } | Dependency::Remote { package } => package,
+            };
+
+            if file_generator::has_lampe(dep_package) {
+                continue;
+            }
+
+            let package_identifier = NoirPackageIdentifier {
+                name: dep_package.name.to_string(),
+                version: dep_package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+            };
+
+            if direct_dependencies.contains_key(&package_identifier) {
+                continue;
+            }
+
+            // Only compile this dependency, don't recurse into its dependencies
+            let res = self.compile_package(noir_project, dep_package)?;
+            warnings.extend(res.warnings);
+
+            direct_dependencies.insert(package_identifier, res.data);
+        }
+
+        Ok(WithWarnings::new((), warnings))
+    }
+
+    /// Collects all transitive dependencies that don't have lampe directories
+    fn collect_all_dependencies_without_lampe(
+        &self,
+        noir_project: &noir::Project,
+        package: &Package,
+        all_dependencies: &mut HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+    ) -> Result<WithWarnings<()>, Error> {
+        let mut warnings = vec![];
+
+        for dependency in package.dependencies.values() {
+            let dep_package = match dependency {
+                Dependency::Local { package } | Dependency::Remote { package } => package,
+            };
+
+            if file_generator::has_lampe(dep_package) {
+                continue;
+            }
+
+            let package_identifier = NoirPackageIdentifier {
+                name: dep_package.name.to_string(),
+                version: dep_package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+            };
+
+            if all_dependencies.contains_key(&package_identifier) {
+                continue;
+            }
+
+            // First recursively collect transitive dependencies
+            let res = self.collect_all_dependencies_without_lampe(
+                noir_project,
+                dep_package,
+                all_dependencies,
+            )?;
+            warnings.extend(res.warnings);
+
+            // Then compile and add this dependency
+            let res = self.compile_package(noir_project, dep_package)?;
+            warnings.extend(res.warnings);
+
+            all_dependencies.insert(package_identifier, res.data);
+        }
 
         Ok(WithWarnings::new((), warnings))
     }
@@ -188,62 +436,6 @@ impl Project {
         }
 
         Ok(result)
-    }
-
-    fn extract_dependencies_without_lampe(
-        &self,
-        noir_project: &noir::Project,
-        package: &Package,
-    ) -> Result<WithWarnings<HashMap<NoirPackageIdentifier, Vec<LeanFile>>>, Error> {
-        let mut warnings = vec![];
-        let mut result = HashMap::new();
-
-        let res = self.do_extract_dependencies_without_lampe(noir_project, package, &mut result)?;
-        warnings.extend(res.warnings);
-
-        Ok(WithWarnings::new(result, warnings))
-    }
-
-    fn do_extract_dependencies_without_lampe(
-        &self,
-        noir_project: &noir::Project,
-        package: &Package,
-        extracted_dependencies: &mut HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
-    ) -> Result<WithWarnings<()>, Error> {
-        let mut warnings = vec![];
-
-        for dependency in package.dependencies.values() {
-            let package = match dependency {
-                Dependency::Local { package } | Dependency::Remote { package } => package,
-            };
-
-            if file_generator::has_lampe(package) {
-                continue;
-            }
-
-            let package_identifier = NoirPackageIdentifier {
-                name:    package.name.to_string(),
-                version: package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
-            };
-
-            if extracted_dependencies.contains_key(&package_identifier) {
-                continue;
-            }
-
-            let res = self.compile_package(noir_project, package)?;
-            warnings.extend(res.warnings);
-
-            extracted_dependencies.insert(package_identifier, res.data);
-
-            let res = self.do_extract_dependencies_without_lampe(
-                noir_project,
-                package,
-                extracted_dependencies,
-            )?;
-            warnings.extend(res.warnings);
-        }
-
-        Ok(WithWarnings::new((), warnings))
     }
 
     fn compile_package(
