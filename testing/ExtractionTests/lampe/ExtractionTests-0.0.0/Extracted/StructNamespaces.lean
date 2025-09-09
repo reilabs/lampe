@@ -5,23 +5,20 @@ import Lampe
 
 open Lampe
 
-namespace «ExtractionTests-0.0.0»
-namespace Extracted
-
-noir_def struct_namespaces::test::Foo::bar<>(self: struct_namespaces::test::Foo<>) -> Field := {
+noir_def «ExtractionTests-0.0.0»::struct_namespaces::test::Foo::bar<>(self: «ExtractionTests-0.0.0»::struct_namespaces::test::Foo<>) -> Field := {
   self.0
 }
 
-noir_def struct_namespaces::test::Foo::bar2<>() -> Field := {
+noir_def «ExtractionTests-0.0.0»::struct_namespaces::test::Foo::bar2<>() -> Field := {
   (3: Field)
 }
 
-noir_def struct_namespaces::baz<>(a: struct_namespaces::test::Foo<>) -> Field := {
-  let x = (struct_namespaces::test::Foo::bar2<> as λ() -> Field)();
-  let y = (struct_namespaces::test::Foo::bar<> as λ(struct_namespaces::test::Foo<>) -> Field)(a);
+noir_def «ExtractionTests-0.0.0»::struct_namespaces::baz<>(a: «ExtractionTests-0.0.0»::struct_namespaces::test::Foo<>) -> Field := {
+  let x = («ExtractionTests-0.0.0»::struct_namespaces::test::Foo::bar2<> as λ() -> Field)();
+  let y = («ExtractionTests-0.0.0»::struct_namespaces::test::Foo::bar<> as λ(«ExtractionTests-0.0.0»::struct_namespaces::test::Foo<>) -> Field)(a);
   (#_fAdd returning Field)(x, y)
 }
 
-def StructNamespaces.env : Env := Env.mk
-  [«struct_namespaces::test::Foo::bar», «struct_namespaces::test::Foo::bar2», «struct_namespaces::baz»]
+def «ExtractionTests-0.0.0».StructNamespaces.env : Env := Env.mk
+  [«ExtractionTests-0.0.0::struct_namespaces::test::Foo::bar», «ExtractionTests-0.0.0::struct_namespaces::test::Foo::bar2», «ExtractionTests-0.0.0::struct_namespaces::baz»]
   []

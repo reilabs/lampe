@@ -5,9 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «ExtractionTests-0.0.0»
-namespace Extracted
-
-def Lib.env : Env := Env.mk
+def «ExtractionTests-0.0.0».Lib.env : Env := Env.mk
   []
   []

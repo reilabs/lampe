@@ -2,6 +2,3 @@
 
 import «Multiple-0.0.0».Extracted
 
-namespace «Multiple-0.0.0»
-
-open Lampe

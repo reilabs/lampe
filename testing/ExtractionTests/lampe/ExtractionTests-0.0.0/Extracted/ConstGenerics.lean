@@ -5,10 +5,7 @@ import Lampe
 
 open Lampe
 
-namespace «ExtractionTests-0.0.0»
-namespace Extracted
-
-noir_def const_generics::nat_generic_test<N: u32>() -> Array<Field, N: u32> := {
+noir_def «ExtractionTests-0.0.0»::const_generics::nat_generic_test<N: u32>() -> Array<Field, N: u32> := {
   for i in (0: u32) .. uConst!(N: u32) do {
     let __0 = i;
     #_skip
@@ -16,7 +13,7 @@ noir_def const_generics::nat_generic_test<N: u32>() -> Array<Field, N: u32> := {
   (#_mkRepeatedArray returning Array<Field, N: u32>)((1: Field))
 }
 
-noir_def const_generics::nat_generic_test_2<N: u8>(x: Field) -> Field := {
+noir_def «ExtractionTests-0.0.0»::const_generics::nat_generic_test_2<N: u8>(x: Field) -> Field := {
   let mut res = x;
   for _ in (0: u8) .. uConst!(N: u8) do {
     res = (#_fMul returning Field)(res, (2: Field));
@@ -25,6 +22,6 @@ noir_def const_generics::nat_generic_test_2<N: u8>(x: Field) -> Field := {
   res
 }
 
-def ConstGenerics.env : Env := Env.mk
-  [«const_generics::nat_generic_test», «const_generics::nat_generic_test_2»]
+def «ExtractionTests-0.0.0».ConstGenerics.env : Env := Env.mk
+  [«ExtractionTests-0.0.0::const_generics::nat_generic_test», «ExtractionTests-0.0.0::const_generics::nat_generic_test_2»]
   []
