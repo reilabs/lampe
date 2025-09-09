@@ -5,13 +5,11 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::panic::panic<T: Type, U: Type, N: u32>(message: FmtString<N: u32, T>) -> U := {
   (#_assert returning Unit)(#_false);
   (#_zeroed returning U)()
 }
 
-def Panic.env : Env := Env.mk
+def «std-1.0.0-beta.11».Panic.env : Env := Env.mk
   [«std-1.0.0-beta.11::panic::panic»]
   []

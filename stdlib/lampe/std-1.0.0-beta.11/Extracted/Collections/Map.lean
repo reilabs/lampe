@@ -5,13 +5,11 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_global_def «std-1.0.0-beta.11»::collections::map::MAX_LOAD_FACTOR_NUMERATOR: u32 = (3: u32);
 
 noir_global_def «std-1.0.0-beta.11»::collections::map::MAX_LOAD_FACTOR_DEN0MINATOR: u32 = (4: u32);
 
-noir_trait_impl[impl_34]<K: Type, V: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::collections::map::Slot<K, V> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_34]<K: Type, V: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::collections::map::Slot<K, V> where [] := {
   noir_def default<>() -> «std-1.0.0-beta.11»::collections::map::Slot<K, V> := {
     (#_makeData returning «std-1.0.0-beta.11»::collections::map::Slot<K, V>)((«std-1.0.0-beta.11»::option::Option::none<Tuple<K, V> > as λ() -> «std-1.0.0-beta.11»::option::Option<Tuple<K, V> >)(), #_false)
   };
@@ -294,7 +292,7 @@ noir_def «std-1.0.0-beta.11»::collections::map::HashMap::assert_load_factor<K:
   #_skip
 }
 
-noir_trait_impl[impl_35]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B> where [K: «std-1.0.0-beta.11»::cmp::Eq<>, K: «std-1.0.0-beta.11»::cmp::Eq<>, V: «std-1.0.0-beta.11»::cmp::Eq<>, B: «std-1.0.0-beta.11»::cmp::Eq<B_as_BuildHasher_H>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_35]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B> where [K: «std-1.0.0-beta.11»::cmp::Eq<>, K: «std-1.0.0-beta.11»::cmp::Eq<>, V: «std-1.0.0-beta.11»::cmp::Eq<>, B: «std-1.0.0-beta.11»::cmp::Eq<B_as_BuildHasher_H>] := {
   noir_def eq<>(self: «std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B>, other: «std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B>) -> bool := {
     let mut equal = #_false;
     if (#_uEq returning bool)((«std-1.0.0-beta.11»::collections::map::HashMap::len<K, V, N: u32, B> as λ(«std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B>) -> u32)(self), («std-1.0.0-beta.11»::collections::map::HashMap::len<K, V, N: u32, B> as λ(«std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B>) -> u32)(other)) then {
@@ -327,7 +325,7 @@ noir_trait_impl[impl_35]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: 
   };
 }
 
-noir_trait_impl[impl_36]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B> where [B: «std-1.0.0-beta.11»::default::Default<B_as_BuildHasher_H>, B: «std-1.0.0-beta.11»::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_36]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B> where [B: «std-1.0.0-beta.11»::default::Default<B_as_BuildHasher_H>, B: «std-1.0.0-beta.11»::default::Default<>] := {
   noir_def default<>() -> «std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B> := {
     let _build_hasher = ((B as «std-1.0.0-beta.11»::default::Default<>)::default<> as λ() -> B)();
     let map = («std-1.0.0-beta.11»::collections::map::HashMap::with_hasher<K, V, N: u32, B> as λ(B) -> «std-1.0.0-beta.11»::collections::map::HashMap<K, V, N: u32, B>)(_build_hasher);
@@ -335,6 +333,6 @@ noir_trait_impl[impl_36]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: 
   };
 }
 
-def Collections.Map.env : Env := Env.mk
+def «std-1.0.0-beta.11».Collections.Map.env : Env := Env.mk
   [«std-1.0.0-beta.11::collections::map::MAX_LOAD_FACTOR_NUMERATOR», «std-1.0.0-beta.11::collections::map::MAX_LOAD_FACTOR_DEN0MINATOR», «std-1.0.0-beta.11::collections::map::Slot::is_valid», «std-1.0.0-beta.11::collections::map::Slot::is_available», «std-1.0.0-beta.11::collections::map::Slot::key_value», «std-1.0.0-beta.11::collections::map::Slot::key_value_unchecked», «std-1.0.0-beta.11::collections::map::Slot::set», «std-1.0.0-beta.11::collections::map::Slot::mark_deleted», «std-1.0.0-beta.11::collections::map::HashMap::with_hasher», «std-1.0.0-beta.11::collections::map::HashMap::clear», «std-1.0.0-beta.11::collections::map::HashMap::contains_key», «std-1.0.0-beta.11::collections::map::HashMap::is_empty», «std-1.0.0-beta.11::collections::map::HashMap::entries», «std-1.0.0-beta.11::collections::map::HashMap::keys», «std-1.0.0-beta.11::collections::map::HashMap::values», «std-1.0.0-beta.11::collections::map::HashMap::iter_mut», «std-1.0.0-beta.11::collections::map::HashMap::iter_keys_mut», «std-1.0.0-beta.11::collections::map::HashMap::iter_values_mut», «std-1.0.0-beta.11::collections::map::HashMap::retain», «std-1.0.0-beta.11::collections::map::HashMap::len», «std-1.0.0-beta.11::collections::map::HashMap::capacity», «std-1.0.0-beta.11::collections::map::HashMap::get», «std-1.0.0-beta.11::collections::map::HashMap::insert», «std-1.0.0-beta.11::collections::map::HashMap::remove», «std-1.0.0-beta.11::collections::map::HashMap::hash», «std-1.0.0-beta.11::collections::map::HashMap::quadratic_probe», «std-1.0.0-beta.11::collections::map::HashMap::assert_load_factor»]
   [impl_34, impl_35, impl_36]

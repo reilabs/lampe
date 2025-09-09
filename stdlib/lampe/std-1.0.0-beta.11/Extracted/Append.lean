@@ -5,9 +5,7 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
-noir_trait_impl[impl_315]<T: Type> «std-1.0.0-beta.11»::append::Append<> for Slice<T> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_315]<T: Type> «std-1.0.0-beta.11»::append::Append<> for Slice<T> where [] := {
   noir_def empty<>() -> Slice<T> := {
     (#_mkSlice returning Slice<T>)()
   };
@@ -17,6 +15,6 @@ noir_trait_impl[impl_315]<T: Type> «std-1.0.0-beta.11»::append::Append<> for S
   };
 }
 
-def Append.env : Env := Env.mk
+def «std-1.0.0-beta.11».Append.env : Env := Env.mk
   []
   [impl_315]

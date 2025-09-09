@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::print_oracle<T: Type>(with_newline: bool, input: T) -> Unit := {
   (#_fresh returning Unit)()
 }
@@ -68,6 +66,6 @@ noir_def «std-1.0.0-beta.11»::tests::test_wrapping_mul<>() -> Unit := {
   #_skip
 }
 
-def Lib.env : Env := Env.mk
+def «std-1.0.0-beta.11».Lib.env : Env := Env.mk
   [«std-1.0.0-beta.11::print_oracle», «std-1.0.0-beta.11::print_unconstrained», «std-1.0.0-beta.11::println», «std-1.0.0-beta.11::print», «std-1.0.0-beta.11::verify_proof_with_type», «std-1.0.0-beta.11::wrapping_add», «std-1.0.0-beta.11::wrapping_sub», «std-1.0.0-beta.11::wrapping_mul», «std-1.0.0-beta.11::tests::test_static_assert_custom_message», «std-1.0.0-beta.11::tests::test_wrapping_mul»]
   []

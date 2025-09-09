@@ -5,567 +5,565 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
-noir_trait_impl[impl_116]<> «std-1.0.0-beta.11»::ops::arith::Add<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_116]<> «std-1.0.0-beta.11»::ops::arith::Add<> for Field where [] := {
   noir_def add<>(self: Field, other: Field) -> Field := {
     (#_fAdd returning Field)(self, other)
   };
 }
 
-noir_trait_impl[impl_117]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_117]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u128 where [] := {
   noir_def add<>(self: u128, other: u128) -> u128 := {
     (#_uAdd returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_118]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_118]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u64 where [] := {
   noir_def add<>(self: u64, other: u64) -> u64 := {
     (#_uAdd returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_119]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_119]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u32 where [] := {
   noir_def add<>(self: u32, other: u32) -> u32 := {
     (#_uAdd returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_120]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_120]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u16 where [] := {
   noir_def add<>(self: u16, other: u16) -> u16 := {
     (#_uAdd returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_121]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_121]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u8 where [] := {
   noir_def add<>(self: u8, other: u8) -> u8 := {
     (#_uAdd returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_122]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_122]<> «std-1.0.0-beta.11»::ops::arith::Add<> for u1 where [] := {
   noir_def add<>(self: u1, other: u1) -> u1 := {
     (#_uAdd returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_123]<> «std-1.0.0-beta.11»::ops::arith::Add<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_123]<> «std-1.0.0-beta.11»::ops::arith::Add<> for i8 where [] := {
   noir_def add<>(self: i8, other: i8) -> i8 := {
     (#_iAdd returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_124]<> «std-1.0.0-beta.11»::ops::arith::Add<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_124]<> «std-1.0.0-beta.11»::ops::arith::Add<> for i16 where [] := {
   noir_def add<>(self: i16, other: i16) -> i16 := {
     (#_iAdd returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_125]<> «std-1.0.0-beta.11»::ops::arith::Add<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_125]<> «std-1.0.0-beta.11»::ops::arith::Add<> for i32 where [] := {
   noir_def add<>(self: i32, other: i32) -> i32 := {
     (#_iAdd returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_126]<> «std-1.0.0-beta.11»::ops::arith::Add<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_126]<> «std-1.0.0-beta.11»::ops::arith::Add<> for i64 where [] := {
   noir_def add<>(self: i64, other: i64) -> i64 := {
     (#_iAdd returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_127]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_127]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for Field where [] := {
   noir_def sub<>(self: Field, other: Field) -> Field := {
     (#_fSub returning Field)(self, other)
   };
 }
 
-noir_trait_impl[impl_128]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_128]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u128 where [] := {
   noir_def sub<>(self: u128, other: u128) -> u128 := {
     (#_uSub returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_129]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_129]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u64 where [] := {
   noir_def sub<>(self: u64, other: u64) -> u64 := {
     (#_uSub returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_130]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_130]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u32 where [] := {
   noir_def sub<>(self: u32, other: u32) -> u32 := {
     (#_uSub returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_131]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_131]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u16 where [] := {
   noir_def sub<>(self: u16, other: u16) -> u16 := {
     (#_uSub returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_132]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_132]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u8 where [] := {
   noir_def sub<>(self: u8, other: u8) -> u8 := {
     (#_uSub returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_133]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_133]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for u1 where [] := {
   noir_def sub<>(self: u1, other: u1) -> u1 := {
     (#_uSub returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_134]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_134]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for i8 where [] := {
   noir_def sub<>(self: i8, other: i8) -> i8 := {
     (#_iSub returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_135]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_135]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for i16 where [] := {
   noir_def sub<>(self: i16, other: i16) -> i16 := {
     (#_iSub returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_136]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_136]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for i32 where [] := {
   noir_def sub<>(self: i32, other: i32) -> i32 := {
     (#_iSub returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_137]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_137]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for i64 where [] := {
   noir_def sub<>(self: i64, other: i64) -> i64 := {
     (#_iSub returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_138]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_138]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for Field where [] := {
   noir_def mul<>(self: Field, other: Field) -> Field := {
     (#_fMul returning Field)(self, other)
   };
 }
 
-noir_trait_impl[impl_139]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_139]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u128 where [] := {
   noir_def mul<>(self: u128, other: u128) -> u128 := {
     (#_uMul returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_140]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_140]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u64 where [] := {
   noir_def mul<>(self: u64, other: u64) -> u64 := {
     (#_uMul returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_141]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_141]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u32 where [] := {
   noir_def mul<>(self: u32, other: u32) -> u32 := {
     (#_uMul returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_142]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_142]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u16 where [] := {
   noir_def mul<>(self: u16, other: u16) -> u16 := {
     (#_uMul returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_143]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_143]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u8 where [] := {
   noir_def mul<>(self: u8, other: u8) -> u8 := {
     (#_uMul returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_144]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_144]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for u1 where [] := {
   noir_def mul<>(self: u1, other: u1) -> u1 := {
     (#_uMul returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_145]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_145]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for i8 where [] := {
   noir_def mul<>(self: i8, other: i8) -> i8 := {
     (#_iMul returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_146]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_146]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for i16 where [] := {
   noir_def mul<>(self: i16, other: i16) -> i16 := {
     (#_iMul returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_147]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_147]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for i32 where [] := {
   noir_def mul<>(self: i32, other: i32) -> i32 := {
     (#_iMul returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_148]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_148]<> «std-1.0.0-beta.11»::ops::arith::Mul<> for i64 where [] := {
   noir_def mul<>(self: i64, other: i64) -> i64 := {
     (#_iMul returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_149]<> «std-1.0.0-beta.11»::ops::arith::Div<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_149]<> «std-1.0.0-beta.11»::ops::arith::Div<> for Field where [] := {
   noir_def div<>(self: Field, other: Field) -> Field := {
     (#_fDiv returning Field)(self, other)
   };
 }
 
-noir_trait_impl[impl_150]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_150]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u128 where [] := {
   noir_def div<>(self: u128, other: u128) -> u128 := {
     (#_uDiv returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_151]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_151]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u64 where [] := {
   noir_def div<>(self: u64, other: u64) -> u64 := {
     (#_uDiv returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_152]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_152]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u32 where [] := {
   noir_def div<>(self: u32, other: u32) -> u32 := {
     (#_uDiv returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_153]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_153]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u16 where [] := {
   noir_def div<>(self: u16, other: u16) -> u16 := {
     (#_uDiv returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_154]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_154]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u8 where [] := {
   noir_def div<>(self: u8, other: u8) -> u8 := {
     (#_uDiv returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_155]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_155]<> «std-1.0.0-beta.11»::ops::arith::Div<> for u1 where [] := {
   noir_def div<>(self: u1, other: u1) -> u1 := {
     (#_uDiv returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_156]<> «std-1.0.0-beta.11»::ops::arith::Div<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_156]<> «std-1.0.0-beta.11»::ops::arith::Div<> for i8 where [] := {
   noir_def div<>(self: i8, other: i8) -> i8 := {
     (#_iDiv returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_157]<> «std-1.0.0-beta.11»::ops::arith::Div<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_157]<> «std-1.0.0-beta.11»::ops::arith::Div<> for i16 where [] := {
   noir_def div<>(self: i16, other: i16) -> i16 := {
     (#_iDiv returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_158]<> «std-1.0.0-beta.11»::ops::arith::Div<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_158]<> «std-1.0.0-beta.11»::ops::arith::Div<> for i32 where [] := {
   noir_def div<>(self: i32, other: i32) -> i32 := {
     (#_iDiv returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_159]<> «std-1.0.0-beta.11»::ops::arith::Div<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_159]<> «std-1.0.0-beta.11»::ops::arith::Div<> for i64 where [] := {
   noir_def div<>(self: i64, other: i64) -> i64 := {
     (#_iDiv returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_160]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_160]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u128 where [] := {
   noir_def rem<>(self: u128, other: u128) -> u128 := {
     (#_uRem returning u128)(self, other)
   };
 }
 
-noir_trait_impl[impl_161]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_161]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u64 where [] := {
   noir_def rem<>(self: u64, other: u64) -> u64 := {
     (#_uRem returning u64)(self, other)
   };
 }
 
-noir_trait_impl[impl_162]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_162]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u32 where [] := {
   noir_def rem<>(self: u32, other: u32) -> u32 := {
     (#_uRem returning u32)(self, other)
   };
 }
 
-noir_trait_impl[impl_163]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_163]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u16 where [] := {
   noir_def rem<>(self: u16, other: u16) -> u16 := {
     (#_uRem returning u16)(self, other)
   };
 }
 
-noir_trait_impl[impl_164]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_164]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u8 where [] := {
   noir_def rem<>(self: u8, other: u8) -> u8 := {
     (#_uRem returning u8)(self, other)
   };
 }
 
-noir_trait_impl[impl_165]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_165]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for u1 where [] := {
   noir_def rem<>(self: u1, other: u1) -> u1 := {
     (#_uRem returning u1)(self, other)
   };
 }
 
-noir_trait_impl[impl_166]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_166]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for i8 where [] := {
   noir_def rem<>(self: i8, other: i8) -> i8 := {
     (#_iRem returning i8)(self, other)
   };
 }
 
-noir_trait_impl[impl_167]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_167]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for i16 where [] := {
   noir_def rem<>(self: i16, other: i16) -> i16 := {
     (#_iRem returning i16)(self, other)
   };
 }
 
-noir_trait_impl[impl_168]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_168]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for i32 where [] := {
   noir_def rem<>(self: i32, other: i32) -> i32 := {
     (#_iRem returning i32)(self, other)
   };
 }
 
-noir_trait_impl[impl_169]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_169]<> «std-1.0.0-beta.11»::ops::arith::Rem<> for i64 where [] := {
   noir_def rem<>(self: i64, other: i64) -> i64 := {
     (#_iRem returning i64)(self, other)
   };
 }
 
-noir_trait_impl[impl_170]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_170]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for Field where [] := {
   noir_def neg<>(self: Field) -> Field := {
     (#_fNeg returning Field)(self)
   };
 }
 
-noir_trait_impl[impl_171]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_171]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for i8 where [] := {
   noir_def neg<>(self: i8) -> i8 := {
     (#_iNeg returning i8)(self)
   };
 }
 
-noir_trait_impl[impl_172]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_172]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for i16 where [] := {
   noir_def neg<>(self: i16) -> i16 := {
     (#_iNeg returning i16)(self)
   };
 }
 
-noir_trait_impl[impl_173]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_173]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for i32 where [] := {
   noir_def neg<>(self: i32) -> i32 := {
     (#_iNeg returning i32)(self)
   };
 }
 
-noir_trait_impl[impl_174]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_174]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for i64 where [] := {
   noir_def neg<>(self: i64) -> i64 := {
     (#_iNeg returning i64)(self)
   };
 }
 
-noir_trait_impl[impl_175]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_175]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u1 where [] := {
   noir_def wrapping_add<>(self: u1, y: u1) -> u1 := {
     (#_uXor returning u1)(self, y)
   };
 }
 
-noir_trait_impl[impl_176]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_176]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u8 where [] := {
   noir_def wrapping_add<>(self: u8, y: u8) -> u8 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_add_hlp<u8> as λ(u8, u8) -> u8)(self, y)
   };
 }
 
-noir_trait_impl[impl_177]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_177]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u16 where [] := {
   noir_def wrapping_add<>(self: u16, y: u16) -> u16 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_add_hlp<u16> as λ(u16, u16) -> u16)(self, y)
   };
 }
 
-noir_trait_impl[impl_178]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_178]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u32 where [] := {
   noir_def wrapping_add<>(self: u32, y: u32) -> u32 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_add_hlp<u32> as λ(u32, u32) -> u32)(self, y)
   };
 }
 
-noir_trait_impl[impl_179]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_179]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u64 where [] := {
   noir_def wrapping_add<>(self: u64, y: u64) -> u64 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_add_hlp<u64> as λ(u64, u64) -> u64)(self, y)
   };
 }
 
-noir_trait_impl[impl_180]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_180]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for u128 where [] := {
   noir_def wrapping_add<>(self: u128, y: u128) -> u128 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_add_hlp<u128> as λ(u128, u128) -> u128)(self, y)
   };
 }
 
-noir_trait_impl[impl_181]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_181]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for i8 where [] := {
   noir_def wrapping_add<>(self: i8, y: i8) -> i8 := {
     let x = (#_cast returning u8)(self);
     (#_cast returning i8)(((u8 as «std-1.0.0-beta.11»::ops::arith::WrappingAdd<>)::wrapping_add<> as λ(u8, u8) -> u8)(x, (#_cast returning u8)(y)))
   };
 }
 
-noir_trait_impl[impl_182]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_182]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for i16 where [] := {
   noir_def wrapping_add<>(self: i16, y: i16) -> i16 := {
     let x = (#_cast returning u16)(self);
     (#_cast returning i16)(((u16 as «std-1.0.0-beta.11»::ops::arith::WrappingAdd<>)::wrapping_add<> as λ(u16, u16) -> u16)(x, (#_cast returning u16)(y)))
   };
 }
 
-noir_trait_impl[impl_183]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_183]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for i32 where [] := {
   noir_def wrapping_add<>(self: i32, y: i32) -> i32 := {
     let x = (#_cast returning u32)(self);
     (#_cast returning i32)(((u32 as «std-1.0.0-beta.11»::ops::arith::WrappingAdd<>)::wrapping_add<> as λ(u32, u32) -> u32)(x, (#_cast returning u32)(y)))
   };
 }
 
-noir_trait_impl[impl_184]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_184]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for i64 where [] := {
   noir_def wrapping_add<>(self: i64, y: i64) -> i64 := {
     let x = (#_cast returning u64)(self);
     (#_cast returning i64)(((u64 as «std-1.0.0-beta.11»::ops::arith::WrappingAdd<>)::wrapping_add<> as λ(u64, u64) -> u64)(x, (#_cast returning u64)(y)))
   };
 }
 
-noir_trait_impl[impl_185]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_185]<> «std-1.0.0-beta.11»::ops::arith::WrappingAdd<> for Field where [] := {
   noir_def wrapping_add<>(self: Field, y: Field) -> Field := {
     (#_fAdd returning Field)(self, y)
   };
 }
 
-noir_trait_impl[impl_186]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_186]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u1 where [] := {
   noir_def wrapping_sub<>(self: u1, y: u1) -> u1 := {
     (#_uXor returning u1)(self, y)
   };
 }
 
-noir_trait_impl[impl_187]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_187]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u8 where [] := {
   noir_def wrapping_sub<>(self: u8, y: u8) -> u8 := {
     (#_cast returning u8)((«std-1.0.0-beta.11»::ops::arith::wrapping_sub_hlp<u8> as λ(u8, u8) -> Field)(self, y))
   };
 }
 
-noir_trait_impl[impl_188]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_188]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u16 where [] := {
   noir_def wrapping_sub<>(self: u16, y: u16) -> u16 := {
     (#_cast returning u16)((«std-1.0.0-beta.11»::ops::arith::wrapping_sub_hlp<u16> as λ(u16, u16) -> Field)(self, y))
   };
 }
 
-noir_trait_impl[impl_189]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_189]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u32 where [] := {
   noir_def wrapping_sub<>(self: u32, y: u32) -> u32 := {
     (#_cast returning u32)((«std-1.0.0-beta.11»::ops::arith::wrapping_sub_hlp<u32> as λ(u32, u32) -> Field)(self, y))
   };
 }
 
-noir_trait_impl[impl_190]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_190]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u64 where [] := {
   noir_def wrapping_sub<>(self: u64, y: u64) -> u64 := {
     (#_cast returning u64)((«std-1.0.0-beta.11»::ops::arith::wrapping_sub_hlp<u64> as λ(u64, u64) -> Field)(self, y))
   };
 }
 
-noir_trait_impl[impl_191]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_191]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for u128 where [] := {
   noir_def wrapping_sub<>(self: u128, y: u128) -> u128 := {
     (#_cast returning u128)((«std-1.0.0-beta.11»::ops::arith::wrapping_sub_hlp<u128> as λ(u128, u128) -> Field)(self, y))
   };
 }
 
-noir_trait_impl[impl_192]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_192]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for i8 where [] := {
   noir_def wrapping_sub<>(self: i8, y: i8) -> i8 := {
     let x = (#_cast returning u8)(self);
     (#_cast returning i8)(((u8 as «std-1.0.0-beta.11»::ops::arith::WrappingSub<>)::wrapping_sub<> as λ(u8, u8) -> u8)(x, (#_cast returning u8)(y)))
   };
 }
 
-noir_trait_impl[impl_193]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_193]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for i16 where [] := {
   noir_def wrapping_sub<>(self: i16, y: i16) -> i16 := {
     let x = (#_cast returning u16)(self);
     (#_cast returning i16)(((u16 as «std-1.0.0-beta.11»::ops::arith::WrappingSub<>)::wrapping_sub<> as λ(u16, u16) -> u16)(x, (#_cast returning u16)(y)))
   };
 }
 
-noir_trait_impl[impl_194]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_194]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for i32 where [] := {
   noir_def wrapping_sub<>(self: i32, y: i32) -> i32 := {
     let x = (#_cast returning u32)(self);
     (#_cast returning i32)(((u32 as «std-1.0.0-beta.11»::ops::arith::WrappingSub<>)::wrapping_sub<> as λ(u32, u32) -> u32)(x, (#_cast returning u32)(y)))
   };
 }
 
-noir_trait_impl[impl_195]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_195]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for i64 where [] := {
   noir_def wrapping_sub<>(self: i64, y: i64) -> i64 := {
     let x = (#_cast returning u64)(self);
     (#_cast returning i64)(((u64 as «std-1.0.0-beta.11»::ops::arith::WrappingSub<>)::wrapping_sub<> as λ(u64, u64) -> u64)(x, (#_cast returning u64)(y)))
   };
 }
 
-noir_trait_impl[impl_196]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_196]<> «std-1.0.0-beta.11»::ops::arith::WrappingSub<> for Field where [] := {
   noir_def wrapping_sub<>(self: Field, y: Field) -> Field := {
     (#_fSub returning Field)(self, y)
   };
 }
 
-noir_trait_impl[impl_197]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_197]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u1 where [] := {
   noir_def wrapping_mul<>(self: u1, y: u1) -> u1 := {
     (#_uAnd returning u1)(self, y)
   };
 }
 
-noir_trait_impl[impl_198]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_198]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u8 where [] := {
   noir_def wrapping_mul<>(self: u8, y: u8) -> u8 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_mul_hlp<u8> as λ(u8, u8) -> u8)(self, y)
   };
 }
 
-noir_trait_impl[impl_199]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_199]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u16 where [] := {
   noir_def wrapping_mul<>(self: u16, y: u16) -> u16 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_mul_hlp<u16> as λ(u16, u16) -> u16)(self, y)
   };
 }
 
-noir_trait_impl[impl_200]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_200]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u32 where [] := {
   noir_def wrapping_mul<>(self: u32, y: u32) -> u32 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_mul_hlp<u32> as λ(u32, u32) -> u32)(self, y)
   };
 }
 
-noir_trait_impl[impl_201]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_201]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u64 where [] := {
   noir_def wrapping_mul<>(self: u64, y: u64) -> u64 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_mul_hlp<u64> as λ(u64, u64) -> u64)(self, y)
   };
 }
 
-noir_trait_impl[impl_202]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_202]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for i8 where [] := {
   noir_def wrapping_mul<>(self: i8, y: i8) -> i8 := {
     let x = (#_cast returning u8)(self);
     (#_cast returning i8)(((u8 as «std-1.0.0-beta.11»::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u8, u8) -> u8)(x, (#_cast returning u8)(y)))
   };
 }
 
-noir_trait_impl[impl_203]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_203]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for i16 where [] := {
   noir_def wrapping_mul<>(self: i16, y: i16) -> i16 := {
     let x = (#_cast returning u16)(self);
     (#_cast returning i16)(((u16 as «std-1.0.0-beta.11»::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u16, u16) -> u16)(x, (#_cast returning u16)(y)))
   };
 }
 
-noir_trait_impl[impl_204]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_204]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for i32 where [] := {
   noir_def wrapping_mul<>(self: i32, y: i32) -> i32 := {
     let x = (#_cast returning u32)(self);
     (#_cast returning i32)(((u32 as «std-1.0.0-beta.11»::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u32, u32) -> u32)(x, (#_cast returning u32)(y)))
   };
 }
 
-noir_trait_impl[impl_205]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_205]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for i64 where [] := {
   noir_def wrapping_mul<>(self: i64, y: i64) -> i64 := {
     let x = (#_cast returning u64)(self);
     (#_cast returning i64)(((u64 as «std-1.0.0-beta.11»::ops::arith::WrappingMul<>)::wrapping_mul<> as λ(u64, u64) -> u64)(x, (#_cast returning u64)(y)))
   };
 }
 
-noir_trait_impl[impl_206]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_206]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for u128 where [] := {
   noir_def wrapping_mul<>(self: u128, y: u128) -> u128 := {
     («std-1.0.0-beta.11»::ops::arith::wrapping_mul128_hlp<> as λ(u128, u128) -> u128)(self, y)
   };
 }
 
-noir_trait_impl[impl_207]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_207]<> «std-1.0.0-beta.11»::ops::arith::WrappingMul<> for Field where [] := {
   noir_def wrapping_mul<>(self: Field, y: Field) -> Field := {
     (#_fMul returning Field)(self, y)
   };
@@ -608,6 +606,6 @@ noir_def «std-1.0.0-beta.11»::ops::arith::wrapping_mul128_hlp<>(x: u128, y: u1
   (#_cast returning u128)((#_fAdd returning Field)(lo, (#_fMul returning Field)((#_cast returning Field)((«std-1.0.0-beta.11»::ops::arith::two_pow_64<> as λ() -> u128)()), hi)))
 }
 
-def Ops.Arith.env : Env := Env.mk
+def «std-1.0.0-beta.11».Ops.Arith.env : Env := Env.mk
   [«std-1.0.0-beta.11::ops::arith::wrapping_add_hlp», «std-1.0.0-beta.11::ops::arith::wrapping_sub_hlp», «std-1.0.0-beta.11::ops::arith::wrapping_mul_hlp», «std-1.0.0-beta.11::ops::arith::two_pow_64», «std-1.0.0-beta.11::ops::arith::split64», «std-1.0.0-beta.11::ops::arith::split_into_64_bit_limbs», «std-1.0.0-beta.11::ops::arith::wrapping_mul128_hlp»]
   [impl_116, impl_117, impl_118, impl_119, impl_120, impl_121, impl_122, impl_123, impl_124, impl_125, impl_126, impl_127, impl_128, impl_129, impl_130, impl_131, impl_132, impl_133, impl_134, impl_135, impl_136, impl_137, impl_138, impl_139, impl_140, impl_141, impl_142, impl_143, impl_144, impl_145, impl_146, impl_147, impl_148, impl_149, impl_150, impl_151, impl_152, impl_153, impl_154, impl_155, impl_156, impl_157, impl_158, impl_159, impl_160, impl_161, impl_162, impl_163, impl_164, impl_165, impl_166, impl_167, impl_168, impl_169, impl_170, impl_171, impl_172, impl_173, impl_174, impl_175, impl_176, impl_177, impl_178, impl_179, impl_180, impl_181, impl_182, impl_183, impl_184, impl_185, impl_186, impl_187, impl_188, impl_189, impl_190, impl_191, impl_192, impl_193, impl_194, impl_195, impl_196, impl_197, impl_198, impl_199, impl_200, impl_201, impl_202, impl_203, impl_204, impl_205, impl_206, impl_207]

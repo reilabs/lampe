@@ -5,12 +5,10 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::compat::is_bn254<>() -> bool := {
   #_true
 }
 
-def Compat.env : Env := Env.mk
+def «std-1.0.0-beta.11».Compat.env : Env := Env.mk
   [«std-1.0.0-beta.11::compat::is_bn254»]
   []

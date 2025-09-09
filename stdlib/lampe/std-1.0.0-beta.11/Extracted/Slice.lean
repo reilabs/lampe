@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::slice::append<T: Type>(mut self: Slice<T>, other: Slice<T>) -> Slice<T> := {
   {
     let ζi0 = other;
@@ -241,6 +239,6 @@ noir_def «std-1.0.0-beta.11»::slice::test::for_eachi_example<>() -> Unit := {
   #_skip
 }
 
-def Slice.env : Env := Env.mk
+def «std-1.0.0-beta.11».Slice.env : Env := Env.mk
   [«std-1.0.0-beta.11::slice::append», «std-1.0.0-beta.11::slice::as_array», «std-1.0.0-beta.11::slice::map», «std-1.0.0-beta.11::slice::mapi», «std-1.0.0-beta.11::slice::for_each», «std-1.0.0-beta.11::slice::for_eachi», «std-1.0.0-beta.11::slice::fold», «std-1.0.0-beta.11::slice::reduce», «std-1.0.0-beta.11::slice::filter», «std-1.0.0-beta.11::slice::join», «std-1.0.0-beta.11::slice::all», «std-1.0.0-beta.11::slice::any», «std-1.0.0-beta.11::slice::test::map_empty», «std-1.0.0-beta.11::slice::test::mapi_empty», «std-1.0.0-beta.11::slice::test::for_each_empty», «std-1.0.0-beta.11::slice::test::for_eachi_empty», «std-1.0.0-beta.11::slice::test::map_example», «std-1.0.0-beta.11::slice::test::mapi_example», «std-1.0.0-beta.11::slice::test::for_each_example», «std-1.0.0-beta.11::slice::test::for_eachi_example»]
   []

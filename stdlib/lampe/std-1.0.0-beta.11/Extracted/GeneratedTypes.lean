@@ -4,8 +4,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_struct_def «std-1.0.0-beta.11»::option::Option<T: Type> {
   bool,
   T,

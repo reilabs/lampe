@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint::double<>(self: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> := {
   («std-1.0.0-beta.11»::embedded_curve_ops::embedded_curve_add<> as λ(«std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>, «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>)(self, self)
 }
@@ -19,31 +17,31 @@ noir_def «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint::generato
   (#_makeData returning «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>)((1: Field), (17631683881184975370165255887551781615748388533673675138860: Field), #_false)
 }
 
-noir_trait_impl[impl_25]<> «std-1.0.0-beta.11»::ops::arith::Add<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_25]<> «std-1.0.0-beta.11»::ops::arith::Add<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
   noir_def add<>(self: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>, other: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> := {
     («std-1.0.0-beta.11»::embedded_curve_ops::embedded_curve_add<> as λ(«std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>, «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>)(self, other)
   };
 }
 
-noir_trait_impl[impl_26]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_26]<> «std-1.0.0-beta.11»::ops::arith::Sub<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
   noir_def sub<>(self: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>, other: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> := {
     ((«std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> as «std-1.0.0-beta.11»::ops::arith::Add<>)::add<> as λ(«std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>, «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>)(self, ((«std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> as «std-1.0.0-beta.11»::ops::arith::Neg<>)::neg<> as λ(«std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>)(other))
   };
 }
 
-noir_trait_impl[impl_27]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_27]<> «std-1.0.0-beta.11»::ops::arith::Neg<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
   noir_def neg<>(self: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> := {
     (#_makeData returning «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>)(self.0, (#_fNeg returning Field)(self.1), self.2)
   };
 }
 
-noir_trait_impl[impl_28]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_28]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
   noir_def eq<>(self: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>, b: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>) -> bool := {
     (#_bOr returning bool)((#_bAnd returning bool)(self.2, b.2), (#_bAnd returning bool)((#_bAnd returning bool)((#_bEq returning bool)(self.2, b.2), (#_fEq returning bool)(self.0, b.0)), (#_fEq returning bool)(self.1, b.1)))
   };
 }
 
-noir_trait_impl[impl_29]<> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_29]<> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<> where [] := {
   noir_def hash<H: Type>(self: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>, state: & H) -> Unit := {
     if self.2 then {
       ((bool as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(bool, & H) -> Unit)(self.2, state);
@@ -79,13 +77,13 @@ noir_def «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar::from_by
   sig_s
 }
 
-noir_trait_impl[impl_30]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_30]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar<> where [] := {
   noir_def eq<>(self: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar<>, other: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar<>) -> bool := {
     (#_bAnd returning bool)((#_fEq returning bool)(other.1, self.1), (#_fEq returning bool)(other.0, self.0))
   };
 }
 
-noir_trait_impl[impl_31]<> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_31]<> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar<> where [] := {
   noir_def hash<H: Type>(self: «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar<>, state: & H) -> Unit := {
     ((Field as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(Field, & H) -> Unit)(self.1, state);
     ((Field as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(Field, & H) -> Unit)(self.0, state);
@@ -151,6 +149,6 @@ noir_def «std-1.0.0-beta.11»::embedded_curve_ops::embedded_curve_add_unsafe<>(
   (#_arrayIndex returning «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>)((#_embeddedCurveAdd returning Array<«std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(point1, point2), (0: u32))
 }
 
-def EmbeddedCurveOps.env : Env := Env.mk
+def «std-1.0.0-beta.11».EmbeddedCurveOps.env : Env := Env.mk
   [«std-1.0.0-beta.11::embedded_curve_ops::EmbeddedCurvePoint::double», «std-1.0.0-beta.11::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity», «std-1.0.0-beta.11::embedded_curve_ops::EmbeddedCurvePoint::generator», «std-1.0.0-beta.11::embedded_curve_ops::EmbeddedCurveScalar::new», «std-1.0.0-beta.11::embedded_curve_ops::EmbeddedCurveScalar::from_field», «std-1.0.0-beta.11::embedded_curve_ops::EmbeddedCurveScalar::from_bytes», «std-1.0.0-beta.11::embedded_curve_ops::multi_scalar_mul», «std-1.0.0-beta.11::embedded_curve_ops::fixed_base_scalar_mul», «std-1.0.0-beta.11::embedded_curve_ops::embedded_curve_add», «std-1.0.0-beta.11::embedded_curve_ops::embedded_curve_add_not_nul», «std-1.0.0-beta.11::embedded_curve_ops::embedded_curve_add_unsafe»]
   [impl_25, impl_26, impl_27, impl_28, impl_29, impl_30, impl_31]

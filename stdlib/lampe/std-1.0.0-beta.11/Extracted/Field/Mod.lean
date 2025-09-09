@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::field::assert_max_bit_size<BIT_SIZE: u32>(self: Field) -> Unit := {
   (#_staticAssert returning Unit)((#_uLt returning bool)(uConst!(BIT_SIZE: u32), (#_cast returning u32)((#_modulusNumBits returning u64)())), "BIT_SIZE must be less than modulus_num_bits");
   (#_applyRangeConstraint returning Unit)(self, uConst!(BIT_SIZE: u32));
@@ -312,6 +310,6 @@ noir_def «std-1.0.0-beta.11»::field::tests::test_field_less_than<>() -> Unit :
   (#_fresh returning Unit)()
 }
 
-def Field.Mod.env : Env := Env.mk
+def «std-1.0.0-beta.11».Field.Mod.env : Env := Env.mk
   [«std-1.0.0-beta.11::field::assert_max_bit_size», «std-1.0.0-beta.11::field::to_le_bits», «std-1.0.0-beta.11::field::to_be_bits», «std-1.0.0-beta.11::field::to_le_bytes», «std-1.0.0-beta.11::field::to_be_bytes», «std-1.0.0-beta.11::field::to_le_radix», «std-1.0.0-beta.11::field::to_be_radix», «std-1.0.0-beta.11::field::pow_32», «std-1.0.0-beta.11::field::sgn0», «std-1.0.0-beta.11::field::lt», «std-1.0.0-beta.11::field::from_le_bytes», «std-1.0.0-beta.11::field::from_be_bytes», «std-1.0.0-beta.11::field::__field_less_than», «std-1.0.0-beta.11::field::field_less_than», «std-1.0.0-beta.11::field::bytes32_to_field», «std-1.0.0-beta.11::field::lt_fallback», «std-1.0.0-beta.11::field::tests::test_to_be_bits», «std-1.0.0-beta.11::field::tests::test_to_le_bits», «std-1.0.0-beta.11::field::tests::test_to_be_bytes», «std-1.0.0-beta.11::field::tests::test_to_le_bytes», «std-1.0.0-beta.11::field::tests::test_to_be_radix», «std-1.0.0-beta.11::field::tests::test_to_le_radix», «std-1.0.0-beta.11::field::tests::test_to_le_radix_1», «std-1.0.0-beta.11::field::tests::test_to_le_radix_3», «std-1.0.0-beta.11::field::tests::test_to_le_radix_brillig_3», «std-1.0.0-beta.11::field::tests::test_to_le_radix_512», «std-1.0.0-beta.11::field::tests::not_enough_limbs_brillig», «std-1.0.0-beta.11::field::tests::not_enough_limbs», «std-1.0.0-beta.11::field::tests::test_field_less_than»]
   []

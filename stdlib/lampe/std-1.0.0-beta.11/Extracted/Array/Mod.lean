@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::array::map<T: Type, N: u32, U: Type, Env: Type>(self: Array<T, N: u32>, f: λ(T) -> U) -> Array<U, N: u32> := {
   let uninitialized = (#_zeroed returning U)();
   let mut ret = (#_mkRepeatedArray returning Array<U, N: u32>)(uninitialized);
@@ -132,7 +130,7 @@ noir_def «std-1.0.0-beta.11»::array::sort_via<T: Type, N: u32, Env: Type>(self
   sorted
 }
 
-noir_trait_impl[impl_24]<N: u32> «std-1.0.0-beta.11»::convert::From<String<N: u32> > for Array<u8, N: u32> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_24]<N: u32> «std-1.0.0-beta.11»::convert::From<String<N: u32> > for Array<u8, N: u32> where [] := {
   noir_def «from»<>(s: String<N: u32>) -> Array<u8, N: u32> := {
     (#_strAsBytes returning Array<u8, N: u32>)(s)
   };
@@ -284,6 +282,6 @@ noir_def «std-1.0.0-beta.11»::array::test::concat_zero_lengths<>() -> Unit := 
   #_skip
 }
 
-def Array.Mod.env : Env := Env.mk
+def «std-1.0.0-beta.11».Array.Mod.env : Env := Env.mk
   [«std-1.0.0-beta.11::array::map», «std-1.0.0-beta.11::array::mapi», «std-1.0.0-beta.11::array::for_each», «std-1.0.0-beta.11::array::for_eachi», «std-1.0.0-beta.11::array::fold», «std-1.0.0-beta.11::array::reduce», «std-1.0.0-beta.11::array::all», «std-1.0.0-beta.11::array::any», «std-1.0.0-beta.11::array::concat», «std-1.0.0-beta.11::array::sort», «std-1.0.0-beta.11::array::sort_via», «std-1.0.0-beta.11::array::test::map_empty», «std-1.0.0-beta.11::array::test::arr_with_100_values», «std-1.0.0-beta.11::array::test::expected_with_100_values», «std-1.0.0-beta.11::array::test::sort_u32», «std-1.0.0-beta.11::array::test::test_sort», «std-1.0.0-beta.11::array::test::test_sort_100_values», «std-1.0.0-beta.11::array::test::test_sort_100_values_comptime», «std-1.0.0-beta.11::array::test::test_sort_via», «std-1.0.0-beta.11::array::test::test_sort_via_100_values», «std-1.0.0-beta.11::array::test::mapi_empty», «std-1.0.0-beta.11::array::test::for_each_empty», «std-1.0.0-beta.11::array::test::for_eachi_empty», «std-1.0.0-beta.11::array::test::map_example», «std-1.0.0-beta.11::array::test::mapi_example», «std-1.0.0-beta.11::array::test::for_each_example», «std-1.0.0-beta.11::array::test::for_eachi_example», «std-1.0.0-beta.11::array::test::concat», «std-1.0.0-beta.11::array::test::concat_zero_length_with_something», «std-1.0.0-beta.11::array::test::concat_something_with_zero_length», «std-1.0.0-beta.11::array::test::concat_zero_lengths»]
   [impl_24]

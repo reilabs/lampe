@@ -5,19 +5,17 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::«meta»::tests::returning_versus_macro_insertion<>() -> Unit := {
   #_unit
 }
 
-noir_trait_impl[impl_429]<> «std-1.0.0-beta.11»::«meta»::tests::FieldCount<> for «std-1.0.0-beta.11»::«meta»::tests::Bar<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_429]<> «std-1.0.0-beta.11»::«meta»::tests::FieldCount<> for «std-1.0.0-beta.11»::«meta»::tests::Bar<> where [] := {
   noir_def field_count<>() -> u32 := {
     (2: u32)
   };
 }
 
-noir_trait_impl[impl_314]<> «std-1.0.0-beta.11»::«meta»::tests::DoNothing<> for «std-1.0.0-beta.11»::«meta»::tests::Bar<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_314]<> «std-1.0.0-beta.11»::«meta»::tests::DoNothing<> for «std-1.0.0-beta.11»::«meta»::tests::Bar<> where [] := {
   noir_def do_nothing<>(_: «std-1.0.0-beta.11»::«meta»::tests::Bar<>) -> Unit := {
     #_skip
   };
@@ -39,6 +37,6 @@ noir_def «std-1.0.0-beta.11»::«meta»::tests::remove_unused_warnings<>() -> U
   }
 }
 
-def Meta.Mod.env : Env := Env.mk
+def «std-1.0.0-beta.11».Meta.Mod.env : Env := Env.mk
   [«std-1.0.0-beta.11::meta::tests::returning_versus_macro_insertion», «std-1.0.0-beta.11::meta::tests::concatenate_test», «std-1.0.0-beta.11::meta::tests::remove_unused_warnings»]
   [impl_429, impl_314]

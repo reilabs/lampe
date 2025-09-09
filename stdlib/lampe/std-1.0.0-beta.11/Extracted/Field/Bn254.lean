@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_global_def «std-1.0.0-beta.11»::field::bn254::PLO: Field = (53438638232309528389504892708671455233: Field);
 
 noir_global_def «std-1.0.0-beta.11»::field::bn254::PHI: Field = (64323764613183177041862057485226039389: Field);
@@ -152,6 +150,6 @@ noir_def «std-1.0.0-beta.11»::field::bn254::tests::check_plo_phi<>() -> Unit :
   #_skip
 }
 
-def Field.Bn254.env : Env := Env.mk
+def «std-1.0.0-beta.11».Field.Bn254.env : Env := Env.mk
   [«std-1.0.0-beta.11::field::bn254::PLO», «std-1.0.0-beta.11::field::bn254::PHI», «std-1.0.0-beta.11::field::bn254::TWO_POW_128», «std-1.0.0-beta.11::field::bn254::compute_decomposition», «std-1.0.0-beta.11::field::bn254::decompose_hint», «std-1.0.0-beta.11::field::bn254::lte_hint», «std-1.0.0-beta.11::field::bn254::assert_gt_limbs», «std-1.0.0-beta.11::field::bn254::decompose», «std-1.0.0-beta.11::field::bn254::assert_gt», «std-1.0.0-beta.11::field::bn254::assert_lt», «std-1.0.0-beta.11::field::bn254::gt», «std-1.0.0-beta.11::field::bn254::lt», «std-1.0.0-beta.11::field::bn254::tests::check_decompose», «std-1.0.0-beta.11::field::bn254::tests::check_decompose_unconstrained», «std-1.0.0-beta.11::field::bn254::tests::check_lte_hint», «std-1.0.0-beta.11::field::bn254::tests::check_assert_gt», «std-1.0.0-beta.11::field::bn254::tests::check_assert_gt_unconstrained», «std-1.0.0-beta.11::field::bn254::tests::check_gt», «std-1.0.0-beta.11::field::bn254::tests::check_gt_unconstrained», «std-1.0.0-beta.11::field::bn254::tests::check_plo_phi»]
   []

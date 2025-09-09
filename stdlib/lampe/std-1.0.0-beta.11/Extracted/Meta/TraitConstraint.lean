@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
-def Meta.TraitConstraint.env : Env := Env.mk
+def «std-1.0.0-beta.11».Meta.TraitConstraint.env : Env := Env.mk
   []
   []

@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::test::create_mock_oracle<N: u32>(name: String<N: u32>) -> Field := {
   (#_fresh returning Field)()
 }
@@ -63,6 +61,6 @@ noir_def «std-1.0.0-beta.11»::test::OracleMock::times_called<>(self: «std-1.0
   (#_fresh returning Field)()
 }
 
-def Test.env : Env := Env.mk
+def «std-1.0.0-beta.11».Test.env : Env := Env.mk
   [«std-1.0.0-beta.11::test::create_mock_oracle», «std-1.0.0-beta.11::test::set_mock_params_oracle», «std-1.0.0-beta.11::test::get_mock_last_params_oracle», «std-1.0.0-beta.11::test::set_mock_returns_oracle», «std-1.0.0-beta.11::test::set_mock_times_oracle», «std-1.0.0-beta.11::test::clear_mock_oracle», «std-1.0.0-beta.11::test::get_times_mock_called», «std-1.0.0-beta.11::test::OracleMock::mock», «std-1.0.0-beta.11::test::OracleMock::with_params», «std-1.0.0-beta.11::test::OracleMock::get_last_params», «std-1.0.0-beta.11::test::OracleMock::returns», «std-1.0.0-beta.11::test::OracleMock::times», «std-1.0.0-beta.11::test::OracleMock::clear», «std-1.0.0-beta.11::test::OracleMock::times_called»]
   []

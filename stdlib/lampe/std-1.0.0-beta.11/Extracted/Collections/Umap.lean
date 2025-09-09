@@ -5,9 +5,7 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
-noir_trait_impl[impl_37]<K: Type, V: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::collections::umap::Slot<K, V> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_37]<K: Type, V: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::collections::umap::Slot<K, V> where [] := {
   noir_def default<>() -> «std-1.0.0-beta.11»::collections::umap::Slot<K, V> := {
     (#_makeData returning «std-1.0.0-beta.11»::collections::umap::Slot<K, V>)((«std-1.0.0-beta.11»::option::Option::none<Tuple<K, V> > as λ() -> «std-1.0.0-beta.11»::option::Option<Tuple<K, V> >)(), #_false)
   };
@@ -212,7 +210,7 @@ noir_def «std-1.0.0-beta.11»::collections::umap::UHashMap::quadratic_probe<K: 
   (#_uRem returning u32)((#_uAdd returning u32)(hash, (#_uDiv returning u32)((#_uAdd returning u32)(attempt, (#_uMul returning u32)(attempt, attempt)), (2: u32))), (#_arrayLen returning u32)(self.0))
 }
 
-noir_trait_impl[impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B> where [K: «std-1.0.0-beta.11»::cmp::Eq<>, K: «std-1.0.0-beta.11»::cmp::Eq<>, V: «std-1.0.0-beta.11»::cmp::Eq<>, B: «std-1.0.0-beta.11»::cmp::Eq<B_as_BuildHasher_H>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B> where [K: «std-1.0.0-beta.11»::cmp::Eq<>, K: «std-1.0.0-beta.11»::cmp::Eq<>, V: «std-1.0.0-beta.11»::cmp::Eq<>, B: «std-1.0.0-beta.11»::cmp::Eq<B_as_BuildHasher_H>] := {
   noir_def eq<>(self: «std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B>, other: «std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B>) -> bool := {
     let mut equal = #_false;
     if (#_uEq returning bool)((«std-1.0.0-beta.11»::collections::umap::UHashMap::len<K, V, B> as λ(«std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B>) -> u32)(self), («std-1.0.0-beta.11»::collections::umap::UHashMap::len<K, V, B> as λ(«std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B>) -> u32)(other)) then {
@@ -247,12 +245,12 @@ noir_trait_impl[impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «
   };
 }
 
-noir_trait_impl[impl_39]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B> where [B: «std-1.0.0-beta.11»::default::Default<B_as_BuildHasher_H>, B: «std-1.0.0-beta.11»::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_39]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B> where [B: «std-1.0.0-beta.11»::default::Default<B_as_BuildHasher_H>, B: «std-1.0.0-beta.11»::default::Default<>] := {
   noir_def default<>() -> «std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B> := {
     («std-1.0.0-beta.11»::collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) -> «std-1.0.0-beta.11»::collections::umap::UHashMap<K, V, B>)(((B as «std-1.0.0-beta.11»::default::Default<>)::default<> as λ() -> B)())
   };
 }
 
-def Collections.Umap.env : Env := Env.mk
+def «std-1.0.0-beta.11».Collections.Umap.env : Env := Env.mk
   [«std-1.0.0-beta.11::collections::umap::Slot::is_valid», «std-1.0.0-beta.11::collections::umap::Slot::is_available», «std-1.0.0-beta.11::collections::umap::Slot::key_value», «std-1.0.0-beta.11::collections::umap::Slot::key_value_unchecked», «std-1.0.0-beta.11::collections::umap::Slot::set», «std-1.0.0-beta.11::collections::umap::Slot::mark_deleted», «std-1.0.0-beta.11::collections::umap::UHashMap::with_hasher», «std-1.0.0-beta.11::collections::umap::UHashMap::with_hasher_and_capacity», «std-1.0.0-beta.11::collections::umap::UHashMap::clear», «std-1.0.0-beta.11::collections::umap::UHashMap::contains_key», «std-1.0.0-beta.11::collections::umap::UHashMap::is_empty», «std-1.0.0-beta.11::collections::umap::UHashMap::entries», «std-1.0.0-beta.11::collections::umap::UHashMap::keys», «std-1.0.0-beta.11::collections::umap::UHashMap::values», «std-1.0.0-beta.11::collections::umap::UHashMap::iter_mut», «std-1.0.0-beta.11::collections::umap::UHashMap::iter_keys_mut», «std-1.0.0-beta.11::collections::umap::UHashMap::iter_values_mut», «std-1.0.0-beta.11::collections::umap::UHashMap::retain», «std-1.0.0-beta.11::collections::umap::UHashMap::len», «std-1.0.0-beta.11::collections::umap::UHashMap::capacity», «std-1.0.0-beta.11::collections::umap::UHashMap::get», «std-1.0.0-beta.11::collections::umap::UHashMap::insert», «std-1.0.0-beta.11::collections::umap::UHashMap::try_resize», «std-1.0.0-beta.11::collections::umap::UHashMap::remove», «std-1.0.0-beta.11::collections::umap::UHashMap::hash», «std-1.0.0-beta.11::collections::umap::UHashMap::quadratic_probe»]
   [impl_37, impl_38, impl_39]

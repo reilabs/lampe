@@ -5,15 +5,13 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
-noir_trait_impl[impl_300]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::«meta»::op::UnaryOp<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_300]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::«meta»::op::UnaryOp<> where [] := {
   noir_def eq<>(self: «std-1.0.0-beta.11»::«meta»::op::UnaryOp<>, other: «std-1.0.0-beta.11»::«meta»::op::UnaryOp<>) -> bool := {
     (#_fEq returning bool)(self.0, other.0)
   };
 }
 
-noir_trait_impl[impl_301]<> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::«meta»::op::UnaryOp<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_301]<> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::«meta»::op::UnaryOp<> where [] := {
   noir_def hash<H: Type>(self: «std-1.0.0-beta.11»::«meta»::op::UnaryOp<>, h: & H) -> Unit := {
     ((Field as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(Field, & H) -> Unit)(self.0, h);
     #_skip
@@ -36,13 +34,13 @@ noir_def «std-1.0.0-beta.11»::«meta»::op::UnaryOp::is_dereference<>(self: «
   (#_fEq returning bool)(self.0, (3: Field))
 }
 
-noir_trait_impl[impl_302]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::«meta»::op::BinaryOp<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_302]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::«meta»::op::BinaryOp<> where [] := {
   noir_def eq<>(self: «std-1.0.0-beta.11»::«meta»::op::BinaryOp<>, other: «std-1.0.0-beta.11»::«meta»::op::BinaryOp<>) -> bool := {
     (#_fEq returning bool)(self.0, other.0)
   };
 }
 
-noir_trait_impl[impl_303]<> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::«meta»::op::BinaryOp<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_303]<> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::«meta»::op::BinaryOp<> where [] := {
   noir_def hash<H: Type>(self: «std-1.0.0-beta.11»::«meta»::op::BinaryOp<>, h: & H) -> Unit := {
     ((Field as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(Field, & H) -> Unit)(self.0, h);
     #_skip
@@ -113,6 +111,6 @@ noir_def «std-1.0.0-beta.11»::«meta»::op::BinaryOp::is_modulo<>(self: «std-
   (#_fEq returning bool)(self.0, (15: Field))
 }
 
-def Meta.Op.env : Env := Env.mk
+def «std-1.0.0-beta.11».Meta.Op.env : Env := Env.mk
   [«std-1.0.0-beta.11::meta::op::UnaryOp::is_minus», «std-1.0.0-beta.11::meta::op::UnaryOp::is_not», «std-1.0.0-beta.11::meta::op::UnaryOp::is_mutable_reference», «std-1.0.0-beta.11::meta::op::UnaryOp::is_dereference», «std-1.0.0-beta.11::meta::op::BinaryOp::is_add», «std-1.0.0-beta.11::meta::op::BinaryOp::is_subtract», «std-1.0.0-beta.11::meta::op::BinaryOp::is_multiply», «std-1.0.0-beta.11::meta::op::BinaryOp::is_divide», «std-1.0.0-beta.11::meta::op::BinaryOp::is_equal», «std-1.0.0-beta.11::meta::op::BinaryOp::is_not_equal», «std-1.0.0-beta.11::meta::op::BinaryOp::is_less_than», «std-1.0.0-beta.11::meta::op::BinaryOp::is_less_than_or_equal», «std-1.0.0-beta.11::meta::op::BinaryOp::is_greater_than», «std-1.0.0-beta.11::meta::op::BinaryOp::is_greater_than_or_equal», «std-1.0.0-beta.11::meta::op::BinaryOp::is_and», «std-1.0.0-beta.11::meta::op::BinaryOp::is_or», «std-1.0.0-beta.11::meta::op::BinaryOp::is_xor», «std-1.0.0-beta.11::meta::op::BinaryOp::is_shift_right», «std-1.0.0-beta.11::meta::op::BinaryOp::is_shift_left», «std-1.0.0-beta.11::meta::op::BinaryOp::is_modulo»]
   [impl_300, impl_301, impl_302, impl_303]

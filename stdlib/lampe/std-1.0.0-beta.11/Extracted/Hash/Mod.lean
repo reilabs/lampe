@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::hash::keccak::keccakf1600<>(input: Array<u64, 25: u32>) -> Array<u64, 25: u32> := {
   (#_keccakf1600 returning Array<u64, 25: u32>)(input)
 }
@@ -65,109 +63,109 @@ noir_def «std-1.0.0-beta.11»::hash::from_field_unsafe<>(scalar: Field) -> «st
   (#_makeData returning «std-1.0.0-beta.11»::embedded_curve_ops::EmbeddedCurveScalar<>)(xlo, xhi)
 }
 
-noir_trait_impl[impl_2]<H: Type> «std-1.0.0-beta.11»::hash::BuildHasher<> for «std-1.0.0-beta.11»::hash::BuildHasherDefault<H> where [H: «std-1.0.0-beta.11»::hash::BuildHasher<>, H: «std-1.0.0-beta.11»::hash::BuildHasher<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_2]<H: Type> «std-1.0.0-beta.11»::hash::BuildHasher<> for «std-1.0.0-beta.11»::hash::BuildHasherDefault<H> where [H: «std-1.0.0-beta.11»::hash::BuildHasher<>, H: «std-1.0.0-beta.11»::hash::BuildHasher<>] := {
   noir_def build_hasher<>(_self: «std-1.0.0-beta.11»::hash::BuildHasherDefault<H>) -> H := {
     ((H as «std-1.0.0-beta.11»::default::Default<>)::default<> as λ() -> H)()
   };
 }
 
-noir_trait_impl[impl_3]<H: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::hash::BuildHasherDefault<H> where [H: «std-1.0.0-beta.11»::default::Default<>, H: «std-1.0.0-beta.11»::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_3]<H: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::hash::BuildHasherDefault<H> where [H: «std-1.0.0-beta.11»::default::Default<>, H: «std-1.0.0-beta.11»::default::Default<>] := {
   noir_def default<>() -> «std-1.0.0-beta.11»::hash::BuildHasherDefault<H> := {
     (#_makeData returning «std-1.0.0-beta.11»::hash::BuildHasherDefault<H>)()
   };
 }
 
-noir_trait_impl[impl_4]<> «std-1.0.0-beta.11»::hash::Hash<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_4]<> «std-1.0.0-beta.11»::hash::Hash<> for Field where [] := {
   noir_def hash<H: Type>(self: Field, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, self);
     #_skip
   };
 }
 
-noir_trait_impl[impl_5]<> «std-1.0.0-beta.11»::hash::Hash<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_5]<> «std-1.0.0-beta.11»::hash::Hash<> for u1 where [] := {
   noir_def hash<H: Type>(self: u1, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)(self));
     #_skip
   };
 }
 
-noir_trait_impl[impl_6]<> «std-1.0.0-beta.11»::hash::Hash<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_6]<> «std-1.0.0-beta.11»::hash::Hash<> for u8 where [] := {
   noir_def hash<H: Type>(self: u8, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)(self));
     #_skip
   };
 }
 
-noir_trait_impl[impl_7]<> «std-1.0.0-beta.11»::hash::Hash<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_7]<> «std-1.0.0-beta.11»::hash::Hash<> for u16 where [] := {
   noir_def hash<H: Type>(self: u16, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)(self));
     #_skip
   };
 }
 
-noir_trait_impl[impl_8]<> «std-1.0.0-beta.11»::hash::Hash<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_8]<> «std-1.0.0-beta.11»::hash::Hash<> for u32 where [] := {
   noir_def hash<H: Type>(self: u32, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)(self));
     #_skip
   };
 }
 
-noir_trait_impl[impl_9]<> «std-1.0.0-beta.11»::hash::Hash<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_9]<> «std-1.0.0-beta.11»::hash::Hash<> for u64 where [] := {
   noir_def hash<H: Type>(self: u64, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)(self));
     #_skip
   };
 }
 
-noir_trait_impl[impl_10]<> «std-1.0.0-beta.11»::hash::Hash<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_10]<> «std-1.0.0-beta.11»::hash::Hash<> for u128 where [] := {
   noir_def hash<H: Type>(self: u128, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)(self));
     #_skip
   };
 }
 
-noir_trait_impl[impl_11]<> «std-1.0.0-beta.11»::hash::Hash<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_11]<> «std-1.0.0-beta.11»::hash::Hash<> for i8 where [] := {
   noir_def hash<H: Type>(self: i8, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)((#_cast returning u8)(self)));
     #_skip
   };
 }
 
-noir_trait_impl[impl_12]<> «std-1.0.0-beta.11»::hash::Hash<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_12]<> «std-1.0.0-beta.11»::hash::Hash<> for i16 where [] := {
   noir_def hash<H: Type>(self: i16, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)((#_cast returning u16)(self)));
     #_skip
   };
 }
 
-noir_trait_impl[impl_13]<> «std-1.0.0-beta.11»::hash::Hash<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_13]<> «std-1.0.0-beta.11»::hash::Hash<> for i32 where [] := {
   noir_def hash<H: Type>(self: i32, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)((#_cast returning u32)(self)));
     #_skip
   };
 }
 
-noir_trait_impl[impl_14]<> «std-1.0.0-beta.11»::hash::Hash<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_14]<> «std-1.0.0-beta.11»::hash::Hash<> for i64 where [] := {
   noir_def hash<H: Type>(self: i64, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)((#_cast returning u64)(self)));
     #_skip
   };
 }
 
-noir_trait_impl[impl_15]<> «std-1.0.0-beta.11»::hash::Hash<> for bool where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_15]<> «std-1.0.0-beta.11»::hash::Hash<> for bool where [] := {
   noir_def hash<H: Type>(self: bool, state: & H) -> Unit := {
     ((H as «std-1.0.0-beta.11»::hash::Hasher<>)::write<> as λ(& H, Field) -> Unit)(state, (#_cast returning Field)(self));
     #_skip
   };
 }
 
-noir_trait_impl[impl_16]<> «std-1.0.0-beta.11»::hash::Hash<> for Unit where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_16]<> «std-1.0.0-beta.11»::hash::Hash<> for Unit where [] := {
   noir_def hash<H: Type>(_self: Unit, _state: & H) -> Unit := {
     #_skip
   };
 }
 
-noir_trait_impl[impl_17]<N: u32, T: Type> «std-1.0.0-beta.11»::hash::Hash<> for Array<T, N: u32> where [T: «std-1.0.0-beta.11»::hash::Hash<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_17]<N: u32, T: Type> «std-1.0.0-beta.11»::hash::Hash<> for Array<T, N: u32> where [T: «std-1.0.0-beta.11»::hash::Hash<>] := {
   noir_def hash<H: Type>(self: Array<T, N: u32>, state: & H) -> Unit := {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
@@ -181,7 +179,7 @@ noir_trait_impl[impl_17]<N: u32, T: Type> «std-1.0.0-beta.11»::hash::Hash<> fo
   };
 }
 
-noir_trait_impl[impl_18]<T: Type> «std-1.0.0-beta.11»::hash::Hash<> for Slice<T> where [T: «std-1.0.0-beta.11»::hash::Hash<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_18]<T: Type> «std-1.0.0-beta.11»::hash::Hash<> for Slice<T> where [T: «std-1.0.0-beta.11»::hash::Hash<>] := {
   noir_def hash<H: Type>(self: Slice<T>, state: & H) -> Unit := {
     ((u32 as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(u32, & H) -> Unit)((#_arrayLen returning u32)(self), state);
     {
@@ -198,7 +196,7 @@ noir_trait_impl[impl_18]<T: Type> «std-1.0.0-beta.11»::hash::Hash<> for Slice<
   };
 }
 
-noir_trait_impl[impl_19]<A: Type, B: Type> «std-1.0.0-beta.11»::hash::Hash<> for Tuple<A, B> where [A: «std-1.0.0-beta.11»::hash::Hash<>, B: «std-1.0.0-beta.11»::hash::Hash<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_19]<A: Type, B: Type> «std-1.0.0-beta.11»::hash::Hash<> for Tuple<A, B> where [A: «std-1.0.0-beta.11»::hash::Hash<>, B: «std-1.0.0-beta.11»::hash::Hash<>] := {
   noir_def hash<H: Type>(self: Tuple<A, B>, state: & H) -> Unit := {
     ((A as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(A, & H) -> Unit)(self.0, state);
     ((B as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(B, & H) -> Unit)(self.1, state);
@@ -206,7 +204,7 @@ noir_trait_impl[impl_19]<A: Type, B: Type> «std-1.0.0-beta.11»::hash::Hash<> f
   };
 }
 
-noir_trait_impl[impl_20]<A: Type, B: Type, C: Type> «std-1.0.0-beta.11»::hash::Hash<> for Tuple<A, B, C> where [A: «std-1.0.0-beta.11»::hash::Hash<>, B: «std-1.0.0-beta.11»::hash::Hash<>, C: «std-1.0.0-beta.11»::hash::Hash<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_20]<A: Type, B: Type, C: Type> «std-1.0.0-beta.11»::hash::Hash<> for Tuple<A, B, C> where [A: «std-1.0.0-beta.11»::hash::Hash<>, B: «std-1.0.0-beta.11»::hash::Hash<>, C: «std-1.0.0-beta.11»::hash::Hash<>] := {
   noir_def hash<H: Type>(self: Tuple<A, B, C>, state: & H) -> Unit := {
     ((A as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(A, & H) -> Unit)(self.0, state);
     ((B as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(B, & H) -> Unit)(self.1, state);
@@ -215,7 +213,7 @@ noir_trait_impl[impl_20]<A: Type, B: Type, C: Type> «std-1.0.0-beta.11»::hash:
   };
 }
 
-noir_trait_impl[impl_21]<A: Type, B: Type, C: Type, D: Type> «std-1.0.0-beta.11»::hash::Hash<> for Tuple<A, B, C, D> where [A: «std-1.0.0-beta.11»::hash::Hash<>, B: «std-1.0.0-beta.11»::hash::Hash<>, C: «std-1.0.0-beta.11»::hash::Hash<>, D: «std-1.0.0-beta.11»::hash::Hash<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_21]<A: Type, B: Type, C: Type, D: Type> «std-1.0.0-beta.11»::hash::Hash<> for Tuple<A, B, C, D> where [A: «std-1.0.0-beta.11»::hash::Hash<>, B: «std-1.0.0-beta.11»::hash::Hash<>, C: «std-1.0.0-beta.11»::hash::Hash<>, D: «std-1.0.0-beta.11»::hash::Hash<>] := {
   noir_def hash<H: Type>(self: Tuple<A, B, C, D>, state: & H) -> Unit := {
     ((A as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(A, & H) -> Unit)(self.0, state);
     ((B as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(B, & H) -> Unit)(self.1, state);
@@ -225,7 +223,7 @@ noir_trait_impl[impl_21]<A: Type, B: Type, C: Type, D: Type> «std-1.0.0-beta.11
   };
 }
 
-noir_trait_impl[impl_22]<A: Type, B: Type, C: Type, D: Type, E: Type> «std-1.0.0-beta.11»::hash::Hash<> for Tuple<A, B, C, D, E> where [A: «std-1.0.0-beta.11»::hash::Hash<>, B: «std-1.0.0-beta.11»::hash::Hash<>, C: «std-1.0.0-beta.11»::hash::Hash<>, D: «std-1.0.0-beta.11»::hash::Hash<>, E: «std-1.0.0-beta.11»::hash::Hash<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_22]<A: Type, B: Type, C: Type, D: Type, E: Type> «std-1.0.0-beta.11»::hash::Hash<> for Tuple<A, B, C, D, E> where [A: «std-1.0.0-beta.11»::hash::Hash<>, B: «std-1.0.0-beta.11»::hash::Hash<>, C: «std-1.0.0-beta.11»::hash::Hash<>, D: «std-1.0.0-beta.11»::hash::Hash<>, E: «std-1.0.0-beta.11»::hash::Hash<>] := {
   noir_def hash<H: Type>(self: Tuple<A, B, C, D, E>, state: & H) -> Unit := {
     ((A as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(A, & H) -> Unit)(self.0, state);
     ((B as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(B, & H) -> Unit)(self.1, state);
@@ -260,6 +258,6 @@ noir_def «std-1.0.0-beta.11»::hash::assert_pedersen<>() -> Unit := {
   #_skip
 }
 
-def Hash.Mod.env : Env := Env.mk
+def «std-1.0.0-beta.11».Hash.Mod.env : Env := Env.mk
   [«std-1.0.0-beta.11::hash::keccak::keccakf1600», «std-1.0.0-beta.11::hash::blake3», «std-1.0.0-beta.11::hash::pedersen_commitment», «std-1.0.0-beta.11::hash::pedersen_commitment_with_separator», «std-1.0.0-beta.11::hash::pedersen_hash», «std-1.0.0-beta.11::hash::pedersen_hash_with_separator», «std-1.0.0-beta.11::hash::derive_generators», «std-1.0.0-beta.11::hash::from_field_unsafe», «std-1.0.0-beta.11::hash::assert_pedersen»]
   [impl_2, impl_3, impl_4, impl_5, impl_6, impl_7, impl_8, impl_9, impl_10, impl_11, impl_12, impl_13, impl_14, impl_15, impl_16, impl_17, impl_18, impl_19, impl_20, impl_21, impl_22]

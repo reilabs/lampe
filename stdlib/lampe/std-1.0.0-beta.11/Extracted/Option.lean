@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::option::Option::none<T: Type>() -> «std-1.0.0-beta.11»::option::Option<T> := {
   (#_makeData returning «std-1.0.0-beta.11»::option::Option<T>)(#_false, (#_zeroed returning T)())
 }
@@ -143,13 +141,13 @@ noir_def «std-1.0.0-beta.11»::option::Option::flatten<T: Type>(option: «std-1
   }
 }
 
-noir_trait_impl[impl_73]<T: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::option::Option<T> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_73]<T: Type> «std-1.0.0-beta.11»::default::Default<> for «std-1.0.0-beta.11»::option::Option<T> where [] := {
   noir_def default<>() -> «std-1.0.0-beta.11»::option::Option<T> := {
     («std-1.0.0-beta.11»::option::Option::none<T> as λ() -> «std-1.0.0-beta.11»::option::Option<T>)()
   };
 }
 
-noir_trait_impl[impl_74]<T: Type> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::option::Option<T> where [T: «std-1.0.0-beta.11»::cmp::Eq<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_74]<T: Type> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::option::Option<T> where [T: «std-1.0.0-beta.11»::cmp::Eq<>] := {
   noir_def eq<>(self: «std-1.0.0-beta.11»::option::Option<T>, other: «std-1.0.0-beta.11»::option::Option<T>) -> bool := {
     if (#_bEq returning bool)(self.0, other.0) then {
       if self.0 then {
@@ -163,7 +161,7 @@ noir_trait_impl[impl_74]<T: Type> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0
   };
 }
 
-noir_trait_impl[impl_75]<T: Type> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::option::Option<T> where [T: «std-1.0.0-beta.11»::hash::Hash<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_75]<T: Type> «std-1.0.0-beta.11»::hash::Hash<> for «std-1.0.0-beta.11»::option::Option<T> where [T: «std-1.0.0-beta.11»::hash::Hash<>] := {
   noir_def hash<H: Type>(self: «std-1.0.0-beta.11»::option::Option<T>, state: & H) -> Unit := {
     ((bool as «std-1.0.0-beta.11»::hash::Hash<>)::hash<H> as λ(bool, & H) -> Unit)(self.0, state);
     if self.0 then {
@@ -173,7 +171,7 @@ noir_trait_impl[impl_75]<T: Type> «std-1.0.0-beta.11»::hash::Hash<> for «std-
   };
 }
 
-noir_trait_impl[impl_76]<T: Type> «std-1.0.0-beta.11»::cmp::Ord<> for «std-1.0.0-beta.11»::option::Option<T> where [T: «std-1.0.0-beta.11»::cmp::Ord<>] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_76]<T: Type> «std-1.0.0-beta.11»::cmp::Ord<> for «std-1.0.0-beta.11»::option::Option<T> where [T: «std-1.0.0-beta.11»::cmp::Ord<>] := {
   noir_def cmp<>(self: «std-1.0.0-beta.11»::option::Option<T>, other: «std-1.0.0-beta.11»::option::Option<T>) -> «std-1.0.0-beta.11»::cmp::Ordering<> := {
     if self.0 then {
       if other.0 then {
@@ -189,6 +187,6 @@ noir_trait_impl[impl_76]<T: Type> «std-1.0.0-beta.11»::cmp::Ord<> for «std-1.
   };
 }
 
-def Option.env : Env := Env.mk
+def «std-1.0.0-beta.11».Option.env : Env := Env.mk
   [«std-1.0.0-beta.11::option::Option::none», «std-1.0.0-beta.11::option::Option::some», «std-1.0.0-beta.11::option::Option::is_none», «std-1.0.0-beta.11::option::Option::is_some», «std-1.0.0-beta.11::option::Option::unwrap», «std-1.0.0-beta.11::option::Option::unwrap_unchecked», «std-1.0.0-beta.11::option::Option::unwrap_or», «std-1.0.0-beta.11::option::Option::unwrap_or_else», «std-1.0.0-beta.11::option::Option::expect», «std-1.0.0-beta.11::option::Option::map», «std-1.0.0-beta.11::option::Option::map_or», «std-1.0.0-beta.11::option::Option::map_or_else», «std-1.0.0-beta.11::option::Option::and», «std-1.0.0-beta.11::option::Option::and_then», «std-1.0.0-beta.11::option::Option::or», «std-1.0.0-beta.11::option::Option::or_else», «std-1.0.0-beta.11::option::Option::xor», «std-1.0.0-beta.11::option::Option::filter», «std-1.0.0-beta.11::option::Option::flatten»]
   [impl_73, impl_74, impl_75, impl_76]

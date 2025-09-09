@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::collections::vec::Vec::new<T: Type>() -> «std-1.0.0-beta.11»::collections::vec::Vec<T> := {
   (#_makeData returning «std-1.0.0-beta.11»::collections::vec::Vec<T>)((#_mkSlice returning Slice<T>)())
 }
@@ -72,6 +70,6 @@ noir_def «std-1.0.0-beta.11»::collections::vec::tests::panics_when_writing_ele
   #_skip
 }
 
-def Collections.Vec.env : Env := Env.mk
+def «std-1.0.0-beta.11».Collections.Vec.env : Env := Env.mk
   [«std-1.0.0-beta.11::collections::vec::Vec::new», «std-1.0.0-beta.11::collections::vec::Vec::from_slice», «std-1.0.0-beta.11::collections::vec::Vec::get», «std-1.0.0-beta.11::collections::vec::Vec::set», «std-1.0.0-beta.11::collections::vec::Vec::push», «std-1.0.0-beta.11::collections::vec::Vec::pop», «std-1.0.0-beta.11::collections::vec::Vec::insert», «std-1.0.0-beta.11::collections::vec::Vec::remove», «std-1.0.0-beta.11::collections::vec::Vec::len», «std-1.0.0-beta.11::collections::vec::tests::set_updates_values_properly», «std-1.0.0-beta.11::collections::vec::tests::panics_when_writing_elements_past_end_of_vec»]
   []

@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::array::check_shuffle::__get_shuffle_indices<T: Type, N: u32>(lhs: Array<T, N: u32>, rhs: Array<T, N: u32>) -> Array<u32, N: u32> := {
   (#_fresh returning Array<u32, N: u32>)()
 }
@@ -32,7 +30,7 @@ noir_def «std-1.0.0-beta.11»::array::check_shuffle::check_shuffle<T: Type, N: 
   #_skip
 }
 
-noir_trait_impl[impl_23]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::array::check_shuffle::test::CompoundStruct<> where [] := {
+noir_trait_impl[«std-1.0.0-beta.11».impl_23]<> «std-1.0.0-beta.11»::cmp::Eq<> for «std-1.0.0-beta.11»::array::check_shuffle::test::CompoundStruct<> where [] := {
   noir_def eq<>(self: «std-1.0.0-beta.11»::array::check_shuffle::test::CompoundStruct<>, other: «std-1.0.0-beta.11»::array::check_shuffle::test::CompoundStruct<>) -> bool := {
     (#_bAnd returning bool)((#_bAnd returning bool)((#_bEq returning bool)(self.0, other.0), (#_fEq returning bool)(self.1, other.1)), (#_uEq returning bool)(self.2, other.2))
   };
@@ -73,6 +71,6 @@ noir_def «std-1.0.0-beta.11»::array::check_shuffle::test::test_shuffle_compoun
   #_skip
 }
 
-def Array.CheckShuffle.env : Env := Env.mk
+def «std-1.0.0-beta.11».Array.CheckShuffle.env : Env := Env.mk
   [«std-1.0.0-beta.11::array::check_shuffle::__get_shuffle_indices», «std-1.0.0-beta.11::array::check_shuffle::__get_index», «std-1.0.0-beta.11::array::check_shuffle::check_shuffle», «std-1.0.0-beta.11::array::check_shuffle::test::test_shuffle», «std-1.0.0-beta.11::array::check_shuffle::test::test_shuffle_identity», «std-1.0.0-beta.11::array::check_shuffle::test::test_shuffle_fail», «std-1.0.0-beta.11::array::check_shuffle::test::test_shuffle_duplicates», «std-1.0.0-beta.11::array::check_shuffle::test::test_shuffle_compound_struct»]
   [impl_23]

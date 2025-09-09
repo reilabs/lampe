@@ -5,8 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-
 noir_def «std-1.0.0-beta.11»::array::quicksort::partition<T: Type, N: u32, Env: Type>(arr: & Array<T, N: u32>, low: u32, high: u32, sortfn: λ(T, T) -> bool) -> u32 := {
   (#_fresh returning u32)()
 }
@@ -19,6 +17,6 @@ noir_def «std-1.0.0-beta.11»::array::quicksort::quicksort<T: Type, N: u32, Env
   (#_fresh returning Array<T, N: u32>)()
 }
 
-def Array.Quicksort.env : Env := Env.mk
+def «std-1.0.0-beta.11».Array.Quicksort.env : Env := Env.mk
   [«std-1.0.0-beta.11::array::quicksort::partition», «std-1.0.0-beta.11::array::quicksort::quicksort_loop», «std-1.0.0-beta.11::array::quicksort::quicksort»]
   []
