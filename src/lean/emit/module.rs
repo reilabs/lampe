@@ -1,4 +1,4 @@
-use crate::lean::{
+use crate::{file_generator::NoirPackageIdentifier, lean::{
     ast::{
         FunctionDefinition,
         GlobalDefinition,
@@ -6,15 +6,17 @@ use crate::lean::{
         ModuleDefinition,
         TraitImplementation,
         WhereClause,
-    },
-    emit::{context::EmitContext, writer::Writer},
-};
+    }, emit::{context::EmitContext, writer::Writer}, LEAN_QUOTE_END, LEAN_QUOTE_START
+}};
 
 /// An emitter for the generated module information in the AST.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ModuleEmitter {
     /// The context handling the emission.
     context: EmitContext,
+
+    //// The package that owns the module
+    package: NoirPackageIdentifier,
 
     /// The module to emit.
     module: Module,
@@ -24,9 +26,10 @@ pub struct ModuleEmitter {
 impl ModuleEmitter {
     /// Creates a new emitter for the provided `module`.
     #[must_use]
-    pub fn new(module: Module) -> ModuleEmitter {
+    pub fn new(package: NoirPackageIdentifier, module: Module) -> ModuleEmitter {
         Self {
             context: EmitContext::default(),
+            package,
             module,
         }
     }
@@ -103,7 +106,7 @@ impl ModuleEmitter {
 
         writer.append_to_line("noir_trait_impl");
         writer.append_to_line("[");
-        writer.append_to_line(&trait_impl.name);
+        writer.append_to_line(&format!("{}.{}", self.package.formatted(true), &trait_impl.name));
         writer.append_to_line("]");
 
         writer.append_to_line("<");
@@ -199,7 +202,8 @@ impl ModuleEmitter {
 
         let mut writer = Writer::new(&mut self.context);
         writer.append_to_line("def ");
-        writer.append_to_line(&format!("{}.env", &self.module.name));
+
+        writer.append_to_line(&format!("{}.{}.env", self.package.formatted(true), &self.module.name));
         writer.append_to_line(" : Env := Env.mk");
         writer.end_line();
         writer.increase_indent();

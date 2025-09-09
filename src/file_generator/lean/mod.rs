@@ -378,7 +378,7 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
             for dep_direct_dep in &dep_direct_dep_ids {
                 if extracted_dependencies.contains_key(dep_direct_dep) {
                     let dep_name = format!("{}-{}", dep_direct_dep.name, dep_direct_dep.version);
-                    let dep_path = format!("../deps/{}/lampe", dep_name);
+                    let dep_path = format!("../../{}/lampe", dep_name);
 
                     dep_additional_dependencies.push(Box::new(
                         LeanDependencyPath::builder(&dep_name)
