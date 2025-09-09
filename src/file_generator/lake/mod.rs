@@ -117,9 +117,6 @@ pub fn generate_lakefile_toml(
         None
     };
 
-    // Note: We don't generate [[lean_lib]] sections for extracted dependencies
-    // as they are handled differently in the lean file structure
-
     for dependency in default_lean_dependencies(stdlib_info) {
         result.push_str(&dependency.generate()?);
         result.push('\n');
