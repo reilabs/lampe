@@ -12,11 +12,9 @@ use noirc_frontend::hir::ParsedFiles;
 use crate::{
     constants::NONE_DEPENDENCY_VERSION,
     error::Error,
-    file_generator,
-    file_generator::{lake::dependency::LeanDependency, LeanFile, NoirPackageIdentifier},
+    file_generator::{self, lake::dependency::{LeanDependency, LeanDependencyPath}, LeanFile, NoirPackageIdentifier},
     lean::emit::{ModuleEmitter, TypesEmitter},
-    noir,
-    noir::WithWarnings,
+    noir::{self, WithWarnings},
 };
 
 pub struct Project {
@@ -174,7 +172,7 @@ impl Project {
             let dep_path = format!("deps/{}/lampe", dep_name);
 
             result.push(Box::new(
-                file_generator::lake::dependency::LeanDependencyPath::builder(&dep_name)
+                LeanDependencyPath::builder(&dep_name)
                     .path(&dep_path)
                     .build(),
             ) as Box<dyn LeanDependency>);
@@ -456,7 +454,16 @@ impl Project {
                     .file_manager()
                     .path(module.id)
                     .unwrap_or_else(|| panic!("Unknown file ID: {:?}", module.id));
-                let content = ModuleEmitter::new(module.clone()).emit();
+
+                let package_name = &package.name.to_string();
+                let package_version =
+                &package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string());
+                let package_id = NoirPackageIdentifier {
+                    name: package_name.clone(),
+                    version: package_version.clone(),
+                };
+
+                let content = ModuleEmitter::new(package_id, module.clone()).emit();
                 LeanFile::from_user_noir_file(file_path, content).unwrap_or_else(|_| {
                     panic!(
                         "Unable to create file at {}",
