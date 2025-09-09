@@ -4,14 +4,11 @@ import Lampe
 
 open Lampe
 
-namespace «Multiple-0.0.0»
-namespace Extracted
+noir_type_alias «Multiple-0.0.0»::baz::asdf::Asdf<> := Field;
 
-noir_type_alias Asdf<> := Field;
-
-noir_struct_def bar::Asdf2<> {
-  @Asdf<>,
+noir_struct_def «Multiple-0.0.0»::bar::Asdf2<> {
+  @«Multiple-0.0.0»::baz::asdf::Asdf<>,
 }
 
-noir_type_alias Asdf3<> := bar::Asdf2<>;
+noir_type_alias «Multiple-0.0.0»::Asdf3<> := «Multiple-0.0.0»::bar::Asdf2<>;
 

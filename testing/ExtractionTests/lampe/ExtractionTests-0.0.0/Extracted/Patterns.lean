@@ -5,20 +5,17 @@ import Lampe
 
 open Lampe
 
-namespace «ExtractionTests-0.0.0»
-namespace Extracted
-
-noir_def patterns::Option2::some<T: Type>(value: T) -> patterns::Option2<T> := {
-  (#_makeData returning patterns::Option2<T>)(#_true, value)
+noir_def «ExtractionTests-0.0.0»::patterns::Option2::some<T: Type>(value: T) -> «ExtractionTests-0.0.0»::patterns::Option2<T> := {
+  (#_makeData returning «ExtractionTests-0.0.0»::patterns::Option2<T>)(#_true, value)
 }
 
-noir_def patterns::pattern_test<>() -> Unit := {
-  let opt = (patterns::Option2::some<bool> as λ(bool) -> patterns::Option2<bool>)(#_true);
-  let t = (#_makeData returning Tuple<Field, patterns::Option2<bool>, Field>)((1: Field), opt, (3: Field));
+noir_def «ExtractionTests-0.0.0»::patterns::pattern_test<>() -> Unit := {
+  let opt = («ExtractionTests-0.0.0»::patterns::Option2::some<bool> as λ(bool) -> «ExtractionTests-0.0.0»::patterns::Option2<bool>)(#_true);
+  let t = (#_makeData returning Tuple<Field, «ExtractionTests-0.0.0»::patterns::Option2<bool>, Field>)((1: Field), opt, (3: Field));
   let (_x, (__0, __1), mut _z) = t;
   #_skip
 }
 
-def Patterns.env : Env := Env.mk
-  [«patterns::Option2::some», «patterns::pattern_test»]
+def «ExtractionTests-0.0.0».Patterns.env : Env := Env.mk
+  [«ExtractionTests-0.0.0::patterns::Option2::some», «ExtractionTests-0.0.0::patterns::pattern_test»]
   []

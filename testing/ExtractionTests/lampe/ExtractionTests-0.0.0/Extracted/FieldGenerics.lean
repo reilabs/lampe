@@ -5,12 +5,9 @@ import Lampe
 
 open Lampe
 
-namespace «ExtractionTests-0.0.0»
-namespace Extracted
+noir_global_def «ExtractionTests-0.0.0»::field_generics::A: Field = (4294967297: Field);
 
-noir_global_def field_generics::A: Field = (4294967297: Field);
-
-noir_def field_generics::foo1<A: Field>() -> Field := {
+noir_def «ExtractionTests-0.0.0»::field_generics::foo1<A: Field>() -> Field := {
   fConst!(A: Field)
 }
 
@@ -19,6 +16,6 @@ noir_def field_generics::main<>() -> Unit := {
   #_skip
 }
 
-def FieldGenerics.env : Env := Env.mk
-  [«field_generics::A», «field_generics::foo1», «field_generics::main»]
+def «ExtractionTests-0.0.0».FieldGenerics.env : Env := Env.mk
+  [«ExtractionTests-0.0.0::field_generics::A», «ExtractionTests-0.0.0::field_generics::foo1», «ExtractionTests-0.0.0::field_generics::main»]
   []
