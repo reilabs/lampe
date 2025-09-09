@@ -5,9 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «ExtractionTests-0.0.0»
-namespace Extracted
-
-def TypeOrder.env : Env := Env.mk
+def «ExtractionTests-0.0.0».TypeOrder.env : Env := Env.mk
   []
   []

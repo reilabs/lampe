@@ -5,13 +5,10 @@ import Lampe
 
 open Lampe
 
-namespace «Multiple-0.0.0»
-namespace Extracted
-
-noir_def bar::bar<>(x: Field) -> Field := {
+noir_def «Multiple-0.0.0»::bar::bar<>(x: Field) -> Field := {
   (#_fAdd returning Field)(x, (1: Field))
 }
 
-def Bar.Mod.env : Env := Env.mk
-  [«bar::bar»]
+def «Multiple-0.0.0».Bar.Mod.env : Env := Env.mk
+  [«Multiple-0.0.0::bar::bar»]
   []
