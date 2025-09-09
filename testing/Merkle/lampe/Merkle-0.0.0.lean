@@ -5,6 +5,3 @@ import «Merkle-0.0.0».Field
 import «Merkle-0.0.0».Ref
 import «Merkle-0.0.0».Spec
 
-namespace «Merkle-0.0.0»
-
-open Lampe
