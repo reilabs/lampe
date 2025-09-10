@@ -265,6 +265,149 @@ impl FileGenerator {
     }
 }
 
+/// Creates directory if it doesn't exist
+fn ensure_directory_exists(dir: &Path) -> Result<(), Error> {
+    if !dir.exists() {
+        fs::create_dir(dir)?;
+    }
+    Ok(())
+}
+
+/// Generates main package files and directories
+fn process_root_package(
+    generator: &FileGenerator,
+    extracted_code: &[LeanFile],
+) -> Result<(), Error> {
+    generator.generate_lib_file()?;
+
+    let lib_dir = generator.lampe_root_dir.join(format!(
+        "{}-{}",
+        &generator.noir_package_identifier.name, &generator.noir_package_identifier.version
+    ));
+    ensure_directory_exists(&lib_dir)?;
+
+    generator.generate_extracted_file(&lib_dir, extracted_code)?;
+
+    let extracted_lib_dir = lib_dir.join(EXTRACTED_MODULE_NAME);
+    ensure_directory_exists(&extracted_lib_dir)?;
+
+    generator
+        .generate_extracted_module_version_extracted_files(&extracted_lib_dir, extracted_code)?;
+
+    Ok(())
+}
+
+/// Processes a single dependency and generates its files
+fn process_dependency<H: std::hash::BuildHasher>(
+    deps_dir: &Path,
+    extracted_dependency: &NoirPackageIdentifier,
+    lean_files: &[LeanFile],
+    dependency_info: &DependencyInfo<H>,
+) -> Result<(), Error> {
+    let extracted_dep_project_dir = deps_dir.join(format!(
+        "{}-{}",
+        &extracted_dependency.name, &extracted_dependency.version
+    ));
+    ensure_directory_exists(&extracted_dep_project_dir)?;
+
+    let extracted_dep_lampe_dir = extracted_dep_project_dir.join("lampe");
+    ensure_directory_exists(&extracted_dep_lampe_dir)?;
+
+    let extracted_dep_lib_dir = extracted_dep_lampe_dir.join(format!(
+        "{}-{}",
+        &extracted_dependency.name, &extracted_dependency.version
+    ));
+    ensure_directory_exists(&extracted_dep_lib_dir)?;
+
+    let (dep_direct_dep_ids, dep_deps_with_lampe) = dependency_info
+        .dependency_relationships
+        .get(extracted_dependency)
+        .cloned()
+        .unwrap_or_default();
+
+    let mut all_direct_deps_for_dep = dep_direct_dep_ids.clone();
+    all_direct_deps_for_dep.extend(dep_deps_with_lampe.clone());
+
+    let dep_generator = FileGenerator::new(
+        &extracted_dep_lampe_dir,
+        extracted_dependency,
+        all_direct_deps_for_dep,
+        &[], // TODO: ugh
+        true,
+    );
+
+    dep_generator.generate_lib_file()?;
+    dep_generator.generate_extracted_file(&extracted_dep_lib_dir, lean_files)?;
+
+    let extracted_dep_extracted_dir = extracted_dep_lib_dir.join(EXTRACTED_MODULE_NAME);
+    ensure_directory_exists(&extracted_dep_extracted_dir)?;
+
+    dep_generator.generate_extracted_module_version_extracted_files(
+        &extracted_dep_extracted_dir,
+        lean_files,
+    )?;
+
+    generate_dependency_additional_files(
+        &extracted_dep_lampe_dir,
+        extracted_dependency,
+        &dep_direct_dep_ids,
+        dependency_info,
+    )?;
+
+    Ok(())
+}
+
+/// Generates additional dependency files (lakefile and lean-toolchain)
+fn generate_dependency_additional_files<H: std::hash::BuildHasher>(
+    extracted_dep_lampe_dir: &Path,
+    extracted_dependency: &NoirPackageIdentifier,
+    dep_direct_dep_ids: &[NoirPackageIdentifier],
+    dependency_info: &DependencyInfo<H>,
+) -> Result<(), Error> {
+    let mut dep_additional_dependencies: Vec<Box<dyn LeanDependency>> = vec![];
+
+    for dep_direct_dep in dep_direct_dep_ids {
+        if dependency_info.extracted_dependencies.contains_key(dep_direct_dep) {
+            let dep_name = format!("{}-{}", dep_direct_dep.name, dep_direct_dep.version);
+            let dep_path = format!("../../{dep_name}/lampe");
+
+            dep_additional_dependencies.push(Box::new(
+                LeanDependencyPath::builder(&dep_name).path(&dep_path).build(),
+            ));
+        }
+    }
+
+    file_generator::lake::generate_lakefile_toml(
+        extracted_dep_lampe_dir,
+        extracted_dependency,
+        &dep_additional_dependencies,
+        true,
+    )?;
+
+    file_generator::lean_toolchain::generate_lean_toolchain(extracted_dep_lampe_dir, true)?;
+
+    Ok(())
+}
+
+/// Processes all dependencies and generates their files
+fn process_dependencies<H: std::hash::BuildHasher>(
+    lampe_root_dir: &Path,
+    dependency_info: &DependencyInfo<H>,
+) -> Result<(), Error> {
+    if dependency_info.extracted_dependencies.is_empty() {
+        return Ok(());
+    }
+
+    let deps_dir = lampe_root_dir.join("deps");
+    ensure_directory_exists(&deps_dir)?;
+
+    for (extracted_dependency, lean_files) in &dependency_info.extracted_dependencies {
+        process_dependency(&deps_dir, extracted_dependency, lean_files, dependency_info)?;
+    }
+
+    Ok(())
+}
+
 /// Generates all lean files from passed extracted code with project
 /// configuration. Current lean files structure is (in pseudo description):
 /// |-- <Main package>
@@ -307,115 +450,8 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
         false,
     );
 
-    generator.generate_lib_file()?;
-
-    let lib_dir = generator.lampe_root_dir.join(format!(
-        "{}-{}",
-        &generator.noir_package_identifier.name, &generator.noir_package_identifier.version
-    ));
-    if !lib_dir.exists() {
-        fs::create_dir(&lib_dir)?;
-    }
-
-    generator.generate_extracted_file(&lib_dir, extracted_code)?;
-
-    let extracted_lib_dir = lib_dir.join(EXTRACTED_MODULE_NAME);
-    if !extracted_lib_dir.exists() {
-        fs::create_dir(&extracted_lib_dir)?;
-    }
-
-    generator
-        .generate_extracted_module_version_extracted_files(&extracted_lib_dir, extracted_code)?;
-
-    if !dependency_info.extracted_dependencies.is_empty() {
-        let deps_dir = generator.lampe_root_dir.join("deps");
-        if !deps_dir.exists() {
-            fs::create_dir(&deps_dir)?;
-        }
-
-        for (extracted_dependency, lean_files) in &dependency_info.extracted_dependencies {
-            let extracted_dep_project_dir = deps_dir.join(format!(
-                "{}-{}",
-                &extracted_dependency.name, &extracted_dependency.version
-            ));
-
-            if !extracted_dep_project_dir.exists() {
-                fs::create_dir(&extracted_dep_project_dir)?;
-            }
-
-            let extracted_dep_lampe_dir = extracted_dep_project_dir.join("lampe");
-            if !extracted_dep_lampe_dir.exists() {
-                fs::create_dir(&extracted_dep_lampe_dir)?;
-            }
-
-            let extracted_dep_lib_dir = extracted_dep_lampe_dir.join(format!(
-                "{}-{}",
-                &extracted_dependency.name, &extracted_dependency.version
-            ));
-
-            if !extracted_dep_lib_dir.exists() {
-                fs::create_dir(&extracted_dep_lib_dir)?;
-            }
-
-            let (dep_direct_dep_ids, dep_deps_with_lampe) = dependency_info
-                .dependency_relationships
-                .get(extracted_dependency)
-                .cloned()
-                .unwrap_or_default();
-
-            let mut all_direct_deps_for_dep = dep_direct_dep_ids.clone();
-            all_direct_deps_for_dep.extend(dep_deps_with_lampe.clone());
-
-            let mut all_deps_for_dep = dep_direct_dep_ids.clone();
-            all_deps_for_dep.extend(dep_deps_with_lampe.clone());
-
-            let dep_generator = FileGenerator::new(
-                &extracted_dep_lampe_dir,
-                extracted_dependency,
-                all_direct_deps_for_dep,
-                &[], // TODO: ugh
-                true,
-            );
-
-            dep_generator.generate_lib_file()?;
-            dep_generator.generate_extracted_file(&extracted_dep_lib_dir, lean_files)?;
-
-            let extracted_dep_extracted_dir = extracted_dep_lib_dir.join(EXTRACTED_MODULE_NAME);
-            if !extracted_dep_extracted_dir.exists() {
-                fs::create_dir(&extracted_dep_extracted_dir)?;
-            }
-
-            dep_generator.generate_extracted_module_version_extracted_files(
-                &extracted_dep_extracted_dir,
-                lean_files,
-            )?;
-
-            let mut dep_additional_dependencies: Vec<Box<dyn LeanDependency>> = vec![];
-
-            for dep_direct_dep in &dep_direct_dep_ids {
-                if dependency_info.extracted_dependencies.contains_key(dep_direct_dep) {
-                    let dep_name = format!("{}-{}", dep_direct_dep.name, dep_direct_dep.version);
-                    let dep_path = format!("../../{dep_name}/lampe");
-
-                    dep_additional_dependencies.push(Box::new(
-                        LeanDependencyPath::builder(&dep_name).path(&dep_path).build(),
-                    ));
-                }
-            }
-
-            file_generator::lake::generate_lakefile_toml(
-                &extracted_dep_lampe_dir,
-                extracted_dependency,
-                &dep_additional_dependencies,
-                true,
-            )?;
-
-            file_generator::lean_toolchain::generate_lean_toolchain(
-                &extracted_dep_lampe_dir,
-                true,
-            )?;
-        }
-    }
+    process_root_package(&generator, extracted_code)?;
+    process_dependencies(lampe_root_dir, dependency_info)?;
 
     Ok(())
 }

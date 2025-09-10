@@ -32,7 +32,8 @@ pub struct NoirPackageIdentifier {
     pub version: String,
 }
 
-/// Stores the information about dependencies needed for generating Lampe's project.
+/// Stores the information about dependencies needed for generating Lampe's
+/// project.
 pub struct DependencyInfo<H: std::hash::BuildHasher> {
     pub all_dependencies:               Vec<Box<dyn LeanDependency>>,
     pub extracted_dependencies:         HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
