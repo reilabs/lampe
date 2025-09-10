@@ -64,7 +64,7 @@ pub struct Writer<'emit_context> {
 /// Basic utility functions for the writer.
 impl Writer<'_> {
     /// Wraps the provided context in the basic writer.
-    pub fn new(context: &mut EmitContext) -> Writer {
+    pub fn new(context: &mut EmitContext) -> Writer<'_> {
         Writer { context }
     }
 
@@ -367,7 +367,7 @@ impl Writer<'_> {
                     Kind::Field => self.append_to_line("fConst!("),
                     Kind::U(_) => self.append_to_line("uConst!("),
                     Kind::Type => panic!("Encountered Type-kinded generic used as value"),
-                };
+                }
                 self.append_to_line(&typ.name);
                 self.append_to_line(": ");
                 self.write_kind(&typ.kind);

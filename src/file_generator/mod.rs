@@ -57,12 +57,13 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
     noir_package_identifier: &NoirPackageIdentifier,
     additional_dependencies: &[Box<dyn LeanDependency>],
     extracted_code: &[LeanFile],
-    extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
-    direct_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
-    direct_dependencies_with_lampe: Vec<NoirPackageIdentifier>,
-    dependency_relationships: HashMap<
+    extracted_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
+    direct_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
+    direct_dependencies_with_lampe: &[NoirPackageIdentifier],
+    dependency_relationships: &HashMap<
         NoirPackageIdentifier,
         (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
+        H,
     >,
 ) -> Result<()> {
     let lampe_root_dir = target_dir.join(LAMPE_DIR_NAME);
@@ -88,11 +89,11 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
         &lampe_root_dir,
         noir_package_identifier,
         extracted_code,
-        extracted_dependencies,
+        &extracted_dependencies,
         &external_dependencies,
-        direct_dependencies,
-        direct_dependencies_with_lampe,
-        dependency_relationships,
+        &direct_dependencies,
+        &direct_dependencies_with_lampe,
+        &dependency_relationships,
     )?;
 
     Ok(())
@@ -116,7 +117,8 @@ pub fn get_lean_dependency(
             let directory = directory.clone().unwrap_or(String::new());
             let path = Path::new(&directory).join(LAMPE_DIR_NAME);
             let subdir = path.to_str().ok_or(LakeRequireGeneration(format!(
-                "Error preparing subdir: {path:?}"
+                "Error preparing subdir: {}",
+                path.display()
             )))?;
 
             Ok(Box::new(
@@ -136,7 +138,8 @@ pub fn get_lean_dependency(
             };
             let path = path.join(LAMPE_DIR_NAME);
             let path = path.to_str().ok_or(LakeRequireGeneration(format!(
-                "Error preparing path: {path:?}"
+                "Error preparing path: {}",
+                path.display()
             )))?;
 
             Ok(Box::new(

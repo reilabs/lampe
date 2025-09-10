@@ -46,7 +46,7 @@ impl ModuleEmitter {
                 ModuleDefinition::Global(g) => self.emit_global(g),
                 ModuleDefinition::Function(f) => self.emit_function_definition(f, false),
                 ModuleDefinition::TraitImpl(t) => self.emit_trait_impl(t),
-            };
+            }
 
             self.context.end_line();
         }

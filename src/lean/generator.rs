@@ -965,8 +965,6 @@ impl LeanGenerator<'_, '_, '_> {
                     let location = self.context.def_interner.get_global(id).location;
                     if let Some(def) = self.generate_global_definition(&id) {
                         globals.insert((location, def));
-                    } else {
-                        continue;
                     }
                 }
                 _ => continue,
@@ -2203,8 +2201,8 @@ impl LeanGenerator<'_, '_, '_> {
                                 .0
                                 .kind;
                             let name = match func_kind {
-                                FunctionAttributeKind::Builtin(b) => b.to_string(),
-                                FunctionAttributeKind::Foreign(f) => f.to_string(),
+                                FunctionAttributeKind::Builtin(b) => b.clone(),
+                                FunctionAttributeKind::Foreign(f) => f.clone(),
                                 _ => panic!(
                                     "Unsupported function kind {func_kind:?} encountered for \
                                      builtin"

@@ -181,7 +181,7 @@ impl Project {
 
         for dep_identifier in all_dependencies.keys() {
             let dep_name = format!("{}-{}", dep_identifier.name, dep_identifier.version);
-            let dep_path = format!("deps/{}/lampe", dep_name);
+            let dep_path = format!("deps/{dep_name}/lampe");
 
             result.push(
                 Box::new(LeanDependencyPath::builder(&dep_name).path(&dep_path).build())
