@@ -114,7 +114,7 @@ impl Project {
             package,
             &all_dependencies_to_extract,
             &direct_dependencies_to_extract,
-            dependency_relationships,
+            &dependency_relationships,
         )?;
         warnings.extend(res.warnings);
 
@@ -128,7 +128,7 @@ impl Project {
         package: &Package,
         all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
         direct_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
-        dependency_relationships: HashMap<
+        dependency_relationships: &HashMap<
             NoirPackageIdentifier,
             (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
         >,
@@ -146,12 +146,11 @@ impl Project {
         let additional_dependencies = Self::get_dependencies_with_lampe(package)?;
 
         // Collect direct dependencies that already have lampe
-        let direct_dependencies_with_lampe =
-            self.collect_direct_dependencies_with_lampe(package)?;
+        let direct_dependencies_with_lampe = Self::collect_direct_dependencies_with_lampe(package);
 
         // Add path-based dependencies for the direct extracted dependencies only
         let path_dependencies =
-            self.create_path_dependencies_for_extracted_deps(direct_dependencies)?;
+            Self::create_path_dependencies_for_extracted_deps(direct_dependencies);
         let mut all_additional_deps = additional_dependencies;
         all_additional_deps.extend(path_dependencies);
 
@@ -163,10 +162,10 @@ impl Project {
             },
             &all_additional_deps,
             &extracted_code,
-            all_dependencies.clone(),
-            direct_dependencies.clone(),
-            direct_dependencies_with_lampe,
-            dependency_relationships,
+            all_dependencies,
+            direct_dependencies,
+            &direct_dependencies_with_lampe,
+            &dependency_relationships,
         )?;
 
         Ok(WithWarnings::new((), warnings))
@@ -174,9 +173,8 @@ impl Project {
 
     /// Creates path-based lean dependencies for the extracted dependencies
     fn create_path_dependencies_for_extracted_deps(
-        &self,
         all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
-    ) -> Result<Vec<Box<dyn LeanDependency>>, Error> {
+    ) -> Vec<Box<dyn LeanDependency>> {
         let mut result = vec![];
 
         for dep_identifier in all_dependencies.keys() {
@@ -189,7 +187,7 @@ impl Project {
             );
         }
 
-        Ok(result)
+        result
     }
 
     /// Collects all dependencies and their relationships
@@ -293,7 +291,7 @@ impl Project {
                 warnings.extend(res.warnings);
 
                 let direct_deps_with_lampe =
-                    self.collect_direct_dependencies_with_lampe(dep_package)?;
+                    Self::collect_direct_dependencies_with_lampe(dep_package);
 
                 let direct_deps_ids: Vec<NoirPackageIdentifier> =
                     direct_deps_without_lampe.keys().cloned().collect();
@@ -316,10 +314,7 @@ impl Project {
     }
 
     /// Collects direct dependencies that already have lampe directories
-    fn collect_direct_dependencies_with_lampe(
-        &self,
-        package: &Package,
-    ) -> Result<Vec<NoirPackageIdentifier>, Error> {
+    fn collect_direct_dependencies_with_lampe(package: &Package) -> Vec<NoirPackageIdentifier> {
         let mut result = vec![];
 
         for dependency in package.dependencies.values() {
@@ -342,7 +337,7 @@ impl Project {
             result.push(package_identifier);
         }
 
-        Ok(result)
+        result
     }
 
     /// Collects only direct dependencies that don't have lampe directories
@@ -531,8 +526,8 @@ impl Debug for Project {
             writeln!(f, "{}name:       {}", tab, p.name)?;
             writeln!(f, "{}version:    {:?}", tab, p.version)?;
             writeln!(f, "{}type:       {}", tab, p.package_type)?;
-            writeln!(f, "{}root_dir:   {:?}", tab, p.root_dir)?;
-            writeln!(f, "{}entry_path: {:?}", tab, p.entry_path)?;
+            writeln!(f, "{}root_dir:   {}", tab, p.root_dir.display())?;
+            writeln!(f, "{}entry_path: {}", tab, p.entry_path.display())?;
             writeln!(f, "{tab}dependencies:")?;
 
             for (crate_name, dep) in &p.dependencies {
