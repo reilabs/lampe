@@ -57,8 +57,7 @@ impl LeanFilePath {
 type LeanFileContent = String;
 
 /// This structure represents lean file = lean file path + line file content.
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct LeanFile {
     pub file_path: LeanFilePath,
     pub content:   LeanFileContent,

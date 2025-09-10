@@ -11,7 +11,8 @@ use crate::{
         error::{Error, Result},
         lake::dependency::{LeanDependency, LeanDependencyGit, LeanDependencyPath},
     },
-    file_generator_error::Error::LakeRequireGeneration, lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
+    file_generator_error::Error::LakeRequireGeneration,
+    lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
 };
 
 pub mod error;
@@ -36,7 +37,10 @@ impl NoirPackageIdentifier {
     #[must_use]
     pub fn formatted(&self, use_quotes: bool) -> String {
         if use_quotes {
-            format!("{}{}-{}{}", LEAN_QUOTE_START, self.name, self.version, LEAN_QUOTE_END)
+            format!(
+                "{}{}-{}{}",
+                LEAN_QUOTE_START, self.name, self.version, LEAN_QUOTE_END
+            )
         } else {
             format!("{}-{}", self.name, self.version)
         }
@@ -56,7 +60,10 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
     extracted_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
     direct_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
     direct_dependencies_with_lampe: Vec<NoirPackageIdentifier>,
-    dependency_relationships: HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+    dependency_relationships: HashMap<
+        NoirPackageIdentifier,
+        (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
+    >,
 ) -> Result<()> {
     let lampe_root_dir = target_dir.join(LAMPE_DIR_NAME);
 
