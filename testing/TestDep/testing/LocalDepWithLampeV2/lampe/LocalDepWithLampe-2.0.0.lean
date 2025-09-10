@@ -2,6 +2,3 @@
 
 import «LocalDepWithLampe-2.0.0».Extracted
 
-namespace «LocalDepWithLampe-2.0.0»
-
-open Lampe
