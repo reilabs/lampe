@@ -32,6 +32,16 @@ pub struct NoirPackageIdentifier {
     pub version: String,
 }
 
+/// Stores the information about dependencies needed for generating Lampe's project.
+pub struct DependencyInfo<H: std::hash::BuildHasher> {
+    pub all_dependencies:               Vec<Box<dyn LeanDependency>>,
+    pub extracted_dependencies:         HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
+    pub direct_dependencies:            HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
+    pub direct_dependencies_with_lampe: Vec<NoirPackageIdentifier>,
+    pub dependency_relationships:
+        HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>), H>,
+}
+
 impl NoirPackageIdentifier {
     /// Formats the package identifier as `name-version`.
     #[must_use]
@@ -55,16 +65,8 @@ impl NoirPackageIdentifier {
 pub fn lampe_project<H: std::hash::BuildHasher>(
     target_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
-    additional_dependencies: &[Box<dyn LeanDependency>],
+    dependency_info: &DependencyInfo<H>,
     extracted_code: &[LeanFile],
-    extracted_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
-    direct_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
-    direct_dependencies_with_lampe: &[NoirPackageIdentifier],
-    dependency_relationships: &HashMap<
-        NoirPackageIdentifier,
-        (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
-        H,
-    >,
 ) -> Result<()> {
     let lampe_root_dir = target_dir.join(LAMPE_DIR_NAME);
 
@@ -75,12 +77,13 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
     lake::generate_lakefile_toml(
         &lampe_root_dir,
         noir_package_identifier,
-        additional_dependencies,
+        &dependency_info.all_dependencies,
         false,
     )?;
     lean_toolchain::generate_lean_toolchain(&lampe_root_dir, false)?;
 
-    let external_dependencies = additional_dependencies
+    let external_dependencies = &dependency_info
+        .all_dependencies
         .iter()
         .map(|x| x.noir_package_identifier())
         .collect::<Result<Vec<_>>>()?;
@@ -89,11 +92,8 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
         &lampe_root_dir,
         noir_package_identifier,
         extracted_code,
-        extracted_dependencies,
-        &external_dependencies,
-        direct_dependencies,
-        direct_dependencies_with_lampe,
-        dependency_relationships,
+        dependency_info,
+        external_dependencies,
     )?;
 
     Ok(())

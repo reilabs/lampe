@@ -15,6 +15,7 @@ use crate::{
     file_generator::{
         self,
         lake::dependency::{LeanDependency, LeanDependencyPath},
+        DependencyInfo,
         LeanFile,
         NoirPackageIdentifier,
     },
@@ -126,7 +127,7 @@ impl Project {
         &self,
         noir_project: &noir::Project,
         package: &Package,
-        all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
+        extracted_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
         direct_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
         dependency_relationships: &HashMap<
             NoirPackageIdentifier,
@@ -151,8 +152,16 @@ impl Project {
         // Add path-based dependencies for the direct extracted dependencies only
         let path_dependencies =
             Self::create_path_dependencies_for_extracted_deps(direct_dependencies);
-        let mut all_additional_deps = additional_dependencies;
-        all_additional_deps.extend(path_dependencies);
+        let mut all_dependencies = additional_dependencies;
+        all_dependencies.extend(path_dependencies);
+
+        let dependency_info = DependencyInfo {
+            all_dependencies,
+            extracted_dependencies: extracted_dependencies.clone(),
+            direct_dependencies: direct_dependencies.clone(),
+            direct_dependencies_with_lampe: direct_dependencies_with_lampe.clone(),
+            dependency_relationships: dependency_relationships.clone(),
+        };
 
         file_generator::lampe_project(
             &self.target_path,
@@ -160,12 +169,8 @@ impl Project {
                 name:    package_name.clone(),
                 version: package_version.clone(),
             },
-            &all_additional_deps,
+            &dependency_info,
             &extracted_code,
-            all_dependencies,
-            direct_dependencies,
-            &direct_dependencies_with_lampe,
-            &dependency_relationships,
         )?;
 
         Ok(WithWarnings::new((), warnings))
