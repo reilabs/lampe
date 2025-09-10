@@ -102,7 +102,11 @@ authors = [""]
     /// Returns the generated crate data for testing the generator instead of
     /// the writer.
     fn get_crate_data(main_source: &str) -> Result<Crate, crate::Error> {
-        let (_, mock_project) = set_up_project(main_source).unwrap();
+        let (temp_dir, mock_project) = set_up_project(main_source).unwrap();
+
+        // Prevent the temp directory from being deleted so that we can read the
+        // Nargo.toml file for names
+        let _temp_dir_path = temp_dir.keep();
 
         let package = &mock_project.nargo_workspace.members[0];
         let noir_project = crate::noir::Project::new(
@@ -566,12 +570,13 @@ mod has {
         let crate_data = get_crate_data(keyword_source).unwrap();
 
         let assert_good_name = |name: &str| {
+            println!("name: {name}");
             assert!(name.split("::").all(|part| {
                 let quoted = part.starts_with(LEAN_QUOTE_START) && part.ends_with(LEAN_QUOTE_END);
                 if quoted {
-                    // ensure quoted parts are lean keywords
+                    // ensure quoted parts are lean keywords or contain special characters
                     let inner = &part[LEAN_QUOTE_START.len()..part.len() - LEAN_QUOTE_END.len()];
-                    LEAN_KEYWORDS.contains(&inner)
+                    LEAN_KEYWORDS.contains(&inner) || inner.chars().any(|c| c == '-' || c == '.')
                 } else {
                     // ensure unquoted parts are not lean keywords
                     !LEAN_KEYWORDS.contains(&part)
