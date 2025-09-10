@@ -2,7 +2,6 @@
 //! configuration, like: imports, namespaces, etc.
 
 use std::{
-    collections::HashMap,
     fmt::Write,
     fs,
     path::{self, Path},
@@ -13,6 +12,7 @@ use itertools::Itertools;
 use crate::file_generator::{
     self,
     lake::dependency::{LeanDependency, LeanDependencyPath},
+    DependencyInfo,
     Error,
     LeanFile,
     NoirPackageIdentifier,
@@ -287,20 +287,17 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
     lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
     extracted_code: &[LeanFile],
-    extracted_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
+    dependency_info: &DependencyInfo<H>,
     external_dependencies: &[NoirPackageIdentifier],
-    direct_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
-    direct_dependencies_with_lampe: &[NoirPackageIdentifier],
-    dependency_relationships: &HashMap<
-        NoirPackageIdentifier,
-        (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
-        H,
-    >,
 ) -> Result<(), Error> {
-    let direct_local_dependencies = direct_dependencies.keys().cloned().collect::<Vec<_>>();
+    let direct_local_dependencies = dependency_info
+        .direct_dependencies
+        .keys()
+        .cloned()
+        .collect::<Vec<_>>();
 
     let mut all_direct_dependencies = direct_local_dependencies.clone();
-    all_direct_dependencies.extend(direct_dependencies_with_lampe.to_owned());
+    all_direct_dependencies.extend(dependency_info.direct_dependencies_with_lampe.clone());
 
     let generator = FileGenerator::new(
         lampe_root_dir,
@@ -330,13 +327,13 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
     generator
         .generate_extracted_module_version_extracted_files(&extracted_lib_dir, extracted_code)?;
 
-    if !extracted_dependencies.is_empty() {
+    if !dependency_info.extracted_dependencies.is_empty() {
         let deps_dir = generator.lampe_root_dir.join("deps");
         if !deps_dir.exists() {
             fs::create_dir(&deps_dir)?;
         }
 
-        for (extracted_dependency, lean_files) in extracted_dependencies {
+        for (extracted_dependency, lean_files) in &dependency_info.extracted_dependencies {
             let extracted_dep_project_dir = deps_dir.join(format!(
                 "{}-{}",
                 &extracted_dependency.name, &extracted_dependency.version
@@ -360,7 +357,8 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
                 fs::create_dir(&extracted_dep_lib_dir)?;
             }
 
-            let (dep_direct_dep_ids, dep_deps_with_lampe) = dependency_relationships
+            let (dep_direct_dep_ids, dep_deps_with_lampe) = dependency_info
+                .dependency_relationships
                 .get(extracted_dependency)
                 .cloned()
                 .unwrap_or_default();
@@ -395,7 +393,7 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
             let mut dep_additional_dependencies: Vec<Box<dyn LeanDependency>> = vec![];
 
             for dep_direct_dep in &dep_direct_dep_ids {
-                if extracted_dependencies.contains_key(dep_direct_dep) {
+                if dependency_info.extracted_dependencies.contains_key(dep_direct_dep) {
                     let dep_name = format!("{}-{}", dep_direct_dep.name, dep_direct_dep.version);
                     let dep_path = format!("../../{dep_name}/lampe");
 
