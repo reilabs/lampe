@@ -5,9 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-namespace Extracted
-
-def Meta.UnresolvedType.env : Env := Env.mk
+def «std-1.0.0-beta.11».Meta.UnresolvedType.env : Env := Env.mk
   []
   []

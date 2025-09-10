@@ -5,9 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.11»
-namespace Extracted
-
-def Meta.TraitImpl.env : Env := Env.mk
+def «std-1.0.0-beta.11».Meta.TraitImpl.env : Env := Env.mk
   []
   []

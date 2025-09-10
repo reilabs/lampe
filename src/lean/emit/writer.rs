@@ -3,50 +3,53 @@ use std::ops::{Deref, DerefMut};
 use convert_case::{Case, Casing};
 use itertools::Itertools;
 
-use crate::lean::{
-    ast::{
-        AssignStatement,
-        Block,
-        BuiltinCallRef,
-        BuiltinTag,
-        BuiltinTypeExpr,
-        Call,
-        Cast,
-        CastTypeExpr,
-        DataTypeExpr,
-        DeclCallRef,
-        Expression,
-        ForStatement,
-        FunctionTypeExpr,
-        GlobalCallRef,
-        IdentCallRef,
-        Identifier,
-        IfThenElse,
-        Index,
-        Kind,
-        LValue,
-        Lambda,
-        LetStatement,
-        Literal,
-        MemberAccess,
-        Pattern,
-        Statement,
-        TraitCallRef,
-        Type,
-        TypeArithExpr,
-        TypeArithOp,
-        TypeExpr,
-        TypePattern,
+use crate::{
+    constants::LAMPE_STRUCT_METHOD_SEPARATOR,
+    lean::{
+        ast::{
+            AssignStatement,
+            Block,
+            BuiltinCallRef,
+            BuiltinTag,
+            BuiltinTypeExpr,
+            Call,
+            Cast,
+            CastTypeExpr,
+            DataTypeExpr,
+            DeclCallRef,
+            Expression,
+            ForStatement,
+            FunctionTypeExpr,
+            GlobalCallRef,
+            IdentCallRef,
+            Identifier,
+            IfThenElse,
+            Index,
+            Kind,
+            LValue,
+            Lambda,
+            LetStatement,
+            Literal,
+            MemberAccess,
+            Pattern,
+            Statement,
+            TraitCallRef,
+            Type,
+            TypeArithExpr,
+            TypeArithOp,
+            TypeExpr,
+            TypePattern,
+        },
+        builtin::{
+            ALIAS_PREFIX,
+            ARRAY_GET_BUILTIN_NAME,
+            BUILTIN_PREFIX,
+            CAST_BUILTIN_NAME,
+            SKIP_BUILTIN_NAME,
+            UNIT_TYPE_NAME,
+        },
+        emit::context::EmitContext,
     },
-    builtin::{
-        ALIAS_PREFIX,
-        ARRAY_GET_BUILTIN_NAME,
-        BUILTIN_PREFIX,
-        CAST_BUILTIN_NAME,
-        SKIP_BUILTIN_NAME,
-        UNIT_TYPE_NAME,
-    },
-    emit::context::EmitContext,
 };
 
 /// A provider of basic functionality for writing standard portions of the AST
@@ -61,7 +64,7 @@ pub struct Writer<'emit_context> {
 /// Basic utility functions for the writer.
 impl Writer<'_> {
     /// Wraps the provided context in the basic writer.
-    pub fn new(context: &mut EmitContext) -> Writer {
+    pub fn new(context: &mut EmitContext) -> Writer<'_> {
         Writer { context }
     }
 
@@ -260,7 +263,7 @@ impl Writer<'_> {
         self.append_to_line(">");
         self.append_to_line(")");
 
-        self.append_to_line("::");
+        self.append_to_line(LAMPE_STRUCT_METHOD_SEPARATOR);
         self.append_to_line(&call_ref.function_name);
 
         self.append_to_line("<");
@@ -364,7 +367,7 @@ impl Writer<'_> {
                     Kind::Field => self.append_to_line("fConst!("),
                     Kind::U(_) => self.append_to_line("uConst!("),
                     Kind::Type => panic!("Encountered Type-kinded generic used as value"),
-                };
+                }
                 self.append_to_line(&typ.name);
                 self.append_to_line(": ");
                 self.write_kind(&typ.kind);

@@ -74,4 +74,8 @@ impl LeanDependency for LeanDependencyReservoirGit {
 
         Ok(result)
     }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
 }

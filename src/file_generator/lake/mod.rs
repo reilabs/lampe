@@ -5,14 +5,18 @@ use std::{fmt::Write, fs, path::Path};
 
 use serde::Deserialize;
 
-use crate::file_generator::{
-    lake::{
-        constants::NOIR_STDLIB_PACKAGE_NAME,
-        dependency::{LeanDependency, LeanDependencyGit},
+use crate::{
+    constants::{NONE_DEPENDENCY_VERSION, STDLIB_TOML},
+    file_generator::{
+        lake::{
+            constants::NOIR_STDLIB_PACKAGE_NAME,
+            dependency::{LeanDependency, LeanDependencyGit},
+        },
+        Error,
+        NoirPackageIdentifier,
+        LAMPE_GENERATED_COMMENT,
     },
-    Error,
-    NoirPackageIdentifier,
-    LAMPE_GENERATED_COMMENT,
+    lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
 };
 
 pub mod constants;
@@ -81,37 +85,36 @@ pub fn generate_lakefile_toml(
     result.push_str("[[lean_lib]]\n");
     writeln!(
         result,
-        "name = \"«{}-{}»\"",
-        noir_package_identifier.name, noir_package_identifier.version
+        "name = \"{}{}-{}{}\"",
+        LEAN_QUOTE_START,
+        noir_package_identifier.name,
+        noir_package_identifier.version,
+        LEAN_QUOTE_END,
     )?;
     result.push('\n');
 
     let stdlib_info = if noir_package_identifier.name == NOIR_STDLIB_PACKAGE_NAME {
         None
-    } else {
-        let stdlib_toml = include_str!("../../../stdlib/Nargo.toml");
-        if let Ok(toml_content) = stdlib_toml.parse::<toml::Table>() {
-            if let toml::Value::Table(package_info) = &toml_content["package"] {
-                if let toml::Value::String(name) = &package_info["name"] {
-                    let version = package_info["version"].as_str().unwrap_or("0.0.0");
+    } else if let Ok(toml_content) = STDLIB_TOML.parse::<toml::Table>() {
+        if let toml::Value::Table(package_info) = &toml_content["package"] {
+            if let toml::Value::String(name) = &package_info["name"] {
+                let version = package_info["version"].as_str().unwrap_or(NONE_DEPENDENCY_VERSION);
 
-                    Some(StdlibInfo {
-                        name:    name.clone(),
-                        version: version.to_string(),
-                    })
-                } else {
-                    None
-                }
+                Some(StdlibInfo {
+                    name:    name.clone(),
+                    version: version.to_string(),
+                })
             } else {
                 None
             }
         } else {
-            eprintln!(
-                "Could not read standard library config; not including standard library as \
-                 dependency"
-            );
             None
         }
+    } else {
+        eprintln!(
+            "Could not read standard library config; not including standard library as dependency"
+        );
+        None
     };
 
     for dependency in default_lean_dependencies(stdlib_info) {

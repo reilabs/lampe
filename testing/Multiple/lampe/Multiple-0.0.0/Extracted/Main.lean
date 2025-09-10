@@ -5,17 +5,14 @@ import Lampe
 
 open Lampe
 
-namespace «Multiple-0.0.0»
-namespace Extracted
-
-noir_def main<>(x: Field) -> Field := {
+noir_def «Multiple-0.0.0»::main<>(x: Field) -> Field := {
   let mut x = x;
-  x = (foo::foo<> as λ(Field) -> Field)(x);
-  x = (bar::bar<> as λ(Field) -> Field)(x);
-  x = (baz::bang::bang<> as λ(Field) -> Field)(x);
+  x = («Multiple-0.0.0»::foo::foo<> as λ(Field) -> Field)(x);
+  x = («Multiple-0.0.0»::bar::bar<> as λ(Field) -> Field)(x);
+  x = («Multiple-0.0.0»::baz::bang::bang<> as λ(Field) -> Field)(x);
   x
 }
 
-def Main.env : Env := Env.mk
-  [main]
+def «Multiple-0.0.0».Main.env : Env := Env.mk
+  [«Multiple-0.0.0::main»]
   []
