@@ -10,15 +10,14 @@ namespace «Merkle-1.0.0»
 open Lampe
 open «Merkle-1.0.0».Ref
 open «Merkle-1.0.0».Spec
-open «Merkle-1.0.0».Extracted
 
-theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp Spec.lp) Ref.State.compress 32}:
-    STHoare Spec.lp env
+theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp lp) Ref.State.compress 32}:
+    STHoare lp env
         ⟦⟧
-        (main.call h![] h![tree.root, proof, item, index])
+        («Merkle-1.0.0::main».call h![] h![tree.root, proof, item, index])
         (fun _ => item ∈ tree) := by
   enter_decl
-  steps [recover_intro (H:= «skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
+  steps [recover_intro (H:= «Merkle-1.0.0::skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
   use index.reverse
   subst_vars
   rename tree.root = _ => hroot

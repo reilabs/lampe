@@ -5,38 +5,35 @@ import Lampe
 
 open Lampe
 
-namespace «Merkle-1.0.0»
-namespace Extracted
-
-noir_def utils::rl<>(u: u8) -> u8 := {
+noir_def «Merkle-1.0.0»::utils::rl<>(u: u8) -> u8 := {
   let top_bit = (#_uShr returning u8)(u, (7: u8));
   (#_uOr returning u8)((#_uShl returning u8)(u, (1: u8)), top_bit)
 }
 
-noir_def utils::rotate_left<>(u: u8, N: u8) -> u8 := {
+noir_def «Merkle-1.0.0»::utils::rotate_left<>(u: u8, N: u8) -> u8 := {
   let mut result = u;
   for _ in (0: u8) .. N do {
-    result = (utils::rl<> as λ(u8) -> u8)(result);
+    result = («Merkle-1.0.0»::utils::rl<> as λ(u8) -> u8)(result);
     #_skip
   };
   result
 }
 
-noir_def utils::sbox<>(v: u8) -> u8 := {
+noir_def «Merkle-1.0.0»::utils::sbox<>(v: u8) -> u8 := {
   let x1 = (#_uNot returning u8)(v);
-  let x2 = (utils::rotate_left<> as λ(u8, u8) -> u8)(x1, (1: u8));
-  let x3 = (utils::rotate_left<> as λ(u8, u8) -> u8)(v, (2: u8));
-  let x4 = (utils::rotate_left<> as λ(u8, u8) -> u8)(v, (3: u8));
+  let x2 = («Merkle-1.0.0»::utils::rotate_left<> as λ(u8, u8) -> u8)(x1, (1: u8));
+  let x3 = («Merkle-1.0.0»::utils::rotate_left<> as λ(u8, u8) -> u8)(v, (2: u8));
+  let x4 = («Merkle-1.0.0»::utils::rotate_left<> as λ(u8, u8) -> u8)(v, (3: u8));
   let x5 = (#_uAnd returning u8)((#_uAnd returning u8)(x2, x3), x4);
-  let x6 = (utils::rotate_left<> as λ(u8, u8) -> u8)(x5, (1: u8));
+  let x6 = («Merkle-1.0.0»::utils::rotate_left<> as λ(u8, u8) -> u8)(x5, (1: u8));
   (#_uXor returning u8)(v, x6)
 }
 
-noir_def utils::sgn0<>(self: Field) -> u1 := {
+noir_def «Merkle-1.0.0»::utils::sgn0<>(self: Field) -> u1 := {
   (#_cast returning u1)(self)
 }
 
-noir_def utils::as_array<>(self: Slice<u8>) -> Array<u8, 32: u32> := {
+noir_def «Merkle-1.0.0»::utils::as_array<>(self: Slice<u8>) -> Array<u8, 32: u32> := {
   let mut array = (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8));
   for i in (0: u32) .. (32: u32) do {
     (array[i]: u8) = (#_sliceIndex returning u8)(self, (#_cast returning u32)(i));
@@ -45,10 +42,10 @@ noir_def utils::as_array<>(self: Slice<u8>) -> Array<u8, 32: u32> := {
   array
 }
 
-noir_def utils::square<>(a: Field) -> Field := {
-  (#_fMul returning Field)((#_fMul returning Field)(a, a), (globals::SIGMA<> as λ() -> Field)())
+noir_def «Merkle-1.0.0»::utils::square<>(a: Field) -> Field := {
+  (#_fMul returning Field)((#_fMul returning Field)(a, a), («Merkle-1.0.0»::globals::SIGMA<> as λ() -> Field)())
 }
 
-def Utils.Mod.env : Env := Env.mk
-  [«utils::rl», «utils::rotate_left», «utils::sbox», «utils::sgn0», «utils::as_array», «utils::square»]
+def «Merkle-1.0.0».Utils.Mod.env : Env := Env.mk
+  [«Merkle-1.0.0::utils::rl», «Merkle-1.0.0::utils::rotate_left», «Merkle-1.0.0::utils::sbox», «Merkle-1.0.0::utils::sgn0», «Merkle-1.0.0::utils::as_array», «Merkle-1.0.0::utils::square»]
   []

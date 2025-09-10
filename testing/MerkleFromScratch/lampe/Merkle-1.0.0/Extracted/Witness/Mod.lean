@@ -5,18 +5,15 @@ import Lampe
 
 open Lampe
 
-namespace «Merkle-1.0.0»
-namespace Extracted
-
-noir_def witness::weird_assert_eq<>(a: Field, b: Field) -> Unit := {
+noir_def «Merkle-1.0.0»::witness::weird_assert_eq<>(a: Field, b: Field) -> Unit := {
   let wit = {
-    (witness::uncons::weird_eq_witness<> as λ(Field, Field) -> Field)(a, b)
+    («Merkle-1.0.0»::witness::uncons::weird_eq_witness<> as λ(Field, Field) -> Field)(a, b)
   };
   (#_assert returning Unit)((#_fEq returning bool)(wit, a));
   (#_assert returning Unit)((#_fEq returning bool)(wit, b));
   #_skip
 }
 
-def Witness.Mod.env : Env := Env.mk
-  [«witness::weird_assert_eq»]
+def «Merkle-1.0.0».Witness.Mod.env : Env := Env.mk
+  [«Merkle-1.0.0::witness::weird_assert_eq»]
   []
