@@ -35,6 +35,9 @@ def mapToStateCondition
 def State.insertVal (self : State p) (r : Ref) (v : AnyValue p) : State p :=
   ⟨self.vals.insert r v, self.lambdas⟩
 
+def State.insertLam (self : State p) (r : Ref) (v : Lambda (Tp.denote p)) : State p :=
+  ⟨self.vals, self.lambdas.insert r v⟩
+
 lemma State.eq_constructor {st₁ : State p} :
   (st₁ = st₂) ↔ (State.mk st₁.vals st₁.lambdas = State.mk st₂.vals st₂.lambdas) := by
   rfl
