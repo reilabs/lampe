@@ -4,16 +4,13 @@ import Lampe
 
 open Lampe
 
-namespace «Merkle-1.0.0»
-namespace Extracted
+noir_struct_def «Merkle-1.0.0»::skyscraper::Skyscraper<> {}
 
-noir_struct_def skyscraper::Skyscraper<> {}
-
-noir_trait_def hasher::BinaryHasher<F: Type> [] := {
+noir_trait_def «Merkle-1.0.0»::hasher::BinaryHasher<F: Type> [] := {
   method hash<>(F, F) -> F;
 }
 
-noir_trait_def hasher::Hasher<> [] := {
+noir_trait_def «Merkle-1.0.0»::hasher::Hasher<> [] := {
   method finish<>(Self) -> Field;
   method write<>(& Self, Field) -> Unit;
 }

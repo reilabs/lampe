@@ -5,9 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «Merkle-1.0.0»
-namespace Extracted
-
-def Hasher.Mod.env : Env := Env.mk
+def «Merkle-1.0.0».Hasher.Mod.env : Env := Env.mk
   []
   []
