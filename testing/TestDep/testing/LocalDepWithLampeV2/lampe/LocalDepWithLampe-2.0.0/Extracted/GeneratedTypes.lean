@@ -4,6 +4,3 @@ import Lampe
 
 open Lampe
 
-namespace «LocalDepWithLampe-2.0.0»
-namespace Extracted
-

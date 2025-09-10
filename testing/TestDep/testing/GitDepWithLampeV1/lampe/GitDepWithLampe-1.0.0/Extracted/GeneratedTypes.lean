@@ -4,6 +4,3 @@ import Lampe
 
 open Lampe
 
-namespace «GitDepWithLampe-1.0.0»
-namespace Extracted
-

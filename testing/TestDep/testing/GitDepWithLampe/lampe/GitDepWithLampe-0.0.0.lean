@@ -2,6 +2,3 @@
 
 import «GitDepWithLampe-0.0.0».Extracted
 
-namespace «GitDepWithLampe-0.0.0»
-
-open Lampe
