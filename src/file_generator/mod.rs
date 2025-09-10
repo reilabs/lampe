@@ -89,11 +89,11 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
         &lampe_root_dir,
         noir_package_identifier,
         extracted_code,
-        &extracted_dependencies,
+        extracted_dependencies,
         &external_dependencies,
-        &direct_dependencies,
-        &direct_dependencies_with_lampe,
-        &dependency_relationships,
+        direct_dependencies,
+        direct_dependencies_with_lampe,
+        dependency_relationships,
     )?;
 
     Ok(())
