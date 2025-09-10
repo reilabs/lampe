@@ -1,12 +1,23 @@
 //! This module contains functionality for generating lean files with specified
 //! configuration, like: imports, namespaces, etc.
 
-use std::{collections::HashMap, fmt::Write, fs, path::{self, Path}};
+use std::{
+    collections::HashMap,
+    fmt::Write,
+    fs,
+    path::{self, Path},
+};
 
 use itertools::Itertools;
 
 use crate::file_generator::{
-    self, lake::dependency::{LeanDependency, LeanDependencyPath}, Error, LeanFile, NoirPackageIdentifier, EXTRACTED_MODULE_NAME, LAMPE_GENERATED_COMMENT
+    self,
+    lake::dependency::{LeanDependency, LeanDependencyPath},
+    Error,
+    LeanFile,
+    NoirPackageIdentifier,
+    EXTRACTED_MODULE_NAME,
+    LAMPE_GENERATED_COMMENT,
 };
 
 pub mod error;
@@ -161,10 +172,7 @@ impl FileGenerator {
         if dependency_env.is_empty() {
             result.push_str(&extracted_env);
         } else {
-            result.push_str(&format!(
-                "{}\n  ++ {}",
-                extracted_env, dependency_env
-            ));
+            result.push_str(&format!("{}\n  ++ {}", extracted_env, dependency_env));
         }
 
         writeln!(result)?;
@@ -194,7 +202,8 @@ impl FileGenerator {
     /// $(project)/lampe/Example-0.0.0/Extracted/Main.lean
     /// $(project)/lampe/Example-0.0.0/Extracted/GeneratedTypes.lean
     /// $(project)/lampe/Example-0.0.0/Extracted/CustomUserFile.lean
-    /// $(project)/lampe/Example-0.0.0/Extracted/CustomDir/CustomUserFileInDir.lean
+    /// $(project)/lampe/Example-0.0.0/Extracted/CustomDir/CustomUserFileInDir.
+    /// lean
     fn generate_extracted_module_version_extracted_file(
         &self,
         extracted_module_dir: &Path,
@@ -246,7 +255,10 @@ impl FileGenerator {
 
         // Only import from direct dependencies
         for dep in self.local_dependencies.iter() {
-            imports.push(format!("«{}-{}».{EXTRACTED_MODULE_NAME}.GeneratedTypes", dep.name, dep.version));
+            imports.push(format!(
+                "«{}-{}».{EXTRACTED_MODULE_NAME}.GeneratedTypes",
+                dep.name, dep.version
+            ));
         }
 
         imports
@@ -279,7 +291,10 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
     external_dependencies: &[NoirPackageIdentifier],
     direct_dependencies: HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
     direct_dependencies_with_lampe: Vec<NoirPackageIdentifier>,
-    dependency_relationships: HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+    dependency_relationships: HashMap<
+        NoirPackageIdentifier,
+        (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
+    >,
 ) -> Result<(), Error> {
     let direct_local_dependencies = direct_dependencies.keys().cloned().collect::<Vec<_>>();
 
@@ -371,7 +386,10 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
                 fs::create_dir(&extracted_dep_extracted_dir)?;
             }
 
-            dep_generator.generate_extracted_module_version_extracted_files(&extracted_dep_extracted_dir, &lean_files)?;
+            dep_generator.generate_extracted_module_version_extracted_files(
+                &extracted_dep_extracted_dir,
+                &lean_files,
+            )?;
 
             let mut dep_additional_dependencies: Vec<Box<dyn LeanDependency>> = vec![];
 
@@ -381,9 +399,7 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
                     let dep_path = format!("../../{}/lampe", dep_name);
 
                     dep_additional_dependencies.push(Box::new(
-                        LeanDependencyPath::builder(&dep_name)
-                            .path(&dep_path)
-                            .build(),
+                        LeanDependencyPath::builder(&dep_name).path(&dep_path).build(),
                     ));
                 }
             }
@@ -395,7 +411,10 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
                 true,
             )?;
 
-            file_generator::lean_toolchain::generate_lean_toolchain(&extracted_dep_lampe_dir, true)?;
+            file_generator::lean_toolchain::generate_lean_toolchain(
+                &extracted_dep_lampe_dir,
+                true,
+            )?;
         }
     }
 
