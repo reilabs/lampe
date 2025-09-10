@@ -6,7 +6,7 @@ use crate::{file_generator::NoirPackageIdentifier, lean::{
         ModuleDefinition,
         TraitImplementation,
         WhereClause,
-    }, emit::{context::EmitContext, writer::Writer}, LEAN_QUOTE_END, LEAN_QUOTE_START
+    }, emit::{context::EmitContext, writer::Writer},
 }};
 
 /// An emitter for the generated module information in the AST.
