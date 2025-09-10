@@ -12,7 +12,12 @@ use noirc_frontend::hir::ParsedFiles;
 use crate::{
     constants::NONE_DEPENDENCY_VERSION,
     error::Error,
-    file_generator::{self, lake::dependency::{LeanDependency, LeanDependencyPath}, LeanFile, NoirPackageIdentifier},
+    file_generator::{
+        self,
+        lake::dependency::{LeanDependency, LeanDependencyPath},
+        LeanFile,
+        NoirPackageIdentifier,
+    },
     lean::emit::{ModuleEmitter, TypesEmitter},
     noir::{self, WithWarnings},
 };
@@ -70,7 +75,8 @@ impl Project {
 
         let mut warnings = vec![];
         for package in &self.nargo_workspace.members {
-            let with_warnings = self.extract_package_with_all_dependencies(&noir_project, package)?;
+            let with_warnings =
+                self.extract_package_with_all_dependencies(&noir_project, package)?;
             if with_warnings.has_warnings() {
                 warnings.extend(with_warnings.warnings);
             }
@@ -78,8 +84,9 @@ impl Project {
         Ok(WithWarnings::new((), warnings))
     }
 
-    /// Extracts a package along with all its transitive dependencies that don't have lampe directories.
-    /// Dependencies are extracted to the deps/ subdirectory.
+    /// Extracts a package along with all its transitive dependencies that don't
+    /// have lampe directories. Dependencies are extracted to the deps/
+    /// subdirectory.
     fn extract_package_with_all_dependencies(
         &self,
         noir_project: &noir::Project,
@@ -121,7 +128,10 @@ impl Project {
         package: &Package,
         all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
         direct_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
-        dependency_relationships: HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+        dependency_relationships: HashMap<
+            NoirPackageIdentifier,
+            (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
+        >,
     ) -> Result<WithWarnings<()>, Error> {
         let package_name = &package.name.to_string();
         let package_version =
@@ -136,10 +146,12 @@ impl Project {
         let additional_dependencies = Self::get_dependencies_with_lampe(package)?;
 
         // Collect direct dependencies that already have lampe
-        let direct_dependencies_with_lampe = self.collect_direct_dependencies_with_lampe(package)?;
+        let direct_dependencies_with_lampe =
+            self.collect_direct_dependencies_with_lampe(package)?;
 
         // Add path-based dependencies for the direct extracted dependencies only
-        let path_dependencies = self.create_path_dependencies_for_extracted_deps(direct_dependencies)?;
+        let path_dependencies =
+            self.create_path_dependencies_for_extracted_deps(direct_dependencies)?;
         let mut all_additional_deps = additional_dependencies;
         all_additional_deps.extend(path_dependencies);
 
@@ -171,11 +183,10 @@ impl Project {
             let dep_name = format!("{}-{}", dep_identifier.name, dep_identifier.version);
             let dep_path = format!("deps/{}/lampe", dep_name);
 
-            result.push(Box::new(
-                LeanDependencyPath::builder(&dep_name)
-                    .path(&dep_path)
-                    .build(),
-            ) as Box<dyn LeanDependency>);
+            result.push(
+                Box::new(LeanDependencyPath::builder(&dep_name).path(&dep_path).build())
+                    as Box<dyn LeanDependency>,
+            );
         }
 
         Ok(result)
@@ -188,14 +199,22 @@ impl Project {
         package: &Package,
         all_dependencies: &mut HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
         direct_dependencies: &mut HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
-        dependency_relationships: &mut HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+        dependency_relationships: &mut HashMap<
+            NoirPackageIdentifier,
+            (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
+        >,
     ) -> Result<WithWarnings<()>, Error> {
         let mut warnings = vec![];
 
-        let res = self.collect_direct_dependencies_without_lampe(noir_project, package, direct_dependencies)?;
+        let res = self.collect_direct_dependencies_without_lampe(
+            noir_project,
+            package,
+            direct_dependencies,
+        )?;
         warnings.extend(res.warnings);
 
-        let res = self.collect_all_dependencies_without_lampe(noir_project, package, all_dependencies)?;
+        let res =
+            self.collect_all_dependencies_without_lampe(noir_project, package, all_dependencies)?;
         warnings.extend(res.warnings);
 
         let res = self.collect_dependencies_relationships_recursive(
@@ -215,7 +234,10 @@ impl Project {
         noir_project: &noir::Project,
         root_package: &Package,
         all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
-        dependency_relationships: &mut HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+        dependency_relationships: &mut HashMap<
+            NoirPackageIdentifier,
+            (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
+        >,
     ) -> Result<WithWarnings<()>, Error> {
         let mut warnings = vec![];
         let mut visited = std::collections::HashSet::new();
@@ -238,7 +260,10 @@ impl Project {
         noir_project: &noir::Project,
         package: &Package,
         all_dependencies: &HashMap<NoirPackageIdentifier, Vec<LeanFile>>,
-        dependency_relationships: &mut HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>)>,
+        dependency_relationships: &mut HashMap<
+            NoirPackageIdentifier,
+            (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
+        >,
         visited: &mut std::collections::HashSet<NoirPackageIdentifier>,
     ) -> Result<WithWarnings<()>, Error> {
         let mut warnings = vec![];
@@ -249,8 +274,11 @@ impl Project {
             };
 
             let dep_id = NoirPackageIdentifier {
-                name: dep_package.name.to_string(),
-                version: dep_package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+                name:    dep_package.name.to_string(),
+                version: dep_package
+                    .version
+                    .clone()
+                    .unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
             };
 
             if all_dependencies.contains_key(&dep_id) && !visited.contains(&dep_id) {
@@ -264,11 +292,14 @@ impl Project {
                 )?;
                 warnings.extend(res.warnings);
 
-                let direct_deps_with_lampe = self.collect_direct_dependencies_with_lampe(dep_package)?;
+                let direct_deps_with_lampe =
+                    self.collect_direct_dependencies_with_lampe(dep_package)?;
 
-                let direct_deps_ids: Vec<NoirPackageIdentifier> = direct_deps_without_lampe.keys().cloned().collect();
+                let direct_deps_ids: Vec<NoirPackageIdentifier> =
+                    direct_deps_without_lampe.keys().cloned().collect();
 
-                dependency_relationships.insert(dep_id.clone(), (direct_deps_ids, direct_deps_with_lampe));
+                dependency_relationships
+                    .insert(dep_id.clone(), (direct_deps_ids, direct_deps_with_lampe));
 
                 let res = self.collect_package_dependencies(
                     noir_project,
@@ -301,8 +332,11 @@ impl Project {
             }
 
             let package_identifier = NoirPackageIdentifier {
-                name: dep_package.name.to_string(),
-                version: dep_package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+                name:    dep_package.name.to_string(),
+                version: dep_package
+                    .version
+                    .clone()
+                    .unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
             };
 
             result.push(package_identifier);
@@ -330,8 +364,11 @@ impl Project {
             }
 
             let package_identifier = NoirPackageIdentifier {
-                name: dep_package.name.to_string(),
-                version: dep_package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+                name:    dep_package.name.to_string(),
+                version: dep_package
+                    .version
+                    .clone()
+                    .unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
             };
 
             if direct_dependencies.contains_key(&package_identifier) {
@@ -367,8 +404,11 @@ impl Project {
             }
 
             let package_identifier = NoirPackageIdentifier {
-                name: dep_package.name.to_string(),
-                version: dep_package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+                name:    dep_package.name.to_string(),
+                version: dep_package
+                    .version
+                    .clone()
+                    .unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
             };
 
             if all_dependencies.contains_key(&package_identifier) {
@@ -457,9 +497,9 @@ impl Project {
 
                 let package_name = &package.name.to_string();
                 let package_version =
-                &package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string());
+                    &package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string());
                 let package_id = NoirPackageIdentifier {
-                    name: package_name.clone(),
+                    name:    package_name.clone(),
                     version: package_version.clone(),
                 };
 
