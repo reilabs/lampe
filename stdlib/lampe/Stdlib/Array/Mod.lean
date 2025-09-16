@@ -23,6 +23,8 @@ export «std-1.0.0-beta.11».Extracted (
 
 open «std-1.0.0-beta.11».Extracted
 
+namespace Array
+
 theorem concat_spec: STHoare p env ⟦⟧
     («std::array::concat».call h![T, M, N] h![a₁, a₂])
     (fun r => r.toList = a₁.toList ++ a₂.toList) := by

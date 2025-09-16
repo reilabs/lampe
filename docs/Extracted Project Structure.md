@@ -64,5 +64,10 @@ For smaller sets of theorems, we recommend creating a `Spec.lean` file in the `L
 directory described above. However, when working to verify an entire library, our advice is to
 create a separate tree directly under the `<extraction_target>` directory that contains all of the
 various files needed to state and prove your theorems. This directory structure can mirror the one
-in the `Extracted` directory, or can be entirely its own thing.
+in the `Extracted` directory, or can be entirely its own thing. 
+
+Regardless, we recommend putting proofs to do with a given type in a namespace named like the type.
+For example, `unwrap_spec` for `Option` is in the `Option` namespace, making it clear which proof
+is being referred to from another proof; it will be `Option.unwrap_spec` instead of a bare (and
+potentially ambiguous) `unwrap_spec`.
 
