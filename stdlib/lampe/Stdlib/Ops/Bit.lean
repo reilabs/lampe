@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Ops.Bit
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Ops.Bit
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::ops::bit::BitAnd».«#genericKinds»
   «std::ops::bit::BitAnd».«#associatedTypesKinds»
   «std::ops::bit::BitAnd».bitand.«#genericKinds»
@@ -45,4 +45,4 @@ export «std-1.0.0-beta.11».Extracted (
   Ops.Bit.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted

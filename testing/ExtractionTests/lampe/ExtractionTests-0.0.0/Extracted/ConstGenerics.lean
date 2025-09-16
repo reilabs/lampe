@@ -10,7 +10,7 @@ namespace Extracted
 
 noir_def const_generics::nat_generic_test<N: u32>() -> Array<Field, N: u32> := {
   for i in (0: u32) .. uConst!(N: u32) do {
-    let _ = i;
+    let __0 = i;
     #_skip
   };
   (#_mkRepeatedArray returning Array<Field, N: u32>)((1: Field))

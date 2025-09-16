@@ -1,17 +1,17 @@
-import «std-1.0.0-beta.11».Extracted.Array.CheckShuffle
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Array.CheckShuffle
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 import Stdlib.Cmp
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::array::check_shuffle::check_shuffle»
   Array.CheckShuffle.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted
 
 lemma get_cast : ∀{M}{α} {l : List α}{h : M = List.length l} {i : Fin M}, l.get (h ▸ i) = l[i.val]'(by cases i; apply lt_of_lt_of_eq (by assumption) h) := by
   intros

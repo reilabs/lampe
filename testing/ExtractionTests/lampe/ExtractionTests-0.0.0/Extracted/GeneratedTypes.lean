@@ -7,8 +7,6 @@ open Lampe
 namespace «ExtractionTests-0.0.0»
 namespace Extracted
 
-noir_type_alias FooType<> := Field;
-
 noir_struct_def struct_namespaces::test::Foo<> {
   Field,
 }
@@ -32,6 +30,8 @@ noir_struct_def type_order::BarStruct<> {
 }
 
 noir_type_alias BarType<> := type_order::BarStruct<>;
+
+noir_type_alias FooType<> := Field;
 
 noir_struct_def type_order::FooStruct<> {
   @FooType<>,

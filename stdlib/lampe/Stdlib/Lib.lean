@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Lib
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Lib
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::print_oracle»
   «std::print_unconstrained»
   «std::println»
@@ -19,4 +19,4 @@ export «std-1.0.0-beta.11».Extracted (
   Lib.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted

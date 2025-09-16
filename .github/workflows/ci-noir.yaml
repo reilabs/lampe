@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: noir-lang/noir
-          ref: fd3925aaaeb76c76319f44590d135498ef41ea6c
+          ref: 9a5b3695b42e391fa27c48e87b9bbb07523d664d
           path: noir
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1

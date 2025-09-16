@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Collections.BoundedVec
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Collections.BoundedVec
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::collections::bounded_vec::BoundedVec»
   «std::collections::bounded_vec::BoundedVec::new»
   «std::collections::bounded_vec::BoundedVec::get»
@@ -31,4 +31,4 @@ export «std-1.0.0-beta.11».Extracted (
   Collections.BoundedVec.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted

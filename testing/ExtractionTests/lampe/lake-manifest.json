@@ -3,7 +3,7 @@
  "packages":
  [{"type": "path",
    "scope": "",
-   "name": "«std-1.0.0-beta.11»",
+   "name": "«std-1.0.0-beta.12»",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
    "dir": "../../../stdlib/lampe",

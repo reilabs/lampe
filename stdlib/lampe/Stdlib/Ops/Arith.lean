@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Ops.Arith
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Ops.Arith
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::ops::arith::Add».«#genericKinds»
   «std::ops::arith::Add».«#associatedTypesKinds»
   «std::ops::arith::Add».add.«#genericKinds»
@@ -70,4 +70,4 @@ export «std-1.0.0-beta.11».Extracted (
   Ops.Arith.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted

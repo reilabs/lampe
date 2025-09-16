@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Slice
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Slice
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::slice::append»
   «std::slice::as_array»
   «std::slice::map»
@@ -21,7 +21,7 @@ export «std-1.0.0-beta.11».Extracted (
   Slice.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted
 
 set_option maxRecDepth 10000
 
