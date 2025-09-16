@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Default
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Default
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::default::Default».«#genericKinds»
   «std::default::Default».«#associatedTypesKinds»
   «std::default::Default».default.«#genericKinds»
@@ -15,4 +15,4 @@ export «std-1.0.0-beta.11».Extracted (
   Default.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted

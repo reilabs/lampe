@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Convert
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Convert
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::convert::AsPrimitive».«#genericKinds»
   «std::convert::AsPrimitive».«#associatedTypesKinds»
   «std::convert::AsPrimitive».as_.«#genericKinds»
@@ -27,4 +27,4 @@ export «std-1.0.0-beta.11».Extracted (
   Convert.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted

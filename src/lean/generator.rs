@@ -2,9 +2,10 @@
 //! generating the Lean AST from it.
 
 use std::{
-    cell::Ref,
+    cell::{Ref, RefCell},
     cmp::Ordering,
     collections::{HashMap, HashSet},
+    ops::AddAssign,
     rc::Rc,
     str::FromStr,
 };
@@ -155,6 +156,9 @@ pub struct LeanGenerator<'file_manager, 'parsed_files> {
     /// The files contained in the root crate, used to filter out `std` and
     /// other crate files during generation.
     known_files: HashSet<FileId>,
+
+    /// A supply of fresh names.
+    name_supply: FreshNameSupply,
 }
 
 /// Utility functions for the Lean generator.
@@ -178,6 +182,7 @@ impl<'file_manager, 'parsed_files> LeanGenerator<'file_manager, 'parsed_files> {
             context,
             root_crate,
             known_files,
+            name_supply: FreshNameSupply::new(),
         }
     }
 
@@ -273,6 +278,7 @@ impl LeanGenerator<'_, '_> {
                             .clone()
                             .into_iter()
                             .position(|item| *item == DependencyId::Struct(id));
+                        self.name_supply.reset();
                         let struct_def = self.generate_struct_def(id);
                         let name = quote_lean_keywords(&struct_def.name);
                         let def = TypeDefinition::Struct(struct_def);
@@ -288,6 +294,7 @@ impl LeanGenerator<'_, '_> {
                             .clone()
                             .into_iter()
                             .position(|item| *item == DependencyId::Alias(id));
+                        self.name_supply.reset();
                         let alias_def = self.generate_alias(id);
                         let name = quote_lean_keywords(&alias_def.name);
                         let def = TypeDefinition::Alias(alias_def);
@@ -299,6 +306,7 @@ impl LeanGenerator<'_, '_> {
                             .clone()
                             .into_iter()
                             .position(|item| *item == DependencyId::Trait(id));
+                        self.name_supply.reset();
                         let trait_def = self.generate_trait_definition(id);
                         let name = quote_lean_keywords(&trait_def.name);
                         let def = TypeDefinition::Trait(trait_def);
@@ -905,6 +913,7 @@ impl LeanGenerator<'_, '_> {
         for def in module_defs {
             match def {
                 ModuleDefId::FunctionId(id) => {
+                    self.name_supply.reset();
                     let function_meta = self.context.function_meta(&id);
 
                     // Skip trait functions in the module scope that do not have bodies.
@@ -936,6 +945,7 @@ impl LeanGenerator<'_, '_> {
                     }
                 }
                 ModuleDefId::GlobalId(id) => {
+                    self.name_supply.reset();
                     let location = self.context.def_interner.get_global(id).location;
                     if let Some(def) = self.generate_global_definition(&id) {
                         globals.insert((location, def));
@@ -1299,17 +1309,33 @@ impl LeanGenerator<'_, '_> {
             .map(|(pattern, typ, ..)| {
                 let typ = self.generate_lean_type_value(typ, None);
                 match pattern {
-                    HirPattern::Identifier(ident) => ParamDef {
-                        name: self.context.def_interner.definition_name(ident.id).to_string(),
-                        typ,
-                        is_mut: false,
-                    },
-                    HirPattern::Mutable(ident, _) => match ident.as_ref() {
-                        HirPattern::Identifier(ident) => ParamDef {
-                            name: self.context.def_interner.definition_name(ident.id).to_string(),
+                    HirPattern::Identifier(ident) => {
+                        let def_name = self.context.def_interner.definition_name(ident.id);
+                        let name = if def_name == IGNORED_NAME {
+                            self.name_supply.get_name()
+                        } else {
+                            sanitize_variable_name(def_name)
+                        };
+                        ParamDef {
+                            name,
                             typ,
-                            is_mut: true,
-                        },
+                            is_mut: false,
+                        }
+                    }
+                    HirPattern::Mutable(ident, _) => match ident.as_ref() {
+                        HirPattern::Identifier(ident) => {
+                            let def_name = self.context.def_interner.definition_name(ident.id);
+                            let name = if def_name == IGNORED_NAME {
+                                self.name_supply.get_name()
+                            } else {
+                                sanitize_variable_name(def_name)
+                            };
+                            ParamDef {
+                                name,
+                                typ,
+                                is_mut: true,
+                            }
+                        }
                         _ => panic!("Missing identifier in function parameter"),
                     },
                     _ => panic!("Missing identifier in function parameter"),
@@ -1576,8 +1602,12 @@ impl LeanGenerator<'_, '_> {
                         None,
                     )
                 });
-                let name =
-                    sanitize_variable_name(self.context.def_interner.definition_name(def_id));
+                let def_name = self.context.def_interner.definition_name(def_id);
+                let name = if def_name == IGNORED_NAME {
+                    self.name_supply.get_name()
+                } else {
+                    sanitize_variable_name(def_name)
+                };
 
                 let ident = Identifier { name, typ };
 
@@ -2774,4 +2804,49 @@ pub struct ModuleDefs {
 
     /// All global definitions in the module.
     pub global_defs: Vec<(Location, GlobalDefinition)>,
+}
+
+const IGNORED_NAME: &str = "_";
+
+/// Provides a supply of fresh names.
+///
+/// All generated names contain a leading underscore as while they may need to
+/// be referred to in proofs, they are not otherwise used in the generated code.
+/// This ensures that we do not generate spurious warnings.
+///
+/// Care must be taken not to rely on an inconsistent global ordering for
+/// generating these names. To that end, we recommend use of [`Self::reset`] to
+/// represent consistent ordering in scopes.
+struct FreshNameSupply {
+    last_ix: RefCell<usize>,
+}
+impl FreshNameSupply {
+    /// Creates a new fresh name supply
+    pub fn new() -> Self {
+        Self {
+            last_ix: RefCell::new(0),
+        }
+    }
+
+    /// Gets a fresh name from the supply.
+    pub fn get_name(&self) -> String {
+        let id = *self.last_ix.borrow();
+        self.last_ix.borrow_mut().add_assign(id + 1);
+        format!("__{id}")
+    }
+
+    /// Resets the name supply.
+    ///
+    /// This is intended to be used to reset the names at the start of every
+    /// top-level construct to ensure the generation of consistent names
+    /// internal to the construct without relying on a global iteration order.
+    pub fn reset(&self) {
+        self.last_ix.replace(0);
+    }
+}
+
+impl Default for FreshNameSupply {
+    fn default() -> Self {
+        Self::new()
+    }
 }

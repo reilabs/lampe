@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Array.Mod
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Array.Mod
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::array::map»
   «std::array::mapi»
   «std::array::for_each»
@@ -21,7 +21,7 @@ export «std-1.0.0-beta.11».Extracted (
   Array.Mod.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted
 
 namespace Array
 
@@ -57,8 +57,8 @@ theorem concat_spec: STHoare p env ⟦⟧
   · intro i hil hiu
     steps
     rw [←add_assoc, List.take_succ, List.take_succ, ←List.append_assoc]
-    have : i_3606.toNat = M.toNat + i := by
-      subst i_3606
+    have : i_3710.toNat = M.toNat + i := by
+      subst i_3710
       simp only [BitVec.toNat_add]
       rw [Nat.mod_eq_of_lt (by assumption), add_comm]
       rfl

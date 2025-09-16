@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Cmp
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Cmp
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::cmp::Eq».«#genericKinds»
   «std::cmp::Eq».«#associatedTypesKinds»
   «std::cmp::Eq».eq.«#genericKinds»
@@ -26,7 +26,7 @@ export «std-1.0.0-beta.11».Extracted (
   Cmp.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted
 
 theorem field_eq_spec {a b}:
     STHoare p env ⟦⟧ («std::cmp::Eq».eq h![] .field h![] h![] h![a, b]) fun r: Bool => ⟦r ↔ a = b⟧ := by

@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.EmbeddedCurveOps
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.EmbeddedCurveOps
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::embedded_curve_ops::EmbeddedCurvePoint::double»
   «std::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity»
   «std::embedded_curve_ops::EmbeddedCurvePoint::generator»
@@ -20,4 +20,4 @@ export «std-1.0.0-beta.11».Extracted (
   EmbeddedCurveOps.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted

@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.11».Extracted.Collections.Map
-import «std-1.0.0-beta.11».Extracted.«std-1.0.0-beta.11»
+import «std-1.0.0-beta.12».Extracted.Collections.Map
+import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
 namespace Lampe
 namespace Stdlib
 
-export «std-1.0.0-beta.11».Extracted (
+export «std-1.0.0-beta.12».Extracted (
   «std::collections::map::HashMap»
   «std::collections::map::Slot»
   «std::collections::map::Slot::is_valid»
@@ -36,4 +36,4 @@ export «std-1.0.0-beta.11».Extracted (
   Collections.Map.env
 )
 
-open «std-1.0.0-beta.11».Extracted
+open «std-1.0.0-beta.12».Extracted
