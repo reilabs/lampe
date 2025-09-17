@@ -457,7 +457,8 @@ it handles pulling pures and existentials to understand.
 partial def solveEntailment' (goal : MVarId): SLM SLGoals := 
   goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
   let (pre, post, goal) ← parseAndNormalizeEntailment goal
-  trace[Lampe.SL] "Initial goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
+  let safety := if (←read).isUnsafe then " (unsafe)" else ""
+  trace[Lampe.SL] "Initial goal{safety}: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
   let (goal, impls₁) ← pullExis pre post goal
   let (pre, post, goal) ← parseAndNormalizeEntailment goal
   let (goal, impls₂) ← pullPures goal pre post
@@ -493,7 +494,7 @@ Solves an entailment of the form `P ⊢ Q ⋆ ⊤` or `P ⊢ Q ⋆ ?M`.
 It pushes all clonable information into the `?M` part to strengthen it for further goals. See how
 it handles pulling pures and existentials to understand.
 -/
-partial def solveEntailment (goal : MVarId) (config : SLConfig) : TacticM SLGoals := 
+partial def solveEntailment (goal : MVarId) (config : SLConfig) : TacticM SLGoals :=
   SLM.run (solveEntailment' goal) config
 
 /--

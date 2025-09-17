@@ -369,7 +369,11 @@ entailments found in the goal.
 
 It throws an exception if it cannot make progress or close any subsequent SL goal(s).
 -/
-partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoals := mvar.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {Lean.exceptEmoji e}") $ do
+partial def step 
+    (mvar : MVarId) 
+    (addLemmas : List AddLemma) 
+    (unsafeUnifySL : Bool)
+  : TacticM TripleGoals := mvar.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {Lean.exceptEmoji e}") $ do
   let target ← mvar.instantiateMVarsInType
   let some (_, body, _) ← parseTriple target | throwError "not a triple"
   if isLetIn body then
@@ -383,7 +387,7 @@ partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoa
     let (_, hNext) ← hNext.intro (vname.getD `v)
     let hHead :: hEnt :: impls₂ ← hHead.apply (←mkConstWithFreshMVarLevels ``consequence_frame_left) | throwError "bad application"
     let impls₃ ← closer hHead
-    let rEnt ← solveEntailment hEnt SLConfig.default
+    let rEnt ← solveEntailment hEnt ⟨unsafeUnifySL⟩
     return TripleGoals.mk hNext [] [] (impls₁ ++ impls₂ ++ impls₃) ++ rEnt
   else
     let closer ← getClosingTerm body
@@ -392,10 +396,10 @@ partial def step (mvar : MVarId) (addLemmas : List AddLemma) : TacticM TripleGoa
     | none => fun goal => tryApplySyntaxes goal addLemmas
     let hHoare :: hEnt :: qEnt :: impls₁ ← mvar.apply (←mkConstWithFreshMVarLevels ``STHoare.consequence_frame) | throwError "ramified_frame_top failed"
     let impls₂ ← closer hHoare
-    let rEnt ← solveEntailment hEnt SLConfig.default
+    let rEnt ← solveEntailment hEnt ⟨unsafeUnifySL⟩
     let (_, qEnt) ← qEnt.intro1
     let qEnt ← if rEnt.entailments.isEmpty then
-      solveEntailment qEnt SLConfig.default
+      solveEntailment qEnt ⟨unsafeUnifySL⟩
     else
       pure $ SLGoals.mk [qEnt] [] []
     return TripleGoals.mk none [] [] (impls₁ ++ impls₂) ++ rEnt ++ qEnt
@@ -405,13 +409,19 @@ Takes `limit` obvious steps, behaving like `repeat step`.
 
 It will never throw exceptions.
 -/
-partial def stepsLoop (goals : TripleGoals) (addLemmas : List AddLemma) (limit : Nat) (strict : Bool := false) : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepsLoop {Lean.exceptEmoji e}") $ do
+partial def stepsLoop 
+    (goals : TripleGoals) 
+    (addLemmas : List AddLemma) 
+    (limit : Nat) 
+    (strict : Bool := false)
+    (unsafeUnifySL : Bool := false)
+  : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepsLoop {Lean.exceptEmoji e}") $ do
   let goals ← normalizeGoals goals
   if limit == 0 then return goals
 
   match goals.triple with
   | some mvar =>
-    let nextTriple ← try some <$> step mvar addLemmas catch e =>
+    let nextTriple ← try some <$> step mvar addLemmas unsafeUnifySL catch e =>
       trace[Lampe.STHoare.Helpers] "step failed with: {←e.toMessageData.toString}"
       if strict then throw e else pure none
     match nextTriple with
@@ -435,7 +445,12 @@ Takes a sequence of at most `limit` steps to attempt to advance the proof state 
 simplifying the goal.
 -/
 partial def steps (mvar : MVarId) (config : StepsConfig)  : TacticM (List MVarId) := do
-  let goals ← stepsLoop (TripleGoals.mk mvar [] [] []) config.addLemmas config.limit config.strict
+  let goals ← stepsLoop 
+    (TripleGoals.mk mvar [] [] []) 
+    config.addLemmas 
+    config.limit 
+    config.strict
+    config.unsafeUnifySL
   return goals.flatten
 
 theorem callDecl_direct_intro {p} {Γ : Env} {func} {args} {Q H}

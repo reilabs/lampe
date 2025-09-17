@@ -453,7 +453,6 @@ theorem filter_some_spec {p T E P Q self pred pred_b}
   . intros
     steps unsafe
     subst_vars
-    sl unsafe
     simp_all
       
   . intros
