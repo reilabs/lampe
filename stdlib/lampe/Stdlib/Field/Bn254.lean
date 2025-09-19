@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Field.Bn254
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Field.Bn254
 
 export «std-1.0.0-beta.12».Extracted (
   «std::field::bn254::PLO» 
@@ -18,7 +17,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::field::bn254::assert_lt»
   «std::field::bn254::gt»
   «std::field::bn254::lt»
-  Field.Bn254.env
 )
 
 open «std-1.0.0-beta.12».Extracted

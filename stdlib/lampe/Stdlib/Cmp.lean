@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Cmp
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Cmp
 
 export «std-1.0.0-beta.12».Extracted (
   «std::cmp::Eq».«#genericKinds»
@@ -23,10 +22,11 @@ export «std-1.0.0-beta.12».Extracted (
   «std::cmp::Ordering::greater»
   «std::cmp::max»
   «std::cmp::min»
-  Cmp.env
 )
 
 open «std-1.0.0-beta.12».Extracted
+
+namespace Eq
 
 theorem field_eq_spec {a b}:
     STHoare p env ⟦⟧ («std::cmp::Eq».eq h![] .field h![] h![] h![a, b]) fun r: Bool => ⟦r ↔ a = b⟧ := by
@@ -89,3 +89,57 @@ theorem slice_eq_spec {T a b}
       contradiction
     steps
     simp_all
+
+end Eq
+
+namespace Ord
+
+/--
+Convert a Lean ordering into a Noir `std::cmp::Ordering`.
+
+We recommend providng the user with `std::cmp::Ordering`s at the boundary of the theorem for any
+ordering values 'created' by the theorem.
+-/
+@[reducible]
+def fromOrdering {p} : Ordering → («std::cmp::Ordering».tp h![] |>.denote p)
+| .lt => (0, ())
+| .eq => (1, ())
+| .gt => (2, ())
+
+/--
+Convert a Noir `std::cmp::Ordering` into a Lean ordering.
+
+We recommend converting user-provided `std::cmp::Ordering`s from the user, and converting them
+within the theorem.
+-/
+def toOrdering {p} : («std::cmp::Ordering».tp h![] |>.denote p) → Ordering
+| (n, ()) => match (n.cast : ZMod 3) with -- TODO is this reasonable?
+  | 0 => .lt
+  | 1 => .eq
+  | 2 => .gt
+
+theorem less_spec {p} : STHoare p env ⟦⟧
+  («std::cmp::Ordering::less».call h![] h![])
+  (fun r => r = fromOrdering .lt) := by
+  enter_decl
+  steps
+  subst_vars
+  simp
+
+theorem equal_spec {p} : STHoare p env ⟦⟧
+  («std::cmp::Ordering::equal».call h![] h![])
+  (fun r => r = fromOrdering .eq) := by
+  enter_decl
+  steps
+  subst_vars
+  simp
+
+theorem greater_spec {p} : STHoare p env ⟦⟧
+  («std::cmp::Ordering::greater».call h![] h![])
+  (fun r => r = fromOrdering .gt) := by
+  enter_decl
+  steps
+  subst_vars
+  simp
+
+end Ord

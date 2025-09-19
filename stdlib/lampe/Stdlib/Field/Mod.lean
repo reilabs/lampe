@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Field.Mod
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Field
 
 export «std-1.0.0-beta.12».Extracted (
   «std::field::assert_max_bit_size»
@@ -21,7 +20,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::field::field_less_than»
   «std::field::bytes32_to_field»
   «std::field::lt_fallback»
-  Field.Mod.env
 )
 
 open «std-1.0.0-beta.12».Extracted

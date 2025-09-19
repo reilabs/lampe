@@ -33,10 +33,10 @@ theorem singleton_congr_star_mv {p} {r} {v₁ v₂ : AnyValue p} (heq: v₁ = v�
   simp
   apply SLP.entails_self
 
-theorem lmbSingleton_congr_star_mv 
-    {argTps outTp p} 
-    {r : FuncRef argTps outTp} 
-    {f₁ f₂ : HList (Tp.denote p) argTps → Expr (Tp.denote p) outTp} 
+theorem lmbSingleton_congr_star_mv
+    {argTps outTp p}
+    {r : FuncRef argTps outTp}
+    {f₁ f₂ : HList (Tp.denote p) argTps → Expr (Tp.denote p) outTp}
     (heq: f₁ = f₂)
   : ([λr ↦ f₁] ⊢ [λr ↦ f₂] ⋆ ⟦⟧) := by
   simp_all [SLP.entails_self]
@@ -50,9 +50,9 @@ theorem singleton_congr_star {p} {r} {v₁ v₂ : AnyValue p} {R} (h: v₁ = v�
   cases h
   apply SLP.entails_self
 
-theorem lmbSingleton_congr_star {p} {r : FuncRef i o} 
-    {v₁ v₂ : HList (Tp.denote p) i → Lampe.Expr (Tp.denote p) o} 
-    {R} 
+theorem lmbSingleton_congr_star {p} {r : FuncRef i o}
+    {v₁ v₂ : HList (Tp.denote p) i → Lampe.Expr (Tp.denote p) o}
+    {R}
     (h: v₁ = v₂)
   : [λr ↦ v₁] ⋆ R ⊢ [λr ↦ v₂] ⋆ R := by
   cases h
@@ -126,10 +126,10 @@ lemma solve_compose [LawfulHeap α] {P Q R S : SLP α} (h₁ : P ⊢ Q ⋆ R) (h
   apply SLP.star_mono_l
   assumption
 
-lemma solve_compose_with_sinks {α} [LawfulHeap α] 
-    {P Q R S T : SLP α} 
-    (h₁ : P ⊢ Q ⋆ R) 
-    (h₂ : R ⊢ S ⋆ T) 
+lemma solve_compose_with_sinks {α} [LawfulHeap α]
+    {P Q R S T : SLP α}
+    (h₁ : P ⊢ Q ⋆ R)
+    (h₂ : R ⊢ S ⋆ T)
   : P ⊢ (Q ⋆ S) ⋆ T := by
   simp only [SLP.star_assoc]
   apply solve_compose <;> assumption
@@ -163,7 +163,7 @@ structure SLGoals where
   props : List MVarId
   implicits : List MVarId
 
-abbrev SLM := ReaderT SLConfig TacticM 
+abbrev SLM := ReaderT SLConfig TacticM
 
 def SLM.run {α} (x : SLM α) (r : SLConfig) : TacticM α :=
   ReaderT.run x r
@@ -171,10 +171,10 @@ def SLM.run {α} (x : SLM α) (r : SLConfig) : TacticM α :=
 def SLGoals.flatten (g : SLGoals) : List MVarId := g.entailments ++ g.props ++ g.implicits
 
 instance : Append SLGoals where
-  append g₁ g₂ := { 
-    entailments := g₁.entailments ++ g₂.entailments, 
-    props := g₁.props ++ g₂.props, 
-    implicits := g₁.implicits ++ g₂.implicits 
+  append g₁ g₂ := {
+    entailments := g₁.entailments ++ g₂.entailments,
+    props := g₁.props ++ g₂.props,
+    implicits := g₁.implicits ++ g₂.implicits
   }
 
 instance : Inhabited SLGoals where
@@ -184,10 +184,14 @@ def _root_.Lean.MVarId.apply' (m: MVarId) (e: Lean.Expr): TacticM (List MVarId) 
   trace[Lampe.SL] "Applying {e}"
   m.apply e
 
+lemma dite_lift_lift [Decidable R] [LawfulHeap α] {P : R → Prop} {Q : ¬R → Prop}
+  : (if h: R then (P h : SLP α) else (⟦Q h⟧ : SLP α)) = (⟦if h : R then P h else Q h⟧ : SLP α) := by
+  split <;> rfl
+
 /--
 Solves goals of the form `P ⊢ [r ↦ v] ⋆ ?_`, trying to copy as much evidence as possible to the MVar on the right
 -/
-partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGoals := 
+partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGoals :=
   goal.withContext $ withTraceNode `Lampe.SL (fun e => return f!"solveSingletonStarMV {Lean.exceptEmoji e}") $ do
   match lhs with
   | SLTerm.singleton _ v _ =>
@@ -239,7 +243,7 @@ For example, if the original goal is `P x ⋆ P y ⊢ (∃∃z, P z) ⋆ P x`, a
 look like `P x ⋆ P y ⊢ P ?v ⋆ P x` and we'd use `P x` to solve `P ?v` and then we're left with
 unsolvable `P y ⊢ P x`. So `?v` cannot be unified by this tactic.
 -/
-def solveExactStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGoals := 
+def solveExactStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGoals :=
   withTraceNode `Lampe.SL (fun e => return f!"solveExactStarMV {Lean.exceptEmoji e}") do
   let isUnsafe := (←read).isUnsafe
   match lhs with
@@ -266,7 +270,7 @@ def solveExactStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGo
       pure $ goals ++ SLGoals.mk [] [] impl
   | _ => throwError "Unrecognized shape in solveExactStarMV"
 
-partial def rewriteSides (goal : MVarId) (newPre newPost : Lean.Expr) (eqPre eqPost : Lean.Expr) 
+partial def rewriteSides (goal : MVarId) (newPre newPost : Lean.Expr) (eqPre eqPost : Lean.Expr)
   : SLM MVarId := do
   let newGoalTp ← mkAppM ``SLP.entails #[newPre, newPost]
   let nextGoal ← mkFreshMVarId
@@ -281,14 +285,14 @@ partial def normalizePre (goal : MVarId) (pre post : SLTerm) : SLM (SLTerm × MV
   let goal ← rewriteSides goal pre'.expr post.expr preEq postEq
   pure (pre', goal)
 
-partial def normalizeSides (goal : MVarId) (pre post : SLTerm) 
+partial def normalizeSides (goal : MVarId) (pre post : SLTerm)
   : SLM (SLTerm × SLTerm × MVarId) := do
   let (pre', preEq) ← Lampe.SL.norm pre
   let (post', postEq) ← Lampe.SL.norm post
   let goal ← rewriteSides goal pre'.expr post'.expr preEq postEq
   pure (pre', post', goal)
 
-partial def solveGoal (goal : MVarId) (pre post : SLTerm) : SLM SLGoals := 
+partial def solveGoal (goal : MVarId) (pre post : SLTerm) : SLM SLGoals :=
   withTraceNode `Lampe.SL (tag := "solveGoal") (fun e => return f!"solveGoal {Lean.exceptEmoji e}") do
   match post with
   | .singleton _ v _ => solveSingletonStarMV goal pre v
@@ -304,8 +308,8 @@ partial def solveGoal (goal : MVarId) (pre post : SLTerm) : SLM SLGoals :=
 
 -- Solves all goals, or moves them to sinks if unable to close.
 -- If this returns (pre, sinks, goal), we have `goal : pre ⊢ sinks`, with both sides normalized
-partial def solveGoals (goal : MVarId) (pre goals sinks : SLTerm) 
-  : SLM (SLGoals × SLTerm × SLTerm × MVarId) := 
+partial def solveGoals (goal : MVarId) (pre goals sinks : SLTerm)
+  : SLM (SLGoals × SLTerm × SLTerm × MVarId) :=
   withTraceNode `Lampe.SL (tag := "solveGoals") (fun e => return f!"solveGoals {Lean.exceptEmoji e}") do
   match goals with
   | .unit _ =>
@@ -358,7 +362,7 @@ partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Lean
     pure (goal, impls)
   | _ => pure (goal, [])
 
-partial def pullPures (goal : MVarId) (pre post : SLTerm) : SLM (MVarId × List MVarId) := 
+partial def pullPures (goal : MVarId) (pre post : SLTerm) : SLM (MVarId × List MVarId) :=
   goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
   let (goal, puller, finalPuller) ← if post.hasMVars then
     let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
@@ -387,7 +391,7 @@ partial def doApplyExis (goal : MVarId) (postExis : SLTerm) : SLM (MVarId × Lis
     pure (goal, goals ++ g₂)
   | _ => pure (goal, [])
 
-partial def applyExis (goal : MVarId) (pre post : SLTerm): SLM (MVarId × List MVarId) := 
+partial def applyExis (goal : MVarId) (pre post : SLTerm): SLM (MVarId × List MVarId) :=
   goal.withContext do
   let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
     | SLTerm.exi _ _ => pure .left
@@ -398,7 +402,7 @@ partial def applyExis (goal : MVarId) (pre post : SLTerm): SLM (MVarId × List M
   let goal ← rewriteSides goal pre.expr newPost preEq postEqMVars
   doApplyExis goal p
 
-partial def solveSinks (goal : MVarId) (pre post : SLTerm): SLM SLGoals := 
+partial def solveSinks (goal : MVarId) (pre post : SLTerm): SLM SLGoals :=
   goal.withContext $ withTraceNode `Lampe.SL (tag := "solveSinks") (fun e => return f!"solveSinks {Lean.exceptEmoji e}") do
   trace[Lampe.SL] "Current goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
   match post with
@@ -422,7 +426,7 @@ partial def pullExisLoop (goal : MVarId): SLM (MVarId × List MVarId) := goal.wi
       pure $ (r, impls ++ rs)
   | _ => pure (goal, [])
 
-partial def pullExis (pre post : SLTerm) (goal : MVarId): SLM (MVarId × List MVarId) := 
+partial def pullExis (pre post : SLTerm) (goal : MVarId): SLM (MVarId × List MVarId) :=
   goal.withContext do
   let (goals, sink, postEq) ← Lampe.SL.split_by (fun t => match t with
   | SLTerm.mvar _ => pure .right
@@ -441,7 +445,7 @@ partial def pullExis (pre post : SLTerm) (goal : MVarId): SLM (MVarId × List MV
   let (g, r) ← pullExisLoop goal
   pure (g, r ++ impls)
 
-partial def parseAndNormalizeEntailment (goal : MVarId): SLM (SLTerm × SLTerm × MVarId) := 
+partial def parseAndNormalizeEntailment (goal : MVarId): SLM (SLTerm × SLTerm × MVarId) :=
   goal.withContext do
   let target ← goal.instantiateMVarsInType
   let (pre, post) ← parseEntailment target
@@ -449,12 +453,12 @@ partial def parseAndNormalizeEntailment (goal : MVarId): SLM (SLTerm × SLTerm �
   return (pre, post, goal)
 
 /--
-Solves an entailment of the form `P ⊢ Q ⋆ ⊤` or `P ⊢ Q ⋆ ?M`. 
+Solves an entailment of the form `P ⊢ Q ⋆ ⊤` or `P ⊢ Q ⋆ ?M`.
 
 It pushes all clonable information into the `?M` part to strengthen it for further goals. See how
 it handles pulling pures and existentials to understand.
 -/
-partial def solveEntailment' (goal : MVarId): SLM SLGoals := 
+partial def solveEntailment' (goal : MVarId): SLM SLGoals :=
   goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
   let (pre, post, goal) ← parseAndNormalizeEntailment goal
   let safety := if (←read).isUnsafe then " (unsafe)" else ""
@@ -489,7 +493,7 @@ partial def solveEntailment' (goal : MVarId): SLM SLGoals :=
     pure $ res ++ moreGoals ++ SLGoals.mk [] exiGoals (impls₁ ++ impls₂)
 
 /--
-Solves an entailment of the form `P ⊢ Q ⋆ ⊤` or `P ⊢ Q ⋆ ?M`. 
+Solves an entailment of the form `P ⊢ Q ⋆ ⊤` or `P ⊢ Q ⋆ ?M`.
 
 It pushes all clonable information into the `?M` part to strengthen it for further goals. See how
 it handles pulling pures and existentials to understand.

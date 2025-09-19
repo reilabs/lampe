@@ -332,6 +332,9 @@ def makeMember [MonadUtil m] : (index : ℕ) → m (TSyntax `term)
 | 0 => ``(Lampe.Builtin.Member.head)
 | n + 1 => do ``(Lampe.Builtin.Member.tail $(←makeMember n))
 
+def makeTraitDefHasImplIdent (traitName : Lean.Ident) : Lean.Ident :=
+  mkIdent $ traitName.getId ++ (.mkSimple "hasImpl")
+
 def makeTraitDefGenericKindsIdent (traitName : Lean.Ident) : Lean.Ident :=
   mkIdent $ traitName.getId ++ (.mkSimple "#genericKinds")
 

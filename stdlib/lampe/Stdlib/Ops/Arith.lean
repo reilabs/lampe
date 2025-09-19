@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Ops.Arith
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Ops.Arith
 
 export «std-1.0.0-beta.12».Extracted (
   «std::ops::arith::Add».«#genericKinds»
@@ -67,7 +66,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::ops::arith::split64»
   «std::ops::arith::split_into_64_bit_limbs»
   «std::ops::arith::wrapping_mul128_hlp»
-  Ops.Arith.env
 )
 
 open «std-1.0.0-beta.12».Extracted
