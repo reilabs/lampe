@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Slice
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Slice
 
 export «std-1.0.0-beta.12».Extracted (
   «std::slice::append»
@@ -18,14 +17,11 @@ export «std-1.0.0-beta.12».Extracted (
   «std::slice::join»
   «std::slice::all»
   «std::slice::any»
-  Slice.env
 )
 
 open «std-1.0.0-beta.12».Extracted
 
 set_option maxRecDepth 10000
-
-namespace Slice
 
 lemma for_each_inv {T Env p f fb l}
     (Inv: List (Tp.denote p T) → SLP (State p))

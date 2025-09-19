@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Collections.Umap
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Collections.Umap
 
 export «std-1.0.0-beta.12».Extracted (
   «std::collections::umap::UHashMap»
@@ -34,7 +33,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::collections::umap::UHashMap::remove»
   «std::collections::umap::UHashMap::hash»
   «std::collections::umap::UHashMap::quadratic_probe»
-  Collections.Umap.env
 )
 
 open «std-1.0.0-beta.12».Extracted

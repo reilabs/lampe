@@ -3,8 +3,7 @@ import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 import Stdlib.Cmp
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Array.CheckShuffle
 
 export «std-1.0.0-beta.12».Extracted (
   «std::array::check_shuffle::check_shuffle»
@@ -249,7 +248,6 @@ example :
   steps [check_shuffle_spec]
   · simp_all
   intros
-  apply u8_eq_spec
+  apply Cmp.Eq.u8_eq_spec
 
-end Stdlib
-end Lampe
+end Lampe.Stdlib.Array.CheckShuffle

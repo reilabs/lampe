@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Array.Mod
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Array
 
 export «std-1.0.0-beta.12».Extracted (
   «std::array::map»
@@ -18,12 +17,9 @@ export «std-1.0.0-beta.12».Extracted (
   «std::array::sort»
   «std::array::sort_via»
   «std::array::test::map_empty»
-  Array.Mod.env
 )
 
 open «std-1.0.0-beta.12».Extracted
-
-namespace Array
 
 theorem concat_spec: STHoare p env ⟦⟧
     («std::array::concat».call h![T, M, N] h![a₁, a₂])

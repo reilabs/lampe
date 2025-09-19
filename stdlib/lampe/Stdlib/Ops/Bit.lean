@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Ops.Bit
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Ops.Bit
 
 export «std-1.0.0-beta.12».Extracted (
   «std::ops::bit::BitAnd».«#genericKinds»
@@ -42,7 +41,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::ops::bit::Shr».shr.«#inputs»
   «std::ops::bit::Shr».shr.«#output»
   «std::ops::bit::Shr».shr
-  Ops.Bit.env
 )
 
 open «std-1.0.0-beta.12».Extracted

@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Collections.Vec
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Collections.Vec
 
 export «std-1.0.0-beta.12».Extracted (
   «std::collections::vec::Vec»
@@ -16,7 +15,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::collections::vec::Vec::insert»
   «std::collections::vec::Vec::remove»
   «std::collections::vec::Vec::len»
-  Collections.Vec.env
 )
 
 open «std-1.0.0-beta.12».Extracted

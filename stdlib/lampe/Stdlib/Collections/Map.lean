@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Collections.Map
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Collections.Map
 
 export «std-1.0.0-beta.12».Extracted (
   «std::collections::map::HashMap»
@@ -33,7 +32,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::collections::map::HashMap::hash»
   «std::collections::map::HashMap::quadratic_probe»
   «std::collections::map::HashMap::assert_load_factor»
-  Collections.Map.env
 )
 
 open «std-1.0.0-beta.12».Extracted

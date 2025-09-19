@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Default
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Default
 
 export «std-1.0.0-beta.12».Extracted (
   «std::default::Default».«#genericKinds»
@@ -12,7 +11,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::default::Default».default.«#inputs»
   «std::default::Default».default.«#output»
   «std::default::Default».default
-  Default.env
 )
 
 open «std-1.0.0-beta.12».Extracted

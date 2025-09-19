@@ -2,8 +2,7 @@ import «std-1.0.0-beta.12».Extracted.Collections.BoundedVec
 import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
 import Lampe
 
-namespace Lampe
-namespace Stdlib
+namespace Lampe.Stdlib.Collections.BoundedVec
 
 export «std-1.0.0-beta.12».Extracted (
   «std::collections::bounded_vec::BoundedVec»
@@ -28,7 +27,6 @@ export «std-1.0.0-beta.12».Extracted (
   «std::collections::bounded_vec::BoundedVec::for_eachi»
   «std::collections::bounded_vec::BoundedVec::from_parts»
   «std::collections::bounded_vec::BoundedVec::from_parts_unchecked»
-  Collections.BoundedVec.env
 )
 
 open «std-1.0.0-beta.12».Extracted
