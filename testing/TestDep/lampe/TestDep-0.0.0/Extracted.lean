@@ -14,19 +14,21 @@ import «LocalDep-2.0.0».Extracted
 import «LocalDepWithLampe-0.0.0».Extracted
 import «LocalDepWithLampe-1.0.0».Extracted
 import «LocalDepWithLampe-2.0.0».Extracted
+import «std-1.0.0-beta.12».Extracted
 
 namespace «TestDep-0.0.0»
 
 def env := Main.env
+  ++ «GitDep-0.0.0».env
+  ++ «GitDep-1.0.0».env
+  ++ «GitDep-2.0.0».env
   ++ «GitDepWithLampe-0.0.0».env
   ++ «GitDepWithLampe-1.0.0».env
   ++ «GitDepWithLampe-2.0.0».env
+  ++ «LocalDep-0.0.0».env
+  ++ «LocalDep-1.0.0».env
+  ++ «LocalDep-2.0.0».env
   ++ «LocalDepWithLampe-0.0.0».env
   ++ «LocalDepWithLampe-1.0.0».env
   ++ «LocalDepWithLampe-2.0.0».env
-  ++ «LocalDep-1.0.0».env
-  ++ «GitDep-1.0.0».env
-  ++ «GitDep-0.0.0».env
-  ++ «GitDep-2.0.0».env
-  ++ «LocalDep-0.0.0».env
-  ++ «LocalDep-2.0.0».env
+  ++ «std-1.0.0-beta.12».env
