@@ -7,10 +7,16 @@ use nargo::package::Package;
 use nargo_toml::DependencyConfig;
 
 use crate::{
-    constants::{NONE_DEPENDENCY_VERSION, STDLIB_TOML}, file_generator::{
+    constants::{NONE_DEPENDENCY_VERSION, STDLIB_TOML},
+    file_generator::{
         error::{Error, Result},
-        lake::{constants::NOIR_STDLIB_PACKAGE_NAME, dependency::{LeanDependency, LeanDependencyGit, LeanDependencyPath}},
-    }, file_generator_error::Error::LakeRequireGeneration, lean::{LEAN_QUOTE_END, LEAN_QUOTE_START}
+        lake::{
+            constants::NOIR_STDLIB_PACKAGE_NAME,
+            dependency::{LeanDependency, LeanDependencyGit, LeanDependencyPath},
+        },
+    },
+    file_generator_error::Error::LakeRequireGeneration,
+    lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
 };
 
 pub mod error;
@@ -77,7 +83,7 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
 
     lake::generate_lakefile_toml(
         &lampe_root_dir,
-        stdlib_info.clone(),
+        stdlib_info.as_ref(),
         noir_package_identifier,
         &dependency_info.all_dependencies,
         false,
@@ -93,7 +99,7 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
     lean::generate_lean_files(
         &lampe_root_dir,
         noir_package_identifier,
-        stdlib_info,
+        stdlib_info.as_ref(),
         extracted_code,
         dependency_info,
         external_dependencies,
@@ -102,7 +108,10 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
     Ok(())
 }
 
-pub fn get_stdlib_info(noir_package_identifier: &NoirPackageIdentifier) -> Option<NoirPackageIdentifier> {
+#[must_use]
+pub fn get_stdlib_info(
+    noir_package_identifier: &NoirPackageIdentifier,
+) -> Option<NoirPackageIdentifier> {
     if noir_package_identifier.name == NOIR_STDLIB_PACKAGE_NAME {
         None
     } else if let Ok(toml_content) = STDLIB_TOML.parse::<toml::Table>() {

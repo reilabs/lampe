@@ -5,8 +5,7 @@ use std::{
     cell::{Ref, RefCell},
     cmp::Ordering,
     collections::{HashMap, HashSet},
-    ops::Index,
-    ops::AddAssign,
+    ops::{AddAssign, Index},
     rc::Rc,
     str::FromStr,
 };
