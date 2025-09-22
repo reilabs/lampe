@@ -144,11 +144,10 @@ impl FileGenerator {
 
         // Import the stdlib `Extracted` file (if we ar enot stdlib)
         if let Some(stdlib_info) = &self.stdlib_info {
-            writeln!(result,
-                    "import «{}-{}».{}",
-                    stdlib_info.name,
-                    stdlib_info.version,
-                    EXTRACTED_MODULE_NAME,
+            writeln!(
+                result,
+                "import «{}-{}».{}",
+                stdlib_info.name, stdlib_info.version, EXTRACTED_MODULE_NAME,
             )?;
         }
 
@@ -192,7 +191,10 @@ impl FileGenerator {
         if dependency_env.is_empty() {
             write!(result, "{extracted_env}\n ++ {std_env}")?;
         } else {
-            write!(result, "{extracted_env}\n  ++ {dependency_env}\n ++ {std_env}")?;
+            write!(
+                result,
+                "{extracted_env}\n  ++ {dependency_env}\n ++ {std_env}"
+            )?;
         }
 
         writeln!(result)?;
@@ -211,7 +213,7 @@ impl FileGenerator {
         extracted_code: &[LeanFile],
     ) -> Result<(), Error> {
         for lean_file in extracted_code {
-            self.generate_extracted_module_version_extracted_file( extracted_module_dir, lean_file)?;
+            self.generate_extracted_module_version_extracted_file(extracted_module_dir, lean_file)?;
         }
 
         Ok(())
@@ -328,7 +330,7 @@ fn process_root_package(
 fn process_dependency<H: std::hash::BuildHasher>(
     deps_dir: &Path,
     extracted_dependency: &NoirPackageIdentifier,
-    stdlib_info: Option<NoirPackageIdentifier>,
+    stdlib_info: Option<&NoirPackageIdentifier>,
     lean_files: &[LeanFile],
     dependency_info: &DependencyInfo<H>,
 ) -> Result<(), Error> {
@@ -359,9 +361,9 @@ fn process_dependency<H: std::hash::BuildHasher>(
     let dep_generator = FileGenerator::new(
         &extracted_dep_lampe_dir,
         extracted_dependency,
-        stdlib_info.clone(),
+        stdlib_info.cloned(),
         all_direct_deps_for_dep,
-        &dep_deps_with_lampe, 
+        &dep_deps_with_lampe,
         true,
     );
 
@@ -390,7 +392,7 @@ fn process_dependency<H: std::hash::BuildHasher>(
 /// Generates additional dependency files (lakefile and lean-toolchain)
 fn generate_dependency_additional_files<H: std::hash::BuildHasher>(
     extracted_dep_lampe_dir: &Path,
-    stdlib_info: Option<NoirPackageIdentifier>,
+    stdlib_info: Option<&NoirPackageIdentifier>,
     extracted_dependency: &NoirPackageIdentifier,
     dep_direct_dep_ids: &[NoirPackageIdentifier],
     dependency_info: &DependencyInfo<H>,
@@ -424,7 +426,7 @@ fn generate_dependency_additional_files<H: std::hash::BuildHasher>(
 /// Processes all dependencies and generates their files
 fn process_dependencies<H: std::hash::BuildHasher>(
     lampe_root_dir: &Path,
-    stdlib_info: Option<NoirPackageIdentifier>,
+    stdlib_info: Option<&NoirPackageIdentifier>,
     dependency_info: &DependencyInfo<H>,
 ) -> Result<(), Error> {
     if dependency_info.extracted_dependencies.is_empty() {
@@ -435,7 +437,13 @@ fn process_dependencies<H: std::hash::BuildHasher>(
     ensure_directory_exists(&deps_dir)?;
 
     for (extracted_dependency, lean_files) in &dependency_info.extracted_dependencies {
-        process_dependency(&deps_dir, extracted_dependency, stdlib_info.clone(), lean_files, dependency_info)?;
+        process_dependency(
+            &deps_dir,
+            extracted_dependency,
+            stdlib_info,
+            lean_files,
+            dependency_info,
+        )?;
     }
 
     Ok(())
@@ -462,7 +470,7 @@ fn process_dependencies<H: std::hash::BuildHasher>(
 pub fn generate_lean_files<H: std::hash::BuildHasher>(
     lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,
-    stdlib_info: Option<NoirPackageIdentifier>,
+    stdlib_info: Option<&NoirPackageIdentifier>,
     extracted_code: &[LeanFile],
     dependency_info: &DependencyInfo<H>,
     external_dependencies: &[NoirPackageIdentifier],
@@ -479,7 +487,7 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
     let generator = FileGenerator::new(
         lampe_root_dir,
         noir_package_identifier,
-        stdlib_info.clone(),
+        stdlib_info.cloned(),
         all_direct_dependencies,
         external_dependencies,
         false,

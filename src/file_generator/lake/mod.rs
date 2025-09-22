@@ -24,7 +24,7 @@ pub mod dependency;
 /// If `stdlib_info` is provided the project is assumed not to be the standard
 /// library, and the bundled standard library is added.
 fn default_lean_dependencies(
-    stdlib_info: Option<NoirPackageIdentifier>,
+    stdlib_info: Option<&NoirPackageIdentifier>,
 ) -> Vec<Box<dyn LeanDependency>> {
     let mut deps: Vec<Box<dyn LeanDependency>> = vec![Box::new(
         LeanDependencyGit::builder("Lampe")
@@ -58,7 +58,7 @@ fn default_lean_dependencies(
 /// - If the lakefile cannot be generated properly.
 pub fn generate_lakefile_toml(
     lampe_root_dir: &Path,
-    stdlib_info: Option<NoirPackageIdentifier>,
+    stdlib_info: Option<&NoirPackageIdentifier>,
     noir_package_identifier: &NoirPackageIdentifier,
     additional_dependencies: &[Box<dyn LeanDependency>],
     overwrite: bool,
@@ -99,7 +99,7 @@ pub fn generate_lakefile_toml(
     }
 
     additional_dependencies
-        .into_iter()
+        .iter()
         .sorted_by_key(|d| d.name())
         .try_for_each(|dependency| -> Result<(), Error> {
             result.push_str(&dependency.generate()?);
