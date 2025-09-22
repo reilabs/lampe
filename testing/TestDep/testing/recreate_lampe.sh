@@ -24,6 +24,6 @@ for dep_dir in "${deps_dirs[@]}"; do
 
 	cd lampe
 
-	lake exe cache get
-	lake build
+	# lake exe cache get
+	# lake build
 done

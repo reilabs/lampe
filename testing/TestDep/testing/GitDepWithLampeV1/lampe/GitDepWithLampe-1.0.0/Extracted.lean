@@ -2,7 +2,9 @@
 
 import «GitDepWithLampe-1.0.0».Extracted.GeneratedTypes
 import «GitDepWithLampe-1.0.0».Extracted.Lib
+import «std-1.0.0-beta.12».Extracted
 
 namespace «GitDepWithLampe-1.0.0»
 
 def env := Lib.env
+  ++ «std-1.0.0-beta.12».env

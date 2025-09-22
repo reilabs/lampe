@@ -15,6 +15,18 @@ name = "std-1.0.0-beta.12"
 path = "../../../stdlib/lampe/"
 
 [[require]]
+name = "GitDep-0.0.0"
+path = "deps/GitDep-0.0.0/lampe"
+
+[[require]]
+name = "GitDep-1.0.0"
+path = "deps/GitDep-1.0.0/lampe"
+
+[[require]]
+name = "GitDep-2.0.0"
+path = "deps/GitDep-2.0.0/lampe"
+
+[[require]]
 name = "GitDepWithLampe-0.0.0"
 git = "https://github.com/reilabs/lampe"
 rev = "mp/fixing-namespaces"
@@ -33,6 +45,18 @@ rev = "mp/fixing-namespaces"
 subDir = "testing/TestDep/testing/GitDepWithLampeV2/lampe"
 
 [[require]]
+name = "LocalDep-0.0.0"
+path = "deps/LocalDep-0.0.0/lampe"
+
+[[require]]
+name = "LocalDep-1.0.0"
+path = "deps/LocalDep-1.0.0/lampe"
+
+[[require]]
+name = "LocalDep-2.0.0"
+path = "deps/LocalDep-2.0.0/lampe"
+
+[[require]]
 name = "LocalDepWithLampe-0.0.0"
 path = ".././testing/LocalDepWithLampe/lampe"
 
@@ -43,28 +67,4 @@ path = ".././testing/LocalDepWithLampeV1/lampe"
 [[require]]
 name = "LocalDepWithLampe-2.0.0"
 path = ".././testing/LocalDepWithLampeV2/lampe"
-
-[[require]]
-name = "LocalDep-1.0.0"
-path = "deps/LocalDep-1.0.0/lampe"
-
-[[require]]
-name = "GitDep-1.0.0"
-path = "deps/GitDep-1.0.0/lampe"
-
-[[require]]
-name = "GitDep-0.0.0"
-path = "deps/GitDep-0.0.0/lampe"
-
-[[require]]
-name = "GitDep-2.0.0"
-path = "deps/GitDep-2.0.0/lampe"
-
-[[require]]
-name = "LocalDep-0.0.0"
-path = "deps/LocalDep-0.0.0/lampe"
-
-[[require]]
-name = "LocalDep-2.0.0"
-path = "deps/LocalDep-2.0.0/lampe"
 

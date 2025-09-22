@@ -9,12 +9,12 @@ name = "«GitDep-1.0.0»"
 [[require]]
 name = "Lampe"
 git = "https://github.com/reilabs/lampe"
-rev = "main"
+rev = "mp/fixing-namespaces"
 subDir = "Lampe"
 
 [[require]]
-name = "std-1.0.0-beta.11"
+name = "std-1.0.0-beta.12"
 git = "https://github.com/reilabs/lampe"
-rev = "main"
+rev = "mp/fixing-namespaces"
 subDir = "stdlib/lampe"
 
