@@ -36,17 +36,6 @@ pub trait LeanDependency {
     /// - [`file_generator::Error::LakeRequireGeneration`], if the dependency is
     ///   in an unexpected form.
     fn noir_package_identifier(&self) -> Result<NoirPackageIdentifier, file_generator::Error> {
-        // let stripped_name = self.name().strip_prefix(LEAN_QUOTE_START).ok_or(
-        //     file_generator::Error::LakeRequireGeneration(
-        //         "Lean dependency was in an unexpected form".to_string(),
-        //     ),
-        // )?;
-        // let stripped_name = stripped_name.strip_suffix(LEAN_QUOTE_END).ok_or(
-        //     file_generator::Error::LakeRequireGeneration(
-        //         "Lean dependency was in an unexpected form".to_string(),
-        //     ),
-        // )?;
-
         let (name, version) =
             self.name()
                 .split_once('-')
