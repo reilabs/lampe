@@ -188,14 +188,11 @@ impl FileGenerator {
             String::new()
         };
 
-        if dependency_env.is_empty() {
-            write!(result, "{extracted_env}\n ++ {std_env}")?;
-        } else {
-            write!(
-                result,
-                "{extracted_env}\n  ++ {dependency_env}\n ++ {std_env}"
-            )?;
-        }
+        let mut env_parts = [extracted_env, dependency_env, std_env]
+            .into_iter()
+            .filter(|s| !s.is_empty());
+
+        write!(result, "{}", env_parts.join("\n  ++ "))?;
 
         writeln!(result)?;
 
