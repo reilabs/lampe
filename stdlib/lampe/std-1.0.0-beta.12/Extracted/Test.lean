@@ -5,65 +5,62 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.12»
-namespace Extracted
-
-noir_def std::test::create_mock_oracle<N: u32>(name: String<N: u32>) -> Field := {
+noir_def «std-1.0.0-beta.12»::test::create_mock_oracle<N: u32>(name: String<N: u32>) -> Field := {
   (#_fresh returning Field)()
 }
 
-noir_def std::test::set_mock_params_oracle<P: Type>(id: Field, params: P) -> Unit := {
+noir_def «std-1.0.0-beta.12»::test::set_mock_params_oracle<P: Type>(id: Field, params: P) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def std::test::get_mock_last_params_oracle<P: Type>(id: Field) -> P := {
+noir_def «std-1.0.0-beta.12»::test::get_mock_last_params_oracle<P: Type>(id: Field) -> P := {
   (#_fresh returning P)()
 }
 
-noir_def std::test::set_mock_returns_oracle<R: Type>(id: Field, returns: R) -> Unit := {
+noir_def «std-1.0.0-beta.12»::test::set_mock_returns_oracle<R: Type>(id: Field, returns: R) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def std::test::set_mock_times_oracle<>(id: Field, times: u64) -> Unit := {
+noir_def «std-1.0.0-beta.12»::test::set_mock_times_oracle<>(id: Field, times: u64) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def std::test::clear_mock_oracle<>(id: Field) -> Unit := {
+noir_def «std-1.0.0-beta.12»::test::clear_mock_oracle<>(id: Field) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def std::test::get_times_mock_called<>(id: Field) -> Field := {
+noir_def «std-1.0.0-beta.12»::test::get_times_mock_called<>(id: Field) -> Field := {
   (#_fresh returning Field)()
 }
 
-noir_def std::test::OracleMock::mock<N: u32>(name: String<N: u32>) -> std::test::OracleMock<> := {
-  (#_fresh returning std::test::OracleMock<>)()
+noir_def «std-1.0.0-beta.12»::test::OracleMock::mock<N: u32>(name: String<N: u32>) -> «std-1.0.0-beta.12»::test::OracleMock<> := {
+  (#_fresh returning «std-1.0.0-beta.12»::test::OracleMock<>)()
 }
 
-noir_def std::test::OracleMock::with_params<P: Type>(self: std::test::OracleMock<>, params: P) -> std::test::OracleMock<> := {
-  (#_fresh returning std::test::OracleMock<>)()
+noir_def «std-1.0.0-beta.12»::test::OracleMock::with_params<P: Type>(self: «std-1.0.0-beta.12»::test::OracleMock<>, params: P) -> «std-1.0.0-beta.12»::test::OracleMock<> := {
+  (#_fresh returning «std-1.0.0-beta.12»::test::OracleMock<>)()
 }
 
-noir_def std::test::OracleMock::get_last_params<P: Type>(self: std::test::OracleMock<>) -> P := {
+noir_def «std-1.0.0-beta.12»::test::OracleMock::get_last_params<P: Type>(self: «std-1.0.0-beta.12»::test::OracleMock<>) -> P := {
   (#_fresh returning P)()
 }
 
-noir_def std::test::OracleMock::returns<R: Type>(self: std::test::OracleMock<>, returns: R) -> std::test::OracleMock<> := {
-  (#_fresh returning std::test::OracleMock<>)()
+noir_def «std-1.0.0-beta.12»::test::OracleMock::returns<R: Type>(self: «std-1.0.0-beta.12»::test::OracleMock<>, returns: R) -> «std-1.0.0-beta.12»::test::OracleMock<> := {
+  (#_fresh returning «std-1.0.0-beta.12»::test::OracleMock<>)()
 }
 
-noir_def std::test::OracleMock::times<>(self: std::test::OracleMock<>, times: u64) -> std::test::OracleMock<> := {
-  (#_fresh returning std::test::OracleMock<>)()
+noir_def «std-1.0.0-beta.12»::test::OracleMock::times<>(self: «std-1.0.0-beta.12»::test::OracleMock<>, times: u64) -> «std-1.0.0-beta.12»::test::OracleMock<> := {
+  (#_fresh returning «std-1.0.0-beta.12»::test::OracleMock<>)()
 }
 
-noir_def std::test::OracleMock::clear<>(self: std::test::OracleMock<>) -> Unit := {
+noir_def «std-1.0.0-beta.12»::test::OracleMock::clear<>(self: «std-1.0.0-beta.12»::test::OracleMock<>) -> Unit := {
   (#_fresh returning Unit)()
 }
 
-noir_def std::test::OracleMock::times_called<>(self: std::test::OracleMock<>) -> Field := {
+noir_def «std-1.0.0-beta.12»::test::OracleMock::times_called<>(self: «std-1.0.0-beta.12»::test::OracleMock<>) -> Field := {
   (#_fresh returning Field)()
 }
 
-def Test.env : Env := Env.mk
-  [«std::test::create_mock_oracle», «std::test::set_mock_params_oracle», «std::test::get_mock_last_params_oracle», «std::test::set_mock_returns_oracle», «std::test::set_mock_times_oracle», «std::test::clear_mock_oracle», «std::test::get_times_mock_called», «std::test::OracleMock::mock», «std::test::OracleMock::with_params», «std::test::OracleMock::get_last_params», «std::test::OracleMock::returns», «std::test::OracleMock::times», «std::test::OracleMock::clear», «std::test::OracleMock::times_called»]
+def «std-1.0.0-beta.12».Test.env : Env := Env.mk
+  [«std-1.0.0-beta.12::test::create_mock_oracle», «std-1.0.0-beta.12::test::set_mock_params_oracle», «std-1.0.0-beta.12::test::get_mock_last_params_oracle», «std-1.0.0-beta.12::test::set_mock_returns_oracle», «std-1.0.0-beta.12::test::set_mock_times_oracle», «std-1.0.0-beta.12::test::clear_mock_oracle», «std-1.0.0-beta.12::test::get_times_mock_called», «std-1.0.0-beta.12::test::OracleMock::mock», «std-1.0.0-beta.12::test::OracleMock::with_params», «std-1.0.0-beta.12::test::OracleMock::get_last_params», «std-1.0.0-beta.12::test::OracleMock::returns», «std-1.0.0-beta.12::test::OracleMock::times», «std-1.0.0-beta.12::test::OracleMock::clear», «std-1.0.0-beta.12::test::OracleMock::times_called»]
   []
