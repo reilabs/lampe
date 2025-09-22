@@ -7,12 +7,10 @@ use nargo::package::Package;
 use nargo_toml::DependencyConfig;
 
 use crate::{
-    file_generator::{
+    constants::{NONE_DEPENDENCY_VERSION, STDLIB_TOML}, file_generator::{
         error::{Error, Result},
-        lake::dependency::{LeanDependency, LeanDependencyGit, LeanDependencyPath},
-    },
-    file_generator_error::Error::LakeRequireGeneration,
-    lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
+        lake::{constants::NOIR_STDLIB_PACKAGE_NAME, dependency::{LeanDependency, LeanDependencyGit, LeanDependencyPath}},
+    }, file_generator_error::Error::LakeRequireGeneration, lean::{LEAN_QUOTE_END, LEAN_QUOTE_START}
 };
 
 pub mod error;
@@ -75,8 +73,11 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
         fs::create_dir(&lampe_root_dir)?;
     }
 
+    let stdlib_info = get_stdlib_info(noir_package_identifier);
+
     lake::generate_lakefile_toml(
         &lampe_root_dir,
+        stdlib_info.clone(),
         noir_package_identifier,
         &dependency_info.all_dependencies,
         false,
@@ -92,12 +93,39 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
     lean::generate_lean_files(
         &lampe_root_dir,
         noir_package_identifier,
+        stdlib_info,
         extracted_code,
         dependency_info,
         external_dependencies,
     )?;
 
     Ok(())
+}
+
+pub fn get_stdlib_info(noir_package_identifier: &NoirPackageIdentifier) -> Option<NoirPackageIdentifier> {
+    if noir_package_identifier.name == NOIR_STDLIB_PACKAGE_NAME {
+        None
+    } else if let Ok(toml_content) = STDLIB_TOML.parse::<toml::Table>() {
+        if let toml::Value::Table(package_info) = &toml_content["package"] {
+            if let toml::Value::String(name) = &package_info["name"] {
+                let version = package_info["version"].as_str().unwrap_or(NONE_DEPENDENCY_VERSION);
+
+                Some(NoirPackageIdentifier {
+                    name:    name.clone(),
+                    version: version.to_string(),
+                })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        eprintln!(
+            "Could not read standard library config; not including standard library as dependency"
+        );
+        None
+    }
 }
 
 /// Convert passed Noir's dependency into Lean's dependency

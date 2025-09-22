@@ -3,15 +3,12 @@
 
 use std::{fmt::Write, fs, path::Path};
 
+use itertools::Itertools;
 use serde::Deserialize;
 
 use crate::{
-    constants::{NONE_DEPENDENCY_VERSION, STDLIB_TOML},
     file_generator::{
-        lake::{
-            constants::NOIR_STDLIB_PACKAGE_NAME,
-            dependency::{LeanDependency, LeanDependencyGit},
-        },
+        lake::dependency::{LeanDependency, LeanDependencyGit},
         Error,
         NoirPackageIdentifier,
         LAMPE_GENERATED_COMMENT,
@@ -26,7 +23,9 @@ pub mod dependency;
 ///
 /// If `stdlib_info` is provided the project is assumed not to be the standard
 /// library, and the bundled standard library is added.
-fn default_lean_dependencies(stdlib_info: Option<StdlibInfo>) -> Vec<Box<dyn LeanDependency>> {
+fn default_lean_dependencies(
+    stdlib_info: Option<NoirPackageIdentifier>,
+) -> Vec<Box<dyn LeanDependency>> {
     let mut deps: Vec<Box<dyn LeanDependency>> = vec![Box::new(
         LeanDependencyGit::builder("Lampe")
             .git("https://github.com/reilabs/lampe")
@@ -59,6 +58,7 @@ fn default_lean_dependencies(stdlib_info: Option<StdlibInfo>) -> Vec<Box<dyn Lea
 /// - If the lakefile cannot be generated properly.
 pub fn generate_lakefile_toml(
     lampe_root_dir: &Path,
+    stdlib_info: Option<NoirPackageIdentifier>,
     noir_package_identifier: &NoirPackageIdentifier,
     additional_dependencies: &[Box<dyn LeanDependency>],
     overwrite: bool,
@@ -93,39 +93,19 @@ pub fn generate_lakefile_toml(
     )?;
     result.push('\n');
 
-    let stdlib_info = if noir_package_identifier.name == NOIR_STDLIB_PACKAGE_NAME {
-        None
-    } else if let Ok(toml_content) = STDLIB_TOML.parse::<toml::Table>() {
-        if let toml::Value::Table(package_info) = &toml_content["package"] {
-            if let toml::Value::String(name) = &package_info["name"] {
-                let version = package_info["version"].as_str().unwrap_or(NONE_DEPENDENCY_VERSION);
-
-                Some(StdlibInfo {
-                    name:    name.clone(),
-                    version: version.to_string(),
-                })
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    } else {
-        eprintln!(
-            "Could not read standard library config; not including standard library as dependency"
-        );
-        None
-    };
-
     for dependency in default_lean_dependencies(stdlib_info) {
         result.push_str(&dependency.generate()?);
         result.push('\n');
     }
 
-    for dependency in additional_dependencies {
-        result.push_str(&dependency.generate()?);
-        result.push('\n');
-    }
+    additional_dependencies
+        .into_iter()
+        .sorted_by_key(|d| d.name())
+        .try_for_each(|dependency| -> Result<(), Error> {
+            result.push_str(&dependency.generate()?);
+            result.push('\n');
+            Ok(())
+        })?;
 
     fs::write(output_file, result)?;
 
@@ -136,12 +116,6 @@ pub fn generate_lakefile_toml(
 #[derive(Deserialize, Debug)]
 struct LakefileConfig {
     name: String,
-}
-
-/// Contains information about the current standard library.
-struct StdlibInfo {
-    pub name:    String,
-    pub version: String,
 }
 
 /// Returns name extracted out of Lampe's project's lakefile.toml.
