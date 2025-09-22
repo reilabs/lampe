@@ -11,8 +11,8 @@ noir_def «ExtractionTests-0.0.0»::field_generics::foo1<A: Field>() -> Field :=
   fConst!(A: Field)
 }
 
-noir_def field_generics::main<>() -> Unit := {
-  let __0 = (field_generics::foo1<4294967297: Field> as λ() -> Field)();
+noir_def «ExtractionTests-0.0.0»::field_generics::main<>() -> Unit := {
+  let __0 = («ExtractionTests-0.0.0»::field_generics::foo1<4294967297: Field> as λ() -> Field)();
   #_skip
 }
 

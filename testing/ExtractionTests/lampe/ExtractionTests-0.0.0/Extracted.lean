@@ -12,6 +12,7 @@ import «ExtractionTests-0.0.0».Extracted.StructNamespaces
 import «ExtractionTests-0.0.0».Extracted.TypeOrder
 import «ExtractionTests-0.0.0».Extracted.UnconstrainedReturn
 import «ExtractionTests-0.0.0».Extracted.UnitReturn
+import «std-1.0.0-beta.12».Extracted
 
 namespace «ExtractionTests-0.0.0»
 
@@ -26,3 +27,4 @@ def env := AssociatedType.env
   ++ TypeOrder.env
   ++ UnconstrainedReturn.env
   ++ UnitReturn.env
+  ++ «std-1.0.0-beta.12».env
