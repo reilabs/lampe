@@ -1,28 +1,12 @@
-import «std-1.0.0-beta.12».Extracted.Array.Mod
-import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
+import «std-1.0.0-beta.12».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Array
 
-export «std-1.0.0-beta.12».Extracted (
-  «std::array::map»
-  «std::array::mapi»
-  «std::array::for_each»
-  «std::array::for_eachi»
-  «std::array::fold»
-  «std::array::reduce»
-  «std::array::all»
-  «std::array::any»
-  «std::array::concat»
-  «std::array::sort»
-  «std::array::sort_via»
-  «std::array::test::map_empty»
-)
-
-open «std-1.0.0-beta.12».Extracted
+open «std-1.0.0-beta.12»
 
 theorem concat_spec: STHoare p env ⟦⟧
-    («std::array::concat».call h![T, M, N] h![a₁, a₂])
+    («std-1.0.0-beta.12::array::concat».call h![T, M, N] h![a₁, a₂])
     (fun r => r.toList = a₁.toList ++ a₂.toList) := by
   enter_decl
   steps

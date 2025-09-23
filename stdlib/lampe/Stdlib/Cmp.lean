@@ -1,30 +1,9 @@
-import «std-1.0.0-beta.12».Extracted.Cmp
-import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
+import «std-1.0.0-beta.12».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Cmp
 
-export «std-1.0.0-beta.12».Extracted (
-  «std::cmp::Eq».«#genericKinds»
-  «std::cmp::Eq».«#associatedTypesKinds»
-  «std::cmp::Eq».eq.«#genericKinds»
-  «std::cmp::Eq».eq.«#inputs»
-  «std::cmp::Eq».eq.«#output»
-  «std::cmp::Eq».eq
-  «std::cmp::Ord».«#genericKinds»
-  «std::cmp::Ord».«#associatedTypesKinds»
-  «std::cmp::Ord».cmp.«#genericKinds»
-  «std::cmp::Ord».cmp.«#inputs»
-  «std::cmp::Ord».cmp.«#output»
-  «std::cmp::Ord».cmp
-  «std::cmp::Ordering::less»
-  «std::cmp::Ordering::equal»
-  «std::cmp::Ordering::greater»
-  «std::cmp::max»
-  «std::cmp::min»
-)
-
-open «std-1.0.0-beta.12».Extracted
+open «std-1.0.0-beta.12»
 
 namespace Eq
 
@@ -389,7 +368,7 @@ We recommend providng the user with `std::cmp::Ordering`s at the boundary of the
 ordering values 'created' by the theorem.
 -/
 @[reducible]
-def fromOrdering {p} : Ordering → («std::cmp::Ordering».tp h![] |>.denote p)
+def fromOrdering {p} : Ordering → («std-1.0.0-beta.12::cmp::Ordering».tp h![] |>.denote p)
 | .lt => (0, ())
 | .eq => (1, ())
 | .gt => (2, ())
@@ -409,7 +388,7 @@ def toOrdering {p} : («std::cmp::Ordering».tp h![] |>.denote p) → Ordering
   | 2 => .gt
 
 theorem less_spec {p} : STHoare p env ⟦⟧
-  («std::cmp::Ordering::less».call h![] h![])
+  («std-1.0.0-beta.12::cmp::Ordering::less».call h![] h![])
   (fun r => r = fromOrdering .lt) := by
   enter_decl
   steps
@@ -417,7 +396,7 @@ theorem less_spec {p} : STHoare p env ⟦⟧
   simp
 
 theorem equal_spec {p} : STHoare p env ⟦⟧
-  («std::cmp::Ordering::equal».call h![] h![])
+  («std-1.0.0-beta.12::cmp::Ordering::equal».call h![] h![])
   (fun r => r = fromOrdering .eq) := by
   enter_decl
   steps
@@ -425,7 +404,7 @@ theorem equal_spec {p} : STHoare p env ⟦⟧
   simp
 
 theorem greater_spec {p} : STHoare p env ⟦⟧
-  («std::cmp::Ordering::greater».call h![] h![])
+  («std-1.0.0-beta.12::cmp::Ordering::greater».call h![] h![])
   (fun r => r = fromOrdering .gt) := by
   enter_decl
   steps

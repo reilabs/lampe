@@ -1,16 +1,10 @@
-import «std-1.0.0-beta.12».Extracted.Array.CheckShuffle
-import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
+import «std-1.0.0-beta.12».Extracted
 import Lampe
 import Stdlib.Cmp
 
 namespace Lampe.Stdlib.Array.CheckShuffle
 
-export «std-1.0.0-beta.12».Extracted (
-  «std::array::check_shuffle::check_shuffle»
-  Array.CheckShuffle.env
-)
-
-open «std-1.0.0-beta.12».Extracted
+open «std-1.0.0-beta.12»
 
 lemma get_cast : ∀{M}{α} {l : List α}{h : M = List.length l} {i : Fin M}, l.get (h ▸ i) = l[i.val]'(by cases i; apply lt_of_lt_of_eq (by assumption) h) := by
   intros
@@ -137,15 +131,15 @@ lemma List.perm_of_index_bijection
     assumption
 
 lemma get_index_spec: STHoare p env ⟦⟧
-    («std::array::check_shuffle::__get_index».call h![N] h![indices, idx])
+    («std-1.0.0-beta.12::array::check_shuffle::__get_index».call h![N] h![indices, idx])
     (fun r => True) := by
   enter_decl
   steps
 
 theorem check_shuffle_spec
-    (h_eq : ∀(a b : T.denote p), STHoare p env ⟦⟧ («std::cmp::Eq».eq h![] T h![] h![] h![a, b]) fun r: Bool => ⟦r ↔ a = b⟧)
+    (h_eq : ∀(a b : T.denote p), STHoare p env ⟦⟧ («std-1.0.0-beta.12::cmp::Eq».eq h![] T h![] h![] h![a, b]) fun r: Bool => ⟦r ↔ a = b⟧)
     : STHoare p env ⟦⟧
-    («std::array::check_shuffle::check_shuffle».call h![T, N] h![lhs, rhs])
+    («std-1.0.0-beta.12::array::check_shuffle::check_shuffle».call h![T, N] h![lhs, rhs])
     (fun _ => List.Perm lhs.toList rhs.toList) := by
   enter_decl
   steps
@@ -243,7 +237,7 @@ Shows that the shuffle check cannot succeed with the given inputs.
 -/
 example :
     STHoare p env ⟦⟧
-      («std::array::check_shuffle::check_shuffle».call h![.u 8, 3] h![⟨[1, 2, 3], by simp⟩, ⟨[1, 2, 2], by simp⟩])
+      («std-1.0.0-beta.12::array::check_shuffle::check_shuffle».call h![.u 8, 3] h![⟨[1, 2, 3], by simp⟩, ⟨[1, 2, 2], by simp⟩])
       (fun _ => False) := by
   steps [check_shuffle_spec]
   · simp_all
