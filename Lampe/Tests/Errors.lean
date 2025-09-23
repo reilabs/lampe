@@ -14,7 +14,7 @@ error: Unable to find a declaration in the environment with the right name
 -/
 #guard_msgs in
 theorem enter_decl_error : STHoare p env ⟦⟧ (hello.call h![] h![])
-    fun output => (String.mk output.toList) = "hello" := by
+    fun output => output.toString = "hello" := by
   enter_decl
 
 /- testing enter_block_as error reporting -/
@@ -29,9 +29,9 @@ due to the absence of the instance above
 Additional diagnostic information may be available using the `set_option diagnostics true` command.-/
 #guard_msgs in
 theorem enter_block_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
-    fun output => (String.mk output.toList) = "hello" := by
+    fun output => output.toString = "hello" := by
   enter_decl
-  step_as (⟦⟧) (fun (v : Tp.denote p (Tp.str 5)) => (String.mk v.toList) = 5)
+  step_as (⟦⟧) (fun (v : Tp.denote p (Tp.str 5)) => v.toString = 5)
   sorry
 
 /- testing steps error messaging -/
@@ -39,7 +39,7 @@ theorem enter_block_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
 /-- error: unknown identifier 'bad_lemma'-/
 #guard_msgs in
 theorem steps_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
-    fun output => (String.mk output.toList) = "hello" := by
+    fun output => output.toString = "hello" := by
   enter_decl
   steps [bad_lemma]
   sorry
@@ -69,3 +69,4 @@ theorem loop_inv_error : STHoare p loopEnv ⟦⟧ (loop_fn.call h![] h![])
   steps
   loop_inv fun i _ _ => [u ↦ ⟨Tp.field, 3⟩] -- random mal-formed loop invariant to show it works
   all_goals sorry
+

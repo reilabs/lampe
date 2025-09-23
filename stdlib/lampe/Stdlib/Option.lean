@@ -663,3 +663,4 @@ theorem cmp_spec {p T self other P Q}
       steps [equal_spec]
       simp_all
 
+-- TODO cmp_pure_spec (got forgotten before)

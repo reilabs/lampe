@@ -97,6 +97,7 @@ and returns a predicate `h : Prop` and an evaluation function `h → (Tp.denote 
 If the builtin succeeds, i.e., the predicate `h` succeeds, it evaluates to `some (eval h)` where `eval = (desc a args).snd`.
 Otherwise, it evaluates to `none`.
 -/
+@[reducible]
 def newGenericPureBuiltin {A : Type}
   (sgn : A → List Tp × Tp)
   (desc : {p : Prime}
