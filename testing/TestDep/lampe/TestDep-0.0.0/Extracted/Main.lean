@@ -5,19 +5,16 @@ import Lampe
 
 open Lampe
 
-namespace «TestDep-0.0.0»
-namespace Extracted
-
-noir_def main<>(x: Field, y: Field) -> Unit := {
+noir_def «TestDep-0.0.0»::main<>(x: Field, y: Field) -> Unit := {
   (#_assert returning Unit)((#_fNeq returning bool)(x, y));
   #_skip
 }
 
-noir_def test_main<>() -> Unit := {
-  (main<> as λ(Field, Field) -> Unit)((1: Field), (2: Field));
+noir_def «TestDep-0.0.0»::test_main<>() -> Unit := {
+  («TestDep-0.0.0»::main<> as λ(Field, Field) -> Unit)((1: Field), (2: Field));
   #_skip
 }
 
-def Main.env : Env := Env.mk
-  [main, test_main]
+def «TestDep-0.0.0».Main.env : Env := Env.mk
+  [«TestDep-0.0.0::main», «TestDep-0.0.0::test_main»]
   []

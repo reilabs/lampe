@@ -1,19 +1,6 @@
-import «std-1.0.0-beta.12».Extracted.Hash.Mod
-import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
+import «std-1.0.0-beta.12».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Hash
 
-export «std-1.0.0-beta.12».Extracted (
-  «std::hash::keccak::keccakf1600»
-  «std::hash::blake3»
-  «std::hash::pedersen_commitment»
-  «std::hash::pedersen_commitment_with_separator»
-  «std::hash::pedersen_hash»
-  «std::hash::pedersen_hash_with_separator»
-  «std::hash::derive_generators»
-  «std::hash::from_field_unsafe»
-  «std::hash::assert_pedersen»
-)
-
-open «std-1.0.0-beta.12».Extracted
+open «std-1.0.0-beta.12»

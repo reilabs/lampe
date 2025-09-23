@@ -23,8 +23,8 @@ import Stdlib.Panic
 import Stdlib.Slice
 import Stdlib.String
 
-import «std-1.0.0-beta.12».Extracted.«std-1.0.0-beta.12»
+import «std-1.0.0-beta.12».Extracted
 
 namespace Lampe.Stdlib
 
-export «std-1.0.0-beta.12».Extracted (env)
+export «std-1.0.0-beta.12» (env)
