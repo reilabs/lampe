@@ -165,7 +165,7 @@ def Tp.denote : Tp → Type
 | .bi => Int
 | .bool => Bool
 | .unit => Unit
-| .str n => FixedLenStr n.toNat
+| .str n => NoirStr n.toNat
 | .fmtStr n tps => FormatString n tps
 | .field => Fp p
 | .slice tp => List (denote tp)
@@ -241,7 +241,7 @@ match tp with
 | .u _ | .i _ | .bi | .field => 0
 | .bool => False
 | .unit => ()
-| .str n => List.Vector.replicate n.toNat '\x00'
+| .str n => List.Vector.replicate n.toNat 0
 | .fmtStr _ _ => ""
 | .slice _ => []
 | .array tp n => List.Vector.replicate n.toNat tp.zero

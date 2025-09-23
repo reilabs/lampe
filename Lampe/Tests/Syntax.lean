@@ -667,3 +667,19 @@ example : STHoare p badNameEnv ⟦⟧ («call::make::has::from::name::meta».cal
   steps
   subst_vars
   rfl
+
+noir_def returns_string<>() → String<5: u32> := {
+  "hello"
+}
+
+def returnsStringEnv : Env := ⟨[returns_string], []⟩
+
+theorem returns_string_correct {p}
+  : STHoare p returnsStringEnv ⟦⟧
+    (returns_string.call h![] h![])
+    (fun v => v = NoirStr.of "hello") := by
+  enter_decl
+  steps
+  subst_vars
+  rfl
+

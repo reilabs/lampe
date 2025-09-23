@@ -456,14 +456,11 @@ def delabLampeConstU : Delab := whenDelabExprOption getExpr >>= fun expr =>
       return ←``(⸨$const⸩)
 
 @[app_delab Lampe.Expr.litStr]
-def delabLampeLitStr : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let args := expr.getAppArgs
-    let charListRaw := args[2]!.getAppArgs[2]!
-    let charList  ← delab charListRaw
-    let str := charList.raw[1].getArgs |>.filter (fun x => x.getKind == `char)
-                                      |>.foldl (init := "") fun acc x => acc.push x.isCharLit?.get!
-    return ←``(⸨ $(⟨Syntax.mkStrLit str⟩) ⸩)
+def delabLampeLitStr : Delab := whenDelabExprOption getExpr >>= fun expr => whenFullyApplied expr do
+  let args := expr.getAppArgs
+  let Expr.lit (Literal.strVal noirStr) := args[2]!.getAppArgs[0]! 
+    | throwError "Expected string literal as argument but none found"
+  return ←``(⸨ $(⟨Syntax.mkStrLit noirStr⟩) ⸩)
 
 section STHoare
 

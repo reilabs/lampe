@@ -534,15 +534,15 @@ theorem eq_spec {p T self other P Q}
       rw [Eq.comm, beq_eq_false_iff_ne]
       assumption
 
-theorem eq_spec_pure {p T self other}
+theorem eq_pure_spec {p T self other}
     {t_eq : «std::cmp::Eq».hasImpl env h![] T}
-    {eq_emb : T.denote p → T.denote p → Prop}
+    {t_eq_emb : T.denote p → T.denote p → Prop}
     (h_eq : ∀a b, STHoare p env ⟦⟧
       («std::cmp::Eq».eq h![] T h![] h![] h![a, b])
-      (fun r : Bool => r = eq_emb a b))
+      (fun r : Bool => r = t_eq_emb a b))
   : STHoare p env ⟦⟧
     («std::cmp::Eq».eq h![] («std::option::Option».tp h![T]) h![] h![] h![self, other])
-    (fun r : Bool => r = Option.Rel eq_emb (toOption self) (toOption other)) := by
+    (fun r : Bool => r = Option.Rel t_eq_emb (toOption self) (toOption other)) := by
   apply STHoare.consequence_frame
   apply eq_spec
   case t_eq => assumption
@@ -617,12 +617,12 @@ theorem hash_spec {p T H self P Q R}
 set_option maxRecDepth 2000 in
 theorem cmp_spec {p T self other P Q}
     {t_ord : «std::cmp::Ord».hasImpl env h![] T}
-    {t_ord_f : (h_self : (toOption self).isSome)
+    (t_ord_f : (h_self : (toOption self).isSome)
              → (h_other : (toOption other).isSome)
              → STHoare p env P
                («std::cmp::Ord».cmp h![] T h![] h![]
                 h![(toOption self).get h_self, (toOption other).get h_other])
-               Q}
+               Q)
   : STHoare p env P
     («std::cmp::Ord».cmp h![] («std::option::Option».tp h![T]) h![] h![] h![self, other])
     (fun r => if (toOption self).isSome then
@@ -660,6 +660,49 @@ theorem cmp_spec {p T self other P Q}
     · intro o_none
       steps
       conv => rhs; simp [s_none, o_none]
+      steps [equal_spec]
+      simp_all
+
+set_option maxRecDepth 2000 in
+theorem cmp_pure_spec {p T self other}
+    {t_ord : «std::cmp::Ord».hasImpl env h![] T}
+    {t_ord_emb : T.denote p → T.denote p → («std::cmp::Ordering».tp h![] |>.denote p)}
+    (t_ord_f : ∀a b, STHoare p env ⟦⟧
+      («std::cmp::Ord».cmp h![] T h![] h![] h![a, b])
+      (fun r => r = t_ord_emb a b))
+  : STHoare p env ⟦⟧
+    («std::cmp::Ord».cmp h![] («std::option::Option».tp h![T]) h![] h![] h![self, other])
+    (fun r => r = if h : (toOption self).isSome then
+      if g : (toOption other).isSome then
+        t_ord_emb ((toOption self).get h) ((toOption other).get g)
+      else fromOrdering .gt
+    else if (toOption other).isSome then fromOrdering .lt else
+      fromOrdering .eq) := by
+  resolve_trait
+  steps
+  rw [option_fst_eq_toOption_isSome]
+  apply STHoare.ite_intro
+  · intro s_some
+    steps
+    rw [option_fst_eq_toOption_isSome]
+    apply STHoare.ite_intro
+    · intro o_some
+      steps
+      rw [option_snd_eq_toOption_get_of_isSome o_some, option_snd_eq_toOption_get_of_isSome s_some]
+      steps [t_ord_f ((toOption self).get s_some) ((toOption other).get o_some)]
+      simp_all
+    · intro
+      steps [greater_spec]
+      simp_all
+
+  · intro s_none
+    steps
+    rw [option_fst_eq_toOption_isSome]
+    apply STHoare.ite_intro
+    · intro
+      steps [less_spec]
+      simp_all
+    · intro
       steps [equal_spec]
       simp_all
 

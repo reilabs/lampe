@@ -166,10 +166,8 @@ partial def makeExpr [MonadDSL m]
 
 -- Literals
 | `(noir_expr|$n:num : $tp) => do wrapInLet (←``(Expr.litNum $(←makeNoirType tp) $n)) binder k
-| `(noir_expr|-$n:num : $tp) => do
-  wrapInLet (←``(Expr.litNum $(←makeNoirType tp) (-$n))) binder k
-| `(noir_expr|$s:str) => do
-  wrapInLet (←`(Expr.litStr (String.length $s) (⟨String.data $s, by rfl⟩))) binder k
+| `(noir_expr|-$n:num : $tp) => do wrapInLet (←``(Expr.litNum $(←makeNoirType tp) (-$n))) binder k
+| `(noir_expr|$s:str) => do wrapInLet (←``(Expr.litStr (String.length $s) (NoirStr.of $s))) binder k
 | `(noir_expr|#_true) => do wrapInLet (←``(Expr.litNum Tp.bool 1)) binder k
 | `(noir_expr|#_false) => do wrapInLet (←``(Expr.litNum Tp.bool 0)) binder k
 | `(noir_expr|#_unit) => do wrapInLet (←``(Expr.skip)) binder k
