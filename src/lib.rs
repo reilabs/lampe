@@ -635,4 +635,21 @@ fn leq<A: Ord>(a: A, b: A) -> bool {
 
         print!("{}", result.unwrap().1);
     }
+
+    #[test]
+    fn static_assert() {
+        let source = r#"
+use std::static_assert;
+
+fn leq<let N: u32>() -> bool {
+    static_assert(N < 32, "Oopsie");
+    true
+}
+"#;
+
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
 }

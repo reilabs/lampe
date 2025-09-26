@@ -1,15 +1,42 @@
 import «std-1.0.0-beta.12».Extracted
 import Lampe
 
+import Mathlib.Order.Compare
+
+import Stdlib.List
+import Stdlib.Tp
+import Stdlib.Tuple
+
 namespace Lampe.Stdlib.Cmp
 
 open «std-1.0.0-beta.12»
+open Lampe.Stdlib
 
 namespace Eq
 
+set_option Lampe.pp.Expr true
+set_option Lampe.pp.STHoare true
+
+/-- A shorthand for a call to the `std::cmp::Eq::eq` method. -/
+@[reducible]
+def eq {p}
+    (generics : HList Kind.denote «std-1.0.0-beta.12::cmp::Eq».«#genericKinds»)
+    (Self : Tp)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::cmp::Eq».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::cmp::Eq».«#genericKinds»)
+  : HList (Tp.denote p)
+      («std-1.0.0-beta.12::cmp::Eq».eq.«#inputs» generics Self associatedTypes fnGenerics)
+  → Expr (Tp.denote p)
+      («std-1.0.0-beta.12::cmp::Eq».eq.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.12::cmp::Eq».eq generics Self associatedTypes fnGenerics
+
+/-- Asserts that the provided `tp` has an implementation of `std::cmp::Eq` in the environment. -/
+@[reducible]
+def hasEqImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] tp
+
 theorem field_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] .field h![] h![] h![a, b])
+    (eq h![] .field h![] h![] h![a, b])
     fun r: Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -17,7 +44,7 @@ theorem field_eq_spec {p a b}
 
 theorem u128_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.u 128) h![] h![] h![a, b])
+    (eq h![] (.u 128) h![] h![] h![a, b])
     (fun r : Bool => r ↔ a = b) := by
   resolve_trait
   steps
@@ -25,7 +52,7 @@ theorem u128_eq_spec {p a b}
 
 theorem u64_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.u 64) h![] h![] h![a, b])
+    (eq h![] (.u 64) h![] h![] h![a, b])
     (fun r : Bool => r ↔ a = b) := by
   resolve_trait
   steps
@@ -33,7 +60,7 @@ theorem u64_eq_spec {p a b}
 
 theorem u32_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.u 32) h![] h![] h![a, b])
+    (eq h![] (.u 32) h![] h![] h![a, b])
     (fun r : Bool => r ↔ a = b) := by
   resolve_trait
   steps
@@ -41,7 +68,7 @@ theorem u32_eq_spec {p a b}
 
 theorem u16_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.u 16) h![] h![] h![a, b])
+    (eq h![] (.u 16) h![] h![] h![a, b])
     (fun r : Bool => r ↔ a = b) := by
   resolve_trait
   steps
@@ -49,7 +76,7 @@ theorem u16_eq_spec {p a b}
 
 theorem u8_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.u 8) h![] h![] h![a, b])
+    (eq h![] (.u 8) h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -57,7 +84,7 @@ theorem u8_eq_spec {p a b}
 
 theorem u1_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.u 1) h![] h![] h![a, b])
+    (eq h![] (.u 1) h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -65,7 +92,7 @@ theorem u1_eq_spec {p a b}
 
 theorem i8_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.i 8) h![] h![] h![a, b])
+    (eq h![] (.i 8) h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -73,7 +100,7 @@ theorem i8_eq_spec {p a b}
 
 theorem i16_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.i 16) h![] h![] h![a, b])
+    (eq h![] (.i 16) h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -81,7 +108,7 @@ theorem i16_eq_spec {p a b}
 
 theorem i32_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.i 32) h![] h![] h![a, b])
+    (eq h![] (.i 32) h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -89,7 +116,7 @@ theorem i32_eq_spec {p a b}
 
 theorem i64_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.i 64) h![] h![] h![a, b])
+    (eq h![] (.i 64) h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -97,7 +124,7 @@ theorem i64_eq_spec {p a b}
 
 theorem unit_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.unit) h![] h![] h![a, b])
+    (eq h![] (.unit) h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -105,7 +132,7 @@ theorem unit_eq_spec {p a b}
 
 theorem bool_eq_spec {p a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.bool) h![] h![] h![a, b])
+    (eq h![] (.bool) h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -113,12 +140,10 @@ theorem bool_eq_spec {p a b}
   · exact ()
 
 theorem array_eq_pure_spec {p T N a b}
-    {t_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] T}
-    {t_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] T h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {t_eq : hasEqImpl env T}
+    {t_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] T h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (T.array N) h![] h![] h![a, b])
+    (eq h![] (T.array N) h![] h![] h![a, b])
     (fun r : Bool => ⟦r ↔ a = b⟧) := by
   resolve_trait
   steps
@@ -167,12 +192,10 @@ theorem array_eq_pure_spec {p T N a b}
   exact Iff.intro (fun eq => List.Vector.eq _ _ eq) (fun eq => congrArg _ eq)
 
 theorem slice_eq_pure_spec {p T a b}
-    (h_trait_res : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] T)
-    (h_eq_child: ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] T h![] h![] h![a, b])
-      fun r : Bool => ⟦r ↔ a = b⟧)
+    (h_trait_res : hasEqImpl env T)
+    (h_eq_child: ∀a b, STHoare p env ⟦⟧ (eq h![] T h![] h![] h![a, b]) fun r : Bool => ⟦r ↔ a = b⟧)
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] T.slice h![] h![] h![a, b])
+    (eq h![] T.slice h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -223,23 +246,19 @@ theorem slice_eq_pure_spec {p T a b}
 theorem string_eq_pure_spec {p N a b}
     {u8_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] (.u 8)}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (.str N) h![] h![] h![a, b])
+    (eq h![] (.str N) h![] h![] h![a, b])
     (fun r : Bool => ⟦r ↔ a = b⟧) := by
   resolve_trait
   steps [array_eq_pure_spec (t_eq := u8_eq) (t_eq_f := fun _ _ => u8_eq_spec)]
   simp_all only [BitVec.natCast_eq_ofNat, List.Vector.mk_toList]
 
 theorem tuple2_eq_pure_spec {p A B self other}
-    {A_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] A}
-    {B_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] B}
-    {A_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] A h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {B_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] B h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {A_eq : hasEqImpl env A}
+    {B_eq : hasEqImpl env B}
+    {A_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] A h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {B_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] B h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (Tp.tuple none [A, B]) h![] h![] h![self, other])
+    (eq h![] (Tp.tuple none [A, B]) h![] h![] h![self, other])
     (fun r : Bool => ⟦r ↔ self = other⟧) := by
   resolve_trait
   steps [A_eq_f, B_eq_f]
@@ -252,20 +271,14 @@ theorem tuple2_eq_pure_spec {p A B self other}
   simp_all
 
 theorem tuple3_eq_pure_spec {p A B C self other}
-    {A_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] A}
-    {B_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] B}
-    {C_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] C}
-    {A_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] A h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {B_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] B h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {C_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] C h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {A_eq : hasEqImpl env A}
+    {B_eq : hasEqImpl env B}
+    {C_eq : hasEqImpl env C}
+    {A_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] A h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {B_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] B h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {C_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] C h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (Tp.tuple none [A, B, C]) h![] h![] h![self, other])
+    (eq h![] (Tp.tuple none [A, B, C]) h![] h![] h![self, other])
     (fun r : Bool => ⟦r ↔ self = other⟧) := by
   resolve_trait
   steps [A_eq_f, B_eq_f, C_eq_f]
@@ -280,24 +293,16 @@ theorem tuple3_eq_pure_spec {p A B C self other}
 
 set_option maxHeartbeats 500000 in
 theorem tuple4_eq_pure_spec {p A B C D self other}
-    {A_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] A}
-    {B_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] B}
-    {C_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] C}
-    {D_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] D}
-    {A_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] A h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {B_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] B h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {C_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] C h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {D_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] D h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {A_eq : hasEqImpl env A}
+    {B_eq : hasEqImpl env B}
+    {C_eq : hasEqImpl env C}
+    {D_eq : hasEqImpl env D}
+    {A_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] A h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {B_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] B h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {C_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] C h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {D_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] D h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (Tp.tuple none [A, B, C, D]) h![] h![] h![self, other])
+    (eq h![] (Tp.tuple none [A, B, C, D]) h![] h![] h![self, other])
     (fun r : Bool => ⟦r ↔ self = other⟧) := by
   resolve_trait
   steps [A_eq_f, B_eq_f, C_eq_f, D_eq_f]
@@ -312,28 +317,18 @@ theorem tuple4_eq_pure_spec {p A B C D self other}
 
 set_option maxHeartbeats 1000000 in
 theorem tuple5_eq_pure_spec {p A B C D E self other}
-    {A_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] A}
-    {B_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] B}
-    {C_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] C}
-    {D_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] D}
-    {E_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] E}
-    {A_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] A h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {B_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] B h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {C_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] C h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {D_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] D h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
-    {E_eq_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] E h![] h![] h![a, b])
-      (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {A_eq : hasEqImpl env A}
+    {B_eq : hasEqImpl env B}
+    {C_eq : hasEqImpl env C}
+    {D_eq : hasEqImpl env D}
+    {E_eq : hasEqImpl env E}
+    {A_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] A h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {B_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] B h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {C_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] C h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {D_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] D h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
+    {E_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] E h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] (Tp.tuple none [A, B, C, D, E]) h![] h![] h![self, other])
+    (eq h![] (Tp.tuple none [A, B, C, D, E]) h![] h![] h![self, other])
     (fun r : Bool => ⟦r ↔ self = other⟧) := by
   resolve_trait
   steps [A_eq_f, B_eq_f, C_eq_f, D_eq_f, E_eq_f]
@@ -346,9 +341,9 @@ theorem tuple5_eq_pure_spec {p A B C D E self other}
   simp_all only [Bool.and_eq_true, Prod.mk.injEq, and_true]
   tauto
 
-theorem ordering_eq_pure_spec {p self other}
+theorem ordering_eq_spec {p self other}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Eq».eq h![] («std-1.0.0-beta.12::cmp::Ordering».tp h![]) h![] h![] h![self, other])
+    (eq h![] («std-1.0.0-beta.12::cmp::Ordering».tp h![]) h![] h![] h![self, other])
     (fun r : Bool => ⟦r ↔ self = other⟧) := by
   resolve_trait
   steps
@@ -361,54 +356,1157 @@ end Eq
 
 namespace Ord
 
-/--
-Convert a Lean ordering into a Noir `std-1.0.0-beta.12::cmp::Ordering`.
+set_option Lampe.pp.Expr true
+set_option Lampe.pp.STHoare true
 
-We recommend providng the user with `std-1.0.0-beta.12::cmp::Ordering`s at the boundary of the theorem for any
+abbrev NoirOrdering := «std-1.0.0-beta.12::cmp::Ordering».tp h![]
+
+/-- A shorthand for a call to the `std::cmp::Ord::cmp` method. -/
+@[reducible]
+def cmp {p}
+    (generics : HList Kind.denote «std-1.0.0-beta.12::cmp::Ord».«#genericKinds»)
+    (Self : Tp)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::cmp::Ord».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::cmp::Ord».cmp.«#genericKinds»)
+  : HList (Tp.denote p)
+      («std-1.0.0-beta.12::cmp::Ord».cmp.«#inputs» generics Self associatedTypes fnGenerics)
+  → Expr (Tp.denote p)
+      («std-1.0.0-beta.12::cmp::Ord».cmp.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.12::cmp::Ord».cmp generics Self associatedTypes fnGenerics
+
+/--
+Convert a Lean ordering into a Noir `std::cmp::Ordering`.
+
+We recommend providng the user with `std::cmp::Ordering`s at the boundary of the theorem for any
 ordering values 'created' by the theorem.
 -/
 @[reducible]
-def fromOrdering {p} : Ordering → («std-1.0.0-beta.12::cmp::Ordering».tp h![] |>.denote p)
+def fromOrdering {p} : Ordering → (NoirOrdering.denote p)
 | .lt => (0, ())
 | .eq => (1, ())
 | .gt => (2, ())
 
+theorem fO_inj {p} : ∀a1 a2, @fromOrdering p a1 = fromOrdering a2 → a1 = a2 := by
+  intros a1 a2 h
+
+  have : (0 : Tp.field.denote p) ≠ 2 := by
+    apply Ne.symm (Ring.two_ne_zero _)
+    simp only [Tp.denote, Fp, ZMod.ringChar_zmod_n, Prime.natVal]
+    intro
+    linarith [p.prop.2]
+
+  have : (2 : Tp.field.denote p) ≠ 1 := by
+    intro h
+    apply sub_eq_zero_of_eq at h
+    norm_num at h
+
+  cases a1 <;> cases a2 <;> {
+    simp only [fromOrdering] at h
+    try injection h
+    simp_all
+  }
+
+theorem fromOrdering_inj {p} : Function.Injective (fromOrdering (p := p)) := by
+  intros a1 a2 h
+
+  have : (0 : Tp.field.denote p) ≠ 2 := by
+    apply Ne.symm (Ring.two_ne_zero _)
+    simp only [Tp.denote, Fp, ZMod.ringChar_zmod_n, Prime.natVal]
+    intro
+    linarith [p.prop.2]
+
+  have : (2 : Tp.field.denote p) ≠ 1 := by
+    intro h
+    apply sub_eq_zero_of_eq at h
+    norm_num at h
+
+  cases a1 <;> cases a2 <;> {
+    simp only [fromOrdering] at h
+    try injection h
+    simp_all
+  }
+
+@[simp]
+lemma fromOrdering_eq_eq_iff {p} {o} : @fromOrdering p o = fromOrdering .eq ↔ o = .eq := by
+  cases o
+  · simp only [fromOrdering, reduceCtorEq, iff_false]
+    intro hp
+    injection hp
+    simp_all
+  · simp only [fromOrdering, reduceCtorEq, iff_true]
+  · simp only [fromOrdering, reduceCtorEq, iff_false]
+    intro hp
+    injection hp with hp
+    apply sub_eq_zero_of_eq at hp
+    norm_num at hp
+
 /--
 Convert a Noir `std-1.0.0-beta.12::cmp::Ordering` into a Lean ordering.
 
-We recommend converting user-provided `std-1.0.0-beta.12::cmp::Ordering`s from the user, and converting them
-within the theorem.
+We recommend converting user-provided `std-1.0.0-beta.12::cmp::Ordering`s from the user, and
+converting them within the theorem.
 
-Note that in order to ensure that `toOrdering` is total,
+Note that in order to ensure that `toOrdering` is total, we calculate the input field element that
+represents the ordering modulo three.
 -/
-def toOrdering {p} : («std-1.0.0-beta.12::cmp::Ordering».tp h![] |>.denote p) → Ordering
+def toOrdering {p} : (NoirOrdering.denote p) → Ordering
 | (n, ()) => match (n.cast : ZMod 3) with
   | 0 => .lt
   | 1 => .eq
   | 2 => .gt
 
-theorem less_spec {p} : STHoare p env ⟦⟧
-  («std-1.0.0-beta.12::cmp::Ordering::less».call h![] h![])
-  (fun r => r = fromOrdering .lt) := by
+/-- Asserts that the provided `tp` has an implementation of `std::cmp::Ord` in the environment. -/
+@[reducible]
+def hasOrdImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::cmp::Ord».hasImpl env h![] tp
+
+/--
+A shorthand of the pure semantics for calling an embedded function implementing the ordering
+comparison between two `tp`s.
+-/
+@[reducible]
+def pureOrdSemantics {p} {tp : Tp} (env : Env) (emb : (Tp.comparator p) tp) (a b : Tp.denote p tp) :=
+  STHoare p env ⟦⟧ (cmp h![] tp h![] h![] h![a, b]) (fun r => r = fromOrdering (emb a b))
+
+theorem less_spec {p}
+  : STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::cmp::Ordering::less».call h![] h![])
+    (fun r => r = fromOrdering .lt) := by
   enter_decl
   steps
   subst_vars
   simp
 
-theorem equal_spec {p} : STHoare p env ⟦⟧
-  («std-1.0.0-beta.12::cmp::Ordering::equal».call h![] h![])
-  (fun r => r = fromOrdering .eq) := by
+theorem equal_spec {p}
+  : STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::cmp::Ordering::equal».call h![] h![])
+    (fun r => r = fromOrdering .eq) := by
   enter_decl
   steps
   subst_vars
   simp
 
-theorem greater_spec {p} : STHoare p env ⟦⟧
-  («std-1.0.0-beta.12::cmp::Ordering::greater».call h![] h![])
-  (fun r => r = fromOrdering .gt) := by
+theorem greater_spec {p}
+  : STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::cmp::Ordering::greater».call h![] h![])
+    (fun r => r = fromOrdering .gt) := by
   enter_decl
   steps
   subst_vars
   simp
+
+theorem u128_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.u 128) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem u64_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.u 64) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem u32_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.u 32) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem u16_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.u 16) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem u8_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.u 8) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem i8_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.i 8) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem i16_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.i 16) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem i32_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.i 32) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem i64_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] (.i 64) h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    steps [less_spec]
+    subst_vars; congr 1
+    simp_all [compare, compareOfLessAndEq]
+  · intro
+    steps
+    apply STHoare.ite_intro
+    · intro
+      steps [greater_spec]
+      subst_vars; congr 1
+      simp_all only [decide_eq_false_iff_not, BitVec.not_lt, gt_iff_lt, decide_eq_true_eq, compare,
+        compareOfLessAndEq]
+      rename_i leq lt
+
+      have h1 : ¬(self = other) := by
+        by_contra! h
+        subst h
+        simp_all only [BitVec.le_refl, BitVec.lt_irrefl]
+
+      have h2 : ¬(self < other) := by simp_all
+
+      simp_all
+    · intro
+      steps [equal_spec]
+      subst_vars; congr 1
+      simp_all [compare, compareOfLessAndEq]
+
+      have h1 : self = other := by
+        rename_i a b
+        apply BitVec.le_antisymm b a
+
+      have h2 : ¬(self < other) := by
+        simp_all
+
+      simp_all
+
+theorem unit_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] .unit h![] h![] h![self, other])
+    (fun r => r = fromOrdering (.eq)) := by
+  resolve_trait
+  steps [equal_spec]
+  simp_all
+
+theorem bool_ord_spec {p self other}
+  : STHoare p env ⟦⟧
+    (cmp h![] .bool h![] h![] h![self, other])
+    (fun r => r = fromOrdering (compare self other)) := by
+  resolve_trait
+  steps
+  apply STHoare.ite_intro
+  · intro
+    apply STHoare.ite_intro
+    · intro
+      steps [equal_spec]
+      simp_all
+    · intro
+      steps [greater_spec]
+      subst_vars
+      congr
+  · intro
+    apply STHoare.ite_intro
+    · intro
+      steps [less_spec]
+      subst_vars
+      congr
+    · intro
+      steps [equal_spec]
+      subst_vars
+      congr
+
+-- TODO Array
+
+theorem slice_ord_pure_spec {p T a b}
+    {t_ord : hasOrdImpl env T}
+    {t_ord_emb : Tp.comparator p T}
+    {t_ord_f : ∀a b, STHoare p env ⟦⟧ 
+      (cmp h![] T h![] h![] h![a, b]) 
+      (fun r => r = fromOrdering (t_ord_emb a b))}
+  : STHoare p env ⟦⟧
+    (cmp h![] T.slice h![] h![] h![a, b])
+    (fun r => r = fromOrdering (List.compareWith t_ord_emb a b)) := by
+  resolve_trait
+  steps
+
+  step_as (⟦⟧) (fun r => r = if self_len < other_len then self_len else other_len)
+  · apply STHoare.ite_intro <;> {
+      intro
+      steps
+      simp_all
+    }
+
+  steps [equal_spec]
+
+  loop_inv nat fun i hlo hhi => ∃∃v, [result ↦ ⟨NoirOrdering, v⟩]
+    ⋆ (v = fromOrdering (List.compareWith t_ord_emb (a.take i) (b.take i)))
+  · sl; simp
+  · simp
+  · intro i hlo hhi
+    steps [equal_spec, Eq.ordering_eq_spec]
+
+    apply STHoare.ite_intro
+    · intro cond
+      steps [t_ord_f]
+      simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
+        zero_le, true_iff, Lens.modify, Builtin.instCastTpU, BitVec.natCast_eq_ofNat,
+        BitVec.ofNat_toNat, BitVec.setWidth_eq, BitVec.toNat_ofNatLT, List.get_eq_getElem,
+        Option.get_some]
+
+      congr 1
+      rename_i init_eq
+      repeat rw [List.take_succ_eq_append_getElem]
+      any_goals 
+        simp_all only [Lens.modify, BitVec.natCast_eq_ofNat, Option.isSome_some]
+        simp_all only [Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, 
+          BitVec.setWidth_eq, BitVec.toNat_ofNatLT]
+
+      generalize a.take i = a_init at *
+      generalize b.take i = b_init at *
+
+      sorry
+
+    · sorry
+
+  all_goals sorry
+
+  -- loop_inv nat fun i hlo hhi => ∃∃v, [result ↦ ⟨NoirOrdering, v⟩]
+  --   ⋆ (v = fromOrdering (List.compareWith t_ord_emb (a.take i) (b.take i)))
+  -- · sl
+  --   simp [List.compareWith]
+  -- · simp
+  -- · intro i hlo hhi
+  --   steps [equal_spec, Eq.ordering_eq_spec]
+  --   
+  --   apply STHoare.ite_intro
+  --   · intro cond
+  --     steps [t_ord_f]
+  --     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
+  --       zero_le, true_iff, Lens.modify, Builtin.instCastTpU, BitVec.natCast_eq_ofNat,
+  --       BitVec.ofNat_toNat, BitVec.setWidth_eq, BitVec.toNat_ofNatLT, List.get_eq_getElem,
+  --       Option.get_some]
+  --
+  --     congr 1
+  --     rename_i init_eq
+  --     repeat rw [List.take_succ_eq_append_getElem]
+  --     rotate_left
+  --     any_goals 
+  --       simp_all only [Lens.modify, BitVec.natCast_eq_ofNat, Option.isSome_some]
+  --       simp_all only [Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, 
+  --         BitVec.setWidth_eq, BitVec.toNat_ofNatLT]
+  --
+  --     generalize a.take i = a_init at *
+  --     generalize b.take i = b_init at *
+  --
+  --     have h : List.compareWith t_ord_emb a_init b_init = .eq := by
+  --       apply fromOrdering_inj at init_eq
+  --       simp_all
+  --
+  --     rw [←List.compareWith_append_of_init_eq_eq t_ord_emb h]
+  --   · intro cond
+  --     steps
+  --     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
+  --       zero_le, Bool.false_eq_true, false_iff]
+  --     congr 1
+  --     rename_i init_ne_eq
+  --     repeat rw [List.take_succ_eq_append_getElem]
+  --     rotate_left
+  --     · split at hhi
+  --       · rename_i bounds
+  --         simp_all only [instLTBitVec]
+  --         apply lt_trans hhi bounds
+  --       · simp_all
+  --     · subst_vars
+  --       split at hhi
+  --       · simp_all
+  --       · rename_i bounds
+  --         simp only [bitvec_to_nat] at *
+  --         simp_all only [BitVec.toNat_ofNatLT, not_lt]
+  --         apply lt_of_lt_of_le hhi bounds
+  --
+  --     generalize a.take i = a_init at *
+  --     generalize b.take i = b_init at *
+  --
+  --     have h : List.compareWith t_ord_emb a_init b_init ≠ .eq := 
+  --       fun e => init_ne_eq (congrArg fromOrdering e)
+  --
+  --     rw [←List.compareWith_append_of_init_ne_eq t_ord_emb h]
+  --
+  -- steps [equal_spec, Eq.ordering_eq_spec]
+  -- · exact ()
+  --
+  -- apply STHoare.ite_intro
+  -- · intro cond
+  --   steps
+  --   simp_all
+  --   sorry
+  -- · intro cond
+  --   steps [u32_ord_spec]
+  --   rename_i a
+  --   subst a
+  --   congr
+  --   simp only [Bool.not_eq_eq_eq_not, Bool.not_false] at cond
+  --   
+  --   have h : min_len.toNat = List.minLen a b := by
+  --     subst min_len
+  --     unfold List.minLen
+  --     subst self_len other_len
+  --
+  --
+  --
+  --     sorry
+  --
+  --
+  --   sorry
+  --
+  -- all_goals sorry
+
+-- theorem tuple2_ord_pure_spec {p A B self other}
+--     {A_ord : hasOrdImpl env A}
+--     {B_ord : hasOrdImpl env B}
+--     {A_ord_emb : Tp.comparator p A}
+--     {B_ord_emb : Tp.comparator p B}
+--     {A_ord_f : ∀a b, pureOrdSemantics env A_ord_emb a b}
+--     {B_ord_f : ∀a b, pureOrdSemantics env B_ord_emb a b}
+--   : STHoare p env ⟦⟧
+--     (cmp h![] (Tp.tuple none [A, B]) h![] h![] h![self, other])
+--     (fun r => r = fromOrdering (Tuple.compare h![A_ord_emb, B_ord_emb] self other)) := by
+--   resolve_trait
+--
+--   steps [A_ord_f, equal_spec, Eq.ordering_eq_spec]
+--   · exact ()
+--
+--   apply STHoare.ite_intro
+--   · intro
+--     simp_all only [Bool.not_eq_eq_eq_not, Bool.not_true, Bool.false_eq_true, false_iff]
+--     steps
+--     subst_vars
+--     rename_i a
+--     have h : A_ord_emb self.1 other.1 ≠ .eq := fun eq => a (congrArg fromOrdering eq)
+--     congr 1
+--     unfold Tuple.compare
+--     simp_all
+--   · intro
+--     steps [B_ord_f]
+--     simp_all only [Bool.not_eq_eq_eq_not, Bool.not_false, iff_true]
+--     rename_i a _
+--     apply fromOrdering_inj at a
+--     congr 1
+--     unfold Tuple.compare
+--     simp_all only
+--     apply Eq.symm
+--     apply Tuple.compare_singleton
+--
+-- theorem tuple3_ord_pure_spec {p A B C self other}
+--     {A_ord : hasOrdImpl env A}
+--     {B_ord : hasOrdImpl env B}
+--     {C_ord : hasOrdImpl env C}
+--     {A_ord_emb : Tp.comparator p A}
+--     {B_ord_emb : Tp.comparator p B}
+--     {C_ord_emb : Tp.comparator p C}
+--     {A_ord_f : ∀a b, pureOrdSemantics env A_ord_emb a b}
+--     {B_ord_f : ∀a b, pureOrdSemantics env B_ord_emb a b}
+--     {C_ord_f : ∀a b, pureOrdSemantics env C_ord_emb a b}
+--   : STHoare p env ⟦⟧
+--     (cmp h![] (Tp.tuple none [A, B, C]) h![] h![] h![self, other])
+--     (fun r => r = fromOrdering (Tuple.compare h![A_ord_emb, B_ord_emb, C_ord_emb] self other)) := by
+--   resolve_trait
+--
+--   let currentCmp := h![A_ord_emb]
+--   let currentSelfInit := Tuple.mk h![self.1]
+--   let currentSelfTail := self.2
+--   let currentOtherInit := Tuple.mk h![other.1]
+--   let currentOtherTail := other.2
+--
+--   steps [equal_spec, Eq.ordering_eq_spec]
+--
+--   step_as (⟦⟧) (fun r => r = fromOrdering (Tuple.compare currentCmp currentSelfInit currentOtherInit))
+--   · steps [A_ord_f]
+--     rw [Tuple.compare_singleton]
+--     assumption
+--
+--   steps [equal_spec, Eq.ordering_eq_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [
+--       result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp B_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩
+--     ])
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [B_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq]
+--       assumption
+--
+--   let currentCmp := HList.snoc currentCmp B_ord_emb
+--   let currentSelfInit := Tuple.snoc currentSelfInit currentSelfTail.1
+--   let currentSelfTail := currentSelfTail.2
+--   let currentOtherInit := Tuple.snoc currentOtherInit currentOtherTail.1
+--   let currentOtherTail := currentOtherTail.2
+--
+--   steps [Eq.ordering_eq_spec, equal_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp C_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩])
+--
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [C_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq (ordA := C_ord_emb)]
+--       assumption
+--
+--   steps
+--   subst_vars
+--   rfl
+--
+-- theorem tuple4_ord_pure_spec {p A B C D self other}
+--     {A_ord : hasOrdImpl env A}
+--     {B_ord : hasOrdImpl env B}
+--     {C_ord : hasOrdImpl env C}
+--     {D_ord : hasOrdImpl env D}
+--     {A_ord_emb : Tp.comparator p A}
+--     {B_ord_emb : Tp.comparator p B}
+--     {C_ord_emb : Tp.comparator p C}
+--     {D_ord_emb : Tp.comparator p D}
+--     {A_ord_f : ∀a b, pureOrdSemantics env A_ord_emb a b}
+--     {B_ord_f : ∀a b, pureOrdSemantics env B_ord_emb a b}
+--     {C_ord_f : ∀a b, pureOrdSemantics env C_ord_emb a b}
+--     {D_ord_f : ∀a b, pureOrdSemantics env D_ord_emb a b}
+--   : STHoare p env ⟦⟧
+--     (cmp h![] (Tp.tuple none [A, B, C, D]) h![] h![] h![self, other])
+--     (fun r => r = fromOrdering 
+--       (Tuple.compare h![A_ord_emb, B_ord_emb, C_ord_emb, D_ord_emb] self other)) := by
+--   resolve_trait
+--
+--   let currentCmp := h![A_ord_emb]
+--   let currentSelfInit := Tuple.mk h![self.1]
+--   let currentSelfTail := self.2
+--   let currentOtherInit := Tuple.mk h![other.1]
+--   let currentOtherTail := other.2
+--
+--   steps [equal_spec, Eq.ordering_eq_spec]
+--
+--   step_as (⟦⟧) (fun r => r = fromOrdering (Tuple.compare currentCmp currentSelfInit currentOtherInit))
+--   · steps [A_ord_f]
+--     rw [Tuple.compare_singleton]
+--     assumption
+--
+--   steps [equal_spec, Eq.ordering_eq_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [
+--       result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp B_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩
+--     ])
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [B_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq]
+--       assumption
+--
+--   let currentCmp := HList.snoc currentCmp B_ord_emb
+--   let currentSelfInit := Tuple.snoc currentSelfInit currentSelfTail.1
+--   let currentSelfTail := currentSelfTail.2
+--   let currentOtherInit := Tuple.snoc currentOtherInit currentOtherTail.1
+--   let currentOtherTail := currentOtherTail.2
+--
+--   steps [Eq.ordering_eq_spec, equal_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp C_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩])
+--
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [C_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq (ordA := C_ord_emb)]
+--       assumption
+--
+--   let currentCmp := HList.snoc currentCmp C_ord_emb
+--   let currentSelfInit := Tuple.snoc currentSelfInit currentSelfTail.1
+--   let currentSelfTail := currentSelfTail.2
+--   let currentOtherInit := Tuple.snoc currentOtherInit currentOtherTail.1
+--   let currentOtherTail := currentOtherTail.2
+--
+--   steps [Eq.ordering_eq_spec, equal_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp D_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩])
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [D_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq (ordA := D_ord_emb)]
+--       assumption
+--
+--   steps
+--   subst_vars
+--   rfl
+--
+-- set_option maxHeartbeats 300000 in
+-- theorem tuple5_ord_pure_spec {p A B C D E self other}
+--     {A_ord : hasOrdImpl env A}
+--     {B_ord : hasOrdImpl env B}
+--     {C_ord : hasOrdImpl env C}
+--     {D_ord : hasOrdImpl env D}
+--     {E_ord : hasOrdImpl env E}
+--     {A_ord_emb : Tp.comparator p A}
+--     {B_ord_emb : Tp.comparator p B}
+--     {C_ord_emb : Tp.comparator p C}
+--     {D_ord_emb : Tp.comparator p D}
+--     {E_ord_emb : Tp.comparator p E}
+--     {A_ord_f : ∀a b, pureOrdSemantics env A_ord_emb a b}
+--     {B_ord_f : ∀a b, pureOrdSemantics env B_ord_emb a b}
+--     {C_ord_f : ∀a b, pureOrdSemantics env C_ord_emb a b}
+--     {D_ord_f : ∀a b, pureOrdSemantics env D_ord_emb a b}
+--     {E_ord_f : ∀a b, pureOrdSemantics env E_ord_emb a b}
+--   : STHoare p env ⟦⟧
+--     (cmp h![] (Tp.tuple none [A, B, C, D, E]) h![] h![] h![self, other])
+--     (fun r => r = fromOrdering 
+--       (Tuple.compare h![A_ord_emb, B_ord_emb, C_ord_emb, D_ord_emb, E_ord_emb] self other)) := by
+--   resolve_trait
+--
+--   let currentCmp := h![A_ord_emb]
+--   let currentSelfInit := Tuple.mk h![self.1]
+--   let currentSelfTail := self.2
+--   let currentOtherInit := Tuple.mk h![other.1]
+--   let currentOtherTail := other.2
+--
+--   steps [equal_spec, Eq.ordering_eq_spec]
+--
+--   step_as (⟦⟧) (fun r => r = fromOrdering (Tuple.compare currentCmp currentSelfInit currentOtherInit))
+--   · steps [A_ord_f]
+--     rw [Tuple.compare_singleton]
+--     assumption
+--
+--   steps [equal_spec, Eq.ordering_eq_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [
+--       result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp B_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩
+--     ])
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [B_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq]
+--       assumption
+--
+--   let currentCmp := HList.snoc currentCmp B_ord_emb
+--   let currentSelfInit := Tuple.snoc currentSelfInit currentSelfTail.1
+--   let currentSelfTail := currentSelfTail.2
+--   let currentOtherInit := Tuple.snoc currentOtherInit currentOtherTail.1
+--   let currentOtherTail := currentOtherTail.2
+--
+--   steps [Eq.ordering_eq_spec, equal_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp C_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩])
+--
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [C_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq (ordA := C_ord_emb)]
+--       assumption
+--
+--   let currentCmp := HList.snoc currentCmp C_ord_emb
+--   let currentSelfInit := Tuple.snoc currentSelfInit currentSelfTail.1
+--   let currentSelfTail := currentSelfTail.2
+--   let currentOtherInit := Tuple.snoc currentOtherInit currentOtherTail.1
+--   let currentOtherTail := currentOtherTail.2
+--
+--   steps [Eq.ordering_eq_spec, equal_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp D_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩])
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [D_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq (ordA := D_ord_emb)]
+--       assumption
+--
+--   let currentCmp := HList.snoc currentCmp D_ord_emb
+--   let currentSelfInit := Tuple.snoc currentSelfInit currentSelfTail.1
+--   let currentSelfTail := currentSelfTail.2
+--   let currentOtherInit := Tuple.snoc currentOtherInit currentOtherTail.1
+--   let currentOtherTail := currentOtherTail.2
+--
+--   steps [Eq.ordering_eq_spec, equal_spec]
+--
+--   step_as
+--     ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+--     (fun _ => [result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp E_ord_emb)
+--         (Tuple.snoc currentSelfInit currentSelfTail.1)
+--         (Tuple.snoc currentOtherInit currentOtherTail.1)⟩])
+--   · apply STHoare.ite_intro
+--     · intro
+--       steps [E_ord_f]
+--       simp_all only [true_iff, Lens.modify, Option.get_some]
+--       congr
+--       rw [Tuple.compare_snoc_of_init_eq_eq]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       assumption
+--     · intro
+--       steps
+--       simp_all only [Bool.false_eq_true, false_iff]
+--       rw [fromOrdering_eq_eq_iff] at *
+--       congr 2
+--       rw [Tuple.compare_snoc_of_init_ne_eq (ordA := E_ord_emb)]
+--       assumption
+--
+--   steps
+--   subst_vars
+--   rfl
+--
+-- theorem max_pure_spec {p T v1 v2}
+--     {T_ord : hasOrdImpl env T}
+--     {T_ord_emb : Tp.comparator p T}
+--     {T_ord_f : ∀a b, pureOrdSemantics env T_ord_emb a b}
+--   : STHoare p env ⟦⟧
+--     («std-1.0.0-beta.12::cmp::max».call h![T] h![v1, v2])
+--     (fun r => r = if T_ord_emb v1 v2 = .gt then v1 else v2) := by
+--   enter_decl
+--   step_as (⟦⟧) (fun r : Bool => r = (T_ord_emb v1 v2 = .gt))
+--   · steps [T_ord_f, greater_spec, Eq.ordering_eq_spec]
+--     generalize T_ord_emb v1 v2 = t_ord at *
+--     cases t_ord
+--     case h₁.a.gt => simp_all
+--     all_goals 
+--       simp_all only [reduceCtorEq, eq_iff_iff, iff_false]
+--       by_contra h
+--       apply fromOrdering_inj at h
+--       simp at h
+--
+--   apply STHoare.ite_intro
+--   all_goals
+--     intro
+--     steps
+--     simp_all
+--
+-- theorem min_pure_spec {p T v1 v2}
+--     {T_ord : hasOrdImpl env T}
+--     {T_ord_emb : Tp.comparator p T}
+--     {T_ord_f : ∀a b, pureOrdSemantics env T_ord_emb a b}
+--   : STHoare p env ⟦⟧
+--     («std-1.0.0-beta.12::cmp::min».call h![T] h![v1, v2])
+--     (fun r => r = if T_ord_emb v1 v2 = .gt then v2 else v1) := by
+--   enter_decl
+--   step_as (⟦⟧) (fun r : Bool => r = (T_ord_emb v1 v2 = .gt))
+--   · steps [T_ord_f, greater_spec, Eq.ordering_eq_spec]
+--     generalize T_ord_emb v1 v2 = t_ord at *
+--     cases t_ord
+--     case h₁.a.gt => simp_all
+--     all_goals 
+--       simp_all only [reduceCtorEq, eq_iff_iff, iff_false]
+--       by_contra h
+--       apply fromOrdering_inj at h
+--       simp at h
+--
+--   apply STHoare.ite_intro
+--   all_goals
+--     intro
+--     steps
+--     simp_all
 
 end Ord
