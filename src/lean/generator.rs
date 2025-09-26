@@ -15,7 +15,7 @@ use itertools::Itertools;
 use nargo::workspace::Workspace;
 use noirc_errors::Location;
 use noirc_frontend::{
-    ast::{FunctionKind, Ident, IntegerBitSize},
+    ast::{BinaryOpKind, FunctionKind, Ident, IntegerBitSize},
     graph::CrateId,
     hir::{
         def_map::{LocalModuleId, ModuleData, ModuleDefId},
@@ -136,9 +136,16 @@ use crate::{
         },
         builtin::{
             self,
+            make_beq,
+            make_bor,
+            make_ordering_const,
+            make_ordering_type,
             BuiltinType,
             ASSERT_BUILTIN_NAME,
             MAKE_ARRAY_BUILTIN_NAME,
+            MAKE_EQUAL_NAME,
+            MAKE_GREATER_NAME,
+            MAKE_LESS_NAME,
             MAKE_REPEATED_ARRAY_BUILTIN_NAME,
             MAKE_REPEATED_SLICE_BUILTIN_NAME,
             MAKE_SLICE_BUILTIN_NAME,
@@ -1907,7 +1914,158 @@ impl LeanGenerator<'_, '_, '_> {
                 return_type: output_type.clone(),
             };
 
-            Expression::Call(call)
+            let direct_op_call = Expression::Call(call);
+
+            // Unfortunately, the Noir compiler does post-processing on these declarations
+            // to generate the correct operator behavior. We have to post-process in the
+            // case of specific operators to ensure we output the correct code.
+            //
+            // It happens for:
+            //
+            // - `std::cmp::Eq`: Where `!=` and `==` both refer to the method `eq`, but the
+            //   latter can be generated directly.
+            // - `std::cmp::Ord`: Where `<`, `>`, `<=`, `>=` all refer to the method `cmp`.
+            match infix.operator.kind {
+                BinaryOpKind::NotEqual => {
+                    // In this case, we simply have to negate the output of the equality operator.
+                    let negation_call_ref = Expression::BuiltinCallRef(BuiltinCallRef {
+                        name:        "bNot".to_string(),
+                        return_type: Type::bool(),
+                    });
+                    Expression::Call(Call {
+                        function:    Box::new(negation_call_ref),
+                        params:      vec![direct_op_call],
+                        return_type: Type::bool(),
+                    })
+                }
+                BinaryOpKind::Less => {
+                    // This can be done simply by comparing the output of `cmp` to the `less`
+                    // constant value.
+                    let make_greater_call = make_ordering_const(
+                        &self.crate_name(self.context.stdlib_crate_id()),
+                        MAKE_LESS_NAME,
+                    );
+                    make_beq(direct_op_call, make_greater_call)
+                }
+                BinaryOpKind::Greater => {
+                    // This can be done simply by comparing the output of `cmp` to the `greater`
+                    // constant value.
+                    let make_greater_call = make_ordering_const(
+                        &self.crate_name(self.context.stdlib_crate_id()),
+                        MAKE_GREATER_NAME,
+                    );
+                    make_beq(direct_op_call, make_greater_call)
+                }
+                BinaryOpKind::LessEqual => {
+                    // In this case we need to refer to the result of calling `cmp` twice, so we
+                    // have to assign it to a variable in a block.
+                    let stdlib_name = self.crate_name(self.context.stdlib_crate_id());
+                    let ordering_type = make_ordering_type(&stdlib_name);
+                    let cmp_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let cmp_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(direct_op_call),
+                    });
+
+                    let eq_to_less = make_beq(
+                        Expression::Ident(cmp_result_ident.clone()),
+                        make_ordering_const(&stdlib_name, MAKE_LESS_NAME),
+                    );
+                    let eq_to_less_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let eq_to_less_binding = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(eq_to_less_ident.clone()),
+                        typ:        Type::bool(),
+                        expression: Box::new(eq_to_less),
+                    });
+                    let eq_to_equal = make_beq(
+                        Expression::Ident(cmp_result_ident),
+                        make_ordering_const(&stdlib_name, MAKE_EQUAL_NAME),
+                    );
+                    let eq_to_equal_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let eq_to_equal_binding = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(eq_to_equal_ident.clone()),
+                        typ:        Type::bool(),
+                        expression: Box::new(eq_to_equal),
+                    });
+
+                    let return_expr = make_bor(
+                        Expression::Ident(eq_to_less_ident),
+                        Expression::Ident(eq_to_equal_ident),
+                    );
+
+                    Expression::Block(Block {
+                        statements: vec![cmp_result, eq_to_less_binding, eq_to_equal_binding],
+                        expression: Some(Box::new(return_expr)),
+                    })
+                }
+                BinaryOpKind::GreaterEqual => {
+                    // In this case we need to refer to the result of calling `cmp` twice, so we
+                    // have to assign it to a variable in a block.
+                    let stdlib_name = self.crate_name(self.context.stdlib_crate_id());
+                    let ordering_type = make_ordering_type(&stdlib_name);
+                    let cmp_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let cmp_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(direct_op_call),
+                    });
+
+                    let eq_to_greater = make_beq(
+                        Expression::Ident(cmp_result_ident.clone()),
+                        make_ordering_const(&stdlib_name, MAKE_GREATER_NAME),
+                    );
+                    let eq_to_greater_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let eq_to_greater_binding = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(eq_to_greater_ident.clone()),
+                        typ:        Type::bool(),
+                        expression: Box::new(eq_to_greater),
+                    });
+                    let eq_to_equal = make_beq(
+                        Expression::Ident(cmp_result_ident),
+                        make_ordering_const(&stdlib_name, MAKE_EQUAL_NAME),
+                    );
+                    let eq_to_equal_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let eq_to_equal_binding = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(eq_to_equal_ident.clone()),
+                        typ:        Type::bool(),
+                        expression: Box::new(eq_to_equal),
+                    });
+
+                    let return_expr = make_bor(
+                        Expression::Ident(eq_to_greater_ident),
+                        Expression::Ident(eq_to_equal_ident),
+                    );
+
+                    Expression::Block(Block {
+                        statements: vec![cmp_result, eq_to_greater_binding, eq_to_equal_binding],
+                        expression: Some(Box::new(return_expr)),
+                    })
+                }
+                _ => {
+                    // In all other cases, we just return the direct operator call as we have
+                    // already generated it
+                    direct_op_call
+                }
+            }
         }
     }
 

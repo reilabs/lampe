@@ -22,6 +22,7 @@ import Stdlib.Option
 import Stdlib.Panic
 import Stdlib.Slice
 import Stdlib.String
+import Stdlib.Tuple
 
 import «std-1.0.0-beta.12».Extracted
 
