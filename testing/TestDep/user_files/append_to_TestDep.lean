@@ -2,7 +2,7 @@ open Lampe
 
 theorem t1 {lp}: STHoare lp «GitDep-0.0.0».env (⟦⟧)
     («GitDep-0.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep" := by
+      fun output => output = .of "hello-git-dep" := by
   enter_decl
   steps []
   subst_vars
@@ -10,7 +10,7 @@ theorem t1 {lp}: STHoare lp «GitDep-0.0.0».env (⟦⟧)
 
 theorem t2 {lp}: STHoare lp «GitDep-0.0.0».env (⟦⟧)
     («GitDep-0.0.0::hello_git_dep».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep" := by
+      fun output => output = .of "hello-git-dep" := by
   enter_decl
   steps []
   subst_vars
@@ -18,7 +18,7 @@ theorem t2 {lp}: STHoare lp «GitDep-0.0.0».env (⟦⟧)
 
 theorem t3 {lp}: STHoare lp «GitDep-1.0.0».env (⟦⟧)
     («GitDep-1.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-v1" := by
+      fun output => output = .of "hello-git-dep-v1" := by
   enter_decl
   steps []
   subst_vars
@@ -26,7 +26,7 @@ theorem t3 {lp}: STHoare lp «GitDep-1.0.0».env (⟦⟧)
 
 theorem t4 {lp}: STHoare lp «GitDep-1.0.0».env (⟦⟧)
   («GitDep-1.0.0::hello_git_dep_v1».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-v1" := by
+      fun output => output = .of "hello-git-dep-v1" := by
   enter_decl
   steps []
   subst_vars
@@ -34,7 +34,7 @@ theorem t4 {lp}: STHoare lp «GitDep-1.0.0».env (⟦⟧)
 
 theorem t5 {lp}: STHoare lp «GitDep-2.0.0».env (⟦⟧)
   («GitDep-2.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-v2" := by
+      fun output => output = .of "hello-git-dep-v2" := by
   enter_decl
   steps []
   subst_vars
@@ -42,7 +42,7 @@ theorem t5 {lp}: STHoare lp «GitDep-2.0.0».env (⟦⟧)
 
 theorem t6 {lp}: STHoare lp «GitDep-2.0.0».env (⟦⟧)
   («GitDep-2.0.0::hello_git_dep_v2».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-v2" := by
+      fun output => output = .of "hello-git-dep-v2" := by
   enter_decl
   steps []
   subst_vars
@@ -50,7 +50,7 @@ theorem t6 {lp}: STHoare lp «GitDep-2.0.0».env (⟦⟧)
 
 theorem t11 {lp}: STHoare lp «LocalDep-0.0.0».env (⟦⟧)
   («LocalDep-0.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep" := by
+      fun output => output = .of "hello-local-dep" := by
   enter_decl
   steps []
   subst_vars
@@ -58,7 +58,7 @@ theorem t11 {lp}: STHoare lp «LocalDep-0.0.0».env (⟦⟧)
 
 theorem t12 {lp}: STHoare lp «LocalDep-0.0.0».env (⟦⟧)
   («LocalDep-0.0.0::hello_local_dep».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep" := by
+      fun output => output = .of "hello-local-dep" := by
   enter_decl
   steps []
   subst_vars
@@ -66,7 +66,7 @@ theorem t12 {lp}: STHoare lp «LocalDep-0.0.0».env (⟦⟧)
 
 theorem t13 {lp}: STHoare lp «LocalDep-1.0.0».env (⟦⟧)
   («LocalDep-1.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-v1" := by
+      fun output => output = .of "hello-local-dep-v1" := by
   enter_decl
   steps []
   subst_vars
@@ -74,7 +74,7 @@ theorem t13 {lp}: STHoare lp «LocalDep-1.0.0».env (⟦⟧)
 
 theorem t14 {lp}: STHoare lp «LocalDep-1.0.0».env (⟦⟧)
   («LocalDep-1.0.0::hello_local_dep_v1».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-v1" := by
+      fun output => output = .of "hello-local-dep-v1" := by
   enter_decl
   steps []
   subst_vars
@@ -82,7 +82,7 @@ theorem t14 {lp}: STHoare lp «LocalDep-1.0.0».env (⟦⟧)
 
 theorem t15 {lp}: STHoare lp «LocalDep-2.0.0».env (⟦⟧)
   («LocalDep-2.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-v2" := by
+      fun output => output = .of "hello-local-dep-v2" := by
   enter_decl
   steps []
   subst_vars
@@ -90,7 +90,7 @@ theorem t15 {lp}: STHoare lp «LocalDep-2.0.0».env (⟦⟧)
 
 theorem t16 {lp}: STHoare lp «LocalDep-2.0.0».env (⟦⟧)
   («LocalDep-2.0.0::hello_local_dep_v2».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-v2" := by
+      fun output => output = .of "hello-local-dep-v2" := by
   enter_decl
   steps []
   subst_vars
@@ -99,7 +99,7 @@ theorem t16 {lp}: STHoare lp «LocalDep-2.0.0».env (⟦⟧)
 
 theorem t21 {lp}: STHoare lp «GitDepWithLampe-0.0.0».env (⟦⟧)
   («GitDepWithLampe-0.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-with-lampe" := by
+      fun output => output = .of "hello-git-dep-with-lampe" := by
   enter_decl
   steps []
   subst_vars
@@ -107,7 +107,7 @@ theorem t21 {lp}: STHoare lp «GitDepWithLampe-0.0.0».env (⟦⟧)
 
 theorem t22 {lp}: STHoare lp «GitDepWithLampe-0.0.0».env (⟦⟧)
   («GitDepWithLampe-0.0.0::hello_git_dep_with_lampe».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-with-lampe" := by
+      fun output => output = .of "hello-git-dep-with-lampe" := by
   enter_decl
   steps []
   subst_vars
@@ -115,7 +115,7 @@ theorem t22 {lp}: STHoare lp «GitDepWithLampe-0.0.0».env (⟦⟧)
 
 theorem t23 {lp}: STHoare lp «GitDepWithLampe-1.0.0».env (⟦⟧)
   («GitDepWithLampe-1.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-with-lampe-v1" := by
+      fun output => output = .of "hello-git-dep-with-lampe-v1" := by
   enter_decl
   steps []
   subst_vars
@@ -123,7 +123,7 @@ theorem t23 {lp}: STHoare lp «GitDepWithLampe-1.0.0».env (⟦⟧)
 
 theorem t24 {lp}: STHoare lp «GitDepWithLampe-1.0.0».env (⟦⟧)
   («GitDepWithLampe-1.0.0::hello_git_dep_with_lampe_v1».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-with-lampe-v1" := by
+      fun output => output = .of "hello-git-dep-with-lampe-v1" := by
   enter_decl
   steps []
   subst_vars
@@ -131,7 +131,7 @@ theorem t24 {lp}: STHoare lp «GitDepWithLampe-1.0.0».env (⟦⟧)
 
 theorem t25 {lp}: STHoare lp «GitDepWithLampe-2.0.0».env (⟦⟧)
   («GitDepWithLampe-2.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-with-lampe-v2" := by
+      fun output => output = .of "hello-git-dep-with-lampe-v2" := by
   enter_decl
   steps []
   subst_vars
@@ -139,7 +139,7 @@ theorem t25 {lp}: STHoare lp «GitDepWithLampe-2.0.0».env (⟦⟧)
 
 theorem t26 {lp}: STHoare lp «GitDepWithLampe-2.0.0».env (⟦⟧)
   («GitDepWithLampe-2.0.0::hello_git_dep_with_lampe_v2».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-git-dep-with-lampe-v2" := by
+      fun output => output = .of "hello-git-dep-with-lampe-v2" := by
   enter_decl
   steps []
   subst_vars
@@ -148,7 +148,7 @@ theorem t26 {lp}: STHoare lp «GitDepWithLampe-2.0.0».env (⟦⟧)
 
 theorem t31 {lp}: STHoare lp «LocalDepWithLampe-0.0.0».env (⟦⟧)
   («LocalDepWithLampe-0.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-with-lampe" := by
+      fun output => output = .of "hello-local-dep-with-lampe" := by
   enter_decl
   steps []
   subst_vars
@@ -156,7 +156,7 @@ theorem t31 {lp}: STHoare lp «LocalDepWithLampe-0.0.0».env (⟦⟧)
 
 theorem t32 {lp}: STHoare lp «LocalDepWithLampe-0.0.0».env (⟦⟧)
   («LocalDepWithLampe-0.0.0::hello_local_dep_with_lampe».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-with-lampe" := by
+      fun output => output = .of "hello-local-dep-with-lampe" := by
   enter_decl
   steps []
   subst_vars
@@ -164,7 +164,7 @@ theorem t32 {lp}: STHoare lp «LocalDepWithLampe-0.0.0».env (⟦⟧)
 
 theorem t33 {lp}: STHoare lp «LocalDepWithLampe-1.0.0».env (⟦⟧)
   («LocalDepWithLampe-1.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-with-lampe-v1" := by
+      fun output => output = .of "hello-local-dep-with-lampe-v1" := by
   enter_decl
   steps []
   subst_vars
@@ -172,7 +172,7 @@ theorem t33 {lp}: STHoare lp «LocalDepWithLampe-1.0.0».env (⟦⟧)
 
 theorem t34 {lp}: STHoare lp «LocalDepWithLampe-1.0.0».env (⟦⟧)
   («LocalDepWithLampe-1.0.0::hello_local_dep_with_lampe_v1».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-with-lampe-v1" := by
+      fun output => output = .of "hello-local-dep-with-lampe-v1" := by
   enter_decl
   steps []
   subst_vars
@@ -180,7 +180,7 @@ theorem t34 {lp}: STHoare lp «LocalDepWithLampe-1.0.0».env (⟦⟧)
 
 theorem t35 {lp}: STHoare lp «LocalDepWithLampe-2.0.0».env (⟦⟧)
   («LocalDepWithLampe-2.0.0::hello».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-with-lampe-v2" := by
+      fun output => output = .of "hello-local-dep-with-lampe-v2" := by
   enter_decl
   steps []
   subst_vars
@@ -188,7 +188,7 @@ theorem t35 {lp}: STHoare lp «LocalDepWithLampe-2.0.0».env (⟦⟧)
 
 theorem t36 {lp}: STHoare lp «LocalDepWithLampe-2.0.0».env (⟦⟧)
   («LocalDepWithLampe-2.0.0::hello_local_dep_with_lampe_v2».call h![] h![])
-      fun output => (String.mk output.toList) = "hello-local-dep-with-lampe-v2" := by
+      fun output => output = .of "hello-local-dep-with-lampe-v2" := by
   enter_decl
   steps []
   subst_vars
