@@ -13,4 +13,4 @@ noir_trait_impl[«ExtractionTests-0.0.0».impl_430]<> «ExtractionTests-0.0.0»:
 
 def «ExtractionTests-0.0.0».AssociatedType.env : Env := Env.mk
   []
-  [impl_430]
+  [«ExtractionTests-0.0.0».impl_430]

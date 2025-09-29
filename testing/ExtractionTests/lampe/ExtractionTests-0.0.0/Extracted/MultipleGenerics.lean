@@ -13,4 +13,4 @@ noir_trait_impl[«ExtractionTests-0.0.0».impl_434]<I: Type> «ExtractionTests-0
 
 def «ExtractionTests-0.0.0».MultipleGenerics.env : Env := Env.mk
   []
-  [impl_434]
+  [«ExtractionTests-0.0.0».impl_434]
