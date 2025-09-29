@@ -93,4 +93,4 @@ noir_trait_impl[«std-1.0.0-beta.12».impl_1]<> «std-1.0.0-beta.12»::default::
 
 def «std-1.0.0-beta.12».Hash.Poseidon2.env : Env := Env.mk
   [«std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::new», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::perform_duplex», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::absorb», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::squeeze», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash_internal»]
-  [impl_0, impl_1]
+  [«std-1.0.0-beta.12».impl_0, «std-1.0.0-beta.12».impl_1]

@@ -23,4 +23,4 @@ noir_def «std-1.0.0-beta.12»::«meta»::ctstring::test::as_quoted_str_example<
 
 def «std-1.0.0-beta.12».Meta.Ctstring.env : Env := Env.mk
   [«std-1.0.0-beta.12::meta::ctstring::test::as_quoted_str_example»]
-  [impl_292, impl_293]
+  [«std-1.0.0-beta.12».impl_292, «std-1.0.0-beta.12».impl_293]

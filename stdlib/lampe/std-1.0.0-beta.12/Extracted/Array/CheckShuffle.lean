@@ -73,4 +73,4 @@ noir_def «std-1.0.0-beta.12»::array::check_shuffle::test::test_shuffle_compoun
 
 def «std-1.0.0-beta.12».Array.CheckShuffle.env : Env := Env.mk
   [«std-1.0.0-beta.12::array::check_shuffle::__get_shuffle_indices», «std-1.0.0-beta.12::array::check_shuffle::__get_index», «std-1.0.0-beta.12::array::check_shuffle::check_shuffle», «std-1.0.0-beta.12::array::check_shuffle::test::test_shuffle», «std-1.0.0-beta.12::array::check_shuffle::test::test_shuffle_identity», «std-1.0.0-beta.12::array::check_shuffle::test::test_shuffle_fail», «std-1.0.0-beta.12::array::check_shuffle::test::test_shuffle_duplicates», «std-1.0.0-beta.12::array::check_shuffle::test::test_shuffle_compound_struct»]
-  [impl_23]
+  [«std-1.0.0-beta.12».impl_23]

@@ -189,4 +189,4 @@ noir_trait_impl[«std-1.0.0-beta.12».impl_76]<T: Type> «std-1.0.0-beta.12»::c
 
 def «std-1.0.0-beta.12».Option.env : Env := Env.mk
   [«std-1.0.0-beta.12::option::Option::none», «std-1.0.0-beta.12::option::Option::some», «std-1.0.0-beta.12::option::Option::is_none», «std-1.0.0-beta.12::option::Option::is_some», «std-1.0.0-beta.12::option::Option::unwrap», «std-1.0.0-beta.12::option::Option::unwrap_unchecked», «std-1.0.0-beta.12::option::Option::unwrap_or», «std-1.0.0-beta.12::option::Option::unwrap_or_else», «std-1.0.0-beta.12::option::Option::expect», «std-1.0.0-beta.12::option::Option::map», «std-1.0.0-beta.12::option::Option::map_or», «std-1.0.0-beta.12::option::Option::map_or_else», «std-1.0.0-beta.12::option::Option::and», «std-1.0.0-beta.12::option::Option::and_then», «std-1.0.0-beta.12::option::Option::or», «std-1.0.0-beta.12::option::Option::or_else», «std-1.0.0-beta.12::option::Option::xor», «std-1.0.0-beta.12::option::Option::filter», «std-1.0.0-beta.12::option::Option::flatten»]
-  [impl_73, impl_74, impl_75, impl_76]
+  [«std-1.0.0-beta.12».impl_73, «std-1.0.0-beta.12».impl_74, «std-1.0.0-beta.12».impl_75, «std-1.0.0-beta.12».impl_76]

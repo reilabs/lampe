@@ -17,4 +17,4 @@ noir_trait_impl[«std-1.0.0-beta.12».impl_77]<N: u32> «std-1.0.0-beta.12»::co
 
 def «std-1.0.0-beta.12».String.env : Env := Env.mk
   [«std-1.0.0-beta.12::string::as_bytes_vec»]
-  [impl_77]
+  [«std-1.0.0-beta.12».impl_77]
