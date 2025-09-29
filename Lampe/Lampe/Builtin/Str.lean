@@ -2,14 +2,16 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 /--
-Defines the conversion of strings of length `n` to a byte array of length `n`.
-Accordingly, we assume that the string has UTF-8 byte length of `n`.
+Defines the conversion of strings of length `N` to a byte array of length `N`.
 
-In Noir, this corresponds to `fn as_bytes(self) -> [u8; n]` implemented for `str<n>`.
+It is enforced that Noir strings are uninterpreted bytes, so the length `N` of a string is the
+number of bytes it contains, not the number of characters (regardless of the encoding).
+
+In Noir, this corresponds to `fn as_bytes(self: str<N>) -> [u8; N]`.
 -/
 def strAsBytes := newGenericPureBuiltin
   (fun n => ⟨[.str n], (.array (.u 8) n)⟩)
-  (fun n h![s] => ⟨s.toList.length = n.toNat,
-    fun h => .map (fun u => u.toNat) ⟨s.toList, h⟩⟩)
+  (fun n h![s] => ⟨s.length = n.toNat,
+    fun _ => s⟩)
 
 end Lampe.Builtin

@@ -18,7 +18,7 @@ structure TraitImplRef where
 
 inductive Expr (rep : Tp → Type) : Tp → Type where
 | litNum : (tp : Tp) → Int → Expr rep tp
-| litStr : (len : U 32) → FixedLenStr len.toNat → Expr rep (.str len)
+| litStr : (len : U 32) → NoirStr len.toNat → Expr rep (.str len)
 | constFp : Int → Expr rep .field
 | constU : U w → Expr rep (.u w)
 | fmtStr : (len : U 32) → (tps : Tp) → FormatString len tps → Expr rep (.fmtStr len tps)

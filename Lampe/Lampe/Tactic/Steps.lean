@@ -105,9 +105,21 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
 
         | ``Lampe.Builtin.fEq => return some (←``(genericTotalPureBuiltin_intro Builtin.fEq rfl (a := ())))
         | ``Lampe.Builtin.uEq => return some (←``(genericTotalPureBuiltin_intro Builtin.uEq rfl))
+        | ``Lampe.Builtin.iEq => return some (←``(genericTotalPureBuiltin_intro Builtin.iEq rfl))
 
         | ``Lampe.Builtin.uAdd => return some (←``(uAdd_intro))
         | ``Lampe.Builtin.uMul => return some (←``(uMul_intro))
+        | ``Lampe.Builtin.uDiv => return some (←``(uDiv_intro))
+        | ``Lampe.Builtin.uSub => return some (←``(uSub_intro))
+        | ``Lampe.Builtin.uRem => return some (←``(uRem_intro))
+
+        | ``Lampe.Builtin.iAdd => return some (←``(iAdd_intro))
+        | ``Lampe.Builtin.iMul => return some (←``(iMul_intro))
+        | ``Lampe.Builtin.iDiv => return some (←``(iDiv_intro))
+        | ``Lampe.Builtin.iSub => return some (←``(iSub_intro))
+        | ``Lampe.Builtin.iRem => return some (←``(iRem_intro))
+
+        | ``Lampe.Builtin.strAsBytes => return some (←``(strAsBytes_intro))
 
         -- Array builtins
         | ``Lampe.Builtin.mkArray =>

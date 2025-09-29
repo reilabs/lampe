@@ -278,7 +278,7 @@ theorem uEq_intro : STHoarePureBuiltin p Γ Builtin.uEq (by tauto) h![a, b] := b
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
-theorem iEq_intro : STHoarePureBuiltin p Γ Builtin.uEq (by tauto) h![a, b] := by
+theorem iEq_intro : STHoarePureBuiltin p Γ Builtin.iEq (by tauto) h![a, b] := by
    simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
