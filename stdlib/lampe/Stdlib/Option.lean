@@ -513,13 +513,13 @@ theorem eq_spec {p T self other P Q}
       assumption
 
 theorem eq_pure_spec {p T self other}
-    {t_eq : «std::cmp::Eq».hasImpl env h![] T}
+    {t_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] T}
     {t_eq_emb : T.denote p → T.denote p → Prop}
     (h_eq : ∀a b, STHoare p env ⟦⟧
-      («std::cmp::Eq».eq h![] T h![] h![] h![a, b])
+      («std-1.0.0-beta.12::cmp::Eq».eq h![] T h![] h![] h![a, b])
       (fun r : Bool => r = t_eq_emb a b))
   : STHoare p env ⟦⟧
-    («std::cmp::Eq».eq h![] («std::option::Option».tp h![T]) h![] h![] h![self, other])
+    («std-1.0.0-beta.12::cmp::Eq».eq h![] («std-1.0.0-beta.12::option::Option».tp h![T]) h![] h![] h![self, other])
     (fun r : Bool => r = Option.Rel t_eq_emb (toOption self) (toOption other)) := by
   apply STHoare.consequence_frame
   apply eq_spec
@@ -594,7 +594,7 @@ theorem hash_spec {p T H self P Q R}
 
 set_option maxRecDepth 2000 in
 theorem cmp_spec {p T self other P Q}
-    {t_ord : «std::cmp::Ord».hasImpl env h![] T}
+    {t_ord : «std-1.0.0-beta.12::cmp::Ord».hasImpl env h![] T}
     (t_ord_f : (h_self : (toOption self).isSome)
              → (h_other : (toOption other).isSome)
              → STHoare p env P
@@ -643,13 +643,13 @@ theorem cmp_spec {p T self other P Q}
 
 set_option maxRecDepth 2000 in
 theorem cmp_pure_spec {p T self other}
-    {t_ord : «std::cmp::Ord».hasImpl env h![] T}
-    {t_ord_emb : T.denote p → T.denote p → («std::cmp::Ordering».tp h![] |>.denote p)}
+    {t_ord : «std-1.0.0-beta.12::cmp::Ord».hasImpl env h![] T}
+    {t_ord_emb : T.denote p → T.denote p → («std-1.0.0-beta.12::cmp::Ordering».tp h![] |>.denote p)}
     (t_ord_f : ∀a b, STHoare p env ⟦⟧
-      («std::cmp::Ord».cmp h![] T h![] h![] h![a, b])
+      («std-1.0.0-beta.12::cmp::Ord».cmp h![] T h![] h![] h![a, b])
       (fun r => r = t_ord_emb a b))
   : STHoare p env ⟦⟧
-    («std::cmp::Ord».cmp h![] («std::option::Option».tp h![T]) h![] h![] h![self, other])
+    («std-1.0.0-beta.12::cmp::Ord».cmp h![] («std-1.0.0-beta.12::option::Option».tp h![T]) h![] h![] h![self, other])
     (fun r => r = if h : (toOption self).isSome then
       if g : (toOption other).isSome then
         t_ord_emb ((toOption self).get h) ((toOption other).get g)
@@ -683,4 +683,3 @@ theorem cmp_pure_spec {p T self other}
     · intro
       steps [equal_spec]
       simp_all
-
