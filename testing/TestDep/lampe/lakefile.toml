@@ -29,19 +29,19 @@ path = "deps/GitDep-2.0.0/lampe"
 [[require]]
 name = "GitDepWithLampe-0.0.0"
 git = "https://github.com/reilabs/lampe"
-rev = "mp/fixing-namespaces"
+rev = "main"
 subDir = "testing/TestDep/testing/GitDepWithLampe/lampe"
 
 [[require]]
 name = "GitDepWithLampe-1.0.0"
 git = "https://github.com/reilabs/lampe"
-rev = "mp/fixing-namespaces"
+rev = "main"
 subDir = "testing/TestDep/testing/GitDepWithLampeV1/lampe"
 
 [[require]]
 name = "GitDepWithLampe-2.0.0"
 git = "https://github.com/reilabs/lampe"
-rev = "mp/fixing-namespaces"
+rev = "main"
 subDir = "testing/TestDep/testing/GitDepWithLampeV2/lampe"
 
 [[require]]
