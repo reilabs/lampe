@@ -16,7 +16,6 @@ use crate::{
     lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
 };
 
-pub mod constants;
 pub mod dependency;
 
 /// This is list of dependencies added by default to all Lampe's projects.

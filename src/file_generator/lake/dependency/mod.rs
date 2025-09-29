@@ -26,6 +26,8 @@ pub trait LeanDependency {
     /// - If the dependency cannot be generated.
     fn generate(&self) -> Result<String, fmt::Error>;
 
+    /// Returns the versioned name of the dependency in the form
+    /// `<name>-<version>`.
     fn name(&self) -> &str;
 
     /// This is the best effort way to generate a `NoirPackageIdentifier` from a

@@ -7,7 +7,7 @@ use crate::file_generator::lean::error::{Error::DuplicateWithGeneratedFile, Resu
 
 /// This structure represents relative path of project's file to easily generate
 /// imports and file paths.
-#[derive(Debug, Eq, Hash, PartialEq, Clone)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct LeanFilePath {
     segments: Vec<String>,
 }
@@ -57,7 +57,7 @@ impl LeanFilePath {
 type LeanFileContent = String;
 
 /// This structure represents lean file = lean file path + line file content.
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct LeanFile {
     pub file_path: LeanFilePath,
     pub content:   LeanFileContent,

@@ -2802,6 +2802,8 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     /// Resolves the `name-version` string for the specified crate.
+    /// NOTE: This is done by reading the `Nargo.toml` file for the crate, so it's a very brittle
+    /// hacky solution.
     ///
     /// # Panics
     ///

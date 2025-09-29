@@ -19,7 +19,7 @@ pub struct ModuleEmitter {
     /// The context handling the emission.
     context: EmitContext,
 
-    //// The package that owns the module
+    //// The package that owns the module.
     package: NoirPackageIdentifier,
 
     /// The module to emit.

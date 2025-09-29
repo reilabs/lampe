@@ -574,11 +574,11 @@ mod has {
             assert!(name.split("::").all(|part| {
                 let quoted = part.starts_with(LEAN_QUOTE_START) && part.ends_with(LEAN_QUOTE_END);
                 if quoted {
-                    // ensure quoted parts are lean keywords or contain special characters
+                    // Ensure quoted parts are lean keywords or contain special characters
                     let inner = &part[LEAN_QUOTE_START.len()..part.len() - LEAN_QUOTE_END.len()];
                     LEAN_KEYWORDS.contains(&inner) || inner.chars().any(|c| c == '-' || c == '.')
                 } else {
-                    // ensure unquoted parts are not lean keywords
+                    // Ensure unquoted parts are not lean keywords
                     !LEAN_KEYWORDS.contains(&part)
                 }
             }));

@@ -23,12 +23,19 @@ use crate::file_generator::{
 pub mod error;
 pub mod file;
 
+/// A container for the context needed to generate Lean files for an extracted Noir project
 struct FileGenerator {
+    /// The root directory of the Lampe project where files will be generated.
     lampe_root_dir:          path::PathBuf,
+    /// The identifier of the Noir package being processed.
     noir_package_identifier: NoirPackageIdentifier,
+    /// Information about the standard library, if applicable (if not the standard library itself)
     stdlib_info:             Option<NoirPackageIdentifier>,
+    /// The local dependencies of the Noir package being processed.
     local_dependencies:      Vec<NoirPackageIdentifier>,
+    /// The external dependencies of the Noir package being processed.
     external_dependencies:   Vec<NoirPackageIdentifier>,
+    /// Configuration option on whether to overwrite existing files.
     overwrite:               bool,
 }
 
@@ -52,7 +59,7 @@ impl FileGenerator {
     }
 
     /// Generates Lean's entrypoint file ready for user's code.
-    /// Example path: $(project)/lampe/Example-0.0.0.lean
+    // Example path: $(project)/lampe/Example-0.0.0.lean
     fn generate_lib_file(&self) -> Result<(), Error> {
         let output_file = self.lampe_root_dir.join(format!(
             "{}-{}.lean",
@@ -82,7 +89,7 @@ impl FileGenerator {
 
     /// Generates extracted module file that groups all imports of extracted and
     /// generated code for simple usage.
-    /// Example path: $(project)/lampe/Example-0.0.0/Extracted.lean
+    // Example path: $(project)/lampe/Example-0.0.0/Extracted.lean
     fn generate_extracted_file(
         &self,
         lib_dir: &Path,
@@ -217,12 +224,12 @@ impl FileGenerator {
     }
 
     /// Generates single main extracted project Lean's file out from passed
-    /// generated code. Example paths:
-    /// $(project)/lampe/Example-0.0.0/Extracted/Main.lean
-    /// $(project)/lampe/Example-0.0.0/Extracted/GeneratedTypes.lean
-    /// $(project)/lampe/Example-0.0.0/Extracted/CustomUserFile.lean
-    /// $(project)/lampe/Example-0.0.0/Extracted/CustomDir/CustomUserFileInDir.
-    /// lean
+    /// generated code.
+    // Example paths:
+    // $(project)/lampe/Example-0.0.0/Extracted/Main.lean
+    // $(project)/lampe/Example-0.0.0/Extracted/GeneratedTypes.lean
+    // $(project)/lampe/Example-0.0.0/Extracted/CustomUserFile.lean
+    // $(project)/lampe/Example-0.0.0/Extracted/CustomDir/CustomUserFileInDir.lean
     fn generate_extracted_module_version_extracted_file(
         &self,
         extracted_module_dir: &Path,
@@ -447,23 +454,24 @@ fn process_dependencies<H: std::hash::BuildHasher>(
 }
 
 /// Generates all lean files from passed extracted code with project
-/// configuration. Current lean files structure is (in pseudo description):
-/// |-- <Main package>
-/// |  |-- Extracted
-/// |  |   |-- GeneratedTypes.lean
-/// |  |   |-- Noir extracted code matching file paths as created by user in Noir project
-/// |  |-- Extracted.lean
-/// |-- <Main package>.lean
-/// |--deps
-///    |--<Dependency1>
-///    |  |-- Structure mirroring main package layout
-///    |--<Dependency2>
-///    |  |-- ...
-///    |-- ...
+/// configuration.
 ///
 /// # Errors
 ///
 /// - If it cannot generate the Lean files.
+// Current lean files structure is (in pseudo description):
+// |-- <Main package>
+// |  |-- Extracted
+// |  |   |-- GeneratedTypes.lean
+// |  |   |-- Noir extracted code matching file paths as created by user in Noir project
+// |  |-- Extracted.lean
+// |-- <Main package>.lean
+// |--deps
+//    |--<Dependency1>
+//    |  |-- Structure mirroring main package layout
+//    |--<Dependency2>
+//    |  |-- ...
+//    |-- ...
 pub fn generate_lean_files<H: std::hash::BuildHasher>(
     lampe_root_dir: &Path,
     noir_package_identifier: &NoirPackageIdentifier,

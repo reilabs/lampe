@@ -7,13 +7,10 @@ use nargo::package::Package;
 use nargo_toml::DependencyConfig;
 
 use crate::{
-    constants::{NONE_DEPENDENCY_VERSION, STDLIB_TOML},
+    constants::{NOIR_STDLIB_PACKAGE_NAME, NONE_DEPENDENCY_VERSION, STDLIB_TOML},
     file_generator::{
         error::{Error, Result},
-        lake::{
-            constants::NOIR_STDLIB_PACKAGE_NAME,
-            dependency::{LeanDependency, LeanDependencyGit, LeanDependencyPath},
-        },
+        lake::dependency::{LeanDependency, LeanDependencyGit, LeanDependencyPath},
     },
     file_generator_error::Error::LakeRequireGeneration,
     lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
@@ -39,10 +36,16 @@ pub struct NoirPackageIdentifier {
 /// Stores the information about dependencies needed for generating Lampe's
 /// project.
 pub struct DependencyInfo<H: std::hash::BuildHasher> {
+    /// The list of all dependencies (including transitive ones)
     pub all_dependencies:               Vec<Box<dyn LeanDependency>>,
+    /// The list of all dependencies that did not already have Lampe extracted
     pub extracted_dependencies:         HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
+    /// The list of all direct dependencies (not including the standard library)
     pub direct_dependencies:            HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
+    /// A list of direct dependencies (not including the standard library) that have Lampe already
+    /// extracted
     pub direct_dependencies_with_lampe: Vec<NoirPackageIdentifier>,
+    /// A graph containing the relationships between dependencies
     pub dependency_relationships:
         HashMap<NoirPackageIdentifier, (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>), H>,
 }
