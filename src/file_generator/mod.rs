@@ -42,8 +42,8 @@ pub struct DependencyInfo<H: std::hash::BuildHasher> {
     pub extracted_dependencies:         HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
     /// The list of all direct dependencies (not including the standard library)
     pub direct_dependencies:            HashMap<NoirPackageIdentifier, Vec<LeanFile>, H>,
-    /// A list of direct dependencies (not including the standard library) that have Lampe already
-    /// extracted
+    /// A list of direct dependencies (not including the standard library) that
+    /// have Lampe already extracted
     pub direct_dependencies_with_lampe: Vec<NoirPackageIdentifier>,
     /// A graph containing the relationships between dependencies
     pub dependency_relationships:

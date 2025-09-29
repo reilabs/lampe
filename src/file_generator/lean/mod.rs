@@ -23,13 +23,15 @@ use crate::file_generator::{
 pub mod error;
 pub mod file;
 
-/// A container for the context needed to generate Lean files for an extracted Noir project
+/// A container for the context needed to generate Lean files for an extracted
+/// Noir project
 struct FileGenerator {
     /// The root directory of the Lampe project where files will be generated.
     lampe_root_dir:          path::PathBuf,
     /// The identifier of the Noir package being processed.
     noir_package_identifier: NoirPackageIdentifier,
-    /// Information about the standard library, if applicable (if not the standard library itself)
+    /// Information about the standard library, if applicable (if not the
+    /// standard library itself)
     stdlib_info:             Option<NoirPackageIdentifier>,
     /// The local dependencies of the Noir package being processed.
     local_dependencies:      Vec<NoirPackageIdentifier>,

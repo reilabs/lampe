@@ -235,7 +235,15 @@ impl ModuleEmitter {
         writer.append_to_line("[");
         writer.write_sep_by(
             &trait_impls,
-            |w, def| w.append_to_line(&EmitContext::quote_name_if_needed(def.name())),
+            |w, def| {
+                let namespace = self.package.formatted(true);
+                let full_name = format!(
+                    "{}.{}",
+                    namespace,
+                    &EmitContext::quote_name_if_needed(def.name())
+                );
+                w.append_to_line(&full_name);
+            },
             ", ",
         );
         writer.append_to_line("]");
