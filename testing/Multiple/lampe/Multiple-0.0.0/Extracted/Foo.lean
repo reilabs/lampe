@@ -5,13 +5,10 @@ import Lampe
 
 open Lampe
 
-namespace «Multiple-0.0.0»
-namespace Extracted
-
-noir_def foo::foo<>(x: Field) -> Field := {
+noir_def «Multiple-0.0.0»::foo::foo<>(x: Field) -> Field := {
   (#_fAdd returning Field)(x, (1: Field))
 }
 
-def Foo.env : Env := Env.mk
-  [«foo::foo»]
+def «Multiple-0.0.0».Foo.env : Env := Env.mk
+  [«Multiple-0.0.0::foo::foo»]
   []

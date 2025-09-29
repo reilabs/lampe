@@ -17,5 +17,5 @@ pub const LEAN_QUOTE_END: &str = "»";
 pub const LEAN_KEYWORDS: &[&str] = &["from", "meta"];
 
 fn conflicts_with_lean_keyword(text: &str) -> bool {
-    LEAN_KEYWORDS.iter().any(|&keyword| text == keyword)
+    LEAN_KEYWORDS.contains(&text)
 }

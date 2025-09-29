@@ -84,4 +84,8 @@ impl LeanDependency for LeanDependencyGit {
 
         Ok(result)
     }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
 }

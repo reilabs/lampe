@@ -5,123 +5,120 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.12»
-namespace Extracted
-
-noir_trait_impl[impl_272]<> std::default::Default<> for Field where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_272]<> «std-1.0.0-beta.12»::default::Default<> for Field where [] := {
   noir_def default<>() -> Field := {
     (0: Field)
   };
 }
 
-noir_trait_impl[impl_273]<> std::default::Default<> for u1 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_273]<> «std-1.0.0-beta.12»::default::Default<> for u1 where [] := {
   noir_def default<>() -> u1 := {
     (0: u1)
   };
 }
 
-noir_trait_impl[impl_274]<> std::default::Default<> for u8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_274]<> «std-1.0.0-beta.12»::default::Default<> for u8 where [] := {
   noir_def default<>() -> u8 := {
     (0: u8)
   };
 }
 
-noir_trait_impl[impl_275]<> std::default::Default<> for u16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_275]<> «std-1.0.0-beta.12»::default::Default<> for u16 where [] := {
   noir_def default<>() -> u16 := {
     (0: u16)
   };
 }
 
-noir_trait_impl[impl_276]<> std::default::Default<> for u32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_276]<> «std-1.0.0-beta.12»::default::Default<> for u32 where [] := {
   noir_def default<>() -> u32 := {
     (0: u32)
   };
 }
 
-noir_trait_impl[impl_277]<> std::default::Default<> for u64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_277]<> «std-1.0.0-beta.12»::default::Default<> for u64 where [] := {
   noir_def default<>() -> u64 := {
     (0: u64)
   };
 }
 
-noir_trait_impl[impl_278]<> std::default::Default<> for u128 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_278]<> «std-1.0.0-beta.12»::default::Default<> for u128 where [] := {
   noir_def default<>() -> u128 := {
     (0: u128)
   };
 }
 
-noir_trait_impl[impl_279]<> std::default::Default<> for i8 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_279]<> «std-1.0.0-beta.12»::default::Default<> for i8 where [] := {
   noir_def default<>() -> i8 := {
     (0: i8)
   };
 }
 
-noir_trait_impl[impl_280]<> std::default::Default<> for i16 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_280]<> «std-1.0.0-beta.12»::default::Default<> for i16 where [] := {
   noir_def default<>() -> i16 := {
     (0: i16)
   };
 }
 
-noir_trait_impl[impl_281]<> std::default::Default<> for i32 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_281]<> «std-1.0.0-beta.12»::default::Default<> for i32 where [] := {
   noir_def default<>() -> i32 := {
     (0: i32)
   };
 }
 
-noir_trait_impl[impl_282]<> std::default::Default<> for i64 where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_282]<> «std-1.0.0-beta.12»::default::Default<> for i64 where [] := {
   noir_def default<>() -> i64 := {
     (0: i64)
   };
 }
 
-noir_trait_impl[impl_283]<> std::default::Default<> for Unit where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_283]<> «std-1.0.0-beta.12»::default::Default<> for Unit where [] := {
   noir_def default<>() -> Unit := {
     #_unit
   };
 }
 
-noir_trait_impl[impl_284]<> std::default::Default<> for bool where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_284]<> «std-1.0.0-beta.12»::default::Default<> for bool where [] := {
   noir_def default<>() -> bool := {
     #_false
   };
 }
 
-noir_trait_impl[impl_285]<N: u32, T: Type> std::default::Default<> for Array<T, N: u32> where [T: std::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_285]<N: u32, T: Type> «std-1.0.0-beta.12»::default::Default<> for Array<T, N: u32> where [T: «std-1.0.0-beta.12»::default::Default<>] := {
   noir_def default<>() -> Array<T, N: u32> := {
-    (#_mkRepeatedArray returning Array<T, N: u32>)(((T as std::default::Default<>)::default<> as λ() -> T)())
+    (#_mkRepeatedArray returning Array<T, N: u32>)(((T as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> T)())
   };
 }
 
-noir_trait_impl[impl_286]<T: Type> std::default::Default<> for Slice<T> where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_286]<T: Type> «std-1.0.0-beta.12»::default::Default<> for Slice<T> where [] := {
   noir_def default<>() -> Slice<T> := {
     (#_mkSlice returning Slice<T>)()
   };
 }
 
-noir_trait_impl[impl_287]<A: Type, B: Type> std::default::Default<> for Tuple<A, B> where [A: std::default::Default<>, B: std::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_287]<A: Type, B: Type> «std-1.0.0-beta.12»::default::Default<> for Tuple<A, B> where [A: «std-1.0.0-beta.12»::default::Default<>, B: «std-1.0.0-beta.12»::default::Default<>] := {
   noir_def default<>() -> Tuple<A, B> := {
-    (#_makeData returning Tuple<A, B>)(((A as std::default::Default<>)::default<> as λ() -> A)(), ((B as std::default::Default<>)::default<> as λ() -> B)())
+    (#_makeData returning Tuple<A, B>)(((A as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> A)(), ((B as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> B)())
   };
 }
 
-noir_trait_impl[impl_288]<A: Type, B: Type, C: Type> std::default::Default<> for Tuple<A, B, C> where [A: std::default::Default<>, B: std::default::Default<>, C: std::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_288]<A: Type, B: Type, C: Type> «std-1.0.0-beta.12»::default::Default<> for Tuple<A, B, C> where [A: «std-1.0.0-beta.12»::default::Default<>, B: «std-1.0.0-beta.12»::default::Default<>, C: «std-1.0.0-beta.12»::default::Default<>] := {
   noir_def default<>() -> Tuple<A, B, C> := {
-    (#_makeData returning Tuple<A, B, C>)(((A as std::default::Default<>)::default<> as λ() -> A)(), ((B as std::default::Default<>)::default<> as λ() -> B)(), ((C as std::default::Default<>)::default<> as λ() -> C)())
+    (#_makeData returning Tuple<A, B, C>)(((A as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> A)(), ((B as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> B)(), ((C as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> C)())
   };
 }
 
-noir_trait_impl[impl_289]<A: Type, B: Type, C: Type, D: Type> std::default::Default<> for Tuple<A, B, C, D> where [A: std::default::Default<>, B: std::default::Default<>, C: std::default::Default<>, D: std::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_289]<A: Type, B: Type, C: Type, D: Type> «std-1.0.0-beta.12»::default::Default<> for Tuple<A, B, C, D> where [A: «std-1.0.0-beta.12»::default::Default<>, B: «std-1.0.0-beta.12»::default::Default<>, C: «std-1.0.0-beta.12»::default::Default<>, D: «std-1.0.0-beta.12»::default::Default<>] := {
   noir_def default<>() -> Tuple<A, B, C, D> := {
-    (#_makeData returning Tuple<A, B, C, D>)(((A as std::default::Default<>)::default<> as λ() -> A)(), ((B as std::default::Default<>)::default<> as λ() -> B)(), ((C as std::default::Default<>)::default<> as λ() -> C)(), ((D as std::default::Default<>)::default<> as λ() -> D)())
+    (#_makeData returning Tuple<A, B, C, D>)(((A as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> A)(), ((B as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> B)(), ((C as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> C)(), ((D as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> D)())
   };
 }
 
-noir_trait_impl[impl_290]<A: Type, B: Type, C: Type, D: Type, E: Type> std::default::Default<> for Tuple<A, B, C, D, E> where [A: std::default::Default<>, B: std::default::Default<>, C: std::default::Default<>, D: std::default::Default<>, E: std::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_290]<A: Type, B: Type, C: Type, D: Type, E: Type> «std-1.0.0-beta.12»::default::Default<> for Tuple<A, B, C, D, E> where [A: «std-1.0.0-beta.12»::default::Default<>, B: «std-1.0.0-beta.12»::default::Default<>, C: «std-1.0.0-beta.12»::default::Default<>, D: «std-1.0.0-beta.12»::default::Default<>, E: «std-1.0.0-beta.12»::default::Default<>] := {
   noir_def default<>() -> Tuple<A, B, C, D, E> := {
-    (#_makeData returning Tuple<A, B, C, D, E>)(((A as std::default::Default<>)::default<> as λ() -> A)(), ((B as std::default::Default<>)::default<> as λ() -> B)(), ((C as std::default::Default<>)::default<> as λ() -> C)(), ((D as std::default::Default<>)::default<> as λ() -> D)(), ((E as std::default::Default<>)::default<> as λ() -> E)())
+    (#_makeData returning Tuple<A, B, C, D, E>)(((A as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> A)(), ((B as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> B)(), ((C as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> C)(), ((D as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> D)(), ((E as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> E)())
   };
 }
 
-def Default.env : Env := Env.mk
+def «std-1.0.0-beta.12».Default.env : Env := Env.mk
   []
-  [impl_272, impl_273, impl_274, impl_275, impl_276, impl_277, impl_278, impl_279, impl_280, impl_281, impl_282, impl_283, impl_284, impl_285, impl_286, impl_287, impl_288, impl_289, impl_290]
+  [«std-1.0.0-beta.12».impl_272, «std-1.0.0-beta.12».impl_273, «std-1.0.0-beta.12».impl_274, «std-1.0.0-beta.12».impl_275, «std-1.0.0-beta.12».impl_276, «std-1.0.0-beta.12».impl_277, «std-1.0.0-beta.12».impl_278, «std-1.0.0-beta.12».impl_279, «std-1.0.0-beta.12».impl_280, «std-1.0.0-beta.12».impl_281, «std-1.0.0-beta.12».impl_282, «std-1.0.0-beta.12».impl_283, «std-1.0.0-beta.12».impl_284, «std-1.0.0-beta.12».impl_285, «std-1.0.0-beta.12».impl_286, «std-1.0.0-beta.12».impl_287, «std-1.0.0-beta.12».impl_288, «std-1.0.0-beta.12».impl_289, «std-1.0.0-beta.12».impl_290]

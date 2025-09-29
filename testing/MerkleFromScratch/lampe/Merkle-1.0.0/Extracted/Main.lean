@@ -5,31 +5,28 @@ import Lampe
 
 open Lampe
 
-namespace «Merkle-1.0.0»
-namespace Extracted
-
-noir_def mtree_recover<H: Type, N: u32>(idx: Array<bool, N: u32>, p: Array<Field, N: u32>, item: Field) -> Field := {
+noir_def «Merkle-1.0.0»::mtree_recover<H: Type, N: u32>(idx: Array<bool, N: u32>, p: Array<Field, N: u32>, item: Field) -> Field := {
   let mut curr_h = item;
   for i in (0: u32) .. uConst!(N: u32) do {
     let dir = (#_arrayIndex returning bool)(idx, (#_cast returning u32)(i));
     let sibling_root = (#_arrayIndex returning Field)(p, (#_cast returning u32)(i));
     if dir then {
-      curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(sibling_root, curr_h);
+      curr_h = ((H as «Merkle-1.0.0»::hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(sibling_root, curr_h);
       #_skip
     } else {
-      curr_h = ((H as hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(curr_h, sibling_root);
+      curr_h = ((H as «Merkle-1.0.0»::hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(curr_h, sibling_root);
       #_skip
     }
   };
   curr_h
 }
 
-noir_def main<>(root: Field, proof: Array<Field, 32: u32>, item: Field, idx: Array<bool, 32: u32>) -> Unit := {
-  let calculated_root = (mtree_recover<skyscraper::Skyscraper<>, 32: u32> as λ(Array<bool, 32: u32>, Array<Field, 32: u32>, Field) -> Field)(idx, proof, item);
-  (witness::weird_assert_eq<> as λ(Field, Field) -> Unit)(root, calculated_root);
+noir_def «Merkle-1.0.0»::main<>(root: Field, proof: Array<Field, 32: u32>, item: Field, idx: Array<bool, 32: u32>) -> Unit := {
+  let calculated_root = («Merkle-1.0.0»::mtree_recover<«Merkle-1.0.0»::skyscraper::Skyscraper<>, 32: u32> as λ(Array<bool, 32: u32>, Array<Field, 32: u32>, Field) -> Field)(idx, proof, item);
+  («Merkle-1.0.0»::witness::weird_assert_eq<> as λ(Field, Field) -> Unit)(root, calculated_root);
   #_skip
 }
 
-def Main.env : Env := Env.mk
-  [mtree_recover, main]
+def «Merkle-1.0.0».Main.env : Env := Env.mk
+  [«Merkle-1.0.0::mtree_recover», «Merkle-1.0.0::main»]
   []

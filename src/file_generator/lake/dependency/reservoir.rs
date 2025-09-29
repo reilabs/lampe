@@ -94,4 +94,8 @@ impl LeanDependency for LeanDependencyReservoir {
 
         Ok(result)
     }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
 }

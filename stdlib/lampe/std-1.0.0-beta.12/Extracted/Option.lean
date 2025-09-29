@@ -5,35 +5,32 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.12»
-namespace Extracted
-
-noir_def std::option::Option::none<T: Type>() -> std::option::Option<T> := {
-  (#_makeData returning std::option::Option<T>)(#_false, (#_zeroed returning T)())
+noir_def «std-1.0.0-beta.12»::option::Option::none<T: Type>() -> «std-1.0.0-beta.12»::option::Option<T> := {
+  (#_makeData returning «std-1.0.0-beta.12»::option::Option<T>)(#_false, (#_zeroed returning T)())
 }
 
-noir_def std::option::Option::some<T: Type>(_value: T) -> std::option::Option<T> := {
-  (#_makeData returning std::option::Option<T>)(#_true, _value)
+noir_def «std-1.0.0-beta.12»::option::Option::some<T: Type>(_value: T) -> «std-1.0.0-beta.12»::option::Option<T> := {
+  (#_makeData returning «std-1.0.0-beta.12»::option::Option<T>)(#_true, _value)
 }
 
-noir_def std::option::Option::is_none<T: Type>(self: std::option::Option<T>) -> bool := {
+noir_def «std-1.0.0-beta.12»::option::Option::is_none<T: Type>(self: «std-1.0.0-beta.12»::option::Option<T>) -> bool := {
   (#_bNot returning bool)(self.0)
 }
 
-noir_def std::option::Option::is_some<T: Type>(self: std::option::Option<T>) -> bool := {
+noir_def «std-1.0.0-beta.12»::option::Option::is_some<T: Type>(self: «std-1.0.0-beta.12»::option::Option<T>) -> bool := {
   self.0
 }
 
-noir_def std::option::Option::unwrap<T: Type>(self: std::option::Option<T>) -> T := {
+noir_def «std-1.0.0-beta.12»::option::Option::unwrap<T: Type>(self: «std-1.0.0-beta.12»::option::Option<T>) -> T := {
   (#_assert returning Unit)(self.0);
   self.1
 }
 
-noir_def std::option::Option::unwrap_unchecked<T: Type>(self: std::option::Option<T>) -> T := {
+noir_def «std-1.0.0-beta.12»::option::Option::unwrap_unchecked<T: Type>(self: «std-1.0.0-beta.12»::option::Option<T>) -> T := {
   self.1
 }
 
-noir_def std::option::Option::unwrap_or<T: Type>(self: std::option::Option<T>, default: T) -> T := {
+noir_def «std-1.0.0-beta.12»::option::Option::unwrap_or<T: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, default: T) -> T := {
   if self.0 then {
     self.1
   } else {
@@ -41,7 +38,7 @@ noir_def std::option::Option::unwrap_or<T: Type>(self: std::option::Option<T>, d
   }
 }
 
-noir_def std::option::Option::unwrap_or_else<T: Type, Env: Type>(self: std::option::Option<T>, default: λ() -> T) -> T := {
+noir_def «std-1.0.0-beta.12»::option::Option::unwrap_or_else<T: Type, Env: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, default: λ() -> T) -> T := {
   if self.0 then {
     self.1
   } else {
@@ -49,20 +46,20 @@ noir_def std::option::Option::unwrap_or_else<T: Type, Env: Type>(self: std::opti
   }
 }
 
-noir_def std::option::Option::expect<T: Type, N: u32, MessageTypes: Type>(self: std::option::Option<T>, message: FmtString<N: u32, MessageTypes>) -> T := {
-  (#_assert returning Unit)((std::option::Option::is_some<T> as λ(std::option::Option<T>) -> bool)(self));
+noir_def «std-1.0.0-beta.12»::option::Option::expect<T: Type, N: u32, MessageTypes: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, message: FmtString<N: u32, MessageTypes>) -> T := {
+  (#_assert returning Unit)((«std-1.0.0-beta.12»::option::Option::is_some<T> as λ(«std-1.0.0-beta.12»::option::Option<T>) -> bool)(self));
   self.1
 }
 
-noir_def std::option::Option::map<T: Type, U: Type, Env: Type>(self: std::option::Option<T>, f: λ(T) -> U) -> std::option::Option<U> := {
+noir_def «std-1.0.0-beta.12»::option::Option::map<T: Type, U: Type, Env: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, f: λ(T) -> U) -> «std-1.0.0-beta.12»::option::Option<U> := {
   if self.0 then {
-    (std::option::Option::some<U> as λ(U) -> std::option::Option<U>)((f as λ(T) -> U)(self.1))
+    («std-1.0.0-beta.12»::option::Option::some<U> as λ(U) -> «std-1.0.0-beta.12»::option::Option<U>)((f as λ(T) -> U)(self.1))
   } else {
-    (std::option::Option::none<U> as λ() -> std::option::Option<U>)()
+    («std-1.0.0-beta.12»::option::Option::none<U> as λ() -> «std-1.0.0-beta.12»::option::Option<U>)()
   }
 }
 
-noir_def std::option::Option::map_or<T: Type, U: Type, Env: Type>(self: std::option::Option<T>, default: U, f: λ(T) -> U) -> U := {
+noir_def «std-1.0.0-beta.12»::option::Option::map_or<T: Type, U: Type, Env: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, default: U, f: λ(T) -> U) -> U := {
   if self.0 then {
     (f as λ(T) -> U)(self.1)
   } else {
@@ -70,7 +67,7 @@ noir_def std::option::Option::map_or<T: Type, U: Type, Env: Type>(self: std::opt
   }
 }
 
-noir_def std::option::Option::map_or_else<T: Type, U: Type, Env1: Type, Env2: Type>(self: std::option::Option<T>, default: λ() -> U, f: λ(T) -> U) -> U := {
+noir_def «std-1.0.0-beta.12»::option::Option::map_or_else<T: Type, U: Type, Env1: Type, Env2: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, default: λ() -> U, f: λ(T) -> U) -> U := {
   if self.0 then {
     (f as λ(T) -> U)(self.1)
   } else {
@@ -78,23 +75,23 @@ noir_def std::option::Option::map_or_else<T: Type, U: Type, Env1: Type, Env2: Ty
   }
 }
 
-noir_def std::option::Option::and<T: Type>(self: std::option::Option<T>, other: std::option::Option<T>) -> std::option::Option<T> := {
-  if (std::option::Option::is_none<T> as λ(std::option::Option<T>) -> bool)(self) then {
-    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
+noir_def «std-1.0.0-beta.12»::option::Option::and<T: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, other: «std-1.0.0-beta.12»::option::Option<T>) -> «std-1.0.0-beta.12»::option::Option<T> := {
+  if («std-1.0.0-beta.12»::option::Option::is_none<T> as λ(«std-1.0.0-beta.12»::option::Option<T>) -> bool)(self) then {
+    («std-1.0.0-beta.12»::option::Option::none<T> as λ() -> «std-1.0.0-beta.12»::option::Option<T>)()
   } else {
     other
   }
 }
 
-noir_def std::option::Option::and_then<T: Type, U: Type, Env: Type>(self: std::option::Option<T>, f: λ(T) -> std::option::Option<U>) -> std::option::Option<U> := {
+noir_def «std-1.0.0-beta.12»::option::Option::and_then<T: Type, U: Type, Env: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, f: λ(T) -> «std-1.0.0-beta.12»::option::Option<U>) -> «std-1.0.0-beta.12»::option::Option<U> := {
   if self.0 then {
-    (f as λ(T) -> std::option::Option<U>)(self.1)
+    (f as λ(T) -> «std-1.0.0-beta.12»::option::Option<U>)(self.1)
   } else {
-    (std::option::Option::none<U> as λ() -> std::option::Option<U>)()
+    («std-1.0.0-beta.12»::option::Option::none<U> as λ() -> «std-1.0.0-beta.12»::option::Option<U>)()
   }
 }
 
-noir_def std::option::Option::or<T: Type>(self: std::option::Option<T>, other: std::option::Option<T>) -> std::option::Option<T> := {
+noir_def «std-1.0.0-beta.12»::option::Option::or<T: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, other: «std-1.0.0-beta.12»::option::Option<T>) -> «std-1.0.0-beta.12»::option::Option<T> := {
   if self.0 then {
     self
   } else {
@@ -102,59 +99,59 @@ noir_def std::option::Option::or<T: Type>(self: std::option::Option<T>, other: s
   }
 }
 
-noir_def std::option::Option::or_else<T: Type, Env: Type>(self: std::option::Option<T>, default: λ() -> std::option::Option<T>) -> std::option::Option<T> := {
+noir_def «std-1.0.0-beta.12»::option::Option::or_else<T: Type, Env: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, default: λ() -> «std-1.0.0-beta.12»::option::Option<T>) -> «std-1.0.0-beta.12»::option::Option<T> := {
   if self.0 then {
     self
   } else {
-    (default as λ() -> std::option::Option<T>)()
+    (default as λ() -> «std-1.0.0-beta.12»::option::Option<T>)()
   }
 }
 
-noir_def std::option::Option::xor<T: Type>(self: std::option::Option<T>, other: std::option::Option<T>) -> std::option::Option<T> := {
+noir_def «std-1.0.0-beta.12»::option::Option::xor<T: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, other: «std-1.0.0-beta.12»::option::Option<T>) -> «std-1.0.0-beta.12»::option::Option<T> := {
   if self.0 then {
     if other.0 then {
-      (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
+      («std-1.0.0-beta.12»::option::Option::none<T> as λ() -> «std-1.0.0-beta.12»::option::Option<T>)()
     } else {
       self
     }
   } else if other.0 then {
     other
   } else {
-    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
+    («std-1.0.0-beta.12»::option::Option::none<T> as λ() -> «std-1.0.0-beta.12»::option::Option<T>)()
   }
 }
 
-noir_def std::option::Option::filter<T: Type, Env: Type>(self: std::option::Option<T>, predicate: λ(T) -> bool) -> std::option::Option<T> := {
+noir_def «std-1.0.0-beta.12»::option::Option::filter<T: Type, Env: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, predicate: λ(T) -> bool) -> «std-1.0.0-beta.12»::option::Option<T> := {
   if self.0 then {
     if (predicate as λ(T) -> bool)(self.1) then {
       self
     } else {
-      (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
+      («std-1.0.0-beta.12»::option::Option::none<T> as λ() -> «std-1.0.0-beta.12»::option::Option<T>)()
     }
   } else {
-    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
+    («std-1.0.0-beta.12»::option::Option::none<T> as λ() -> «std-1.0.0-beta.12»::option::Option<T>)()
   }
 }
 
-noir_def std::option::Option::flatten<T: Type>(option: std::option::Option<std::option::Option<T> >) -> std::option::Option<T> := {
+noir_def «std-1.0.0-beta.12»::option::Option::flatten<T: Type>(option: «std-1.0.0-beta.12»::option::Option<«std-1.0.0-beta.12»::option::Option<T> >) -> «std-1.0.0-beta.12»::option::Option<T> := {
   if option.0 then {
     option.1
   } else {
-    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
+    («std-1.0.0-beta.12»::option::Option::none<T> as λ() -> «std-1.0.0-beta.12»::option::Option<T>)()
   }
 }
 
-noir_trait_impl[impl_73]<T: Type> std::default::Default<> for std::option::Option<T> where [] := {
-  noir_def default<>() -> std::option::Option<T> := {
-    (std::option::Option::none<T> as λ() -> std::option::Option<T>)()
+noir_trait_impl[«std-1.0.0-beta.12».impl_73]<T: Type> «std-1.0.0-beta.12»::default::Default<> for «std-1.0.0-beta.12»::option::Option<T> where [] := {
+  noir_def default<>() -> «std-1.0.0-beta.12»::option::Option<T> := {
+    («std-1.0.0-beta.12»::option::Option::none<T> as λ() -> «std-1.0.0-beta.12»::option::Option<T>)()
   };
 }
 
-noir_trait_impl[impl_74]<T: Type> std::cmp::Eq<> for std::option::Option<T> where [T: std::cmp::Eq<>] := {
-  noir_def eq<>(self: std::option::Option<T>, other: std::option::Option<T>) -> bool := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_74]<T: Type> «std-1.0.0-beta.12»::cmp::Eq<> for «std-1.0.0-beta.12»::option::Option<T> where [T: «std-1.0.0-beta.12»::cmp::Eq<>] := {
+  noir_def eq<>(self: «std-1.0.0-beta.12»::option::Option<T>, other: «std-1.0.0-beta.12»::option::Option<T>) -> bool := {
     if (#_bEq returning bool)(self.0, other.0) then {
       if self.0 then {
-        ((T as std::cmp::Eq<>)::eq<> as λ(T, T) -> bool)(self.1, other.1)
+        ((T as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)(self.1, other.1)
       } else {
         #_true
       }
@@ -164,32 +161,32 @@ noir_trait_impl[impl_74]<T: Type> std::cmp::Eq<> for std::option::Option<T> wher
   };
 }
 
-noir_trait_impl[impl_75]<T: Type> std::hash::Hash<> for std::option::Option<T> where [T: std::hash::Hash<>] := {
-  noir_def hash<H: Type>(self: std::option::Option<T>, state: & H) -> Unit := {
-    ((bool as std::hash::Hash<>)::hash<H> as λ(bool, & H) -> Unit)(self.0, state);
+noir_trait_impl[«std-1.0.0-beta.12».impl_75]<T: Type> «std-1.0.0-beta.12»::hash::Hash<> for «std-1.0.0-beta.12»::option::Option<T> where [T: «std-1.0.0-beta.12»::hash::Hash<>] := {
+  noir_def hash<H: Type>(self: «std-1.0.0-beta.12»::option::Option<T>, state: & H) -> Unit := {
+    ((bool as «std-1.0.0-beta.12»::hash::Hash<>)::hash<H> as λ(bool, & H) -> Unit)(self.0, state);
     if self.0 then {
-      ((T as std::hash::Hash<>)::hash<H> as λ(T, & H) -> Unit)(self.1, state);
+      ((T as «std-1.0.0-beta.12»::hash::Hash<>)::hash<H> as λ(T, & H) -> Unit)(self.1, state);
       #_skip
     }
   };
 }
 
-noir_trait_impl[impl_76]<T: Type> std::cmp::Ord<> for std::option::Option<T> where [T: std::cmp::Ord<>] := {
-  noir_def cmp<>(self: std::option::Option<T>, other: std::option::Option<T>) -> std::cmp::Ordering<> := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_76]<T: Type> «std-1.0.0-beta.12»::cmp::Ord<> for «std-1.0.0-beta.12»::option::Option<T> where [T: «std-1.0.0-beta.12»::cmp::Ord<>] := {
+  noir_def cmp<>(self: «std-1.0.0-beta.12»::option::Option<T>, other: «std-1.0.0-beta.12»::option::Option<T>) -> «std-1.0.0-beta.12»::cmp::Ordering<> := {
     if self.0 then {
       if other.0 then {
-        ((T as std::cmp::Ord<>)::cmp<> as λ(T, T) -> std::cmp::Ordering<>)(self.1, other.1)
+        ((T as «std-1.0.0-beta.12»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.12»::cmp::Ordering<>)(self.1, other.1)
       } else {
-        (std::cmp::Ordering::greater<> as λ() -> std::cmp::Ordering<>)()
+        («std-1.0.0-beta.12»::cmp::Ordering::greater<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)()
       }
     } else if other.0 then {
-      (std::cmp::Ordering::less<> as λ() -> std::cmp::Ordering<>)()
+      («std-1.0.0-beta.12»::cmp::Ordering::less<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)()
     } else {
-      (std::cmp::Ordering::equal<> as λ() -> std::cmp::Ordering<>)()
+      («std-1.0.0-beta.12»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)()
     }
   };
 }
 
-def Option.env : Env := Env.mk
-  [«std::option::Option::none», «std::option::Option::some», «std::option::Option::is_none», «std::option::Option::is_some», «std::option::Option::unwrap», «std::option::Option::unwrap_unchecked», «std::option::Option::unwrap_or», «std::option::Option::unwrap_or_else», «std::option::Option::expect», «std::option::Option::map», «std::option::Option::map_or», «std::option::Option::map_or_else», «std::option::Option::and», «std::option::Option::and_then», «std::option::Option::or», «std::option::Option::or_else», «std::option::Option::xor», «std::option::Option::filter», «std::option::Option::flatten»]
-  [impl_73, impl_74, impl_75, impl_76]
+def «std-1.0.0-beta.12».Option.env : Env := Env.mk
+  [«std-1.0.0-beta.12::option::Option::none», «std-1.0.0-beta.12::option::Option::some», «std-1.0.0-beta.12::option::Option::is_none», «std-1.0.0-beta.12::option::Option::is_some», «std-1.0.0-beta.12::option::Option::unwrap», «std-1.0.0-beta.12::option::Option::unwrap_unchecked», «std-1.0.0-beta.12::option::Option::unwrap_or», «std-1.0.0-beta.12::option::Option::unwrap_or_else», «std-1.0.0-beta.12::option::Option::expect», «std-1.0.0-beta.12::option::Option::map», «std-1.0.0-beta.12::option::Option::map_or», «std-1.0.0-beta.12::option::Option::map_or_else», «std-1.0.0-beta.12::option::Option::and», «std-1.0.0-beta.12::option::Option::and_then», «std-1.0.0-beta.12::option::Option::or», «std-1.0.0-beta.12::option::Option::or_else», «std-1.0.0-beta.12::option::Option::xor», «std-1.0.0-beta.12::option::Option::filter», «std-1.0.0-beta.12::option::Option::flatten»]
+  [«std-1.0.0-beta.12».impl_73, «std-1.0.0-beta.12».impl_74, «std-1.0.0-beta.12».impl_75, «std-1.0.0-beta.12».impl_76]

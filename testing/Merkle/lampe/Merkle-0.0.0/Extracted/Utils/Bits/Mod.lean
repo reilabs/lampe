@@ -5,14 +5,11 @@ import Lampe
 
 open Lampe
 
-namespace «Merkle-0.0.0»
-namespace Extracted
-
-noir_def utils::bits::to_le_bits<>(self: Field) -> Array<u1, 256: u32> := {
+noir_def «Merkle-0.0.0»::utils::bits::to_le_bits<>(self: Field) -> Array<u1, 256: u32> := {
   let mut val = self;
   let mut bits = (#_mkRepeatedArray returning Array<u1, 256: u32>)((0: u1));
   for i in (0: u32) .. (256: u32) do {
-    (bits[i]: u1) = (utils::sgn0<> as λ(Field) -> u1)(val);
+    (bits[i]: u1) = («Merkle-0.0.0»::utils::sgn0<> as λ(Field) -> u1)(val);
     if (#_uEq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)(i)), (0: u1)) then {
       val = (#_fDiv returning Field)(val, (2: Field));
       #_skip
@@ -24,6 +21,6 @@ noir_def utils::bits::to_le_bits<>(self: Field) -> Array<u1, 256: u32> := {
   bits
 }
 
-def Utils.Bits.Mod.env : Env := Env.mk
-  [«utils::bits::to_le_bits»]
+def «Merkle-0.0.0».Utils.Bits.Mod.env : Env := Env.mk
+  [«Merkle-0.0.0::utils::bits::to_le_bits»]
   []

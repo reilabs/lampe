@@ -5,22 +5,19 @@ import Lampe
 
 open Lampe
 
-namespace «GitDepWithLampe-0.0.0»
-namespace Extracted
-
-noir_def not_equal<>(x: Field, y: Field) -> bool := {
+noir_def «GitDepWithLampe-0.0.0»::not_equal<>(x: Field, y: Field) -> bool := {
   (#_fNeq returning bool)(x, y)
 }
 
-noir_global_def hello: String<24: u32> = "hello-git-dep-with-lampe";
+noir_global_def «GitDepWithLampe-0.0.0»::hello: String<24: u32> = "hello-git-dep-with-lampe";
 
-noir_global_def hello_git_dep_with_lampe: String<24: u32> = "hello-git-dep-with-lampe";
+noir_global_def «GitDepWithLampe-0.0.0»::hello_git_dep_with_lampe: String<24: u32> = "hello-git-dep-with-lampe";
 
-noir_def test_not_equal<>() -> Unit := {
-  (#_assert returning Unit)((not_equal<> as λ(Field, Field) -> bool)((1: Field), (2: Field)));
+noir_def «GitDepWithLampe-0.0.0»::test_not_equal<>() -> Unit := {
+  (#_assert returning Unit)((«GitDepWithLampe-0.0.0»::not_equal<> as λ(Field, Field) -> bool)((1: Field), (2: Field)));
   #_skip
 }
 
-def Lib.env : Env := Env.mk
-  [not_equal, hello, hello_git_dep_with_lampe, test_not_equal]
+def «GitDepWithLampe-0.0.0».Lib.env : Env := Env.mk
+  [«GitDepWithLampe-0.0.0::not_equal», «GitDepWithLampe-0.0.0::hello», «GitDepWithLampe-0.0.0::hello_git_dep_with_lampe», «GitDepWithLampe-0.0.0::test_not_equal»]
   []

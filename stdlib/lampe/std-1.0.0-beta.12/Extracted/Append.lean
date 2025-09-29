@@ -5,19 +5,16 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.12»
-namespace Extracted
-
-noir_trait_impl[impl_315]<T: Type> std::append::Append<> for Slice<T> where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_315]<T: Type> «std-1.0.0-beta.12»::append::Append<> for Slice<T> where [] := {
   noir_def empty<>() -> Slice<T> := {
     (#_mkSlice returning Slice<T>)()
   };
   
   noir_def append<>(self: Slice<T>, other: Slice<T>) -> Slice<T> := {
-    (std::slice::append<T> as λ(Slice<T>, Slice<T>) -> Slice<T>)(self, other)
+    («std-1.0.0-beta.12»::slice::append<T> as λ(Slice<T>, Slice<T>) -> Slice<T>)(self, other)
   };
 }
 
-def Append.env : Env := Env.mk
+def «std-1.0.0-beta.12».Append.env : Env := Env.mk
   []
-  [impl_315]
+  [«std-1.0.0-beta.12».impl_315]

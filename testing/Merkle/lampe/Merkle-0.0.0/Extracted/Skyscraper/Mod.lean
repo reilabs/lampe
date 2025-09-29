@@ -5,16 +5,13 @@ import Lampe
 
 open Lampe
 
-namespace «Merkle-0.0.0»
-namespace Extracted
-
-noir_trait_impl[impl_430]<> hasher::BinaryHasher<Field> for skyscraper::Skyscraper<> where [] := {
+noir_trait_impl[«Merkle-0.0.0».impl_430]<> «Merkle-0.0.0»::hasher::BinaryHasher<Field> for «Merkle-0.0.0»::skyscraper::Skyscraper<> where [] := {
   noir_def hash<>(a: Field, b: Field) -> Field := {
-    let x = (permute::permute<> as λ(Array<Field, 2: u32>) -> Array<Field, 2: u32>)((#_mkArray returning Array<Field, 2: u32>)(a, b));
+    let x = («Merkle-0.0.0»::permute::permute<> as λ(Array<Field, 2: u32>) -> Array<Field, 2: u32>)((#_mkArray returning Array<Field, 2: u32>)(a, b));
     (#_fAdd returning Field)((#_arrayIndex returning Field)(x, (0: u32)), a)
   };
 }
 
-def Skyscraper.Mod.env : Env := Env.mk
+def «Merkle-0.0.0».Skyscraper.Mod.env : Env := Env.mk
   []
-  [impl_430]
+  [«Merkle-0.0.0».impl_430]

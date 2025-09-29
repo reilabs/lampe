@@ -1,13 +1,16 @@
-use crate::lean::{
-    ast::{
-        FunctionDefinition,
-        GlobalDefinition,
-        Module,
-        ModuleDefinition,
-        TraitImplementation,
-        WhereClause,
+use crate::{
+    file_generator::NoirPackageIdentifier,
+    lean::{
+        ast::{
+            FunctionDefinition,
+            GlobalDefinition,
+            Module,
+            ModuleDefinition,
+            TraitImplementation,
+            WhereClause,
+        },
+        emit::{context::EmitContext, writer::Writer},
     },
-    emit::{context::EmitContext, writer::Writer},
 };
 
 /// An emitter for the generated module information in the AST.
@@ -15,6 +18,9 @@ use crate::lean::{
 pub struct ModuleEmitter {
     /// The context handling the emission.
     context: EmitContext,
+
+    //// The package that owns the module.
+    package: NoirPackageIdentifier,
 
     /// The module to emit.
     module: Module,
@@ -24,9 +30,10 @@ pub struct ModuleEmitter {
 impl ModuleEmitter {
     /// Creates a new emitter for the provided `module`.
     #[must_use]
-    pub fn new(module: Module) -> ModuleEmitter {
+    pub fn new(package: NoirPackageIdentifier, module: Module) -> ModuleEmitter {
         Self {
             context: EmitContext::default(),
+            package,
             module,
         }
     }
@@ -39,7 +46,7 @@ impl ModuleEmitter {
                 ModuleDefinition::Global(g) => self.emit_global(g),
                 ModuleDefinition::Function(f) => self.emit_function_definition(f, false),
                 ModuleDefinition::TraitImpl(t) => self.emit_trait_impl(t),
-            };
+            }
 
             self.context.end_line();
         }
@@ -103,7 +110,11 @@ impl ModuleEmitter {
 
         writer.append_to_line("noir_trait_impl");
         writer.append_to_line("[");
-        writer.append_to_line(&trait_impl.name);
+        writer.append_to_line(&format!(
+            "{}.{}",
+            self.package.formatted(true),
+            &trait_impl.name
+        ));
         writer.append_to_line("]");
 
         writer.append_to_line("<");
@@ -199,7 +210,12 @@ impl ModuleEmitter {
 
         let mut writer = Writer::new(&mut self.context);
         writer.append_to_line("def ");
-        writer.append_to_line(&format!("{}.env", &self.module.name));
+
+        writer.append_to_line(&format!(
+            "{}.{}.env",
+            self.package.formatted(true),
+            &self.module.name
+        ));
         writer.append_to_line(" : Env := Env.mk");
         writer.end_line();
         writer.increase_indent();
@@ -219,7 +235,15 @@ impl ModuleEmitter {
         writer.append_to_line("[");
         writer.write_sep_by(
             &trait_impls,
-            |w, def| w.append_to_line(&EmitContext::quote_name_if_needed(def.name())),
+            |w, def| {
+                let namespace = self.package.formatted(true);
+                let full_name = format!(
+                    "{}.{}",
+                    namespace,
+                    &EmitContext::quote_name_if_needed(def.name())
+                );
+                w.append_to_line(&full_name);
+            },
             ", ",
         );
         writer.append_to_line("]");

@@ -5,15 +5,12 @@ import Lampe
 
 open Lampe
 
-namespace «ExtractionTests-0.0.0»
-namespace Extracted
-
-noir_trait_impl[impl_434]<I: Type> multiple_generics::Foo<I> for multiple_generics::Pair<I> where [] := {
-  noir_def foo3<>(self: multiple_generics::Pair<I>) -> I := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_434]<I: Type> «ExtractionTests-0.0.0»::multiple_generics::Foo<I> for «ExtractionTests-0.0.0»::multiple_generics::Pair<I> where [] := {
+  noir_def foo3<>(self: «ExtractionTests-0.0.0»::multiple_generics::Pair<I>) -> I := {
     self.0
   };
 }
 
-def MultipleGenerics.env : Env := Env.mk
+def «ExtractionTests-0.0.0».MultipleGenerics.env : Env := Env.mk
   []
-  [impl_434]
+  [«ExtractionTests-0.0.0».impl_434]

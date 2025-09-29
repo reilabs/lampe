@@ -5,19 +5,16 @@ import Lampe
 
 open Lampe
 
-namespace «Merkle-0.0.0»
-namespace Extracted
-
-noir_def bar::bar<>(a: Field) -> Field := {
-  let bytes = (utils::bytes::to_le_bytes<> as λ(Field) -> Array<u8, 32: u32>)(a);
+noir_def «Merkle-0.0.0»::bar::bar<>(a: Field) -> Field := {
+  let bytes = («Merkle-0.0.0»::utils::bytes::to_le_bytes<> as λ(Field) -> Array<u8, 32: u32>)(a);
   let mut new_left = (#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8));
   let mut new_right = (#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8));
   for i in (0: u32) .. (16: u32) do {
-    (new_left[i]: u8) = (utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)));
+    (new_left[i]: u8) = («Merkle-0.0.0»::utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)));
     #_skip
   };
   for i in (0: u32) .. (16: u32) do {
-    (new_right[i]: u8) = (utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uAdd returning u32)((16: u32), i))));
+    (new_right[i]: u8) = («Merkle-0.0.0»::utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uAdd returning u32)((16: u32), i))));
     #_skip
   };
   let mut new_bytes = (#_asSlice returning Slice<u8>)(new_right);
@@ -32,10 +29,10 @@ noir_def bar::bar<>(a: Field) -> Field := {
     };
     #_skip
   };
-  let new_bytes_array = (utils::as_array<> as λ(Slice<u8>) -> Array<u8, 32: u32>)(new_bytes);
-  (utils::bytes::from_le_bytes<> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
+  let new_bytes_array = («Merkle-0.0.0»::utils::as_array<> as λ(Slice<u8>) -> Array<u8, 32: u32>)(new_bytes);
+  («Merkle-0.0.0»::utils::bytes::from_le_bytes<> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
 }
 
-def Bar.env : Env := Env.mk
-  [«bar::bar»]
+def «Merkle-0.0.0».Bar.env : Env := Env.mk
+  [«Merkle-0.0.0::bar::bar»]
   []

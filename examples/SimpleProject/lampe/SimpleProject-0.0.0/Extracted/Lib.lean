@@ -5,18 +5,15 @@ import Lampe
 
 open Lampe
 
-namespace «SimpleProject-0.0.0»
-namespace Extracted
-
-noir_def return_one<>() -> Field := {
+noir_def «SimpleProject-0.0.0»::return_one<>() -> Field := {
   (1: Field)
 }
 
-noir_def test_equal_one<>() -> Unit := {
-  (#_assert returning Unit)((#_fEq returning bool)((1: Field), (return_one<> as λ() -> Field)()));
+noir_def «SimpleProject-0.0.0»::test_equal_one<>() -> Unit := {
+  (#_assert returning Unit)((#_fEq returning bool)((1: Field), («SimpleProject-0.0.0»::return_one<> as λ() -> Field)()));
   #_skip
 }
 
-def Lib.env : Env := Env.mk
-  [return_one, test_equal_one]
+def «SimpleProject-0.0.0».Lib.env : Env := Env.mk
+  [«SimpleProject-0.0.0::return_one», «SimpleProject-0.0.0::test_equal_one»]
   []

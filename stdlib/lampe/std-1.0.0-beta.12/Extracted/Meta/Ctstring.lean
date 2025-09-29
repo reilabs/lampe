@@ -5,25 +5,22 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.12»
-namespace Extracted
-
-noir_trait_impl[impl_292]<N: u32> std::«meta»::ctstring::AsCtString<> for String<N: u32> where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_292]<N: u32> «std-1.0.0-beta.12»::«meta»::ctstring::AsCtString<> for String<N: u32> where [] := {
   noir_def as_ctstring<>(self: String<N: u32>) -> Unit := {
     (#_strAsCtstring returning Unit)(self)
   };
 }
 
-noir_trait_impl[impl_293]<N: u32, T: Type> std::«meta»::ctstring::AsCtString<> for FmtString<N: u32, T> where [] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_293]<N: u32, T: Type> «std-1.0.0-beta.12»::«meta»::ctstring::AsCtString<> for FmtString<N: u32, T> where [] := {
   noir_def as_ctstring<>(self: FmtString<N: u32, T>) -> Unit := {
     (#_fmtstrAsCtstring returning Unit)(self)
   };
 }
 
-noir_def std::«meta»::ctstring::test::as_quoted_str_example<>() -> Unit := {
+noir_def «std-1.0.0-beta.12»::«meta»::ctstring::test::as_quoted_str_example<>() -> Unit := {
   #_unit
 }
 
-def Meta.Ctstring.env : Env := Env.mk
-  [«std::meta::ctstring::test::as_quoted_str_example»]
-  [impl_292, impl_293]
+def «std-1.0.0-beta.12».Meta.Ctstring.env : Env := Env.mk
+  [«std-1.0.0-beta.12::meta::ctstring::test::as_quoted_str_example»]
+  [«std-1.0.0-beta.12».impl_292, «std-1.0.0-beta.12».impl_293]

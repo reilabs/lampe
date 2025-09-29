@@ -5,9 +5,6 @@ import Lampe
 
 open Lampe
 
-namespace «std-1.0.0-beta.12»
-namespace Extracted
-
-def EcdsaSecp256R1.env : Env := Env.mk
+def «std-1.0.0-beta.12».EcdsaSecp256R1.env : Env := Env.mk
   []
   []

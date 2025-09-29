@@ -62,4 +62,8 @@ impl LeanDependency for LeanDependencyPath {
 
         Ok(result)
     }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
 }

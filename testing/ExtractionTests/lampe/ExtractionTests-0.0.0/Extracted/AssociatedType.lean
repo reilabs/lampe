@@ -5,15 +5,12 @@ import Lampe
 
 open Lampe
 
-namespace «ExtractionTests-0.0.0»
-namespace Extracted
-
-noir_trait_impl[impl_430]<> associated_type::Foo<> for associated_type::Pair<> where [] := {
-  noir_def foo_meth<>(self: associated_type::Pair<>) -> Field := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_430]<> «ExtractionTests-0.0.0»::associated_type::Foo<> for «ExtractionTests-0.0.0»::associated_type::Pair<> where [] := {
+  noir_def foo_meth<>(self: «ExtractionTests-0.0.0»::associated_type::Pair<>) -> Field := {
     self.0
   };
 }
 
-def AssociatedType.env : Env := Env.mk
+def «ExtractionTests-0.0.0».AssociatedType.env : Env := Env.mk
   []
-  [impl_430]
+  [«ExtractionTests-0.0.0».impl_430]
