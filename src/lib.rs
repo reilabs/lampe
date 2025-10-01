@@ -72,7 +72,7 @@ authors = [""]
         let (temp_dir, mock_project) = set_up_project(main_source)?;
 
         let warnings = mock_project
-            .extract()
+            .extract(true)
             .expect("getting warnings")
             .warnings
             .iter()

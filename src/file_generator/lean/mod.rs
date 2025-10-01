@@ -339,6 +339,7 @@ fn process_dependency<H: std::hash::BuildHasher>(
     stdlib_info: Option<&NoirPackageIdentifier>,
     lean_files: &[LeanFile],
     dependency_info: &DependencyInfo<H>,
+    overwrite: bool,
 ) -> Result<(), Error> {
     let extracted_dep_project_dir = deps_dir.join(format!(
         "{}-{}",
@@ -370,7 +371,7 @@ fn process_dependency<H: std::hash::BuildHasher>(
         stdlib_info.cloned(),
         all_direct_deps_for_dep,
         &dep_deps_with_lampe,
-        true,
+        overwrite,
     );
 
     dep_generator.generate_lib_file()?;
@@ -434,6 +435,7 @@ fn process_dependencies<H: std::hash::BuildHasher>(
     lampe_root_dir: &Path,
     stdlib_info: Option<&NoirPackageIdentifier>,
     dependency_info: &DependencyInfo<H>,
+    overwrite: bool,
 ) -> Result<(), Error> {
     if dependency_info.extracted_dependencies.is_empty() {
         return Ok(());
@@ -449,6 +451,7 @@ fn process_dependencies<H: std::hash::BuildHasher>(
             stdlib_info,
             lean_files,
             dependency_info,
+            overwrite,
         )?;
     }
 
@@ -481,6 +484,7 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
     extracted_code: &[LeanFile],
     dependency_info: &DependencyInfo<H>,
     external_dependencies: &[NoirPackageIdentifier],
+    overwrite: bool,
 ) -> Result<(), Error> {
     let direct_local_dependencies = dependency_info
         .direct_dependencies
@@ -497,11 +501,11 @@ pub fn generate_lean_files<H: std::hash::BuildHasher>(
         stdlib_info.cloned(),
         all_direct_dependencies,
         external_dependencies,
-        false,
+        overwrite,
     );
 
     process_root_package(&generator, extracted_code)?;
-    process_dependencies(lampe_root_dir, stdlib_info, dependency_info)?;
+    process_dependencies(lampe_root_dir, stdlib_info, dependency_info, overwrite)?;
 
     Ok(())
 }
