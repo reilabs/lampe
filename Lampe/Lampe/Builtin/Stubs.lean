@@ -43,15 +43,8 @@ def ecdsaSecp256K1 := stub
 def ecdsaSecp256R1 := stub
 def embeddedCurveAdd := stub
 def fmtstrAsCtstring := stub
-def isUnconstrained := stub
 def keccakf1600 := stub
 def mkFormatString := stub
-def modulesLeBytes := stub
-def modulusBeBits := stub
-def modulusBeBytes := stub
-def modulusLeBits := stub
-def modulusLeBytes := stub
-def modulusNumBits := stub
 def multiScalarMul := stub
 def poseidon2Permutation := stub
 def recursiveAggregation := stub
@@ -59,9 +52,5 @@ def sha256Compression := stub
 def sliceRefcount := stub
 def staticAssert := stub
 def strAsCtstring := stub
-def toBeBits := stub
-def toBeRadix := stub
-def toLeBits := stub
-def toLeRadix := stub
 
 end Lampe.Builtin

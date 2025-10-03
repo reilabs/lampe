@@ -90,7 +90,7 @@ Represents the builtin that converts an unsigned integer into a field element.
 
 Noir's semantics for this conversion take the unsigned integer and zero-extend it up to the size of
 the field. We do this by taking our unsigned int as an arbitrary `i ∈ ℤ` and then convert this to a
-field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field` 
+field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field`
 implemented for uints of bit size `s`.
 
 Integers are also internally represented as field elements with an additional restriction that all
@@ -111,7 +111,7 @@ Represents the builtin that converts a signed integer into a field element.
 
 Noir's semantics for this conversion take the signed integer and zero-extend it up to the size of
 the field. We do this by taking our signed int as an arbitrary `i ∈ ℤ` and then convert this to a
-field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field` 
+field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field`
 implemented for uints of bit size `s`.
 
 Integers are also internally represented as field elements with an additional restriction that all
@@ -126,5 +126,102 @@ def iAsField := newGenericTotalPureBuiltin
   -- semantics for our operation by doing so. We then rely on a coercion from ℕ to our field, the
   -- source of which can be viewed with `set_option trace.Meta.synthInstance`.
   (fun _ h![a] => a.toNat)
+
+/--
+Represents the builtin that returns the bit representation of the modulus of a field in
+little-endian format.
+-/
+def modulusLeBits : Builtin := newTotalPureBuiltin
+  ⟨[], (.slice (.u 1))⟩
+  (fun {p} h![] => decomposeToRadix 2 p.val (by tauto))
+
+/--
+Represents the builtin that returns the bit representation of the modulus of a field in
+big-endian format.
+-/
+def modulusBeBits : Builtin := newTotalPureBuiltin
+  ⟨[], (.slice (.u 1))⟩
+  (fun {p} h![] => .reverse (decomposeToRadix 2 p.val (by tauto)))
+
+/--
+Represents the builtin that returns the byte representation of the modulus of a field in
+little-endian format.
+-/
+def modulusLeBytes : Builtin := newTotalPureBuiltin
+  ⟨[], (.slice (.u 8))⟩
+  (fun {p} h![] => decomposeToRadix 256 p.val (by linarith))
+
+/--
+Represents the builtin that returns the byte representation of the modulus of a field in
+big-endian format.
+-/
+def modulusBeBytes : Builtin := newTotalPureBuiltin
+  ⟨[], (.slice (.u 8))⟩
+  (fun {p} h![] => .reverse (decomposeToRadix 256 p.val (by linarith)))
+
+/--
+Represents the builtin that returns the number of bits in the modulus of a field.
+-/
+def modulusNumBits : Builtin := newTotalPureBuiltin
+  ⟨[], (.u 64)⟩
+  -- Note: We could use the `log2` definition but this is easier to reason about.
+  (fun {p} h![] => decomposeToRadix 2 p.val (by tauto) |>.length)
+
+/--
+Represents the builtin that converts a field element to its bit representation in little-endian
+format.
+-/
+def toLeBits : Builtin := newGenericTotalPureBuiltin
+  (fun s => ([.field], .array (.u 1) s))
+  (fun s h![f] => ⟨
+    decomposeToRadix 2 f.val (by linarith) |>.takeD s.toNat 0,
+    by simp only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
+      BitVec.ofNat_eq_ofNat, List.takeD_length]
+    ⟩)
+
+/--
+Represents the builtin that converts a field element to its bit representation in big-endian format.
+-/
+def toBeBits : Builtin := newGenericTotalPureBuiltin
+  (fun s => ([.field], .array (.u 1) s))
+  (fun s h![f] => ⟨
+    .reverse $ decomposeToRadix 2 f.val (by linarith) |>.takeD s.toNat 0,
+    by simp only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
+      BitVec.ofNat_eq_ofNat, List.length_reverse, List.takeD_length]
+    ⟩)
+
+/--
+Represents the builtin that converts a field element to its radix representation in little-endian
+format.
+-/
+def toLeRadix : Builtin := newGenericPureBuiltin
+  (fun s => ([.field, .u 32], .array (.u 8) s))
+  (fun s h![f, r] => ⟨1 < r,
+    fun h => ⟨
+      decomposeToRadix r.toNat f.val (by
+        simp only [BitVec.lt_def] at h
+        exact h
+      ) |>.takeD s.toNat 0,
+      by
+        simp only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
+          BitVec.ofNat_eq_ofNat, List.takeD_length]
+    ⟩⟩)
+
+/--
+Represents the builtin that converts a field element to its radix representation in big-endian
+format.
+-/
+def toBeRadix : Builtin := newGenericPureBuiltin
+  (fun s => ([.field, .u 32], .array (.u 8) s))
+  (fun s h![f, r] => ⟨1 < r,
+    fun h => ⟨
+      .reverse $ decomposeToRadix r.toNat f.val (by
+        simp only [BitVec.lt_def] at h
+        exact h
+      ) |>.takeD s.toNat 0,
+      by
+        simp only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
+          BitVec.ofNat_eq_ofNat, List.length_reverse, List.takeD_length]
+    ⟩⟩)
 
 end Lampe.Builtin

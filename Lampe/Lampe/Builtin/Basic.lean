@@ -212,4 +212,13 @@ def arrayLenDesc : {p : Prime}
 def arrayLen : Builtin :=
   newGenericPureBuiltin arrayLenSgn arrayLenDesc
 
+/--
+Returns whether the execution is performed in an unconstrained context.
+
+Note we always return false, as otherwise we would be unable to reason about the code.
+-/
+def isUnconstrained : Builtin := newTotalPureBuiltin
+  ⟨[], .bool⟩
+  (fun h![] => false)
+
 end Lampe.Builtin
