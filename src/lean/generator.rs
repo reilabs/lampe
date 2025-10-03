@@ -1898,6 +1898,14 @@ impl LeanGenerator<'_, '_, '_> {
                 .to_string();
             let trait_name = self.fully_qualified_trait_name(trait_data.crate_id, trait_data.id);
 
+            let func_data = self
+                .context
+                .def_interner
+                .function_meta(trait_data.method_ids(function_name.clone()));
+            let func_type = self.generate_lean_type_value(func_data.typ, None);
+
+            // TODO get trait func to resolve output type
+
             let call_target = TraitCallRef {
                 trait_name,
                 function_name,

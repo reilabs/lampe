@@ -1028,4 +1028,25 @@ theorem tuple3_ord_pure_spec {p A B C self other}
   subst_vars
   rfl
 
+-- TODO tuple4
+-- TODO tuple5
+
+theorem max_pure_spec {p T v1 v2}
+    {T_ord : hasOrdImpl env T}
+    {T_ord_emb : ordFuncOf T}
+    {T_ord_f : ∀a b, pureOrdSemantics env T_ord_emb a b}
+  : STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::cmp::max».call h![T] h![v1, v2])
+    (fun r => r = if T_ord_emb v1 v2 = .gt then v1 else v2) := by
+  sorry
+
+theorem min_pure_spec {p T v1 v2}
+    {T_ord : hasOrdImpl env T}
+    {T_ord_emb : ordFuncOf T}
+    {T_ord_f : ∀a b, pureOrdSemantics env T_ord_emb a b}
+  : STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::cmp::max».call h![T] h![v1, v2])
+    (fun r => r = if T_ord_emb v1 v2 = .gt then v2 else v1) := by
+  sorry
+
 end Ord

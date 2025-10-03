@@ -31,7 +31,6 @@ def mk {p memTps} (args : HList (Tp.denote p) memTps)
     (arg, rest)
   | [], .nil => ()
 
-@[simp]
 lemma head_eq_fst {p} 
     {tp : Tp} 
     {tps : List Tp} 
@@ -39,7 +38,6 @@ lemma head_eq_fst {p}
   : Builtin.indexTpl tuple Builtin.Member.head = tuple.1 := by
   cases tuple; rfl
 
-@[simp]
 lemma tail_head_eq_snd {p} 
     {t1 : Tp} 
     {t2 : Tp}
@@ -48,7 +46,6 @@ lemma tail_head_eq_snd {p}
   : Builtin.indexTpl tuple Builtin.Member.head.tail = tuple.2.1 := by
   cases tuple; rfl
 
-@[simp]
 lemma tail_tail_head_eq_third {p} 
     {t1 : Tp} 
     {t2 : Tp}
@@ -58,7 +55,6 @@ lemma tail_tail_head_eq_third {p}
   : Builtin.indexTpl tuple Builtin.Member.head.tail.tail = tuple.2.2.1 := by
   cases tuple; rfl
 
-@[simp]
 lemma tail_tail_tail_head_eq_fourth {p} 
     {t1 : Tp} 
     {t2 : Tp}
@@ -69,7 +65,6 @@ lemma tail_tail_tail_head_eq_fourth {p}
   : Builtin.indexTpl tuple Builtin.Member.head.tail.tail.tail = tuple.2.2.2.1 := by
   cases tuple; rfl
 
-@[simp]
 lemma tail_tail_tail_tail_head_eq_fifth {p} 
     {t1 : Tp} 
     {t2 : Tp}
