@@ -22,8 +22,8 @@ In Noir, this builtin corresponds to `fn modulus_num_bits() -> u64` implemented 
 -/
 def fModNumBits := newPureBuiltin
   ⟨[.field], (.u 64)⟩
-  (@fun p h![_] => ⟨numBits p.val < 2^64,
-    fun _ => numBits p.val⟩)
+  (@fun p h![_] => ⟨numBits p.natVal < 2^64,
+    fun _ => numBits p.natVal⟩)
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in little-endian format.
@@ -32,7 +32,7 @@ In Noir, this builtin corresponds to `fn modulus_le_bits() -> [u1]` implemented 
 -/
 def fModLeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
-  (@fun p h![_] => decomposeToRadix 2 p.val (by tauto))
+  (@fun p h![_] => decomposeToRadix 2 p.natVal (by tauto))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
@@ -41,7 +41,7 @@ In Noir, this builtin corresponds to `fn modulus_be_bits() -> [u1]` implemented 
 -/
 def fModBeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
-  (@fun p h![_] => .reverse (decomposeToRadix 2 p.val (by tauto)))
+  (@fun p h![_] => .reverse (decomposeToRadix 2 p.natVal (by tauto)))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the byte representation of `p` in little-endian format.
@@ -50,7 +50,7 @@ In Noir, this builtin corresponds to `fn modulus_le_bytes() -> [u8]` implemented
 -/
 def fModLeBytes := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 8))⟩
-  (@fun p h![_] => decomposeToRadix 256 p.val (by linarith))
+  (@fun p h![_] => decomposeToRadix 256 p.natVal (by linarith))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
@@ -59,7 +59,7 @@ In Noir, this builtin corresponds to `fn modulus_be_bytes() -> [u8]` implemented
 -/
 def fModBeBytes := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 8))⟩
-  (@fun p h![_] => .reverse (decomposeToRadix 256 p.val (by linarith)))
+  (@fun p h![_] => .reverse (decomposeToRadix 256 p.natVal (by linarith)))
 
 /--
 Represents the builtin that converts a field element to an unsigned integer.
@@ -90,7 +90,7 @@ Represents the builtin that converts an unsigned integer into a field element.
 
 Noir's semantics for this conversion take the unsigned integer and zero-extend it up to the size of
 the field. We do this by taking our unsigned int as an arbitrary `i ∈ ℤ` and then convert this to a
-field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field` 
+field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field`
 implemented for uints of bit size `s`.
 
 Integers are also internally represented as field elements with an additional restriction that all
@@ -111,7 +111,7 @@ Represents the builtin that converts a signed integer into a field element.
 
 Noir's semantics for this conversion take the signed integer and zero-extend it up to the size of
 the field. We do this by taking our signed int as an arbitrary `i ∈ ℤ` and then convert this to a
-field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field` 
+field element by zero extending. In Noir, this builtin corresponds to `fn as_field(self) -> Field`
 implemented for uints of bit size `s`.
 
 Integers are also internally represented as field elements with an additional restriction that all
@@ -126,5 +126,93 @@ def iAsField := newGenericTotalPureBuiltin
   -- semantics for our operation by doing so. We then rely on a coercion from ℕ to our field, the
   -- source of which can be viewed with `set_option trace.Meta.synthInstance`.
   (fun _ h![a] => a.toNat)
+
+/--
+Represents the builtin that returns the bit representation of the modulus of a field in
+little-endian format.
+-/
+def modulusLeBits : Builtin := newTotalPureBuiltin
+  ⟨[], (.slice (.u 1))⟩
+  (fun {p} h![] => decomposeToRadix 2 p.natVal (by tauto) |>.map (BitVec.ofNat 1 ·))
+
+/--
+Represents the builtin that returns the bit representation of the modulus of a field in
+big-endian format.
+-/
+def modulusBeBits : Builtin := newTotalPureBuiltin
+  ⟨[], (.slice (.u 1))⟩
+  (fun {p} h![] => .reverse (decomposeToRadix 2 p.natVal (by tauto)))
+
+/--
+Represents the builtin that returns the byte representation of the modulus of a field in
+little-endian format.
+-/
+def modulusLeBytes : Builtin := newTotalPureBuiltin
+  ⟨[], (.slice (.u 8))⟩
+  (fun {p} h![] => decomposeToRadix 256 p.natVal (by linarith))
+
+/--
+Represents the builtin that returns the byte representation of the modulus of a field in
+big-endian format.
+-/
+def modulusBeBytes : Builtin := newTotalPureBuiltin
+  ⟨[], (.slice (.u 8))⟩
+  (fun {p} h![] => .reverse (decomposeToRadix 256 p.natVal (by linarith)))
+
+/--
+Represents the builtin that returns the number of bits in the modulus of a field.
+-/
+def modulusNumBits : Builtin := newTotalPureBuiltin
+  ⟨[], (.u 64)⟩
+  -- Note: We could use the `log2` definition but this is easier to reason about.
+  (fun {p} h![] => decomposeToRadix 2 p.natVal (by tauto) |>.length)
+
+/--
+Represents the builtin that converts a field element to its bit representation in little-endian format.
+
+Fails if `f ≥ 2^s`.
+-/
+def toLeBits : Builtin := newGenericBuiltin
+  (fun s => ([.field], .array (.u 1) s))
+  (fun s h![f] output =>
+    f.val < 2^s.toNat ∧
+    f.val = composeFromRadix 2 (output.val.map (·.toNat)))
+
+/--
+Represents the builtin that converts a field element to its bit representation in big-endian format.
+
+Fails if `f ≥ 2^s`.
+-/
+def toBeBits : Builtin := newGenericBuiltin
+  (fun s => ([.field], .array (.u 1) s))
+  (fun s h![f] output =>
+    f.val < 2^s.toNat ∧
+    f.val = composeFromRadix 2 (output.val.reverse.map (·.toNat)))
+
+/--
+Represents the builtin that converts a field element to its radix representation in little-endian
+format.
+
+Fails if `r ≤ 1` or `f ≥ 2^s`.
+-/
+def toLeRadix : Builtin := newGenericBuiltin
+  (fun s => ([.field, .u 32], .array (.u 8) s))
+  (fun s h![f, r] output =>
+    1 < r.toNat ∧
+    f.val < 2^s.toNat ∧
+    f.val = composeFromRadix r.toNat (output.val.map (·.toNat)))
+
+/--
+Represents the builtin that converts a field element to its radix representation in big-endian
+format.
+
+Fails if `r ≤ 1` or `f ≥ 2^s`.
+-/
+def toBeRadix : Builtin := newGenericBuiltin
+  (fun s => ([.field, .u 32], .array (.u 8) s))
+  (fun s h![f, r] output =>
+    1 < r.toNat ∧
+    f.val < 2^s.toNat ∧
+    f.val = composeFromRadix r.toNat (output.val.reverse.map (·.toNat)))
 
 end Lampe.Builtin
