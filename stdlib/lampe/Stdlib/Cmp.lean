@@ -16,7 +16,7 @@ set_option Lampe.pp.STHoare true
 
 /-- A shorthand for a call to the `std::cmp::Eq::eq` method. -/
 @[reducible]
-def eq {p} 
+def eq {p}
     (generics : HList Kind.denote «std-1.0.0-beta.12::cmp::Eq».«#genericKinds»)
     (Self : Tp)
     (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::cmp::Eq».«#associatedTypesKinds»)
@@ -365,9 +365,9 @@ def cmp {p}
     (Self : Tp)
     (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::cmp::Ord».«#associatedTypesKinds»)
     (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::cmp::Ord».cmp.«#genericKinds»)
-  : HList (Tp.denote p) 
+  : HList (Tp.denote p)
       («std-1.0.0-beta.12::cmp::Ord».cmp.«#inputs» generics Self associatedTypes fnGenerics)
-  → Expr (Tp.denote p) 
+  → Expr (Tp.denote p)
       («std-1.0.0-beta.12::cmp::Ord».cmp.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.12::cmp::Ord».cmp generics Self associatedTypes fnGenerics
 
@@ -896,7 +896,7 @@ theorem tuple2_ord_pure_spec {p A B self other}
 
   · intro
     steps [B_ord_f]
-  
+
     simp_all only [Bool.not_eq_eq_eq_not, Bool.not_false, ne_eq, ite_not, iff_true]
     rename_i a1 a2 b1 b2 _ _ _ _
 
@@ -915,6 +915,56 @@ theorem tuple2_ord_pure_spec {p A B self other}
       apply sub_eq_zero_of_eq at h1
       norm_num at h1
 
+abbrev Tp.comparator (p: Prime) (t : Tp): Type := t.denote p → t.denote p → Ordering
+
+lemma Tuple.compare_of_head_ne_eq {p} {A : Tp} {Bs: List Tp} ordA (ords : HList (Tp.comparator p) Bs)
+    {a1 a2 : A.denote p} {bs1 bs2 } (h : ordA a1 a2 ≠ .eq) :
+  Tuple.compare (HList.cons ordA ords) (a1, bs1) (a2, bs2) = ordA a1 a2 := by
+  simp [Tuple.compare, h]
+
+lemma Tuple.compare_of_head_eq_eq {p} {A : Tp} {Bs: List Tp} ordA (ords : HList (Tp.comparator p) Bs)
+    {a1 a2 : A.denote p} {bs1 bs2 } (h : ordA a1 a2 = .eq) :
+  Tuple.compare (HList.cons ordA ords) (a1, bs1) (a2, bs2) = Tuple.compare ords bs1 bs2:= by
+  simp [Tuple.compare, h]
+
+lemma Tuple.compare_singleton:
+  Tuple.compare h![ordA] a b = ordA a.1 b.1 := by
+  simp only [Tuple.compare]
+  split <;> simp_all
+
+@[simp]
+lemma fromOrdering_eq_eq_iff {p} {o} :
+  @fromOrdering p o = fromOrdering .eq ↔ o = .eq := by
+  cases o
+  · simp only [fromOrdering, reduceCtorEq, iff_false]
+    intro hp
+    injection hp
+    simp_all
+  · simp only [fromOrdering, reduceCtorEq, iff_true]
+  · simp only [fromOrdering, reduceCtorEq, iff_false]
+    intro hp
+    injection hp with hp
+    apply sub_eq_zero_of_eq at hp
+    norm_num at hp
+
+def Tuple.snoc (hs : Tp.denote p (Tp.tuple none tps)) (a : Tp.denote p tp) : Tp.denote p (Tp.tuple none (tps ++ [tp])) :=
+match tps, hs with
+| [], () => (a, ())
+| _::_, (h, hs) => (h, Tuple.snoc hs a)
+
+def HList.snoc (hs : HList f tps) (a : f tp): HList f (tps ++ [tp]) :=
+match tps, hs with
+| [], h![] => h![a]
+| _::_, HList.cons x xs => HList.cons x (HList.snoc xs a)
+
+theorem Tuple.compare_snoc_of_init_eq_eq {p} {A : Tp} {As : List Tp} {ordA} {ords : HList (Tp.comparator p) As}
+  {a1 b1 : A.denote p} {as1 bs1} (h: Tuple.compare ords as1 bs1 = .eq):
+  Tuple.compare (HList.snoc ords ordA) (Tuple.snoc as1 a1) (Tuple.snoc bs1 b1) = ordA a1 b1 := by sorry
+
+theorem Tuple.compare_snoc_of_init_ne_eq {p} {A : Tp} {As : List Tp} {ordA} {ords : HList (Tp.comparator p) As}
+  {a1 b1 : A.denote p} {as1 bs1} (h: Tuple.compare ords as1 bs1 ≠ .eq):
+  Tuple.compare (HList.snoc ords ordA) (Tuple.snoc as1 a1) (Tuple.snoc bs1 b1) = Tuple.compare ords as1 bs1 := by sorry
+
 theorem tuple3_ord_pure_spec {p A B C self other}
     {A_ord : hasOrdImpl env A}
     {B_ord : hasOrdImpl env B}
@@ -929,101 +979,73 @@ theorem tuple3_ord_pure_spec {p A B C self other}
     (cmp h![] (Tp.tuple none [A, B, C]) h![] h![] h![self, other])
     (fun r => r = fromOrdering (Tuple.compare h![A_ord_emb, B_ord_emb, C_ord_emb] self other)) := by
   resolve_trait
-  steps [A_ord_f, equal_spec, Eq.ordering_eq_spec]
-  step_as 
-    ([result ↦ ⟨NoirOrdering, fromOrdering $ A_ord_emb self.1 other.1⟩]) 
+
+  let currentCmp := h![A_ord_emb]
+  let currentSelfInit := Tuple.mk h![self.1]
+  let currentSelfTail := self.2
+  let currentOtherInit := Tuple.mk h![other.1]
+  let currentOtherTail := other.2
+
+  steps [equal_spec, Eq.ordering_eq_spec]
+
+  step_as (⟦⟧) (fun r => r = fromOrdering (Tuple.compare currentCmp currentSelfInit currentOtherInit))
+  · steps [A_ord_f]
+    rw [Tuple.compare_singleton]
+    assumption
+
+  steps [equal_spec, Eq.ordering_eq_spec]
+
+  step_as
+    ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
     (fun _ => [
-      result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare h![A_ord_emb, B_ord_emb] 
-        (Tuple.mk h![self.1, self.2.1]) 
-        (Tuple.mk h![other.1, other.2.1])⟩
+      result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp B_ord_emb)
+        (Tuple.snoc currentSelfInit currentSelfTail.1)
+        (Tuple.snoc currentOtherInit currentOtherTail.1)⟩
     ])
   · apply STHoare.ite_intro
     · intro
       steps [B_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some, Tuple.mk, Tuple.compare]
+      simp_all only [true_iff, Lens.modify, Option.get_some]
       congr
-      repeat rw [Tuple.tail_head_eq_snd]
-      rename_i equality cond
-      repeat rw [Tuple.head_eq_fst] at equality
-      
-      generalize h1 : A_ord_emb self.1 other.1 = a_res at *
-      cases a_res
-      · simp [fromOrdering] at equality
-        injection equality with fst
-        norm_num at fst
-      · cases B_ord_emb self.2.1 other.2.1 <;> simp_all
-      · simp [fromOrdering] at equality
-        injection equality with fst
-        apply sub_eq_zero_of_eq at fst
-        norm_num at fst
-
+      rw [Tuple.compare_snoc_of_init_eq_eq]
+      rw [fromOrdering_eq_eq_iff] at *
+      assumption
     · intro
       steps
-      simp_all only [Bool.false_eq_true, false_iff, Tuple.mk]
-      rename_i equality cond
-      repeat rw [Tuple.head_eq_fst] at equality
-      congr
-      unfold Tuple.compare 
-      simp only
+      simp_all only [Bool.false_eq_true, false_iff]
+      rw [fromOrdering_eq_eq_iff] at *
+      congr 2
+      rw [Tuple.compare_snoc_of_init_ne_eq]
+      assumption
 
-      generalize A_ord_emb self.1 other.1 = a_res at *
-      cases a_res <;> simp_all
-  
+  let currentCmp := HList.snoc currentCmp B_ord_emb
+  let currentSelfInit := Tuple.snoc currentSelfInit currentSelfTail.1
+  let currentSelfTail := currentSelfTail.2
+  let currentOtherInit := Tuple.snoc currentOtherInit currentOtherTail.1
+  let currentOtherTail := currentOtherTail.2
+
   steps [Eq.ordering_eq_spec, equal_spec]
 
-  step_as 
-    ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare h![A_ord_emb, B_ord_emb] 
-        (Tuple.mk h![self.1, self.2.1]) 
-        (Tuple.mk h![other.1, other.2.1])⟩]) 
-    (fun _ => [ result ↦ ⟨NoirOrdering, 
-      fromOrdering $ Tuple.compare h![A_ord_emb, B_ord_emb, C_ord_emb] self other⟩])
+  step_as
+    ([result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare currentCmp currentSelfInit currentOtherInit⟩])
+    (fun _ => [result ↦ ⟨NoirOrdering, fromOrdering $ Tuple.compare (HList.snoc currentCmp C_ord_emb)
+        (Tuple.snoc currentSelfInit currentSelfTail.1)
+        (Tuple.snoc currentOtherInit currentOtherTail.1)⟩])
   · apply STHoare.ite_intro
     · intro
       steps [C_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some, Tuple.mk, Tuple.compare]
+      simp_all only [true_iff, Lens.modify, Option.get_some]
       congr
-      repeat rw [Tuple.tail_tail_head_eq_third] at *
-      simp_all only [Tuple.mk, Lens.modify]
-      rename_i equality cond
-      
-      generalize A_ord_emb self.1 other.1 = a_res at *
-      generalize B_ord_emb self.2.1 other.2.1 = b_res at *
-      cases a_res
-      · simp [fromOrdering] at equality
-        injection equality with fst
-        norm_num at fst
-      · simp_all
-        cases b_res
-        · simp [fromOrdering] at equality
-          injection equality with fst
-          norm_num at fst
-        · cases C_ord_emb self.2.2.1 other.2.2.1 <;> simp_all
-        · simp [fromOrdering] at equality
-          injection equality with fst
-          apply sub_eq_zero_of_eq at fst
-          norm_num at fst
-      · simp [fromOrdering] at equality
-        injection equality with fst
-        apply sub_eq_zero_of_eq at fst
-        norm_num at fst
-
+      rw [Tuple.compare_snoc_of_init_eq_eq]
+      rw [fromOrdering_eq_eq_iff] at *
+      assumption
     · intro
       steps
-      simp_all only [Bool.false_eq_true, false_iff, Tuple.mk]
-      rename_i equality cond
-      repeat rw [Tuple.head_eq_fst] at *
+      simp_all only [Bool.false_eq_true, false_iff]
+      rw [fromOrdering_eq_eq_iff] at *
       congr 2
-
-      simp_all only [Tuple.compare]
-
-      generalize A_ord_emb self.1 other.1 = a_res at *
-      generalize B_ord_emb self.2.1 other.2.1 = b_res at *
-
-      cases a_res
-      · simp_all
-      · cases b_res <;> simp_all
-      · simp_all
-
+      rw [Tuple.compare_snoc_of_init_ne_eq (ordA := C_ord_emb)]
+      assumption
   steps
   subst_vars
   rfl
