@@ -293,6 +293,16 @@ theorem uLt_intro : STHoarePureBuiltin p Γ Builtin.uLt (by tauto) h![a, b] := b
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
+theorem uLeq_intro : STHoarePureBuiltin p Γ Builtin.uLeq (by tauto) h![a, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
+theorem uNeq_intro : STHoarePureBuiltin p Γ Builtin.uNeq (by tauto) h![a, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
 theorem iLt_intro : STHoarePureBuiltin p Γ Builtin.iLt (by tauto) h![a, b] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
@@ -573,6 +583,28 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
       simp_all only [Option.map_some, SLP.true_star, SLP.star_assoc]
       apply SLP.ent_star_top at h
       simp_all
+
+-- Field
+
+theorem toLeBits_intro : STHoarePureBuiltin p Γ Builtin.toLeBits (by tauto) h![f] (a := s) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
+theorem toBeBits_intro : STHoarePureBuiltin p Γ Builtin.toBeBits (by tauto) h![f] (a := s) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
+theorem toLeRadix_intro : STHoarePureBuiltin p Γ Builtin.toLeRadix (by tauto) h![f, r] (a := s) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  fapply pureBuiltin_intro_consequence (by rfl) (by rfl)
+  simp
+
+theorem toBeRadix_intro : STHoarePureBuiltin p Γ Builtin.toBeRadix (by tauto) h![f, r] (a := s) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  fapply pureBuiltin_intro_consequence (by rfl) (by rfl)
+  simp
 
 -- Misc
 

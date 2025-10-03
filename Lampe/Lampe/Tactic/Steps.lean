@@ -82,7 +82,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.fresh => return some (←``(fresh_intro))
         | ``Lampe.Builtin.assert => return some (←``(assert_intro))
 
-        | ``Lampe.Builtin.bNot => return some (←``(genericTotalPureBuiltin_intro Builtin.bNot rfl))
+        | ``Lampe.Builtin.bNot => return some (←``(genericTotalPureBuiltin_intro Builtin.bNot (a := ()) rfl))
         | ``Lampe.Builtin.bAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.bAnd rfl))
         | ``Lampe.Builtin.bXor => return some (←``(genericTotalPureBuiltin_intro Builtin.bXor rfl))
         | ``Lampe.Builtin.bOr  => return some (←``(genericTotalPureBuiltin_intro Builtin.bOr  rfl))
@@ -112,12 +112,22 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.uDiv => return some (←``(uDiv_intro))
         | ``Lampe.Builtin.uSub => return some (←``(uSub_intro))
         | ``Lampe.Builtin.uRem => return some (←``(uRem_intro))
+        | ``Lampe.Builtin.uLeq => return some (←``(uLeq_intro))
+        | ``Lampe.Builtin.uNeq => return some (←``(uNeq_intro))
 
         | ``Lampe.Builtin.iAdd => return some (←``(iAdd_intro))
         | ``Lampe.Builtin.iMul => return some (←``(iMul_intro))
         | ``Lampe.Builtin.iDiv => return some (←``(iDiv_intro))
         | ``Lampe.Builtin.iSub => return some (←``(iSub_intro))
         | ``Lampe.Builtin.iRem => return some (←``(iRem_intro))
+
+        | ``Lampe.Builtin.modulusLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBits (a := ()) rfl))
+        | ``Lampe.Builtin.modulusBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBits (a := _) rfl))
+        | ``Lampe.Builtin.modulusLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBytes (a := _) rfl))
+        | ``Lampe.Builtin.modulusBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBytes (a := _) rfl))
+        | ``Lampe.Builtin.modulusNumBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusNumBits (a := _) rfl))
+
+        | ``Lampe.Builtin.isUnconstrained => return some (←``(genericTotalPureBuiltin_intro Builtin.isUnconstrained (a := ()) rfl))
 
         | ``Lampe.Builtin.strAsBytes => return some (←``(strAsBytes_intro))
 
@@ -152,6 +162,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.ref => return some (←``(ref_intro))
         | ``Lampe.Builtin.readRef => return some (←``(readRef_intro))
 
+        -- Field builtins
         | ``Lampe.Builtin.fApplyRangeConstraint => return some (←``(fApplyRangeConstraint_intro))
         | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits rfl))
         | ``Lampe.Builtin.fModBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBytes rfl))
@@ -162,6 +173,10 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.iFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.iFromField rfl))
         | ``Lampe.Builtin.uAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.uAsField rfl))
         | ``Lampe.Builtin.uFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.uFromField rfl))
+        | ``Lampe.Builtin.toLeBits => return some (←``(toLeBits_intro))
+        | ``Lampe.Builtin.toBeBits => return some (←``(toBeBits_intro))
+        | ``Lampe.Builtin.toLeRadix => return some (←``(toLeRadix_intro))
+        | ``Lampe.Builtin.toBeRadix => return some (←``(toBeRadix_intro))
 
         -- Tuple/struct builtins
         | ``Lampe.Builtin.makeData => return some (← ``(genericTotalPureBuiltin_intro (a := (_, _)) Builtin.makeData rfl))
@@ -382,9 +397,9 @@ entailments found in the goal.
 
 It throws an exception if it cannot make progress or close any subsequent SL goal(s).
 -/
-partial def step 
-    (mvar : MVarId) 
-    (addLemmas : List AddLemma) 
+partial def step
+    (mvar : MVarId)
+    (addLemmas : List AddLemma)
     (unsafeUnifySL : Bool)
   : TacticM TripleGoals := mvar.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {Lean.exceptEmoji e}") $ do
   let target ← mvar.instantiateMVarsInType
@@ -422,10 +437,10 @@ Takes `limit` obvious steps, behaving like `repeat step`.
 
 It will never throw exceptions.
 -/
-partial def stepsLoop 
-    (goals : TripleGoals) 
-    (addLemmas : List AddLemma) 
-    (limit : Nat) 
+partial def stepsLoop
+    (goals : TripleGoals)
+    (addLemmas : List AddLemma)
+    (limit : Nat)
     (strict : Bool := false)
     (unsafeUnifySL : Bool := false)
   : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepsLoop {Lean.exceptEmoji e}") $ do
@@ -458,10 +473,10 @@ Takes a sequence of at most `limit` steps to attempt to advance the proof state 
 simplifying the goal.
 -/
 partial def steps (mvar : MVarId) (config : StepsConfig)  : TacticM (List MVarId) := do
-  let goals ← stepsLoop 
-    (TripleGoals.mk mvar [] [] []) 
-    config.addLemmas 
-    config.limit 
+  let goals ← stepsLoop
+    (TripleGoals.mk mvar [] [] [])
+    config.addLemmas
+    config.limit
     config.strict
     config.unsafeUnifySL
   return goals.flatten
@@ -498,12 +513,12 @@ declare_syntax_cat steps_items
 syntax "[" term,* "]" : steps_items
 syntax "steps" (num)? (steps_items)? optConfig : tactic
 
-def parseStepsConfig 
+def parseStepsConfig
     (goal : MVarId)
     (unsafeUnifySL : Bool)
     (limit : Option (TSyntax `num))
     (stepsItems : Option (TSyntax `steps_items))
-    (config : TSyntax `Lean.Parser.Tactic.optConfig) 
+    (config : TSyntax `Lean.Parser.Tactic.optConfig)
   : TacticM StepsConfig := goal.withContext do
   -- Parse the limit
   let limit := limit.map (fun n => n.getNat) |>.getD 1000
