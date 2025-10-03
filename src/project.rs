@@ -71,13 +71,13 @@ impl Project {
     ///
     /// Will return `Error` if something goes wrong witch compiling, extracting
     /// or generating files.
-    pub fn extract(&self) -> Result<WithWarnings<()>, Error> {
+    pub fn extract(&self, ovewrite: bool) -> Result<WithWarnings<()>, Error> {
         let noir_project = noir::Project::new(&self.nargo_file_manager, &self.nargo_parsed_files);
 
         let mut warnings = vec![];
         for package in &self.nargo_workspace.members {
             let with_warnings =
-                self.extract_package_with_all_dependencies(&noir_project, package)?;
+                self.extract_package_with_all_dependencies(&noir_project, package, ovewrite)?;
             if with_warnings.has_warnings() {
                 warnings.extend(with_warnings.warnings);
             }
@@ -92,6 +92,7 @@ impl Project {
         &self,
         noir_project: &noir::Project,
         package: &Package,
+        ovewrite: bool,
     ) -> Result<WithWarnings<()>, Error> {
         let mut warnings = vec![];
 
@@ -116,6 +117,7 @@ impl Project {
             &all_dependencies_to_extract,
             &direct_dependencies_to_extract,
             &dependency_relationships,
+            ovewrite,
         )?;
         warnings.extend(res.warnings);
 
@@ -133,6 +135,7 @@ impl Project {
             NoirPackageIdentifier,
             (Vec<NoirPackageIdentifier>, Vec<NoirPackageIdentifier>),
         >,
+        ovewrite: bool,
     ) -> Result<WithWarnings<()>, Error> {
         let package_name = &package.name.to_string();
         let package_version =
@@ -171,6 +174,7 @@ impl Project {
             },
             &dependency_info,
             &extracted_code,
+            ovewrite,
         )?;
 
         Ok(WithWarnings::new((), warnings))

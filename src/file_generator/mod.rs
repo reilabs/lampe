@@ -75,6 +75,7 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
     noir_package_identifier: &NoirPackageIdentifier,
     dependency_info: &DependencyInfo<H>,
     extracted_code: &[LeanFile],
+    overwrite: bool,
 ) -> Result<()> {
     let lampe_root_dir = target_dir.join(LAMPE_DIR_NAME);
 
@@ -106,6 +107,7 @@ pub fn lampe_project<H: std::hash::BuildHasher>(
         extracted_code,
         dependency_info,
         external_dependencies,
+        overwrite,
     )?;
 
     Ok(())
