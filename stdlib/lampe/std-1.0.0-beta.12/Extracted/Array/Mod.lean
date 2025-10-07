@@ -112,7 +112,12 @@ noir_def «std-1.0.0-beta.12»::array::concat<T: Type, N: u32, M: u32>(self: Arr
 }
 
 noir_def «std-1.0.0-beta.12»::array::sort<T: Type, N: u32>(self: Array<T, N: u32>) -> Array<T, N: u32> := {
-  («std-1.0.0-beta.12»::array::sort_via<T, N: u32, Unit> as λ(Array<T, N: u32>, λ(T, T) -> bool) -> Array<T, N: u32>)(self, (fn(a: T, b: T): bool := ((T as «std-1.0.0-beta.12»::cmp::Ord<>)::cmp<> as λ(T, T) -> bool)(a, b)))
+  («std-1.0.0-beta.12»::array::sort_via<T, N: u32, Unit> as λ(Array<T, N: u32>, λ(T, T) -> bool) -> Array<T, N: u32>)(self, (fn(a: T, b: T): bool := {
+    let __0 = ((T as «std-1.0.0-beta.12»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.12»::cmp::Ordering<>)(a, b);
+    let __1 = («std-1.0.0-beta.12»::cmp::Ordering::less<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)();
+    let __3 = («std-1.0.0-beta.12»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)();
+    (#_bOr returning bool)((#_bEq returning bool)(__0, __1), (#_bEq returning bool)(__0, __3))
+  }))
 }
 
 noir_def «std-1.0.0-beta.12»::array::sort_via<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>, ordering: λ(T, T) -> bool) -> Array<T, N: u32> := {

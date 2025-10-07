@@ -15,7 +15,7 @@ use itertools::Itertools;
 use nargo::workspace::Workspace;
 use noirc_errors::Location;
 use noirc_frontend::{
-    ast::{FunctionKind, Ident, IntegerBitSize},
+    ast::{BinaryOpKind, FunctionKind, Ident, IntegerBitSize},
     graph::CrateId,
     hir::{
         def_map::{LocalModuleId, ModuleData, ModuleDefId},
@@ -136,9 +136,16 @@ use crate::{
         },
         builtin::{
             self,
+            make_beq,
+            make_bor,
+            make_ordering_const,
+            make_ordering_type,
             BuiltinType,
             ASSERT_BUILTIN_NAME,
             MAKE_ARRAY_BUILTIN_NAME,
+            MAKE_EQUAL_NAME,
+            MAKE_GREATER_NAME,
+            MAKE_LESS_NAME,
             MAKE_REPEATED_ARRAY_BUILTIN_NAME,
             MAKE_REPEATED_SLICE_BUILTIN_NAME,
             MAKE_SLICE_BUILTIN_NAME,
@@ -1846,6 +1853,7 @@ impl LeanGenerator<'_, '_, '_> {
         Expression::Call(call)
     }
 
+    #[expect(clippy::too_many_lines)] // It doesn't make sense to split this up.
     pub fn generate_infix(&self, infix: &HirInfixExpression, output_type: &Type) -> Expression {
         let lhs = self.generate_expr(infix.lhs);
         let rhs = self.generate_expr(infix.rhs);
@@ -1891,23 +1899,345 @@ impl LeanGenerator<'_, '_, '_> {
                 .to_string();
             let trait_name = self.fully_qualified_trait_name(trait_data.crate_id, trait_data.id);
 
-            let call_target = TraitCallRef {
-                trait_name,
-                function_name,
-                self_type: lhs_ty_lean,
-                trait_generics: Vec::default(),
-                fun_generics: Vec::default(),
-                param_types,
-                return_type: output_type.clone(),
-            };
+            // TODO get trait func to resolve output type
 
-            let call = Call {
-                function: Box::new(Expression::TraitCallRef(call_target)),
-                params,
-                return_type: output_type.clone(),
-            };
+            // Unfortunately, the Noir compiler does post-processing on these declarations
+            // to generate the correct operator behavior. We have to post-process in the
+            // case of specific operators to ensure we output the correct code.
+            //
+            // It happens for:
+            //
+            // - `std::cmp::Eq`: Where `!=` and `==` both refer to the method `eq`, but the
+            //   latter can be generated directly.
+            // - `std::cmp::Ord`: Where `<`, `>`, `<=`, `>=` all refer to the method `cmp`.
+            match infix.operator.kind {
+                BinaryOpKind::NotEqual => {
+                    // In this case, we simply have to negate the output of the equality operator.
+                    let eq_call_ref = TraitCallRef {
+                        trait_name,
+                        function_name,
+                        self_type: lhs_ty_lean,
+                        trait_generics: Vec::default(),
+                        fun_generics: Vec::default(),
+                        param_types,
+                        return_type: Type::bool(),
+                    };
+                    let eq_call = Expression::Call(Call {
+                        function: Box::new(Expression::TraitCallRef(eq_call_ref)),
+                        params,
+                        return_type: Type::bool(),
+                    });
 
-            Expression::Call(call)
+                    let negation_call_ref = Expression::BuiltinCallRef(BuiltinCallRef {
+                        name:        "bNot".to_string(),
+                        return_type: Type::bool(),
+                    });
+                    Expression::Call(Call {
+                        function:    Box::new(negation_call_ref),
+                        params:      vec![eq_call],
+                        return_type: Type::bool(),
+                    })
+                }
+                BinaryOpKind::Less => {
+                    // This can be done simply by comparing the output of `cmp` to the `less`
+                    // constant value.
+                    let stdlib_name = self.crate_name(self.context.stdlib_crate_id());
+                    let ordering_type = make_ordering_type(&stdlib_name);
+                    let cmp_call_ref = TraitCallRef {
+                        trait_name,
+                        function_name,
+                        self_type: lhs_ty_lean,
+                        trait_generics: Vec::default(),
+                        fun_generics: Vec::default(),
+                        param_types,
+                        return_type: ordering_type.clone(),
+                    };
+                    let cmp_call = Expression::Call(Call {
+                        function: Box::new(Expression::TraitCallRef(cmp_call_ref)),
+                        params,
+                        return_type: ordering_type.clone(),
+                    });
+                    let cmp_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let cmp_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(cmp_call),
+                    });
+
+                    let make_less_call = make_ordering_const(
+                        &self.crate_name(self.context.stdlib_crate_id()),
+                        MAKE_LESS_NAME,
+                    );
+                    let make_less_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let make_less_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(make_less_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(make_less_call),
+                    });
+
+                    let eq_call = Expression::Call(Call {
+                        function:    Box::new(Expression::TraitCallRef(TraitCallRef {
+                            trait_name:     format!("{stdlib_name}::cmp::Eq"),
+                            function_name:  "eq".to_string(),
+                            self_type:      ordering_type.clone(),
+                            trait_generics: vec![],
+                            fun_generics:   vec![],
+                            param_types:    vec![ordering_type.clone(), ordering_type.clone()],
+                            return_type:    Type::bool(),
+                        })),
+                        params:      vec![
+                            Expression::Ident(cmp_result_ident),
+                            Expression::Ident(make_less_result_ident),
+                        ],
+                        return_type: Type::bool(),
+                    });
+
+                    Expression::Block(Block {
+                        statements: vec![cmp_result, make_less_result],
+                        expression: Some(Box::new(eq_call)),
+                    })
+                }
+                BinaryOpKind::Greater => {
+                    // This can be done simply by comparing the output of `cmp` to the `greater`
+                    // constant value.
+                    let stdlib_name = self.crate_name(self.context.stdlib_crate_id());
+                    let ordering_type = make_ordering_type(&stdlib_name);
+                    let cmp_call_ref = TraitCallRef {
+                        trait_name,
+                        function_name,
+                        self_type: lhs_ty_lean,
+                        trait_generics: Vec::default(),
+                        fun_generics: Vec::default(),
+                        param_types,
+                        return_type: ordering_type.clone(),
+                    };
+                    let cmp_call = Expression::Call(Call {
+                        function: Box::new(Expression::TraitCallRef(cmp_call_ref)),
+                        params,
+                        return_type: ordering_type.clone(),
+                    });
+                    let cmp_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let cmp_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(cmp_call),
+                    });
+
+                    let make_greater_call = make_ordering_const(
+                        &self.crate_name(self.context.stdlib_crate_id()),
+                        MAKE_GREATER_NAME,
+                    );
+                    let make_greater_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let make_greater_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(make_greater_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(make_greater_call),
+                    });
+
+                    let eq_call = Expression::Call(Call {
+                        function:    Box::new(Expression::TraitCallRef(TraitCallRef {
+                            trait_name:     format!("{stdlib_name}::cmp::Eq"),
+                            function_name:  "eq".to_string(),
+                            self_type:      ordering_type.clone(),
+                            trait_generics: vec![],
+                            fun_generics:   vec![],
+                            param_types:    vec![ordering_type.clone(), ordering_type.clone()],
+                            return_type:    Type::bool(),
+                        })),
+                        params:      vec![
+                            Expression::Ident(cmp_result_ident),
+                            Expression::Ident(make_greater_result_ident),
+                        ],
+                        return_type: Type::bool(),
+                    });
+
+                    Expression::Block(Block {
+                        statements: vec![cmp_result, make_greater_result],
+                        expression: Some(Box::new(eq_call)),
+                    })
+                }
+                BinaryOpKind::LessEqual => {
+                    // In this case we need to refer to the result of calling `cmp` twice, so we
+                    // have to assign it to a variable in a block.
+                    let ordering_type =
+                        make_ordering_type(&self.crate_name(self.context.stdlib_crate_id()));
+                    let cmp_call_ref = TraitCallRef {
+                        trait_name,
+                        function_name,
+                        self_type: lhs_ty_lean,
+                        trait_generics: Vec::default(),
+                        fun_generics: Vec::default(),
+                        param_types,
+                        return_type: ordering_type.clone(),
+                    };
+                    let cmp_call = Expression::Call(Call {
+                        function: Box::new(Expression::TraitCallRef(cmp_call_ref)),
+                        params,
+                        return_type: ordering_type.clone(),
+                    });
+                    let cmp_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let cmp_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(cmp_call),
+                    });
+
+                    let make_less_call = make_ordering_const(
+                        &self.crate_name(self.context.stdlib_crate_id()),
+                        MAKE_LESS_NAME,
+                    );
+                    let make_less_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let make_less_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(make_less_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(make_less_call),
+                    });
+
+                    let make_eq_call = make_ordering_const(
+                        &self.crate_name(self.context.stdlib_crate_id()),
+                        MAKE_EQUAL_NAME,
+                    );
+                    let make_eq_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let make_eq_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(make_eq_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(make_eq_call),
+                    });
+
+                    let eq_to_less_expr = make_beq(
+                        Expression::Ident(cmp_result_ident.clone()),
+                        Expression::Ident(make_less_result_ident),
+                    );
+
+                    let eq_to_eq_expr = make_beq(
+                        Expression::Ident(cmp_result_ident),
+                        Expression::Ident(make_eq_result_ident),
+                    );
+
+                    let or_expr = make_bor(eq_to_less_expr, eq_to_eq_expr);
+
+                    Expression::Block(Block {
+                        statements: vec![cmp_result, make_less_result, make_eq_result],
+                        expression: Some(Box::new(or_expr)),
+                    })
+                }
+                BinaryOpKind::GreaterEqual => {
+                    // In this case we need to refer to the result of calling `cmp` twice, so we
+                    // have to assign it to a variable in a block.
+                    let ordering_type =
+                        make_ordering_type(&self.crate_name(self.context.stdlib_crate_id()));
+                    let cmp_call_ref = TraitCallRef {
+                        trait_name,
+                        function_name,
+                        self_type: lhs_ty_lean,
+                        trait_generics: Vec::default(),
+                        fun_generics: Vec::default(),
+                        param_types,
+                        return_type: ordering_type.clone(),
+                    };
+                    let cmp_call = Expression::Call(Call {
+                        function: Box::new(Expression::TraitCallRef(cmp_call_ref)),
+                        params,
+                        return_type: ordering_type.clone(),
+                    });
+                    let cmp_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let cmp_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(cmp_call),
+                    });
+
+                    let make_greater_call = make_ordering_const(
+                        &self.crate_name(self.context.stdlib_crate_id()),
+                        MAKE_GREATER_NAME,
+                    );
+                    let make_greater_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let make_greater_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(make_greater_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(make_greater_call),
+                    });
+
+                    let make_eq_call = make_ordering_const(
+                        &self.crate_name(self.context.stdlib_crate_id()),
+                        MAKE_EQUAL_NAME,
+                    );
+                    let make_eq_result_ident = Identifier {
+                        name: self.name_supply.get_name(),
+                        typ:  ordering_type.clone(),
+                    };
+                    let make_eq_result = Statement::Let(LetStatement {
+                        pattern:    Pattern::Identifier(make_eq_result_ident.clone()),
+                        typ:        ordering_type.clone(),
+                        expression: Box::new(make_eq_call),
+                    });
+
+                    let eq_to_less_expr = make_beq(
+                        Expression::Ident(cmp_result_ident.clone()),
+                        Expression::Ident(make_greater_result_ident),
+                    );
+
+                    let eq_to_eq_expr = make_beq(
+                        Expression::Ident(cmp_result_ident),
+                        Expression::Ident(make_eq_result_ident),
+                    );
+
+                    let or_expr = make_bor(eq_to_less_expr, eq_to_eq_expr);
+
+                    Expression::Block(Block {
+                        statements: vec![cmp_result, make_greater_result, make_eq_result],
+                        expression: Some(Box::new(or_expr)),
+                    })
+                }
+                _ => {
+                    // In all other cases, we just return the direct operator call as we have
+                    // already generated it
+                    let call_target = TraitCallRef {
+                        trait_name,
+                        function_name,
+                        self_type: lhs_ty_lean,
+                        trait_generics: Vec::default(),
+                        fun_generics: Vec::default(),
+                        param_types,
+                        return_type: output_type.clone(),
+                    };
+
+                    let call = Call {
+                        function: Box::new(Expression::TraitCallRef(call_target)),
+                        params,
+                        return_type: output_type.clone(),
+                    };
+
+                    Expression::Call(call)
+                }
+            }
         }
     }
 

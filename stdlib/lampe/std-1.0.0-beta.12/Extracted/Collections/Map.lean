@@ -310,7 +310,7 @@ noir_trait_impl[«std-1.0.0-beta.12».impl_35]<K: Type, V: Type, N: u32, B: Type
                 #_skip
               } else {
                 let other_value = («std-1.0.0-beta.12»::option::Option::unwrap_unchecked<V> as λ(«std-1.0.0-beta.12»::option::Option<V>) -> V)(other_value);
-                if ((V as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(V, V) -> bool)(value, other_value) then {
+                if (#_bNot returning bool)(((V as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(V, V) -> bool)(value, other_value)) then {
                   equal = #_false;
                   #_skip
                 }
