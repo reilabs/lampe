@@ -12,7 +12,7 @@ open Lampe «Merkle-1.0.0» «Merkle-1.0.0».Field
 namespace «Merkle-1.0.0»
 namespace Spec
 
-def lp : Lampe.Prime := ⟨p, pPrime⟩
+def lp : Lampe.Prime := p
 
 def _root_.List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
 | 0, _ => List.Vector.nil
@@ -201,8 +201,15 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils:
     · decide
     · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
         cases input
+        rename_i val isLt
         conv => lhs; arg 1; whnf
-        simp [Nat.div_eq_zero_iff, *, lp, p] at *
+        simp only [lp, p] at isLt
+        have h : 1 < fieldP := by simp only [fieldP]; linarith
+        conv at isLt => rhs; apply Nat.sub_add_cancel h
+        simp only [Int.cast_zero, BitVec.ofNat_eq_ofNat, BitVec.toNat_ofNat, Nat.reducePow,
+          Nat.zero_mod, Int.cast_ofNat, Nat.reduceMod, zero_le, Nat.div_eq_zero_iff,
+          OfNat.ofNat_ne_zero, false_or, gt_iff_lt] at *
+        unfold fieldP at isLt
         linarith
       congr 1
       simp [Int.cast, IntCast.intCast]
@@ -392,6 +399,7 @@ set_option maxHeartbeats 3000000000000
 theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] h![input])
     fun output => output = Ref.bar input := by
   enter_decl
+  simp only [«Merkle-1.0.0::bar::bar»]
   steps [to_le_bytes_intro]
 
   step_as
@@ -529,6 +537,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
 theorem sigma_intro : STHoare lp env (⟦⟧) («Merkle-1.0.0::globals::SIGMA».call h![] h![])
     fun output => output = Ref.SIGMA := by
   enter_decl
+  simp only [«Merkle-1.0.0::globals::SIGMA»]
   steps []
   unfold Ref.SIGMA
   assumption
@@ -580,3 +589,16 @@ lemma weird_assert_eq_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::witness::we
     steps
   steps
   simp_all
+
+theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : MerkleTree (Fp lp) Ref.State.compress 32}:
+    STHoare lp env
+        ⟦⟧
+        («Merkle-1.0.0::main».call h![] h![tree.root, proof, item, index])
+        (fun _ => item ∈ tree) := by
+  enter_decl
+  steps [recover_intro (H:= «Merkle-1.0.0::skyscraper::Skyscraper».tp h![]) (N:=32) (hHash := SkyscraperHash_correct), weird_assert_eq_intro]
+  use index.reverse
+  subst_vars
+  rename tree.root = _ => hroot
+  rw [Eq.comm, MerkleTree.recover_eq_root_iff_proof_and_item_correct] at hroot
+  exact hroot.2

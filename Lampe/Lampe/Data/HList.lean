@@ -17,6 +17,13 @@ def replicate {rep : α → Type _} (v : rep tp) : (n : Nat) → HList rep (List
 | .zero => HList.nil
 | .succ n' => HList.cons v (HList.replicate v n')
 
+@[reducible]
+def snoc (hs : HList f tps) (a : f tp)
+  : HList f (tps ++ [tp]) :=
+match tps, hs with
+| [], h![] => h![a]
+| _::_, HList.cons x xs => HList.cons x (HList.snoc xs a)
+
 open Lean PrettyPrinter
 
 @[app_unexpander HList.nil]

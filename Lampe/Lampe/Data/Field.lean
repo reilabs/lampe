@@ -57,19 +57,37 @@ lemma List.getElem_chunksExact {l : List α} {h : l.length = k*d} {hi}: (List.ch
 
 namespace Lampe
 
-def Prime : Type := {P : ℕ // Nat.Prime (P+1)}
+-- We use `P + 1` in order to take advantage of `ZMod p` being defeq to `Fin p` if `p` is `Succ`.
+def Prime : Type := {P : ℕ // Nat.Prime (P + 1) ∧ P + 1 > 2}
 
 def Prime.natVal (P : Prime) : ℕ := P.val + 1
+
+@[reducible]
+def Prime.ofNat (p : ℕ) (is_prime : Nat.Prime p) (is_gt_two : p > 2): Prime := ⟨p - 1, by
+  have h1 : 1 ≤ p := by
+    simp only [gt_iff_lt] at is_gt_two
+
+    have hi : 1 < 2 := by norm_num
+    have lt : 1 < p := by apply lt_trans hi is_gt_two
+
+    apply Nat.le_of_lt
+    simp_all
+
+  have h2 : p - 1 + 1 = p := by
+    simp [Nat.sub_add_cancel h1]
+
+  apply And.intro <;> (rw [h2]; simp_all)
+  ⟩
 
 def Fp (P : Prime) := ZMod P.natVal
 
 instance : DecidableEq (Fp P) := inferInstanceAs (DecidableEq (ZMod P.natVal))
 
 instance : Field (Fp P) :=
-  let _ := Fact.mk P.prop
+  let _ := Fact.mk P.prop.left
   inferInstanceAs (Field (ZMod (P.val + 1)))
 
-instance : NeZero (Prime.natVal P) := ⟨Nat.Prime.ne_zero P.prop⟩
+instance : NeZero (Prime.natVal P) := ⟨Nat.Prime.ne_zero P.prop.left⟩
 
 def numBits (P : ℕ) : ℕ := Nat.log2 P + 1
 

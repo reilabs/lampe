@@ -8,15 +8,11 @@ name = "«Merkle-1.0.0»"
 
 [[require]]
 name = "Lampe"
-git = "https://github.com/reilabs/lampe"
-rev = "main"
-subDir = "Lampe"
+path = "../../../Lampe/"
 
 [[require]]
 name = "std-1.0.0-beta.12"
-git = "https://github.com/reilabs/lampe"
-rev = "main"
-subDir = "stdlib/lampe"
+path = "../../../stdlib/lampe/"
 
 [[require]]
 name = "proven-zk"
