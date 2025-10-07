@@ -607,4 +607,32 @@ mod has {
             assert_good_name(type_data.name());
         }
     }
+
+    #[test]
+    fn not_eq() {
+        let neq_source = r"
+fn not_eq<A: Eq>(a: A, b: A) -> bool {
+    a != b
+}
+";
+
+        let result = display_extraction_results(neq_source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
+
+    #[test]
+    fn generic_ord() {
+        let ord_source = r"
+fn leq<A: Ord>(a: A, b: A) -> bool {
+    a <= b
+}
+";
+
+        let result = display_extraction_results(ord_source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
 }

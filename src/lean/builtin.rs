@@ -1,9 +1,11 @@
 use noirc_frontend::{
     ast::{BinaryOpKind, IntegerBitSize, UnaryOp},
     shared::Signedness,
-    Type,
+    Type as NoirType,
     TypeBinding,
 };
+
+use crate::lean::ast::{BuiltinCallRef, Call, DeclCallRef, Expression, Type};
 
 pub type BuiltinName = String;
 
@@ -19,6 +21,66 @@ pub const MAKE_SLICE_BUILTIN_NAME: &str = "mkSlice";
 pub const MAKE_STRUCT_BUILTIN_NAME: &str = "makeData";
 pub const SKIP_BUILTIN_NAME: &str = "skip";
 pub const UNIT_TYPE_NAME: &str = "Unit";
+
+pub const ORDERING_TYPE_NAME: &str = "cmp::Ordering";
+pub const MAKE_LESS_NAME: &str = "cmp::Ordering::less";
+pub const MAKE_EQUAL_NAME: &str = "cmp::Ordering::equal";
+pub const MAKE_GREATER_NAME: &str = "cmp::Ordering::greater";
+
+pub const BEQ_NAME: &str = "bEq";
+pub const BOR_NAME: &str = "bOr";
+
+/// Builds the name of the ordering type in the specified crate.
+#[must_use]
+pub fn make_ordering_type(crate_name: &str) -> Type {
+    Type::data_type(&format!("{crate_name}::{ORDERING_TYPE_NAME}"), vec![])
+}
+
+/// Builds a function that creates the ordering constant based on the provided
+/// `ordering_name` in the given `crate_name`.
+#[must_use]
+pub fn make_ordering_const(crate_name: &str, ordering_name: &str) -> Expression {
+    let return_type = make_ordering_type(crate_name);
+
+    Expression::Call(Call {
+        function: Box::new(Expression::DeclCallRef(DeclCallRef {
+            function:    format!("{crate_name}::{ordering_name}"),
+            generics:    vec![],
+            param_types: vec![],
+            return_type: return_type.clone(),
+        })),
+        params: vec![],
+        return_type,
+    })
+}
+
+/// Builds a call to boolean equality between the provided `left` and `right`
+/// expressions.
+#[must_use]
+pub fn make_beq(left: Expression, right: Expression) -> Expression {
+    Expression::Call(Call {
+        function:    Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
+            name:        BEQ_NAME.to_string(),
+            return_type: Type::bool(),
+        })),
+        params:      vec![left, right],
+        return_type: Type::bool(),
+    })
+}
+
+/// Builds a call to boolean disjunction between the provided `left` and `right`
+/// expressions.
+#[must_use]
+pub fn make_bor(left: Expression, right: Expression) -> Expression {
+    Expression::Call(Call {
+        function:    Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
+            name:        BOR_NAME.to_string(),
+            return_type: Type::bool(),
+        })),
+        params:      vec![left, right],
+        return_type: Type::bool(),
+    })
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinType {
@@ -44,22 +106,24 @@ const fn integer_bit_size_to_u8(s: IntegerBitSize) -> u8 {
     }
 }
 
-impl TryInto<BuiltinType> for Type {
+impl TryInto<BuiltinType> for NoirType {
     type Error = String;
 
     fn try_into(self) -> Result<BuiltinType, String> {
         match self {
-            Type::FieldElement => Ok(BuiltinType::Field),
-            Type::Bool => Ok(BuiltinType::Bool),
-            Type::Unit => Ok(BuiltinType::Unit),
-            Type::Integer(Signedness::Signed, s) => Ok(BuiltinType::Int(integer_bit_size_to_u8(s))),
-            Type::Integer(Signedness::Unsigned, s) => {
+            NoirType::FieldElement => Ok(BuiltinType::Field),
+            NoirType::Bool => Ok(BuiltinType::Bool),
+            NoirType::Unit => Ok(BuiltinType::Unit),
+            NoirType::Integer(Signedness::Signed, s) => {
+                Ok(BuiltinType::Int(integer_bit_size_to_u8(s)))
+            }
+            NoirType::Integer(Signedness::Unsigned, s) => {
                 Ok(BuiltinType::Uint(integer_bit_size_to_u8(s)))
             }
-            Type::Array(..) => Ok(BuiltinType::Array),
-            Type::Slice(_) => Ok(BuiltinType::Slice),
-            Type::String(_) => Ok(BuiltinType::String),
-            Type::TypeVariable(tv) => match &*tv.borrow() {
+            NoirType::Array(..) => Ok(BuiltinType::Array),
+            NoirType::Slice(_) => Ok(BuiltinType::Slice),
+            NoirType::String(_) => Ok(BuiltinType::String),
+            NoirType::TypeVariable(tv) => match &*tv.borrow() {
                 TypeBinding::Bound(ty) => TryInto::<BuiltinType>::try_into(ty.clone()),
                 TypeBinding::Unbound(..) => Err(format!("unbound type variable `{tv:?}`")),
             },

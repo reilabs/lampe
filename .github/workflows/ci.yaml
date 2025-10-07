@@ -195,6 +195,42 @@ jobs:
       - name: Run test script
         working-directory: lampe
         run: ./testing/test.xsh
+
+  examples:
+    name: "Examples"
+    needs: [ build-lake, build-cargo ]
+    runs-on: ubuntu-latest
+    env:
+      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v5
+        with:
+          path: lampe
+      - name: Install xonsh
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update
+          sudo apt-get install -yq python3 pipx
+          pipx install 'xonsh[full]'
+      - name: Install xonsh (python) dependencies
+        working-directory: lampe
+        run: xonsh -c 'xpip install -r scripts/requirements.txt'
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.85.1
+          default: true
+          components: rustfmt, clippy
+      - name: Set up Lean 4
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-mathlib-cache: true
+          lake-package-directory: lampe/Lampe
       - name: Run test script on examples
         working-directory: lampe
         run: ./examples/test.xsh
