@@ -11,7 +11,7 @@ open Lampe «Merkle-0.0.0» «Merkle-0.0.0».Field
 
 namespace Spec
 
-def lp : Lampe.Prime := ⟨p, pPrime⟩
+def lp : Lampe.Prime := p
 
 def _root_.List.Vector.pad {α n} (v : List.Vector α n) (d : Nat) (pad : α) : List.Vector α d := match d, n with
 | 0, _ => List.Vector.nil
@@ -200,8 +200,15 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («Merkle-0.0.0::utils:
     · decide
     · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
         cases input
+        rename_i val isLt
         conv => lhs; arg 1; whnf
-        simp [Nat.div_eq_zero_iff, *, lp, p] at *
+        simp only [lp, p] at isLt
+        have h : 1 < fieldP := by simp only [fieldP]; linarith
+        conv at isLt => rhs; apply Nat.sub_add_cancel h
+        simp only [Int.cast_zero, BitVec.ofNat_eq_ofNat, BitVec.toNat_ofNat, Nat.reducePow,
+          Nat.zero_mod, Int.cast_ofNat, Nat.reduceMod, zero_le, Nat.div_eq_zero_iff,
+          OfNat.ofNat_ne_zero, false_or, gt_iff_lt] at *
+        unfold fieldP at isLt
         linarith
       congr 1
       simp [Int.cast, IntCast.intCast]
