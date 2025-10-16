@@ -909,7 +909,7 @@ theorem array_ord_pure_spec {p T N a b}
   resolve_trait
   steps [equal_spec]
 
-  loop_inv nat fun i hlo hhi => [result ↦ 
+  loop_inv nat fun i hlo hhi => [result ↦
     ⟨NoirOrdering, fromOrdering (List.compareWith t_ord_emb (a.toList.take i) (b.toList.take i))⟩]
   · simp
   · intro i hlo hhi
@@ -934,7 +934,7 @@ theorem array_ord_pure_spec {p T N a b}
       steps
       congr 1
       conv_rhs => rw [List.compareWith_take_then_drop i]
-      simp_all [Function.Injective.eq_iff fromOrdering_inj, List.take_take, List.drop_take, 
+      simp_all [Function.Injective.eq_iff fromOrdering_inj, List.take_take, List.drop_take,
         Ordering.then_of_ne_eq]
 
   steps [equal_spec, Eq.ordering_eq_spec]
@@ -972,7 +972,7 @@ theorem slice_ord_pure_spec {p T a b}
 
   steps [equal_spec]
 
-  loop_inv nat fun i hlo hhi => [result ↦ 
+  loop_inv nat fun i hlo hhi => [result ↦
     ⟨NoirOrdering, fromOrdering (List.compareWith t_ord_emb (a.take i) (b.take i))⟩]
   · simp
   · intro i hlo hhi
@@ -1263,7 +1263,7 @@ theorem tuple4_ord_pure_spec {p A B C D self other}
   subst_vars
   rfl
 
-set_option maxHeartbeats 300000 in
+set_option maxHeartbeats 350000 in
 theorem tuple5_ord_pure_spec {p A B C D E self other}
     {A_ord : hasOrdImpl env A}
     {B_ord : hasOrdImpl env B}

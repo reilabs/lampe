@@ -107,6 +107,10 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.uEq => return some (←``(genericTotalPureBuiltin_intro Builtin.uEq rfl))
         | ``Lampe.Builtin.iEq => return some (←``(genericTotalPureBuiltin_intro Builtin.iEq rfl))
 
+        | ``Lampe.Builtin.fNeq => return some (←``(genericTotalPureBuiltin_intro Builtin.fNeq rfl))
+        | ``Lampe.Builtin.uNeq => return some (←``(genericTotalPureBuiltin_intro Builtin.uNeq rfl))
+        | ``Lampe.Builtin.iNeq => return some (←``(genericTotalPureBuiltin_intro Builtin.iNeq rfl))
+
         | ``Lampe.Builtin.iGt => return some (←``(genericTotalPureBuiltin_intro Builtin.iGt rfl))
         | ``Lampe.Builtin.iLt => return some (←``(genericTotalPureBuiltin_intro Builtin.iLt rfl))
         | ``Lampe.Builtin.uGt => return some (←``(genericTotalPureBuiltin_intro Builtin.uGt rfl))
@@ -185,6 +189,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
       match vtp with
       | ``Tp.field => return some (←``(litField_intro))
       | ``Tp.u => return some (←``(litU_intro))
+      | ``Tp.i => return some (←``(litI_intro))
       | ``Tp.bool =>
         let some v := val.getAppArgs[2]? | throwError "malformed litNum"
         let some (v : Lean.Expr) := v.getAppArgs[1]? | throwError "malformed litNum" -- `OfNat.ofNat _ n`
@@ -387,9 +392,9 @@ entailments found in the goal.
 
 It throws an exception if it cannot make progress or close any subsequent SL goal(s).
 -/
-partial def step 
-    (mvar : MVarId) 
-    (addLemmas : List AddLemma) 
+partial def step
+    (mvar : MVarId)
+    (addLemmas : List AddLemma)
     (unsafeUnifySL : Bool)
   : TacticM TripleGoals := mvar.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {Lean.exceptEmoji e}") $ do
   let target ← mvar.instantiateMVarsInType
@@ -427,10 +432,10 @@ Takes `limit` obvious steps, behaving like `repeat step`.
 
 It will never throw exceptions.
 -/
-partial def stepsLoop 
-    (goals : TripleGoals) 
-    (addLemmas : List AddLemma) 
-    (limit : Nat) 
+partial def stepsLoop
+    (goals : TripleGoals)
+    (addLemmas : List AddLemma)
+    (limit : Nat)
     (strict : Bool := false)
     (unsafeUnifySL : Bool := false)
   : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepsLoop {Lean.exceptEmoji e}") $ do
@@ -463,10 +468,10 @@ Takes a sequence of at most `limit` steps to attempt to advance the proof state 
 simplifying the goal.
 -/
 partial def steps (mvar : MVarId) (config : StepsConfig)  : TacticM (List MVarId) := do
-  let goals ← stepsLoop 
-    (TripleGoals.mk mvar [] [] []) 
-    config.addLemmas 
-    config.limit 
+  let goals ← stepsLoop
+    (TripleGoals.mk mvar [] [] [])
+    config.addLemmas
+    config.limit
     config.strict
     config.unsafeUnifySL
   return goals.flatten
@@ -503,12 +508,12 @@ declare_syntax_cat steps_items
 syntax "[" term,* "]" : steps_items
 syntax "steps" (num)? (steps_items)? optConfig : tactic
 
-def parseStepsConfig 
+def parseStepsConfig
     (goal : MVarId)
     (unsafeUnifySL : Bool)
     (limit : Option (TSyntax `num))
     (stepsItems : Option (TSyntax `steps_items))
-    (config : TSyntax `Lean.Parser.Tactic.optConfig) 
+    (config : TSyntax `Lean.Parser.Tactic.optConfig)
   : TacticM StepsConfig := goal.withContext do
   -- Parse the limit
   let limit := limit.map (fun n => n.getNat) |>.getD 1000

@@ -151,6 +151,14 @@ theorem litU_intro: STHoare p Γ ⟦⟧ (.litNum (.u s) n) fun v => v = n := by
   apply SLP.ent_star_top
   assumption
 
+theorem litI_intro: STHoare p Γ ⟦⟧ (.litNum (.i s) n) fun v => v = n := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
 theorem litField_intro: STHoare p Γ ⟦⟧ (.litNum .field n) fun v => v = n := by
   unfold STHoare THoare
   intro H st hp
@@ -322,7 +330,7 @@ theorem loop_inv_intro
     (fun _ => Inv
       (i + 1)
       (BitVec.le_trans hlo (U.le_add_one_of_exists_lt hhi))
-      (U.le_plus_one_of_lt hhi))) 
+      (U.le_plus_one_of_lt hhi)))
     → STHoare p Γ
       (∃∃h, Inv lo BitVec.le_refl h)
       (.loop lo hi body)
@@ -392,7 +400,7 @@ theorem loop_inv_intro'
   : (∀(i:Nat),
       (hlo: lo.toNat ≤ i) → (hhi: i < hi.toNat) → STHoare p Γ (Inv i hlo (by linarith))
       (body $ BitVec.ofNatLT i (lt_trans hhi hi.toFin.prop))
-      (fun _ => Inv (i + 1) (by linarith) (by linarith))) 
+      (fun _ => Inv (i + 1) (by linarith) (by linarith)))
     → STHoare p Γ
       (∃∃h, Inv lo.toNat BitVec.le_refl h)
       (.loop lo hi body)

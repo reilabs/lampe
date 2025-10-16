@@ -12,7 +12,7 @@ namespace Lampe
 -- The value of the field prime under which the semantics are operating.
 variable (p : Prime)
 
-/-- 
+/--
 Omni provides our implementation of the program semantics for Noir, demonstrating how state
 transitions can occur within the program.
 
@@ -20,7 +20,7 @@ It effectively says that if the program with the environment `Γ` begins in stat
 program fragment `expr` is executed, then execution succeeds and the postcondition `Q` holds, or
 execution has failed.
 
-Noir as a language exhibits explicitly nondeterministic behavior, which we want to capture in our 
+Noir as a language exhibits explicitly nondeterministic behavior, which we want to capture in our
 semantics explicitly. The type of `Q` represents this through making the postcondition into a _set_,
 modeled explicitly as a selector function. This is wrapped in an `Option`, where a value of `some`
 implies a successful execution, while `none` suggests a failure. The interpretation is that, if
@@ -34,6 +34,7 @@ inductive Omni : (Γ : Env) → (st : State p) → (expr : Expr (Tp.denote p) tp
 | litFalse {Q} : Q (some (st, false)) → Omni Γ st (.litNum .bool 0) Q
 | litTrue {Q} : Q (some (st, true)) → Omni Γ st (.litNum .bool 1) Q
 | litU {Q} : Q (some (st, ↑n)) → Omni Γ st (.litNum (.u s) n) Q
+| litI {Q} : Q (some (st, ↑n)) → Omni Γ st (.litNum (.i s) n) Q
 | litUnit {Q} : Q (some (st, ())) → Omni Γ st (.litNum .unit n) Q
 | constFp {Q} {c : Int} : Q (some (st, c)) → Omni Γ st (.constFp c) Q
 | constU {Q} {c : U w} : Q (some (st, c)) → Omni Γ st (.constU c) Q
@@ -132,6 +133,7 @@ theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} 
   | litFalse hq
   | litTrue hq
   | litU hq
+  | litI hq
   | litUnit
   | constU
   | constFp
@@ -260,7 +262,7 @@ theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} 
       rw [Finmap.union_comm_of_disjoint hd₁]
       tauto
 
-/-- 
+/--
 Any theorem over our Omnisemantics that is proved for an environment Γ₁ is also valid for Γ₂, where
 Γ₁ ⊆ Γ₂.
 
