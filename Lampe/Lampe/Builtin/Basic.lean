@@ -165,6 +165,17 @@ def assert := newPureBuiltin
   (fun h![a] => ⟨a == true,
     fun _ => ()⟩)
 
+/--
+Defines the static assertion builtin that takes a boolean and a message of type `tp : Tp`.
+We assume the following:
+- If `a == true`, it evaluates to `()`.
+- Else, an exception is thrown.
+-/
+def staticAssert := newGenericPureBuiltin
+  (fun tp => ⟨[.bool, tp], .unit⟩)
+  (fun _ h![a, _] => ⟨a == true,
+    fun _ => ()⟩)
+
 inductive freshOmni : Omni where
 | mk {P st tp Q} : (∀ v, Q (some (st, v))) → freshOmni P st [] tp h![] Q
 
