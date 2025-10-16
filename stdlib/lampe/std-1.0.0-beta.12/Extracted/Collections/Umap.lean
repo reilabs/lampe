@@ -210,7 +210,7 @@ noir_def «std-1.0.0-beta.12»::collections::umap::UHashMap::quadratic_probe<K: 
   (#_uRem returning u32)((#_uAdd returning u32)(hash, (#_uDiv returning u32)((#_uAdd returning u32)(attempt, (#_uMul returning u32)(attempt, attempt)), (2: u32))), (#_arrayLen returning u32)(self.0))
 }
 
-noir_trait_impl[«std-1.0.0-beta.12».impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.12»::cmp::Eq<> for «std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B> where [K: «std-1.0.0-beta.12»::cmp::Eq<>, K: «std-1.0.0-beta.12»::cmp::Eq<>, V: «std-1.0.0-beta.12»::cmp::Eq<>, B: «std-1.0.0-beta.12»::cmp::Eq<B_as_BuildHasher_H>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_38]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.12»::cmp::Eq<> for «std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B> where [K: «std-1.0.0-beta.12»::cmp::Eq<>, K: «std-1.0.0-beta.12»::hash::Hash<>, V: «std-1.0.0-beta.12»::cmp::Eq<>, B: «std-1.0.0-beta.12»::hash::BuildHasher<B_as_BuildHasher_H>] := {
   noir_def eq<>(self: «std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B>, other: «std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B>) -> bool := {
     let mut equal = #_false;
     if (#_uEq returning bool)((«std-1.0.0-beta.12»::collections::umap::UHashMap::len<K, V, B> as λ(«std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B>) -> u32)(self), («std-1.0.0-beta.12»::collections::umap::UHashMap::len<K, V, B> as λ(«std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B>) -> u32)(other)) then {
@@ -245,7 +245,7 @@ noir_trait_impl[«std-1.0.0-beta.12».impl_38]<K: Type, V: Type, B: Type, B_as_B
   };
 }
 
-noir_trait_impl[«std-1.0.0-beta.12».impl_39]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.12»::default::Default<> for «std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B> where [B: «std-1.0.0-beta.12»::default::Default<B_as_BuildHasher_H>, B: «std-1.0.0-beta.12»::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_39]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.12»::default::Default<> for «std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B> where [B: «std-1.0.0-beta.12»::hash::BuildHasher<B_as_BuildHasher_H>, B: «std-1.0.0-beta.12»::default::Default<>] := {
   noir_def default<>() -> «std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B> := {
     («std-1.0.0-beta.12»::collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) -> «std-1.0.0-beta.12»::collections::umap::UHashMap<K, V, B>)(((B as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> B)())
   };

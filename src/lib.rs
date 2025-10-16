@@ -635,4 +635,34 @@ fn leq<A: Ord>(a: A, b: A) -> bool {
 
         print!("{}", result.unwrap().1);
     }
+
+    #[test]
+    fn trait_where_bounds() {
+        let source = r"
+trait MyFrom<T> {
+    fn from(input: T) -> Self;
+}
+
+trait MyInto<T> {
+    fn into(self) -> T;
+}
+
+impl<T> MyFrom<T> for T {
+    fn from(input: T) -> Self {
+        input
+    }
+}
+
+impl<T, U> MyInto<T> for U where T: From<U> {
+    fn into(self) -> T {
+        T::from(self)
+    }
+}
+";
+
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
 }

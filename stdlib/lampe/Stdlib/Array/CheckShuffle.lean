@@ -195,8 +195,6 @@ theorem check_shuffle_spec
       rename List.Vector.get rhs _  = List.Vector.get lhs _ => hpeq
       rw [Eq.comm] at hpeq
       convert hpeq
-      · simp
-      · simp [GetElem.getElem]
     · simp_all
 
   steps

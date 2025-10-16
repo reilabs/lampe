@@ -11,7 +11,7 @@ noir_trait_impl[«std-1.0.0-beta.12».impl_40]<T: Type> «std-1.0.0-beta.12»::c
   };
 }
 
-noir_trait_impl[«std-1.0.0-beta.12».impl_41]<T: Type, U: Type> «std-1.0.0-beta.12»::convert::Into<T> for U where [T: «std-1.0.0-beta.12»::convert::Into<U>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_41]<T: Type, U: Type> «std-1.0.0-beta.12»::convert::Into<T> for U where [T: «std-1.0.0-beta.12»::convert::From<U>] := {
   noir_def into<>(self: U) -> T := {
     ((T as «std-1.0.0-beta.12»::convert::From<U>)::«from»<> as λ(U) -> T)(self)
   };

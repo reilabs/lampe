@@ -1426,7 +1426,13 @@ impl LeanGenerator<'_, '_, '_> {
                     .chain(generics.named.iter().map(|g| &g.typ))
                     .map(|g| self.generate_lean_type_value(g, None))
                     .collect_vec();
-                let bound = Type::data_type(&trait_name, generics.clone());
+                let bound_trait_id = cons.trait_bound.trait_id;
+                let bound_trait_data = self.context.def_interner.get_trait(bound_trait_id);
+                let bound_trait_name = quote_lean_keywords(
+                    &self.fully_qualified_trait_name(bound_trait_data.crate_id, bound_trait_id),
+                );
+
+                let bound = Type::data_type(&bound_trait_name, generics.clone());
 
                 WhereClause {
                     var,

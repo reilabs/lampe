@@ -63,13 +63,13 @@ noir_def «std-1.0.0-beta.12»::hash::from_field_unsafe<>(scalar: Field) -> «st
   (#_makeData returning «std-1.0.0-beta.12»::embedded_curve_ops::EmbeddedCurveScalar<>)(xlo, xhi)
 }
 
-noir_trait_impl[«std-1.0.0-beta.12».impl_2]<H: Type> «std-1.0.0-beta.12»::hash::BuildHasher<> for «std-1.0.0-beta.12»::hash::BuildHasherDefault<H> where [H: «std-1.0.0-beta.12»::hash::BuildHasher<>, H: «std-1.0.0-beta.12»::hash::BuildHasher<>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_2]<H: Type> «std-1.0.0-beta.12»::hash::BuildHasher<> for «std-1.0.0-beta.12»::hash::BuildHasherDefault<H> where [H: «std-1.0.0-beta.12»::hash::Hasher<>, H: «std-1.0.0-beta.12»::default::Default<>] := {
   noir_def build_hasher<>(_self: «std-1.0.0-beta.12»::hash::BuildHasherDefault<H>) -> H := {
     ((H as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> H)()
   };
 }
 
-noir_trait_impl[«std-1.0.0-beta.12».impl_3]<H: Type> «std-1.0.0-beta.12»::default::Default<> for «std-1.0.0-beta.12»::hash::BuildHasherDefault<H> where [H: «std-1.0.0-beta.12»::default::Default<>, H: «std-1.0.0-beta.12»::default::Default<>] := {
+noir_trait_impl[«std-1.0.0-beta.12».impl_3]<H: Type> «std-1.0.0-beta.12»::default::Default<> for «std-1.0.0-beta.12»::hash::BuildHasherDefault<H> where [H: «std-1.0.0-beta.12»::hash::Hasher<>, H: «std-1.0.0-beta.12»::default::Default<>] := {
   noir_def default<>() -> «std-1.0.0-beta.12»::hash::BuildHasherDefault<H> := {
     (#_makeData returning «std-1.0.0-beta.12»::hash::BuildHasherDefault<H>)()
   };

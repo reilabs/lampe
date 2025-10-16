@@ -92,7 +92,7 @@ def makeLambdaParam [MonadDSL m] (p : TSyntax `noir_lam_param) : m LambdaParam :
   let pat ← makePat pat
   let ty ← makeNoirType ty
   pure ⟨pat, ty⟩
-| _ => throwUnsupportedSyntax 
+| _ => throwUnsupportedSyntax
 
 mutual
 
@@ -317,7 +317,7 @@ partial def makeLambda [MonadDSL m]
   → m (TSyntax `term)
 | `(noir_lambda|fn( $params,* ): $retType := $body), binder, k => do
   let retType : TSyntax `term ← makeNoirType retType
-  let params ← params.getElems.toList.mapM makeLambdaParam 
+  let params ← params.getElems.toList.mapM makeLambdaParam
   let paramTypes := params.map fun p => p.type
   let paramTypes ← makeListLit paramTypes
   let paramNames ← params.mapM fun b => match b.binder with
@@ -496,15 +496,15 @@ def makeTraitDef [MonadUtil m] : Syntax → m (List $ TSyntax `command)
     `(abbrev $(makeTraitDefAssociatedTypesKindsIdent traitName) : List Kind := $assocTypeGenKinds)
   outputs := outputs.concat associatedTypesKindDecl
 
-  let traitHasImplDecl : TSyntax `command ← 
-    `(@[reducible] def $(makeTraitDefHasImplIdent traitName) 
+  let traitHasImplDecl : TSyntax `command ←
+    `(@[reducible] def $(makeTraitDefHasImplIdent traitName)
       (env : $(←``(Env)))
       (traitGenerics : HList Kind.denote $(makeTraitDefGenericKindsIdent traitName))
       (selfType : Tp) :=
-        $(←``(TraitResolvable)) env 
-        ⟨⟨$(Syntax.mkStrLit traitName.getId.toString), 
-          $(makeTraitDefGenericKindsIdent traitName), 
-          traitGenerics⟩, 
+        $(←``(TraitResolvable)) env
+        ⟨⟨$(Syntax.mkStrLit traitName.getId.toString),
+          $(makeTraitDefGenericKindsIdent traitName),
+          traitGenerics⟩,
         selfType⟩)
   outputs := outputs.concat traitHasImplDecl
 
@@ -519,7 +519,7 @@ def makeTraitDef [MonadUtil m] : Syntax → m (List $ TSyntax `command)
 
     let params ← params.getElems.toList.mapM makeNoirType
     let inTypesDecl ← `(
-      def $(makeTraitFunDefInputsIdent traitName fnName)
+      @[reducible] def $(makeTraitFunDefInputsIdent traitName fnName)
       : HList Kind.denote $(makeTraitDefGenericKindsIdent traitName)
       → Tp
       → HList Kind.denote $(makeTraitDefAssociatedTypesKindsIdent traitName)
@@ -533,7 +533,7 @@ def makeTraitDef [MonadUtil m] : Syntax → m (List $ TSyntax `command)
 
     let outTp ← makeNoirType retType
     let outTypeDecl ← `(
-      def $(makeTraitFunDefOutputIdent traitName fnName)
+      @[reducible] def $(makeTraitFunDefOutputIdent traitName fnName)
       : HList Kind.denote $(makeTraitDefGenericKindsIdent traitName)
       → Tp
       → HList Kind.denote $(makeTraitDefAssociatedTypesKindsIdent traitName)
@@ -546,7 +546,7 @@ def makeTraitDef [MonadUtil m] : Syntax → m (List $ TSyntax `command)
     outputs := outputs.concat outTypeDecl
 
     let callDecl ← `(
-      def $(makeTraitFunDefIdent traitName fnName) {p}
+      @[reducible] def $(makeTraitFunDefIdent traitName fnName) {p}
         (generics : HList Kind.denote $(makeTraitDefGenericKindsIdent traitName))
         (Self : Tp)
         (associatedTypes : HList Kind.denote $(makeTraitDefAssociatedTypesKindsIdent traitName))
