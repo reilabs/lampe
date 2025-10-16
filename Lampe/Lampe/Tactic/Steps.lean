@@ -81,6 +81,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         match n with
         | ``Lampe.Builtin.fresh => return some (←``(fresh_intro))
         | ``Lampe.Builtin.assert => return some (←``(assert_intro))
+        | ``Lampe.Builtin.staticAssert => return some (←``(staticAssert_intro))
 
         | ``Lampe.Builtin.bNot => return some (←``(genericTotalPureBuiltin_intro Builtin.bNot (a := ()) rfl))
         | ``Lampe.Builtin.bAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.bAnd rfl))
@@ -113,6 +114,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.uSub => return some (←``(uSub_intro))
         | ``Lampe.Builtin.uRem => return some (←``(uRem_intro))
         | ``Lampe.Builtin.uLeq => return some (←``(uLeq_intro))
+        | ``Lampe.Builtin.uLt => return some (←``(uLt_intro))
         | ``Lampe.Builtin.uNeq => return some (←``(uNeq_intro))
 
         | ``Lampe.Builtin.iAdd => return some (←``(iAdd_intro))
@@ -123,7 +125,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
 
         | ``Lampe.Builtin.modulusLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBits (a := ()) rfl))
         | ``Lampe.Builtin.modulusBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBits (a := _) rfl))
-        | ``Lampe.Builtin.modulusLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBytes (a := _) rfl))
+        | ``Lampe.Builtin.modulusLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBytes (a := ()) rfl))
         | ``Lampe.Builtin.modulusBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBytes (a := _) rfl))
         | ``Lampe.Builtin.modulusNumBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusNumBits (a := _) rfl))
 

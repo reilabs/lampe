@@ -51,7 +51,6 @@ def poseidon2Permutation := stub
 def recursiveAggregation := stub
 def sha256Compression := stub
 def sliceRefcount := stub
-def staticAssert := stub
 def strAsCtstring := stub
 
 end Lampe.Builtin

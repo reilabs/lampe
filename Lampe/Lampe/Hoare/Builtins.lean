@@ -613,6 +613,11 @@ theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
+theorem staticAssert_intro : STHoarePureBuiltin p Γ Builtin.staticAssert (by tauto) (a := tp) h![c, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
 theorem cast_intro [Builtin.CastTp tp tp'] : STHoare p Γ ⟦⟧ (.callBuiltin [tp] tp' .cast h![v])
    (fun v' => v' = @Builtin.CastTp.cast tp tp' _ p v) := by
    unfold STHoare THoare
