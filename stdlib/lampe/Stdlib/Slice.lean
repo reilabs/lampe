@@ -66,58 +66,47 @@ lemma slice_pure_map {T U Env p f fb func l}
   · assumption
   · intros; steps [h_pure]; simp_all
 
-theorem as_array_intro {p T} {N : BitVec 32} {input : List _} (hinput : input.length < 2 ^ 32) (hi : input.length = N) :
-    STHoare p env ⟦⟧
+theorem as_array_spec {p T N input}
+  : STHoare p env ⟦⟧
     («std-1.0.0-beta.12::slice::as_array».call h![T, N] h![input])
-    fun output => (output : List.Vector (Tp.denote p T) N.toNat) = ⟨input, by
-      have : input.length = input.length % 4294967296 := (Nat.mod_eq_of_lt hinput).symm
-      simp [←hi, ←this]
-    ⟩
-  := by
+    (fun r => r.toList = input) := by
   enter_decl
   steps
-  loop_inv nat fun i _ _ => ∃∃v, [array ↦ ⟨Tp.array T N, v⟩] ⋆ (v.toList = input.take i ++ List.replicate (N - i).toNat (Tp.zero p T))
-  · sl; simp; rfl
-  · simp only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-    zero_le]
-  · intro i hlo hhi
+  loop_inv nat fun i hlo hhi => ∃∃v, [array ↦ ⟨T.array N, v⟩] ⋆ (v.toList.take i = input.take i)
+  · sl; simp
+  · simp
+  · intro i _ _
     steps
-    simp_all
-    conv in (occs := 1) List.replicate _ =>
-      congr
-      equals N.toNat - i =>
-        sorry
-    conv in (occs := 2) List.replicate _ =>
-      congr
-      equals N.toNat - (i + 1) =>
-        sorry
-    conv in min i input.length =>
-      equals i =>
-        sorry
-    simp only [tsub_self]
-    sorry
-  · steps
-    apply List.Vector.eq
-    simp_all [-List.takeD_succ, List.takeD_eq_take]
-    subst_vars; simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat, Nat.reducePow]; omega
+    simp_all only [beq_true, decide_eq_true_eq, BitVec.toNat_intCast, Int.reducePow,
+      EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, Lens.modify, Lens.get, Access.modify,
+      BitVec.toNat_ofNatLT, ↓reduceDIte, Builtin.instCastTpU, BitVec.natCast_eq_ofNat,
+      BitVec.ofNat_toNat, BitVec.setWidth_eq, List.get_eq_getElem, Option.bind_eq_bind,
+      Option.bind_some, Option.bind_fun_some, Option.get_some, List.Vector.toList_set]
+    rename_i take_of_vec_eq_input
+    rw [List.take_succ]
+    rw [List.take_set]
+    rw [take_of_vec_eq_input]
+    simp_all only [Lens.modify, Lens.get, Access.modify, BitVec.toNat_ofNatLT, ↓reduceDIte,
+      Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
+      List.get_eq_getElem, Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some,
+      Option.isSome_some, List.length_set, List.Vector.toList_length, getElem?_pos,
+      List.getElem_set_self, Option.toList_some]
 
-  -- sl
-  -- · simp; rfl
-  -- · simp
-  -- · intro i hlo hhi
-  --   steps
-  --   have : i < 32 := by assumption
-  --   have : 32 - i = (31 - i) + 1 := by omega
-  --   simp_all only [Int.cast_zero, BitVec.ofNat_eq_ofNat, BitVec.toNat_ofNat, Nat.reducePow,
-  --     Nat.zero_mod, zero_le, BitVec.reduceToNat, List.replicate_succ, Lens.modify, Lens.get,
-  --     Access.modify, BitVec.toNat_ofNatLT, Nat.reduceMod, ↓reduceDIte, Builtin.instCastTpU,
-  --     BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, List.get_eq_getElem,
-  --     Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some, Option.get_some,
-  --     List.Vector.toList_set, List.length_take, min_eq_left_of_lt, le_refl, List.set_append_right,
-  --     tsub_self, List.set_cons_zero, Nat.reduceSubDiff]
-  --   rw [List.take_succ_eq_append_getElem]
-  --   simp only [List.append_assoc, List.cons_append, List.nil_append]
-  --   simp_all
-  -- steps
-  -- apply List.Vector.eq
-  -- simp_all [-List.takeD_succ, List.takeD_eq_take]
+    have : i < input.length := by simp_all
+    have h : (List.take i input).set i input[i] = List.take i input := by
+      rw [List.set_eq_of_length_le (by simp_all)]
+    rw [h, List.take_append_getElem]
+
+  steps
+  rename_i a v _
+  subst_vars
+  have h1 : input.length = BitVec.toNat N := by aesop
+  have h2 : v.toList.length = BitVec.toNat N := by simp_all
+  conv at a =>
+    congr
+    · arg 1; rw [←h2]
+    · rw [←h1]
+
+  rw [List.take_length] at a
+  simp_all 
+

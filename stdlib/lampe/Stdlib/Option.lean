@@ -83,7 +83,6 @@ theorem is_none_spec {p T v} : STHoare p env ⟦⟧
   steps
   subst_vars
   simp
-  exact ()
 
 theorem is_some_spec {p T v} : STHoare p env ⟦⟧
     («std-1.0.0-beta.12::option::Option::is_some».call h![T] h![v])
