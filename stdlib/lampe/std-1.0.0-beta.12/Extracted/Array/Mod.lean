@@ -65,7 +65,7 @@ noir_def «std-1.0.0-beta.12»::array::reduce<T: Type, N: u32, Env: Type>(self: 
   accumulator
 }
 
-noir_def «std-1.0.0-beta.12»::array::all<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>, predicate: λ(T) -> bool) -> bool := {
+noir_def «std-1.0.0-beta.12»::array::«all»<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>, predicate: λ(T) -> bool) -> bool := {
   let mut ret = #_true;
   {
     let ζi0 = self;
