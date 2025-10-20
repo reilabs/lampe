@@ -1,4 +1,5 @@
-import Mathlib
+import Mathlib.Data.Nat.Bitwise
+import Mathlib.Tactic
 
 namespace Lampe
 
