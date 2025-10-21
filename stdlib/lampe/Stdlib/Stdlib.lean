@@ -12,6 +12,7 @@ import Stdlib.Convert
 import Stdlib.Default
 import Stdlib.EmbeddedCurveOps
 import Stdlib.Extra
+import Stdlib.Field
 import Stdlib.Field.Bn254
 import Stdlib.Field.Mod
 import Stdlib.Hash.Mod
