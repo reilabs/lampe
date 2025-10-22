@@ -586,25 +586,109 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
 
 -- Field
 
-theorem toLeBits_intro : STHoarePureBuiltin p Γ Builtin.toLeBits (by tauto) h![f] (a := s) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  apply pureBuiltin_intro_consequence <;> try tauto
-  tauto
+theorem toLeBits_intro {f : Tp.denote p Tp.field} :
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array N) Builtin.toLeBits h![f])
+    (fun arr => ⟦f.val < 2^N.toNat ∧ f.val = composeFromRadix 2 (arr.val.map (·.toNat))⟧) := by
+  unfold STHoare THoare
+  intros H st hst
+  constructor
+  unfold Builtin.toLeBits Builtin.newGenericBuiltin
+  simp only [Builtin.Omni]
+  by_cases hex : ∃ output : List.Vector (Tp.denote p (Tp.u 1)) N.toNat,
+      f.val < 2^N.toNat ∧ f.val = composeFromRadix 2 (output.val.map BitVec.toNat)
+  · obtain ⟨output, h_range, h_compose⟩ := hex
+    apply Builtin.genericOmni.ok
+    · constructor <;> assumption
+    · unfold mapToValHeapCondition
+      simp only [Option.map_some, SLP.true_star, SLP.star_assoc]
+      apply SLP.ent_star_top at hst
+      simp_all [SLP.lift]
+  · apply Builtin.genericOmni.err
+    · intro val h
+      push_neg at hex
+      obtain ⟨hrange, hcomp⟩ := h
+      exact hex val hrange hcomp
+    · unfold mapToValHeapCondition
+      simp only [Option.map_none]
 
-theorem toBeBits_intro : STHoarePureBuiltin p Γ Builtin.toBeBits (by tauto) h![f] (a := s) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  apply pureBuiltin_intro_consequence <;> try tauto
-  tauto
+theorem toBeBits_intro {f : Tp.denote p Tp.field} :
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array N) Builtin.toBeBits h![f])
+    (fun arr => ⟦f.val < 2^N.toNat ∧ f.val = composeFromRadix 2 (arr.val.reverse.map (·.toNat))⟧) := by
+  unfold STHoare THoare
+  intros H st hst
+  constructor
+  unfold Builtin.toBeBits Builtin.newGenericBuiltin
+  simp only [Builtin.Omni]
+  by_cases hex : ∃ output : List.Vector (Tp.denote p (Tp.u 1)) N.toNat,
+      f.val < 2^N.toNat ∧ f.val = composeFromRadix 2 (output.val.reverse.map BitVec.toNat)
+  · obtain ⟨output, h_range, h_compose⟩ := hex
+    apply Builtin.genericOmni.ok
+    · constructor <;> assumption
+    · unfold mapToValHeapCondition
+      simp only [Option.map_some, SLP.true_star, SLP.star_assoc]
+      apply SLP.ent_star_top at hst
+      simp_all [SLP.lift]
+  · apply Builtin.genericOmni.err
+    · intro val h
+      push_neg at hex
+      obtain ⟨hrange, hcomp⟩ := h
+      exact hex val hrange hcomp
+    · unfold mapToValHeapCondition
+      simp only [Option.map_none]
 
-theorem toLeRadix_intro : STHoarePureBuiltin p Γ Builtin.toLeRadix (by tauto) h![f, r] (a := s) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  fapply pureBuiltin_intro_consequence (by rfl) (by rfl)
-  simp
+theorem toLeRadix_intro {f : Tp.denote p Tp.field} {r : Tp.denote p (Tp.u 32)} :
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field, Tp.u 32] ((Tp.u 8).array N) Builtin.toLeRadix h![f, r])
+    (fun arr => ⟦1 < r.toNat ∧ f.val < 2^N.toNat ∧ f.val = composeFromRadix r.toNat (arr.val.map (·.toNat))⟧) := by
+  unfold STHoare THoare
+  intros H st hst
+  constructor
+  unfold Builtin.toLeRadix Builtin.newGenericBuiltin
+  simp only [Builtin.Omni]
+  by_cases hex : ∃ output : List.Vector (Tp.denote p (Tp.u 8)) N.toNat,
+      1 < r.toNat ∧ f.val < 2^N.toNat ∧ f.val = composeFromRadix r.toNat (output.val.map BitVec.toNat)
+  · obtain ⟨output, h_radix, h_range, h_compose⟩ := hex
+    apply Builtin.genericOmni.ok
+    · constructor
+      · assumption
+      · constructor <;> assumption
+    · unfold mapToValHeapCondition
+      simp only [Option.map_some, SLP.true_star, SLP.star_assoc]
+      apply SLP.ent_star_top at hst
+      simp_all [SLP.lift]
+  · apply Builtin.genericOmni.err
+    · intro val h
+      push_neg at hex
+      obtain ⟨hradix, hrange, hcomp⟩ := h
+      exact hex val hradix hrange hcomp
+    · unfold mapToValHeapCondition
+      simp only [Option.map_none]
 
-theorem toBeRadix_intro : STHoarePureBuiltin p Γ Builtin.toBeRadix (by tauto) h![f, r] (a := s) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  fapply pureBuiltin_intro_consequence (by rfl) (by rfl)
-  simp
+theorem toBeRadix_intro {f : Tp.denote p Tp.field} {r : Tp.denote p (Tp.u 32)} :
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field, Tp.u 32] ((Tp.u 8).array N) Builtin.toBeRadix h![f, r])
+    (fun arr => ⟦1 < r.toNat ∧ f.val < 2^N.toNat ∧ f.val = composeFromRadix r.toNat (arr.val.reverse.map (·.toNat))⟧) := by
+  unfold STHoare THoare
+  intros H st hst
+  constructor
+  unfold Builtin.toBeRadix Builtin.newGenericBuiltin
+  simp only [Builtin.Omni]
+  by_cases hex : ∃ output : List.Vector (Tp.denote p (Tp.u 8)) N.toNat,
+      1 < r.toNat ∧ f.val < 2^N.toNat ∧ f.val = composeFromRadix r.toNat (output.val.reverse.map BitVec.toNat)
+  · obtain ⟨output, h_radix, h_range, h_compose⟩ := hex
+    apply Builtin.genericOmni.ok
+    · constructor
+      · assumption
+      · constructor <;> assumption
+    · unfold mapToValHeapCondition
+      simp only [Option.map_some, SLP.true_star, SLP.star_assoc]
+      apply SLP.ent_star_top at hst
+      simp_all [SLP.lift]
+  · apply Builtin.genericOmni.err
+    · intro val h
+      push_neg at hex
+      obtain ⟨hradix, hrange, hcomp⟩ := h
+      exact hex val hradix hrange hcomp
+    · unfold mapToValHeapCondition
+      simp only [Option.map_none]
 
 -- Misc
 
