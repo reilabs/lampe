@@ -168,60 +168,51 @@ def modulusNumBits : Builtin := newTotalPureBuiltin
   (fun {p} h![] => decomposeToRadix 2 p.val (by tauto) |>.length)
 
 /--
-Represents the builtin that converts a field element to its bit representation in little-endian
-format.
+Represents the builtin that converts a field element to its bit representation in little-endian format.
+
+Fails if `f ≥ 2^s`.
 -/
-def toLeBits : Builtin := newGenericTotalPureBuiltin
+def toLeBits : Builtin := newGenericBuiltin
   (fun s => ([.field], .array (.u 1) s))
-  (fun s h![f] => ⟨
-    decomposeToRadix 2 f.val (by linarith) |>.takeD s.toNat 0,
-    by simp only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
-      BitVec.ofNat_eq_ofNat, List.takeD_length]
-    ⟩)
+  (fun s h![f] output =>
+    f.val < 2^s.toNat ∧
+    f.val = composeFromRadix 2 (output.val.map (·.toNat)))
 
 /--
 Represents the builtin that converts a field element to its bit representation in big-endian format.
+
+Fails if `f ≥ 2^s`.
 -/
-def toBeBits : Builtin := newGenericTotalPureBuiltin
+def toBeBits : Builtin := newGenericBuiltin
   (fun s => ([.field], .array (.u 1) s))
-  (fun s h![f] => ⟨
-    .reverse $ decomposeToRadix 2 f.val (by linarith) |>.takeD s.toNat 0,
-    by simp only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
-      BitVec.ofNat_eq_ofNat, List.length_reverse, List.takeD_length]
-    ⟩)
+  (fun s h![f] output =>
+    f.val < 2^s.toNat ∧
+    f.val = composeFromRadix 2 (output.val.reverse.map (·.toNat)))
 
 /--
 Represents the builtin that converts a field element to its radix representation in little-endian
 format.
+
+Fails if `r ≤ 1` or `f ≥ 2^s`.
 -/
-def toLeRadix : Builtin := newGenericPureBuiltin
+def toLeRadix : Builtin := newGenericBuiltin
   (fun s => ([.field, .u 32], .array (.u 8) s))
-  (fun s h![f, r] => ⟨1 < r,
-    fun h => ⟨
-      decomposeToRadix r.toNat f.val (by
-        simp only [BitVec.lt_def] at h
-        exact h
-      ) |>.takeD s.toNat 0,
-      by
-        simp only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
-          BitVec.ofNat_eq_ofNat, List.takeD_length]
-    ⟩⟩)
+  (fun s h![f, r] output =>
+    1 < r.toNat ∧
+    f.val < 2^s.toNat ∧
+    f.val = composeFromRadix r.toNat (output.val.map (·.toNat)))
 
 /--
 Represents the builtin that converts a field element to its radix representation in big-endian
 format.
+
+Fails if `r ≤ 1` or `f ≥ 2^s`.
 -/
-def toBeRadix : Builtin := newGenericPureBuiltin
+def toBeRadix : Builtin := newGenericBuiltin
   (fun s => ([.field, .u 32], .array (.u 8) s))
-  (fun s h![f, r] => ⟨1 < r,
-    fun h => ⟨
-      .reverse $ decomposeToRadix r.toNat f.val (by
-        simp only [BitVec.lt_def] at h
-        exact h
-      ) |>.takeD s.toNat 0,
-      by
-        simp only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
-          BitVec.ofNat_eq_ofNat, List.length_reverse, List.takeD_length]
-    ⟩⟩)
+  (fun s h![f, r] output =>
+    1 < r.toNat ∧
+    f.val < 2^s.toNat ∧
+    f.val = composeFromRadix r.toNat (output.val.reverse.map (·.toNat)))
 
 end Lampe.Builtin
