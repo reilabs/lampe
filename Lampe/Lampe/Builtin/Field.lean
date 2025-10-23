@@ -133,7 +133,7 @@ little-endian format.
 -/
 def modulusLeBits : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 1))⟩
-  (fun {p} h![] => decomposeToRadix 2 p.val (by tauto))
+  (fun {p} h![] => decomposeToRadix 2 p.val (by tauto) |>.map (BitVec.ofNat 1 ·))
 
 /--
 Represents the builtin that returns the bit representation of the modulus of a field in
