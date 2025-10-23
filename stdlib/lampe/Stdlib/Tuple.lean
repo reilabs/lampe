@@ -7,13 +7,29 @@ set_option Lampe.pp.Expr false
 set_option Lampe.pp.STHoare false
 
 /--
+A useful shorthand for declaring the Lampe type of tuples containing `memberTypes` fields.
+
+Specifically these are Noir _tuples_, despite the shared representation with structs, as they have
+no name.
+-/
+def type (memberTypes : List Tp) := Tp.tuple none memberTypes
+
+/--
+A useful shorthand for declaring the type of values with tuple types.
+
+Specifically these are Noir _tuples_, despite the shared representation with structs, as they have
+no name.
+-/
+def denote (p : Prime) (memberTypes : List Tp) := Tp.denoteArgs p memberTypes
+
+/--
 Implements the ordering relation on Noir's tuples, as is expressed in the various implementations of
 `std::cmp::Ord` for the various tuple sizes.
 -/
 @[reducible]
 def compare {p memTps}
     (memEmbOrdFns : HList (Tp.comparator p) memTps)
-    (self other : Tp.denote p (.tuple none memTps))
+    (self other : denote p memTps)
   : Ordering :=
 match memTps, memEmbOrdFns with
 | tp :: tps, .cons f fs =>
@@ -23,8 +39,7 @@ match memTps, memEmbOrdFns with
 | [], .nil => .eq
 
 @[reducible]
-def mk {p memTps} (args : HList (Tp.denote p) memTps)
-  : Tp.denote p (.tuple none memTps) :=
+def mk {p memTps} (args : HList (Tp.denote p) memTps) : denote p memTps :=
 match memTps, args with
 | tp :: tps, .cons arg args =>
   let rest := mk args
@@ -32,80 +47,10 @@ match memTps, args with
 | [], .nil => ()
 
 @[reducible]
-def snoc
-    (hs : Tp.denote p (Tp.tuple none tps))
-    (a : Tp.denote p tp)
-  : Tp.denote p (Tp.tuple none (tps ++ [tp])) :=
+def snoc (hs : denote p tps) (a : Tp.denote p tp) : denote p (tps ++ [tp]) :=
 match tps, hs with
 | [], () => (a, ())
 | _::_, (h, hs) => (h, snoc hs a)
-
-lemma head_eq_fst {p}
-    {tp : Tp}
-    {tps : List Tp}
-    {tuple : Tp.denote p (.tuple none (tp :: tps))}
-  : Builtin.indexTpl tuple Builtin.Member.head = tuple.1 := by
-  cases tuple; rfl
-
-lemma tail_head_eq_snd {p}
-    {t1 : Tp}
-    {t2 : Tp}
-    {tps : List Tp}
-    {tuple : Tp.denote p (.tuple none (t1 :: t2 :: tps))}
-  : Builtin.indexTpl tuple Builtin.Member.head.tail = tuple.2.1 := by
-  cases tuple; rfl
-
-lemma tail_tail_head_eq_third {p}
-    {t1 : Tp}
-    {t2 : Tp}
-    {t3 : Tp}
-    {tps : List Tp}
-    {tuple : Tp.denote p (.tuple none (t1 :: t2 :: t3 :: tps))}
-  : Builtin.indexTpl tuple Builtin.Member.head.tail.tail = tuple.2.2.1 := by
-  cases tuple; rfl
-
-lemma tail_tail_tail_head_eq_fourth {p}
-    {t1 : Tp}
-    {t2 : Tp}
-    {t3 : Tp}
-    {t4 : Tp}
-    {tps : List Tp}
-    {tuple : Tp.denote p (.tuple none (t1 :: t2 :: t3 :: t4 :: tps))}
-  : Builtin.indexTpl tuple Builtin.Member.head.tail.tail.tail = tuple.2.2.2.1 := by
-  cases tuple; rfl
-
-lemma tail_tail_tail_tail_head_eq_fifth {p}
-    {t1 : Tp}
-    {t2 : Tp}
-    {t3 : Tp}
-    {t4 : Tp}
-    {t5 : Tp}
-    {tps : List Tp}
-    {tuple : Tp.denote p (.tuple none (t1 :: t2 :: t3 :: t4 :: t5 :: tps))}
-  : Builtin.indexTpl tuple Builtin.Member.head.tail.tail.tail.tail = tuple.2.2.2.2.1 := by
-  cases tuple; rfl
-
-lemma compare_of_head_ne_eq {p}
-    {A : Tp}
-    {Bs: List Tp}
-    (ordA)
-    (ords : HList (Tp.comparator p) Bs)
-    {a1 a2 : A.denote p}
-    {bs1 bs2}
-    (h : ordA a1 a2 ≠ .eq)
-  : compare (HList.cons ordA ords) (a1, bs1) (a2, bs2) = ordA a1 a2 := by
-  simp [compare, h]
-
-lemma compare_of_head_eq_eq {p}
-    {A : Tp}
-    {Bs : List Tp}
-    (ordA)
-    (ords : HList (Tp.comparator p) Bs)
-    {a1 a2 : A.denote p}
-    {bs1 bs2}
-    (h : ordA a1 a2 = .eq)
-  : compare (HList.cons ordA ords) (a1, bs1) (a2, bs2) = compare ords bs1 bs2 := by
-  simp [compare, h]
 
 lemma compare_singleton : compare h![ordA] a b = ordA a.1 b.1 := by
   simp only [compare]
@@ -118,7 +63,7 @@ lemma compare_snoc {p}
     {ords : HList (Tp.comparator p) As}
     {a1 b1 : A.denote p}
     {as1 bs1}
-  : compare (HList.snoc ords ordA) (snoc as1 a1) (snoc bs1 b1) = 
+  : compare (HList.snoc ords ordA) (snoc as1 a1) (snoc bs1 b1) =
     (compare ords as1 bs1 |>.then (ordA a1 b1)) := by
   induction As with
   | nil =>
