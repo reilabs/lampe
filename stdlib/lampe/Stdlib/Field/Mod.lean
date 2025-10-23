@@ -162,7 +162,29 @@ theorem to_le_bits_intro :
           -- Here we need to show that if `ok` is false, and `bits[N - 1 -i] == pSlice[N - 1 - i]`,
           -- then the invariant holds for i + 1 given i
           -- In this case we keep the same witness `j` as for `i`
-          sorry
+          constructor
+          · rintro ⟨⟨j_val, hj_prop⟩, hj₁, hj₂, hj₃⟩
+            use ⟨j_val, Nat.lt_succ_of_lt hj_prop⟩, hj₁, hj₂, hj₃
+          · rintro ⟨⟨j_val, hj_prop⟩, hj₁, hj₂, hj₃⟩
+            by_cases h_case : j_val < i
+            · use ⟨j_val, h_case⟩, hj₁, hj₂, hj₃
+            · exfalso
+              apply hj₂
+              convert h₂ using 2
+              · congr 1
+                set d := decomposeToRadix 2 p.val (by linarith) with hd
+                have h_bound : j_val < d.length := by
+                  rw [← h₁.1]
+                  omega
+                convert complex_index_eq j_val d.length h_bound pSlice_len |>.symm
+                omega
+              · congr 1
+                set d := decomposeToRadix 2 p.val (by linarith) with hd
+                have h_bound : j_val < d.length := by
+                  rw [← h₁.1]
+                  omega
+                convert complex_index_eq j_val d.length h_bound pSlice_len |>.symm
+                omega
       -- Here we need to show that if `ok` is true, then the invariant holds for i + 1 given i
       · congr 2
         rw [eq_iff_iff]
