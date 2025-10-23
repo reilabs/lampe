@@ -11,6 +11,16 @@ abbrev toLeBitsCall (f : Nat) (N : BitVec 32) := decomposeToRadix 2 f (by linari
 
 set_option maxHeartbeats 1000000000
 
+-- Helper lemma for index calculation in to_le_bits proof
+private lemma complex_index_eq (i : Nat) (d_len : Nat) (h : i < d_len) (h_len : d_len < 4294967296) :
+    (4294967296 - i + (4294967295 + d_len)) % 4294967296 = d_len - 1 - i := by
+  calc (4294967296 - i + (4294967295 + d_len)) % 4294967296
+    _ = (d_len + (4294967296 - i + 4294967295)) % 4294967296 := by ac_rfl
+    _ = (d_len + 8589934591 - i) % 4294967296 := by congr 2; omega
+    _ = (d_len - 1 - i + 8589934592) % 4294967296 := by omega
+    _ = (d_len - 1 - i) % 4294967296 := by rw [Nat.add_mod]; norm_num
+    _ = d_len - 1 - i := by apply Nat.mod_eq_of_lt; omega
+
 theorem to_le_bits_intro :
     STHoare p env ⟦⟧
     («std-1.0.0-beta.12::field::to_le_bits».call h![N] h![f])
@@ -87,50 +97,39 @@ theorem to_le_bits_intro :
           refine ⟨?_, ?_, ?_⟩
           rcases h₁ with ⟨lens_eq, rest⟩
           · rintro ⟨k, hk⟩
-            -- We need to show bits[len - 1 - k] = pSlice[len - 1 - k] for k < i
-            -- The negated invariant tells us there's no witness at any position < i
-            -- We'll use induction or a direct argument
+            -- We need to show `bits[N.toNat - 1 - k] = pSlice[N.toNat - 1 - k]` for all k < i
+            --
+            -- The proof strategy: We know from h₁ that `ok` was false at iteration i,
+            -- meaning NO witness j < i exists such that:
+            --   - All positions k < j match, AND
+            --   - Position j differs, AND
+            --   - pSlice[j] = 1
+            --
+            -- We're now showing that i IS such a witness (from h₂ and inner_assert).
+            -- This means all positions k < i must match, otherwise there would be an earlier witness.
+            --
+            -- Formally: If any k < i didn't match, let k_min be the smallest such k.
+            -- Then k_min would be a witness (all positions before it match vacuously or by minimality,
+            -- k_min differs by assumption, and we can show pSlice[k_min] = 1 from the field constraint).
+            -- This contradicts that the invariant was false.
             sorry
-          -- Here we need to use `h₂` to argue that bits[N - 1 - i] != pSlice[N - 1 - i], and
+          -- Here we need to use `h₂` to argue that `bits[N - 1 - i] != pSlice[N - 1 - i]`, and
           · intro h_eq
-            -- If bits[i] = pSlice[i], and pSlice[i] = 1 (from inner_assert), then bits[i] = 1
-            -- But h₂ says bits[i] ≠ 1, giving us a contradiction
             set d := decomposeToRadix 2 p.val (by linarith) with hd
             have h_bound : i < d.length := by
               rcases h₁ with ⟨lens_eq, _⟩
               rw [← lens_eq]
               exact hlo
-            -- First, show that bits[complex_index] = 1 using h_eq and inner_assert
             have bits_eq_one : List.Vector.get bits
                 ⟨(4294967296 - i + (4294967295 + d.length)) % 4294967296, by
                   rcases h₁ with ⟨lens_eq, _⟩
                   calc (4294967296 - i + (4294967295 + d.length)) % 4294967296
-                    _ = d.length - 1 - i := by
-                      calc (4294967296 - i + (4294967295 + d.length)) % 4294967296
-                        _ = (d.length + (4294967296 - i + 4294967295)) % 4294967296 := by ac_rfl
-                        _ = (d.length + 8589934591 - i) % 4294967296 := by congr 2; omega
-                        _ = (d.length - 1 - i + 8589934592) % 4294967296 := by omega
-                        _ = (d.length - 1 - i) % 4294967296 := by rw [Nat.add_mod]; norm_num
-                        _ = d.length - 1 - i := by apply Nat.mod_eq_of_lt; omega
+                    _ = d.length - 1 - i := complex_index_eq i d.length h_bound pSlice_len
                     _ < BitVec.toNat N := by rw [← lens_eq]; omega
                 ⟩ = (1 : BitVec 1) := by
-              -- Use h_eq to substitute bits[i] with pSlice[i]
-              have idx_eq : (4294967296 - i + (4294967295 + d.length)) % 4294967296 = d.length - 1 - i := by
-                calc (4294967296 - i + (4294967295 + d.length)) % 4294967296
-                  _ = (d.length + (4294967296 - i + 4294967295)) % 4294967296 := by ac_rfl
-                  _ = (d.length + 8589934591 - i) % 4294967296 := by
-                    congr 2
-                    omega
-                  _ = (d.length - 1 - i + 8589934592) % 4294967296 := by omega
-                  _ = (d.length - 1 - i) % 4294967296 := by
-                    rw [Nat.add_mod]
-                    norm_num
-                  _ = d.length - 1 - i := by
-                    apply Nat.mod_eq_of_lt
-                    omega
+              have idx_eq : (4294967296 - i + (4294967295 + d.length)) % 4294967296 = d.length - 1 - i :=
+                complex_index_eq i d.length h_bound pSlice_len
               rcases h₁ with ⟨lens_eq, _⟩
-              -- h_eq tells us bits[d.length - 1 - i] = pSlice[d.length - 1 - i]
-              -- inner_assert tells us pSlice[(idx)] = 1 where idx simplifies to d.length - 1 - i
               simp [hd.symm] at h_eq inner_assert
               simp [idx_eq] at inner_assert
               rw [inner_assert] at h_eq
@@ -140,7 +139,7 @@ theorem to_le_bits_intro :
 
             exact h₂ bits_eq_one
 
-          -- use the `inner_assert`
+          -- Here we need to use the `inner_assert`
           · convert inner_assert using 3
             simp only
             set d := decomposeToRadix 2 p.val (by linarith) with hd
@@ -149,20 +148,7 @@ theorem to_le_bits_intro :
               rw [← lens_eq]
               exact hlo
             conv in _ % 4294967296 =>
-              equals d.length - 1 - i =>
-                calc (4294967296 - i + (4294967295 + d.length)) % 4294967296
-                  _ = (d.length + (4294967296 - i + 4294967295)) % 4294967296 := by ac_rfl
-                  _ = (d.length + 8589934591 - i) % 4294967296 := by
-                    congr 2
-                    norm_num
-                    omega
-                  _ = (d.length - 1 - i + 8589934592) % 4294967296 := by omega
-                  _ = (d.length - 1 - i) % 4294967296 := by
-                    rw [Nat.add_mod]
-                    norm_num
-                  _ = d.length - 1 - i := by
-                    apply Nat.mod_eq_of_lt
-                    omega
+              rw [complex_index_eq i d.length h_bound pSlice_len]
         · congr 1
           simp_all only [List.length_map, Nat.reducePow, BitVec.toNat_intCast, Int.reducePow,
             EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, ne_eq, List.getElem_map,
@@ -201,56 +187,7 @@ theorem to_le_bits_intro :
       simp at ok_invariant
       sorry
 
-    -- · intros i hhi hlo
-    --   steps
-    --   -- If `!ok`
-    --   apply STHoare.ite_intro <;> intro h₁ <;> steps
-    --   -- If `bits[N.toNat - 1 - i] != pSlice[N.toNat - 1 - i]`
-    --   · apply STHoare.ite_intro <;> intro h₂ <;> steps
-    --     · simp_all only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
-    --       List.length_flatMap, List.length_cons, List.length_nil, zero_add, List.map_const',
-    --       List.sum_replicate, smul_eq_mul, mul_one, Nat.reducePow, BitVec.toNat_intCast,
-    --       Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, ne_eq,
-    --       BitVec.ofNat_eq_ofNat, Bool.decide_or, decide_not, Bool.not_or, Bool.not_not,
-    --       Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_eq_eq_not, Bool.not_true,
-    --       decide_eq_false_iff_not, not_exists, not_and, Builtin.instCastTpU, BitVec.ofNat_toNat,
-    --       BitVec.setWidth_eq, BitVec.toNat_sub, BitVec.toNat_ofNatLT, Int.reduceMod, Int.toNat_one,
-    --       Nat.add_one_sub_one, Nat.add_mod_mod, List.get_eq_getElem, beq_true, Lens.modify,
-    --       Option.get_some, not_true_eq_false, false_or]
-    --       -- Need to prove: ∃ j, (∀ k < j, bits match) ∧ (bits differ at j) ∧ (pSlice[j] = 1)
-    --       -- Witness: j = i
-    --       rename_i h_inv_neg h₂ pSlice_at_i
-    --       congr
-    --       rw [eq_comm, decide_eq_true]
-    --       refine ⟨⟨i, Nat.lt_succ_self i⟩, ?_, ?_, ?_⟩
-    --       · -- Goal 1: ∀ k < i, bits[N-1-k] = pSlice[N-1-k]
-    --         rcases h₁ with ⟨a, b⟩
-    --         rw [← a]
-    --         rintro ⟨k, hk⟩
-    --         simp
-    --         rename pSlice = _ => pSlice_val₂
-    --         simp only [List.pure_def] at pSlice_val
-
-    --       · -- Goal 2: bits[N-1-i] ≠ pSlice[N-1-i]
-    --         -- This comes from h₂✝ (the condition that bits differ)
-    --         sorry
-    --       · -- Goal 3: pSlice[N-1-i] = some 1
-    --         -- This should follow from pSlice_at_i after index arithmetic
-    --         sorry
-    --     · simp_all only [BitVec.natCast_eq_ofNat, List.pure_def, List.bind_eq_flatMap,
-    --       List.length_flatMap, List.length_cons, List.length_nil, zero_add, List.map_const',
-    --       List.sum_replicate, smul_eq_mul, mul_one, Nat.reducePow, BitVec.toNat_intCast,
-    --       Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, ne_eq,
-    --       BitVec.ofNat_eq_ofNat, Bool.decide_or, decide_not, Bool.not_or, Bool.not_not,
-    --       Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_eq_eq_not, Bool.not_true,
-    --       decide_eq_false_iff_not, not_exists, not_and, Builtin.instCastTpU, BitVec.ofNat_toNat,
-    --       BitVec.setWidth_eq, BitVec.toNat_sub, BitVec.toNat_ofNatLT, Int.reduceMod, Int.toNat_one,
-    --       Nat.add_one_sub_one, Nat.add_mod_mod, List.get_eq_getElem, Bool.not_false,
-    --       not_true_eq_false, false_or]
-    --       sorry
-    --   · sorry
-    -- · sorry
-
+  -- wrap it up
   · intro
     steps
     subst_vars
