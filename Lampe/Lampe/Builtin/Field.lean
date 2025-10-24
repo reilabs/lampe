@@ -15,15 +15,15 @@ def fApplyRangeConstraint := newPureBuiltin
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the number of bits of `p`.
-We asdecomposeWithRadix `log p + 1 < 2^64`, i.e., `p`'s size can be represented by a uint of bit-size `64`.
+We as decomposeWithRadix `log p + 1 < 2^64`, i.e., `p`'s size can be represented by a uint of bit-size `64`.
 Otherwise, this builtin throws an exception.
 
 In Noir, this builtin corresponds to `fn modulus_num_bits() -> u64` implemented for `Field`.
 -/
 def fModNumBits := newPureBuiltin
   ⟨[.field], (.u 64)⟩
-  (@fun p h![_] => ⟨numBits p.val < 2^64,
-    fun _ => numBits p.val⟩)
+  (@fun p h![_] => ⟨numBits p.natVal < 2^64,
+    fun _ => numBits p.natVal⟩)
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in little-endian format.
@@ -32,7 +32,7 @@ In Noir, this builtin corresponds to `fn modulus_le_bits() -> [u1]` implemented 
 -/
 def fModLeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
-  (@fun p h![_] => decomposeToRadix 2 p.val (by tauto))
+  (@fun p h![_] => decomposeToRadix 2 p.natVal (by tauto))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
@@ -41,7 +41,7 @@ In Noir, this builtin corresponds to `fn modulus_be_bits() -> [u1]` implemented 
 -/
 def fModBeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
-  (@fun p h![_] => .reverse (decomposeToRadix 2 p.val (by tauto)))
+  (@fun p h![_] => .reverse (decomposeToRadix 2 p.natVal (by tauto)))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the byte representation of `p` in little-endian format.
@@ -50,7 +50,7 @@ In Noir, this builtin corresponds to `fn modulus_le_bytes() -> [u8]` implemented
 -/
 def fModLeBytes := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 8))⟩
-  (@fun p h![_] => decomposeToRadix 256 p.val (by linarith))
+  (@fun p h![_] => decomposeToRadix 256 p.natVal (by linarith))
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
@@ -59,7 +59,7 @@ In Noir, this builtin corresponds to `fn modulus_be_bytes() -> [u8]` implemented
 -/
 def fModBeBytes := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 8))⟩
-  (@fun p h![_] => .reverse (decomposeToRadix 256 p.val (by linarith)))
+  (@fun p h![_] => .reverse (decomposeToRadix 256 p.natVal (by linarith)))
 
 /--
 Represents the builtin that converts a field element to an unsigned integer.
@@ -133,7 +133,7 @@ little-endian format.
 -/
 def modulusLeBits : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 1))⟩
-  (fun {p} h![] => decomposeToRadix 2 p.val (by tauto) |>.map (BitVec.ofNat 1 ·))
+  (fun {p} h![] => decomposeToRadix 2 p.natVal (by tauto) |>.map (BitVec.ofNat 1 ·))
 
 /--
 Represents the builtin that returns the bit representation of the modulus of a field in
@@ -141,7 +141,7 @@ big-endian format.
 -/
 def modulusBeBits : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 1))⟩
-  (fun {p} h![] => .reverse (decomposeToRadix 2 p.val (by tauto)))
+  (fun {p} h![] => .reverse (decomposeToRadix 2 p.natVal (by tauto)))
 
 /--
 Represents the builtin that returns the byte representation of the modulus of a field in
@@ -149,7 +149,7 @@ little-endian format.
 -/
 def modulusLeBytes : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 8))⟩
-  (fun {p} h![] => decomposeToRadix 256 p.val (by linarith))
+  (fun {p} h![] => decomposeToRadix 256 p.natVal (by linarith))
 
 /--
 Represents the builtin that returns the byte representation of the modulus of a field in
@@ -157,7 +157,7 @@ big-endian format.
 -/
 def modulusBeBytes : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 8))⟩
-  (fun {p} h![] => .reverse (decomposeToRadix 256 p.val (by linarith)))
+  (fun {p} h![] => .reverse (decomposeToRadix 256 p.natVal (by linarith)))
 
 /--
 Represents the builtin that returns the number of bits in the modulus of a field.
@@ -165,7 +165,7 @@ Represents the builtin that returns the number of bits in the modulus of a field
 def modulusNumBits : Builtin := newTotalPureBuiltin
   ⟨[], (.u 64)⟩
   -- Note: We could use the `log2` definition but this is easier to reason about.
-  (fun {p} h![] => decomposeToRadix 2 p.val (by tauto) |>.length)
+  (fun {p} h![] => decomposeToRadix 2 p.natVal (by tauto) |>.length)
 
 /--
 Represents the builtin that converts a field element to its bit representation in little-endian format.

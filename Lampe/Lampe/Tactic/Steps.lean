@@ -617,6 +617,11 @@ elab "step_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term ")" : ta
 States the invariants that hold for a loop, and then creates goals that need to be proved to prove
 that the loop operates according to this specification.
 
+The provided invariant should be stated such that the body causes the state to transition from the
+state given by the evaluation of the invariant at index `i` to the evaluation of the invariant at
+index `i + 1`. In that sense, it can be thought of as a _precondition_ for each evaluation of the
+loop.
+
 It can be called in two main ways:
 
 - `loop_inv invariant`: States the invariant that holds for the loop using the iteration variable as

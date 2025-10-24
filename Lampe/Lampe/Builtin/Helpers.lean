@@ -101,7 +101,7 @@ theorem composeFromRadix_cons (r : Nat) (l : List Nat) :
   simp only [List.reverse_cons, List.foldl_append, List.foldl, List.foldl_reverse,
     Nat.add_left_cancel_iff]
 
-theorem composeFromRadix_decomposeToRadix (r v : Nat) (h : r > 1) :
+theorem composeFromRadix_decomposeToRadix_id (r v : Nat) (h : r > 1) :
     composeFromRadix r (decomposeToRadix r v h) = v := by
   revert h
   refine Nat.strong_induction_on v ?_
