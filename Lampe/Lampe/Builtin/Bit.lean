@@ -82,25 +82,25 @@ def uXor := newGenericTotalPureBuiltin
   (fun _ h![a, b] => a.xor b)
 
 /--
-Defines the bitwise left shift of an `s`-bit uint `a: U s`
-with an amount represented by an 8-bit uint `b : U 8`.
-This is assumed to evaluate to `(a <<< b) : U s`.
+Defines the bitwise left shift of an `s`-bit uint `a: U s` with the shift amount sharing the same
+type.
 
-In Noir, this builtin corresponds to `a << b` for an uint `a` of bit-size `s` and an uint `b` of bit-size `8`.
+This is assumed to evaluate to `(a <<< b) : U s`. In Noir, this builtin corresponds to `a << b` for
+an uint `a` of bit-size `s` and an uint `b` of bit-size `s`.
 -/
 def uShl := newGenericTotalPureBuiltin
-  (fun s => ⟨[(.u s), (.u 8)], (.u s)⟩)
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun _ h![a, b] => a <<< b)
 
 /--
-Defines the bitwise right shift of an `s`-bit uint `a: U s`
-with an amount represented by an 8-bit uint `b : U 8`.
-This is assumed to evaluate to `(a >>> b) : U s`.
+Defines the bitwise right shift of an `s`-bit uint `a: U s` with the shift amount sharing the same
+type.
 
-In Noir, this builtin corresponds to `a >> b` for an uint `a` of bit-size `s` and an uint `b` of bit-size `8`.
+This is assumed to evaluate to `(a >>> b) : U s`. In Noir, this builtin corresponds to `a >> b` for
+an uint `a` of bit-size `s` and an uint `b` of bit-size `s`.
 -/
 def uShr := newGenericTotalPureBuiltin
-  (fun s => ⟨[(.u s), (.u 8)], (.u s)⟩)
+  (fun s => ⟨[(.u s), (.u s)], (.u s)⟩)
   (fun _ h![a, b] => a >>> b)
 
 /--
@@ -144,26 +144,27 @@ def iXor := newGenericTotalPureBuiltin
   (fun _ h![a, b] => a.xor b)
 
 /--
-Defines the bitwise left shift of an `s`-bit int `a: I s`
-with an amount represented by an 8-bit uint `b : U 8`.
-This is assumed to evaluate to `(a <<< b) : I s`.
+Defines the bitwise left shift of an `s`-bit int `a: U s` with the shift amount sharing the same
+type.
 
-In Noir, this builtin corresponds to `a << b` for an int `a` of bit-size `s` and an uint `b` of bit-size `8`.
+This is assumed to evaluate to `(a <<< b) : U s`. In Noir, this builtin corresponds to `a << b` for
+an int `a` of bit-size `s` and an int `b` of bit-size `s`. If the shift is negative, then the
+precondition check fails and this builtin evaluates to an error.
 -/
-def iShl := newGenericTotalPureBuiltin
-  (fun s => ⟨[(.i s), (.u 8)], (.i s)⟩)
-  (fun _ h![a, b] => a <<< b)
+def iShl := newGenericPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun _ h![a, b] => ⟨b.toInt > 0, fun _ => a <<< b⟩)
 
 /--
-Defines the bitwise right shift of an `s`-bit int `a: I s`
-with an amount represented by an 8-bit uint `b : U 8`.
-This is assumed to evaluate to `(a >>> b) : I s`.
+Defines the bitwise right shift of an `s`-bit int `a: U s` with the shift amount sharing the same
+type.
 
-In Noir, this builtin corresponds to `a >> b` for an int `a` of bit-size `s` and an uint `b` of bit-size `8`.
+This is assumed to evaluate to `(a >>> b) : U s`. In Noir, this builtin corresponds to `a >> b` for
+an int `a` of bit-size `s` and an int `b` of bit-size `s`. If the shift is negative, then the
+precondition check fails and this builtin evaluates to an error.
 -/
-def iShr := newGenericTotalPureBuiltin
-  (fun s => ⟨[(.i s), (.u 8)], (.i s)⟩)
-  (fun _ h![a, b] => a >>> b)
-
+def iShr := newGenericPureBuiltin
+  (fun s => ⟨[(.i s), (.i s)], (.i s)⟩)
+  (fun _ h![a, b] => ⟨b.toInt > 0, fun _ => a >>> b⟩)
 
 end Lampe.Builtin

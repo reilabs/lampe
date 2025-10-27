@@ -683,3 +683,4 @@ theorem cmp_pure_spec {p T self other}
     · intro
       steps [equal_spec]
       simp_all
+

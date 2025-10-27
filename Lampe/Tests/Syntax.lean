@@ -683,3 +683,19 @@ theorem returns_string_correct {p}
   subst_vars
   rfl
 
+noir_def integer_shifts<>(a: i32, b: i32) -> i32 := {
+  let x = (#_iShl returning i32)(a, b);
+  let y = (#_iShr returning i32)(a, b);
+  (#_iSub returning i32)(a, b)
+}
+
+def integerShiftsEnv : Env := ⟨[integer_shifts], []⟩
+
+theorem integer_shifts_correct {p a b}
+  : STHoare p integerShiftsEnv ⟦⟧
+    (integer_shifts.call h![] h![a, b])
+    (fun r => r = a - b) := by
+  enter_decl
+  steps
+  simp_all
+

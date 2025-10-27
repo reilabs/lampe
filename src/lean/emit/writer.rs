@@ -617,7 +617,7 @@ impl Writer<'_> {
             }
             BuiltinTag::U(n) => self.append_to_line(&format!("u{n}")),
             BuiltinTag::Unit => self.append_to_line(UNIT_TYPE_NAME),
-        };
+        }
     }
 
     /// Directly writes the contents of the type arithmetic expression into the

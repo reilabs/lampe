@@ -69,8 +69,8 @@ fn main() -> ExitCode {
 pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
     let list = fs::read_dir(&args.root).map_err(|_| {
         file::Error::Other(format!(
-            "Unable to read directory {:?}",
-            args.root.as_os_str()
+            "Unable to read directory {}",
+            args.root.as_os_str().display()
         ))
     })?;
 
@@ -81,8 +81,8 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
             .metadata()
             .map_err(|_| {
                 file::Error::Other(format!(
-                    "Unable to read metadata of {:?}",
-                    entry.file_name()
+                    "Unable to read metadata of {}",
+                    entry.file_name().display()
                 ))
             })?
             .is_dir()

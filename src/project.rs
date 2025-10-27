@@ -25,7 +25,7 @@ use crate::{
 
 pub struct Project {
     /// The root directory of the Noir project
-    project_root: PathBuf,
+    root: PathBuf,
 
     /// The directory where put the Lampe project
     target_path: PathBuf,
@@ -56,7 +56,7 @@ impl Project {
         let (nargo_file_manager, nargo_parsed_files) = noir::parse_workspace(&nargo_workspace);
 
         Ok(Self {
-            project_root,
+            root: project_root,
             target_path,
             nargo_workspace,
             nargo_file_manager,
@@ -556,7 +556,7 @@ impl Debug for Project {
         }
 
         writeln!(f, "Project(")?;
-        writeln!(f, "  project_root: {:?}", self.project_root)?;
+        writeln!(f, "  project_root: {:?}", self.root)?;
         writeln!(f, "  members:")?;
         for p in &self.nargo_workspace.members {
             package_fmt(f, p, "    ")?;

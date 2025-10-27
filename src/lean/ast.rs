@@ -129,6 +129,7 @@ pub struct ParamVal {
     pub value: Box<Expression>,
 }
 
+#[expect(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Statement {
     Assign(AssignStatement),
