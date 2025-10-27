@@ -33,3 +33,4 @@ lemma val_div_of_dvd {p : Prime} {a b : Fp p} (h : b.val ∣ a.val)
   conv_rhs => rw [ZMod.val_mul_of_lt (by norm_cast; rw [ZMod.val_natCast_of_lt this]; assumption)]
   rw [Nat.mul_div_cancel_left _ (by apply Nat.zero_lt_of_ne_zero; assumption)]
   field_simp
+

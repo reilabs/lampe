@@ -68,6 +68,7 @@ authors = [""]
 
     /// Returns a tuple of warnings and a string representation of the extracted
     /// files
+    #[expect(clippy::format_push_string)]
     fn display_extraction_results(main_source: &str) -> std::io::Result<(Vec<String>, String)> {
         let (temp_dir, mock_project) = set_up_project(main_source)?;
 

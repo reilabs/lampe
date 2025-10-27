@@ -874,6 +874,7 @@ impl LeanGenerator<'_, '_, '_> {
         extra_defs
     }
 
+    #[expect(clippy::needless_continue)]
     pub fn generate_module_definitions(&self, module: &ModuleData) -> ModuleDefs {
         let mut globals = HashSet::new();
         let mut functions = HashSet::new();
