@@ -65,6 +65,15 @@ impl TypesEmitter {
     pub fn emit_struct(&mut self, struct_: &StructDefinition) {
         let mut writer = Writer::new(&mut self.context);
 
+        if struct_.deprecation.is_deprecated {
+            if let Some(msg) = &struct_.deprecation.message {
+                writer.append_to_line(&format!("[[deprecated \"{msg}\"]]"));
+            } else {
+                writer.append_to_line("[[deprecated]]");
+            }
+            writer.end_line();
+        }
+
         writer.append_to_line("noir_struct_def ");
         writer.append_to_line(&struct_.name);
 

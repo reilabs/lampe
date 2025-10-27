@@ -64,6 +64,15 @@ impl ModuleEmitter {
     pub fn emit_function_definition(&mut self, function: &FunctionDefinition, with_semi: bool) {
         let mut writer = Writer::new(&mut self.context);
 
+        if function.deprecation.is_deprecated {
+            if let Some(msg) = &function.deprecation.message {
+                writer.append_to_line(&format!("[[deprecated \"{msg}\"]]"));
+            } else {
+                writer.append_to_line("[[deprecated]]");
+            }
+            writer.end_line();
+        }
+
         writer.append_to_line("noir_def ");
         writer.append_to_line(&function.name);
 
@@ -199,6 +208,11 @@ impl ModuleEmitter {
                     def,
                     ModuleDefinition::Function(..) | ModuleDefinition::Global(..)
                 )
+            })
+            // We filter out deprecated entries from the environment.
+            .filter(|def| match def {
+                ModuleDefinition::Function(func) => !func.deprecation.is_deprecated,
+                _ => true,
             })
             .collect();
         let trait_impls: Vec<_> = self

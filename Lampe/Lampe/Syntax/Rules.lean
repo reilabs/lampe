@@ -27,6 +27,8 @@ declare_syntax_cat noir_type
 
 syntax noir_arrow := "->" <|> "→"
 
+syntax noir_depr? := ("[[" "deprecated" (ppSpace str)? "]]" ppSpace)?
+
 -- GLOBAL DEFINITIONS -----------------------------------------------------------------------------
 -- These include functions, traits, trait implementations, and globals, as well as aliases.
 

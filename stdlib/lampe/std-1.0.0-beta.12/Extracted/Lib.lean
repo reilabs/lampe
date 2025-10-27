@@ -32,14 +32,17 @@ noir_def «std-1.0.0-beta.12»::verify_proof_with_type<N: u32, M: u32, K: u32>(v
   #_skip
 }
 
+[[deprecated "wrapping operations should be done with the Wrapping traits. E.g: x.wrapping_add(y)"]]
 noir_def «std-1.0.0-beta.12»::wrapping_add<T: Type>(x: T, y: T) -> T := {
   ((Field as «std-1.0.0-beta.12»::convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fAdd returning Field)(((T as «std-1.0.0-beta.12»::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), ((T as «std-1.0.0-beta.12»::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
+[[deprecated "wrapping operations should be done with the Wrapping traits. E.g: x.wrapping_sub(y)"]]
 noir_def «std-1.0.0-beta.12»::wrapping_sub<T: Type>(x: T, y: T) -> T := {
   ((Field as «std-1.0.0-beta.12»::convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fSub returning Field)((#_fAdd returning Field)(((T as «std-1.0.0-beta.12»::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), (340282366920938463463374607431768211456: Field)), ((T as «std-1.0.0-beta.12»::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
 
+[[deprecated "wrapping operations should be done with the Wrapping traits. E.g: x.wrapping_mul(y)"]]
 noir_def «std-1.0.0-beta.12»::wrapping_mul<T: Type>(x: T, y: T) -> T := {
   ((Field as «std-1.0.0-beta.12»::convert::AsPrimitive<T>)::as_<> as λ(Field) -> T)((#_fMul returning Field)(((T as «std-1.0.0-beta.12»::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(x), ((T as «std-1.0.0-beta.12»::convert::AsPrimitive<Field>)::as_<> as λ(T) -> Field)(y)))
 }
@@ -67,5 +70,5 @@ noir_def «std-1.0.0-beta.12»::tests::test_wrapping_mul<>() -> Unit := {
 }
 
 def «std-1.0.0-beta.12».Lib.env : Env := Env.mk
-  [«std-1.0.0-beta.12::print_oracle», «std-1.0.0-beta.12::print_unconstrained», «std-1.0.0-beta.12::println», «std-1.0.0-beta.12::print», «std-1.0.0-beta.12::verify_proof_with_type», «std-1.0.0-beta.12::wrapping_add», «std-1.0.0-beta.12::wrapping_sub», «std-1.0.0-beta.12::wrapping_mul», «std-1.0.0-beta.12::tests::test_static_assert_custom_message», «std-1.0.0-beta.12::tests::test_wrapping_mul»]
+  [«std-1.0.0-beta.12::print_oracle», «std-1.0.0-beta.12::print_unconstrained», «std-1.0.0-beta.12::println», «std-1.0.0-beta.12::print», «std-1.0.0-beta.12::verify_proof_with_type», «std-1.0.0-beta.12::tests::test_static_assert_custom_message», «std-1.0.0-beta.12::tests::test_wrapping_mul»]
   []

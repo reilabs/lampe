@@ -417,6 +417,11 @@ theorem strAsBytes_intro : STHoarePureBuiltin p Γ Builtin.strAsBytes (by tauto)
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
+theorem arrayAsStrUnchecked_intro : STHoarePureBuiltin p Γ Builtin.arrayAsStrUnchecked (by tauto) h![a] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
 -- Memory
 
 theorem ref_intro :

@@ -31,7 +31,6 @@ def stub : Builtin := {
 -- to match the name in extracted code that comes from Noir.
 def aes128Encrypt := stub
 def applyRangeConstraint := stub
-def arrayAsStrUnchecked := stub
 def arrayRefcount := stub
 def asWitness := stub
 def assertConstant := stub

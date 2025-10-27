@@ -12,9 +12,13 @@ open Lean Elab
 -- DSL: TERMS -------------------------------------------------------------------------------------
 
 /-- Elaborates a function definition written in the Noir eDSL. -/
-elab "noir_def" decl:noir_fn_def : command => do
+elab d:noir_depr? "noir_def" decl:noir_fn_def : command => do
   let (name, decl) ← makeFnDecl decl
-  let decl ← `(def $name : FunctionDecl := $decl)
+  let decl ← match (←parseDeprecatedMessage d) with
+  | some msg => `(
+    @[deprecated $name $(Syntax.mkStrLit msg) (since := "")] 
+    def $name : FunctionDecl := $decl)
+  | none => `(def $name : FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
 /-- Elaborates a trait implementation written in the Noir eDSL. -/
@@ -37,8 +41,13 @@ elab "noir_type_alias" defn:noir_alias : command => do
   Elab.Command.elabCommand decl
 
 /-- Elaborates a struct definition written in the Noir eDSL. -/
-elab "noir_struct_def" defName:noir_ident defn:noir_type_def : command => do
-  let cmd ← `(def $(makeStructDefIdent (←makeNoirIdent defName)) := $(←makeStructDef defName defn))
+elab d:noir_depr? "noir_struct_def" defName:noir_ident defn:noir_type_def : command => do
+  let ident := makeStructDefIdent (←makeNoirIdent defName)
+  let cmd ← match (←parseDeprecatedMessage d) with
+  | some msg => `(
+    @[deprecated $ident $(Syntax.mkStrLit msg) (since := "")] 
+    def $ident := $(←makeStructDef defName defn))
+  | none => `(def $ident := $(←makeStructDef defName defn))
   Elab.Command.elabCommand cmd
 
 /-- Elaborates a trait definition written in the Noir eDSL. -/

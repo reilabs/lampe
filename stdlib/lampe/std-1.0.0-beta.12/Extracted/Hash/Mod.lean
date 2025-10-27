@@ -5,6 +5,7 @@ import Lampe
 
 open Lampe
 
+[[deprecated "This function has been moved to std::hash::keccakf1600"]]
 noir_def «std-1.0.0-beta.12»::hash::keccak::keccakf1600<>(input: Array<u64, 25: u32>) -> Array<u64, 25: u32> := {
   (#_keccakf1600 returning Array<u64, 25: u32>)(input)
 }
@@ -259,5 +260,5 @@ noir_def «std-1.0.0-beta.12»::hash::assert_pedersen<>() -> Unit := {
 }
 
 def «std-1.0.0-beta.12».Hash.Mod.env : Env := Env.mk
-  [«std-1.0.0-beta.12::hash::keccak::keccakf1600», «std-1.0.0-beta.12::hash::blake3», «std-1.0.0-beta.12::hash::pedersen_commitment», «std-1.0.0-beta.12::hash::pedersen_commitment_with_separator», «std-1.0.0-beta.12::hash::pedersen_hash», «std-1.0.0-beta.12::hash::pedersen_hash_with_separator», «std-1.0.0-beta.12::hash::derive_generators», «std-1.0.0-beta.12::hash::from_field_unsafe», «std-1.0.0-beta.12::hash::assert_pedersen»]
+  [«std-1.0.0-beta.12::hash::blake3», «std-1.0.0-beta.12::hash::pedersen_commitment», «std-1.0.0-beta.12::hash::pedersen_commitment_with_separator», «std-1.0.0-beta.12::hash::pedersen_hash», «std-1.0.0-beta.12::hash::pedersen_hash_with_separator», «std-1.0.0-beta.12::hash::derive_generators», «std-1.0.0-beta.12::hash::from_field_unsafe», «std-1.0.0-beta.12::hash::assert_pedersen»]
   [«std-1.0.0-beta.12».impl_2, «std-1.0.0-beta.12».impl_3, «std-1.0.0-beta.12».impl_4, «std-1.0.0-beta.12».impl_5, «std-1.0.0-beta.12».impl_6, «std-1.0.0-beta.12».impl_7, «std-1.0.0-beta.12».impl_8, «std-1.0.0-beta.12».impl_9, «std-1.0.0-beta.12».impl_10, «std-1.0.0-beta.12».impl_11, «std-1.0.0-beta.12».impl_12, «std-1.0.0-beta.12».impl_13, «std-1.0.0-beta.12».impl_14, «std-1.0.0-beta.12».impl_15, «std-1.0.0-beta.12».impl_16, «std-1.0.0-beta.12».impl_17, «std-1.0.0-beta.12».impl_18, «std-1.0.0-beta.12».impl_19, «std-1.0.0-beta.12».impl_20, «std-1.0.0-beta.12».impl_21, «std-1.0.0-beta.12».impl_22]
