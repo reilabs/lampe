@@ -63,7 +63,7 @@ use noirc_frontend::{
         TypeId,
     },
     shared::Signedness,
-    token::FunctionAttributeKind,
+    token::{FunctionAttributeKind, SecondaryAttributeKind},
     BinaryTypeOperator,
     DataType,
     Kind as NoirKind,
@@ -100,6 +100,7 @@ use crate::{
             ConstGenericLiteral,
             Crate,
             DeclCallRef,
+            Deprecation,
             Expression,
             ForStatement,
             FunctionDefinition,
@@ -378,6 +379,16 @@ impl LeanGenerator<'_, '_, '_> {
     /// Generates the definition of a `struct` that is describeed by the
     /// provided `id`.
     pub fn generate_struct_def(&self, id: TypeId) -> StructDefinition {
+        let deprecation = Deprecation::from_noir(
+            self.context
+                .def_interner
+                .type_attributes(&id)
+                .iter()
+                .find_map(|attr| match &attr.kind {
+                    SecondaryAttributeKind::Deprecated(msg) => Some(msg.clone()),
+                    _ => None,
+                }),
+        );
         let struct_data = self.context.def_interner.get_type(id);
         let struct_data = struct_data.borrow();
         let name = self.fully_qualified_struct_path(&struct_data.id.module_id().krate, &id);
@@ -401,6 +412,7 @@ impl LeanGenerator<'_, '_, '_> {
             name,
             generics,
             members,
+            deprecation,
         }
     }
 
@@ -693,6 +705,7 @@ impl LeanGenerator<'_, '_, '_> {
         let name = self.fully_qualified_alias_name(id);
         let generics = self.gather_lean_type_patterns_from_resolved_generics(&alias_data.generics);
         let aliased_type = self.generate_lean_type_value(&alias_data.typ, None);
+
         TypeAlias {
             name,
             typ: aliased_type,
@@ -1014,6 +1027,13 @@ impl LeanGenerator<'_, '_, '_> {
         };
         let name = quote_lean_keywords(&name);
 
+        let deprecation = Deprecation::from_noir(
+            self.context
+                .def_interner
+                .function_attributes(id)
+                .get_deprecated_note(),
+        );
+
         let generics = self.gather_function_generic_patterns(function_meta);
         let parameters = self.generate_function_parameters(function_meta);
         let return_type = self.generate_lean_type_value(function_meta.return_type(), None);
@@ -1045,6 +1065,7 @@ impl LeanGenerator<'_, '_, '_> {
             parameters,
             return_type,
             body,
+            deprecation,
         })
     }
 
@@ -1517,6 +1538,7 @@ impl LeanGenerator<'_, '_, '_> {
             parameters,
             return_type,
             body,
+            deprecation: Deprecation::undeprecated(),
         }
     }
 

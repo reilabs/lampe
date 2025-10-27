@@ -101,19 +101,50 @@ pub struct WhereClause {
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct Deprecation {
+    pub is_deprecated: bool,
+    pub message:       Option<String>,
+}
+impl Deprecation {
+    /// Something that is not deprecated.
+    #[must_use]
+    pub fn undeprecated() -> Self {
+        Self {
+            is_deprecated: false,
+            message:       None,
+        }
+    }
+
+    /// Returns not deprecated if the outer `Option` is `None`, otherwise
+    /// returns deprecated with the optional message.
+    #[must_use]
+    pub fn from_noir(depr_note: Option<Option<String>>) -> Self {
+        match depr_note {
+            None => Self::undeprecated(),
+            Some(message) => Self {
+                is_deprecated: true,
+                message,
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct FunctionDefinition {
     pub name:        String,
     pub generics:    Vec<TypePattern>,
     pub parameters:  Vec<ParamDef>,
     pub return_type: Type,
     pub body:        Expression,
+    pub deprecation: Deprecation,
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct StructDefinition {
-    pub name:     String,
-    pub generics: Vec<TypePattern>,
-    pub members:  Vec<Type>,
+    pub name:        String,
+    pub generics:    Vec<TypePattern>,
+    pub members:     Vec<Type>,
+    pub deprecation: Deprecation,
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

@@ -137,6 +137,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.iNeg => return some (←``(iNeg_intro))
 
         | ``Lampe.Builtin.strAsBytes => return some (←``(strAsBytes_intro))
+        | ``Lampe.Builtin.arrayAsStrUnchecked => return some (←``(arrayAsStrUnchecked_intro))
 
         -- Array builtins
         | ``Lampe.Builtin.mkArray =>

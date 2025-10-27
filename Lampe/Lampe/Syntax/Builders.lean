@@ -459,7 +459,7 @@ def makeTraitImpl [MonadUtil m] : Syntax → m (Lean.Ident × TSyntax `term)
 /--
 Builds a struct definition from the provided syntax, or returns an error if the syntax is invalid.
 -/
-def makeStructDef [MonadUtil m] (name : TSyntax `noir_ident): Syntax → m (TSyntax `term)
+def makeStructDef [MonadUtil m] (name : TSyntax `noir_ident) : Syntax → m (TSyntax `term)
 | `(noir_type_def|< $genDefs,* > { $members,* }) => do
   let (genKinds, genDefs) ← makeGenericDefTerms genDefs.getElems.toList
   let fieldTypes ← members.getElems.toList.mapM fun paramSyn => match paramSyn with
@@ -576,3 +576,17 @@ def makeTraitDef [MonadUtil m] : Syntax → m (List $ TSyntax `command)
 
   pure outputs
 | _ => throwUnsupportedSyntax
+
+-- def makeStructDef [MonadUtil m] (name : TSyntax `noir_ident): Syntax → m (TSyntax `term)
+
+/-- 
+Extracts any deprecation message that may have been attached to a definition.
+
+Returns `some ""` if the entity is deprecated but has no message, and returns `none` if the entity
+is not deprecated at all.
+-/
+def parseDeprecatedMessage [MonadUtil m] : (stx : Syntax) → m (Option String)
+| `(noir_depr?|[[deprecated]]) => pure $ some ""
+| `(noir_depr?|[[deprecated $msg:str]]) => pure msg.getString 
+| _ => pure none
+
