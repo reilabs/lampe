@@ -1,4 +1,3 @@
-import Mathlib.Data.Nat.Bitwise
 import Mathlib.Tactic
 
 namespace Lampe
@@ -26,48 +25,6 @@ def composeFromRadix (r : Nat) (l : List Nat) : Nat := (l.reverse.foldl (fun acc
 
 example : (composeFromRadix 10 [3, 2, 1]) = 123 := by rfl
 example : (composeFromRadix 2 [1, 1, 0, 1, 1, 1, 1]) = 123 := by rfl
-
-theorem decomposeToRadix_2_eq_bits (n : Nat) :
-    decomposeToRadix 2 n (by decide) = n.bits.map (fun b => if b then 1 else 0) := by
-  induction n using Nat.binaryRec with
-  | z =>
-    rw [Nat.zero_bits]
-    rfl
-  | f b n h =>
-    cases b with
-    | false =>
-      rw [Nat.bit_false]
-      match n with
-      | .zero => unfold decomposeToRadix; simp
-      | n@(k + 1) =>
-        rename n = _ => n_def
-        simp_all
-        rw [← n_def]
-        rw [← n_def] at h
-        unfold decomposeToRadix
-        have : ∃l, 2 * n = Nat.succ l := by
-          simp [n_def]
-        have ⟨l, hl⟩ := this
-        simp [hl]
-        refine ⟨?_, ?_⟩
-        simp at hl
-        simp [←hl]
-        simp at hl
-        rw [←hl]
-        simp [h]
-    | true =>
-      simp
-      unfold decomposeToRadix
-      simp only [Nat.mul_add_mod_self_left, Nat.mod_succ, List.cons.injEq, true_and]
-      rcases n.even_or_odd' with ⟨k, rfl | rfl⟩
-      · conv in (2 * (2 * k) + 1) / 2 =>
-        equals 2 * k =>
-          grind
-        assumption
-      · conv in (2 * (2 * k + 1) + 1) / 2 =>
-        equals 2 * k + 1 =>
-          grind
-        assumption
 
 theorem decomposeToRadix_zero (r : Nat) (h : r > 1) :
     decomposeToRadix r 0 h = [] := by
@@ -331,5 +288,304 @@ theorem composeFromRadix_le_mono_len (r : Nat) :
       < r ^ l₁.length := h_upper_l₁
     _ ≤ r ^ (l₂.length - 1) := h_pow
     _ ≤ composeFromRadix r l₂ := h_lower_l₂
+
+theorem composeFromRadix_append (l₁ l₂  : List Nat) (r : Nat) :
+    composeFromRadix r (l₁ ++ l₂) =
+      composeFromRadix r l₁ + r ^ l₁.length * composeFromRadix r l₂ := by
+  induction l₁ with
+  | nil =>
+    simp [composeFromRadix_nil, List.nil_append]
+  | cons hd tl ih =>
+    simp only [List.cons_append, List.length_cons]
+    rw [composeFromRadix_cons, ih, composeFromRadix_cons]
+    rw [Nat.pow_succ]
+    ring
+
+theorem composeFromRadix_split (r : Nat) (l : List Nat) (k : Nat) (hk : k ≤ l.length) :
+    composeFromRadix r l =
+      composeFromRadix r (l.take k) + r ^ k * composeFromRadix r (l.drop k) := by
+  suffices ∀ l₁ l₂ : List Nat, composeFromRadix r (l₁ ++ l₂) =
+      composeFromRadix r l₁ + r ^ l₁.length * composeFromRadix r l₂ by
+    conv_lhs => rw [← List.take_append_drop k l]
+    rw [this]
+    congr 1
+    rw [List.length_take]
+    simp [hk]
+  intros; apply composeFromRadix_append
+
+
+/-- If the radix decomposition of `n₁` and `n₂` have the same length and agree on all more
+significant positions, but differ at the next lesser digit then they differ (this is basically the
+lexicographic ordering on lists in little-endian format).
+-/
+theorem decomposeToRadix_lexicographic_gt (r n₁ n₂ : Nat) (h : r > 1) (m : Nat) :
+    let d₁ := decomposeToRadix r n₁ h
+    let d₂ := decomposeToRadix r n₂ h
+    let N := d₁.length
+    d₁.length = d₂.length →
+    N - 1 - m < N →
+    (∀ i < m, ∀ (h₁ : N - 1 - i < d₁.length) (h₂ : N - 1 - i < d₂.length),
+      d₁[N - 1 - i]'h₁ = d₂[N - 1 - i]'h₂) →
+    ∀ (hm₁ : N - 1 - m < d₁.length) (hm₂ : N - 1 - m < d₂.length),
+      d₁[N - 1 - m]'hm₁ > d₂[N - 1 - m]'hm₂ →
+      n₁ > n₂ := by
+  intro d₁ d₂ N h_len_eq h_idx_valid h_agree hm₁ hm₂ h_diff
+  have hn₁ : n₁ = composeFromRadix r d₁ :=
+    (composeFromRadix_decomposeToRadix r n₁ h).symm
+  have hn₂ : n₂ = composeFromRadix r d₂ :=
+    (composeFromRadix_decomposeToRadix r n₂ h).symm
+  rw [hn₁, hn₂]
+
+  have hd₁_in : ∀ d ∈ d₁, d < r := fun _ => decomposeToRadix_in_fin r n₁ h
+  have hd₂_in : ∀ d ∈ d₂, d < r := fun _ => decomposeToRadix_in_fin r n₂ h
+
+  set k := N - 1 - m with hk_def
+
+  have h_low_bound₁ : composeFromRadix r (d₁.take k) < r ^ k := by
+    have : (d₁.take k).length ≤ k := List.length_take_le k d₁
+    have h_all : ∀ d ∈ d₁.take k, d < r := by
+      intros d hd
+      apply hd₁_in
+      exact List.mem_of_mem_take hd
+    cases Nat.eq_zero_or_pos k with
+    | inl hk0 =>
+      rw [hk0]
+      simp [composeFromRadix_nil]
+    | inr hkpos =>
+      by_cases h_len : (d₁.take k).length = 0
+      · have : d₁.take k = [] := List.length_eq_zero_iff.mp h_len
+        simp [this, composeFromRadix_nil]
+        exact Nat.pow_pos (by omega : 0 < r)
+      · push_neg at h_len
+        have h_len_pos : (d₁.take k).length > 0 := Nat.pos_of_ne_zero h_len
+        have h_ub := composeFromRadix_upper_bound r (d₁.take k) h_all
+        calc composeFromRadix r (d₁.take k)
+            < r ^ (d₁.take k).length := h_ub
+          _ ≤ r ^ k := by
+              apply Nat.pow_le_pow_right (by omega : 1 ≤ r)
+              exact this
+
+  have h_low_bound₂ : composeFromRadix r (d₂.take k) < r ^ k := by
+    have : (d₂.take k).length ≤ k := List.length_take_le k d₂
+    have h_all : ∀ d ∈ d₂.take k, d < r := by
+      intros d hd
+      apply hd₂_in
+      exact List.mem_of_mem_take hd
+    cases Nat.eq_zero_or_pos k with
+    | inl hk0 =>
+      rw [hk0]
+      simp [composeFromRadix_nil]
+    | inr hkpos =>
+      by_cases h_len : (d₂.take k).length = 0
+      · have : d₂.take k = [] := List.length_eq_zero_iff.mp h_len
+        simp [this, composeFromRadix_nil]
+        exact Nat.pow_pos (by omega : 0 < r)
+      · push_neg at h_len
+        have h_len_pos : (d₂.take k).length > 0 := Nat.pos_of_ne_zero h_len
+        have h_ub := composeFromRadix_upper_bound r (d₂.take k) h_all
+        calc composeFromRadix r (d₂.take k)
+            < r ^ (d₂.take k).length := h_ub
+          _ ≤ r ^ k := by
+              apply Nat.pow_le_pow_right (by omega : 1 ≤ r)
+              exact this
+
+  have hsplit₁ : composeFromRadix r d₁ =
+      composeFromRadix r (d₁.take k) + r ^ k * composeFromRadix r (d₁.drop k) := by
+    apply composeFromRadix_split
+    omega
+
+  have hsplit₂ : composeFromRadix r d₂ =
+      composeFromRadix r (d₂.take k) + r ^ k * composeFromRadix r (d₂.drop k) := by
+    apply composeFromRadix_split
+    omega
+
+  rw [hsplit₁, hsplit₂]
+
+  have h_high_gt : composeFromRadix r (d₁.drop k) > composeFromRadix r (d₂.drop k) := by
+    have h_drop_len : (d₁.drop k).length = (d₂.drop k).length := by
+      simp only [List.length_drop]
+      omega
+
+    have h_nonempty₁ : d₁.drop k ≠ [] := by
+      intro h
+      have := List.length_eq_zero_iff.mpr h
+      simp [List.length_drop] at this
+      omega
+
+    have h_nonempty₂ : d₂.drop k ≠ [] := by
+      intro h
+      have := List.length_eq_zero_iff.mpr h
+      simp [List.length_drop] at this
+      omega
+
+    obtain ⟨hd₁, tl₁, heq₁⟩ := List.exists_cons_of_ne_nil h_nonempty₁
+    obtain ⟨hd₂, tl₂, heq₂⟩ := List.exists_cons_of_ne_nil h_nonempty₂
+
+    have h_hd₁ : hd₁ = d₁[k] := by
+      have h1 : d₁[k] = d₁[k + 0]'hm₁ := by simp
+      have h2 : d₁[k + 0]'hm₁ = (d₁.drop k)[0]'(by rw [heq₁]; simp) := by
+        have : 0 < (d₁.drop k).length := by
+          apply List.length_pos_of_ne_nil
+          simp [heq₁]
+        have asdf := @List.getElem_drop Nat d₁ k 0 this
+        rw [asdf]
+      have h3 : (d₁.drop k)[0]'(by rw [heq₁]; simp) = (hd₁ :: tl₁)[0]'(by simp) := by simp [heq₁]
+      have h4 : (hd₁ :: tl₁)[0]'(by simp) = hd₁ := rfl
+      rw [h1, h2, h3, h4]
+
+    have h_hd₂ : hd₂ = d₂[k] := by
+      have h1 : d₂[k] = d₂[k + 0]'hm₂ := by simp
+      have h2 : d₂[k + 0]'hm₂ = (d₂.drop k)[0]'(by rw [heq₂]; simp) := by
+        have : 0 < (d₂.drop k).length := by
+          apply List.length_pos_of_ne_nil
+          simp [heq₂]
+        have asdf := @List.getElem_drop Nat d₂ k 0 this
+        rw [asdf]
+      have h3 : (d₂.drop k)[0]'(by rw [heq₂]; simp) = (hd₂ :: tl₂)[0]'(by simp) := by simp [heq₂]
+      have h4 : (hd₂ :: tl₂)[0]'(by simp) = hd₂ := rfl
+      rw [h1, h2, h3, h4]
+
+    have h_tails_eq : composeFromRadix r tl₁ = composeFromRadix r tl₂ := by
+      have h_tl_len : tl₁.length = tl₂.length := by
+        have : (hd₁ :: tl₁).length = (hd₂ :: tl₂).length := by
+          rw [← heq₁, ← heq₂, h_drop_len]
+        simp at this
+        exact this
+
+      by_cases hm_zero : m = 0
+      · have : k = N - 1 := by rw [hk_def]; simp [hm_zero]
+        have : k + 1 = N := by omega
+        have h_drop_len1 : (d₁.drop k).length = N - k := by
+          simp only [List.length_drop]
+          rfl
+        have : (d₁.drop k).length = 1 := by omega
+        rw [heq₁] at this
+        simp at this
+        have h_tl₁_empty : tl₁ = [] := by
+          cases tl₁
+          · rfl
+          · simp at this
+        have h_tl₂_empty : tl₂ = [] := by
+          have : tl₂.length = 0 := by rw [← h_tl_len, h_tl₁_empty]; simp
+          cases tl₂
+          · rfl
+          · simp at this
+        simp [h_tl₁_empty, h_tl₂_empty]
+      · have hm_pos : 0 < m := Nat.zero_lt_of_ne_zero hm_zero
+        -- From hm₁: N - 1 - m < N, derive that N ≥ m + 1
+        have h_N_ge : N ≥ m + 1 := by
+          have : k < N := h_idx_valid
+          have : k = N - 1 - m := hk_def
+          have h_bound : N - 1 ≥ m := by
+            by_contra h_not
+            push_neg at h_not
+            have : N - 1 - m = 0 := Nat.sub_eq_zero_of_le (Nat.le_of_lt h_not)
+            rw [← hk_def] at this
+            rw [this] at h_idx_valid
+            have h_N_le_m : N ≤ m := by omega
+            have h_i_bound : m - 1 < m := by omega
+            have h_idx_eq : N - 1 - (m - 1) = N - m := by omega
+            have h_N_m_zero : N - m = 0 := by omega
+            have h_eq_01 : d₁[0]'(by omega : 0 < N) = d₂[0]'(by rw [← h_len_eq]; omega : 0 < d₂.length) := by
+              have := h_agree (m - 1) h_i_bound (by omega) (by omega)
+              simp [h_idx_eq, h_N_m_zero] at this
+              exact this
+            have h_gt_01 : d₁[0]'(by omega : 0 < N) > d₂[0]'(by rw [← h_len_eq]; omega : 0 < d₂.length) := by
+              have h_k_eq_0 : k = 0 := this
+              calc d₁[0]'(by omega : 0 < N)
+                  = d₁[k]'(by omega : k < N) := by simp [h_k_eq_0]
+                _ > d₂[k]'(by rw [← h_len_eq]; omega : k < d₂.length) := h_diff
+                _ = d₂[0]'(by rw [← h_len_eq]; omega : 0 < d₂.length) := by simp [h_k_eq_0]
+            omega
+          -- N - 1 ≥ m is equivalent to N ≥ m + 1 for natural numbers
+          omega
+
+        have h_tl₁_len : tl₁.length = m := by
+          have h_cons_len : (hd₁::tl₁).length = (d₁.drop k).length := by rw [← heq₁]
+          have h_drop_k_len : (d₁.drop k).length = N - k := by
+            simp [List.length_drop]
+            rfl
+          have h_calc : N - k = m + 1 := by omega
+          rw [h_drop_k_len, h_calc] at h_cons_len
+          simp [List.length_cons] at h_cons_len
+          omega
+
+        have h_tl_eq : tl₁ = tl₂ := by
+          apply List.ext_getElem h_tl_len
+          intro j _ _
+          have h_j_lt_m : j < m := by omega
+          have h_idx_eq : N - 1 - (m - 1 - j) = k + 1 + j := by omega -- for some reason omega doesn't work here
+
+          -- Now use h_agree to show equality
+          have h1 : tl₁[j] = d₁[k + 1 + j]'(by omega : k + 1 + j < N) := by
+            have h_bound : j + 1 < (hd₁ :: tl₁).length := by
+              simp [List.length_cons, h_tl₁_len]
+              omega
+            have : tl₁[j] = (hd₁ :: tl₁)[j + 1]'h_bound := by
+              simp [List.getElem_cons_succ]
+            rw [this]
+            have h_drop_bound : j + 1 < (d₁.drop k).length := by rw [heq₁]; exact h_bound
+            have : (hd₁ :: tl₁)[j + 1]'h_bound = (d₁.drop k)[j + 1]'h_drop_bound := by
+              congr 1
+              exact heq₁.symm
+            rw [this]
+            rw [List.getElem_drop]
+            congr 1
+            omega
+          have h2 : tl₂[j] = d₂[k + 1 + j]'(by omega : k + 1 + j < d₂.length) := by
+            have h_bound : j + 1 < (hd₂ :: tl₂).length := by
+              simp [List.length_cons, h_tl_len, h_tl₁_len]
+              omega
+            have : tl₂[j] = (hd₂ :: tl₂)[j + 1]'h_bound := by
+              simp [List.getElem_cons_succ]
+            rw [this]
+            have h_drop_bound : j + 1 < (d₂.drop k).length := by rw [heq₂]; exact h_bound
+            have : (hd₂ :: tl₂)[j + 1]'h_bound = (d₂.drop k)[j + 1]'h_drop_bound := by
+              congr 1
+              exact heq₂.symm
+            rw [this]
+            rw [List.getElem_drop]
+            congr 1
+            omega
+          rw [h1, h2]
+          have : d₁[k + 1 + j]'(by omega) = d₁[N - 1 - (m - 1 - j)]'(by omega) := by
+            congr 1; exact h_idx_eq.symm
+          rw [this]
+          have : d₂[k + 1 + j]'(by omega : k + 1 + j < d₂.length) = d₂[N - 1 - (m - 1 - j)]'(by omega) := by
+            congr 1; exact h_idx_eq.symm
+          rw [this]
+          exact h_agree (m - 1 - j) (by omega) (by omega) (by omega)
+        rw [h_tl_eq]
+
+
+    -- Now use composeFromRadix_cons
+    calc composeFromRadix r (d₁.drop k)
+        = composeFromRadix r (hd₁ :: tl₁) := by rw [← heq₁]
+      _ = composeFromRadix r tl₁ * r + hd₁ := composeFromRadix_cons r tl₁
+      _ = composeFromRadix r tl₂ * r + hd₁ := by rw [h_tails_eq]
+      _ = composeFromRadix r tl₂ * r + d₁[k] := by rw [h_hd₁]
+      _ > composeFromRadix r tl₂ * r + d₂[k] := by
+            have : d₁[k] > d₂[k] := h_diff
+            omega
+      _ = composeFromRadix r tl₂ * r + hd₂ := by rw [← h_hd₂]
+      _ = composeFromRadix r (hd₂ :: tl₂) := by rw [composeFromRadix_cons]
+      _ = composeFromRadix r (d₂.drop k) := by rw [heq₂]
+
+  have h_rk_pos : r ^ k > 0 := Nat.pow_pos (by omega : 0 < r)
+  have h_mul_gt : r ^ k * composeFromRadix r (d₁.drop k) > r ^ k * composeFromRadix r (d₂.drop k) := by
+    exact Nat.mul_lt_mul_of_pos_left h_high_gt h_rk_pos
+
+  have h_diff_bound : r ^ k * composeFromRadix r (d₁.drop k) ≥ r ^ k * composeFromRadix r (d₂.drop k) + r ^ k := by
+    have : composeFromRadix r (d₁.drop k) ≥ composeFromRadix r (d₂.drop k) + 1 := h_high_gt
+    calc r ^ k * composeFromRadix r (d₁.drop k)
+      _ ≥ r ^ k * (composeFromRadix r (d₂.drop k) + 1) := by
+            apply Nat.mul_le_mul_left
+            omega
+      _ = r ^ k * composeFromRadix r (d₂.drop k) + r ^ k := by ring
+
+  calc composeFromRadix r (d₁.take k) + r ^ k * composeFromRadix r (d₁.drop k)
+      ≥ r ^ k * composeFromRadix r (d₁.drop k) := by omega
+    _ ≥ r ^ k * composeFromRadix r (d₂.drop k) + r ^ k := h_diff_bound
+    _ > composeFromRadix r (d₂.take k) + r ^ k * composeFromRadix r (d₂.drop k) := by omega
 
 end Lampe

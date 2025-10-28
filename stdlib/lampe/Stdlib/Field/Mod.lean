@@ -109,10 +109,77 @@ theorem to_le_bits_intro :
             -- This means all positions k < i must match, otherwise there would be an earlier witness.
             --
             -- Formally: If any k < i didn't match, let k_min be the smallest such k.
-            -- Then k_min would be a witness (all positions before it match vacuously or by minimality,
-            -- k_min differs by assumption, and we can show pSlice[k_min] = 1 from the field constraint).
-            -- This contradicts that the invariant was false.
+            -- Then k_min would be a witness (all positions before it match by minimality,
+            -- k_min differs by assumption, so by rest pSlice[k_min] = 0 and bits[k_min] = 1).
+            -- This would mean f > p, contradiction.
+
+            suffices ∀ k' < i, bits[N.toNat - 1 - k'] = pSlice[N.toNat - 1 - k'] by
+              have := this k hk
+              simp only [lens_eq, pSlice_val, List.getElem_map] at this ⊢
+              exact this
+
+            intro k'
+            refine Nat.strong_induction_on k' fun m ih hm => ?_
+
+            have h_all_match : ∀ j < m, bits[N.toNat - 1 - j] = pSlice[N.toNat - 1 - j] := by
+              intro j hj
+              have : j < i := Nat.lt_trans hj hm
+              exact ih j hj this
+
+            specialize rest ⟨m, hm⟩
+            have : (∀ (k : Fin m), bits[BitVec.toNat N - 1 - ↑k] =
+              BitVec.ofNat 1 (decomposeToRadix 2 p.val Builtin.fModLeBits._proof_1)[BitVec.toNat N - 1 - ↑k]) := by
+              intro ⟨k_val, hk_val⟩
+              -- Use h_all_match which says bits[N-1-k] = pSlice[N-1-k]
+              have := h_all_match k_val hk_val
+              -- Rewrite pSlice using pSlice_val
+              simp only [pSlice_val, List.getElem_map] at this
+              exact this
+            specialize rest this
+
+            by_contra h_neq
+
+            simp [pSlice_val] at h_neq
+            specialize rest h_neq
+
+            set dTRp := decomposeToRadix 2 p.val Builtin.fModLeBits._proof_1 with hdTRp
+
+            have pSlice_m_eq_zero : BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m] = 0#1 := by
+              -- pSlice[m] is a 1-bit value, so it's either 0 or 1
+              -- rest says it's not 1, so it must be 0
+              have : BitVec.toNat (BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m]) < 2 := by
+                have := BitVec.isLt (BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m])
+                simp at this
+                exact this
+              interval_cases h_case : BitVec.toNat (BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m])
+              · apply BitVec.eq_of_toNat_eq
+                simpa using h_case
+              · exfalso
+                apply rest
+                apply BitVec.eq_of_toNat_eq
+                simpa using h_case
+
+            -- Now we have pSlice[m] = 0 and bits[m] ≠ pSlice[m], so bits[m] = 1
+            have bits_m_eq_one : bits[BitVec.toNat N - 1 - m] = 1#1 := by
+              have bits_neq_zero : bits[BitVec.toNat N - 1 - m] ≠ 0#1 := by
+                rw [pSlice_m_eq_zero] at h_neq
+                exact h_neq
+              -- bits is a 1-bit value, so it's either 0 or 1
+              have bits_bound : BitVec.toNat bits[BitVec.toNat N - 1 - m] < 2 := by
+                have := BitVec.isLt bits[BitVec.toNat N - 1 - m]
+                simp at this
+                exact this
+              interval_cases h_case : BitVec.toNat bits[BitVec.toNat N - 1 - m]
+              · exfalso
+                apply bits_neq_zero
+                apply_fun BitVec.toNat
+                convert h_case
+                exact fun _ _  => BitVec.toNat_inj.mp
+              · apply BitVec.eq_of_toNat_eq
+                simpa using h_case
+
             sorry
+
           -- Here we need to use `h₂` to argue that `bits[N - 1 - i] != pSlice[N - 1 - i]`, and
           · intro h_eq
             set d := decomposeToRadix 2 p.val (by linarith) with hd
