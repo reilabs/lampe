@@ -23,7 +23,7 @@ theorem compareWith_take_then_drop {α : Type} {a b : List α}
     (i : ℕ)
     (f : α → α → Ordering)
   : compareWith f a b = 
-      (compareWith f (a.take i) (b.take i)).then (compareWith f (a.drop i) (b.drop i)) := by
+    (compareWith f (a.take i) (b.take i)).then (compareWith f (a.drop i) (b.drop i)) := by
   induction i generalizing a b with
   | zero => simp_all
   | succ n ih => 
