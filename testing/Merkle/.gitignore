@@ -1,2 +1,2 @@
-/target
-/lampe/.lake
+.lake/
+target/
