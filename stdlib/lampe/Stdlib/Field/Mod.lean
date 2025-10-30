@@ -37,10 +37,10 @@ theorem to_le_bits_intro :
     rename' p => pSlice
     rename pSlice = _ => pSlice_val
     rename pSlice.length < 2  ^32 => pSlice_len
-    rename_i N_leq_pSlice_len _
-    simp at N_leq_pSlice_len
+    rename_i N_leq_pSlice_len
     have bits_len_eq_N : bits.length = N.toNat := rfl
     have : N.toNat ≤ pSlice.length := by
+      simp at N_leq_pSlice_len
       rw [BitVec.le_def] at N_leq_pSlice_len
       exact N_leq_pSlice_len
     -- Main loop
@@ -97,22 +97,6 @@ theorem to_le_bits_intro :
           refine ⟨?_, ?_, ?_⟩
           rcases h₁ with ⟨lens_eq, rest⟩
           · rintro ⟨k, hk⟩
-            -- We need to show `bits[N.toNat - 1 - k] = pSlice[N.toNat - 1 - k]` for all k < i
-            --
-            -- The proof strategy: We know from h₁ that `ok` was false at iteration i,
-            -- meaning NO witness j < i exists such that:
-            --   - All positions k < j match, AND
-            --   - Position j differs, AND
-            --   - pSlice[j] = 1
-            --
-            -- We're now showing that i IS such a witness (from h₂ and inner_assert).
-            -- This means all positions k < i must match, otherwise there would be an earlier witness.
-            --
-            -- Formally: If any k < i didn't match, let k_min be the smallest such k.
-            -- Then k_min would be a witness (all positions before it match by minimality,
-            -- k_min differs by assumption, so by rest pSlice[k_min] = 0 and bits[k_min] = 1).
-            -- This would mean f > p, contradiction.
-
             suffices ∀ k' < i, bits[N.toNat - 1 - k'] = pSlice[N.toNat - 1 - k'] by
               have := this k hk
               simp only [lens_eq, pSlice_val, List.getElem_map] at this ⊢
@@ -128,7 +112,7 @@ theorem to_le_bits_intro :
 
             specialize rest ⟨m, hm⟩
             have : (∀ (k : Fin m), bits[BitVec.toNat N - 1 - ↑k] =
-              BitVec.ofNat 1 (decomposeToRadix 2 p.val Builtin.fModLeBits._proof_1)[BitVec.toNat N - 1 - ↑k]) := by
+              BitVec.ofNat 1 (decomposeToRadix 2 p.natVal Builtin.fModLeBits._proof_1)[BitVec.toNat N - 1 - ↑k]) := by
               intro ⟨k_val, hk_val⟩
               -- Use h_all_match which says bits[N-1-k] = pSlice[N-1-k]
               have := h_all_match k_val hk_val
@@ -142,7 +126,7 @@ theorem to_le_bits_intro :
             simp [pSlice_val] at h_neq
             specialize rest h_neq
 
-            set dTRp := decomposeToRadix 2 p.val Builtin.fModLeBits._proof_1 with hdTRp
+            set dTRp := decomposeToRadix 2 p.natVal Builtin.fModLeBits._proof_1 with hdTRp
 
             have pSlice_m_eq_zero : BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m] = 0#1 := by
               -- pSlice[m] is a 1-bit value, so it's either 0 or 1
@@ -182,7 +166,7 @@ theorem to_le_bits_intro :
 
           -- Here we need to use `h₂` to argue that `bits[N - 1 - i] != pSlice[N - 1 - i]`, and
           · intro h_eq
-            set d := decomposeToRadix 2 p.val (by linarith) with hd
+            set d := decomposeToRadix 2 p.natVal (by linarith) with hd
             have h_bound : i < d.length := by
               rcases h₁ with ⟨lens_eq, _⟩
               rw [← lens_eq]
@@ -209,7 +193,7 @@ theorem to_le_bits_intro :
           -- Here we need to use the `inner_assert`
           · convert inner_assert using 3
             simp only
-            set d := decomposeToRadix 2 p.val (by linarith) with hd
+            set d := decomposeToRadix 2 p.natVal (by linarith) with hd
             have h_bound : i < d.length := by
               rcases h₁ with ⟨lens_eq, _⟩
               rw [← lens_eq]
@@ -239,14 +223,14 @@ theorem to_le_bits_intro :
               apply hj₂
               convert h₂ using 2
               · congr 1
-                set d := decomposeToRadix 2 p.val (by linarith) with hd
+                set d := decomposeToRadix 2 p.natVal (by linarith) with hd
                 have h_bound : j_val < d.length := by
                   rw [← h₁.1]
                   omega
                 convert complex_index_eq j_val d.length h_bound pSlice_len |>.symm
                 omega
               · congr 1
-                set d := decomposeToRadix 2 p.val (by linarith) with hd
+                set d := decomposeToRadix 2 p.natVal (by linarith) with hd
                 have h_bound : j_val < d.length := by
                   rw [← h₁.1]
                   omega
@@ -270,7 +254,7 @@ theorem to_le_bits_intro :
             · left
               exact len_eq
     -- Here is where all the "action" is, have to prove the constraint `ok` holds => `bits` is as
-    -- expected
+    -- expected. This should follow from the
     · steps
       rename_i ok_invariant _
       simp at ok_invariant
@@ -287,54 +271,9 @@ theorem to_le_radix_intro (radix_gt : radix > 1 := by bv_decide) :
     («std-1.0.0-beta.12::field::to_le_radix».call h![N] h![f, radix])
     fun r => r = ⟨decomposeToRadix radix.toNat f.val (by assumption) |>.takeD N.toNat 0, by simp⟩ := by
   sorry
-  -- enter_decl
-  -- steps
-  -- fapply STHoare.letIn_intro
-  -- · exact fun _ => ⟦⟧
-  -- · apply STHoare.iteTrue_intro
-  --   steps
-  -- intro
-  -- steps
-  -- rename_i _ _ v_eq
-  -- exact v_eq
 
 theorem to_le_bytes_intro :
     STHoare p env ⟦⟧
     («std-1.0.0-beta.12::field::to_le_bytes».call h![N] h![f])
     fun r => r = ⟨decomposeToRadix 256 f.val (by linarith) |>.takeD N.toNat 0, by simp⟩ := by
   sorry
-  -- enter_decl
-  -- steps
-  -- steps [to_le_radix_intro (N := N) (f := f) (radix := 256)]
-  -- fapply STHoare.letIn_intro
-  -- · exact fun _ => ⟦⟧
-  -- · apply STHoare.iteTrue_intro
-  --   steps
-  --   simp_all
-  --   loop_inv nat
-  --     (fun _ _ _ => ∃∃b, ([ok ↦ ⟨Tp.bool, b⟩]))
-  --   rotate_left
-  --   simp
-  --   exact ⟦⟧
-  --   rotate_right
-  --   simp
-  --   apply SLP.exists_intro_r
-  --   exact SLP.entails_self
-
-  --   -- loop body
-  --   intros i hlo hhi
-  --   steps
-  --   apply STHoare.ite_intro
-  --   · intro h₁
-  --     steps
-  --     apply STHoare.ite_intro
-  --     · intro h₂
-  --       steps
-  --     · intro h₂
-  --       steps
-  --   · intro
-  --     steps
-  --   steps
-  -- intro v
-  -- steps
-  -- simp_all
