@@ -116,7 +116,9 @@ noir_def «std-1.0.0-beta.12»::array::sort<T: Type, N: u32>(self: Array<T, N: u
     let __0 = ((T as «std-1.0.0-beta.12»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.12»::cmp::Ordering<>)(a, b);
     let __1 = («std-1.0.0-beta.12»::cmp::Ordering::less<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)();
     let __3 = («std-1.0.0-beta.12»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)();
-    (#_bOr returning bool)((#_bEq returning bool)(__0, __1), (#_bEq returning bool)(__0, __3))
+    let __7 = ((«std-1.0.0-beta.12»::cmp::Ordering<> as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.12»::cmp::Ordering<>, «std-1.0.0-beta.12»::cmp::Ordering<>) -> bool)(__0, __1);
+    let __15 = ((«std-1.0.0-beta.12»::cmp::Ordering<> as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.12»::cmp::Ordering<>, «std-1.0.0-beta.12»::cmp::Ordering<>) -> bool)(__0, __3);
+    (#_bOr returning bool)(__7, __15)
   }))
 }
 

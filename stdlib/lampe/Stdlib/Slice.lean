@@ -191,7 +191,7 @@ theorem mapi_pure_spec {T U Env p f fb fEmb l}
 
 theorem for_each_spec {T Env p f fb l}
     (Inv : List (Tp.denote p T) → SLP (State p))
-    (h_inv : ∀(lp: List (Tp.denote p T)) (e: T.denote p),
+    (h_inv : ∀(lp : List (Tp.denote p T)) (e : T.denote p),
       ((lp ++ [e]) <+: l) → STHoare p env (Inv lp) (fb h![e]) (fun _ => Inv (lp ++ [e])))
   : STHoare p env
     (Inv [] ⋆ [λf ↦ fb])
@@ -305,7 +305,8 @@ theorem reduce_spec {p T Env l f fb}
     (l_len_gt : l.length > 0)
     (inv : List (T.denote p) → T.denote p → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (acc : T.denote p) (e : T.denote p),
-      ((ip ++ [e] <+: l.tail) → STHoare p env (inv ip acc) (fb h![acc, e]) (fun r => inv (ip ++ [e]) r)))
+      ((ip ++ [e] <+: l.tail) → STHoare p env (inv ip acc) (fb h![acc, e])
+        (fun r => inv (ip ++ [e]) r)))
   : STHoare p env
     ((inv [] l[0]) ⋆ [λf ↦ fb])
     («std-1.0.0-beta.12::slice::reduce».call h![T, Env] h![l, f])
@@ -315,7 +316,9 @@ theorem reduce_spec {p T Env l f fb}
   cases l with
   | nil => contradiction
   | cons init l =>
-    simp at *
+    simp only [List.tail_cons, List.length_cons, BitVec.toNat_intCast, Int.reducePow,
+      EuclideanDomain.zero_mod, Int.toNat_zero, Fin.zero_eta, List.get_eq_getElem,
+      Fin.coe_ofNat_eq_mod, Nat.zero_mod, List.getElem_cons_zero] at *
     loop_inv nat fun i _ _ => ∃∃v, [accumulator ↦ ⟨T, v⟩] ⋆ [λf ↦ fb] ⋆ inv (l.take (i-1)) v
     · sl
     · simp only [BitVec.toNat_intCast, BitVec.toNat_ofNatLT]; omega
@@ -518,11 +521,10 @@ theorem all_spec {p T Env l f fb}
     have := inv_spec (l.take i) b l[i] (by simp [List.take_prefix])
 
     steps [STHoare.callLambda_intro (hlam := this)]
-    · exact ()
-
     simp_all only [Bool.decide_and, Bool.decide_eq_true, Bool.forall_bool, Bool.false_and,
       Bool.true_and, List.take_append_getElem, Lens.modify, Option.get_some]
-    steps
+    sl
+    exact ()
   · simp_all only [Bool.decide_and, Bool.decide_eq_true, Bool.forall_bool, Bool.false_and,
     Bool.true_and, BitVec.toNat_ofNatLT, List.take_length, SLP.star_true]
     steps
@@ -574,12 +576,10 @@ theorem any_spec {p T Env l f fb}
     have := inv_spec (l.take i) b l[i] (by simp [List.take_prefix])
 
     steps [STHoare.callLambda_intro (hlam := this)]
-    · exact ()
-
     simp_all only [Bool.decide_or, Bool.decide_eq_true, Bool.forall_bool, Bool.false_or,
       Bool.true_or, List.take_append_getElem, Lens.modify, Option.get_some]
-    steps
-
+    sl
+    exact ()
   · simp_all only [Bool.decide_or, Bool.decide_eq_true, Bool.forall_bool, Bool.false_or, Bool.true_or,
     BitVec.toNat_ofNatLT, List.take_length, SLP.star_true]
     steps

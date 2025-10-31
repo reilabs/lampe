@@ -43,7 +43,6 @@ def ecdsaSecp256K1 := stub
 def ecdsaSecp256R1 := stub
 def embeddedCurveAdd := stub
 def fmtstrAsCtstring := stub
-def isUnconstrained := stub
 def keccakf1600 := stub
 def mkFormatString := stub
 def modulesLeBytes := stub
