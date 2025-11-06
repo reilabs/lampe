@@ -1,7 +1,6 @@
 import Stdlib.Append
 import Stdlib.Array.CheckShuffle
 import Stdlib.Array.Mod
-import Stdlib.Array.Quicksort
 import Stdlib.Cmp
 import Stdlib.Collections.BoundedVec
 import Stdlib.Collections.Map

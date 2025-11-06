@@ -14,7 +14,7 @@ In Noir, this corresponds to `fn as_bytes<let N: u32>(self: str<N>) -> [u8; N]`.
 def strAsBytes := newGenericPureBuiltin
   (fun n => ⟨[.str n], (.array (.u 8) n)⟩)
   (fun n h![s] => ⟨s.length = n.toNat,
-    fun _ => s⟩)
+    fun _ => s.bytes⟩)
 
 /--
 Implements the semantics of the `arrayAsStrUnchecked` builtin in Noir.

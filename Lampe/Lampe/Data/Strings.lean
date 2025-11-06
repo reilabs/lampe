@@ -31,6 +31,10 @@ def mk {n : ℕ} (bytes : List.Vector UInt8 n) : NoirStr n :=
 @[reducible]
 def length {n : ℕ} (_ : NoirStr n) : ℕ := n
 
+/-- Gets the bytes that represent the string. -/
+@[reducible]
+def bytes {n : ℕ} (ns : NoirStr n) : List.Vector NoirByte n := ns
+
 /--
 Converts the provided Lean String into a noir string, interpreting it as a series of UTF-8 encoded
 bytes.

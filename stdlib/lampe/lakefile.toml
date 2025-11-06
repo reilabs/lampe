@@ -21,3 +21,8 @@ path = "../../Lampe"
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"
 rev = "v4.21.0"
+
+[[require]]
+name = "batteries"
+git = "https://github.com/leanprover-community/batteries"
+rev = "v4.21.0"

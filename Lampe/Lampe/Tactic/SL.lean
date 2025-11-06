@@ -168,6 +168,18 @@ abbrev SLM := ReaderT SLConfig TacticM
 def SLM.run {α} (x : SLM α) (r : SLConfig) : TacticM α :=
   ReaderT.run x r
 
+instance : MonadBacktrack (Lean.Elab.Tactic.SavedState) SLM where
+  saveState := Lean.Elab.Tactic.saveState 
+  restoreState b := Lean.Elab.Tactic.SavedState.restore b
+
+def SLM.tryCatchRestore {α : Type}  (x : SLM α)  (h : Exception → SLM α) : SLM α := do
+  let s ← saveState
+  try x catch ex => s.restore; h ex
+
+instance : MonadExcept Exception SLM where
+  throw := throw
+  tryCatch := SLM.tryCatchRestore
+
 def SLGoals.flatten (g : SLGoals) : List MVarId := g.entailments ++ g.props ++ g.implicits
 
 instance : Append SLGoals where

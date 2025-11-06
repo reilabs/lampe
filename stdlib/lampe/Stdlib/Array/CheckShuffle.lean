@@ -137,8 +137,9 @@ lemma get_index_spec: STHoare p env ⟦⟧
   steps
 
 theorem check_shuffle_spec
-    (h_eq : ∀(a b : T.denote p), STHoare p env ⟦⟧ («std-1.0.0-beta.12::cmp::Eq».eq h![] T h![] h![] h![a, b]) fun r: Bool => ⟦r ↔ a = b⟧)
-    : STHoare p env ⟦⟧
+    (t_eq : Cmp.Eq.hasImpl env T)
+    (t_eq_spec : ∀a b, STHoare p env ⟦⟧ (Cmp.Eq.eq h![] T h![] h![] h![a, b]) fun r: Bool => ⟦r ↔ a = b⟧)
+  : STHoare p env ⟦⟧
     («std-1.0.0-beta.12::array::check_shuffle::check_shuffle».call h![T, N] h![lhs, rhs])
     (fun _ => List.Perm lhs.toList rhs.toList) := by
   enter_decl
@@ -166,18 +167,16 @@ theorem check_shuffle_spec
 
   rename ∀_, ∃_, _ = _ => shuffle_indices_surj
 
-
   loop_inv nat fun i _ ilt => ∀(k : Fin i), lhs.get (k.castLE ilt) = rhs[(shuffle_indices.get $ k.castLE ilt).toNat]?
   · intro k
     fin_cases k
   · simp
   · intro i _ ilt
-    steps [h_eq]
+    steps [t_eq_spec]
 
     rename (_ == true) = true => hp1
     simp only [beq_true] at hp1
     cases hp1
-
 
     rename (_ = _ ↔ _) => hp
     simp only [true_iff] at hp
@@ -233,13 +232,13 @@ theorem check_shuffle_spec
 /--
 Shows that the shuffle check cannot succeed with the given inputs.
 -/
-example :
+example {t_eq : Cmp.Eq.hasImpl env (.u 8)} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::array::check_shuffle::check_shuffle».call h![.u 8, 3] h![⟨[1, 2, 3], by simp⟩, ⟨[1, 2, 2], by simp⟩])
       (fun _ => False) := by
   steps [check_shuffle_spec]
   · simp_all
-  intros
-  apply Cmp.Eq.u8_eq_spec
+  · exact t_eq
+  · apply Cmp.Eq.u8_eq_spec
 
 end Lampe.Stdlib.Array.CheckShuffle

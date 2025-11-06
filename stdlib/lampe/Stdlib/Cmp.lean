@@ -2,6 +2,7 @@ import «std-1.0.0-beta.12».Extracted
 import Lampe
 
 import Mathlib.Order.Compare
+import Batteries.Classes.Order
 
 import Stdlib.Extra
 import Stdlib.Integer
@@ -34,7 +35,7 @@ def eq {p}
 
 /-- Asserts that the provided `tp` has an implementation of `std::cmp::Eq` in the environment. -/
 @[reducible]
-def hasEqImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] tp
+def hasImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] tp
 
 theorem field_eq_spec {p a b}
   : STHoare p env ⟦⟧
@@ -142,7 +143,7 @@ theorem bool_eq_spec {p a b}
   · exact ()
 
 theorem array_eq_pure_spec {p T N a b}
-    {t_eq : hasEqImpl env T}
+    {t_eq : hasImpl env T}
     {t_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] T h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
   : STHoare p env ⟦⟧
     (eq h![] (T.array N) h![] h![] h![a, b])
@@ -194,7 +195,7 @@ theorem array_eq_pure_spec {p T N a b}
   exact Iff.intro (fun eq => List.Vector.eq _ _ eq) (fun eq => congrArg _ eq)
 
 theorem slice_eq_pure_spec {p T a b}
-    (h_trait_res : hasEqImpl env T)
+    (h_trait_res : hasImpl env T)
     (h_eq_child: ∀a b, STHoare p env ⟦⟧ (eq h![] T h![] h![] h![a, b]) fun r : Bool => ⟦r ↔ a = b⟧)
   : STHoare p env ⟦⟧
     (eq h![] T.slice h![] h![] h![a, b])
@@ -255,8 +256,8 @@ theorem string_eq_pure_spec {p N a b}
   simp_all only [BitVec.natCast_eq_ofNat, List.Vector.mk_toList]
 
 theorem tuple2_eq_pure_spec {p A B self other}
-    {A_eq : hasEqImpl env A}
-    {B_eq : hasEqImpl env B}
+    {A_eq : hasImpl env A}
+    {B_eq : hasImpl env B}
     {A_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] A h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
     {B_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] B h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
   : STHoare p env ⟦⟧
@@ -273,9 +274,9 @@ theorem tuple2_eq_pure_spec {p A B self other}
   simp_all
 
 theorem tuple3_eq_pure_spec {p A B C self other}
-    {A_eq : hasEqImpl env A}
-    {B_eq : hasEqImpl env B}
-    {C_eq : hasEqImpl env C}
+    {A_eq : hasImpl env A}
+    {B_eq : hasImpl env B}
+    {C_eq : hasImpl env C}
     {A_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] A h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
     {B_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] B h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
     {C_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] C h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
@@ -295,10 +296,10 @@ theorem tuple3_eq_pure_spec {p A B C self other}
 
 set_option maxHeartbeats 500000 in
 theorem tuple4_eq_pure_spec {p A B C D self other}
-    {A_eq : hasEqImpl env A}
-    {B_eq : hasEqImpl env B}
-    {C_eq : hasEqImpl env C}
-    {D_eq : hasEqImpl env D}
+    {A_eq : hasImpl env A}
+    {B_eq : hasImpl env B}
+    {C_eq : hasImpl env C}
+    {D_eq : hasImpl env D}
     {A_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] A h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
     {B_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] B h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
     {C_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] C h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
@@ -319,11 +320,11 @@ theorem tuple4_eq_pure_spec {p A B C D self other}
 
 set_option maxHeartbeats 1000000 in
 theorem tuple5_eq_pure_spec {p A B C D E self other}
-    {A_eq : hasEqImpl env A}
-    {B_eq : hasEqImpl env B}
-    {C_eq : hasEqImpl env C}
-    {D_eq : hasEqImpl env D}
-    {E_eq : hasEqImpl env E}
+    {A_eq : hasImpl env A}
+    {B_eq : hasImpl env B}
+    {C_eq : hasImpl env C}
+    {D_eq : hasImpl env D}
+    {E_eq : hasImpl env E}
     {A_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] A h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
     {B_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] B h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
     {C_eq_f : ∀a b, STHoare p env ⟦⟧ (eq h![] C h![] h![] h![a, b]) (fun r : Bool => ⟦r ↔ a = b⟧)}
@@ -438,7 +439,7 @@ def toOrdering {p} : (NoirOrdering.denote p) → Ordering
 
 /-- Asserts that the provided `tp` has an implementation of `std::cmp::Ord` in the environment. -/
 @[reducible]
-def hasOrdImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::cmp::Ord».hasImpl env h![] tp
+def hasImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::cmp::Ord».hasImpl env h![] tp
 
 /--
 A shorthand of the pure semantics for calling an embedded function implementing the ordering
@@ -447,6 +448,75 @@ comparison between two `tp`s.
 @[reducible]
 def pureOrdSemantics {p} {tp : Tp} (env : Env) (emb : (Tp.comparator p) tp) (a b : Tp.denote p tp) :=
   STHoare p env ⟦⟧ (cmp h![] tp h![] h![] h![a, b]) (fun r => r = fromOrdering (emb a b))
+
+/--
+Provides the embedded semantics of the `<` operator based on the provided semantics of the `cmp`
+function embedding.
+
+This is necessary as `<` on an arbitrary `T` exists as a virtual operator that is desugared during
+compilation to have semantics that match those given by these definition. In other words, there is
+no definition of the operator that can have a theorem stated about it.
+
+This embedding assumes that the function whose semantics it represents is pure, as is the `cmp`
+function on which it depends.
+-/
+abbrev lt_emb {p T} (t_cmp_emb : Tp.comparator p T) := fun a b => t_cmp_emb a b = .lt
+
+/--
+Provides the embedded semantics of the `<=` operator based on the provided semantics of the `cmp`
+function embedding.
+
+This is necessary as `<=` on an arbitrary `T` exists as a virtual operator that is desugared during
+compilation to have semantics that match those given by these definition. In other words, there is
+no definition of the operator that can have a theorem stated about it.
+
+This embedding assumes that the function whose semantics it represents is pure, as is the `cmp`
+function on which it depends.
+-/
+abbrev le_emb {p T} (t_cmp_emb : Tp.comparator p T) :=
+    fun a b => t_cmp_emb a b = .lt || t_cmp_emb a b = .eq
+
+lemma le_emb_trans {p T} (t_cmp_emb : Tp.comparator p T) (t_cmp_trans : Std.TransCmp t_cmp_emb)
+  : Transitive fun a b => le_emb t_cmp_emb a b = true := by
+  unfold le_emb
+  intro x y z
+  simp only [Bool.or_eq_true, decide_eq_true_eq, Bool.decide_or, ←Ordering.isLE_iff_eq_lt_or_eq_eq]
+  exact t_cmp_trans.isLE_trans
+
+/--
+Provides the embedded semantics of the `>` operator based on the provided semantics of the `cmp`
+function embedding.
+
+This is necessary as `>` on an arbitrary `T` exists as a virtual operator that is desugared during
+compilation to have semantics that match those given by these definition. In other words, there is
+no definition of the operator that can have a theorem stated about it.
+
+This embedding assumes that the function whose semantics it represents is pure, as is the `cmp`
+function on which it depends.
+-/
+abbrev gt_emb {p T} (t_cmp_emb : Tp.comparator p T) :=
+    fun a b => t_cmp_emb a b = .gt
+
+/--
+Provides the embedded semantics of the `>` operator based on the provided semantics of the `cmp`
+function embedding.
+
+This is necessary as `>` on an arbitrary `T` exists as a virtual operator that is desugared during
+compilation to have semantics that match those given by these definition. In other words, there is
+no definition of the operator that can have a theorem stated about it.
+
+This embedding assumes that the function whose semantics it represents is pure, as is the `cmp`
+function on which it depends.
+-/
+abbrev ge_emb {p T} (t_cmp_emb : Tp.comparator p T) :=
+    fun a b => t_cmp_emb a b = .gt || t_cmp_emb a b = .eq
+
+lemma ge_emb_trans {p T} (t_cmp_emb : Tp.comparator p T) (t_cmp_trans : Std.TransCmp t_cmp_emb)
+  : Transitive fun a b => ge_emb t_cmp_emb a b = true := by
+  unfold ge_emb
+  intro x y z
+  simp only [Bool.or_eq_true, decide_eq_true_eq, Bool.decide_or, ←Ordering.isGE_iff_eq_gt_or_eq_eq]
+  exact t_cmp_trans.isGE_trans
 
 theorem less_spec {p}
   : STHoare p env ⟦⟧
@@ -898,7 +968,7 @@ theorem bool_ord_spec {p self other}
       congr
 
 theorem array_ord_pure_spec {p T N a b}
-    {t_ord : hasOrdImpl env T}
+    {t_ord : hasImpl env T}
     {t_ord_emb : Tp.comparator p T}
     {t_ord_f : ∀a b, STHoare p env ⟦⟧
       (cmp h![] T h![] h![] h![a, b])
@@ -952,7 +1022,7 @@ theorem array_ord_pure_spec {p T N a b}
   rw [h1, h2]
 
 theorem slice_ord_pure_spec {p T a b}
-    {t_ord : hasOrdImpl env T}
+    {t_ord : hasImpl env T}
     {t_ord_emb : Tp.comparator p T}
     {t_ord_f : ∀a b, STHoare p env ⟦⟧
       (cmp h![] T h![] h![] h![a, b])
@@ -1020,8 +1090,8 @@ theorem slice_ord_pure_spec {p T a b}
       simp_all [Nat.min_eq_right, Nat.le_of_lt]
 
 theorem tuple2_ord_pure_spec {p A B self other}
-    {A_ord : hasOrdImpl env A}
-    {B_ord : hasOrdImpl env B}
+    {A_ord : hasImpl env A}
+    {B_ord : hasImpl env B}
     {A_ord_emb : Tp.comparator p A}
     {B_ord_emb : Tp.comparator p B}
     {A_ord_f : ∀a b, pureOrdSemantics env A_ord_emb a b}
@@ -1056,9 +1126,9 @@ theorem tuple2_ord_pure_spec {p A B self other}
     apply Tuple.compare_singleton
 
 theorem tuple3_ord_pure_spec {p A B C self other}
-    {A_ord : hasOrdImpl env A}
-    {B_ord : hasOrdImpl env B}
-    {C_ord : hasOrdImpl env C}
+    {A_ord : hasImpl env A}
+    {B_ord : hasImpl env B}
+    {C_ord : hasImpl env C}
     {A_ord_emb : Tp.comparator p A}
     {B_ord_emb : Tp.comparator p B}
     {C_ord_emb : Tp.comparator p C}
@@ -1144,10 +1214,10 @@ theorem tuple3_ord_pure_spec {p A B C self other}
   rfl
 
 theorem tuple4_ord_pure_spec {p A B C D self other}
-    {A_ord : hasOrdImpl env A}
-    {B_ord : hasOrdImpl env B}
-    {C_ord : hasOrdImpl env C}
-    {D_ord : hasOrdImpl env D}
+    {A_ord : hasImpl env A}
+    {B_ord : hasImpl env B}
+    {C_ord : hasImpl env C}
+    {D_ord : hasImpl env D}
     {A_ord_emb : Tp.comparator p A}
     {B_ord_emb : Tp.comparator p B}
     {C_ord_emb : Tp.comparator p C}
@@ -1265,11 +1335,11 @@ theorem tuple4_ord_pure_spec {p A B C D self other}
 
 set_option maxHeartbeats 350000 in
 theorem tuple5_ord_pure_spec {p A B C D E self other}
-    {A_ord : hasOrdImpl env A}
-    {B_ord : hasOrdImpl env B}
-    {C_ord : hasOrdImpl env C}
-    {D_ord : hasOrdImpl env D}
-    {E_ord : hasOrdImpl env E}
+    {A_ord : hasImpl env A}
+    {B_ord : hasImpl env B}
+    {C_ord : hasImpl env C}
+    {D_ord : hasImpl env D}
+    {E_ord : hasImpl env E}
     {A_ord_emb : Tp.comparator p A}
     {B_ord_emb : Tp.comparator p B}
     {C_ord_emb : Tp.comparator p C}
@@ -1417,7 +1487,7 @@ theorem tuple5_ord_pure_spec {p A B C D E self other}
   rfl
 
 theorem max_pure_spec {p T v1 v2}
-    {T_ord : hasOrdImpl env T}
+    {T_ord : hasImpl env T}
     {T_ord_emb : Tp.comparator p T}
     {T_ord_f : ∀a b, pureOrdSemantics env T_ord_emb a b}
   : STHoare p env ⟦⟧
@@ -1442,7 +1512,7 @@ theorem max_pure_spec {p T v1 v2}
     simp_all
 
 theorem min_pure_spec {p T v1 v2}
-    {T_ord : hasOrdImpl env T}
+    {T_ord : hasImpl env T}
     {T_ord_emb : Tp.comparator p T}
     {T_ord_f : ∀a b, pureOrdSemantics env T_ord_emb a b}
   : STHoare p env ⟦⟧
