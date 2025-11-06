@@ -81,8 +81,9 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         match n with
         | ``Lampe.Builtin.fresh => return some (←``(fresh_intro))
         | ``Lampe.Builtin.assert => return some (←``(assert_intro))
+        | ``Lampe.Builtin.staticAssert => return some (←``(staticAssert_intro))
 
-        | ``Lampe.Builtin.bNot => return some (←``(genericTotalPureBuiltin_intro Builtin.bNot rfl))
+        | ``Lampe.Builtin.bNot => return some (←``(genericTotalPureBuiltin_intro Builtin.bNot (a := ()) rfl))
         | ``Lampe.Builtin.bAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.bAnd rfl))
         | ``Lampe.Builtin.bXor => return some (←``(genericTotalPureBuiltin_intro Builtin.bXor rfl))
         | ``Lampe.Builtin.bOr  => return some (←``(genericTotalPureBuiltin_intro Builtin.bOr  rfl))
@@ -128,6 +129,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.uDiv => return some (←``(uDiv_intro))
         | ``Lampe.Builtin.uSub => return some (←``(uSub_intro))
         | ``Lampe.Builtin.uRem => return some (←``(uRem_intro))
+        | ``Lampe.Builtin.uLeq => return some (←``(uLeq_intro))
 
         | ``Lampe.Builtin.iAdd => return some (←``(iAdd_intro))
         | ``Lampe.Builtin.iMul => return some (←``(iMul_intro))
@@ -135,6 +137,12 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.iSub => return some (←``(iSub_intro))
         | ``Lampe.Builtin.iRem => return some (←``(iRem_intro))
         | ``Lampe.Builtin.iNeg => return some (←``(iNeg_intro))
+
+        | ``Lampe.Builtin.modulusLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBits (a := ()) rfl))
+        | ``Lampe.Builtin.modulusBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBits (a := _) rfl))
+        | ``Lampe.Builtin.modulusLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBytes (a := ()) rfl))
+        | ``Lampe.Builtin.modulusBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBytes (a := _) rfl))
+        | ``Lampe.Builtin.modulusNumBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusNumBits (a := _) rfl))
 
         | ``Lampe.Builtin.strAsBytes => return some (←``(strAsBytes_intro))
         | ``Lampe.Builtin.arrayAsStrUnchecked => return some (←``(arrayAsStrUnchecked_intro))
@@ -173,6 +181,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.ref => return some (←``(ref_intro))
         | ``Lampe.Builtin.readRef => return some (←``(readRef_intro))
 
+        -- Field builtins
         | ``Lampe.Builtin.fApplyRangeConstraint => return some (←``(fApplyRangeConstraint_intro))
         | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits rfl))
         | ``Lampe.Builtin.fModBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBytes rfl))
@@ -183,6 +192,10 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.iFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.iFromField rfl))
         | ``Lampe.Builtin.uAsField => return some (←``(genericTotalPureBuiltin_intro Builtin.uAsField rfl))
         | ``Lampe.Builtin.uFromField => return some (←``(genericTotalPureBuiltin_intro Builtin.uFromField rfl))
+        | ``Lampe.Builtin.toLeBits => return some (←``(toLeBits_intro))
+        | ``Lampe.Builtin.toBeBits => return some (←``(toBeBits_intro))
+        | ``Lampe.Builtin.toLeRadix => return some (←``(toLeRadix_intro))
+        | ``Lampe.Builtin.toBeRadix => return some (←``(toBeRadix_intro))
 
         -- Tuple/struct builtins
         | ``Lampe.Builtin.makeData => return some (← ``(genericTotalPureBuiltin_intro (a := (_, _)) Builtin.makeData rfl))

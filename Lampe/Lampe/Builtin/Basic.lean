@@ -70,6 +70,46 @@ end Lampe
 
 namespace Lampe.Builtin
 
+inductive genericOmni {A : Type}
+  (sgn : A → List Tp × Tp)
+  (desc : {p : Prime} → (a : A) → (args : HList (Tp.denote p) (sgn a).fst) → (Tp.denote p (sgn a).snd) → Prop)
+  : Omni where
+  | ok {p st a args Q val} :
+    (h : desc a args val)
+      → Q (some (st, val))
+      → (genericOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
+  | err {p st a args Q} :
+    (h : ∀ val, ¬ desc a args val)
+      → Q none
+      → (genericOmni sgn desc) p st (sgn a).fst (sgn a).snd args Q
+
+def newGenericBuiltin {A : Type}
+  (sgn : A → List Tp × Tp)
+  (desc : {p : Prime} → (a : A) → (args : HList (Tp.denote p) (sgn a).fst) → (Tp.denote p (sgn a).snd) → Prop) : Builtin := {
+  omni := genericOmni sgn desc
+  conseq := by
+    unfold omni_conseq
+    intros
+    cases_type genericOmni
+    · apply genericOmni.ok <;> tauto
+    · apply genericOmni.err <;> tauto
+  frame := by
+    unfold omni_frame
+    intros
+    cases_type genericOmni
+    · apply genericOmni.ok
+      · assumption
+      · simp
+        repeat apply Exists.intro
+        constructor
+        · assumption
+        · tauto
+    · apply genericOmni.err
+      · assumption
+      · simp
+        tauto
+}
+
 inductive genericPureOmni {A : Type}
   (sgn : A → List Tp × Tp)
   (desc : {p : Prime}
@@ -163,6 +203,17 @@ Defines the assertion builtin that takes a boolean. We assume the following:
 def assert := newPureBuiltin
   ⟨[.bool], .unit⟩
   (fun h![a] => ⟨a == true,
+    fun _ => ()⟩)
+
+/--
+Defines the static assertion builtin that takes a boolean and a message of type `tp : Tp`.
+We assume the following:
+- If `a == true`, it evaluates to `()`.
+- Else, an exception is thrown.
+-/
+def staticAssert := newGenericPureBuiltin
+  (fun tp => ⟨[.bool, tp], .unit⟩)
+  (fun _ h![a, _] => ⟨a == true,
     fun _ => ()⟩)
 
 inductive freshOmni : Omni where
