@@ -49,7 +49,7 @@ assert noir_version == rust_cargo_toml['dependencies']['noirc_frontend']['rev']
 
 ci_noir_yaml = load_yaml(ci_noir_yaml_path)
 
-assert 'actions/checkout@v5' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['uses']
+assert 'actions/checkout@v6' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['uses']
 assert 'noir-lang/noir' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['with']['repository']
 assert noir_version == ci_noir_yaml['jobs']['run-tests']['steps'][0]['with']['ref']
 assert 'noir' == ci_noir_yaml['jobs']['run-tests']['steps'][0]['with']['path']

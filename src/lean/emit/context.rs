@@ -3,12 +3,6 @@ use crate::lean::{LEAN_QUOTE_END, LEAN_QUOTE_START};
 /// The default contents of a single indentation level.
 pub const DEFAULT_INDENTATION_CONTENT: &str = "  ";
 
-/// If this is seen at the end of a line, the indent level is increased.
-pub const INCREASE_INDENT_TAIL: &str = "{";
-
-/// If this is seen at the end of a line, the indent level is decreased.
-pub const DECREASE_INDENT_TAIL: &str = "}";
-
 /// Handles the emission of Lean DSL source code for a single module / file pair
 /// in the Noir source.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -136,21 +130,6 @@ impl EmitContext {
             } else {
                 text.to_string()
             }
-        } else {
-            text.to_string()
-        }
-    }
-
-    #[must_use]
-    pub fn split_up_funcref_name(text: &str) -> String {
-        // Turn something like «asdf::inner::colon_test_inner» into
-        // «asdf»::«inner»::«colon_test_inner»
-        if text.starts_with(LEAN_QUOTE_START) && text.ends_with(LEAN_QUOTE_END) {
-            text[LEAN_QUOTE_START.len()..text.len() - LEAN_QUOTE_END.len()]
-                .split("::")
-                .map(|s| format!("{LEAN_QUOTE_START}{s}{LEAN_QUOTE_END}"))
-                .collect::<Vec<_>>()
-                .join("::")
         } else {
             text.to_string()
         }

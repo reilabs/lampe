@@ -77,10 +77,7 @@ impl LeanFile {
             return Err(DuplicateWithGeneratedFile(path.to_path_buf()));
         }
 
-        Ok(LeanFile {
-            file_path: LeanFilePath::from_noir_path(path),
-            content,
-        })
+        Ok(LeanFile { file_path, content })
     }
 
     #[must_use]
