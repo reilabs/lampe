@@ -5,7 +5,6 @@ import Lampe.Ast
 import Lampe.Ast.Extensions
 import Lampe.Builtin.Arith
 import Lampe.Builtin.Array
-import Lampe.Builtin.BigInt
 import Lampe.Builtin.Bit
 import Lampe.Builtin.Cmp
 import Lampe.Builtin.Field
@@ -579,7 +578,7 @@ def makeTraitDef [MonadUtil m] : Syntax → m (List $ TSyntax `command)
 
 -- def makeStructDef [MonadUtil m] (name : TSyntax `noir_ident): Syntax → m (TSyntax `term)
 
-/-- 
+/--
 Extracts any deprecation message that may have been attached to a definition.
 
 Returns `some ""` if the entity is deprecated but has no message, and returns `none` if the entity
@@ -587,6 +586,5 @@ is not deprecated at all.
 -/
 def parseDeprecatedMessage [MonadUtil m] : (stx : Syntax) → m (Option String)
 | `(noir_depr?|[[deprecated]]) => pure $ some ""
-| `(noir_depr?|[[deprecated $msg:str]]) => pure msg.getString 
+| `(noir_depr?|[[deprecated $msg:str]]) => pure msg.getString
 | _ => pure none
-
