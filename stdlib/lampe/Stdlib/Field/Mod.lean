@@ -5,275 +5,325 @@ namespace Lampe.Stdlib.Field
 
 open «std-1.0.0-beta.12» (env)
 
-abbrev toLeBitsCall (f : Nat) (N : BitVec 32) := decomposeToRadix 2 f (by linarith)
-  |>.map (fun a => BitVec.ofNat 1 a)
-  |>.takeD N.toNat 0
+@[simp]
+theorem BitVec.ofNatLT_eq_iff {m d n} {h : m < (2:ℕ) ^ d} {g: n < 2 ^ d}: BitVec.ofNatLT _ h = BitVec.ofNatLT _ g ↔ m = n := by
+  apply Iff.intro
+  · intro hp
+    cases hp
+    rfl
+  · rintro rfl
+    rfl'
 
-set_option maxHeartbeats 1000000000
+theorem List.lt_append_of_lt [DecidableEq α] [LT α] [DecidableLT α] (l₁ l₂ l₃ l₄: List α):
+    l₁.length = l₂.length → l₁ < l₂ → l₁ ++ l₃ < l₂ ++ l₄ := by
+  intro hl hlt
+  rw [List.lt_iff_exists] at hlt
+  simp only [hl, List.take_length, lt_self_iff_false, and_false, exists_idem, false_or] at hlt
+  rcases hlt with ⟨i, h, _⟩
+  rw [List.lt_iff_exists]
+  right
+  exists i, (by simp only [List.length_append]; linarith), (by simp only [List.length_append]; linarith)
+  apply And.intro
+  · intro j hj
+    have : j < l₁.length := by linarith
+    have : j < l₂.length := by linarith
+    simp_all
+  · simp_all
 
--- Helper lemma for index calculation in to_le_bits proof
-private lemma complex_index_eq (i : Nat) (d_len : Nat) (h : i < d_len) (h_len : d_len < 4294967296) :
-    (4294967296 - i + (4294967295 + d_len)) % 4294967296 = d_len - 1 - i := by
-  calc (4294967296 - i + (4294967295 + d_len)) % 4294967296
-    _ = (d_len + (4294967296 - i + 4294967295)) % 4294967296 := by ac_rfl
-    _ = (d_len + 8589934591 - i) % 4294967296 := by congr 2; omega
-    _ = (d_len - 1 - i + 8589934592) % 4294967296 := by omega
-    _ = (d_len - 1 - i) % 4294967296 := by rw [Nat.add_mod]; norm_num
-    _ = d_len - 1 - i := by apply Nat.mod_eq_of_lt; omega
+instance : Std.Total (fun (x1: U s) x2 => ¬x1 < x2) := { total := by simp [BitVec.le_total] }
+instance : Std.Antisymm (fun (x1: U s) x2 => ¬x1 < x2) where
+  antisymm _ _ _ _ := by simp_all only [BitVec.not_lt]; apply BitVec.le_antisymm <;> assumption
+  instance : Std.Irrefl (fun (x1: U s) x2 => x1 < x2) where
+  irrefl _ := BitVec.lt_irrefl _
 
-theorem to_le_bits_intro :
+theorem U.cases_one (i : U 1) : i = 0 ∨ i = 1 := by
+  fin_cases i <;> simp
+
+@[simp]
+theorem RadixVec.ofDigitsBE_cons {r: Radix} {d: Nat} {x: Digit r} {xs: List.Vector (Digit r) d}:
+    RadixVec.ofDigitsBE (r:=r) (x ::ᵥ xs) = (x.val * r.val ^ d + RadixVec.ofDigitsBE xs) := by
+  rfl
+
+theorem ofDigitsBE_lt {r:Radix} {d: Nat} {l: List.Vector (Digit r) d}:
+    (RadixVec.ofDigitsBE l).val < r.val ^ d := by
+  induction d with
+  | zero => simp
+  | succ d ih =>
+    cases' l using List.Vector.casesOn with _ x xs
+    simp only [RadixVec.ofDigitsBE_cons, List.length_cons, Nat.pow_succ, gt_iff_lt]
+    have : r.val - 1 + 1 = r.val := by
+      apply Nat.sub_one_add_one
+      simp only [ne_eq, Nat.ne_zero_iff_zero_lt]
+      exact lt_trans (by decide) r.prop
+    calc
+      _ ≤ (r - 1) * r.val ^ d + RadixVec.ofDigitsBE xs := by
+        simp only [add_le_add_iff_right]
+        rw [Nat.mul_le_mul_right_iff (by by_contra; simp_all)]
+        apply Nat.le_of_lt_succ
+        rw [Nat.succ_eq_add_one, this]
+        exact x.prop
+      _ < (r - 1) * r.val ^ d + r.val ^ d := by simp [*]
+      _ = (↑r - 1) * ↑r ^ d + 1 * ↑r ^ d := by simp
+      _ = _ := by rw [←Nat.add_mul, this, mul_comm]
+
+theorem ofDigitsBE'_lt {r:Radix} {l: List (Digit r)}:
+    RadixVec.ofDigitsBE' l < r ^ l.length := by
+  induction l with
+  | nil => simp
+  | cons x xs ih =>
+    simp only [RadixVec.ofDigitsBE'_cons, List.length_cons, Nat.pow_succ, gt_iff_lt]
+    have : r.val - 1 + 1 = r.val := by
+      apply Nat.sub_one_add_one
+      simp only [ne_eq, Nat.ne_zero_iff_zero_lt]
+      exact lt_trans (by decide) r.prop
+    calc
+      _ ≤ (r - 1) * r.val ^ xs.length + RadixVec.ofDigitsBE' xs := by
+        simp only [add_le_add_iff_right]
+        rw [Nat.mul_le_mul_right_iff (by by_contra; simp_all)]
+        apply Nat.le_of_lt_succ
+        rw [Nat.succ_eq_add_one, this]
+        exact x.prop
+      _ < (r - 1) * r.val ^ xs.length + r.val ^ xs.length := by linarith
+      _ = (↑r - 1) * ↑r ^ xs.length + 1 * ↑r ^ xs.length := by simp
+      _ = _ := by rw [←Nat.add_mul, this, mul_comm]
+
+@[simp]
+theorem ofDigitsBE_toDigitsBE {r: Radix} {n : RadixVec r d}: RadixVec.ofDigitsBE (RadixVec.toDigitsBE n) = n := by
+  induction d with
+  | zero =>
+    cases' r with r hr
+    cases' n with n hn
+    have : n = 0 := by simp_all
+    simp [RadixVec.toDigitsBE, RadixVec.ofDigitsBE, this]
+  | succ d ih =>
+    conv_rhs => rw [RadixVec.msd_lsds_decomposition (v:=n)]
+    simp [RadixVec.ofDigitsBE, RadixVec.toDigitsBE, ih]
+
+@[simp]
+theorem toDigitsBE_ofDigitsBE {r: Radix} {v : List.Vector (Digit r) d}: RadixVec.toDigitsBE (RadixVec.ofDigitsBE v) = v := by
+  induction' v using List.Vector.inductionOn
+  · rfl
+  · simp only [RadixVec.toDigitsBE, RadixVec.ofDigitsBE]
+    congr
+    · simp only [List.Vector.head_cons, List.Vector.tail_cons]
+      simp only [RadixVec.msd]
+      apply Fin.eq_of_val_eq
+      simp only
+      rw [Nat.mul_comm]
+      rw [Nat.mul_add_div]
+      · rw [Nat.div_eq_of_lt]
+        · simp
+        · exact ofDigitsBE_lt
+      · cases r
+        apply Nat.lt_of_succ_le
+        apply Nat.one_le_pow
+        linarith
+    · rename_i h
+      simp only [List.Vector.head_cons, List.Vector.tail_cons]
+      simp only [RadixVec.lsds]
+      conv_rhs => rw [←h]
+      congr 2
+      simp only [RadixVec.msd]
+      conv_lhs =>
+        arg 2
+        arg 1
+        rw [Nat.mul_comm]
+      rw [Nat.mul_add_div]
+      · rw [Nat.div_eq_of_lt]
+        · simp
+        · exact ofDigitsBE_lt
+      · cases r
+        apply Nat.lt_of_succ_le
+        apply Nat.one_le_pow
+        linarith
+
+theorem ofDigitsBE'_toDigitsBE' {r: Radix} {n : Nat}: RadixVec.ofDigitsBE' (RadixVec.toDigitsBE' r n) = n := by
+  simp only [RadixVec.toDigitsBE', RadixVec.ofDigitsBE']
+  generalize_proofs hn hlen
+  conv_rhs => change (Fin.mk n hn).val; rw [←ofDigitsBE_toDigitsBE (n := ⟨n, hn⟩)]
+  congr <;> simp
+
+theorem ofDigitsBE_mono {r: Radix} {l₁ l₂: List.Vector (Digit r) d}: l₁.toList < l₂.toList → RadixVec.ofDigitsBE l₁ < RadixVec.ofDigitsBE l₂ := by
+  intro hp
+  induction d with
+  | zero =>
+    cases List.Vector.eq_nil l₁
+    cases List.Vector.eq_nil l₂
+    simp at hp
+  | succ d ih =>
+    cases' l₁ with l₁ l₁_len
+    cases' l₂ with l₂ l₂_len
+    cases' hp
+    · simp at l₁_len
+    · rename_i h₁ l₁ h₂ l₂ hh
+      rw [Fin.lt_def] at hh
+      simp only [RadixVec.ofDigitsBE, List.Vector.head, Fin.mk_lt_mk]
+      calc
+        _ < h₁.val * r.val ^ d + r.val ^ d := by simp
+        _ = (h₁.val + 1) * r.val ^ d := by linarith
+        _ ≤ h₂ * r.val ^ d := by
+          apply Nat.mul_le_mul_right
+          linarith
+        _ ≤ _ := by linarith
+    · simp only [RadixVec.ofDigitsBE, List.Vector.head, Fin.mk_lt_mk, List.Vector.tail]
+      rename_i _ l₁ l₂ hp
+      simp only [List.length_cons, Nat.add_right_cancel_iff] at l₁_len l₂_len
+      have : (List.Vector.toList ⟨l₁, l₁_len⟩ < List.Vector.toList ⟨l₂, l₂_len⟩) := hp
+
+      have := ih this
+      rw [Fin.lt_def] at this
+      linarith
+
+theorem ofDigitsBE'_mono {r: Radix} {l₁ l₂: List (Digit r)}: l₁.length = l₂.length → l₁ < l₂ → RadixVec.ofDigitsBE' l₁ < RadixVec.ofDigitsBE' l₂ := by
+  intro hl hlt
+  have := ofDigitsBE_mono (l₁ := ⟨l₁, hl⟩) (l₂ := ⟨l₂, rfl⟩) hlt
+  rw [Fin.lt_def] at this
+  simp only [RadixVec.ofDigitsBE']
+  convert this
+
+theorem ofDigitsBE'_toList {r : Radix} {l : List.Vector (Digit r) d}: RadixVec.ofDigitsBE' l.toList = (RadixVec.ofDigitsBE l).val := by
+  simp only [RadixVec.ofDigitsBE']
+  congr <;> simp
+
+theorem to_be_bits_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_le_bits».call h![N] h![f])
-    fun r => r = ⟨toLeBitsCall f.val N, by simp⟩ := by
+    («std-1.0.0-beta.12::field::to_be_bits».call h![N] h![f])
+    fun r => ∃∃(lt : f.val < (2 ^ N.toNat)), r = (RadixVec.toDigitsBE (d := N.toNat) (r := 2) ⟨f.val, by simp_all [OfNat.ofNat]⟩ |>.map BitVec.ofFin) := by
+  rcases N with ⟨⟨N,_⟩⟩
+  -- cases' N with N
   enter_decl
   steps
-  rename _ => conds
-  rcases conds with ⟨h_lt, h_eq⟩
-
-  -- if !unconstrained
-  apply STHoare.letIn_intro (Q := fun _ => ⟦bits = ⟨toLeBitsCall f.val N, by simp⟩⟧)
+  · exact ()
+  step_as (⟦⟧) (fun _ => RadixVec.ofDigitsBE' (bits.toList.map (fun i => (i.toFin : Digit 2))) < p.natVal)
   · apply STHoare.iteTrue_intro
     steps
-    rename' p => pSlice
-    rename pSlice = _ => pSlice_val
-    rename pSlice.length < 2  ^32 => pSlice_len
-    rename_i N_leq_pSlice_len
-    have bits_len_eq_N : bits.length = N.toNat := rfl
-    have : N.toNat ≤ pSlice.length := by
-      simp at N_leq_pSlice_len
-      rw [BitVec.le_def] at N_leq_pSlice_len
-      exact N_leq_pSlice_len
-    -- Main loop
-    loop_inv nat
-      (fun i hlo (hhi : i ≤ N.toNat) => [ok ↦ ⟨Tp.bool,
-        N.toNat ≠ pSlice.length ∨
-        ∃ j : Fin i,
-          (∀ k : Fin j, bits[N.toNat - 1 - k.val] = pSlice[N.toNat - 1 - k.val]) ∧
-          bits[N.toNat - 1 - j.val] ≠ pSlice[N.toNat - 1 - j.val] ∧
-          pSlice[N.toNat - 1 - j.val] = (1 : BitVec 1)
-      ⟩])
-    · congr
-      rw [eq_iff_iff]
-      constructor
-      · intro h
-        left
-        rw [bits_len_eq_N] at h
-        apply_fun BitVec.toNat (w := 32) at h
-        · simp only [BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
-          BitVec.toNat_ofNatLT, ne_eq] at h
-          exact h
-        · exact fun _ _  => BitVec.toNat_inj.mp
-      · rintro (h | ⟨⟨j_val, j_lt⟩, hj₁, hj₂, hj₃⟩)
-        · rw [bits_len_eq_N]
-          intro hh
-          simp at hh
-          apply h
-          rw [hh]
-          simp
-        · simp at j_lt
+    · exact ()
+    rename' p => pbits
+    by_cases h: bits.length = pbits.length
+    · cases' bits with bits bitsLen
+      simp only [BitVec.toNat_ofFin] at bitsLen
+      cases bitsLen
+      loop_inv nat fun i _ _ => (bits.take i ≤ pbits.take i) ⋆ [ok ↦ ⟨_, decide $ bits.take i < (pbits.take i)⟩]
       · simp
-    · intros i hhi hlo
+      · simp only [h]
+        simp [BitVec.ofNatLT_eq_ofNat]
+      · simp
+      · intro i _ _
+        steps
+        by_cases h: bits.take i < pbits.take i
+        · simp only [h]
+          apply STHoare.iteFalse_intro
+          have : bits.take (i + 1) < pbits.take (i + 1) := by
+            repeat rw [List.take_succ_eq_append_getElem (by simp_all)]
+            apply List.lt_append_of_lt
+            · simp_all
+            · assumption
+          steps
+          · apply List.le_of_lt
+            assumption
+          · simp_all
+        · simp only [h]
+          apply STHoare.iteTrue_intro
+          rename bits.take i ≤ pbits.take i => hle
+          have : bits.take i = pbits.take i := by
+            rw [List.le_iff_lt_or_eq] at hle
+            tauto
+          steps
+          by_cases hi : bits[i] = pbits[i]
+          · convert STHoare.iteFalse_intro _
+            · simp [List.Vector.get, hi]
+            · rw [List.take_succ_eq_append_getElem (by assumption)]
+              rw [List.take_succ_eq_append_getElem (by assumption)]
+              rw [this, hi]
+              steps
+              · apply List.le_refl
+              · congr
+                simp [List.le_refl]
+          · convert STHoare.iteTrue_intro _
+            · simp [List.Vector.get, hi]
+            · steps 7
+              have hpbit : pbits[i] = 1 := by
+                simp_all [Int.cast, IntCast.intCast]
+              have hbit: bits[i] = 0 := by
+                have := U.cases_one bits[i]
+                simp_all
+              have bitle : bits[i] < pbits[i] := by simp [hpbit, hbit]
+              have : bits.take (i + 1) < pbits.take (i + 1) := by
+                rw [List.take_succ_eq_append_getElem (by assumption)]
+                rw [List.take_succ_eq_append_getElem (by assumption)]
+                rw [this]
+                apply List.append_left_lt
+                rw [List.cons_lt_cons_iff]
+                left
+                exact bitle
+              steps
+              · apply List.le_of_lt this
+              · congr
+                simp [this]
       steps
-      -- If `!ok`
-      apply STHoare.ite_intro <;> intro h₁ <;> steps
-      -- If `bits[N.toNat - 1 - i] != pSlice[N.toNat - 1 - i]`
-      · apply STHoare.ite_intro <;> intro h₂ <;> steps
-        · congr
-          simp_all only [List.length_map, Nat.reducePow, BitVec.toNat_intCast, Int.reducePow,
-            EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, ne_eq, List.getElem_map,
-            BitVec.ofNat_eq_ofNat, Bool.decide_or, decide_not, Bool.not_or, Bool.not_not,
-            Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_eq_eq_not, Bool.not_true,
-            decide_eq_false_iff_not, not_exists, not_and, Builtin.instCastTpU,
-            BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, BitVec.toNat_sub,
-            BitVec.toNat_ofNatLT, Int.reduceMod, Int.toNat_one, Nat.add_one_sub_one,
-            Nat.add_mod_mod, List.get_eq_getElem, beq_true, Lens.modify, Option.get_some,
-            not_true_eq_false, false_or, true_eq_decide_iff]
-          -- Here we need to show that if `h₁ : ok = false`, and
-          -- `h₂ : bits[N - 1 -i] != pSlice[N - 1 - i]`,
-          -- then the invariant holds for i + 1 given i
-          -- In this case we take `j = i` as the witness
-          rename_i inner_assert
-          use ⟨i, Nat.lt_succ_self i⟩
-          refine ⟨?_, ?_, ?_⟩
-          rcases h₁ with ⟨lens_eq, rest⟩
-          · rintro ⟨k, hk⟩
-            suffices ∀ k' < i, bits[N.toNat - 1 - k'] = pSlice[N.toNat - 1 - k'] by
-              have := this k hk
-              simp only [lens_eq, pSlice_val, List.getElem_map] at this ⊢
-              exact this
-
-            intro k'
-            refine Nat.strong_induction_on k' fun m ih hm => ?_
-
-            have h_all_match : ∀ j < m, bits[N.toNat - 1 - j] = pSlice[N.toNat - 1 - j] := by
-              intro j hj
-              have : j < i := Nat.lt_trans hj hm
-              exact ih j hj this
-
-            specialize rest ⟨m, hm⟩
-            have : (∀ (k : Fin m), bits[BitVec.toNat N - 1 - ↑k] =
-              BitVec.ofNat 1 (decomposeToRadix 2 p.natVal Builtin.fModLeBits._proof_1)[BitVec.toNat N - 1 - ↑k]) := by
-              intro ⟨k_val, hk_val⟩
-              -- Use h_all_match which says bits[N-1-k] = pSlice[N-1-k]
-              have := h_all_match k_val hk_val
-              -- Rewrite pSlice using pSlice_val
-              simp only [pSlice_val, List.getElem_map] at this
-              exact this
-            specialize rest this
-
-            by_contra h_neq
-
-            simp [pSlice_val] at h_neq
-            specialize rest h_neq
-
-            set dTRp := decomposeToRadix 2 p.natVal Builtin.fModLeBits._proof_1 with hdTRp
-
-            have pSlice_m_eq_zero : BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m] = 0#1 := by
-              -- pSlice[m] is a 1-bit value, so it's either 0 or 1
-              -- rest says it's not 1, so it must be 0
-              have : BitVec.toNat (BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m]) < 2 := by
-                have := BitVec.isLt (BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m])
-                simp at this
-                exact this
-              interval_cases h_case : BitVec.toNat (BitVec.ofNat 1 dTRp[BitVec.toNat N - 1 - m])
-              · apply BitVec.eq_of_toNat_eq
-                simpa using h_case
-              · exfalso
-                apply rest
-                apply BitVec.eq_of_toNat_eq
-                simpa using h_case
-
-            -- Now we have pSlice[m] = 0 and bits[m] ≠ pSlice[m], so bits[m] = 1
-            have bits_m_eq_one : bits[BitVec.toNat N - 1 - m] = 1#1 := by
-              have bits_neq_zero : bits[BitVec.toNat N - 1 - m] ≠ 0#1 := by
-                rw [pSlice_m_eq_zero] at h_neq
-                exact h_neq
-              -- bits is a 1-bit value, so it's either 0 or 1
-              have bits_bound : BitVec.toNat bits[BitVec.toNat N - 1 - m] < 2 := by
-                have := BitVec.isLt bits[BitVec.toNat N - 1 - m]
-                simp at this
-                exact this
-              interval_cases h_case : BitVec.toNat bits[BitVec.toNat N - 1 - m]
-              · exfalso
-                apply bits_neq_zero
-                apply_fun BitVec.toNat
-                convert h_case
-                exact fun _ _  => BitVec.toNat_inj.mp
-              · apply BitVec.eq_of_toNat_eq
-                simpa using h_case
-
-            sorry
-
-          -- Here we need to use `h₂` to argue that `bits[N - 1 - i] != pSlice[N - 1 - i]`, and
-          · intro h_eq
-            set d := decomposeToRadix 2 p.natVal (by linarith) with hd
-            have h_bound : i < d.length := by
-              rcases h₁ with ⟨lens_eq, _⟩
-              rw [← lens_eq]
-              exact hlo
-            have bits_eq_one : List.Vector.get bits
-                ⟨(4294967296 - i + (4294967295 + d.length)) % 4294967296, by
-                  rcases h₁ with ⟨lens_eq, _⟩
-                  calc (4294967296 - i + (4294967295 + d.length)) % 4294967296
-                    _ = d.length - 1 - i := complex_index_eq i d.length h_bound pSlice_len
-                    _ < BitVec.toNat N := by rw [← lens_eq]; omega
-                ⟩ = (1 : BitVec 1) := by
-              have idx_eq : (4294967296 - i + (4294967295 + d.length)) % 4294967296 = d.length - 1 - i :=
-                complex_index_eq i d.length h_bound pSlice_len
-              rcases h₁ with ⟨lens_eq, _⟩
-              simp [hd.symm] at h_eq inner_assert
-              simp [idx_eq] at inner_assert
-              rw [inner_assert] at h_eq
-              convert h_eq using 1
-              congr 1
-              simp [idx_eq]
-
-            exact h₂ bits_eq_one
-
-          -- Here we need to use the `inner_assert`
-          · convert inner_assert using 3
-            simp only
-            set d := decomposeToRadix 2 p.natVal (by linarith) with hd
-            have h_bound : i < d.length := by
-              rcases h₁ with ⟨lens_eq, _⟩
-              rw [← lens_eq]
-              exact hlo
-            conv in _ % 4294967296 =>
-              rw [complex_index_eq i d.length h_bound pSlice_len]
-        · congr 1
-          simp_all only [List.length_map, Nat.reducePow, BitVec.toNat_intCast, Int.reducePow,
-            EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, ne_eq, List.getElem_map,
-            BitVec.ofNat_eq_ofNat, Bool.decide_or, decide_not, Bool.not_or, Bool.not_not,
-            Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_eq_eq_not, Bool.not_true,
-            decide_eq_false_iff_not, not_exists, not_and, Builtin.instCastTpU,
-            BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, BitVec.toNat_sub,
-            BitVec.toNat_ofNatLT, Int.reduceMod, Int.toNat_one, Nat.add_one_sub_one,
-            Nat.add_mod_mod, List.get_eq_getElem, Bool.not_false, not_true_eq_false, false_or,
-            decide_eq_decide]
-          -- Here we need to show that if `ok` is false, and `bits[N - 1 -i] == pSlice[N - 1 - i]`,
-          -- then the invariant holds for i + 1 given i
-          -- In this case we keep the same witness `j` as for `i`
-          constructor
-          · rintro ⟨⟨j_val, hj_prop⟩, hj₁, hj₂, hj₃⟩
-            use ⟨j_val, Nat.lt_succ_of_lt hj_prop⟩, hj₁, hj₂, hj₃
-          · rintro ⟨⟨j_val, hj_prop⟩, hj₁, hj₂, hj₃⟩
-            by_cases h_case : j_val < i
-            · use ⟨j_val, h_case⟩, hj₁, hj₂, hj₃
-            · exfalso
-              apply hj₂
-              convert h₂ using 2
-              · congr 1
-                set d := decomposeToRadix 2 p.natVal (by linarith) with hd
-                have h_bound : j_val < d.length := by
-                  rw [← h₁.1]
-                  omega
-                convert complex_index_eq j_val d.length h_bound pSlice_len |>.symm
-                omega
-              · congr 1
-                set d := decomposeToRadix 2 p.natVal (by linarith) with hd
-                have h_bound : j_val < d.length := by
-                  rw [← h₁.1]
-                  omega
-                convert complex_index_eq j_val d.length h_bound pSlice_len |>.symm
-                omega
-      -- Here we need to show that if `ok` is true, then the invariant holds for i + 1 given i
-      · congr 2
-        rw [eq_iff_iff]
-        constructor <;> rintro (len_neq | ⟨⟨j_val, j_prop⟩, ⟨hj₁, hj₂, hj₃⟩⟩)
-        · left; exact len_neq
-        · right
-          use ⟨j_val, Nat.lt_succ_of_lt j_prop⟩
-        · left; exact len_neq
-        · by_cases h_case : j_val < i
-          · right
-            use ⟨j_val, h_case⟩
-          · simp at h₁
-            by_cases len_eq : N.toNat = pSlice.length
-            · right
-              exact h₁ len_eq
-            · left
-              exact len_eq
-    -- Here is where all the "action" is, have to prove the constraint `ok` holds => `bits` is as
-    -- expected. This should follow from the
-    · steps
-      rename_i ok_invariant _
-      simp at ok_invariant
-      sorry
-
-  -- wrap it up
-  · intro
-    steps
+      rename decide _ = true => hlt
+      have : bits.length = pbits.length := by simp_all
+      simp only [BitVec.toNat_ofFin, List.take_length, beq_true, decide_eq_true_eq] at hlt
+      simp only [this, List.take_length] at hlt
+      rw [←ofDigitsBE'_toDigitsBE' (r := 2) (n := p.natVal)]
+      apply ofDigitsBE'_mono
+      · simp_all
+      · have : RadixVec.toDigitsBE' 2 p.natVal =
+          List.map (fun (i : BitVec 1) => (i.toFin : Digit 2)) (List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop) (RadixVec.toDigitsBE' 2 p.natVal)) := by
+          simp only [List.map_map]
+          rw [eq_comm]
+          convert List.map_id _
+        rw [this]
+        apply List.map_lt
+        · intro x y h
+          rw [BitVec.lt_def] at h
+          rw [Fin.lt_def]
+          exact h
+        · subst pbits
+          exact hlt
+    · loop_inv nat fun _ _ _ => [ok ↦ ⟨_, true⟩]
+      · congr
+        simp only [BitVec.toNat_ne, *, List.Vector.length, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat]
+        simp_all
+      · simp
+      · intro _ _ _
+        steps
+        apply STHoare.iteFalse_intro
+        steps
+      steps
+      have : bits.length < pbits.length := by
+        apply lt_of_le_of_ne
+        · simp only [BitVec.natCast_eq_ofNat, List.Vector.length, BitVec.ofNat_toNat, BitVec.setWidth_eq] at *
+          simp_all
+        · assumption
+      calc
+        _ < _ := ofDigitsBE'_lt
+        _ ≤ 2 ^ (pbits.length - 1) := by
+          apply Nat.pow_le_pow_right
+          · decide
+          · apply Nat.le_pred_of_lt
+            simp_all
+        _ = 2 ^ Nat.log 2 p.natVal := by
+          subst pbits
+          simp [RadixVec.toDigitsBE', OfNat.ofNat]
+        _ ≤ _ := by apply Nat.pow_log_le_self; simp [Prime.natVal]
+  steps
+  rotate_left
+  · rename_i v _
     subst_vars
-    rfl
-
-theorem to_le_radix_intro (radix_gt : radix > 1 := by bv_decide) :
-    STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_le_radix».call h![N] h![f, radix])
-    fun r => r = ⟨decomposeToRadix radix.toNat f.val (by assumption) |>.takeD N.toNat 0, by simp⟩ := by
-  sorry
-
-theorem to_le_bytes_intro :
-    STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_le_bytes».call h![N] h![f])
-    fun r => r = ⟨decomposeToRadix 256 f.val (by linarith) |>.takeD N.toNat 0, by simp⟩ := by
-  sorry
+    simp
+    rw [ZMod.val_natCast]
+    apply lt_of_le_of_lt (Nat.mod_le _ _)
+    apply ofDigitsBE_lt
+  · rename_i h v _
+    subst_vars
+    simp only [←List.Vector.toList_map, ofDigitsBE'_toList] at h
+    conv_rhs =>
+      enter [2, 1, 1]
+      rw [ZMod.val_natCast]
+      rw [Nat.mod_eq_of_lt h]
+    apply List.Vector.eq
+    rw [eq_comm]
+    simp only [BitVec.toNat_ofFin, Fin.eta, toDigitsBE_ofDigitsBE,
+      List.Vector.toList_map, List.map_map]
+    convert List.map_id _

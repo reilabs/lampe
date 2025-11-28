@@ -37,7 +37,6 @@ partial def ppTp (expr : Lean.Expr) : DelabM <| TSyntax `noir_type := do
   | Tp.i n =>
     let i := mkIdent <| .mkSimple s!"i{← ppExpr n}"
     return ← `(noir_type|$(⟨i⟩):noir_type)
-  | Tp.bi => return ⟨mkIdent `bi⟩
   | Tp.field => return ⟨mkIdent `Field⟩
   | Tp.bool => return ⟨mkIdent `bool⟩
   | Tp.unit => return ⟨mkIdent `Unit⟩
@@ -324,7 +323,7 @@ def delabLam : Delab := whenDelabExprOption getExpr >>= fun expr =>
       pure (args, body)
     | _ => throwError "unable to parse args of Lambda"
 
-    let funArgs ← args.getElems.zip argTps.toArray |>.mapM fun (arg, tp) => do 
+    let funArgs ← args.getElems.zip argTps.toArray |>.mapM fun (arg, tp) => do
       `(noir_lam_param|$(⟨arg⟩):noir_pat : $(← ppTp tp))
 
     return ← ``(⸨fn($funArgs,*) : $(←ppTp outTp) := $(⟨extractInnerLampeExpr body⟩)⸩)
@@ -458,7 +457,7 @@ def delabLampeConstU : Delab := whenDelabExprOption getExpr >>= fun expr =>
 @[app_delab Lampe.Expr.litStr]
 def delabLampeLitStr : Delab := whenDelabExprOption getExpr >>= fun expr => whenFullyApplied expr do
   let args := expr.getAppArgs
-  let Expr.lit (Literal.strVal noirStr) := args[2]!.getAppArgs[0]! 
+  let Expr.lit (Literal.strVal noirStr) := args[2]!.getAppArgs[0]!
     | throwError "Expected string literal as argument but none found"
   return ←``(⸨ $(⟨Syntax.mkStrLit noirStr⟩) ⸩)
 
