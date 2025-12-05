@@ -584,8 +584,7 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
 
 theorem toLeBits_intro {f : Tp.denote p Tp.field} :
     STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array N) Builtin.toLeBits h![f])
-    (fun output =>
-    f = (RadixVec.ofDigitsBE (r := ⟨2, by linarith⟩) (output.map fun i => i.toFin).reverse |>.val)) := by
+    fun output => f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin).reverse := by
   apply STHoare.consequence
   case h_hoare =>
     apply genericBuiltin_intro (sgn := fun s => ([.field], .array (.u 1) s))
@@ -595,8 +594,7 @@ theorem toLeBits_intro {f : Tp.denote p Tp.field} :
 
 theorem toBeBits_intro {f : Tp.denote p Tp.field} :
     STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array s) Builtin.toBeBits h![f])
-    (fun output =>
-      f = (RadixVec.ofDigitsBE (r := ⟨2, by linarith⟩) (output.map fun i => i.toFin) |>.val)) := by
+    fun output => f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin) := by
   apply STHoare.consequence
   case h_hoare =>
     apply genericBuiltin_intro (sgn := fun s => ([.field], .array (.u 1) s))
@@ -606,36 +604,25 @@ theorem toBeBits_intro {f : Tp.denote p Tp.field} :
 
 theorem toLeRadix_intro {f : Tp.denote p Tp.field} {r : Tp.denote p (Tp.u 32)} :
     STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field, Tp.u 32] ((Tp.u 8).array s) Builtin.toLeRadix h![f, r])
-    (fun output =>
-    ∃∃(hr1 : 1 < r.toNat),
-    ∃∃(_ : r.toNat < 256),
-    ∃∃(hout : ∀(i:Fin s.toNat), output[i].toNat < r.toNat),
-    f = (RadixVec.ofDigitsBE (r := ⟨r.toNat, hr1⟩)
-      (List.Vector.ofFn fun i => ⟨output[i].toNat, hout i⟩).reverse).val) := by
+    fun output => f = RadixVec.ofLimbsBE r.toNat (output.map BitVec.toNat).reverse := by
   apply STHoare.consequence
   case h_hoare =>
     apply genericBuiltin_intro (sgn := fun s => ([.field, .u 32], .array (.u 8) s))
   · apply SLP.entails_self
   · simp only
     intro
-    simp [SLP.exists_pure]
     apply SLP.entails_self
 
 
 theorem toBeRadix_intro {f : Tp.denote p Tp.field} {r : Tp.denote p (Tp.u 32)} :
     STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field, Tp.u 32] ((Tp.u 8).array s) Builtin.toBeRadix h![f, r])
-    (fun output => ∃∃(hr1 : 1 < r.toNat),
-    ∃∃(_ : r.toNat < 256),
-    ∃∃(hout : ∀(i:Fin s.toNat), output[i].toNat < r.toNat),
-    f = (RadixVec.ofDigitsBE (r := ⟨r.toNat, hr1⟩)
-      (List.Vector.ofFn fun i => ⟨output[i].toNat, hout i⟩)).val) := by
+    fun output => f = RadixVec.ofLimbsBE r.toNat (output.map BitVec.toNat) := by
   apply STHoare.consequence
   case h_hoare =>
     apply genericBuiltin_intro (sgn := fun s => ([.field, .u 32], .array (.u 8) s))
   · apply SLP.entails_self
   · simp only
     intro
-    simp [SLP.exists_pure]
     apply SLP.entails_self
 
 -- Misc

@@ -87,28 +87,49 @@ def toDigitsBE {d} (v : RadixVec r d): List.Vector (Digit r) d := match d with
 | 0 => List.Vector.nil
 | _ + 1 => v.msd ::ᵥ toDigitsBE v.lsds
 
-def ofDigitsBE {d} (v : List.Vector (Digit r) d): RadixVec r d := match d with
-| 0 => ⟨0, by simp⟩
-| d + 1 => ⟨v.head.val * r^d + (ofDigitsBE v.tail).val, by
-  have : r.val^(d+1) = (r - 1) * r^d + r^d := by
-    have : r.val = r - 1 + 1 := by
-      have : r.val ≥ 1 := by linarith [r.prop]
-      rw [Nat.sub_add_cancel this]
-    rw [pow_succ]
-    conv_lhs => arg 2; rw [this]
-    conv_lhs => rw [Nat.mul_add]
-    simp [mul_comm]
-  rw [this]
-  apply Nat.add_lt_add_of_le_of_lt
-  · apply Nat.mul_le_mul
-    · apply Nat.le_of_lt_succ
-      have : r.val = r - 1 + 1 := by
-        have : r.val ≥ 1 := by linarith [r.prop]
-        rw [Nat.sub_add_cancel this]
-      simp [←this]
-    · apply le_refl
-  · exact Fin.prop _
+def ofLimbsBE {d} (r : Nat) (v : List.Vector ℕ d): ℕ := match d with
+| 0 => 0
+| d + 1 => v.head * r^d + ofLimbsBE r v.tail
+
+def ofDigitsBE {d} {r : Radix} (v : List.Vector (Digit r) d): RadixVec r d := ⟨ofLimbsBE r.val (v.map (fun d => d.val)), by
+  induction d with
+  | zero => simp [ofLimbsBE]
+  | succ d ih =>
+    simp only [ofLimbsBE, List.Vector.head_map, List.Vector.tail_map]
+    calc
+      _ < v.head.val * r.val^d + r.val^d := by
+        have := ih v.tail
+        linarith
+      _ = (v.head.val + 1) * r.val^d := by linarith
+      _ ≤ r * r.val^d := by
+        have := Nat.succ_le_of_lt v.head.prop
+        apply Nat.mul_le_mul_right
+        assumption
+      _ = _ := by simp [Nat.pow_succ, Nat.mul_comm]
 ⟩
+
+-- def ofDigitsBE {d} (v : List.Vector (Digit r) d): RadixVec r d := match d with
+-- | 0 => ⟨0, by simp⟩
+-- | d + 1 => ⟨v.head.val * r^d + (ofDigitsBE v.tail).val, by
+--   have : r.val^(d+1) = (r - 1) * r^d + r^d := by
+--     have : r.val = r - 1 + 1 := by
+--       have : r.val ≥ 1 := by linarith [r.prop]
+--       rw [Nat.sub_add_cancel this]
+--     rw [pow_succ]
+--     conv_lhs => arg 2; rw [this]
+--     conv_lhs => rw [Nat.mul_add]
+--     simp [mul_comm]
+--   rw [this]
+--   apply Nat.add_lt_add_of_le_of_lt
+--   · apply Nat.mul_le_mul
+--     · apply Nat.le_of_lt_succ
+--       have : r.val = r - 1 + 1 := by
+--         have : r.val ≥ 1 := by linarith [r.prop]
+--         rw [Nat.sub_add_cancel this]
+--       simp [←this]
+--     · apply le_refl
+--   · exact Fin.prop _
+-- ⟩
 
 def ofDigitsBE' (l : List (Digit r)): Nat :=
   (RadixVec.ofDigitsBE ⟨l, rfl⟩).val

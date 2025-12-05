@@ -33,7 +33,7 @@ theorem List.lt_append_of_lt [DecidableEq α] [LT α] [DecidableLT α] (l₁ l�
 instance : Std.Total (fun (x1: U s) x2 => ¬x1 < x2) := { total := by simp [BitVec.le_total] }
 instance : Std.Antisymm (fun (x1: U s) x2 => ¬x1 < x2) where
   antisymm _ _ _ _ := by simp_all only [BitVec.not_lt]; apply BitVec.le_antisymm <;> assumption
-  instance : Std.Irrefl (fun (x1: U s) x2 => x1 < x2) where
+instance : Std.Irrefl (fun (x1: U s) x2 => x1 < x2) where
   irrefl _ := BitVec.lt_irrefl _
 
 theorem U.cases_one (i : U 1) : i = 0 ∨ i = 1 := by
@@ -42,6 +42,20 @@ theorem U.cases_one (i : U 1) : i = 0 ∨ i = 1 := by
 @[simp]
 theorem RadixVec.ofDigitsBE_cons {r: Radix} {d: Nat} {x: Digit r} {xs: List.Vector (Digit r) d}:
     RadixVec.ofDigitsBE (r:=r) (x ::ᵥ xs) = (x.val * r.val ^ d + RadixVec.ofDigitsBE xs) := by
+  rfl
+
+@[simp]
+theorem RadixVec.ofDigitsBE_cons' {r: Radix} {d: Nat} {x: Digit r} {xs: List.Vector (Digit r) d}:
+    RadixVec.ofDigitsBE (r:=r) (x ::ᵥ xs) = ⟨x.val * r.val ^ d + RadixVec.ofDigitsBE xs, by
+    calc
+      _ < x.val * r.val ^ d + r.val ^ d := by simp
+      _ = (x.val + 1) * r.val ^ d := by linarith
+      _ ≤ r * r.val ^ d := by
+        apply Nat.mul_le_mul_right
+        have := x.prop
+        linarith
+      _ = _ := by simp [Nat.pow_succ, Nat.mul_comm]
+    ⟩ := by
   rfl
 
 theorem ofDigitsBE_lt {r:Radix} {d: Nat} {l: List.Vector (Digit r) d}:
@@ -94,19 +108,19 @@ theorem ofDigitsBE_toDigitsBE {r: Radix} {n : RadixVec r d}: RadixVec.ofDigitsBE
     cases' r with r hr
     cases' n with n hn
     have : n = 0 := by simp_all
-    simp [RadixVec.toDigitsBE, RadixVec.ofDigitsBE, this]
+    simp [RadixVec.toDigitsBE, RadixVec.ofDigitsBE, RadixVec.ofLimbsBE, this]
   | succ d ih =>
     conv_rhs => rw [RadixVec.msd_lsds_decomposition (v:=n)]
-    simp [RadixVec.ofDigitsBE, RadixVec.toDigitsBE, ih]
+    have := Fin.val_eq_of_eq $ ih (n := n.lsds)
+    simpa [RadixVec.ofDigitsBE, RadixVec.toDigitsBE, RadixVec.ofLimbsBE]
 
 @[simp]
 theorem toDigitsBE_ofDigitsBE {r: Radix} {v : List.Vector (Digit r) d}: RadixVec.toDigitsBE (RadixVec.ofDigitsBE v) = v := by
   induction' v using List.Vector.inductionOn
   · rfl
-  · simp only [RadixVec.toDigitsBE, RadixVec.ofDigitsBE]
+  · simp only [RadixVec.toDigitsBE, RadixVec.ofDigitsBE_cons']
     congr
-    · simp only [List.Vector.head_cons, List.Vector.tail_cons]
-      simp only [RadixVec.msd]
+    · simp only [RadixVec.msd]
       apply Fin.eq_of_val_eq
       simp only
       rw [Nat.mul_comm]
@@ -119,10 +133,10 @@ theorem toDigitsBE_ofDigitsBE {r: Radix} {v : List.Vector (Digit r) d}: RadixVec
         apply Nat.one_le_pow
         linarith
     · rename_i h
-      simp only [List.Vector.head_cons, List.Vector.tail_cons]
       simp only [RadixVec.lsds]
       conv_rhs => rw [←h]
-      congr 2
+      congr 1
+      apply Fin.eq_of_val_eq
       simp only [RadixVec.msd]
       conv_lhs =>
         arg 2
@@ -151,13 +165,12 @@ theorem ofDigitsBE_mono {r: Radix} {l₁ l₂: List.Vector (Digit r) d}: l₁.to
     cases List.Vector.eq_nil l₂
     simp at hp
   | succ d ih =>
-    cases' l₁ with l₁ l₁_len
-    cases' l₂ with l₂ l₂_len
+    cases' l₁ using List.Vector.casesOn with _ h₁
+    cases' l₂ using List.Vector.casesOn with _ h₂
     cases' hp
-    · simp at l₁_len
-    · rename_i h₁ l₁ h₂ l₂ hh
+    · rename_i t₁ t₂ hh
       rw [Fin.lt_def] at hh
-      simp only [RadixVec.ofDigitsBE, List.Vector.head, Fin.mk_lt_mk]
+      simp only [RadixVec.ofDigitsBE_cons', List.Vector.head, Fin.mk_lt_mk]
       calc
         _ < h₁.val * r.val ^ d + r.val ^ d := by simp
         _ = (h₁.val + 1) * r.val ^ d := by linarith
@@ -165,12 +178,9 @@ theorem ofDigitsBE_mono {r: Radix} {l₁ l₂: List.Vector (Digit r) d}: l₁.to
           apply Nat.mul_le_mul_right
           linarith
         _ ≤ _ := by linarith
-    · simp only [RadixVec.ofDigitsBE, List.Vector.head, Fin.mk_lt_mk, List.Vector.tail]
-      rename_i _ l₁ l₂ hp
-      simp only [List.length_cons, Nat.add_right_cancel_iff] at l₁_len l₂_len
-      have : (List.Vector.toList ⟨l₁, l₁_len⟩ < List.Vector.toList ⟨l₂, l₂_len⟩) := hp
-
-      have := ih this
+    · simp only [RadixVec.ofDigitsBE_cons', List.Vector.head, Fin.mk_lt_mk, List.Vector.tail]
+      rename_i _ _ hp
+      have := ih hp
       rw [Fin.lt_def] at this
       linarith
 
@@ -197,7 +207,6 @@ theorem to_be_bits_intro :
   step_as (⟦⟧) (fun _ => RadixVec.ofDigitsBE' (bits.toList.map (fun i => (i.toFin : Digit 2))) < p.natVal)
   · apply STHoare.iteTrue_intro
     steps
-    · exact ()
     rename' p => pbits
     by_cases h: bits.length = pbits.length
     · cases' bits with bits bitsLen
@@ -327,3 +336,54 @@ theorem to_be_bits_intro :
     simp only [BitVec.toNat_ofFin, Fin.eta, toDigitsBE_ofDigitsBE,
       List.Vector.toList_map, List.map_map]
     convert List.map_id _
+
+-- set_option trace.Lampe.STHoare.Helpers true
+
+theorem to_be_radix_intro :
+    STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::field::to_be_radix».call h![N] h![f, 256])
+    fun o =>
+      ∃∃ (v : List.Vector (Digit ⟨256, by decide⟩) N.toNat),
+      o = v.map BitVec.ofFin ⋆
+      f = RadixVec.ofDigitsBE v := by
+  enter_decl
+  steps
+  · exact ()
+  apply STHoare.letIn_intro
+  apply STHoare.iteTrue_intro
+  · steps
+    apply STHoare.skip_intro
+  intro _
+  steps
+  case v =>
+    rename_i v _
+    exact v.map BitVec.toFin
+  · apply List.Vector.eq
+    simp only [List.Vector.toList_map, List.map_map]
+    rw [eq_comm]
+    exact List.map_id _
+  · subst_vars
+    simp only [BitVec.ofNat_eq_ofNat, BitVec.toNat_ofNat, RadixVec.ofDigitsBE, Nat.reducePow, Nat.reduceMod]
+    congr 2
+    apply List.Vector.eq
+    simp
+
+-- set_option trace.Lampe.STHoare.Helpers true
+
+theorem to_be_bytes_intro :
+    STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::field::to_be_bytes».call h![N] h![f])
+    fun o =>
+      ∃∃(lt : f.val < (256 ^ N.toNat)), o = (RadixVec.toDigitsBE
+        (d := N.toNat)
+        (r := ⟨256,  by decide⟩)
+        ⟨f.val, by simp_all [OfNat.ofNat]⟩ |>.map BitVec.ofFin) := by
+  enter_decl
+  steps [to_be_radix_intro]
+  · exact ()
+  apply STHoare.letIn_intro
+  apply STHoare.iteTrue_intro
+  · steps
+    sorry
+  sorry
+  sorry

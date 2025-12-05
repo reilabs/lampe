@@ -139,15 +139,15 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.iNeg => return some (←``(iNeg_intro))
 
         | ``Lampe.Builtin.modulusLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBits (a := ()) rfl))
-        | ``Lampe.Builtin.modulusBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBits (a := _) rfl))
+        | ``Lampe.Builtin.modulusBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBits (a := ()) rfl))
         | ``Lampe.Builtin.modulusLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusLeBytes (a := ()) rfl))
-        | ``Lampe.Builtin.modulusBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBytes (a := _) rfl))
-        | ``Lampe.Builtin.modulusNumBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusNumBits (a := _) rfl))
+        | ``Lampe.Builtin.modulusBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusBeBytes (a := ()) rfl))
+        | ``Lampe.Builtin.modulusNumBits => return some (←``(genericTotalPureBuiltin_intro Builtin.modulusNumBits (a := ()) rfl))
 
         | ``Lampe.Builtin.strAsBytes => return some (←``(strAsBytes_intro))
         | ``Lampe.Builtin.arrayAsStrUnchecked => return some (←``(arrayAsStrUnchecked_intro))
 
-        | ``Lampe.Builtin.isUnconstrained => 
+        | ``Lampe.Builtin.isUnconstrained =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.isUnconstrained rfl))
 
         -- Array builtins
@@ -335,8 +335,8 @@ partial def doPlucks (goal : MVarId) (pre : SLTerm) : TacticM (MVarId × List MV
   | .star _ (.lift _) r =>
     let plucker ← mkConstWithFreshMVarLevels ``pluck_pures_destructively
     let goal :: impls₁ ← goal.apply plucker | throwError "unexpected goals in pluck_pures_destructively"
-    let (goal, impls₂) ← doPlucks goal r
     let goal ← introPure goal
+    let (goal, impls₂) ← doPlucks goal r
     pure (goal, impls₁ ++ impls₂)
   | .lift _ =>
     let plucker ← mkConstWithFreshMVarLevels ``pluck_final_pure_destructively
