@@ -178,9 +178,8 @@ Fails if `f ≥ 2^s`.
 -/
 def toLeBits : Builtin := newGenericBuiltin
   (fun s => ([.field], .array (.u 1) s))
-  (fun s h![f] output =>
-    f = (RadixVec.ofDigitsBE (r := ⟨2, by linarith⟩) (output.map fun i => i.toFin).reverse |>.val)
-  )
+  fun _ h![f] output =>
+    f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin).reverse
 
 /--
 Represents the builtin that converts a field element to its bit representation in big-endian format.
@@ -189,9 +188,8 @@ Fails if `f ≥ 2^s`.
 -/
 def toBeBits : Builtin := newGenericBuiltin
   (fun s => ([.field], .array (.u 1) s))
-  (fun s h![f] output =>
-    f = (RadixVec.ofDigitsBE (r := ⟨2, by linarith⟩) (output.map fun i => i.toFin) |>.val)
-  )
+  fun _ h![f] output =>
+    f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin)
 
 /--
 Represents the builtin that converts a field element to its radix representation in little-endian
@@ -201,13 +199,8 @@ Fails if `r ≤ 1` or `f ≥ 2^s`.
 -/
 def toLeRadix : Builtin := newGenericBuiltin
   (fun s => ([.field, .u 32], .array (.u 8) s))
-  (fun s h![f, r] output =>
-    ∃(hr1 : 1 < r.toNat),
-    ∃(hrb : r.toNat < 256),
-    ∃(hout : ∀(i:Fin s.toNat), output[i].toNat < r.toNat),
-    f = (RadixVec.ofDigitsBE (r := ⟨r.toNat, hr1⟩)
-      (List.Vector.ofFn fun i => ⟨output[i].toNat, hout i⟩).reverse).val
-  )
+  fun _ h![f, r] output =>
+    f = RadixVec.ofLimbsBE r.toNat (output.map BitVec.toNat).reverse
 
 /--
 Represents the builtin that converts a field element to its radix representation in big-endian
@@ -217,15 +210,7 @@ Fails if `r ≤ 1` or `f ≥ 2^s`.
 -/
 def toBeRadix : Builtin := newGenericBuiltin
   (fun s => ([.field, .u 32], .array (.u 8) s))
-  (fun s h![f, r] output =>
-    ∃(hr1 : 1 < r.toNat),
-    ∃(hrb : r.toNat < 256),
-    ∃(hout : ∀(i:Fin s.toNat), output[i].toNat < r.toNat),
-    f = (RadixVec.ofDigitsBE (r := ⟨r.toNat, hr1⟩)
-      (List.Vector.ofFn fun i => ⟨output[i].toNat, hout i⟩)).val
-  )
-
--- set_option pp. true
-#print toBeRadix
+  fun _ h![f, r] output =>
+    f = RadixVec.ofLimbsBE r.toNat (output.map BitVec.toNat)
 
 end Lampe.Builtin
