@@ -147,7 +147,7 @@ noir_def «std-1.0.0-beta.12»::slice::join<T: Type>(self: Slice<T>, separator: 
   ret
 }
 
-noir_def «std-1.0.0-beta.12»::slice::all<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
+noir_def «std-1.0.0-beta.12»::slice::«all»<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
   let mut ret = #_true;
   {
     let ζi0 = self;
