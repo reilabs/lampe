@@ -29,7 +29,6 @@ theorem bool_not_spec {p a}
   resolve_trait
   steps
   simp_all
-  exact ()
 
 set_option maxRecDepth 1300 in
 theorem u128_not_spec {p a}
@@ -665,4 +664,3 @@ theorem i64_shr_spec {p a b}
   resolve_trait
   steps
   simp_all
-
