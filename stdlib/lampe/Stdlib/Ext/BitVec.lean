@@ -21,12 +21,14 @@ instance : Std.Irrefl (fun (x1 : U s) x2 => x1 < x2) where
 lemma U.cases_one (i : U 1) : i = 0 ∨ i = 1 := by fin_cases i <;> simp
 
 @[simp]
-theorem BitVec.toFin_ofFin_comp (n : ℕ) : (fun (i : BitVec n) => i.toFin) ∘ BitVec.ofFin = id := by
+theorem BitVec.toFin_ofFin_comp (n : ℕ) :
+    (fun (i : BitVec n) => i.toFin) ∘ BitVec.ofFin = id := by
   funext x
   simp [BitVec.toFin_ofFin]
 
 @[simp]
-theorem BitVec.ofFin_toFin_comp (n : ℕ) : BitVec.ofFin ∘ (fun (i : BitVec n) => i.toFin) = id := by
+theorem BitVec.ofFin_toFin_comp (n : ℕ) :
+    BitVec.ofFin ∘ (fun (i : BitVec n) => i.toFin) = id := by
   funext x
   rfl
 

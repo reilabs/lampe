@@ -31,10 +31,13 @@ theorem List.take_succ_lt_of_take_lt [DecidableEq α] [LT α] [DecidableLT α] {
     l₁.take (i + 1) < l₂.take (i + 1) := by
   rw [List.take_succ_eq_append_getElem hi₁, List.take_succ_eq_append_getElem hi₂]
   apply List.lt_append_of_lt
-  · simp only [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi₁), Nat.min_eq_left (Nat.le_of_lt hi₂)]
+  · simp [
+      Nat.min_eq_left (Nat.le_of_lt hi₁), Nat.min_eq_left (Nat.le_of_lt hi₂)
+    ]
   · exact hlt
 
-theorem List.take_succ_lt_of_getElem_lt [DecidableEq α] [LT α] [DecidableLT α] {l₁ l₂ : List α}
+theorem List.take_succ_lt_of_getElem_lt [DecidableEq α] [LT α] [DecidableLT α]
+    {l₁ l₂ : List α}
     (hi₁ : i < l₁.length) (hi₂ : i < l₂.length)
     (heq : l₁.take i = l₂.take i) (hlt : l₁[i] < l₂[i]) :
     l₁.take (i + 1) < l₂.take (i + 1) := by

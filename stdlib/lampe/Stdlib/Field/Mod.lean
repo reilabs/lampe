@@ -7,20 +7,19 @@ namespace Lampe.Stdlib.Field
 
 open «std-1.0.0-beta.12» (env)
 
-/-- Key lemma for bound proofs (bits version): if `data < pdata` lexicographically and
-    `pdata = toDigitsBE' 2 p` mapped to BitVec, then `ofDigitsBE' (data.map toFin) < p`.
-    Works for both BE (with data) and LE (with data.reverse). -/
 theorem bits_lt_of_lex_lt {data pdata : List (BitVec 1)}
     (hlen : data.length = pdata.length)
     (hlt : data < pdata)
-    (hpdata : pdata = List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop) (RadixVec.toDigitsBE' 2 p)) :
+    (hpdata : pdata = List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop)
+      (RadixVec.toDigitsBE' 2 p)) :
     RadixVec.ofDigitsBE' (data.map (fun i => (i.toFin : Digit 2))) < p := by
   rw [←RadixVec.ofDigitsBE'_toDigitsBE' (r := 2) (n := p)]
   apply RadixVec.ofDigitsBE'_mono
   · simp [hlen, hpdata, List.length_map]
   · have hself : RadixVec.toDigitsBE' 2 p =
         List.map (fun (i : BitVec 1) => (i.toFin : Digit 2))
-          (List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop) (RadixVec.toDigitsBE' 2 p)) := by
+          (List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop)
+            (RadixVec.toDigitsBE' 2 p)) := by
       rw [List.map_map, eq_comm]
       convert List.map_id _
     rw [hself]
@@ -35,7 +34,8 @@ theorem bits_lt_of_lex_lt {data pdata : List (BitVec 1)}
 theorem bytes_lt_of_lex_lt {data pdata : List (BitVec 8)}
     (hlen : data.length = pdata.length)
     (hlt : data < pdata)
-    (hpdata : pdata = List.map (fun (d : Digit ⟨256, by decide⟩) => BitVec.ofNatLT d.val d.prop) (RadixVec.toDigitsBE' ⟨256, by decide⟩ p)) :
+    (hpdata : pdata = List.map (fun (d : Digit ⟨256, by decide⟩) => BitVec.ofNatLT d.val d.prop)
+      (RadixVec.toDigitsBE' ⟨256, by decide⟩ p)) :
     RadixVec.ofDigitsBE' (data.map (fun i => (i.toFin : Digit ⟨256, by decide⟩))) < p := by
   rw [←RadixVec.ofDigitsBE'_toDigitsBE' (r := ⟨256, by decide⟩) (n := p)]
   apply RadixVec.ofDigitsBE'_mono
@@ -73,12 +73,15 @@ theorem ofDigitsBE'_lt_of_shorter_than_modulus {r : Radix} {data : List (Digit r
 theorem to_be_bits_intro :
     STHoare p env ⟦⟧
     («std-1.0.0-beta.12::field::to_be_bits».call h![N] h![f])
-    fun r => ∃∃(lt : f.val < (2 ^ N.toNat)), r = (RadixVec.toDigitsBE (d := N.toNat) (r := 2) ⟨f.val, by simp_all [OfNat.ofNat]⟩ |>.map BitVec.ofFin) := by
+    fun r => ∃∃(lt : f.val < (2 ^ N.toNat)),
+      r = (RadixVec.toDigitsBE (d := N.toNat) (r := 2)
+        ⟨f.val, by simp_all [OfNat.ofNat]⟩ |>.map BitVec.ofFin) := by
   rcases N with ⟨⟨N,_⟩⟩
   enter_decl
   steps
   · exact ()
-  step_as (⟦⟧) (fun _ => RadixVec.ofDigitsBE' (bits.toList.map (fun i => (i.toFin : Digit 2))) < p.natVal)
+  step_as (⟦⟧)
+    (fun _ => RadixVec.ofDigitsBE' (bits.toList.map (fun i => (i.toFin : Digit 2))) < p.natVal)
   · apply STHoare.iteTrue_intro
     steps
     rename' p => pbits
@@ -86,7 +89,8 @@ theorem to_be_bits_intro :
     · cases' bits with bits bitsLen
       simp only [BitVec.toNat_ofFin] at bitsLen
       cases bitsLen
-      loop_inv nat fun i _ _ => (bits.take i ≤ pbits.take i) ⋆ [ok ↦ ⟨_, decide $ bits.take i < (pbits.take i)⟩]
+      loop_inv nat fun i _ _ =>
+        (bits.take i ≤ pbits.take i) ⋆ [ok ↦ ⟨_, decide <| bits.take i < (pbits.take i)⟩]
       · simp
       · simp only [h]
         simp [BitVec.ofNatLT_eq_ofNat]
@@ -205,15 +209,11 @@ theorem to_be_radix_intro :
     rename_i v _
     exact v.map BitVec.toFin
   · apply List.Vector.eq
-    simp only [List.Vector.toList_map, List.map_map]
+    simp
     rw [eq_comm]
     exact List.map_id _
   · subst_vars
-    simp only [
-      BitVec.ofNat_eq_ofNat, BitVec.toNat_ofNat,
-      RadixVec.ofDigitsBE,
-      Nat.reducePow, Nat.reduceMod
-    ]
+    rw [RadixVec.ofDigitsBE]
     congr 2
     apply List.Vector.eq
     simp
@@ -238,18 +238,12 @@ theorem to_le_radix_intro :
     rename_i v _
     exact v.reverse.map BitVec.toFin
   · apply List.Vector.eq
-    simp only [
-      List.Vector.toList_map, List.Vector.toList_reverse,
-      List.map_map, List.map_reverse, List.reverse_reverse
-    ]
-    rw [eq_comm]
-    convert List.map_id _
+    simp [List.Vector.toList_reverse, Function.comp_def]
   · subst_vars
     simp only [BitVec.ofNat_eq_ofNat]
     congr 2
     apply List.Vector.eq
-    rw [eq_comm]
-    simp [Function.comp]
+    simp [List.Vector.toList_reverse, BitVec.toFin, Fin.val_mk]
 
 theorem to_be_bytes_intro :
     STHoare p env ⟦⟧
@@ -263,7 +257,9 @@ theorem to_be_bytes_intro :
   enter_decl
   steps [to_be_radix_intro]
   · exact ()
-  step_as (⟦⟧) (fun _ => RadixVec.ofDigitsBE' (bytes.toList.map (fun i => (i.toFin : Digit ⟨256, by decide⟩))) < p.natVal)
+  step_as (⟦⟧) (fun _ =>
+    RadixVec.ofDigitsBE' (bytes.toList.map (fun i => (i.toFin : Digit ⟨256, by decide⟩)))
+      < p.natVal)
   · apply STHoare.iteTrue_intro
     steps
     rename' p => pbytes  -- pbytes is the modulus bytes slice
@@ -271,7 +267,9 @@ theorem to_be_bytes_intro :
     · cases' bytes with bytes bytesLen
       simp only [BitVec.toNat_ofFin] at bytesLen
       cases bytesLen
-      loop_inv nat fun i _ _ => (bytes.take i ≤ pbytes.take i) ⋆ [ok ↦ ⟨_, decide $ bytes.take i < (pbytes.take i)⟩]
+      loop_inv nat fun i _ _ =>
+        (bytes.take i ≤ pbytes.take i) ⋆
+          [ok ↦ ⟨_, decide <| bytes.take i < (pbytes.take i)⟩]
       · simp
       · simp only [h]
         simp [BitVec.ofNatLT_eq_ofNat]
@@ -319,9 +317,11 @@ theorem to_be_bytes_intro :
       steps
       rename decide _ = true => hlt
       have hlen : bytes.length = pbytes.length := by simp_all
-      simp only [BitVec.toNat_ofFin, List.take_length, beq_true, decide_eq_true_eq] at hlt
-      simp only [hlen, List.take_length] at hlt
-      have hpbytes_eq : pbytes = List.map (fun (d : Digit ⟨256, by decide⟩) => BitVec.ofNatLT d.val d.prop) (RadixVec.toDigitsBE' ⟨256, by decide⟩ p.natVal) := by
+      simp [BitVec.toNat_ofFin] at hlt
+      simp [hlen] at hlt
+      have hpbytes_eq : pbytes =
+          List.map (fun (d : Digit ⟨256, by decide⟩) => BitVec.ofNatLT d.val d.prop)
+            (RadixVec.toDigitsBE' ⟨256, by decide⟩ p.natVal) := by
         subst pbytes
         simp only [RadixVec.toDigitsBE', List.do_pure_eq_map]
         congr 1
@@ -342,11 +342,12 @@ theorem to_be_bytes_intro :
         apply lt_of_le_of_ne
         · simp_all
         · assumption
-      have hpbytes_len : pbytes.length = (RadixVec.toDigitsBE' ⟨256, by decide⟩ p.natVal).length := by
+      have hpbytes_len :
+          pbytes.length = (RadixVec.toDigitsBE' ⟨256, by decide⟩ p.natVal).length := by
         subst pbytes
         simp [RadixVec.toDigitsBE']
       apply ofDigitsBE'_lt_of_shorter_than_modulus (P := p)
-      simp only [List.length_map, List.Vector.toList_length, hpbytes_len] at hlen_lt ⊢
+      simp [List.Vector.toList_length, hpbytes_len] at hlen_lt ⊢
       exact hlen_lt
   steps
   rotate_left
@@ -364,18 +365,21 @@ theorem to_be_bytes_intro :
       enter [2, 1, 1]
       rw [ZMod.val_natCast, Nat.mod_eq_of_lt h]
     apply List.Vector.eq
-    simp only [Fin.eta, RadixVec.toDigitsBE_ofDigitsBE]
+    simp [RadixVec.toDigitsBE_ofDigitsBE]
 
 set_option maxHeartbeats 300000
 theorem to_le_bits_intro :
     STHoare p env ⟦⟧
     («std-1.0.0-beta.12::field::to_le_bits».call h![N] h![f])
-    fun r => ∃∃(lt : f.val < (2 ^ N.toNat)), r = (RadixVec.toDigitsBE (d := N.toNat) (r := 2) ⟨f.val, by simp_all [OfNat.ofNat]⟩ |>.map BitVec.ofFin |>.reverse) := by
+    fun r => ∃∃(lt : f.val < (2 ^ N.toNat)),
+      r = (RadixVec.toDigitsBE (d := N.toNat) (r := 2)
+        ⟨f.val, by simp_all [OfNat.ofNat]⟩ |>.map BitVec.ofFin |>.reverse) := by
   rcases N with ⟨⟨N,_⟩⟩
   enter_decl
   steps
   · exact ()
-  step_as (⟦⟧) (fun _ => RadixVec.ofDigitsBE' (bits.toList.reverse.map (fun i => (i.toFin : Digit 2))) < p.natVal)
+  step_as (⟦⟧) (fun _ =>
+    RadixVec.ofDigitsBE' (bits.toList.reverse.map (fun i => (i.toFin : Digit 2))) < p.natVal)
   · apply STHoare.iteTrue_intro
     steps
     rename' p => pbits
@@ -383,7 +387,9 @@ theorem to_le_bits_intro :
     · cases' bits with bits bitsLen
       simp only [BitVec.toNat_ofFin] at bitsLen
       cases bitsLen
-      loop_inv nat fun i _ _ => (bits.reverse.take i ≤ pbits.reverse.take i) ⋆ [ok ↦ ⟨_, decide $ bits.reverse.take i < (pbits.reverse.take i)⟩]
+      loop_inv nat fun i _ _ =>
+        (bits.reverse.take i ≤ pbits.reverse.take i) ⋆
+          [ok ↦ ⟨_, decide <| bits.reverse.take i < (pbits.reverse.take i)⟩]
       · simp
       · simp only [h]
         simp [BitVec.ofNatLT_eq_ofNat]
@@ -414,38 +420,31 @@ theorem to_le_bits_intro :
           have hidx := U32.index_toNat bits.length i hlen32 hi32 hi_lt
           by_cases hi : bits.reverse[i]'hi_lt_bits = pbits.reverse[i]'hi_lt_pbits
           · convert STHoare.iteFalse_intro _
-            · simp only [
-                List.Vector.get, List.getElem_reverse, List.length_reverse,
-                h, hlen_eq
-              ] at hi ⊢
+            · simp [List.Vector.get, h, hlen_eq] at hi ⊢
               simp_all [List.get_eq_getElem]
-            · rw [List.take_succ_eq_append_getElem hi_lt_bits, List.take_succ_eq_append_getElem hi_lt_pbits, heq, hi]
+            · rw [
+                List.take_succ_eq_append_getElem hi_lt_bits,
+                List.take_succ_eq_append_getElem hi_lt_pbits,
+                heq, hi
+              ]
               steps
               · apply List.le_refl
               · congr
                 simp [List.le_refl]
           · convert STHoare.iteTrue_intro _
-            · simp only [
-                List.Vector.get, List.getElem_reverse, List.length_reverse,
-                h, hlen_eq
-              ] at hi ⊢
+            · simp [List.Vector.get, List.length_reverse, h, hlen_eq] at hi ⊢
               simp_all [List.get_eq_getElem]
             · steps 9
               rename_i hassert
               have hpbit : pbits[pbits.length - 1 - i] = 1 := by
-                simp only [
-                  beq_true, decide_eq_true_eq,
-                  List.get_eq_getElem
-                ] at hassert
+                simp only [beq_true, decide_eq_true_eq, List.get_eq_getElem] at hassert
                 convert hassert using 2
                 rw [←hlen_eq]
                 exact hidx.symm
               have hbit : bits[bits.length - 1 - i] = 0 := by
                 have := U.cases_one bits[bits.length - 1 - i]
-                simp only [List.getElem_reverse, h, List.length_reverse, hlen_eq] at hi
                 simp_all
               have hbit_lt : bits.reverse[i]'hi_lt_bits < pbits.reverse[i]'hi_lt_pbits := by
-                simp only [List.getElem_reverse, h, List.length_reverse, hlen_eq] at hbit ⊢
                 simp [hpbit, hbit]
               have : bits.reverse.take (i + 1) < pbits.reverse.take (i + 1) :=
                 List.take_succ_lt_of_getElem_lt hi_lt_bits hi_lt_pbits heq hbit_lt
@@ -455,11 +454,15 @@ theorem to_le_bits_intro :
       steps
       rename decide _ = true => hlt_final
       have hlen : bits.length = pbits.length := by simp_all
-      simp only [BitVec.toNat_ofFin, List.take_length, beq_true, decide_eq_true_eq, List.length_reverse] at hlt_final
+      simp [
+        BitVec.toNat_ofFin, List.take_length, List.length_reverse
+      ] at hlt_final
       simp only [hlen, List.take_length, List.length_reverse] at hlt_final
       have hlt_full : bits.reverse < pbits.reverse :=
         List.lt_of_take_lt (by simp [hlen]) (by simp) hlt_final
-      have hpbits_rev : pbits.reverse = List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop) (RadixVec.toDigitsBE' 2 p.natVal) := by
+      have hpbits_rev : pbits.reverse =
+          List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop)
+            (RadixVec.toDigitsBE' 2 p.natVal) := by
         subst pbits
         simp only [
           RadixVec.toDigitsBE', RadixVec.of,
@@ -469,12 +472,15 @@ theorem to_le_bits_intro :
         congr 1
         funext x
         simp [BitVec.ofNatLT, BitVec.ofFin]
-      have hlen_rev : bits.reverse.length = pbits.reverse.length := by simp [List.length_reverse, hlen]
+      have hlen_rev : bits.reverse.length = pbits.reverse.length := by
+        simp [List.length_reverse, hlen]
       apply bits_lt_of_lex_lt hlen_rev (hpbits_rev ▸ hlt_full) hpbits_rev
     ·
       loop_inv nat fun _ _ _ => [ok ↦ ⟨_, true⟩]
       · congr
-        simp only [BitVec.toNat_ne, *, List.Vector.length, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat]
+        simp only [
+          BitVec.toNat_ne, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat
+        ]
         simp_all
       · simp
       · intro _ _ _
@@ -484,15 +490,14 @@ theorem to_le_bits_intro :
       steps
       have hlen_lt : bits.length < pbits.length := by
         apply lt_of_le_of_ne
-        · simp only [BitVec.natCast_eq_ofNat, List.Vector.length, BitVec.ofNat_toNat, BitVec.setWidth_eq] at *
+        · simp only [
+            BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq
+          ] at *
           simp_all
         · assumption
       apply ofDigitsBE'_lt_of_shorter_than_modulus (P := p)
       subst pbits
-      simp only [
-        RadixVec.toDigitsBE', List.do_pure_eq_map, List.length_map,
-        List.length_reverse, List.Vector.toList_length
-      ] at hlen_lt ⊢
+      simp [RadixVec.toDigitsBE'] at hlen_lt ⊢
       exact hlen_lt
   steps
   rotate_left
@@ -505,15 +510,17 @@ theorem to_le_bits_intro :
   ·
     rename_i h v _
     subst_vars
-    simp only [
-      ←List.Vector.toList_map, List.length_reverse,
-      List.map_reverse, List.Vector.toList_reverse,
-      RadixVec.ofDigitsBE'_toList,
+    simp [
+      ←List.Vector.toList_map, List.Vector.toList_reverse,
+      ←RadixVec.ofDigitsBE'_toList,
     ] at h
     conv_rhs =>
       enter [1, 2, 1, 1]
       rw [ZMod.val_natCast]
-      simp only [←RadixVec.ofDigitsBE'_toList, ←List.Vector.toList_map, List.Vector.toList_reverse]
+      simp [
+        ←List.Vector.toList_map, List.Vector.toList_reverse,
+        ←RadixVec.ofDigitsBE'_toList
+      ]
       rw [Nat.mod_eq_of_lt h]
     conv_rhs =>
       enter [1, 2, 1, 1]
@@ -526,7 +533,7 @@ theorem to_le_bits_intro :
       apply List.Vector.eq
       simp only [
         List.Vector.toList_map, List.map_map, List.map_id,
-        BitVec.ofFin_toFin_comp, BitVec.ofFin_toFin_comp
+        BitVec.ofFin_toFin_comp
       ]
 
 
@@ -543,7 +550,9 @@ theorem to_le_bytes_intro :
   enter_decl
   steps [to_le_radix_intro]
   · exact ()
-  step_as (⟦⟧) (fun _ => RadixVec.ofDigitsBE' (bytes.toList.reverse.map (fun i => (i.toFin : Digit ⟨256, by decide⟩))) < p.natVal)
+  step_as (⟦⟧) (fun _ =>
+    RadixVec.ofDigitsBE'
+      (bytes.toList.reverse.map (fun i => (i.toFin : Digit ⟨256, by decide⟩))) < p.natVal)
   · apply STHoare.iteTrue_intro
     steps
     rename' p => pbytes
@@ -551,7 +560,9 @@ theorem to_le_bytes_intro :
     · cases' bytes with bytes bytesLen
       simp only [BitVec.toNat_ofFin] at bytesLen
       cases bytesLen
-      loop_inv nat fun i _ _ => (bytes.reverse.take i ≤ pbytes.reverse.take i) ⋆ [ok ↦ ⟨_, decide $ bytes.reverse.take i < (pbytes.reverse.take i)⟩]
+      loop_inv nat fun i _ _ =>
+        (bytes.reverse.take i ≤ pbytes.reverse.take i) ⋆
+          [ok ↦ ⟨_, decide <| bytes.reverse.take i < (pbytes.reverse.take i)⟩]
       · simp
       · simp only [h]
         simp [BitVec.ofNatLT_eq_ofNat]
@@ -582,28 +593,31 @@ theorem to_le_bytes_intro :
           have hidx := U32.index_toNat bytes.length i hlen32 hi32 hi_lt
           by_cases hi : bytes.reverse[i]'hi_lt_bytes = pbytes.reverse[i]'hi_lt_pbytes
           · convert STHoare.iteFalse_intro _
-            · simp only [
+            · simp [
                 List.Vector.get, List.getElem_reverse, List.length_reverse,
                 h, hlen_eq
               ] at hi ⊢
               simp_all [List.get_eq_getElem]
-            · rw [List.take_succ_eq_append_getElem hi_lt_bytes, List.take_succ_eq_append_getElem hi_lt_pbytes, heq, hi]
+            · rw [
+                List.take_succ_eq_append_getElem hi_lt_bytes,
+                List.take_succ_eq_append_getElem hi_lt_pbytes, heq, hi
+              ]
               steps
               · apply List.le_refl
               · congr
                 simp [List.le_refl]
           · convert STHoare.iteTrue_intro _
             · simp only [
-                List.Vector.get, List.getElem_reverse, List.length_reverse,
-                h, hlen_eq
+                List.Vector.get, List.getElem_reverse, List.length_reverse, h, hlen_eq
               ] at hi ⊢
               simp_all [List.get_eq_getElem]
             · steps 14
               rename_i hassert_lt
               have hbyte_lt : bytes.reverse[i]'hi_lt_bytes < pbytes.reverse[i]'hi_lt_pbytes := by
                 simp only [List.getElem_reverse, h, List.length_reverse, hlen_eq]
-                simp only [beq_true, decide_eq_true_eq, List.Vector.get, List.get_eq_getElem] at hassert_lt
-                convert hassert_lt using 2 <;> simp_all
+                simp only [List.Vector.get, List.get_eq_getElem] at hassert_lt
+                convert hassert_lt using 2
+                simp_all
               have : bytes.reverse.take (i + 1) < pbytes.reverse.take (i + 1) :=
                 List.take_succ_lt_of_getElem_lt hi_lt_bytes hi_lt_pbytes heq hbyte_lt
               steps
@@ -612,11 +626,12 @@ theorem to_le_bytes_intro :
       steps
       rename decide _ = true => hlt_final
       have hlen : bytes.length = pbytes.length := by simp_all
-      simp only [BitVec.toNat_ofFin, List.take_length, beq_true, decide_eq_true_eq, List.length_reverse] at hlt_final
-      simp only [hlen, List.take_length, List.length_reverse] at hlt_final
+      simp [hlen] at hlt_final
       have hlt_full : bytes.reverse < pbytes.reverse :=
         List.lt_of_take_lt (by simp [hlen]) (by simp) hlt_final
-      have hpbytes_rev : pbytes.reverse = List.map (fun (d : Digit ⟨256, by decide⟩) => BitVec.ofNatLT d.val d.prop) (RadixVec.toDigitsBE' ⟨256, by decide⟩ p.natVal) := by
+      have hpbytes_rev : pbytes.reverse =
+          List.map (fun (d : Digit ⟨256, by decide⟩) => BitVec.ofNatLT d.val d.prop)
+            (RadixVec.toDigitsBE' ⟨256, by decide⟩ p.natVal) := by
         subst pbytes
         simp only [
           RadixVec.toDigitsBE', RadixVec.of, List.do_pure_eq_map, List.map_map,
@@ -625,12 +640,13 @@ theorem to_le_bytes_intro :
         congr 1
         funext x
         simp [BitVec.ofNatLT, BitVec.ofFin]
-      have hlen_rev : bytes.reverse.length = pbytes.reverse.length := by simp [List.length_reverse, hlen]
+      have hlen_rev : bytes.reverse.length = pbytes.reverse.length := by
+        simp [List.length_reverse, hlen]
       apply bytes_lt_of_lex_lt hlen_rev (hpbytes_rev ▸ hlt_full) hpbytes_rev
     ·
       loop_inv nat fun _ _ _ => [ok ↦ ⟨_, true⟩]
       · congr
-        simp only [BitVec.toNat_ne, *, List.Vector.length, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat]
+        simp only [BitVec.toNat_ne, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat]
         simp_all
       · simp
       · intro _ _ _
@@ -640,10 +656,10 @@ theorem to_le_bytes_intro :
       steps
       have hlen_lt : bytes.length < pbytes.length := by
         apply lt_of_le_of_ne
-        · simp only [BitVec.natCast_eq_ofNat, List.Vector.length, BitVec.ofNat_toNat, BitVec.setWidth_eq] at *
-          simp_all
+        · simp_all
         · assumption
-      have hpbytes_len : pbytes.length = (RadixVec.toDigitsBE' ⟨256, by decide⟩ p.natVal).length := by
+      have hpbytes_len :
+          pbytes.length = (RadixVec.toDigitsBE' ⟨256, by decide⟩ p.natVal).length := by
         subst pbytes
         simp [RadixVec.toDigitsBE', RadixVec.of, List.do_pure_eq_map]
       apply ofDigitsBE'_lt_of_shorter_than_modulus (P := p)
@@ -664,20 +680,19 @@ theorem to_le_bytes_intro :
     rename_i v hbytes hf
     rw [hbytes] at hbound
     have hbound' : RadixVec.ofDigitsBE v < p.natVal := by
-      simp only [
-        List.Vector.toList_map, List.Vector.toList_reverse,
-        List.map_reverse, List.reverse_reverse, List.map_map, List.map_id,
-        BitVec.toFin_ofFin_comp 8,
-      ] at hbound
+      simp [List.Vector.toList_reverse, BitVec.toFin_ofFin_comp 8] at hbound
       rw [RadixVec.ofDigitsBE'_toList] at hbound
       exact hbound
     subst hvDigits hbytes hf
-    have hval_eq : ZMod.val (↑↑(RadixVec.ofDigitsBE v) : ZMod p.natVal) = (RadixVec.ofDigitsBE v).val := by
+    have hval_eq :
+        ZMod.val (↑↑(RadixVec.ofDigitsBE v) : ZMod p.natVal) = (RadixVec.ofDigitsBE v).val := by
       rw [ZMod.val_natCast, Nat.mod_eq_of_lt hbound']
     have hlt256N : ZMod.val (↑↑(RadixVec.ofDigitsBE v) : ZMod p.natVal) < 256^N := by
       rw [hval_eq]
       exact (RadixVec.ofDigitsBE v).isLt
-    have hSubtype : (⟨ZMod.val (↑↑(RadixVec.ofDigitsBE v) : ZMod p.natVal), hlt256N⟩ : RadixVec ⟨256, by decide⟩ N) = RadixVec.ofDigitsBE v := by
+    have hSubtype :
+        (⟨ZMod.val (↑↑(RadixVec.ofDigitsBE v) : ZMod p.natVal), hlt256N⟩ :
+          RadixVec ⟨256, by decide⟩ N) = RadixVec.ofDigitsBE v := by
       ext
       simp only [hval_eq]
     simp only [hSubtype, RadixVec.toDigitsBE_ofDigitsBE, List.Vector.reverse_map]
