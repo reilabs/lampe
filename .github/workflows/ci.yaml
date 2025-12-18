@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install xonsh
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch (sparse)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: |
             Lampe
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch (sparse)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install xonsh
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: lampe
       - name: Set up Rust
@@ -103,7 +103,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
       - name: Install rust
@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: lampe
       - name: Set up Rust
@@ -144,7 +144,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: lampe
       - name: Set up Rust
@@ -165,7 +165,7 @@ jobs:
       LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: lampe
       - name: Install xonsh
@@ -204,7 +204,7 @@ jobs:
       LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: lampe
       - name: Install xonsh
