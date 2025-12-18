@@ -1,118 +1,11 @@
 import «std-1.0.0-beta.12».Extracted
 import Lampe
 import Lampe.Builtin.Helpers
+import Stdlib.Ext
 
 namespace Lampe.Stdlib.Field
 
 open «std-1.0.0-beta.12» (env)
-
-theorem List.lt_append_of_lt [DecidableEq α] [LT α] [DecidableLT α]
-  (l₁ l₂ l₃ l₄: List α):
-    l₁.length = l₂.length → l₁ < l₂ → l₁ ++ l₃ < l₂ ++ l₄ := by
-  intro hl hlt
-  rw [List.lt_iff_exists] at hlt
-  simp only [hl, List.take_length, lt_self_iff_false, and_false, exists_idem, false_or] at hlt
-  rcases hlt with ⟨i, h, _⟩
-  rw [List.lt_iff_exists]
-  right
-  exists
-    i,
-    (by simp only [List.length_append]; linarith),
-    (by simp only [List.length_append]; linarith)
-  apply And.intro
-  · intro j hj
-    have : j < l₁.length := by linarith
-    have : j < l₂.length := by linarith
-    simp_all
-  · simp_all
-
-theorem List.take_succ_lt_of_take_lt [DecidableEq α] [LT α] [DecidableLT α] {l₁ l₂ : List α}
-    (hi₁ : i < l₁.length) (hi₂ : i < l₂.length) (hlt : l₁.take i < l₂.take i) :
-    l₁.take (i + 1) < l₂.take (i + 1) := by
-  rw [List.take_succ_eq_append_getElem hi₁, List.take_succ_eq_append_getElem hi₂]
-  apply List.lt_append_of_lt
-  · simp only [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi₁), Nat.min_eq_left (Nat.le_of_lt hi₂)]
-  · exact hlt
-
-theorem List.take_succ_lt_of_getElem_lt [DecidableEq α] [LT α] [DecidableLT α] {l₁ l₂ : List α}
-  (hi₁ : i < l₁.length) (hi₂ : i < l₂.length)
-  (heq : l₁.take i = l₂.take i) (hlt : l₁[i] < l₂[i]) :
-    l₁.take (i + 1) < l₂.take (i + 1) := by
-  rw [
-    List.take_succ_eq_append_getElem hi₁,
-    List.take_succ_eq_append_getElem hi₂,
-    heq
-  ]
-  exact List.append_left_lt (List.cons_lt_cons_iff.mpr (Or.inl hlt))
-
-theorem List.lt_of_take_lt [DecidableEq α] [LT α] [DecidableLT α] {l₁ l₂ : List α} {n : ℕ}
-  (hlen₁ : l₁.length = n) (hlen₂ : l₂.length = n)
-  (hlt : l₁.take n < l₂.take n) : l₁ < l₂ := by
-  rw [←List.take_length (l := l₁), ←List.take_length (l := l₂), hlen₁, hlen₂]
-  exact hlt
-
-instance : Std.Total (fun (x1: U s) x2 => ¬x1 < x2) := { total := by simp [BitVec.le_total] }
-instance : Std.Antisymm (fun (x1: U s) x2 => ¬x1 < x2) where
-  antisymm _ _ _ _ := by
-    simp_all only [BitVec.not_lt]
-    apply BitVec.le_antisymm <;> assumption
-instance : Std.Irrefl (fun (x1: U s) x2 => x1 < x2) where
-  irrefl _ := BitVec.lt_irrefl _
-
-lemma U.cases_one (i : U 1) : i = 0 ∨ i = 1 := by fin_cases i <;> simp
-
-theorem BitVec.toFin_ofFin_comp (n : ℕ) : (fun (i : BitVec n) => i.toFin) ∘ BitVec.ofFin = id := by
-  funext x
-  simp [BitVec.toFin_ofFin]
-
-theorem BitVec.ofFin_toFin_comp (n : ℕ) : BitVec.ofFin ∘ (fun (i : BitVec n) => i.toFin) = id := by
-  funext x
-  rfl
-
-theorem List.Vector.map_toFin_map_ofFin {n d : ℕ} (v : List.Vector (Fin (2^n)) d) :
-    List.Vector.map (fun (i : BitVec n) => i.toFin) (List.Vector.map BitVec.ofFin v) = v := by
-  apply List.Vector.eq
-  simp only [List.Vector.toList_map, List.map_map, BitVec.toFin_ofFin_comp, List.map_id]
-
-theorem List.Vector.map_ofFin_map_toFin {n d : ℕ} (v : List.Vector (BitVec n) d) :
-    List.Vector.map BitVec.ofFin (List.Vector.map (fun (i : BitVec n) => i.toFin) v) = v := by
-  apply List.Vector.eq
-  simp only [List.Vector.toList_map, List.map_map, BitVec.ofFin_toFin_comp, List.map_id]
-
-theorem List.Vector.reverse_map {α β : Type} {d : ℕ} (v : List.Vector α d) (f : α → β) :
-    (v.map f).reverse = v.reverse.map f := by
-  apply List.Vector.eq
-  simp only [List.Vector.toList_reverse, List.Vector.toList_map, List.map_reverse]
-
-theorem List.do_pure_eq_map {α β : Type} (l : List α) (f : α → β) :
-    (do let a ← l; pure (f a)) = List.map f l := by
-  induction l with
-  | nil => rfl
-  | cons x xs ih =>
-    show List.flatMap _ (x :: xs) = _
-    simp only [List.flatMap_cons, Pure.pure, List.singleton_append, List.map_cons]
-    congr 1
-
-theorem RadixVec.toDigitsBE'_bytes_eq_map_toFin_map_ofNatLT (hr : 1 < 256) (m : ℕ) :
-    RadixVec.toDigitsBE' ⟨256, hr⟩ m =
-      List.map (fun (i : BitVec 8) => i.toFin)
-        (List.map (fun (d : Digit ⟨256, hr⟩) => BitVec.ofNatLT d.val d.prop)
-          (RadixVec.toDigitsBE' ⟨256, hr⟩ m)) := by
-  simp only [List.map_map]
-  rw [eq_comm]
-  convert List.map_id _
-
-@[simp]
-theorem List.Vector.toList_reverse {α : Type} {n : ℕ} (v : List.Vector α n) :
-    v.reverse.toList = v.toList.reverse := rfl
-
-lemma U32.index_toNat (len i : ℕ) (hlen : len < 2^32) (hi : i < 2^32) (hi_lt : i < len) :
-    (({ toFin := ⟨len, hlen⟩ } : U 32) - 1 - (BitVec.ofNatLT i hi)).toNat = len - 1 - i := by
-  have h1 : ({ toFin := ⟨len, hlen⟩ } : U 32).toNat = len := by simp
-  have h2 : (BitVec.ofNatLT i hi : U 32).toNat = i := by simp
-  have h3 : (1 : U 32).toNat = 1 := by decide
-  simp only [BitVec.toNat_sub, h1, h2, h3, Nat.reducePow]
-  omega
 
 /-- Key lemma for bound proofs (bits version): if `data < pdata` lexicographically and
     `pdata = toDigitsBE' 2 p` mapped to BitVec, then `ofDigitsBE' (data.map toFin) < p`.
@@ -124,12 +17,11 @@ theorem bits_lt_of_lex_lt {data pdata : List (BitVec 1)}
     RadixVec.ofDigitsBE' (data.map (fun i => (i.toFin : Digit 2))) < p := by
   rw [←RadixVec.ofDigitsBE'_toDigitsBE' (r := 2) (n := p)]
   apply RadixVec.ofDigitsBE'_mono
-  · simp [RadixVec.toDigitsBE', hlen, hpdata, List.length_map]
+  · simp [hlen, hpdata, List.length_map]
   · have hself : RadixVec.toDigitsBE' 2 p =
         List.map (fun (i : BitVec 1) => (i.toFin : Digit 2))
           (List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop) (RadixVec.toDigitsBE' 2 p)) := by
-      simp only [List.map_map]
-      rw [eq_comm]
+      rw [List.map_map, eq_comm]
       convert List.map_id _
     rw [hself]
     apply List.map_lt
@@ -148,7 +40,14 @@ theorem bytes_lt_of_lex_lt {data pdata : List (BitVec 8)}
   rw [←RadixVec.ofDigitsBE'_toDigitsBE' (r := ⟨256, by decide⟩) (n := p)]
   apply RadixVec.ofDigitsBE'_mono
   · simp [RadixVec.toDigitsBE', hlen, hpdata, List.length_map]
-  · rw [RadixVec.toDigitsBE'_bytes_eq_map_toFin_map_ofNatLT (by decide) p]
+  · have hself : RadixVec.toDigitsBE' ⟨256, by decide⟩ p =
+        List.map (fun (i : BitVec 8) => i.toFin)
+          (List.map (fun (d : Digit ⟨256, by decide⟩) => BitVec.ofNatLT d.val d.prop)
+            (RadixVec.toDigitsBE' ⟨256, by decide⟩ p)) := by
+      simp only [List.map_map]
+      rw [eq_comm]
+      convert List.map_id _
+    rw [hself]
     apply List.map_lt
     · intro x y h
       rw [BitVec.lt_def] at h
@@ -619,10 +518,17 @@ theorem to_le_bits_intro :
     conv_rhs =>
       enter [1, 2, 1, 1]
       rw [← List.Vector.toList_reverse]
-    conv_rhs => rw [
-      RadixVec.ofDigitsBE'_subtype_eq, RadixVec.toDigitsBE_ofDigitsBE,
-      List.Vector.reverse_map, List.Vector.reverse_reverse, List.Vector.map_ofFin_map_toFin
-    ]
+    conv_rhs =>
+      rw [
+        RadixVec.ofDigitsBE'_subtype_eq, RadixVec.toDigitsBE_ofDigitsBE,
+        List.Vector.reverse_map, List.Vector.reverse_reverse,
+      ]
+      apply List.Vector.eq
+      simp only [
+        List.Vector.toList_map, List.map_map, List.map_id,
+        BitVec.ofFin_toFin_comp, BitVec.ofFin_toFin_comp
+      ]
+
 
 set_option maxHeartbeats 500000
 theorem to_le_bytes_intro :
