@@ -74,7 +74,7 @@ theorem recover_intro {H N idx proof item}
   subst_vars
   simp
 
-set_option maxRecDepth 2000 in
+set_option maxRecDepth 10000 in
 lemma SkyscraperHash_correct: STHoare Field.lp env ⟦⟧
       («hasher-0.0.0::BinaryHasher».hash h![.field] («skyscraper-0.0.0::Skyscraper».tp h![]) h![] h![] h![a,b])
       (fun v => v = Ref.State.compress ⟨[a, b], rfl⟩) := by

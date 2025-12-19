@@ -13,3 +13,4 @@ noir_trait_def «hasher-0.0.0»::Hasher<> [] := {
   method finish<>(Self) -> Field;
   method write<>(& Self, Field) -> Unit;
 }
+

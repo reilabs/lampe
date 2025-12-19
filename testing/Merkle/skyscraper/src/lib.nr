@@ -8,6 +8,6 @@ pub struct Skyscraper;
 impl hasher::BinaryHasher<Field> for Skyscraper {
     fn hash(a: Field, b: Field) -> Field {
         let s = permute::permute([a, b]);
-        s[0] + s[1]
+        s[0] + a
     }
 }
