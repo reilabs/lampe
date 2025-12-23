@@ -700,10 +700,6 @@ theorem to_le_bytes_intro :
       simp only [hval_eq]
     simp only [hSubtype, RadixVec.toDigitsBE_ofDigitsBE, List.Vector.reverse_map]
 
-lemma Nat.sub_sub_succ {n i : Nat} (hi : 1 ≤ i) :
-    n - 1 - (i - 1) = n - i := by
-  omega
-
 set_option maxHeartbeats 2000000
 theorem pow_32_intro {p self exponent} :
     STHoare p env ⟦⟧
@@ -715,89 +711,48 @@ theorem pow_32_intro {p self exponent} :
   rename_i hlt hb
   set digits :=
     RadixVec.toDigitsBE (d := 32) (r := 2) ⟨exponent.val, hlt⟩ with hdigits
-  have hb : b = (digits.map BitVec.ofFin).reverse := by simp [digits, hb]
-  have hb_rev : b.reverse = digits.map BitVec.ofFin := by simp [(congrArg List.Vector.reverse hb)]
-  have hb_digits_vec :
-      List.Vector.map (fun i => (i.toFin : Digit 2)) b.reverse = digits := by
-    simp [hb_rev, (List.Vector.map_toFin_map_ofFin (n := 1) (v := digits))]
+  have hb_bits : b = (digits.map BitVec.ofFin).reverse := by
+    simpa [digits] using hb
   have hb_digits :
+      b.reverse.map (fun i => (i.toFin : Digit 2)) = digits := by
+    simp [hb_bits, List.Vector.reverse_map, List.Vector.toList_reverse]
+    exact List.Vector.map_toFin_map_ofFin (n := 1) (d := 32) (v := digits)
+  have hb_digits_list :
       b.toList.reverse.map (fun i => (i.toFin : Digit 2)) = digits.toList := by
-    simpa [List.Vector.toList_map, List.Vector.toList_reverse] using
-      congrArg List.Vector.toList hb_digits_vec
+    simpa [List.Vector.toList_reverse] using
+      congrArg List.Vector.toList hb_digits
   loop_inv nat fun i _ _ =>
     [r ↦ ⟨.field, self ^ (RadixVec.ofDigitsBE' (digits.toList.take (i - 1)))⟩]
   · simp
   · intro i hi_lo hhi
-    simp [] at hhi
     steps
     · congr 1
-      have hi_lt32 : i - 1 < 32 := by
-        cases i with
-        | zero =>
-            simp
-        | succ i =>
-            have : i < 32 := by
-              have : i.succ < 33 := by simpa using hhi
-              exact Nat.lt_of_succ_lt_succ this
-            simpa
+      have hi_lo' : 1 ≤ i := by simpa using hi_lo
+      have hhi : i < 33 := by simpa using hhi
+      have hi_lt32 : i - 1 < 32 := by omega
+      have hi_le : i ≤ 32 := by exact Nat.lt_succ_iff.mp hhi
       have hi_lt : i - 1 < digits.toList.length := by
-        simpa [digits, List.Vector.toList_length] using hi_lt32
-      have hi_lt_b : i - 1 < b.toList.length := by
-        simpa [List.Vector.toList_length] using hi_lt32
+        simp [digits, List.Vector.toList_length, hi_lt32]
       have hi_lt_rev : i - 1 < b.toList.reverse.length := by
-        simpa [List.length_reverse] using hi_lt_b
+        simp [List.length_reverse, List.Vector.toList_length, hi_lt32]
+      have hmap :
+          (b.toList.reverse[i - 1]'hi_lt_rev).toFin =
+            (b.toList.reverse.map (fun i => (i.toFin : Digit 2)))[i - 1]'(by
+              simpa [List.length_map] using hi_lt_rev) := by
+        simp [
+          (List.getElem_map_rev (f := fun i => (i.toFin : Digit 2))
+            (l := b.toList.reverse) (n := i - 1) (h := hi_lt_rev))
+        ]
       have hidx :
           (b.toList.reverse[i - 1]'hi_lt_rev).toFin =
             digits.toList[i - 1]'hi_lt := by
-        have hmap :
-            (b.toList.reverse[i - 1]'hi_lt_rev).toFin =
-              (b.toList.reverse.map (fun i => (i.toFin : Digit 2)))[i - 1]'(by
-                simp []
-                omega
-              ) := by
-          simp [
-            (List.getElem_map_rev (f := fun i => (i.toFin : Digit 2))
-              (l := b.toList.reverse) (n := i - 1) (h := hi_lt_rev))
-          ]
-        simpa [hb_digits] using hmap
+        simpa [hb_digits_list] using hmap
       set a := RadixVec.ofDigitsBE' (digits.toList.take (i - 1)) with ha
-      have hi_lo : 1 ≤ i := by simpa [hi_lo]
-      have hi_le : i ≤ 32 := by
-        have : i < 33 := by simp [hhi]
-        exact Nat.lt_succ_iff.mp this
+      have hindex_lt32 : 32 - i < 32 := by omega
       have hindex_lt : 32 - i < b.toList.length := by
-        have hle : 32 - i ≤ 31 := by
-          simp [Nat.sub_le_sub_left hi_lo 32]
-        have hlt : 31 < 32 := by decide
-        have : 32 - i < 32 := lt_of_le_of_lt hle hlt
-        simp [List.Vector.toList_length, this]
-      have hsub : b.toList.length - 1 - (i - 1) = 32 - i := by
-        simp [List.Vector.toList_length, Nat.sub_sub_succ (n := 32) hi_lo]
+        simpa [List.Vector.toList_length] using hindex_lt32
       have hmod : (4294967296 - i + 32) % 4294967296 = 32 - i := by
-        have hle : i ≤ 4294967296 := by
-          exact le_trans hi_le (by decide)
-        have h32_lt : 32 < 4294967296 := by decide
-        have hcalc : 4294967296 - i + 32 = 4294967296 + (32 - i) := by
-          calc
-            4294967296 - i + 32 = 4294967296 + 32 - i := by
-              symm
-              exact Nat.sub_add_comm hle
-            _ = 4294967296 + (32 - i) := by
-              exact (Nat.add_sub_assoc hi_le 4294967296)
-        calc
-          (4294967296 - i + 32) % 4294967296
-              = (4294967296 + (32 - i)) % 4294967296 := by
-                  simp [hcalc]
-          _ = ((4294967296 % 4294967296) + (32 - i) % 4294967296) % 4294967296 := by
-                  simp [Nat.add_mod]
-          _ = (32 - i) % 4294967296 := by simp
-          _ = 32 - i := by
-                  apply Nat.mod_eq_of_lt
-                  have : 32 - i ≤ 32 := Nat.sub_le _ _
-                  exact lt_of_le_of_lt this h32_lt
-      have hindex_lt32 : 32 - i < 32 := by
-        simp []
-        omega
+        exact Nat.mod_u32_sub_add_eq i hi_le
       have hindex_fin :
           (⟨(4294967296 - i + 32) % 4294967296, by
               simp [hmod, hindex_lt32]⟩ : Fin 32) =
@@ -808,7 +763,7 @@ theorem pow_32_intro {p self exponent} :
           digits.toList.take i =
             digits.toList.take (i - 1) ++ [digits.toList[i - 1]'hi_lt] := by
         have hi_eq : i = i - 1 + 1 := by
-          exact (Nat.sub_add_cancel hi_lo).symm
+          exact (Nat.sub_add_cancel hi_lo').symm
         have htake' :
             digits.toList.take (i - 1 + 1) =
               digits.toList.take (i - 1) ++ [digits.toList[i - 1]'hi_lt] := by
@@ -821,32 +776,35 @@ theorem pow_32_intro {p self exponent} :
               digits.toList[i - 1]'hi_lt := by
         rw [htake, RadixVec.ofDigitsBE'_append, RadixVec.ofDigitsBE'_cons]
         have hradix : (↑(2 : Radix) : Nat) = 2 := rfl
-        simp [
-          List.length, RadixVec.ofDigitsBE'_cons, RadixVec.ofDigitsBE'_nil,
-          Nat.pow_one, Nat.pow_zero, Nat.zero_add, Nat.add_zero, Nat.mul_one, Nat.mul_zero,
-          hradix
-        ]
+        simp [hradix]
       have hpow2 :
           self ^ (a * 2) = self ^ a * self ^ a := by
         simpa [ha, pow_two] using (pow_mul self a 2)
-      by_cases hbit : b.toList.reverse[i - 1]'(by
-          simpa [List.length_reverse] using hi_lt_b) = 0
-      · have hbit_rev : b.toList.reverse[i - 1]'hi_lt_rev = 0 := by
-          simpa using hbit
-        have hbit_index : b.toList[32 - i]'hindex_lt = 0 := by
+      have hbit_info (bit : U 1)
+          (hbit_rev : b.toList.reverse[i - 1]'hi_lt_rev = bit) :
+          (↑(BitVec.toNat (List.Vector.get b ⟨32 - i, hindex_lt32⟩)) : Fp p) =
+              (↑(BitVec.toNat bit) : Fp p) ∧
+            digits.toList[i - 1]'hi_lt = (bit.toFin : Digit 2) := by
+        have hsub : 32 - 1 - (i - 1) = 32 - i := by
+          omega
+        have hbit_index : b.toList[32 - i]'hindex_lt = bit := by
           simpa [
             List.getElem_reverse, List.length_reverse, List.Vector.toList_length,
-            Nat.sub_sub_succ (n := 32) hi_lo
+            hsub
           ] using hbit_rev
         have hbit_nat :
-            (↑(BitVec.toNat (List.Vector.get b ⟨32 - i, hindex_lt32⟩)) : Fp p) = 0 := by
+            (↑(BitVec.toNat (List.Vector.get b ⟨32 - i, hindex_lt32⟩)) : Fp p) =
+              (↑(BitVec.toNat bit) : Fp p) := by
           simpa [List.Vector.get, List.get_eq_getElem] using
             (congrArg (fun x => (↑x.toNat : Fp p)) hbit_index)
-        have hbit_digit : digits.toList[i - 1]'hi_lt = 0 := by
+        have hbit_digit : digits.toList[i - 1]'hi_lt = (bit.toFin : Digit 2) := by
           have hbit_fin :
-              (b.toList.reverse[i - 1]'hi_lt_rev).toFin = 0 := by
-            exact congrArg (fun x => (x.toFin : Digit 2)) hbit_rev
+              (b.toList.reverse[i - 1]'hi_lt_rev).toFin = bit.toFin := by
+            simpa using congrArg (fun x => (x.toFin : Digit 2)) hbit_rev
           exact hidx.symm.trans hbit_fin
+        exact ⟨hbit_nat, hbit_digit⟩
+      by_cases hbit : b.toList.reverse[i - 1]'hi_lt_rev = 0
+      · rcases hbit_info 0 hbit with ⟨hbit_nat, hbit_digit⟩
         have hdigits_zero :
             RadixVec.ofDigitsBE' (digits.toList.take i) =
               RadixVec.ofDigitsBE' (digits.toList.take (i - 1)) * 2 := by
@@ -865,26 +823,10 @@ theorem pow_32_intro {p self exponent} :
                 exact hpow2
           _ = self ^ RadixVec.ofDigitsBE' (digits.toList.take i) := by
                 simp [ha, hdigits_zero]
-      · have hbit' : b.toList.reverse[i - 1]'(by
-            simpa [List.length_reverse] using hi_lt_b) = 1 := by
-          have := U.cases_one (b.toList.reverse[i - 1]'(by
-            simpa [List.length_reverse] using hi_lt_b))
+      · have hbit_rev : b.toList.reverse[i - 1]'hi_lt_rev = 1 := by
+          have := U.cases_one (b.toList.reverse[i - 1]'hi_lt_rev)
           tauto
-        have hbit_rev : b.toList.reverse[i - 1]'hi_lt_rev = 1 := by simp [hbit']
-        have hbit_index : b.toList[32 - i]'hindex_lt = 1 := by
-          simpa [
-            List.getElem_reverse, List.length_reverse, List.Vector.toList_length,
-            Nat.sub_sub_succ (n := 32) hi_lo
-          ] using hbit_rev
-        have hbit_nat :
-            (↑(BitVec.toNat (List.Vector.get b ⟨32 - i, hindex_lt32⟩)) : Fp p) = 1 := by
-          simpa [List.Vector.get, List.get_eq_getElem] using
-            (congrArg (fun x => (↑x.toNat : Fp p)) hbit_index)
-        have hbit_digit : digits.toList[i - 1]'hi_lt = 1 := by
-          have hbit_fin :
-              (b.toList.reverse[i - 1]'hi_lt_rev).toFin = 1 := by
-            exact congrArg (fun x => (x.toFin : Digit 2)) hbit_rev
-          exact hidx.symm.trans hbit_fin
+        rcases hbit_info 1 hbit_rev with ⟨hbit_nat, hbit_digit⟩
         have hdigits_one :
             RadixVec.ofDigitsBE' (digits.toList.take i) =
               RadixVec.ofDigitsBE' (digits.toList.take (i - 1)) * 2 + 1 := by

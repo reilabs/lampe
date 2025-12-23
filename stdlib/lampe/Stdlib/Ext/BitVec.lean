@@ -33,7 +33,7 @@ theorem BitVec.ofFin_toFin_comp (n : ℕ) :
   rfl
 
 theorem List.Vector.map_toFin_map_ofFin {n d : ℕ} (v : List.Vector (Fin (2^n)) d) :
-    List.Vector.map (fun (i : BitVec n) => i.toFin) (List.Vector.map BitVec.ofFin v) = v := by
+    List.Vector.map (fun i => i.toFin) (List.Vector.map BitVec.ofFin v) = v := by
   apply List.Vector.eq
   simp only [List.Vector.toList_map, List.map_map, BitVec.toFin_ofFin_comp, List.map_id]
 
