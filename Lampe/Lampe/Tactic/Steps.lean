@@ -182,8 +182,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.readRef => return some (←``(readRef_intro))
 
         -- Field builtins
-        | ``Lampe.Builtin.fApplyRangeConstraint => return some (←``(fApplyRangeConstraint_intro))
-        | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits rfl))
+        | ``Lampe.Builtin.applyRangeConstraint => return some (←``(applyRangeConstraint_intro))        | ``Lampe.Builtin.fModBeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBits rfl))
         | ``Lampe.Builtin.fModBeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModBeBytes rfl))
         | ``Lampe.Builtin.fModLeBits => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBits rfl))
         | ``Lampe.Builtin.fModLeBytes => return some (←``(genericTotalPureBuiltin_intro Builtin.fModLeBytes rfl))
