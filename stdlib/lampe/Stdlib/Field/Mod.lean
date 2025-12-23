@@ -1,13 +1,16 @@
 import «std-1.0.0-beta.12».Extracted
 import Lampe
 import Lampe.Builtin.Helpers
+import Stdlib.Field.Basic
+import Stdlib.Field.Bn254
+import Stdlib.Compat
 import Stdlib.Ext
 
 namespace Lampe.Stdlib.Field
 
 open «std-1.0.0-beta.12» (env)
 
-theorem bits_lt_of_lex_lt {data pdata : List (BitVec 1)}
+lemma bits_lt_of_lex_lt {data pdata : List (BitVec 1)}
     (hlen : data.length = pdata.length)
     (hlt : data < pdata)
     (hpdata : pdata = List.map (fun (d : Digit 2) => BitVec.ofNatLT d.val d.prop)
@@ -31,7 +34,7 @@ theorem bits_lt_of_lex_lt {data pdata : List (BitVec 1)}
     · rw [hpdata] at hlt
       exact hlt
 
-theorem bytes_lt_of_lex_lt {data pdata : List (BitVec 8)}
+lemma bytes_lt_of_lex_lt {data pdata : List (BitVec 8)}
     (hlen : data.length = pdata.length)
     (hlt : data < pdata)
     (hpdata : pdata = List.map (fun (d : Digit ⟨256, by decide⟩) => BitVec.ofNatLT d.val d.prop)
@@ -56,7 +59,7 @@ theorem bytes_lt_of_lex_lt {data pdata : List (BitVec 8)}
     · rw [hpdata] at hlt
       exact hlt
 
-theorem ofDigitsBE'_lt_of_shorter_than_modulus {r : Radix} {data : List (Digit r)} {P : Prime}
+lemma ofDigitsBE'_lt_of_shorter_than_modulus {r : Radix} {data : List (Digit r)} {P : Prime}
     (hlen : data.length < (RadixVec.toDigitsBE' r P.natVal).length) :
     RadixVec.ofDigitsBE' data < P.natVal := by
   have hr : 1 < r.val := r.prop
@@ -696,3 +699,93 @@ theorem to_le_bytes_intro :
       ext
       simp only [hval_eq]
     simp only [hSubtype, RadixVec.toDigitsBE_ofDigitsBE, List.Vector.reverse_map]
+
+theorem lt_intro {p self another} [Prime.BitsGT p 129]
+    (hmod : p.natVal = Lampe.Stdlib.Field.Bn254.ploNat +
+      Lampe.Stdlib.Field.Bn254.pow128 * Lampe.Stdlib.Field.Bn254.phiNat) :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.12::field::lt».call h![] h![self, another])
+      (fun r => r = decide (self.val < another.val)) := by
+  enter_decl
+  steps [Lampe.Stdlib.Compat.is_bn254_spec]
+  apply STHoare.iteTrue_intro
+  steps [Lampe.Stdlib.Field.Bn254.lt_intro (p := p) (hmod := hmod)]
+  rename_i hlt
+  simp [hlt]
+
+theorem from_le_bytes_intro :
+    STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::field::from_le_bytes».call h![N] h![bytes])
+    fun output => output = Fp.ofBytesLE (P := p) bytes.toList := by
+  rcases N with ⟨⟨N, hN⟩⟩
+  enter_decl
+  steps
+  loop_inv nat fun i _ _ =>
+    [v ↦ ⟨.field, (256 ^ i : Fp p)⟩] ⋆
+      [result ↦ ⟨.field, Fp.ofBytesLE (P := p) (bytes.toList.take i)⟩]
+  · simp
+  · intro i _ hhi
+    steps
+    · congr 1
+      conv at hhi => rhs; whnf
+      simp only [
+        Lens.modify, BitVec.ofNat_eq_ofNat, BitVec.reduceToNat, Builtin.instCastTpUField,
+        Builtin.instCastTpU, BitVec.natCast_eq_ofNat, List.take_succ, getElem?, decidableGetElem?,
+        List.Vector.toList_length
+      ]
+      simp only [hhi, Fp.ofBytesLE, List.map_append, ofBaseLE_append]
+      have hi_le : i ≤ N := by linarith
+      have hi_mod : i % 4294967296 = i := by
+        apply Nat.mod_eq_of_lt
+        linarith [hi_le, hN]
+      simp [*, List.Vector.get, ofBaseLE]
+      rw [mul_comm]
+      rfl
+  steps
+  simp_all
+  rw [List.take_of_length_le]
+  · simp
+
+theorem from_be_bytes_intro :
+    STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::field::from_be_bytes».call h![N] h![bytes])
+    fun output => output = Fp.ofBytesLE (P := p) bytes.toList.reverse := by
+  rcases N with ⟨⟨N, hN⟩⟩
+  enter_decl
+  steps
+  loop_inv nat fun i _ _ =>
+    [v ↦ ⟨.field, (256 ^ i : Fp p)⟩] ⋆
+      [result ↦ ⟨.field, Fp.ofBytesLE (P := p) (bytes.toList.reverse.take i)⟩]
+  · simp
+  · intro i _ hhi
+    steps
+    · congr 1
+      conv at hhi => rhs; whnf
+      simp only [
+        Lens.modify, BitVec.ofNat_eq_ofNat, Builtin.instCastTpUField, Builtin.instCastTpU,
+        BitVec.natCast_eq_ofNat, List.take_succ, getElem?, decidableGetElem?,
+        List.Vector.toList_length, List.length_reverse
+      ]
+      simp only [hhi, Fp.ofBytesLE, List.map_append, ofBaseLE_append]
+      have hi_le : i ≤ N := by linarith
+      have hi_mod : i % 4294967296 = i := by
+        apply Nat.mod_eq_of_lt
+        linarith [hi_le, hN]
+      have hlen32 : N < 2^32 := by simp [hN]
+      have hi32 : i < 2^32 := Nat.lt_trans hhi hlen32
+      have hidx := U32.index_toNat N i hlen32 hi32 hhi
+      simp_all [List.Vector.get, ofBaseLE, List.getElem_reverse]
+      rw [mul_comm]
+      rfl
+  steps
+  simp_all
+  rw [List.take_of_length_le]
+  · simp [List.length_reverse]
+
+theorem sgn0_intro :
+    STHoare p env ⟦⟧
+    («std-1.0.0-beta.12::field::sgn0».call h![] h![f])
+    (fun r => r = @Builtin.CastTp.cast Tp.field (Tp.u 1) _ p f) := by
+  enter_decl
+  simpa using
+    (Lampe.STHoare.cast_intro (p := p) (Γ := env) (tp := Tp.field) (tp' := Tp.u 1) (v := f))
