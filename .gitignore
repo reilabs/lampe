@@ -6,4 +6,4 @@
 .idea
 .vscode
 
-testing/MerkleFromScratch/lampe/lake-manifest.json
+testing/*/lampe/lake-manifest.json
