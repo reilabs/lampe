@@ -321,7 +321,7 @@ fn run_workspace_root(root: &Path, args: &ProgramOptions) -> Result<ExitCode, Er
 
     let crates = select_workspace_crates(root)?;
 
-    let lampe_targets: HashSet<PathBuf> = crates.iter().map(|path| path.normalize()).collect();
+    let lampe_targets: HashSet<PathBuf> = crates.iter().map(NormalizePath::normalize).collect();
 
     for crate_root in crates {
         let target_path = match &args.target {
@@ -359,9 +359,11 @@ fn run_workspace_root(root: &Path, args: &ProgramOptions) -> Result<ExitCode, Er
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::fs;
+
     use tempfile::TempDir;
+
+    use super::*;
 
     fn write_nargo_toml(dir: &Path, contents: &str) {
         fs::write(dir.join("Nargo.toml"), contents).expect("write Nargo.toml");
@@ -370,10 +372,7 @@ mod tests {
     fn create_crate(root: &Path, name: &str, with_lampe: bool) -> PathBuf {
         let crate_path = root.join(name);
         fs::create_dir_all(&crate_path).expect("create crate dir");
-        write_nargo_toml(
-            &crate_path,
-            "[package]\nname = \"test\"\ntype = \"bin\"\n",
-        );
+        write_nargo_toml(&crate_path, "[package]\nname = \"test\"\ntype = \"bin\"\n");
         if with_lampe {
             fs::create_dir_all(crate_path.join("lampe")).expect("create lampe dir");
         }
@@ -396,10 +395,7 @@ mod tests {
     #[test]
     fn is_workspace_root_false_for_package_manifest() {
         let temp = TempDir::new().expect("tempdir");
-        write_nargo_toml(
-            temp.path(),
-            "[package]\nname = \"root\"\ntype = \"bin\"\n",
-        );
+        write_nargo_toml(temp.path(), "[package]\nname = \"root\"\ntype = \"bin\"\n");
 
         assert!(!is_workspace_root(temp.path()).expect("workspace check"));
     }

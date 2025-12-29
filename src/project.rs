@@ -81,9 +81,9 @@ impl Project {
     fn package_is_lampe_target(&self, package: &Package) -> bool {
         use fm::NormalizePath;
 
-        self.lampe_targets.as_ref().map_or(false, |targets| {
-            targets.contains(&package.root_dir.normalize())
-        })
+        self.lampe_targets
+            .as_ref()
+            .is_some_and(|targets| targets.contains(&package.root_dir.normalize()))
     }
 
     fn package_has_lampe(&self, package: &Package) -> bool {
@@ -508,10 +508,7 @@ impl Project {
             } else if self.package_is_lampe_target(package) {
                 let package_identifier = NoirPackageIdentifier {
                     name:    package.name.to_string(),
-                    version: package
-                        .version
-                        .clone()
-                        .unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+                    version: package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
                 };
                 package_identifier.formatted(false)
             } else {
