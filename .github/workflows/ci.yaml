@@ -156,6 +156,8 @@ jobs:
       - name: Test (cargo)
         working-directory: lampe
         run: cargo test --all
+      - name: Remove build artifacts
+        run: rm -rf lampe/target
 
   end-to-end:
     name: "E2E Tests"
