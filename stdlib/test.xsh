@@ -45,6 +45,7 @@ def main():
     cargo build --release
 
     run_test(test_case)
+    cleanup_ci_artifacts()
 
 if __name__ == "__main__":
     main()
