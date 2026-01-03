@@ -1,0 +1,7 @@
+[package]
+name = "skyscraper"
+type = "lib"
+authors = [""]
+
+[dependencies]
+hasher = { path = "../hasher" }

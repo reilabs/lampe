@@ -3,6 +3,8 @@
 from pathlib import Path
 from tomlkit import dumps
 from tomlkit import parse
+from tomlkit import table
+import json
 import yaml
 import re
 
@@ -45,6 +47,52 @@ def load_toml(path):
 def write_toml(path, toml):
     with open(path, mode="w") as f:
         f.write(dumps(toml))
+
+def load_json(path):
+    with open(path, mode="r") as f:
+        return json.load(f)
+
+def write_json(path, data):
+    with open(path, mode="w") as f:
+        json.dump(data, f, indent=1)
+
+def set_lean_option(toml, option_key, value):
+    if 'leanOptions' not in toml:
+        toml['leanOptions'] = table()
+
+    current = toml['leanOptions']
+    parts = option_key.split('.')
+    for part in parts[:-1]:
+        if part not in current:
+            current[part] = table()
+        current = current[part]
+
+    current[parts[-1]] = value
+
+    return toml
+
+def set_toml_lean_option(toml_path, option_key, value):
+    lakefile_toml = load_toml(toml_path)
+
+    set_lean_option(lakefile_toml, option_key, value)
+
+    write_toml(toml_path, lakefile_toml)
+
+def set_packages_dir(toml, packages_dir):
+    toml['packagesDir'] = packages_dir
+    return toml
+
+def set_toml_packages_dir(toml_path, packages_dir):
+    lakefile_toml = load_toml(toml_path)
+
+    set_packages_dir(lakefile_toml, packages_dir)
+
+    write_toml(toml_path, lakefile_toml)
+
+def set_manifest_packages_dir(manifest_path, packages_dir):
+    manifest = load_json(manifest_path)
+    manifest['packagesDir'] = packages_dir
+    write_json(manifest_path, manifest)
 
 def load_yaml(path):
     with open(path, mode="r") as f:
