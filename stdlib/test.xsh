@@ -35,21 +35,15 @@ source @(project_root / 'scripts' / 'test.xsh')
 
 def main():
     args = parse_args()
-
     update_mode = args.update
+
     test_case = project_root / 'stdlib'
-    lake_dir = project_root / 'stdlib' / '.lake'
 
     if 'LAMPE_TEST_CURRENT_COMMIT_SHA' not in ${...}:
         $LAMPE_TEST_CURRENT_COMMIT_SHA=$(git rev-parse HEAD)
 
-    if not lake_dir.exists():
-        lake_dir.mkdir()
-
-    cd @(project_root)
-    cargo build --release
-
-    run_test(test_case, update_mode, lake_dir)
+    run_test(test_case, update_mode)
+    cleanup_ci_artifacts()
 
 if __name__ == "__main__":
     main()
