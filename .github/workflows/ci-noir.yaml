@@ -4,63 +4,45 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
+  build-ci-image:
+    uses: ./.github/workflows/build-ci-image.yaml
+    with:
+      allow_push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+  
   run-tests:
-    name: "Test Noir"
+    name: Test Noir
+    needs: build-ci-image
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout Noir repo
+      - name: Checkout Noir Repo
         uses: actions/checkout@v6
         with:
           repository: noir-lang/noir
           ref: 9a5b3695b42e391fa27c48e87b9bbb07523d664d
           path: noir
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: 1.85.1
-          components: rustfmt, clippy
-      - name: Build (cargo)
-        working-directory: noir
-        run: cargo build --package nargo_cli --release
-      - name: Install nargo CLI
-        working-directory: noir
-        run: cp ./target/release/nargo /usr/local/bin/
-      - name: Ensure test programs up-to-date
+      - name: Ensure Test Programs Up To Date
         working-directory: noir/test_programs
         run: ./rebuild.sh
-      - name: Checkout Lampe repo
+      - name: Checkout Lampe Repo
         uses: actions/checkout@v6
         with:
           path: lampe
-      - name: Install xonsh
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update
-          sudo apt-get install -yq python3 pipx
-          pipx install 'xonsh[full]'
-      - name: Install xonsh (python) dependencies
-        run: xonsh -c 'xpip install -r lampe/scripts/requirements.txt'
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: 1.85.0
-          components: rustfmt, clippy
-      - name: Build (cargo)
+      - name: Build (Cargo)
         working-directory: lampe
         run: cargo build --release
-      - name: Install (cargo)
+      - name: Install CLI
         working-directory: lampe
         run: cargo install --path .
-      - name: Set up Lean 4
-        uses: leanprover/lean-action@v1
-        with:
-          auto-config: false
-          build: false
-          test: false
-          lint: false
-          use-mathlib-cache: true
-          lake-package-directory: lampe/Lampe
-      - name: Run Lampe on each test_program
+      - name: Run Lampe on Each Test Program
         working-directory: lampe/testing_noir
         run: ./test.xsh --noir-path ${{ github.workspace }}/noir --log-stdout
