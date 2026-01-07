@@ -1,6 +1,19 @@
 name: CI Image
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - docker/ci/Dockerfile
+      - scripts/ci/toolchain_versions.toml
+      - scripts/ci/read_toolchain_versions.py
+      - scripts/requirements.txt
+      - rust-toolchain.toml
+      - Lampe/lean-toolchain
+      - stdlib/lampe/lean-toolchain
+      - Cargo.toml
+      - .github/workflows/ci-image.yaml
   push:
     branches:
       - main
@@ -23,6 +36,7 @@ jobs:
   build-image:
     name: Build CI Image
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout
         uses: actions/checkout@v6
