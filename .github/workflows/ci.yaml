@@ -7,42 +7,74 @@ on:
     branches:
       - main
   workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
 jobs:
+  build-ci-image:
+    uses: ./.github/workflows/build-ci-image.yaml
+    with:
+      allow_push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+  
   ensure-noir-version:
-    name: "Check Noir Versions"
+    name: Check Noir Versions
+    needs: build-ci-image
     runs-on: ubuntu-latest
+    env:
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout current branch
+      - name: Checkout Current Branch
         uses: actions/checkout@v6
-      - name: Install xonsh
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update
-          sudo apt-get install -yq python3 pipx
-          pipx install 'xonsh[full]'
-      - name: Install xonsh (python) dependencies
-        run: xonsh -c 'xpip install -r scripts/requirements.txt'
-      - name: Check if noir version match everywhere
+      - name: Check Noir Version Consistency
         run: scripts/check_noir_version_consistency.xsh
 
-  build-lake:
-    name: "Build Lampe"
+  build-lean:
+    name: Build Lampe
+    needs: build-ci-image
     runs-on: ubuntu-latest
+    env:
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout current branch (sparse)
+      - name: Checkout Current Branch (Sparse)
         uses: actions/checkout@v6
         with:
           sparse-checkout: |
             Lampe
-      - name: Set up Lean 4
-        uses: leanprover/lean-action@v1
+            stdlib/lampe/lean-toolchain
+            stdlib/lampe/lake-manifest.json
+      - name: Set Lake Package Dir
+        run: |
+          mkdir -p "$RUNNER_TEMP/lake-packages"
+          echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
+      - name: Restore Lake Packages Cache
+        uses: actions/cache@v4
         with:
-          auto-config: false
-          build: false
-          test: false
-          lint: false
-          use-mathlib-cache: true
-          lake-package-directory: Lampe
+          path: ${{ env.LAKE_PKG_DIR }}
+          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
+          restore-keys: |
+            lake-packages-${{ runner.os }}-
+      - name: Restore Lampe Build Cache
+        uses: actions/cache@v4
+        with:
+          path: Lampe/.lake/build
+          key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json') }}
+          restore-keys: |
+            lampe-build-${{ runner.os }}-
+      - name: Get Mathlib Cache
+        working-directory: Lampe
+        run: lake exe cache get
       - name: Make All (Lampe)
         working-directory: Lampe
         run: lake exe mk_all --check --lib Lampe
@@ -53,184 +85,230 @@ jobs:
         working-directory: Lampe
         run: lake test
 
-  build-stdlib:
-    name: "Build Stdlib"
-    needs: [ build-lake, build-cargo ]
+  build-rust:
+    name: Build CLI
+    needs: [build-ci-image, check-rust-formatting, lint-rust, test-rust]
     runs-on: ubuntu-latest
+    env:
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout current branch (sparse)
+      - name: Checkout Current Branch
         uses: actions/checkout@v6
-      - name: Install xonsh
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update
-          sudo apt-get install -yq python3 pipx
-          pipx install 'xonsh[full]'
-      - name: Install xonsh (python) dependencies
-        run: xonsh -c 'xpip install -r scripts/requirements.txt'
-      - name: Set up Lean 4
-        uses: leanprover/lean-action@v1
-        with:
-          auto-config: false
-          build: false
-          test: false
-          lint: false
-          use-mathlib-cache: true
-          lake-package-directory: Lampe
-      - name: Test Stdlib Extraction
-        run: ./stdlib/test.xsh
-
-  build-cargo:
-    name: "Build Rust"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout current branch
-        uses: actions/checkout@v6
-        with:
-          path: lampe
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.90.0
-          default: true
-          components: rustfmt, clippy
-      - name: Build (cargo)
-        working-directory: lampe
+      - name: Build (Cargo)
         run: cargo build --release
+      - name: Upload CLI Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lampe-cli-${{ github.sha }}
+          path: target/release/lampe
 
   check-rust-formatting:
-    name: "Check Rust Formatting"
-    runs-on: "ubuntu-latest"
+    name: Check Rust Formatting
+    needs: build-ci-image
+    runs-on: ubuntu-latest
+    env:
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
         with:
           submodules: recursive
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          profile: minimal
-          override: true
-          components: rustfmt
       - name: Check Formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo +nightly fmt --all -- --check
 
   lint-rust:
-    name: "Lint Rust"
-    needs: build-cargo
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout current branch
-        uses: actions/checkout@v6
-        with:
-          path: lampe
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.90.0
-          default: true
-          components: rustfmt, clippy
-      - name: Lint (clippy)
-        working-directory: lampe
-        run: RUSTFLAGS="-Dwarnings" cargo clippy --all-targets --all-features
-
-  test-cargo:
-    name: "Test Rust"
-    needs: build-cargo
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout current branch
-        uses: actions/checkout@v6
-        with:
-          path: lampe
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.90.0
-          default: true
-          components: rustfmt, clippy
-      - name: Test (cargo)
-        working-directory: lampe
-        run: cargo test --all
-
-  end-to-end:
-    name: "E2E Tests"
-    needs: [ build-lake, build-cargo ]
+    name: Lint Rust
+    needs: build-ci-image
     runs-on: ubuntu-latest
     env:
-      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout current branch
+      - name: Checkout Current Branch
         uses: actions/checkout@v6
-        with:
-          path: lampe
-      - name: Install xonsh
+      - name: Lint (Clippy)
+        run: RUSTFLAGS="-Dwarnings" cargo clippy --all-targets --all-features
+
+  test-rust:
+    name: Test Rust
+    needs: build-ci-image
+    runs-on: ubuntu-latest
+    env:
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Current Branch
+        uses: actions/checkout@v6
+      - name: Test (Cargo)
+        run: cargo test --all
+      - name: Remove Build Artifacts
+        run: rm -rf target
+
+  build-stdlib:
+    name: Build Stdlib
+    needs: [build-ci-image, build-rust, build-lean]
+    runs-on: ubuntu-latest
+    env:
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
+      LAMPE_KEEP_LAKE_CACHE: "1"
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Current Branch
+        uses: actions/checkout@v6
+      - name: Set Lake Package Dir
         run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update
-          sudo apt-get install -yq python3 pipx
-          pipx install 'xonsh[full]'
-      - name: Install xonsh (python) dependencies
-        working-directory: lampe
-        run: xonsh -c 'xpip install -r scripts/requirements.txt'
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+          mkdir -p "$RUNNER_TEMP/lake-packages"
+          echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
+      - name: Restore Lake Packages Cache
+        uses: actions/cache@v4
         with:
-          toolchain: 1.90.0
-          default: true
-          components: rustfmt, clippy
-      - name: Set up Lean 4
-        uses: leanprover/lean-action@v1
+          path: ${{ env.LAKE_PKG_DIR }}
+          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
+          restore-keys: |
+            lake-packages-${{ runner.os }}-
+      - name: Restore Lampe Build Cache
+        uses: actions/cache@v4
         with:
-          auto-config: false
-          build: false
-          test: false
-          lint: false
-          use-mathlib-cache: true
-          lake-package-directory: lampe/Lampe
-      - name: Run test script
-        working-directory: lampe
+          path: Lampe/.lake/build
+          key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json') }}
+          restore-keys: |
+            lampe-build-${{ runner.os }}-
+      - name: Restore Stdlib Build Cache
+        uses: actions/cache@v4
+        with:
+          path: stdlib/lampe/.lake/build
+          key: stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
+          restore-keys: |
+            stdlib-build-${{ runner.os }}-
+      - name: Download CLI Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lampe-cli-${{ github.sha }}
+          path: target/release
+      - name: Ensure CLI Executable
+        run: chmod +x target/release/lampe
+      - name: Test Stdlib Extraction
+        run: ./stdlib/test.xsh
+
+  end-to-end:
+    name: E2E Tests
+    needs: [build-ci-image, build-stdlib]
+    runs-on: ubuntu-latest
+    env:
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Current Branch
+        uses: actions/checkout@v6
+      - name: Set Lake Package Dir
+        run: |
+          mkdir -p "$RUNNER_TEMP/lake-packages"
+          echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
+      - name: Restore Lake Packages Cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.LAKE_PKG_DIR }}
+          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
+          restore-keys: |
+            lake-packages-${{ runner.os }}-
+      - name: Restore Lampe Build Cache
+        uses: actions/cache@v4
+        with:
+          path: Lampe/.lake/build
+          key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json') }}
+          restore-keys: |
+            lampe-build-${{ runner.os }}-
+      - name: Restore Stdlib Build Cache
+        uses: actions/cache@v4
+        with:
+          path: stdlib/lampe/.lake/build
+          key: stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
+          restore-keys: |
+            stdlib-build-${{ runner.os }}-
+      - name: Download CLI Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lampe-cli-${{ github.sha }}
+          path: target/release
+      - name: Ensure CLI Executable
+        run: chmod +x target/release/lampe
+      - name: Run Test Script
         run: ./testing/test.xsh
 
   examples:
-    name: "Examples"
-    needs: [ build-lake, build-cargo ]
+    name: Examples
+    needs: [build-ci-image, build-stdlib]
     runs-on: ubuntu-latest
     env:
+      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
+    container:
+      image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout current branch
+      - name: Checkout Current Branch
         uses: actions/checkout@v6
-        with:
-          path: lampe
-      - name: Install xonsh
+      - name: Set Lake Package Dir
         run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update
-          sudo apt-get install -yq python3 pipx
-          pipx install 'xonsh[full]'
-      - name: Install xonsh (python) dependencies
-        working-directory: lampe
-        run: xonsh -c 'xpip install -r scripts/requirements.txt'
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+          mkdir -p "$RUNNER_TEMP/lake-packages"
+          echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
+      - name: Restore Lake Packages Cache
+        uses: actions/cache@v4
         with:
-          toolchain: 1.90.0
-          default: true
-          components: rustfmt, clippy
-      - name: Set up Lean 4
-        uses: leanprover/lean-action@v1
+          path: ${{ env.LAKE_PKG_DIR }}
+          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
+          restore-keys: |
+            lake-packages-${{ runner.os }}-
+      - name: Restore Lampe Build Cache
+        uses: actions/cache@v4
         with:
-          auto-config: false
-          build: false
-          test: false
-          lint: false
-          use-mathlib-cache: true
-          lake-package-directory: lampe/Lampe
-      - name: Run test script on examples
-        working-directory: lampe
+          path: Lampe/.lake/build
+          key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json') }}
+          restore-keys: |
+            lampe-build-${{ runner.os }}-
+      - name: Restore Stdlib Build Cache
+        uses: actions/cache@v4
+        with:
+          path: stdlib/lampe/.lake/build
+          key: stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
+          restore-keys: |
+            stdlib-build-${{ runner.os }}-
+      - name: Download CLI Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lampe-cli-${{ github.sha }}
+          path: target/release
+      - name: Ensure CLI Executable
+        run: chmod +x target/release/lampe
+      - name: Run Test Script On Examples
         run: ./examples/test.xsh
