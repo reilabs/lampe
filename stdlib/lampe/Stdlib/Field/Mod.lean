@@ -363,12 +363,17 @@ theorem to_be_bytes_intro :
   · rename_i h v _
     subst_vars
     simp only [←List.Vector.toList_map, RadixVec.ofDigitsBE'_toList] at h
-    rw [List.Vector.map_toFin_map_ofFin] at h
     conv_rhs =>
       enter [2, 1, 1]
-      rw [ZMod.val_natCast, Nat.mod_eq_of_lt h]
+      rw [ZMod.val_natCast]
+      rw [Nat.mod_eq_of_lt h]
     apply List.Vector.eq
-    simp [RadixVec.toDigitsBE_ofDigitsBE]
+    rw [eq_comm]
+    simp only [
+      BitVec.toNat_ofFin, Fin.eta, RadixVec.toDigitsBE_ofDigitsBE,
+      List.Vector.toList_map, List.map_map
+    ]
+    convert List.map_id _
 
 set_option maxHeartbeats 300000
 theorem to_le_bits_intro :
@@ -715,8 +720,16 @@ theorem pow_32_intro {p self exponent} :
     simpa [digits] using hb
   have hb_digits :
       b.reverse.map (fun i => (i.toFin : Digit 2)) = digits := by
-    simp [hb_bits, List.Vector.reverse_map, List.Vector.toList_reverse]
-    exact List.Vector.map_toFin_map_ofFin (n := 1) (d := 32) (v := digits)
+    apply List.Vector.eq
+    have hcomp :
+        ((fun (i : BitVec 1) => i.toFin) ∘ (BitVec.ofFin (w := 1))) =
+          (fun x : Fin (2^1) => x) := by
+      funext x
+      simp [Function.comp, BitVec.toFin_ofFin]
+    simp [
+      hb_bits, List.Vector.reverse_map, List.Vector.toList_reverse, List.map_map,
+      hcomp
+    ]
   have hb_digits_list :
       b.toList.reverse.map (fun i => (i.toFin : Digit 2)) = digits.toList := by
     simpa [List.Vector.toList_reverse] using
