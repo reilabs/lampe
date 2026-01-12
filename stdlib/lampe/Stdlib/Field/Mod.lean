@@ -765,7 +765,7 @@ theorem pow_32_intro {p self exponent} :
       have hindex_lt : 32 - i < b.toList.length := by
         simpa [List.Vector.toList_length] using hindex_lt32
       have hmod : (4294967296 - i + 32) % 4294967296 = 32 - i := by
-        exact Nat.mod_u32_sub_add_eq i hi_le
+        exact Nat.mod_sub_add_eq 4294967296 i 32 hi_le (by decide)
       have hindex_fin :
           (⟨(4294967296 - i + 32) % 4294967296, by
               simp [hmod, hindex_lt32]⟩ : Fin 32) =
