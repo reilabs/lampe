@@ -150,6 +150,7 @@ theorem two_pow_128_spec {p} :
   rename_i hpow
   simpa [pow128] using hpow
 
+-- FIXME: steps requires this even tho it's an empty postcondition
 theorem lte_hint_intro {p a b} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::field::bn254::lte_hint».call h![] h![a, b])
@@ -157,6 +158,7 @@ theorem lte_hint_intro {p a b} :
   enter_decl
   steps
 
+-- FIXME: steps requires this even tho it's an empty postcondition
 theorem decompose_hint_intro {p x} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::field::bn254::decompose_hint».call h![] h![x])
