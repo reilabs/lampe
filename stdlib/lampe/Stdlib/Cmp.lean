@@ -1068,7 +1068,6 @@ theorem slice_ord_pure_spec {p T a b}
         Ordering.then_of_ne_eq]
 
   steps [equal_spec, Eq.ordering_eq_spec]
-  · trivial
 
   apply STHoare.ite_intro
   · intro
@@ -1102,7 +1101,6 @@ theorem tuple2_ord_pure_spec {p A B self other}
   resolve_trait
 
   steps [A_ord_f, equal_spec, Eq.ordering_eq_spec]
-  · exact ()
 
   apply STHoare.ite_intro
   · intro

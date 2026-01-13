@@ -30,7 +30,6 @@ def stub : Builtin := {
 -- Note that many of the names here explicitly do not follow the Lean naming scheme, as they have
 -- to match the name in extracted code that comes from Noir.
 def aes128Encrypt := stub
-def applyRangeConstraint := stub
 def arrayRefcount := stub
 def asWitness := stub
 def assertConstant := stub

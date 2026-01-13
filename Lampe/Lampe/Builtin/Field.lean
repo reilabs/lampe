@@ -6,9 +6,10 @@ For a prime `p`, a field element `a : Fp p`, and a bit size `w : U 32`,
 this builtin evaluates to `()` if and only if `a < 2^w`, i.e., it can be represented by `w` bits.
 Otherwise, an exception is thrown.
 
-In Noir, this builtin corresponds to `fn __assert_max_bit_size(self, bit_size: u32)` implemented for `Field`.
+In Noir, this builtin corresponds to `fn __assert_max_bit_size(self, bit_size: u32)` implemented
+for `Field`.
 -/
-def fApplyRangeConstraint := newPureBuiltin
+def applyRangeConstraint := newPureBuiltin
   ⟨[.field, (.u 32)], .unit⟩
   (fun h![a, w] => ⟨a.val < 2^w.toNat,
     fun _ => ()⟩)

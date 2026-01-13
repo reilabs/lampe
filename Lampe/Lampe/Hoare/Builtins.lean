@@ -311,8 +311,8 @@ theorem iGt_intro : STHoarePureBuiltin p Γ Builtin.iGt (by tauto) h![a, b] := b
 
 -- Field misc
 
-theorem fApplyRangeConstraint_intro :
-  STHoarePureBuiltin p Γ Builtin.fApplyRangeConstraint (by tauto) h![f, c] (a := ()) := by
+theorem applyRangeConstraint_intro :
+  STHoarePureBuiltin p Γ Builtin.applyRangeConstraint (by tauto) h![f, c] (a := ()) := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
