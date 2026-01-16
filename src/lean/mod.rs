@@ -14,7 +14,7 @@ pub const LEAN_QUOTE_START: &str = "«";
 pub const LEAN_QUOTE_END: &str = "»";
 
 /// Keywords that are built into Lean's syntax, so we need to quote them
-pub const LEAN_KEYWORDS: &[&str] = &["from", "meta"];
+pub const LEAN_KEYWORDS: &[&str] = &["all", "from", "meta"];
 
 fn conflicts_with_lean_keyword(text: &str) -> bool {
     LEAN_KEYWORDS.contains(&text)

@@ -2,7 +2,6 @@ import Lampe.Hoare.SepTotal
 
 import Lampe.Builtin.Arith
 import Lampe.Builtin.Array
-import Lampe.Builtin.BigInt
 import Lampe.Builtin.Bit
 import Lampe.Builtin.Cast
 import Lampe.Builtin.Cmp
@@ -72,6 +71,25 @@ def genericTotalPureBuiltin_intro {A : Type} {sgn : A → List Tp × Tp} {desc}
   any_goals rfl
   tauto
 
+theorem genericBuiltin_intro {A : Type} {a : A} {sgn desc args} :
+  STHoare p Γ
+    ⟦⟧
+    (.callBuiltin (sgn a).fst (sgn a).snd (Builtin.newGenericBuiltin sgn desc) args)
+    (fun v => desc a args v) := by
+  intro H st p
+  constructor
+  unfold mapToValHeapCondition
+  simp [Builtin.newGenericBuiltin, mapToValHeapCondition]
+
+  by_cases h: ∃v, desc a args v
+  · cases' h with v h
+    apply Builtin.genericOmni.ok
+    · exact h
+    · exists ∅, st, by simp, by simp, by simp [SLP.lift, h], st, ∅
+      simp_all
+  · apply Builtin.genericOmni.err
+    · simp_all
+    · simp
 
 -- Arithmetics
 
@@ -199,46 +217,6 @@ theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![ar
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
--- BigInt
-
-theorem bigIntEq_intro : STHoarePureBuiltin p Γ Builtin.bigIntEq (by tauto) h![a, b] (a := ()) := by
-   simp only [STHoarePureBuiltin, SLP.exists_pure]
-   apply pureBuiltin_intro_consequence <;> try tauto
-   tauto
-
-theorem bigIntAdd_intro : STHoarePureBuiltin p Γ Builtin.bigIntAdd (by tauto) h![a, b] (a := ()) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  apply pureBuiltin_intro_consequence <;> try tauto
-  tauto
-
-theorem bigIntSub_intro : STHoarePureBuiltin p Γ Builtin.bigIntSub (by tauto) h![a, b] (a := ()) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  apply pureBuiltin_intro_consequence <;> try tauto
-  tauto
-
-theorem bigIntMul_intro : STHoarePureBuiltin p Γ Builtin.bigIntMul (by tauto) h![a, b] (a := ()) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  apply pureBuiltin_intro_consequence <;> try tauto
-  tauto
-
-theorem bigIntDiv_intro : STHoarePureBuiltin p Γ Builtin.bigIntDiv (by tauto) h![a, b] (a := ()) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  apply pureBuiltin_intro_consequence <;> try tauto
-  tauto
-
-theorem bigIntFromLeBytes_intro : STHoarePureBuiltin p Γ Builtin.bigIntFromLeBytes (by tauto) h![bs, mbs] (a := ()) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  apply pureBuiltin_intro_consequence <;> try tauto
-  tauto
-
-theorem bigIntToLeBytes_intro : STHoarePureBuiltin p Γ Builtin.bigIntToLeBytes (by tauto) h![a] (a := ()) := by
-  simp only [STHoarePureBuiltin, SLP.exists_pure]
-  apply pureBuiltin_intro_consequence <;> try rfl
-  . dsimp only
-    intro h
-    use h
-  exact ()
-
 -- Bitwise
 
 def bNot_intro := genericTotalPureBuiltin_intro Builtin.bNot rfl ()
@@ -256,14 +234,14 @@ def iAnd_intro := genericTotalPureBuiltin_intro Builtin.iAnd rfl
 def iOr_intro := genericTotalPureBuiltin_intro Builtin.iOr rfl
 def iXor_intro := genericTotalPureBuiltin_intro Builtin.iXor rfl
 
-theorem iShl_intro {p Γ W} 
+theorem iShl_intro {p Γ W}
   {a b : Tp.denote p (.i W)}
   : STHoarePureBuiltin p Γ Builtin.iShl (by tauto) h![a, b] (a := W) := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
-theorem iShr_intro {p Γ W} 
+theorem iShr_intro {p Γ W}
   {a b : Tp.denote p (.i W)}
   : STHoarePureBuiltin p Γ Builtin.iShr (by tauto) h![a, b] (a := W) := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
@@ -306,6 +284,16 @@ theorem uLt_intro : STHoarePureBuiltin p Γ Builtin.uLt (by tauto) h![a, b] := b
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
+theorem uLeq_intro : STHoarePureBuiltin p Γ Builtin.uLeq (by tauto) h![a, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
+theorem uNeq_intro : STHoarePureBuiltin p Γ Builtin.uNeq (by tauto) h![a, b] := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
 theorem iLt_intro : STHoarePureBuiltin p Γ Builtin.iLt (by tauto) h![a, b] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
@@ -323,8 +311,8 @@ theorem iGt_intro : STHoarePureBuiltin p Γ Builtin.iGt (by tauto) h![a, b] := b
 
 -- Field misc
 
-theorem fApplyRangeConstraint_intro :
-  STHoarePureBuiltin p Γ Builtin.fApplyRangeConstraint (by tauto) h![f, c] (a := ()) := by
+theorem applyRangeConstraint_intro :
+  STHoarePureBuiltin p Γ Builtin.applyRangeConstraint (by tauto) h![f, c] (a := ()) := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
@@ -592,9 +580,59 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
       apply SLP.ent_star_top at h
       simp_all
 
+-- Field
+
+theorem toLeBits_intro {f : Tp.denote p Tp.field} :
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array N) Builtin.toLeBits h![f])
+    fun output => f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin).reverse := by
+  apply STHoare.consequence
+  case h_hoare =>
+    apply genericBuiltin_intro (sgn := fun s => ([.field], .array (.u 1) s))
+  · apply SLP.entails_self
+  · intro
+    apply SLP.entails_self
+
+theorem toBeBits_intro {f : Tp.denote p Tp.field} :
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array s) Builtin.toBeBits h![f])
+    fun output => f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin) := by
+  apply STHoare.consequence
+  case h_hoare =>
+    apply genericBuiltin_intro (sgn := fun s => ([.field], .array (.u 1) s))
+  · apply SLP.entails_self
+  · intro
+    apply SLP.entails_self
+
+theorem toLeRadix_intro {f : Tp.denote p Tp.field} {r : Tp.denote p (Tp.u 32)} :
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field, Tp.u 32] ((Tp.u 8).array s) Builtin.toLeRadix h![f, r])
+    fun output => f = RadixVec.ofLimbsBE r.toNat (output.map BitVec.toNat).reverse := by
+  apply STHoare.consequence
+  case h_hoare =>
+    apply genericBuiltin_intro (sgn := fun s => ([.field, .u 32], .array (.u 8) s))
+  · apply SLP.entails_self
+  · simp only
+    intro
+    apply SLP.entails_self
+
+
+theorem toBeRadix_intro {f : Tp.denote p Tp.field} {r : Tp.denote p (Tp.u 32)} :
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field, Tp.u 32] ((Tp.u 8).array s) Builtin.toBeRadix h![f, r])
+    fun output => f = RadixVec.ofLimbsBE r.toNat (output.map BitVec.toNat) := by
+  apply STHoare.consequence
+  case h_hoare =>
+    apply genericBuiltin_intro (sgn := fun s => ([.field, .u 32], .array (.u 8) s))
+  · apply SLP.entails_self
+  · simp only
+    intro
+    apply SLP.entails_self
+
 -- Misc
 
 theorem assert_intro : STHoarePureBuiltin p Γ Builtin.assert (by tauto) h![a] (a := ()) := by
+  simp only [STHoarePureBuiltin, SLP.exists_pure]
+  apply pureBuiltin_intro_consequence <;> try tauto
+  tauto
+
+theorem staticAssert_intro : STHoarePureBuiltin p Γ Builtin.staticAssert (by tauto) (a := tp) h![c, b] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto

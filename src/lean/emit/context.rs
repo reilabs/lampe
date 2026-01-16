@@ -123,13 +123,9 @@ impl EmitContext {
     /// [`LEAN_QUOTE_END`] if it is necessary.
     #[must_use]
     pub fn quote_name_if_needed(text: &str) -> String {
-        if !text.starts_with(LEAN_QUOTE_START) || !text.ends_with(LEAN_QUOTE_END) {
-            if text.contains("::") {
-                let text = text.replace(LEAN_QUOTE_START, "").replace(LEAN_QUOTE_END, "");
-                format!("{LEAN_QUOTE_START}{text}{LEAN_QUOTE_END}")
-            } else {
-                text.to_string()
-            }
+        if text.contains("::") {
+            let text = text.replace(LEAN_QUOTE_START, "").replace(LEAN_QUOTE_END, "");
+            format!("{LEAN_QUOTE_START}{text}{LEAN_QUOTE_END}")
         } else {
             text.to_string()
         }
@@ -158,6 +154,10 @@ mod test {
         assert_eq!(
             EmitContext::quote_name_if_needed("foo::bar42"),
             format!("{LEAN_QUOTE_START}foo::bar42{LEAN_QUOTE_END}")
+        );
+        assert_eq!(
+            EmitContext::quote_name_if_needed("«std-1.0.0-beta.12»::slice::«all»"),
+            format!("{LEAN_QUOTE_START}std-1.0.0-beta.12::slice::all{LEAN_QUOTE_END}")
         );
     }
 
