@@ -44,10 +44,6 @@ def fModBeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
   (@fun p h![_] => RadixVec.toDigitsBE' 2 p.natVal |>.map fun d => BitVec.ofNatLT d.val d.prop) --.of ⟨2, by linarith⟩ p.natVal |>.toDigitsBE.toList)
 
-#print fModBeBits
-
-  -- .reverse (decomposeToRadix 2 p.natVal (by tauto)))
-
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the byte representation of `p` in little-endian format.
 
