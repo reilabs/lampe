@@ -11,10 +11,17 @@
 // These occur in our Noir dependencies and cannot be avoided.
 #![allow(clippy::multiple_crate_versions)]
 
-use std::{fs, panic, path::PathBuf, process::ExitCode};
+use std::{
+    collections::HashSet,
+    fs,
+    panic,
+    path::{Path, PathBuf},
+    process::ExitCode,
+};
 
 use clap::{arg, Parser};
 use lampe::{noir_error, noir_error::file, Error, Project};
+use toml::Value;
 
 /// The default Noir project path for the CLI to extract from.
 const DEFAULT_NOIR_PROJECT_PATH: &str = "./";
@@ -167,16 +174,12 @@ pub fn run_test_mode(args: &ProgramOptions) -> Result<ExitCode, Error> {
 /// - [`Error`] if the extraction process fails for any reason.
 pub fn run(args: &ProgramOptions) -> Result<ExitCode, Error> {
     let noir_root_path = args.root.clone();
-    let target_path = args.target.clone().unwrap_or(noir_root_path.clone());
-    let project = Project::new(noir_root_path, target_path)?;
-
-    let result = project.extract(args.overwrite)?;
-
-    if result.has_warnings() {
-        for warning in &result.warnings {
-            eprintln!("{warning:?}");
-        }
+    if is_workspace_root(&noir_root_path)? {
+        return run_workspace_root(&noir_root_path, args);
     }
+
+    let target_path = args.target.clone().unwrap_or(noir_root_path.clone());
+    extract_project(noir_root_path, target_path, args.overwrite, None)?;
 
     Ok(ExitCode::SUCCESS)
 }
@@ -191,4 +194,243 @@ fn parse_path(path: &str) -> Result<PathBuf, String> {
         path = std::env::current_dir().unwrap().join(path).normalize();
     }
     Ok(path)
+}
+
+fn extract_project(
+    noir_root_path: PathBuf,
+    target_path: PathBuf,
+    overwrite: bool,
+    lampe_targets: Option<&HashSet<PathBuf>>,
+) -> Result<(), Error> {
+    let project = Project::new(noir_root_path, target_path)?;
+    let project = if let Some(targets) = lampe_targets {
+        project.with_lampe_targets(targets.clone())
+    } else {
+        project
+    };
+    let result = project.extract(overwrite)?;
+
+    if result.has_warnings() {
+        for warning in &result.warnings {
+            eprintln!("{warning:?}");
+        }
+    }
+
+    Ok(())
+}
+
+fn is_workspace_root(root: &Path) -> Result<bool, Error> {
+    if has_workspace_manifest(root)? {
+        return Ok(true);
+    }
+
+    if root.join("Nargo.toml").is_file() || root.join("lampe").is_dir() {
+        return Ok(false);
+    }
+
+    Ok(!list_workspace_crates(root)?.is_empty())
+}
+
+fn has_workspace_manifest(root: &Path) -> Result<bool, Error> {
+    let manifest_path = root.join("Nargo.toml");
+    if !manifest_path.is_file() {
+        return Ok(false);
+    }
+
+    let contents = fs::read_to_string(&manifest_path).map_err(|err| {
+        file::Error::Other(format!(
+            "Unable to read workspace manifest {}: {err:?}",
+            manifest_path.as_os_str().display()
+        ))
+    })?;
+    let parsed: Value = toml::from_str(&contents).map_err(|err| {
+        file::Error::Other(format!(
+            "Unable to parse workspace manifest {}: {err:?}",
+            manifest_path.as_os_str().display()
+        ))
+    })?;
+
+    Ok(parsed.get("workspace").is_some())
+}
+
+fn list_workspace_crates(root: &Path) -> Result<Vec<PathBuf>, Error> {
+    let list = fs::read_dir(root).map_err(|_| {
+        file::Error::Other(format!(
+            "Unable to read directory {}",
+            root.as_os_str().display()
+        ))
+    })?;
+
+    let mut crates = Vec::new();
+    for entry in list {
+        let entry =
+            entry.map_err(|err| file::Error::Other(format!("Unable to read entry: {err:?}")))?;
+        if !entry
+            .metadata()
+            .map_err(|_| {
+                file::Error::Other(format!(
+                    "Unable to read metadata of {}",
+                    entry.file_name().display()
+                ))
+            })?
+            .is_dir()
+        {
+            continue;
+        }
+
+        let path = entry.path();
+        if path.join("Nargo.toml").is_file() {
+            crates.push(path);
+        }
+    }
+
+    crates.sort();
+    Ok(crates)
+}
+
+fn select_workspace_crates(root: &Path) -> Result<Vec<PathBuf>, Error> {
+    let crates = list_workspace_crates(root)?;
+    if crates.is_empty() {
+        return Err(file::Error::Other(format!(
+            "No Nargo.toml files found under {}",
+            root.as_os_str().display()
+        ))
+        .into());
+    }
+
+    // If any crates already have Lampe output, only re-extract those.
+    let crates_with_lampe: Vec<PathBuf> = crates
+        .iter()
+        .filter(|path| path.join("lampe").is_dir())
+        .cloned()
+        .collect();
+
+    if crates_with_lampe.is_empty() {
+        return Err(file::Error::Other(format!(
+            "No workspace crates with lampe output found under {}",
+            root.as_os_str().display()
+        ))
+        .into());
+    }
+
+    Ok(crates_with_lampe)
+}
+
+fn run_workspace_root(root: &Path, args: &ProgramOptions) -> Result<ExitCode, Error> {
+    use fm::NormalizePath;
+
+    let crates = select_workspace_crates(root)?;
+
+    let lampe_targets: HashSet<PathBuf> = crates.iter().map(NormalizePath::normalize).collect();
+
+    for crate_root in crates {
+        let target_path = match &args.target {
+            Some(base) => {
+                let crate_name = crate_root.file_name().ok_or_else(|| {
+                    file::Error::Other(format!(
+                        "Unable to resolve crate directory name for {}",
+                        crate_root.as_os_str().display()
+                    ))
+                })?;
+                let target = base.join(crate_name);
+                if !target.exists() {
+                    fs::create_dir_all(&target).map_err(|err| {
+                        file::Error::Other(format!(
+                            "Unable to create target directory {}: {err:?}",
+                            target.as_os_str().display()
+                        ))
+                    })?;
+                }
+                target
+            }
+            None => crate_root.clone(),
+        };
+
+        extract_project(
+            crate_root,
+            target_path,
+            args.overwrite,
+            Some(&lampe_targets),
+        )?;
+    }
+
+    Ok(ExitCode::SUCCESS)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+    };
+
+    use tempfile::TempDir;
+
+    use super::{is_workspace_root, list_workspace_crates, select_workspace_crates};
+
+    fn write_nargo_toml(dir: &Path, contents: &str) {
+        fs::write(dir.join("Nargo.toml"), contents).expect("write Nargo.toml");
+    }
+
+    fn create_crate(root: &Path, name: &str, with_lampe: bool) -> PathBuf {
+        let crate_path = root.join(name);
+        fs::create_dir_all(&crate_path).expect("create crate dir");
+        write_nargo_toml(&crate_path, "[package]\nname = \"test\"\ntype = \"bin\"\n");
+        if with_lampe {
+            fs::create_dir_all(crate_path.join("lampe")).expect("create lampe dir");
+        }
+        crate_path
+    }
+
+    #[test]
+    fn list_workspace_crates_finds_subdirs_with_nargo() {
+        let temp = TempDir::new().expect("tempdir");
+        let root = temp.path();
+
+        let crate_b = create_crate(root, "b", false);
+        let crate_a = create_crate(root, "a", false);
+        fs::create_dir_all(root.join("c")).expect("create non-crate dir");
+
+        let crates = list_workspace_crates(root).expect("list crates");
+        assert_eq!(crates, vec![crate_a, crate_b]);
+    }
+
+    #[test]
+    fn is_workspace_root_false_for_package_manifest() {
+        let temp = TempDir::new().expect("tempdir");
+        write_nargo_toml(temp.path(), "[package]\nname = \"root\"\ntype = \"bin\"\n");
+
+        assert!(!is_workspace_root(temp.path()).expect("workspace check"));
+    }
+
+    #[test]
+    fn is_workspace_root_true_for_workspace_manifest() {
+        let temp = TempDir::new().expect("tempdir");
+        write_nargo_toml(temp.path(), "[workspace]\nmembers = [\"a\"]\n");
+
+        assert!(is_workspace_root(temp.path()).expect("workspace check"));
+    }
+
+    #[test]
+    fn select_workspace_crates_filters_without_lampe() {
+        let temp = TempDir::new().expect("tempdir");
+        let root = temp.path();
+
+        let crate_a = create_crate(root, "a", true);
+        create_crate(root, "b", false);
+
+        let crates = select_workspace_crates(root).expect("select crates");
+        assert_eq!(crates, vec![crate_a]);
+    }
+
+    #[test]
+    fn select_workspace_crates_errors_without_lampe_crates() {
+        let temp = TempDir::new().expect("tempdir");
+        let root = temp.path();
+
+        create_crate(root, "a", false);
+        create_crate(root, "b", false);
+
+        assert!(select_workspace_crates(root).is_err());
+    }
 }
