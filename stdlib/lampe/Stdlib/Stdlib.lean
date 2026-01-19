@@ -1,5 +1,6 @@
 import Stdlib.Append
 import Stdlib.Array.CheckShuffle
+import Stdlib.Ext
 import Stdlib.Array.Mod
 import Stdlib.Cmp
 import Stdlib.Collections.BoundedVec

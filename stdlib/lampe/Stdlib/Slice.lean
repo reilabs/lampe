@@ -6,7 +6,7 @@ import Stdlib.TraitMethods
 namespace Lampe.Stdlib.Slice
 open «std-1.0.0-beta.12»
 
-set_option maxRecDepth 10000
+set_option maxRecDepth 1000
 
 set_option Lampe.pp.Expr true
 set_option Lampe.pp.STHoare true
@@ -601,4 +601,3 @@ theorem any_pure_spec {p T Env l f fb fEmb}
     simp_all only [List.any_eq_true, Bool.decide_or, Bool.decide_eq_true, List.any_append,
       List.any_cons, List.any_nil, Bool.or_false]
     rw [←List.any_eq]
-

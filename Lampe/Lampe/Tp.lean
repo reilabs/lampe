@@ -22,7 +22,6 @@ variable (p : Prime)
 inductive Tp where
 | u (size : Nat)
 | i (size : Nat)
-| bi -- BigInt
 | bool
 | unit
 | str (size: U 32)
@@ -162,7 +161,6 @@ def Tp.denoteArgs : List Tp → Type
 def Tp.denote : Tp → Type
 | .u n => U n
 | .i n => I n
-| .bi => Int
 | .bool => Bool
 | .unit => Unit
 | .str n => NoirStr n.toNat
@@ -202,7 +200,6 @@ def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplie
   | Tp.field => mkAppM `Lampe.Fp #[p]
   | Tp.u n => mkAppM `Lampe.U #[n]
   | Tp.i n => mkAppM `Lampe.I #[n]
-  | Tp.bi => mkAppM `Int #[]
   | Tp.bool => mkAppM `Bool #[]
   | Tp.unit => mkAppM `Unit #[]
   | Tp.str n =>
@@ -238,7 +235,7 @@ def Tp.zeroArgs (args : List Tp) : HList (Tp.denote p) args :=
 
 def Tp.zero (tp : Tp) : Tp.denote p tp :=
 match tp with
-| .u _ | .i _ | .bi | .field => 0
+| .u _ | .i _ | .field => 0
 | .bool => False
 | .unit => ()
 | .str n => List.Vector.replicate n.toNat 0

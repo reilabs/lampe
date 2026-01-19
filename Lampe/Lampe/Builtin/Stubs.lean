@@ -30,7 +30,6 @@ def stub : Builtin := {
 -- Note that many of the names here explicitly do not follow the Lean naming scheme, as they have
 -- to match the name in extracted code that comes from Noir.
 def aes128Encrypt := stub
-def applyRangeConstraint := stub
 def arrayRefcount := stub
 def asWitness := stub
 def assertConstant := stub
@@ -45,22 +44,11 @@ def embeddedCurveAdd := stub
 def fmtstrAsCtstring := stub
 def keccakf1600 := stub
 def mkFormatString := stub
-def modulesLeBytes := stub
-def modulusBeBits := stub
-def modulusBeBytes := stub
-def modulusLeBits := stub
-def modulusLeBytes := stub
-def modulusNumBits := stub
 def multiScalarMul := stub
 def poseidon2Permutation := stub
 def recursiveAggregation := stub
 def sha256Compression := stub
 def sliceRefcount := stub
-def staticAssert := stub
 def strAsCtstring := stub
-def toBeBits := stub
-def toBeRadix := stub
-def toLeBits := stub
-def toLeRadix := stub
 
 end Lampe.Builtin

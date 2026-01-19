@@ -3,7 +3,6 @@ import Lampe.Ast.Extensions
 import Lampe.Builtin.Arith
 import Lampe.Builtin.Array
 import Lampe.Builtin.Basic
-import Lampe.Builtin.BigInt
 import Lampe.Builtin.Bit
 import Lampe.Builtin.Cast
 import Lampe.Builtin.Cmp
