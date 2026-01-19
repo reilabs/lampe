@@ -36,6 +36,8 @@ except NameError:
     project_root = get_project_root()
 # --- End of copied part.
 
+source @(project_root / "scripts" / "utils.xsh")
+
 def get_script_dir():
     return project_root / "scripts"
 
