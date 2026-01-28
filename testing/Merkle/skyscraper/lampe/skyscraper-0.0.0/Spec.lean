@@ -4,8 +4,7 @@ import «skyscraper-0.0.0».Extracted
 import «skyscraper-0.0.0».Field
 import «skyscraper-0.0.0».Ref
 
-import «skyscraper-0.0.0».ForStdlib.Field
-import «skyscraper-0.0.0».ForStdlib.Slice
+import Stdlib.Stdlib
 
 open Lampe
 
@@ -42,6 +41,33 @@ theorem List.takeD_eq_take_append : List.takeD n l pad = List.take n l ++ List.r
     · simp [List.takeD, List.take, ih]
 
 end utils
+
+section byte_conversion
+
+-- Prove that stdlib env is a subset of skyscraper env (since skyscraper includes stdlib)
+lemma stdlib_env_subset : «std-1.0.0-beta.12».env ⊆ env := by
+  unfold env
+  simp only [Env.subset_append_right]
+
+-- The stdlib theorems now use Fp.toBytesLE/Fp.ofBytesLE directly
+-- We just need to lift them to the skyscraper env using is_mono
+
+theorem to_le_bytes_intro {input : Fp lp} : STHoare lp env ⟦⟧
+    («std-1.0.0-beta.12::field::to_le_bytes».call h![32] h![input])
+    fun v => v = Fp.toBytesLE 32 input :=
+  STHoare.is_mono stdlib_env_subset Lampe.Stdlib.Field.to_le_bytes_intro
+
+theorem from_le_bytes_intro {input : List.Vector (U 8) 32} : STHoare lp env ⟦⟧
+    («std-1.0.0-beta.12::field::from_le_bytes».call h![32] h![input])
+    fun output => output = Fp.ofBytesLE input.toList :=
+  STHoare.is_mono stdlib_env_subset Lampe.Stdlib.Field.from_le_bytes_intro
+
+theorem as_array_intro {input : List (U 8)} : STHoare lp env ⟦⟧
+    («std-1.0.0-beta.12::slice::as_array».call h![Tp.u 8, 32] h![input])
+    fun r => r.toList = input :=
+  STHoare.is_mono stdlib_env_subset Lampe.Stdlib.Slice.as_array_spec
+
+end byte_conversion
 
 section globals
 
@@ -106,7 +132,8 @@ end components
 
 section bar
 
-open Stdlib Field Slice in
+set_option maxHeartbeats 800000 in
+open Lampe.Stdlib.Field Lampe.Stdlib.Slice in
 theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h![] h![input])
     fun output => output = Ref.bar input := by
   enter_decl
@@ -239,9 +266,10 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
       steps
   steps [as_array_intro, from_le_bytes_intro]
 
-  rotate_left
-  · subst_vars; rfl
-  · subst_vars; rfl
+  all_goals subst_vars
+  show Fp.ofBytesLE (List.Vector.toList new_bytes_array) = Ref.bar input
+  unfold Ref.bar
+  congr 1
 
 end bar
 
