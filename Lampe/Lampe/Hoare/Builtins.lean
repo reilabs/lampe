@@ -584,7 +584,7 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
 
 theorem toLeBits_intro {f : Tp.denote p Tp.field} :
     STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array N) Builtin.toLeBits h![f])
-    fun output => f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin).reverse := by
+    fun output => f = RadixVec.ofDigitsLE (r := 2) (output.map BitVec.toFin) := by
   apply STHoare.consequence
   case h_hoare =>
     apply genericBuiltin_intro (sgn := fun s => ([.field], .array (.u 1) s))
@@ -604,7 +604,7 @@ theorem toBeBits_intro {f : Tp.denote p Tp.field} :
 
 theorem toLeRadix_intro {f : Tp.denote p Tp.field} {r : Tp.denote p (Tp.u 32)} :
     STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field, Tp.u 32] ((Tp.u 8).array s) Builtin.toLeRadix h![f, r])
-    fun output => f = RadixVec.ofLimbsBE r.toNat (output.map BitVec.toNat).reverse := by
+    fun output => f = RadixVec.ofLimbsLE r.toNat (output.map BitVec.toNat) := by
   apply STHoare.consequence
   case h_hoare =>
     apply genericBuiltin_intro (sgn := fun s => ([.field, .u 32], .array (.u 8) s))
