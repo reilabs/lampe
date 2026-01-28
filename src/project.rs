@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fmt::Debug, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+    path::PathBuf,
+};
 
 use fm::FileManager;
 use itertools::Itertools;
@@ -38,6 +42,9 @@ pub struct Project {
 
     /// Nargo object keeping parsed files
     pub nargo_parsed_files: ParsedFiles,
+
+    /// Workspace packages treated as already having Lampe output.
+    lampe_targets: Option<HashSet<PathBuf>>,
 }
 
 impl Project {
@@ -61,7 +68,30 @@ impl Project {
             nargo_workspace,
             nargo_file_manager,
             nargo_parsed_files,
+            lampe_targets: None,
         })
+    }
+
+    #[must_use]
+    pub fn with_lampe_targets(mut self, targets: HashSet<PathBuf>) -> Self {
+        self.lampe_targets = Some(targets);
+        self
+    }
+
+    fn package_is_lampe_target(&self, package: &Package) -> bool {
+        use fm::NormalizePath;
+
+        self.lampe_targets
+            .as_ref()
+            .is_some_and(|targets| targets.contains(&package.root_dir.normalize()))
+    }
+
+    fn package_has_lampe(&self, package: &Package) -> bool {
+        if self.package_is_lampe_target(package) {
+            return true;
+        }
+
+        file_generator::has_lampe(package)
     }
 
     /// Extracts Noir code as Lean creating Lampe project structure in Noir
@@ -147,10 +177,10 @@ impl Project {
         warnings.extend(res.warnings);
         let extracted_code = res.data;
 
-        let additional_dependencies = Self::get_dependencies_with_lampe(package)?;
+        let additional_dependencies = self.get_dependencies_with_lampe(package)?;
 
         // Collect direct dependencies that already have lampe
-        let direct_dependencies_with_lampe = Self::collect_direct_dependencies_with_lampe(package);
+        let direct_dependencies_with_lampe = self.collect_direct_dependencies_with_lampe(package);
 
         // Add path-based dependencies for the direct extracted dependencies only
         let path_dependencies =
@@ -300,7 +330,7 @@ impl Project {
                 warnings.extend(res.warnings);
 
                 let direct_deps_with_lampe =
-                    Self::collect_direct_dependencies_with_lampe(dep_package);
+                    self.collect_direct_dependencies_with_lampe(dep_package);
 
                 let direct_deps_ids: Vec<NoirPackageIdentifier> =
                     direct_deps_without_lampe.keys().cloned().collect();
@@ -323,7 +353,10 @@ impl Project {
     }
 
     /// Collects direct dependencies that already have lampe directories
-    fn collect_direct_dependencies_with_lampe(package: &Package) -> Vec<NoirPackageIdentifier> {
+    fn collect_direct_dependencies_with_lampe(
+        &self,
+        package: &Package,
+    ) -> Vec<NoirPackageIdentifier> {
         let mut result = vec![];
 
         for dependency in package.dependencies.values() {
@@ -331,7 +364,7 @@ impl Project {
                 Dependency::Local { package } | Dependency::Remote { package } => package,
             };
 
-            if !file_generator::has_lampe(dep_package) {
+            if !self.package_has_lampe(dep_package) {
                 continue;
             }
 
@@ -363,7 +396,7 @@ impl Project {
                 Dependency::Local { package } | Dependency::Remote { package } => package,
             };
 
-            if file_generator::has_lampe(dep_package) {
+            if self.package_has_lampe(dep_package) {
                 continue;
             }
 
@@ -403,7 +436,7 @@ impl Project {
                 Dependency::Local { package } | Dependency::Remote { package } => package,
             };
 
-            if file_generator::has_lampe(dep_package) {
+            if self.package_has_lampe(dep_package) {
                 continue;
             }
 
@@ -438,6 +471,7 @@ impl Project {
     }
 
     fn get_dependencies_with_lampe(
+        &self,
         package: &Package,
     ) -> Result<Vec<Box<dyn LeanDependency>>, Error> {
         let mut result = vec![];
@@ -465,11 +499,21 @@ impl Project {
                 Dependency::Local { package } | Dependency::Remote { package } => package,
             };
 
-            if !file_generator::has_lampe(package) {
+            if !self.package_has_lampe(package) {
                 continue;
             }
 
-            let lean_dependency_name = file_generator::read_lampe_package_name(package)?;
+            let lean_dependency_name = if file_generator::has_lampe(package) {
+                file_generator::read_lampe_package_name(package)?
+            } else if self.package_is_lampe_target(package) {
+                let package_identifier = NoirPackageIdentifier {
+                    name:    package.name.to_string(),
+                    version: package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
+                };
+                package_identifier.formatted(false)
+            } else {
+                continue;
+            };
 
             result.push(file_generator::get_lean_dependency(
                 &lean_dependency_name,
