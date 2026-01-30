@@ -32,6 +32,22 @@ theorem BitVec.ofFin_toFin_comp (n : ℕ) :
   funext x
   rfl
 
+namespace Lampe
+
+lemma map_toFin_ofFin_eq {n : Nat} (digits : List.Vector (Digit 2) n) :
+    (digits.map (BitVec.ofFin (w := 1))).map (fun i => (i.toFin : Digit 2)) = digits := by
+  have hcomp :
+      ((fun (i : BitVec 1) => i.toFin) ∘ (BitVec.ofFin (w := 1))) =
+        (fun x : Fin (2^1) => x) := by
+    funext x
+    simp [Function.comp, BitVec.toFin_ofFin]
+  apply List.Vector.eq
+  simp [
+    List.Vector.toList_map, List.map_map, Function.comp, hcomp, List.map_id
+  ]
+
+end Lampe
+
 lemma U32.index_toNat (len i : ℕ) (hlen : len < 2^32) (hi : i < 2^32) (hi_lt : i < len) :
     (({ toFin := ⟨len, hlen⟩ } : U 32) - 1 - (BitVec.ofNatLT i hi)).toNat = len - 1 - i := by
   have h1 : ({ toFin := ⟨len, hlen⟩ } : U 32).toNat = len := by simp

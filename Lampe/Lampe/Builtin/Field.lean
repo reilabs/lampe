@@ -16,7 +16,7 @@ def applyRangeConstraint := newPureBuiltin
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the number of bits of `p`.
-We asdecomposeWithRadix `log p + 1 < 2^64`, i.e., `p`'s size can be represented by a uint of bit-size `64`.
+We assume `log p + 1 < 2^64`, i.e., `p`'s size can be represented by a uint of bit-size `64`.
 Otherwise, this builtin throws an exception.
 
 In Noir, this builtin corresponds to `fn modulus_num_bits() -> u64` implemented for `Field`.
@@ -33,7 +33,7 @@ In Noir, this builtin corresponds to `fn modulus_le_bits() -> [u1]` implemented 
 -/
 def fModLeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
-  (@fun p h![_] => RadixVec.of ⟨2, by linarith⟩ p.natVal |>.toDigitsBE.toList.reverse)
+  (@fun p h![_] => (RadixVec.toDigitsLE' 2 p.natVal).map BitVec.ofFin)
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
@@ -42,7 +42,7 @@ In Noir, this builtin corresponds to `fn modulus_be_bits() -> [u1]` implemented 
 -/
 def fModBeBits := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 1))⟩
-  (@fun p h![_] => RadixVec.toDigitsBE' 2 p.natVal |>.map fun d => BitVec.ofNatLT d.val d.prop) --.of ⟨2, by linarith⟩ p.natVal |>.toDigitsBE.toList)
+  (@fun p h![_] => (RadixVec.toDigitsBE' 2 p.natVal).map BitVec.ofFin)
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the byte representation of `p` in little-endian format.
@@ -51,7 +51,7 @@ In Noir, this builtin corresponds to `fn modulus_le_bytes() -> [u8]` implemented
 -/
 def fModLeBytes := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 8))⟩
-  (@fun p h![_] => RadixVec.of ⟨256, by linarith⟩ p.natVal |>.toDigitsBE.toList.reverse)
+  (@fun p h![_] => (RadixVec.toDigitsLE' R256 p.natVal).map BitVec.ofFin)
 
 /--
 For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit representation of `p` in big-endian format.
@@ -60,7 +60,7 @@ In Noir, this builtin corresponds to `fn modulus_be_bytes() -> [u8]` implemented
 -/
 def fModBeBytes := newTotalPureBuiltin
   ⟨[.field], (.slice (.u 8))⟩
-  (@fun p h![_] => RadixVec.of ⟨256, by linarith⟩ p.natVal |>.toDigitsBE.toList)
+  (@fun p h![_] => (RadixVec.toDigitsBE' R256 p.natVal).map BitVec.ofFin)
 
 /--
 Represents the builtin that converts a field element to an unsigned integer.
@@ -134,7 +134,7 @@ little-endian format.
 -/
 def modulusLeBits : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 1))⟩
-  (fun {p} h![] => RadixVec.of ⟨2, by linarith⟩ p.natVal |>.toDigitsBE.toList.reverse)
+  (fun {p} h![] => (RadixVec.toDigitsLE' 2 p.natVal).map BitVec.ofFin)
 
 /--
 Represents the builtin that returns the bit representation of the modulus of a field in
@@ -142,7 +142,7 @@ big-endian format.
 -/
 def modulusBeBits : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 1))⟩
-  (fun {p} h![] => RadixVec.toDigitsBE' 2 p.natVal |>.map fun d => BitVec.ofNatLT d.val d.prop)
+  (fun {p} h![] => (RadixVec.toDigitsBE' 2 p.natVal).map BitVec.ofFin)
 
 /--
 Represents the builtin that returns the byte representation of the modulus of a field in
@@ -150,7 +150,7 @@ little-endian format.
 -/
 def modulusLeBytes : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 8))⟩
-  (fun {p} h![] => RadixVec.of ⟨256, by linarith⟩ p.natVal |>.toDigitsBE.toList.reverse)
+  (fun {p} h![] => (RadixVec.toDigitsLE' R256 p.natVal).map BitVec.ofFin)
 
 /--
 Represents the builtin that returns the byte representation of the modulus of a field in
@@ -158,7 +158,7 @@ big-endian format.
 -/
 def modulusBeBytes : Builtin := newTotalPureBuiltin
   ⟨[], (.slice (.u 8))⟩
-  (fun {p} h![] => RadixVec.of ⟨256, by linarith⟩ p.natVal |>.toDigitsBE.toList)
+  (fun {p} h![] => (RadixVec.toDigitsBE' R256 p.natVal).map BitVec.ofFin)
 
 /--
 Represents the builtin that returns the number of bits in the modulus of a field.
@@ -176,7 +176,7 @@ Fails if `f ≥ 2^s`.
 def toLeBits : Builtin := newGenericBuiltin
   (fun s => ([.field], .array (.u 1) s))
   fun _ h![f] output =>
-    f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin).reverse
+    f = RadixVec.ofDigitsLE (r := 2) (output.map BitVec.toFin)
 
 /--
 Represents the builtin that converts a field element to its bit representation in big-endian format.
@@ -197,7 +197,7 @@ Fails if `r ≤ 1` or `f ≥ 2^s`.
 def toLeRadix : Builtin := newGenericBuiltin
   (fun s => ([.field, .u 32], .array (.u 8) s))
   fun _ h![f, r] output =>
-    f = RadixVec.ofLimbsBE r.toNat (output.map BitVec.toNat).reverse
+    f = RadixVec.ofLimbsLE r.toNat (output.map BitVec.toNat)
 
 /--
 Represents the builtin that converts a field element to its radix representation in big-endian

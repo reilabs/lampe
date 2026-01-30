@@ -1,0 +1,6 @@
+[package]
+name = "hasher"
+type = "lib"
+authors = [""]
+
+[dependencies]
