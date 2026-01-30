@@ -201,7 +201,7 @@ theorem to_be_bits_intro :
       simp only [this, List.take_length] at hlt
       apply bits_lt_of_lex_lt this hlt
       subst pbits
-      simp [Lampe.Builtin.modulus_bits_be]
+      simp [Lampe.Builtin.modulusBeBits]
     · loop_inv nat fun _ _ _ => [ok ↦ ⟨_, true⟩]
       · congr
         simp only [
@@ -223,7 +223,7 @@ theorem to_be_bits_intro :
         · assumption
       apply ofDigitsBE'_lt_of_shorter_than_modulus (P := p)
       subst pbits
-      simpa [Lampe.Builtin.modulus_bits_be, RadixVec.toDigitsBE'] using hlen_lt
+      simpa [Lampe.Builtin.modulusBeBits, RadixVec.toDigitsBE'] using hlen_lt
   steps
   rotate_left
   · rename_i v _
@@ -345,7 +345,7 @@ theorem to_le_bits_intro :
             (RadixVec.toDigitsBE' 2 p.natVal) := by
         subst pbits
         simp [
-          Lampe.Builtin.modulus_bits_le, RadixVec.toDigitsLE', RadixVec.toDigitsBE',
+          Lampe.Builtin.modulusLeBits, RadixVec.toDigitsLE', RadixVec.toDigitsBE',
           List.map_reverse, List.reverse_reverse
         ]
       have hlen_rev : bits.reverse.length = pbits.reverse.length := by
@@ -373,7 +373,7 @@ theorem to_le_bits_intro :
         · exact h
       apply ofDigitsBE'_lt_of_shorter_than_modulus (P := p)
       subst pbits
-      simpa [Lampe.Builtin.modulus_bits_le, RadixVec.toDigitsLE', RadixVec.toDigitsBE'] using hlen_lt
+      simpa [Lampe.Builtin.modulusLeBits, RadixVec.toDigitsLE', RadixVec.toDigitsBE'] using hlen_lt
   steps
   rotate_left
   · rename_i v _
@@ -502,7 +502,7 @@ theorem to_be_bytes_intro :
           List.map (fun (d : Digit R256) => BitVec.ofNatLT d.val d.prop)
             (RadixVec.toDigitsBE' R256 p.natVal) := by
         subst pbytes
-        simp [Lampe.Builtin.modulus_bytes_be, RadixVec.toDigitsBE']
+        simp [Lampe.Builtin.modulusBeBytes, RadixVec.toDigitsBE']
       apply bytes_lt_of_lex_lt hlen hlt hpbytes_eq
     ·
       loop_inv nat fun _ _ _ => [ok ↦ ⟨_, true⟩]
@@ -525,7 +525,7 @@ theorem to_be_bytes_intro :
       have hpbytes_len :
           pbytes.length = (RadixVec.toDigitsBE' R256 p.natVal).length := by
         subst pbytes
-        simp [Lampe.Builtin.modulus_bytes_be, RadixVec.toDigitsBE']
+        simp [Lampe.Builtin.modulusBeBytes, RadixVec.toDigitsBE']
       apply ofDigitsBE'_lt_of_shorter_than_modulus (P := p)
       simp [List.Vector.toList_length, hpbytes_len] at hlen_lt ⊢
       exact hlen_lt
@@ -657,7 +657,7 @@ theorem to_le_bytes_intro :
             (RadixVec.toDigitsBE' R256 p.natVal) := by
         subst pbytes
         simp [
-          Lampe.Builtin.modulus_bytes_le, RadixVec.toDigitsLE', RadixVec.toDigitsBE',
+          Lampe.Builtin.modulusLeBytes, RadixVec.toDigitsLE', RadixVec.toDigitsBE',
           List.map_reverse, List.reverse_reverse
         ]
       have hlen_rev : bytes.reverse.length = pbytes.reverse.length := by
@@ -681,7 +681,7 @@ theorem to_le_bytes_intro :
       have hpbytes_len :
           pbytes.length = (RadixVec.toDigitsBE' R256 p.natVal).length := by
         subst pbytes
-        simp [Lampe.Builtin.modulus_bytes_le, RadixVec.toDigitsLE', RadixVec.toDigitsBE']
+        simp [Lampe.Builtin.modulusLeBytes, RadixVec.toDigitsLE', RadixVec.toDigitsBE']
       apply ofDigitsBE'_lt_of_shorter_than_modulus (P := p)
       simp only [
         List.length_map, List.length_reverse, List.Vector.toList_length,
