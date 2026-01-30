@@ -14,8 +14,8 @@ import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 import Lampe.Builtin.Stubs
-import Lampe.Data.Field
 import Lampe.Data.Digits
+import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.Data.Integers
 import Lampe.Data.Meta
