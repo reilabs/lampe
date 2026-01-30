@@ -5,6 +5,7 @@ import «skyscraper-0.0.0».Field
 import «skyscraper-0.0.0».Ref
 
 import Stdlib.Stdlib
+import Mathlib.Data.Vector.Defs
 
 open Lampe
 
@@ -40,34 +41,11 @@ theorem List.takeD_eq_take_append : List.takeD n l pad = List.take n l ++ List.r
     · simp [List.replicate]
     · simp [List.takeD, List.take, ih]
 
+lemma List.Vector.getElem_toList {v : List.Vector α n} {i : Nat} (hi : i < n) :
+    v[i] = v.toList[i]'(by simpa [List.Vector.toList_length] using hi) := by
+  simp [List.Vector.getElem_def]
+
 end utils
-
-section byte_conversion
-
--- Prove that stdlib env is a subset of skyscraper env (since skyscraper includes stdlib)
-lemma stdlib_env_subset : «std-1.0.0-beta.12».env ⊆ env := by
-  unfold env
-  simp only [Env.subset_append_right]
-
--- The stdlib theorems now use Fp.toBytesLE/Fp.ofBytesLE directly
--- We just need to lift them to the skyscraper env using is_mono
-
-theorem to_le_bytes_intro {input : Fp lp} : STHoare lp env ⟦⟧
-    («std-1.0.0-beta.12::field::to_le_bytes».call h![32] h![input])
-    fun v => v = Fp.toBytesLE 32 input :=
-  STHoare.is_mono stdlib_env_subset Lampe.Stdlib.Field.to_le_bytes_intro
-
-theorem from_le_bytes_intro {input : List.Vector (U 8) 32} : STHoare lp env ⟦⟧
-    («std-1.0.0-beta.12::field::from_le_bytes».call h![32] h![input])
-    fun output => output = Fp.ofBytesLE input.toList :=
-  STHoare.is_mono stdlib_env_subset Lampe.Stdlib.Field.from_le_bytes_intro
-
-theorem as_array_intro {input : List (U 8)} : STHoare lp env ⟦⟧
-    («std-1.0.0-beta.12::slice::as_array».call h![Tp.u 8, 32] h![input])
-    fun r => r.toList = input :=
-  STHoare.is_mono stdlib_env_subset Lampe.Stdlib.Slice.as_array_spec
-
-end byte_conversion
 
 section globals
 
@@ -138,7 +116,12 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
     fun output => output = Ref.bar input := by
   enter_decl
   simp only [«skyscraper-0.0.0::bar::bar»]
-  steps [to_le_bytes_intro]
+  steps [Lampe.Stdlib.Field.to_le_bytes_intro]
+  rename_i hlt bytes_def
+  have hlt' : ZMod.val input < 256 ^ 32 := by
+    simpa [BitVec.toNat_ofNat] using hlt
+  have hbytes : Fp.toBytesLE 32 input = bytes := by
+      simpa [bytes_def, List.map_reverse] using (Fp.toBytesLE_eq_toDigitsLE_of_lt (x := input) (n := 32) hlt')
   step_as
     ([new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
     (fun _ => [new_left ↦ ⟨(Tp.u 8).array 16, bytes.take 16 |>.map Ref.sbox⟩])
@@ -233,6 +216,13 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
 
       simp only [hlt, dite_true, Option.toList]
       simp [List.cons_append, List.nil_append, List.Vector.toList]
+      have hidx : 16 + i < 32 := by linarith
+      have hidx' : 16 + i < (List.Vector.toList bytes).length := by
+        simpa [List.Vector.toList_length] using hidx
+      have hget : bytes[16 + i] = bytes.toList[16 + i] := by
+        simpa [List.get_eq_getElem, hidx'] using
+          (List.Vector.getElem_toList (v := bytes) (i := 16 + i) (hi := hidx))
+      simpa using congrArg Ref.sbox hget
 
 
   steps
@@ -264,11 +254,12 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
       simp_all [List.Vector.toList_length, hlt', ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true, List.Vector.get_eq_get_toList]
     · subst_vars
       steps
-  steps [as_array_intro, from_le_bytes_intro]
+  steps [Lampe.Stdlib.Slice.as_array_spec, Lampe.Stdlib.Field.from_le_bytes_intro]
 
   all_goals subst_vars
   show Fp.ofBytesLE (List.Vector.toList new_bytes_array) = Ref.bar input
   unfold Ref.bar
+  rw [hbytes]
   congr 1
 
 end bar

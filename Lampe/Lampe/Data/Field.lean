@@ -106,12 +106,37 @@ def Fp.toBitsLE {P} n: Fp P → List.Vector (U 1) n := fun x =>
     exact Nat.mod_lt _ (Nat.pow_pos (by decide : 0 < r.val))
   (RadixVec.toDigitsLE (r := r) (d := n) ⟨v, hv⟩).map BitVec.ofFin
 
+lemma Fp.toBitsLE_eq_toDigitsLE {P} {n} {x : Fp P} :
+    Fp.toBitsLE n x =
+      (RadixVec.toDigitsLE (r := (2 : Radix)) (d := n)
+        ⟨x.val % (2 : Radix).val ^ n,
+          by exact Nat.mod_lt _ (Nat.pow_pos (by decide : 0 < (2 : Radix).val))⟩).map
+        BitVec.ofFin := by
+  simp [Fp.toBitsLE]
+
+lemma Fp.toBitsLE_eq_toDigitsLE_of_lt {P} {n} {x : Fp P} (h : x.val < (2 : Radix).val ^ n) :
+    Fp.toBitsLE n x =
+      (RadixVec.toDigitsLE (r := (2 : Radix)) (d := n) ⟨x.val, h⟩).map BitVec.ofFin := by
+  simpa [Nat.mod_eq_of_lt h] using (Fp.toBitsLE_eq_toDigitsLE (x := x) (n := n))
+
 def Fp.toBytesLE {P} n : Fp P → List.Vector (U 8) n := fun x =>
   let r : Radix := R256
   let v := x.val % r.val ^ n
   have hv : v < r.val ^ n := by
     exact Nat.mod_lt _ (Nat.pow_pos (by decide : 0 < r.val))
   (RadixVec.toDigitsLE (r := r) (d := n) ⟨v, hv⟩).map BitVec.ofFin
+
+lemma Fp.toBytesLE_eq_toDigitsLE {P} {n} {x : Fp P} :
+    Fp.toBytesLE n x =
+      (RadixVec.toDigitsLE (r := R256) (d := n)
+        ⟨x.val % R256.val ^ n, by exact Nat.mod_lt _ (Nat.pow_pos (by decide : 0 < R256.val))⟩).map
+        BitVec.ofFin := by
+  simp [Fp.toBytesLE]
+
+lemma Fp.toBytesLE_eq_toDigitsLE_of_lt {P} {n} {x : Fp P} (h : x.val < R256.val ^ n) :
+    Fp.toBytesLE n x =
+      (RadixVec.toDigitsLE (r := R256) (d := n) ⟨x.val, h⟩).map BitVec.ofFin := by
+  simpa [Nat.mod_eq_of_lt h] using (Fp.toBytesLE_eq_toDigitsLE (x := x) (n := n))
 
 def Fp.ofBytesLE {P} : List (U 8) → Fp P := fun bytes =>
   RadixVec.ofLimbsLE' 256 (bytes.map BitVec.toNat)
