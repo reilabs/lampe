@@ -233,7 +233,8 @@ theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils:
         rw [List.take_of_length_le (by simp_all [Nat.le_of_lt]), List.take_of_length_le (by simp_all [Nat.le_of_lt_succ])]
         have : (256 - i) = 255 - i + 1 := by omega
         simp [this, List.replicate_succ]
-        simp [BitVec.ofNat_1_eq_mod, ZMod.val_natCast, ZMod.natCast_val]
+        try
+          simp [BitVec.ofNat_1_eq_mod, ZMod.val_natCast, ZMod.natCast_val]
         congr
         rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
         apply lt_of_le_of_lt (Nat.div_le_self _ _)
@@ -316,8 +317,6 @@ theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils
 
       simp [Fp.toBytesLE]
 
-      have : 256 = 2 ^ 8 := by rfl
-      simp_rw [this]
       conv => rhs; arg 2; arg 1; rw [toBaseLE_pow (B:=2) (D:=8) (K:=32)]
       simp only [List.Vector.get, Fp.toBitsLE, Fin.cast_eq_self, List.get_eq_getElem,
         List.getElem_map, BitVec.natCast_eq_ofNat, Nat.reduceMul, ofBaseLE,
@@ -360,7 +359,10 @@ theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ («Merkle-1.0.0::uti
         apply Nat.mod_eq_of_lt; linarith
       simp [*, List.Vector.get, ofBaseLE]
       rw [mul_comm]
-      rfl
+      simpa [List.length_take] using
+        (Lampe.ofLimbsLE'_append 256
+          (List.take i (List.map BitVec.toNat (List.Vector.toList input)))
+          [BitVec.toNat ((List.Vector.toList input)[i])])
   steps
   simp_all
   rw [List.take_of_length_le]
