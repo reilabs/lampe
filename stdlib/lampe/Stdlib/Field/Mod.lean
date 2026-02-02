@@ -541,16 +541,16 @@ theorem to_be_bytes_intro :
     subst_vars
     rename_i _ h
     simp [
-      List.Vector.toList_map, List.Vector.toList_reverse,
-      ←RadixVec.ofDigitsBE'_toList, List.map_map, List.map_id,
-      BitVec.toFin_ofFin_comp 8, BitVec.toFin_ofFin, Function.comp,
+      List.Vector.toList_map,
+      ←RadixVec.ofDigitsBE'_toList,
+      BitVec.toFin_ofFin_comp 8, BitVec.toFin_ofFin,
     ] at h
     conv_rhs =>
       enter [2, 1, 1]
       rw [ZMod.val_natCast]
       simp [
-        List.Vector.toList_map, List.Vector.toList_reverse,
-        ←RadixVec.ofDigitsBE'_toList, List.map_map, List.map_id,
+        List.Vector.toList_map,
+        ←RadixVec.ofDigitsBE'_toList,
         BitVec.toFin_ofFin_comp 8, BitVec.toFin_ofFin, Function.comp
       ]
       rw [Nat.mod_eq_of_lt h]
@@ -929,20 +929,9 @@ theorem from_le_bytes_intro :
     steps
     · congr 1
       conv at hhi => rhs; whnf
-      simp only [
-        Lens.modify, BitVec.ofNat_eq_ofNat, BitVec.reduceToNat, Builtin.instCastTpUField,
-        Builtin.instCastTpU, BitVec.natCast_eq_ofNat, List.take_succ, getElem?, decidableGetElem?,
-        List.Vector.toList_length
-      ]
-      have hidx : i < bytes.toList.length := by
-        simpa [List.Vector.toList_length] using hhi
-      have htake :
-          bytes.toList.take (i + 1) =
-            bytes.toList.take i ++ [bytes.toList[i]'hidx] := by
-        simpa using (List.take_succ_eq_append_getElem (l := bytes.toList) (i := i) hidx)
       simp [
-        htake, hhi, Fp.ofBytesLE, List.map_append, RadixVec.ofLimbsLE'_append,
-        List.Vector.toList_getElem
+        List.take_succ, List.Vector.toList_getElem,
+        hhi, Fp.ofBytesLE, RadixVec.ofLimbsLE'_append,
       ]
       rw [mul_comm]
       ring_nf
@@ -970,17 +959,15 @@ theorem from_be_bytes_intro :
     · congr 1
       conv at hhi => rhs; whnf
       simp [
-        List.take_succ, List.Vector.toList_length, List.length_reverse,
         hhi, Fp.ofBytesLE, RadixVec.ofLimbsLE'_append,
-        List.Vector.toList_getElem, List.getElem_reverse
+        List.take_succ, List.Vector.toList_getElem,
       ]
       rw [mul_comm]
       ring_nf
       have hmin := Nat.min_eq_left (Nat.le_of_lt hhi)
       simp [RadixVec.ofLimbsLE', RadixVec.ofLimbsBE'_cons, RadixVec.ofLimbsBE'_nil, hmin]
       left
-      have hmod : (4294967295 + (4294967296 - i) + N) % 4294967296 = (N - 1) - i := by
-        omega
+      have hmod : (4294967295 + (4294967296 - i) + N) % 4294967296 = (N - 1) - i := by omega
       simp [hmod]
   steps
   simp_all
