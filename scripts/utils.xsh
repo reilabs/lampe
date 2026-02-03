@@ -139,6 +139,19 @@ def change_toml_required_lampe_to_path(toml_path, lampe_path):
 
     write_toml(toml_path, lakefile_toml)
 
+def change_manifest_required_dep_to_path_by_regex(manifest_path, name_regex, path):
+    manifest = load_json(manifest_path)
+    compiled_name_regex = re.compile(name_regex)
+
+    for package in manifest.get('packages', []):
+        if not compiled_name_regex.match(package.get('name', '')):
+            continue
+        if package.get('type') != 'path':
+            continue
+        package['dir'] = path
+
+    write_json(manifest_path, manifest)
+
 def read_noir_version():
     rust_cargo_toml = load_toml(rust_cargo_toml_path)
     return rust_cargo_toml['dependencies']['noirc_driver']['rev']

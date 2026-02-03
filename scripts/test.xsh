@@ -289,6 +289,8 @@ def run_test_in_dir(working_dir, original_dir, update_mode):
             manifest_path = lampe_dir / "lake-manifest.json"
             if manifest_path.exists():
                 set_manifest_packages_dir(manifest_path, packages_dir)
+                change_manifest_required_dep_to_path_by_regex(manifest_path, '^Lampe$', lampe_path)
+                change_manifest_required_dep_to_path_by_regex(manifest_path, '^«std-.*»$', stdlib_path)
 
             rev = $LAMPE_TEST_CURRENT_COMMIT_SHA
             change_toml_required_dep_to_rev_by_regex(lakefile_path, '^GitDepWithLampe-.*$', rev)
