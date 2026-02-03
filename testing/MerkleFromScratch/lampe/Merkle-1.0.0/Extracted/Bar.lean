@@ -6,7 +6,7 @@ import Lampe
 open Lampe
 
 noir_def «Merkle-1.0.0»::bar::bar<>(a: Field) -> Field := {
-  let bytes = («Merkle-1.0.0»::utils::bytes::to_le_bytes<> as λ(Field) -> Array<u8, 32: u32>)(a);
+  let bytes = («std-1.0.0-beta.12»::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(a);
   let mut new_left = (#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8));
   let mut new_right = (#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8));
   for i in (0: u32) .. (16: u32) do {
@@ -30,7 +30,7 @@ noir_def «Merkle-1.0.0»::bar::bar<>(a: Field) -> Field := {
     #_skip
   };
   let new_bytes_array = («Merkle-1.0.0»::utils::as_array<> as λ(Slice<u8>) -> Array<u8, 32: u32>)(new_bytes);
-  («Merkle-1.0.0»::utils::bytes::from_le_bytes<> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
+  («std-1.0.0-beta.12»::field::from_le_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
 }
 
 def «Merkle-1.0.0».Bar.env : Env := Env.mk

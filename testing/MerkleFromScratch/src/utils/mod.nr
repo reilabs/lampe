@@ -1,6 +1,3 @@
-pub mod bits;
-pub mod bytes;
-
 use crate::globals;
 
 pub fn rl(u: u8) -> u8 {

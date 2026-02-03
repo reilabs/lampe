@@ -6,6 +6,7 @@ import Lampe
 import ProvenZk
 
 import Mathlib.Data.Vector.Snoc
+import Stdlib.Stdlib
 
 open Lampe «Merkle-1.0.0» «Merkle-1.0.0».Field
 
@@ -30,6 +31,10 @@ theorem List.Vector.toList_pad {v : List.Vector α n} {pad} : (v.pad d pad).toLi
     · rcases (List.exists_of_length_succ _ prop) with ⟨h, t, ⟨rfl⟩⟩
       simp at prop
       simp [List.Vector.pad, List.Vector.head, List.Vector.tail, ih]
+
+lemma List.Vector.getElem_toList {v : List.Vector α n} {i : Nat} (hi : i < n) :
+    v[i] = v.toList[i]'(by simpa [List.Vector.toList_length] using hi) := by
+  simp [List.Vector.getElem_def]
 
 theorem List.takeD_eq_take_append : List.takeD n l pad = List.take n l ++ List.replicate (n - l.length) pad := by
   induction n generalizing l with
@@ -151,224 +156,6 @@ theorem sgn0_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils::sgn0».call h
   steps
   simp_all
 
-lemma ZMod.div2_on_vals (v : Lampe.Fp lp) :
-    v.val / 2 = match v.val % 2 with
-    | 0 => (v / 2).val
-    | _ => ((v - 1) / 2).val := by
-
-  have two_unit := ZMod.inv_mul_of_unit 2 (ZMod.isUnit_iff_coprime 2 lp.natVal |>.mpr (by decide))
-  have vVal_decomp := Nat.div_add_mod v.val 2
-  have v_decomp : v = 2 * ↑(v.val / 2) + ↑(v.val % 2) := by
-    apply Fp.eq_of_val_eq
-    rw [ZMod.val_add, ZMod.val_mul, ZMod.val_natCast, ZMod.val_natCast]
-    conv in v.val / 2 % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.div_le_self _ _) v.prop)]
-    conv in ZMod.val 2 => whnf
-    conv in 2 * _ % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.mul_div_le _ _) v.prop)]
-    conv in v.val % _ % _ => rw [Nat.mod_eq_of_lt (by apply lt_of_le_of_lt (Nat.mod_le _ _) v.prop)]
-    rw [vVal_decomp, Nat.mod_eq_of_lt]
-    exact v.prop
-
-  split <;> {
-    rename_i h
-    try simp only [imp_false, Nat.mod_two_not_eq_zero] at h
-    rw [←vVal_decomp]
-    conv => rhs; rw [v_decomp]
-    rw [h]
-    ring_nf
-    rw [mul_assoc, two_unit]
-    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, mul_div_cancel_right₀, mul_one]
-    rewrite [ZMod.val_natCast, Nat.mod_eq_of_lt]
-    · omega
-    · simp only [ZMod.val, Prime.natVal]
-      omega
-  }
-
-@[simp]
-lemma Fp.cast_u {s P} {v : Fp P} : (v.cast : U s) = BitVec.ofNat s (v.val) := by rfl
-
-set_option maxRecDepth 10000 in
-set_option maxHeartbeats 2000000 in
-theorem to_le_bits_intro {input} : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils::bits::to_le_bits».call h![] h![input]) fun v => v = Fp.toBitsLE 256 input := by
-    enter_decl
-    steps
-
-    step_as v =>
-      ([val ↦ ⟨.field, input⟩] ⋆ [bits ↦ v])
-      (fun _ => [val ↦ ⟨.field, 0⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE 256 input⟩])
-
-    loop_inv nat fun i _ _ => [val ↦ ⟨.field, (↑(input.val / 2^i) : Fp lp)⟩] ⋆ [bits ↦ ⟨(Tp.u 1).array 256, Fp.toBitsLE i input |>.pad 256 0⟩]
-    · simp [Int.cast, IntCast.intCast, Fp.cast_self]
-    · decide
-    · have : input.val / 115792089237316195423570985008687907853269984665640564039457584007913129639936 = 0 := by
-        cases input
-        rename_i val isLt
-        conv => lhs; arg 1; whnf
-        simp only [lp, p] at isLt
-        have h : 1 < fieldP := by simp only [fieldP]; linarith
-        conv at isLt => rhs; apply Nat.sub_add_cancel h
-        simp only [Int.cast_zero, BitVec.ofNat_eq_ofNat, BitVec.toNat_ofNat, Nat.reducePow,
-          Nat.zero_mod, Int.cast_ofNat, Nat.reduceMod, zero_le, Nat.div_eq_zero_iff,
-          OfNat.ofNat_ne_zero, false_or, gt_iff_lt] at *
-        unfold fieldP at isLt
-        linarith
-      congr 1
-      simp [Int.cast, IntCast.intCast]
-      rw [this]
-      rfl
-    · intro i _ hi
-      simp [IntCast.intCast, Int.cast] at hi
-      steps [sgn0_intro]
-      step_as v =>
-        ([val ↦ ⟨.field, v⟩])
-        (fun _ => [val ↦ ⟨.field, (↑(v.val / 2) : Fp lp)⟩])
-      · simp only [pow_succ]
-        congr 2
-        rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
-        · simp [Nat.div_div_eq_div_mul]
-        · cases input
-          apply lt_of_le_of_lt (Nat.div_le_self _ _) (by assumption)
-      · congr 1
-        apply List.Vector.eq
-        simp [-List.takeD_succ, Fp.toBitsLE, toBaseLE_succ_snoc, List.takeD_eq_take_append, hi, Nat.le_of_lt]
-        rw [List.take_of_length_le (by simp_all [Nat.le_of_lt]), List.take_of_length_le (by simp_all [Nat.le_of_lt_succ])]
-        have : (256 - i) = 255 - i + 1 := by omega
-        simp [this, List.replicate_succ]
-        try
-          simp [BitVec.ofNat_1_eq_mod, ZMod.val_natCast, ZMod.natCast_val]
-        congr
-        rw [ZMod.val_natCast, Nat.mod_eq_of_lt]
-        apply lt_of_le_of_lt (Nat.div_le_self _ _)
-        simp [ZMod.val, lp, Prime.natVal]
-      · simp only [ZMod.div2_on_vals]
-        have : i % 4294967296 = i := by
-          apply Nat.mod_eq_of_lt; linarith
-        simp
-        apply STHoare.ite_intro
-        · intro h
-          simp at h
-          steps
-          simp [*, Access.modify] at *
-          rw [Eq.comm, BitVec.ofNat_1_eq_0_iff] at h
-          simp [Fp.cast_self, h]
-        · intro h
-          have bitvec_ne_zero_iff_eq_one {bv : BitVec 1}: (¬bv = 0#1) ↔ bv = 1#1 := by
-            rcases bv with ⟨bv⟩
-            fin_cases bv <;> simp
-          simp [*, BitVec.ofNat_1_eq_0_iff] at h
-          rw [Eq.comm, BitVec.ofNat_1_eq_1_iff] at h
-          steps
-          simp [h, Fp.cast_self]
-    steps
-    simp_all
-
-lemma Int.castBitVec_ofNat {p} {n : Nat} : (Int.cast (OfNat.ofNat n) : Tp.denote p (Tp.u s)) = BitVec.ofNat s n := by
-  rfl
-
-set_option maxRecDepth 10000 in
-set_option maxHeartbeats 2000000 in
-theorem to_le_bytes_intro {input} : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils::bytes::to_le_bytes».call h![] h![input]) fun v => v = Fp.toBytesLE 32 input := by
-  enter_decl
-  steps [to_le_bits_intro]
-  step_as =>
-    ([bytes ↦ ⟨(Tp.u 8).array 32, List.Vector.replicate 32 0⟩])
-    (fun _ => [bytes ↦ ⟨(Tp.u 8).array 32, Fp.toBytesLE 32 input⟩])
-
-  · loop_inv nat fun i _ _ => (∃∃v, [bytes ↦ ⟨(Tp.u 8).array 32, v⟩] ⋆ (v.toList = (Fp.toBytesLE 32 input).toList.take i ++ List.replicate (32 - i) 0))
-    · sl
-      rfl
-    · sl
-      congr 1
-      apply List.Vector.eq
-      simp_all
-    · decide
-    · intro i _ hi
-      steps
-      rw [Int.castBitVec_ofNat] at *
-      simp only [BitVec.toNat_ofNat, Nat.reducePow, Nat.zero_mod, zero_le, Nat.reduceMod,
-        BitVec.natCast_eq_ofNat, BitVec.reduceToInt, Int.reducePow, exists_prop,
-        BitVec.ofNat_eq_ofNat, BitVec.reduceToNat, Builtin.instCastTpU, BitVec.ofNat_toNat,
-        BitVec.setWidth_eq, BitVec.toInt_setWidth, neg_mul, Lens.modify, Lens.get,
-        Option.bind_eq_bind, Option.bind_some] at *
-      subst_vars
-      simp only [Access.modify, BitVec.toNat_ofNat, Nat.reducePow, Nat.reduceMod,
-        BitVec.reduceToNat, BitVec.toNat_mul, Nat.mul_mod_mod, BitVec.toNat_add, Nat.one_mod,
-        Nat.mod_add_mod, Option.get_dite]
-      have : i ≤ 32 := by linarith
-      have : i + 1 ≤ 32 := by linarith
-      have : i % 4294967296 = i := by
-        apply Nat.mod_eq_of_lt; linarith
-      simp [-List.takeD_succ, List.takeD_eq_take_append, *, List.take_take]
-      rw [List.take_succ, List.append_assoc]
-      congr 1
-      have : (32 - i) = (31 - i) + 1 := by omega
-      simp only [this, List.replicate_succ, List.set_cons_zero, getElem?, decidableGetElem?,
-      List.Vector.toList_length, hi, ↓reduceDIte, Option.toList_some, List.singleton_append,
-      List.cons.injEq, and_true]
-
-      simp_all only [BitVec.toInt_mul, BitVec.reduceToInt, Nat.reducePow, BitVec.toNat_add,
-      BitVec.toNat_mul, BitVec.toNat_ofNat, Nat.reduceMod, Nat.one_mod, Nat.mod_add_mod,
-      BitVec.toInt_setWidth, Int.mul_bmod_bmod, BitVec.toInt_add, Int.add_bmod_bmod,
-      Int.bmod_add_bmod, neg_mul, BitVec.ofNat_eq_ofNat, Lens.modify, Lens.get,
-      Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
-      Option.bind_eq_bind, Option.bind_some, Nat.reduceLeDiff, Nat.mod_succ_eq_iff_lt,
-      Nat.succ_eq_add_one, Nat.reduceAdd, List.get?Internal_eq_getElem?, List.Vector.toList_length,
-      List.getElem?_eq_getElem, Option.toList_some, List.cons_append, List.nil_append,
-      List.cons.injEq, and_true]
-
-      simp [Fp.toBytesLE]
-
-      conv => rhs; arg 2; arg 1; rw [toBaseLE_pow (B:=2) (D:=8) (K:=32)]
-      simp only [List.Vector.get, Fp.toBitsLE, Fin.cast_eq_self, List.get_eq_getElem,
-        List.getElem_map, BitVec.natCast_eq_ofNat, Nat.reduceMul, ofBaseLE,
-        List.getElem_chunksExact, List.ofFn_succ, Fin.isValue, Fin.val_zero, add_zero, Fin.val_succ,
-        zero_add, Nat.reduceAdd, Fin.val_eq_zero, List.ofFn_zero, List.foldr_cons, List.foldr_nil,
-        mul_zero]
-      conv in (occs := *) ((8*i + _) % _) => all_goals rw [Nat.mod_eq_of_lt (by linarith)]
-      conv in (8 * i % _) => rw [Nat.mod_eq_of_lt (by linarith)]
-      ring_nf
-      simp only [BitVec.add_def, BitVec.toNat_setWidth, BitVec.toNat_ofNat, pow_one,
-        toBaseLE_elem_lt, Nat.mod_eq_of_lt, Nat.reducePow, BitVec.toNat_mul, Nat.reduceLT,
-        Nat.mul_mod_mod, Nat.add_mod_mod, Nat.mod_add_mod]
-      unfold BitVec.ofNat
-      congr 1
-      unfold Fin.ofNat
-      congr 1
-      simp only [Nat.reducePow, Nat.add_mod_mod, Nat.mod_add_mod, mul_comm]
-  steps
-  simp_all
-
-set_option maxRecDepth 10000 in
-set_option maxHeartbeats 2000000 in
-theorem from_le_bytes_intro {input} : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils::bytes::from_le_bytes».call h![] h![input])
-    fun output => output = Lampe.Fp.ofBytesLE input.toList := by
-  enter_decl
-  steps
-
-  loop_inv nat fun i _ _ => [v ↦ ⟨.field, (256 ^ i : Fp lp)⟩] ⋆ [result ↦ ⟨.field, Lampe.Fp.ofBytesLE $ input.toList.take i⟩]
-  · decide
-  · intro i _ hhi
-    steps
-    · congr 1
-      conv at hhi => rhs; whnf
-      simp only [Lens.modify, BitVec.ofNat_eq_ofNat, BitVec.reduceToNat, Builtin.instCastTpUField,
-      Builtin.instCastTpU, BitVec.natCast_eq_ofNat, List.take_succ, getElem?, decidableGetElem?,
-      List.Vector.toList_length]
-      simp only [hhi, Fp.ofBytesLE, List.map_append, ofBaseLE_append]
-      have : i ≤ 32 := by linarith
-      have : i % 4294967296 = i := by
-        apply Nat.mod_eq_of_lt; linarith
-      simp [*, List.Vector.get, ofBaseLE]
-      rw [mul_comm]
-      simpa [List.length_take] using
-        (Lampe.ofLimbsLE'_append 256
-          (List.take i (List.map BitVec.toNat (List.Vector.toList input)))
-          [BitVec.toNat ((List.Vector.toList input)[i])])
-  steps
-  simp_all
-  rw [List.take_of_length_le]
-  · simp
-
--- set_option maxHeartbeats 2000000 in
 theorem as_array_intro input (hi : input.length = 32) : STHoare lp env ⟦⟧
     («Merkle-1.0.0::utils::as_array».call h![] h![input])
     fun output => output = ⟨input, hi⟩ := by
@@ -397,12 +184,18 @@ theorem as_array_intro input (hi : input.length = 32) : STHoare lp env ⟦⟧
   apply List.Vector.eq
   simp_all [-List.takeD_succ, List.takeD_eq_take]
 
-set_option maxHeartbeats 3000000000000
+set_option maxHeartbeats 30000000
 theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] h![input])
     fun output => output = Ref.bar input := by
   enter_decl
   simp only [«Merkle-1.0.0::bar::bar»]
-  steps [to_le_bytes_intro]
+  steps [Lampe.Stdlib.Field.to_le_bytes_intro]
+  rename_i hlt bytes_def
+  have hlt' : ZMod.val input < 256 ^ 32 := by
+    simpa [BitVec.toNat_ofNat] using hlt
+  have hbytes : Fp.toBytesLE 32 input = bytes := by
+    simpa [bytes_def, List.map_reverse] using
+      (Fp.toBytesLE_eq_toDigitsLE_of_lt (x := input) (n := 32) hlt')
 
   step_as
     ([new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.replicate 16 0⟩])
@@ -499,6 +292,13 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
 
       simp only [hlt, dite_true, Option.toList]
       simp [List.cons_append, List.nil_append, List.Vector.toList]
+      have hidx : 16 + i < 32 := by linarith
+      have hidx' : 16 + i < (List.Vector.toList bytes).length := by
+        simpa [List.Vector.toList_length] using hidx
+      have hget : bytes[16 + i] = bytes.toList[16 + i] := by
+        simpa [List.get_eq_getElem, hidx'] using
+          (List.Vector.getElem_toList (v := bytes) (i := 16 + i) (hi := hidx))
+      simpa using congrArg Ref.sbox hget
 
 
   steps
@@ -530,11 +330,16 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
       simp_all [List.Vector.toList_length, hlt', ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true, List.Vector.get_eq_get_toList]
     · subst_vars
       steps
-  steps [as_array_intro, from_le_bytes_intro]
-
-  rotate_left
-  · subst_vars; rfl
-  · subst_vars; rfl
+  have hlen :
+      ((List.Vector.map Ref.sbox (List.Vector.drop 16 bytes)).toList ++
+          (List.Vector.map Ref.sbox (List.Vector.take 16 bytes)).toList).length = 32 := by
+    simp [List.length_append, List.length_map, List.Vector.toList_length]
+  steps [as_array_intro, Lampe.Stdlib.Field.from_le_bytes_intro]
+  all_goals (try exact hlen)
+  subst_vars
+  unfold Ref.bar
+  rw [hbytes]
+  rfl
 
 theorem sigma_intro : STHoare lp env (⟦⟧) («Merkle-1.0.0::globals::SIGMA».call h![] h![])
     fun output => output = Ref.SIGMA := by
