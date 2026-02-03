@@ -7,8 +7,6 @@ import «Merkle-1.0.0».Extracted.Hasher.Mod
 import «Merkle-1.0.0».Extracted.Main
 import «Merkle-1.0.0».Extracted.Permute
 import «Merkle-1.0.0».Extracted.Skyscraper.Mod
-import «Merkle-1.0.0».Extracted.Utils.Bits.Mod
-import «Merkle-1.0.0».Extracted.Utils.Bytes
 import «Merkle-1.0.0».Extracted.Utils.Mod
 import «Merkle-1.0.0».Extracted.Witness.Mod
 import «Merkle-1.0.0».Extracted.Witness.Uncons
@@ -22,8 +20,6 @@ def env := Bar.env
   ++ Main.env
   ++ Permute.env
   ++ Skyscraper.Mod.env
-  ++ Utils.Bits.Mod.env
-  ++ Utils.Bytes.env
   ++ Utils.Mod.env
   ++ Witness.Mod.env
   ++ Witness.Uncons.env

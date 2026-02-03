@@ -1,0 +1,8 @@
+[package]
+name = "Merkle"
+type = "bin"
+authors = [""]
+
+[dependencies]
+hasher = { path = "../hasher" }
+skyscraper = { path = "../skyscraper" }

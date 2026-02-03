@@ -1,9 +1,7 @@
-use super::utils::bytes::to_le_bytes;
-use crate::utils::bytes::from_le_bytes;
 use crate::utils::{sbox, as_array};
 
 pub fn bar(a: Field) -> Field {
-    let bytes: [u8; 32] = to_le_bytes(a);
+    let bytes: [u8; 32] = a.to_le_bytes();
     let mut new_left: [u8; 16] = [0; 16];
     let mut new_right: [u8; 16] = [0; 16];
 
@@ -22,5 +20,5 @@ pub fn bar(a: Field) -> Field {
 
     let new_bytes_array: [u8; 32] = as_array(new_bytes);
 
-    from_le_bytes(new_bytes_array)
+    Field::from_le_bytes(new_bytes_array)
 }
