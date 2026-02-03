@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-rm -rf ./lampe
+# Only remove generated extraction output; keep custom files under lampe/.
+rm -rf ./lampe/*/Extracted
+rm -f ./lampe/*/Extracted.lean
