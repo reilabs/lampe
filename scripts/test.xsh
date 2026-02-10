@@ -118,6 +118,24 @@ def copy_test_case(src_dir, dest_dir):
     lampe_dest.mkdir()
     copy_tree(lampe_src, lampe_dest, {".lake", "lake-manifest.json"})
 
+def export_lake_build_cache(working_dir, original_dir):
+    if os.environ.get("LAMPE_EXPORT_BUILD_CACHE") != "1":
+        return
+
+    for working_lampe_dir in find_lampe_dirs(working_dir):
+        source_build = working_lampe_dir / ".lake" / "build"
+        if not source_build.exists():
+            continue
+
+        relative_lampe_dir = working_lampe_dir.relative_to(working_dir)
+        target_lampe_dir = original_dir / relative_lampe_dir
+        target_build = target_lampe_dir / ".lake" / "build"
+
+        if target_build.exists():
+            shutil.rmtree(target_build)
+        target_build.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(source_build, target_build, symlinks=True)
+
 def run_tests(dir):
     args = parse_args()
     script_dir = project_root / dir
@@ -307,3 +325,4 @@ def run_test(dir_path, update_mode):
         working_dir = Path(tmp_dir)
         copy_test_case(dir_path, working_dir)
         run_test_in_dir(working_dir, dir_path, update_mode)
+        export_lake_build_cache(working_dir, dir_path)

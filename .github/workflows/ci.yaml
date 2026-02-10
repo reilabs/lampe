@@ -307,6 +307,8 @@ jobs:
         run: chmod +x target/release/lampe
       - name: Test Stdlib Extraction
         if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
+        env:
+          LAMPE_EXPORT_BUILD_CACHE: "1"
         run: ./stdlib/test.xsh
       - name: Check Lake Packages Cache Contents
         id: lake-packages-content
