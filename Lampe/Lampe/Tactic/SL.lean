@@ -377,8 +377,24 @@ partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Lean
 partial def pullPures (goal : MVarId) (pre post : SLTerm) : SLM (MVarId × List MVarId) :=
   goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
   let (goal, puller, finalPuller) ← if post.hasMVars then
+    -- Similar to `pullExis`: ensure we pick a *single* metavariable sink.
+    let isUnsafe := (←read).isUnsafe
+    let foundMv ← IO.mkRef false
     let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
-      | SLTerm.mvar _ => pure .right
+      | SLTerm.mvar _ => do
+        let already ← foundMv.get
+        if already then
+          if isUnsafe then
+            let tp ← inferType t.expr
+            let args := tp.getAppArgs'
+            let alpha ← liftOption args[0]?
+            let inst ← liftOption args[1]?
+            let unit ← mkAppOptM ``SLP.lift #[some alpha, some inst, some (mkConst ``True [])]
+            discard <| isDefEq t.expr unit
+          pure .left
+        else
+          foundMv.set true
+          pure .right
       | _ => pure .left
     ) post
     match pmv with
@@ -440,9 +456,38 @@ partial def pullExisLoop (goal : MVarId): SLM (MVarId × List MVarId) := goal.wi
 
 partial def pullExis (pre post : SLTerm) (goal : MVarId): SLM (MVarId × List MVarId) :=
   goal.withContext do
+  -- `sl` expects a single "sink" (either `?M` or `⊤`) in the postcondition. However, some goals
+  -- can contain multiple metavariable sinks (e.g. `... ⊢ goals ⋆ ?M₁ ⋆ ?M₂`), in which case the
+  -- old splitter would return a sink of the shape `?M₁ ⋆ ?M₂` and fail with "unsupported sink shape".
+  --
+  -- We instead pick *one* sink (the rightmost, due to right-first traversal in `split_by`) and
+  -- treat any additional metavariable/top terms as regular goals.
+  let isUnsafe := (←read).isUnsafe
+  let foundSink ← IO.mkRef false
   let (goals, sink, postEq) ← Lampe.SL.split_by (fun t => match t with
-  | SLTerm.mvar _ => pure .right
-  | SLTerm.top _ => pure .right
+  | SLTerm.mvar _ => do
+    let already ← foundSink.get
+    if already then
+      -- In unsafe mode, aggressively collapse extra sink metavariables to `⟦⟧` so that the
+      -- remaining postcondition has a single sink.
+      if isUnsafe then
+        let tp ← inferType t.expr
+        let args := tp.getAppArgs'
+        let alpha ← liftOption args[0]?
+        let inst ← liftOption args[1]?
+        let unit ← mkAppOptM ``SLP.lift #[some alpha, some inst, some (mkConst ``True [])]
+        discard <| isDefEq t.expr unit
+      pure .left
+    else
+      foundSink.set true
+      pure .right
+  | SLTerm.top _ => do
+    let already ← foundSink.get
+    if already then
+      pure .left
+    else
+      foundSink.set true
+      pure .right
   | _ => pure .left
   ) post
   let newPost ← mkAppM ``SLP.star #[goals.expr, sink.expr]
