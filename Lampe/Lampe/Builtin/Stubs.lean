@@ -44,7 +44,16 @@ def fmtstrAsCtstring := stub
 def keccakf1600 := stub
 def mkFormatString := stub
 def multiScalarMul := stub
-def poseidon2Permutation := stub
+/--
+Abstract Poseidon2 permutation function.
+Opaque for now — to be replaced with the actual mathematical definition later.
+-/
+opaque poseidon2PermFn (p : Prime) (n : U 32) (state : List.Vector (Fp p) n.toNat)
+    : List.Vector (Fp p) n.toNat := state
+
+def poseidon2Permutation := newGenericTotalPureBuiltin
+  (fun n : U 32 => ⟨[.array .field n, .u 32], .array .field n⟩)
+  (fun n h![state, _width] => poseidon2PermFn _ n state)
 def recursiveAggregation := stub
 def sha256Compression := stub
 def sliceRefcount := stub
