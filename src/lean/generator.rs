@@ -1380,12 +1380,15 @@ impl LeanGenerator<'_, '_, '_> {
         let global_data = self.context.def_interner.get_global(*id);
         let statement = self.context.def_interner.statement(&global_data.let_statement);
         let def_info = self.context.def_interner.definition(global_data.definition_id);
-        if def_info.comptime {
-            return None;
-        }
 
         match statement {
             HirStatement::Let(binding) => {
+                // Skip comptime globals with non-identifier patterns (e.g. tuple
+                // destructuring) as they cannot be represented as named globals.
+                if def_info.comptime && !matches!(binding.pattern, HirPattern::Identifier(_)) {
+                    return None;
+                }
+
                 let name = self.fully_qualified_global_name(id);
                 let typ = self.generate_lean_type_value(&binding.r#type, None);
                 let expr = self.generate_expr(binding.expression);

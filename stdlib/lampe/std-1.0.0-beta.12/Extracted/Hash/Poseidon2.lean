@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+noir_global_def «std-1.0.0-beta.12»::hash::poseidon2::RATE: u32 = (3: u32);
+
 noir_def «std-1.0.0-beta.12»::hash::poseidon2::Poseidon2::hash<N: u32>(input: Array<Field, N: u32>, message_size: u32) -> Field := {
   («std-1.0.0-beta.12»::hash::poseidon2::Poseidon2::hash_internal<N: u32> as λ(Array<Field, N: u32>, u32, bool) -> Field)(input, message_size, (#_uNeq returning bool)(message_size, uConst!(N: u32)))
 }
@@ -92,5 +94,5 @@ noir_trait_impl[«std-1.0.0-beta.12».impl_1]<> «std-1.0.0-beta.12»::default::
 }
 
 def «std-1.0.0-beta.12».Hash.Poseidon2.env : Env := Env.mk
-  [«std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::new», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::perform_duplex», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::absorb», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::squeeze», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash_internal»]
+  [«std-1.0.0-beta.12::hash::poseidon2::RATE», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::new», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::perform_duplex», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::absorb», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::squeeze», «std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash_internal»]
   [«std-1.0.0-beta.12».impl_0, «std-1.0.0-beta.12».impl_1]
