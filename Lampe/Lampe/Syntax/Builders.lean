@@ -216,10 +216,9 @@ partial def makeExpr [MonadDSL m]
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
-  -- For mutable local identifiers, `makeExpr` auto-dereferences bare idents.
-  -- In `#_ref(id)`, this would produce `ref(readRef id)` and allocate a fresh
-  -- cell, losing reference identity. In that specific case, keep the original
-  -- reference by emitting `Expr.var id`.
+  -- `makeExpr` auto-dereferences mutable locals, so `#_ref(id)` would lower to
+  -- `ref(readRef id)` — a fresh cell that loses reference identity.  Detect
+  -- that case and emit `Expr.var id` to preserve the original reference.
   if isRefBuiltin then
     match argsList with
     | [arg] => match arg with
