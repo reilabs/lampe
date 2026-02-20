@@ -208,12 +208,30 @@ partial def makeExpr [MonadDSL m]
 
 -- Builtin Calls
 | `(noir_expr|(#_ $name:ident returning $tp)( $args,* )) =>
-  makeArgs args.getElems.toList fun args => do
+  let argsList := args.getElems.toList
+  let isRefBuiltin := name.getId == `ref
+  let emitBuiltin : m (TSyntax `term) := makeArgs argsList fun args => do
     let argVals ← makeHListLit args
     wrapInLet
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
+  -- For mutable local identifiers, `makeExpr` auto-dereferences bare idents.
+  -- In `#_ref(id)`, this would produce `ref(readRef id)` and allocate a fresh
+  -- cell, losing reference identity. In that specific case, keep the original
+  -- reference by emitting `Expr.var id`.
+  if isRefBuiltin then
+    match argsList with
+    | [arg] => match arg with
+      | `(noir_expr|$id:ident) => do
+        if ←isAutoDerefd id.getId then
+          wrapInLet (←``(Expr.var $id)) binder k
+        else
+          emitBuiltin
+      | _ => emitBuiltin
+    | _ => emitBuiltin
+  else
+    emitBuiltin
 
 -- Bare function refs
 | `(noir_expr|$ref:noir_funcref) => match ref with
