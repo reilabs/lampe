@@ -5,10 +5,12 @@ import Lampe
 
 open Lampe
 
+noir_global_def «std-1.0.0-beta.12»::compat::BN254_MODULUS_BE_BYTES: Slice<u8> = (#_mkSlice returning Slice<u8>)((48: u8), (100: u8), (78: u8), (114: u8), (225: u8), (49: u8), (160: u8), (41: u8), (184: u8), (80: u8), (69: u8), (182: u8), (129: u8), (129: u8), (88: u8), (93: u8), (40: u8), (51: u8), (232: u8), (72: u8), (121: u8), (185: u8), (112: u8), (145: u8), (67: u8), (225: u8), (245: u8), (147: u8), (240: u8), (0: u8), (0: u8), (1: u8));
+
 noir_def «std-1.0.0-beta.12»::compat::is_bn254<>() -> bool := {
   #_true
 }
 
 def «std-1.0.0-beta.12».Compat.env : Env := Env.mk
-  [«std-1.0.0-beta.12::compat::is_bn254»]
+  [«std-1.0.0-beta.12::compat::BN254_MODULUS_BE_BYTES», «std-1.0.0-beta.12::compat::is_bn254»]
   []
