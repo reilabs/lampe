@@ -683,6 +683,47 @@ theorem returns_string_correct {p}
   subst_vars
   rfl
 
+-- Regression test: #_ref on a mutable local must preserve reference identity.
+-- Before the fix, #_ref(x) on a `let mut x` would auto-deref x and allocate a
+-- fresh cell (`ref(readRef(x))`), so mutations through the new ref were lost.
+noir_def increment_ref<>(r: & Field) -> Unit := {
+  (*r: Field) = (#_fAdd returning Field)((#_readRef returning Field)(r), (1: Field));
+  #_skip
+}
+
+noir_def mut_ref_loop<>() -> Field := {
+  let mut acc = (0: Field);
+  for _ in (0: u32) .. (3: u32) do {
+    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)(acc));
+  };
+  acc
+}
+
+def mutRefLoopEnv : Env := ⟨[increment_ref, mut_ref_loop], []⟩
+
+theorem increment_ref_spec {r : Ref} {v : Fp p} :
+    STHoare p mutRefLoopEnv
+    [r ↦ ⟨.field, v⟩]
+    (increment_ref.call h![] h![r])
+    (fun _ => [r ↦ ⟨.field, v + 1⟩]) := by
+  enter_decl
+  steps
+
+theorem mut_ref_loop_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_loop.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 3) := by
+  enter_decl
+  steps
+  loop_inv nat (fun i _ _ => [acc ↦ ⟨.field, (i : Fp p)⟩])
+  · simp
+  · intros i _ _
+    steps [increment_ref_spec]
+    push_cast
+    ring
+  · steps
+    simp_all
+
 noir_def integer_shifts<>(a: i32, b: i32) -> i32 := {
   let x = (#_iShl returning i32)(a, b);
   let y = (#_iShr returning i32)(a, b);
