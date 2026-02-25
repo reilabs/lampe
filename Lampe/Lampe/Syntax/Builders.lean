@@ -216,18 +216,31 @@ partial def makeExpr [MonadDSL m]
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
-  -- `makeExpr` auto-dereferences mutable locals, so `#_ref(id)` would lower to
-  -- `ref(readRef id)` — a fresh cell that loses reference identity.  Detect
-  -- that case and emit `Expr.var id` to preserve the original reference.
+  -- `makeExpr` auto-dereferences mutable locals, so `#_ref(expr)` would lower to
+  -- `ref(readRef id)` — a fresh cell that loses reference identity.  We set
+  -- `suppressAutoDeref` before recursing into the argument; if `makeBareIdent`
+  -- finds a mutable ident it will emit `Expr.var id` and consume the flag,
+  -- letting us skip the outer `ref(...)` wrapper.  This propagates through
+  -- syntax wrappers (parens, blocks) that the recursive `makeExpr` traverses.
   if isRefBuiltin then
     match argsList with
-    | [arg] => match arg with
-      | `(noir_expr|$id:ident) => do
-        if ←isAutoDerefd id.getId then
-          wrapInLet (←``(Expr.var $id)) binder k
-        else
-          emitBuiltin
-      | _ => emitBuiltin
+    | [arg] => do
+      let _ ← setSuppressAutoDeref true
+      makeExpr arg binder fun argVal => do
+        -- Reset the flag and check whether `makeBareIdent` already consumed it.
+        -- Consumed (prev = false) means it emitted `Expr.var id` — the ref itself.
+        let prev ← setSuppressAutoDeref false
+        if !prev then
+          match k with
+          | some k => k argVal
+          | none => pure argVal
+        else do
+          -- Argument was not a mutable ident; wrap in ref(...) as normal.
+          let argVals ← makeHListLit [argVal]
+          wrapInLet
+            (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
+            binder
+            k
     | _ => emitBuiltin
   else
     emitBuiltin
@@ -360,7 +373,13 @@ partial def makeBareIdent [MonadDSL m]
     (k : Option $ TSyntax `term → m (TSyntax `term))
   : m (TSyntax `term) := do
   if ←isAutoDerefd ident.getId then
-    wrapInLet (←``(Expr.readRef $ident)) binder k
+    -- When suppressAutoDeref is set (inside #_ref), emit the variable directly
+    -- without readRef and consume the flag.  The caller (#_ref handler) will
+    -- see that the flag was consumed and skip the outer ref(...) wrapping.
+    if ←setSuppressAutoDeref false then
+      wrapInLet (←``(Expr.var $ident)) binder k
+    else
+      wrapInLet (←``(Expr.readRef $ident)) binder k
   else match binder with
   | none => match k with
     | some k => k ident

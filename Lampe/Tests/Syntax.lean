@@ -699,7 +699,26 @@ noir_def mut_ref_loop<>() -> Field := {
   acc
 }
 
-def mutRefLoopEnv : Env := ⟨[increment_ref, mut_ref_loop], []⟩
+-- Same test with parenthesized #_ref argument: #_ref((acc))
+noir_def mut_ref_loop_parens<>() -> Field := {
+  let mut acc = (0: Field);
+  for _ in (0: u32) .. (3: u32) do {
+    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)((acc)));
+  };
+  acc
+}
+
+-- Same test with block-wrapped #_ref argument: #_ref({ acc })
+noir_def mut_ref_loop_block<>() -> Field := {
+  let mut acc = (0: Field);
+  for _ in (0: u32) .. (3: u32) do {
+    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)({ acc }));
+  };
+  acc
+}
+
+def mutRefLoopEnv : Env :=
+  ⟨[increment_ref, mut_ref_loop, mut_ref_loop_parens, mut_ref_loop_block], []⟩
 
 theorem increment_ref_spec {r : Ref} {v : Fp p} :
     STHoare p mutRefLoopEnv
@@ -720,7 +739,37 @@ theorem mut_ref_loop_correct
   · intros i _ _
     steps [increment_ref_spec]
     push_cast
-    ring
+    ring_nf
+  · steps
+    simp_all
+
+theorem mut_ref_loop_parens_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_loop_parens.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 3) := by
+  enter_decl
+  steps
+  loop_inv nat (fun i _ _ => [acc ↦ ⟨.field, (i : Fp p)⟩])
+  · simp
+  · intros i _ _
+    steps [increment_ref_spec]
+    push_cast
+    ring_nf
+  · steps
+    simp_all
+
+theorem mut_ref_loop_block_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_loop_block.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 3) := by
+  enter_decl
+  steps
+  loop_inv nat (fun i _ _ => [acc ↦ ⟨.field, (i : Fp p)⟩])
+  · simp
+  · intros i _ _
+    steps [increment_ref_spec]
+    push_cast
+    ring_nf
   · steps
     simp_all
 
