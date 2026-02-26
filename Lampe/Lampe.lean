@@ -9,6 +9,7 @@ import Lampe.Builtin.Cmp
 import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
+import Lampe.Builtin.Poseidon2
 import Lampe.Builtin.Runtime
 import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
