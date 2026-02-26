@@ -1,330 +1,25 @@
-import «std-1.0.0-beta.12».Extracted
-import Lampe
+import Stdlib.Collections.BoundedVec.Core
 
 namespace Lampe.Stdlib.Collections.BoundedVec
 
 open «std-1.0.0-beta.12»
 
 /-!
-`collections::bounded_vec` is represented as a pair:
-- `storage : Array<T, MaxLen>`
-- `len : u32`
+`collections::bounded_vec`
 
-The intended abstract sequence is `storage.take len`.
-For the "safe" API surface (`new`, `get`, `set`, `push`, `pop`, `extend_*`, `from_array`,
-`from_parts`), we also want a zeroed-tail invariant for indices `i ≥ len`.
+This file is the Hoare-logic layer for `BoundedVec`.
 
-This file starts the formalization by:
-- introducing model projections/invariants,
-- proving the trivial accessor specs (`len`, `max_len`, `storage`),
-- documenting the spec backlog for the remaining methods.
+We are restarting the development to avoid baking in tuple-update helpers (`withLen`, `popped`, ...).
+All method specs should be stated in terms of the semantic function `embed` and Lean `List`
+operations; representation projections (`storage`, `len`) are used only as a bridge to the extracted
+code during proofs.
+
+First targets:
+- `get_unchecked` (converges unconditionally, only constrained in-bounds, no storage mentioned in spec)
+- `get` (requires in-bounds precondition, spec stated via `embed`)
 -/
 
-abbrev Repr (p : Prime) (T : Tp) (MaxLen : U 32) : Type :=
-  Tp.denoteArgs p [T.array MaxLen, .u 32]
-
-def storage {p T MaxLen} (v : Repr p T MaxLen) : List.Vector (T.denote p) MaxLen.toNat :=
-  Builtin.indexTpl v Builtin.Member.head
-
-def len {p T MaxLen} (v : Repr p T MaxLen) : U 32 :=
-  Builtin.indexTpl v Builtin.Member.head.tail
-
-def active {p T MaxLen} (v : Repr p T MaxLen) : List (T.denote p) :=
-  (storage v).toList.take (len v).toNat
-
-def bounded {p T MaxLen} (v : Repr p T MaxLen) : Prop :=
-  (len v).toNat ≤ MaxLen.toNat
-
-def zeroedTail {p T MaxLen} (v : Repr p T MaxLen) : Prop :=
-  ∀ i (hlo : (len v).toNat ≤ i) (hhi : i < MaxLen.toNat),
-    (storage v)[i]'hhi = Tp.zero p T
-
-def wellFormed {p T MaxLen} (v : Repr p T MaxLen) : Prop :=
-  bounded v ∧ zeroedTail v
-
-abbrev bvTp (T : Tp) (MaxLen : U 32) : Tp :=
-  «std-1.0.0-beta.12::collections::bounded_vec::BoundedVec».tp h![T, MaxLen]
-
-def withStorage {p T MaxLen}
-    (v : Repr p T MaxLen) (arr : List.Vector (T.denote p) MaxLen.toNat) : Repr p T MaxLen :=
-  Builtin.replaceTuple' v Builtin.Member.head arr
-
-def withLen {p T MaxLen}
-    (v : Repr p T MaxLen) (l : U 32) : Repr p T MaxLen :=
-  Builtin.replaceTuple' v Builtin.Member.head.tail l
-
-def withStorageAt {p T MaxLen}
-    (v : Repr p T MaxLen) (idx : Fin MaxLen.toNat) (value : Tp.denote p T) : Repr p T MaxLen :=
-  withStorage v ((storage v).set idx value)
-
-def pushed {p T MaxLen}
-    (v : Repr p T MaxLen)
-    (elem : Tp.denote p T)
-    (hpush : (len v).toNat < MaxLen.toNat) : Repr p T MaxLen :=
-  withLen (withStorageAt v ⟨(len v).toNat, hpush⟩ elem) (len v + 1)
-
-def popped {p T MaxLen}
-    (v : Repr p T MaxLen)
-    (hlast : (len v - 1).toNat < MaxLen.toNat) : Repr p T MaxLen :=
-  withLen (withStorageAt v ⟨(len v - 1).toNat, hlast⟩ (Tp.zero p T)) (len v - 1)
-
-@[simp]
-theorem storage_withStorage {p T MaxLen} {v : Repr p T MaxLen}
-    {arr : List.Vector (T.denote p) MaxLen.toNat} :
-    storage (withStorage v arr) = arr := by
-  unfold storage withStorage
-  simp [Builtin.index_replaced_tpl (tpl := v) (mem := Builtin.Member.head) (v' := arr)]
-
-@[simp]
-theorem len_withStorage {p T MaxLen} {v : Repr p T MaxLen}
-    {arr : List.Vector (T.denote p) MaxLen.toNat} :
-    len (withStorage v arr) = len v := by
-  unfold len withStorage
-  rfl
-
-@[simp]
-theorem len_withLen {p T MaxLen} {v : Repr p T MaxLen} {l : U 32} :
-    len (withLen v l) = l := by
-  unfold len withLen
-  simp [Builtin.index_replaced_tpl (tpl := v) (mem := Builtin.Member.head.tail) (v' := l)]
-
-@[simp]
-theorem index_replace_head_tail {p T MaxLen} {v : Repr p T MaxLen} {l : U 32} :
-    Builtin.indexTpl (Builtin.replaceTuple' v Builtin.Member.head.tail l)
-      Builtin.Member.head.tail = l := by
-  simp [Builtin.index_replaced_tpl (tpl := v) (mem := Builtin.Member.head.tail) (v' := l)]
-
-@[simp]
-theorem storage_withLen {p T MaxLen} {v : Repr p T MaxLen} {l : U 32} :
-    storage (withLen v l) = storage v := by
-  unfold storage withLen
-  rfl
-
-@[simp]
-theorem len_modify_head_tail {p T MaxLen}
-    {v : Tp.denote p (bvTp T MaxLen)} {l : U 32}
-    (h : ((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify v l).isSome = true) :
-    len (((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify v l).get h) = l := by
-  unfold len
-  simp [Lens.modify, Lens.get, Access.modify]
-  exact (Builtin.index_replaced_tpl (tpl := v) (mem := Builtin.Member.head.tail) (v' := l))
-
-@[simp]
-theorem len_withStorageAt {p T MaxLen} {v : Repr p T MaxLen} {idx : Fin MaxLen.toNat}
-    {value : Tp.denote p T} :
-    len (withStorageAt v idx value) = len v := by
-  simp [withStorageAt]
-
-@[simp]
-theorem withStorageAt_withLen {p T MaxLen} {v : Repr p T MaxLen} {l : U 32} {idx : Fin MaxLen.toNat}
-    {value : Tp.denote p T} :
-    withStorageAt (withLen v l) idx value = withLen (withStorageAt v idx value) l := by
-  cases v; rfl
-
-theorem vector_set_proof_irrel {n : Nat} {α : Type _} (v : List.Vector α n) (i : Nat)
-    (h1 h2 : i < n) (x : α) :
-    List.Vector.set v ⟨i, h1⟩ x = List.Vector.set v ⟨i, h2⟩ x := by
-  have : (⟨i, h1⟩ : Fin n) = ⟨i, h2⟩ := by
-    apply Fin.ext
-    rfl
-  simp [this]
-
-@[simp]
-theorem indexTpl_replace_tail_head {p T MaxLen} (v : Repr p T MaxLen) (l : U 32) :
-    Builtin.indexTpl (Builtin.replaceTuple' v Builtin.Member.head.tail l) Builtin.Member.head =
-      Builtin.indexTpl v Builtin.Member.head := by
-  cases v; rfl
-
-@[simp]
-theorem indexTpl_replace_head_tail {p T MaxLen} (v : Repr p T MaxLen)
-    (arr : List.Vector (T.denote p) MaxLen.toNat) :
-    Builtin.indexTpl (Builtin.replaceTuple' v Builtin.Member.head arr) Builtin.Member.head.tail =
-      Builtin.indexTpl v Builtin.Member.head.tail := by
-  cases v; rfl
-
-theorem replaceTuple'_head_tail_comm {p T MaxLen} (v : Repr p T MaxLen)
-    (arr : List.Vector (T.denote p) MaxLen.toNat) (l : U 32) :
-    Builtin.replaceTuple' (Builtin.replaceTuple' v Builtin.Member.head.tail l) Builtin.Member.head arr =
-      Builtin.replaceTuple' (Builtin.replaceTuple' v Builtin.Member.head arr) Builtin.Member.head.tail l := by
-  cases v; rfl
-
-theorem modify_head_array_some {p T MaxLen} {v : Tp.denote p (bvTp T MaxLen)} {idx : U 32} {value : Tp.denote p T}
-    (hidx : idx.toNat < MaxLen.toNat) :
-    (((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons (Access.array idx)).modify v value) =
-      some (withStorageAt v ⟨idx.toNat, hidx⟩ value) := by
-  simp [Lens.modify, Lens.get, Access.get, Access.modify, withStorageAt, withStorage, storage, hidx]
-
-lemma bitvec_ofNat_eq_of_toNat_eq {i : Nat} {x : U 32} (h : i = x.toNat) :
-    BitVec.ofNat 32 i = x := by
-  simp [h, BitVec.ofNat_toNat (x := x)]
-
-@[simp] lemma bitvec_ofNatLT_eq_ofNat {i : Nat} (h : i < 2 ^ 32) :
-    BitVec.ofNatLT i h = BitVec.ofNat 32 i := by
-  simpa using (BitVec.ofNatLT_eq_ofNat (w := 32) (n := i) h)
-
-lemma bitvec_ofNatLT_eq_of_toNat_eq {i : Nat} {x : U 32} (h : i = x.toNat) (pf : i < 2 ^ 32) :
-    BitVec.ofNatLT i pf = x := by
-  simpa using (bitvec_ofNat_eq_of_toNat_eq (i := i) (x := x) h)
-
-lemma lt_two_pow_of_lt_maxLen {i : Nat} {MaxLen : U 32} (hhi : i < MaxLen.toNat) :
-    i < 2 ^ 32 := by
-  have hmax : MaxLen.toNat < 2 ^ 32 := by
-    simpa using
-      (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
-  exact lt_trans hhi hmax
-
-lemma nat_lt_of_bv_lt {i : Nat} {x : U 32}
-    (hhi : i < 2 ^ 32) (hcond : (BitVec.ofNat 32 i) < x) : i < x.toNat := by
-  have hcond' : (BitVec.ofNat 32 i).toNat < x.toNat := by
-    simpa [BitVec.lt_def] using hcond
-  have hhi' : i < 4294967296 := by
-    simpa using hhi
-  have hcond'' : i % 4294967296 < x.toNat := by
-    simpa [BitVec.toNat_ofNat] using hcond'
-  simpa [Nat.mod_eq_of_lt hhi'] using hcond''
-
-lemma nat_le_of_bv_le {i : Nat} {x : U 32}
-    (hhi : i < 2 ^ 32) (hcond : x ≤ BitVec.ofNat 32 i) : x.toNat ≤ i := by
-  have hcond' : x.toNat ≤ (BitVec.ofNat 32 i).toNat := by
-    simpa [BitVec.le_def] using hcond
-  have hhi' : i < 4294967296 := by
-    simpa using hhi
-  have hcond'' : x.toNat ≤ i % 4294967296 := by
-    simpa [BitVec.toNat_ofNat] using hcond'
-  simpa [Nat.mod_eq_of_lt hhi'] using hcond''
-
-lemma toNat_ofNat_lt_of_lt_maxLen {i : Nat} {MaxLen : U 32} (hhi : i < MaxLen.toNat) :
-    (BitVec.ofNat 32 i).toNat < MaxLen.toNat := by
-  have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-  have pf' : i < 4294967296 := by
-    simpa using pf
-  have hhi' : i % 4294967296 < MaxLen.toNat := by
-    simpa [Nat.mod_eq_of_lt pf'] using hhi
-  simpa [BitVec.toNat_ofNat] using hhi'
-
-lemma active_prefix_storage {p T MaxLen} {self : Repr p T MaxLen} {i : Nat}
-    (hbounded : bounded self) (hi : i < (len self).toNat) :
-    List.take i (active self) ++
-        [(storage self).toList[i]'(by
-          have : i < (storage self).toList.length := by
-            simpa [bounded, storage, List.Vector.toList_length] using (lt_of_lt_of_le hi hbounded)
-          exact this)] <+:
-      active self := by
-  have hbounded' : (len self).toNat ≤ MaxLen.toNat := hbounded
-  have hactive_len : (active self).length = (len self).toNat := by
-    simp [active, List.length_take, List.Vector.toList_length, hbounded']
-  have hlt : i < (active self).length := by
-    simpa [hactive_len] using hi
-  have hprefix :
-      List.take i (active self) ++ [(active self)[i]'hlt] <+: active self := by
-    have htake :
-        List.take i (active self) ++ [(active self)[i]'hlt] =
-          List.take (i + 1) (active self) := by
-      simpa using (List.take_succ_eq_append_getElem hlt)
-    have hpre : List.take (i + 1) (active self) <+: active self := by
-      simpa using (List.take_prefix (i + 1) (active self))
-    simpa [htake] using hpre
-  have hstorage : i < (storage self).toList.length := by
-    simpa [storage, List.Vector.toList_length] using (lt_of_lt_of_le hi hbounded')
-  have hget : (active self)[i]'hlt = (storage self).toList[i]'hstorage := by
-    simp [active, List.getElem_take, hstorage, hbounded', hi]
-  simpa [hget] using hprefix
-
-lemma decide_lt_succ_eq {a b : Nat} :
-    decide (a < b + 1) = (decide (a < b) || decide (a = b)) := by
-  by_cases h1 : a < b
-  · have h2 : a < b + 1 := Nat.lt_trans h1 (Nat.lt_succ_self b)
-    simp [h1, h2, Nat.ne_of_lt h1]
-  · have h1' : a = b ∨ b < a := Nat.eq_or_lt_of_not_lt h1
-    cases h1' with
-    | inl hEq =>
-        have h2 : a < b + 1 := by simp [hEq, Nat.lt_succ_self b]
-        simp [h1, hEq, h2]
-    | inr hGt =>
-        have h2 : ¬ a < b + 1 := by
-          have hle : b + 1 ≤ a := Nat.succ_le_iff.mpr hGt
-          exact Nat.not_lt_of_ge hle
-        simp [h1, h2, Nat.ne_of_gt hGt]
-
-lemma min_succ_eq_right {i len : Nat} (h : len ≤ i) : min (i + 1) len = len := by
-  exact Nat.min_eq_right (Nat.le_trans h (Nat.le_succ i))
-
-lemma take_active_eq_take_storage {p T MaxLen} {self : Repr p T MaxLen} {i : Nat}
-    (h : i ≤ (len self).toNat) :
-    (active self).take i = (storage self).toList.take i := by
-  simp [active, List.take_take, Nat.min_eq_left h]
-
-lemma take_min_take {i len : Nat} {l : List α} (h : i ≤ len) :
-    List.take (min i len) (List.take len l) = List.take i l := by
-  simp [Nat.min_eq_left h, List.take_take]
-
--- TODO: i think this could benefit from some other U32 arithimetic lemmas we have
-lemma decide_ofNat_eq_toNat {i : Nat} {x : U 32} (pf : i < 2 ^ 32) :
-    decide (BitVec.ofNat 32 i = x) = decide (i = x.toNat) := by
-  by_cases hxi : i = x.toNat
-  · have hbx : BitVec.ofNat 32 i = x := by
-      simp [hxi, bitvec_ofNat_eq_of_toNat_eq (i := i) (x := x) hxi]
-    simp [hxi, hbx]
-  · have pf' : i < 4294967296 := by
-      simpa using pf
-    have hbx : BitVec.ofNat 32 i ≠ x := by
-      intro hbx
-      have hbx_toNat : (BitVec.ofNat 32 i).toNat = x.toNat := by
-        simpa using congrArg BitVec.toNat hbx
-      have hmod : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-      have : i = x.toNat := by
-        have hbx_toNat' : i % 4294967296 = x.toNat := by
-          simpa [BitVec.toNat_ofNat] using hbx_toNat
-        simpa [hmod] using hbx_toNat'
-      exact hxi this
-    simp [hxi, hbx]
-
-lemma decide_lt_succ_eq_bv {i : Nat} {x : U 32} (pf : i < 2 ^ 32) :
-    decide (x.toNat < i + 1) =
-      (decide (x.toNat < i) || decide (BitVec.ofNat 32 i = x)) := by
-  have h := decide_lt_succ_eq (a := x.toNat) (b := i)
-  have h' : decide (x.toNat = i) = decide (BitVec.ofNat 32 i = x) := by
-    simpa [eq_comm] using (decide_ofNat_eq_toNat (i := i) (x := x) pf).symm
-  simpa [h'] using h
-
-theorem new_storage_len_spec {p T MaxLen} :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::new».call h![T, MaxLen] h![])
-      (fun r =>
-        storage r = List.Vector.replicate MaxLen.toNat (Tp.zero p T) ∧
-        len r = 0) := by
-  enter_decl
-  steps
-  subst_vars
-  constructor <;> rfl
-
-theorem new_wellFormed_spec {p T MaxLen} :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::new».call h![T, MaxLen] h![])
-      (fun r => len r = 0 ∧ wellFormed r) := by
-  enter_decl
-  steps
-  subst_vars
-  constructor
-  · rfl
-  · constructor
-    · simp [bounded, len]
-    · intro i _ hhi
-      change (List.Vector.replicate MaxLen.toNat (Tp.zero p T)).get ⟨i, hhi⟩ = Tp.zero p T
-      simp [List.Vector.get_replicate (n := MaxLen.toNat) (a := Tp.zero p T) ⟨i, hhi⟩]
-
-theorem new_spec {p T MaxLen} :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::new».call h![T, MaxLen] h![])
-      (fun r => len r = 0 ∧ bounded r) := by
-  enter_decl
-  steps
-  subst_vars
-  constructor
-  · rfl
-  · simp [bounded, len]
-
-theorem get_unchecked_spec {p T MaxLen self index}
+private theorem get_unchecked_concrete_spec {p T MaxLen self index}
     (hindex : index.toNat < MaxLen.toNat) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked».call h![T, MaxLen]
@@ -334,7 +29,7 @@ theorem get_unchecked_spec {p T MaxLen self index}
   steps
   simpa [storage]
 
-theorem get_spec {p T MaxLen self index}
+private theorem get_concrete_spec {p T MaxLen self index}
     (hbounded : bounded self)
     (hindex : index.toNat < (len self).toNat) :
     STHoare p env ⟦⟧
@@ -343,21 +38,184 @@ theorem get_spec {p T MaxLen self index}
       (fun r => r = (storage self)[index.toNat]'(lt_of_lt_of_le hindex hbounded)) := by
   have hindex_max : index.toNat < MaxLen.toNat := lt_of_lt_of_le hindex hbounded
   enter_decl
-  steps [get_unchecked_spec (hindex := hindex_max)]
+  steps [get_unchecked_concrete_spec (p := p) (T := T) (MaxLen := MaxLen) (self := self) (index := index) (hindex := hindex_max)]
   assumption
 
-theorem set_unchecked_spec {p T MaxLen selfRef self index value}
+theorem get_unchecked_spec {p T MaxLen self index}
+    (hindex : index.toNat < MaxLen.toNat) :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked».call h![T, MaxLen]
+        h![self, index])
+      (fun r => ∀ h : index.toNat < (embed self).length, r = (embed self)[index.toNat]'h) := by
+  have hstorage : index.toNat < (storage self).toList.length := by
+    simpa [storage, List.Vector.toList_length] using hindex
+  refine STHoare.consequence
+      (H₁ := (⟦⟧ : SLP (State p)))
+      (H₂ := (⟦⟧ : SLP (State p)))
+      (Q₁ := fun r => (r = (storage self)[index.toNat]'hindex))
+      (Q₂ := fun r => (∀ hlt : index.toNat < (embed self).length, r = (embed self)[index.toNat]'hlt))
+      SLP.entails_self ?_ (get_unchecked_concrete_spec (p := p) (T := T) (MaxLen := MaxLen)
+        (self := self) (index := index) (hindex := hindex))
+  intro r
+  have h_lift :
+      ((r = (storage self)[index.toNat]'hindex) : SLP (State p)) ⊢
+        ((∀ hlt : index.toNat < (embed self).length, r = (embed self)[index.toNat]'hlt) : SLP (State p)) := by
+    intro st hst
+    rcases hst with ⟨hr, hst⟩
+    refine ⟨?_, hst⟩
+    intro hlt
+    have hr_list : r = (storage self).toList[index.toNat]'hstorage := by
+      simpa [List.Vector.getElem_def] using hr
+    have hx_rhs :
+        (embed self)[index.toNat]'hlt = (storage self).toList[index.toNat]'hstorage := by
+      simpa using
+        (embed_getElem_toList (self := self) (i := index.toNat) (hxs := hlt) (hstorage := hstorage))
+    exact hr_list.trans hx_rhs.symm
+  exact SLP.star_mono_r h_lift
+
+theorem get_spec {p T MaxLen self index}
+    (hbounded : bounded self)
+    (hindex : index.toNat < (embed self).length) :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get».call h![T, MaxLen]
+        h![self, index])
+      (fun r => r = (embed self)[index.toNat]'hindex) := by
+  have hlen : (embed self).length = (len self).toNat := embed_length_eq_len_toNat (v := self) hbounded
+  have hindex_len : index.toNat < (len self).toNat := by
+    simpa [hlen] using hindex
+  have hindex_max : index.toNat < MaxLen.toNat := lt_of_lt_of_le hindex_len hbounded
+  have hstorage : index.toNat < (storage self).toList.length := by
+    simpa [storage, List.Vector.toList_length] using hindex_max
+  have hx_rhs :
+      (embed self)[index.toNat]'hindex = (storage self).toList[index.toNat]'hstorage := by
+    simpa using (embed_getElem_toList (self := self) (i := index.toNat) (hxs := hindex) (hstorage := hstorage))
+  have hprec :
+      STHoare p env ⟦⟧
+        («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get».call h![T, MaxLen]
+          h![self, index])
+        (fun r => r = (storage self)[index.toNat]'hindex_max) := by
+    simpa using
+      (get_concrete_spec (p := p) (T := T) (MaxLen := MaxLen) (self := self) (index := index)
+        (hbounded := hbounded) (hindex := hindex_len))
+
+  -- Post-compose the concrete storage equality into the semantic `embed` equality.
+  refine STHoare.consequence
+      (H₁ := (⟦⟧ : SLP (State p)))
+      (H₂ := (⟦⟧ : SLP (State p)))
+      (Q₁ := fun r => (r = (storage self)[index.toNat]'hindex_max))
+      (Q₂ := fun r => (r = (embed self)[index.toNat]'hindex))
+      SLP.entails_self ?_ hprec
+  intro r
+  have h_lift :
+      ((r = (storage self)[index.toNat]'hindex_max) : SLP (State p))
+        ⊢ ((r = (embed self)[index.toNat]'hindex) : SLP (State p)) := by
+    intro st hst
+    rcases hst with ⟨hr, hst⟩
+    refine ⟨?_, hst⟩
+    have hr_list : r = (storage self).toList[index.toNat]'hstorage := by
+      simpa [List.Vector.getElem_def] using hr
+    exact hr_list.trans hx_rhs.symm
+  exact SLP.star_mono_r h_lift
+
+private theorem set_unchecked_concrete_spec {p T MaxLen selfRef self index value}
     (hindex : index.toNat < MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::set_unchecked».call h![T, MaxLen]
         h![selfRef, index, value])
-      (fun _ => [selfRef ↦ ⟨bvTp T MaxLen, withStorageAt self ⟨index.toNat, hindex⟩ value⟩]) := by
-  enter_decl
-  steps
-  aesop
+      (fun _ =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self ∧ storage v' = (storage self).set ⟨index.toNat, hindex⟩ value⟧) := by
+  let vUpd : Repr p T MaxLen :=
+    Builtin.replaceTuple' self Builtin.Member.head ((storage self).set ⟨index.toNat, hindex⟩ value)
+  have hstate :
+      STHoare p env
+        [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+        («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::set_unchecked».call h![T, MaxLen]
+          h![selfRef, index, value])
+        (fun _ =>
+          [selfRef ↦ ⟨bvTp T MaxLen, vUpd⟩]) := by
+    enter_decl
+    steps
+    aesop
+  refine STHoare.consequence
+      (H₁ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (H₂ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (Q₁ := fun _ =>
+        ([selfRef ↦ ⟨bvTp T MaxLen, vUpd⟩] : SLP (State p)))
+      (Q₂ := fun _ =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self ∧ storage v' = (storage self).set ⟨index.toNat, hindex⟩ value⟧ : SLP (State p)))
+      SLP.entails_self ?_ hstate
+  intro _
+  have hpt :
+      ([selfRef ↦ ⟨bvTp T MaxLen, vUpd⟩] : SLP (State p))
+        ⊢ (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self ∧ storage v' = (storage self).set ⟨index.toNat, hindex⟩ value⟧ : SLP (State p)) := by
+    intro st hst
+    have hlen : len vUpd = len self := by cases self; rfl
+    have hstorage : storage vUpd = (storage self).set ⟨index.toNat, hindex⟩ value := by
+      unfold vUpd storage
+      cases self
+      rfl
+    refine ⟨vUpd, st, (∅ : State p), by simp, by simp, ?_, ?_⟩
+    · simpa [vUpd] using hst
+    · exact ⟨And.intro hlen hstorage, rfl⟩
+  exact SLP.star_mono_r hpt
 
-theorem set_spec {p T MaxLen selfRef self index value}
+theorem set_unchecked_spec {p T MaxLen selfRef self index value}
+    (hb : bounded self)
+    (hindex : index.toNat < MaxLen.toNat) :
+    STHoare p env
+      [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::set_unchecked».call h![T, MaxLen]
+        h![selfRef, index, value])
+      (fun _ =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = (embed self).set index.toNat value⟧) := by
+  refine STHoare.consequence
+      (H₁ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (H₂ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (Q₁ := fun _ =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self ∧ storage v' = (storage self).set ⟨index.toNat, hindex⟩ value⟧ : SLP (State p)))
+      (Q₂ := fun _ =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = (embed self).set index.toNat value⟧ : SLP (State p)))
+      SLP.entails_self ?_ (set_unchecked_concrete_spec (p := p) (T := T) (MaxLen := MaxLen)
+        (selfRef := selfRef) (self := self) (index := index) (value := value) (hindex := hindex))
+  intro _
+  have hpt :
+      (∃∃ v',
+        [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+          ⟦len v' = len self ∧ storage v' = (storage self).set ⟨index.toNat, hindex⟩ value⟧ : SLP (State p))
+        ⊢ (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = (embed self).set index.toNat value⟧ : SLP (State p)) := by
+    intro st hst
+    unfold SLP.exists' at hst
+    rcases hst with ⟨v', hst⟩
+    unfold SLP.star at hst
+    rcases hst with ⟨st₁, st₂, hdisj, hunion, hpt, hpure⟩
+    unfold SLP.lift at hpure
+    rcases hpure with ⟨hpure, hempty⟩
+    rcases hpure with ⟨hlen', hstorage'⟩
+    have hb' : bounded v' := by
+      simpa [bounded, hlen'] using hb
+    have hembed' : embed v' = (embed self).set index.toNat value := by
+      exact embed_eq_set_of_storage_set (v := self) (v' := v')
+        (i := index.toNat) (hi := hindex) (a := value) (hlen := hlen') (hstorage := hstorage')
+    refine ⟨v', st₁, st₂, hdisj, hunion, hpt, ?_⟩
+    exact ⟨And.intro hb' hembed', hempty⟩
+  exact SLP.star_mono_r hpt
+
+private theorem set_concrete_spec {p T MaxLen selfRef self index value}
     (hbounded : bounded self)
     (hindex : index.toNat < (len self).toNat) :
     STHoare p env
@@ -365,39 +223,244 @@ theorem set_spec {p T MaxLen selfRef self index value}
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::set».call h![T, MaxLen]
         h![selfRef, index, value])
       (fun _ =>
-        [selfRef ↦ ⟨bvTp T MaxLen, withStorageAt self ⟨index.toNat, lt_of_lt_of_le hindex hbounded⟩ value⟩]) := by
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self ∧
+              storage v' = (storage self).set ⟨index.toNat, lt_of_lt_of_le hindex hbounded⟩ value⟧) := by
   have hindex_max : index.toNat < MaxLen.toNat := lt_of_lt_of_le hindex hbounded
   enter_decl
-  steps [set_unchecked_spec (hindex := hindex_max)]
+  steps [set_unchecked_concrete_spec (p := p) (T := T) (MaxLen := MaxLen)
+    (selfRef := selfRef) (self := self) (index := index) (value := value) (hindex := hindex_max)]
+  subst_vars
+  rename_i v hproj
+  rcases hproj with ⟨hlen', hstorage'⟩
+  refine And.intro hlen' ?_
+  -- `steps` produced the storage update with proof `hindex_max`; rewrite to the desired proof.
+  have hstorageProof :
+      (storage self).set ⟨index.toNat, hindex_max⟩ value =
+        (storage self).set ⟨index.toNat, lt_of_lt_of_le hindex hbounded⟩ value := by
+    simpa using
+      (vector_set_proof_irrel (v := storage self) (i := index.toNat)
+        (h1 := hindex_max) (h2 := lt_of_lt_of_le hindex hbounded) (x := value))
+  exact hstorage'.trans hstorageProof
 
-theorem push_spec {p T MaxLen selfRef self elem}
+theorem set_spec {p T MaxLen selfRef self index value}
+    (hbounded : bounded self)
+    (hindex : index.toNat < (embed self).length) :
+    STHoare p env
+      [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::set».call h![T, MaxLen]
+        h![selfRef, index, value])
+      (fun _ =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = (embed self).set index.toNat value⟧) := by
+  have hlen : (embed self).length = (len self).toNat := embed_length_eq_len_toNat (v := self) hbounded
+  have hindex_len : index.toNat < (len self).toNat := by
+    simpa [hlen] using hindex
+  have hindex_max : index.toNat < MaxLen.toNat := lt_of_lt_of_le hindex_len hbounded
+  refine STHoare.consequence
+      (H₁ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (H₂ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (Q₁ := fun _ =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self ∧ storage v' = (storage self).set ⟨index.toNat, hindex_max⟩ value⟧ : SLP (State p)))
+      (Q₂ := fun _ =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = (embed self).set index.toNat value⟧ : SLP (State p)))
+      SLP.entails_self ?_
+      (set_concrete_spec (p := p) (T := T) (MaxLen := MaxLen)
+        (selfRef := selfRef) (self := self) (index := index) (value := value)
+        (hbounded := hbounded) (hindex := hindex_len))
+  intro _
+  have hpt :
+      (∃∃ v',
+        [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+          ⟦len v' = len self ∧ storage v' = (storage self).set ⟨index.toNat, hindex_max⟩ value⟧ : SLP (State p))
+        ⊢ (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = (embed self).set index.toNat value⟧ : SLP (State p)) := by
+    intro st hst
+    unfold SLP.exists' at hst
+    rcases hst with ⟨v', hst⟩
+    unfold SLP.star at hst
+    rcases hst with ⟨st₁, st₂, hdisj, hunion, hpt, hpure⟩
+    unfold SLP.lift at hpure
+    rcases hpure with ⟨hpure, hempty⟩
+    rcases hpure with ⟨hlen', hstorage'⟩
+    have hb' : bounded v' := by
+      simpa [bounded, hlen'] using hbounded
+    have hembed' : embed v' = (embed self).set index.toNat value := by
+      exact embed_eq_set_of_storage_set (v := self) (v' := v')
+        (i := index.toNat) (hi := hindex_max) (a := value) (hlen := hlen') (hstorage := hstorage')
+    refine ⟨v', st₁, st₂, hdisj, hunion, hpt, ?_⟩
+    exact ⟨And.intro hb' hembed', hempty⟩
+  exact SLP.star_mono_r hpt
+
+private theorem modify_head_array_some {p T MaxLen} {v : Tp.denote p (bvTp T MaxLen)} {idx : U 32}
+    {value : Tp.denote p T} (hidx : idx.toNat < MaxLen.toNat) :
+    (((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons (Access.array idx)).modify v value) =
+      some (Builtin.replaceTuple' v Builtin.Member.head ((storage v).set ⟨idx.toNat, hidx⟩ value)) := by
+  simp [Lens.modify, Lens.get, Access.get, Access.modify, storage, hidx, bvTp]
+
+private theorem push_concrete_spec {p T MaxLen selfRef self elem}
     (hpush : (len self).toNat < MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::push».call h![T, MaxLen]
         h![selfRef, elem])
-      (fun _ => [selfRef ↦ ⟨bvTp T MaxLen, pushed self elem hpush⟩]) := by
-  enter_decl
-  steps
-  apply (STHoare.letIn_intro
-    (Q := fun _ =>
-      [selfRef ↦ ⟨bvTp T MaxLen, withStorageAt self ⟨(len self).toNat, hpush⟩ elem⟩]))
-  ·
+      (fun _ =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self + 1 ∧
+              storage v' = (storage self).set ⟨(len self).toNat, hpush⟩ elem⟧) := by
+  let vStor : Repr p T MaxLen :=
+    Builtin.replaceTuple' self Builtin.Member.head ((storage self).set ⟨(len self).toNat, hpush⟩ elem)
+  let vUpd : Repr p T MaxLen :=
+    Builtin.replaceTuple' vStor Builtin.Member.head.tail (len self + 1)
+  have hstate :
+      STHoare p env
+        [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+        («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::push».call h![T, MaxLen]
+          h![selfRef, elem])
+        (fun _ =>
+          [selfRef ↦ ⟨bvTp T MaxLen, vUpd⟩]) := by
+    enter_decl
     steps
-    subst_vars
-    simp [bvTp, modify_head_array_some (v := self) (idx := len self) (value := elem) hpush]
-    simp [withStorageAt, withStorage, storage, len]
-  ·
-    intro _
-    steps
+    apply (STHoare.letIn_intro
+      (Q := fun _ =>
+        [selfRef ↦ ⟨bvTp T MaxLen, vStor⟩]))
+    ·
+      steps
+      subst_vars
+      simp [bvTp, vStor, modify_head_array_some (v := self) (idx := len self) (value := elem) hpush,
+        storage, len, vector_set_proof_irrel]
+    ·
+      intro _
+      steps
+  refine STHoare.consequence
+      (H₁ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (H₂ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (Q₁ := fun _ =>
+        ([selfRef ↦ ⟨bvTp T MaxLen, vUpd⟩] : SLP (State p)))
+      (Q₂ := fun _ =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self + 1 ∧ storage v' = (storage self).set ⟨(len self).toNat, hpush⟩ elem⟧ : SLP (State p)))
+      SLP.entails_self ?_ hstate
+  intro _
+  have hpt :
+      ([selfRef ↦ ⟨bvTp T MaxLen, vUpd⟩] : SLP (State p))
+        ⊢ (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self + 1 ∧ storage v' = (storage self).set ⟨(len self).toNat, hpush⟩ elem⟧ : SLP (State p)) := by
+    intro st hst
+    have hlen : len vUpd = len self + 1 := by
+      unfold vUpd len
+      simp [Builtin.index_replaced_tpl]
+    have hstorage : storage vUpd = (storage self).set ⟨(len self).toNat, hpush⟩ elem := by
+      unfold vUpd vStor storage
+      cases self <;> rfl
+    refine ⟨vUpd, st, (∅ : State p), by simp, by simp, ?_, ?_⟩
+    · simpa [vUpd] using hst
+    · exact ⟨And.intro hlen hstorage, rfl⟩
+  exact SLP.star_mono_r hpt
 
-theorem len_spec {p T MaxLen self} :
+theorem push_spec {p T MaxLen selfRef self elem}
+    (hbounded : bounded self)
+    (hspace : (embed self).length < MaxLen.toNat) :
+    STHoare p env
+      [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::push».call h![T, MaxLen]
+        h![selfRef, elem])
+      (fun _ =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = embed self ++ [elem]⟧) := by
+  have hlen : (embed self).length = (len self).toNat := embed_length_eq_len_toNat (v := self) hbounded
+  have hpush : (len self).toNat < MaxLen.toNat := by
+    simpa [hlen] using hspace
+  refine STHoare.consequence
+      (H₁ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (H₂ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (Q₁ := fun _ =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self + 1 ∧ storage v' = (storage self).set ⟨(len self).toNat, hpush⟩ elem⟧ : SLP (State p)))
+      (Q₂ := fun _ =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = embed self ++ [elem]⟧ : SLP (State p)))
+      SLP.entails_self ?_
+      (push_concrete_spec (p := p) (T := T) (MaxLen := MaxLen)
+        (selfRef := selfRef) (self := self) (elem := elem) (hpush := hpush))
+  intro _
+  have hpt :
+      (∃∃ v',
+        [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+          ⟦len v' = len self + 1 ∧ storage v' = (storage self).set ⟨(len self).toNat, hpush⟩ elem⟧ : SLP (State p))
+        ⊢ (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = embed self ++ [elem]⟧ : SLP (State p)) := by
+    intro st hst
+    unfold SLP.exists' at hst
+    rcases hst with ⟨v', hst⟩
+    unfold SLP.star at hst
+    rcases hst with ⟨st₁, st₂, hdisj, hunion, hpt, hpure⟩
+    unfold SLP.lift at hpure
+    rcases hpure with ⟨hpure, hempty⟩
+    rcases hpure with ⟨hlen', hstorage'⟩
+    have hb' : bounded v' := by
+      have hmax : MaxLen.toNat < 2 ^ 32 := by
+        simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
+      have hx32 : (len self).toNat + 1 < 2 ^ 32 := by
+        exact lt_of_le_of_lt (Nat.succ_le_of_lt hpush) hmax
+      have htoNat_v' : (len v').toNat = (len self).toNat + 1 := by
+        simpa [hlen', BitVec.toNat_add_one_of_lt (x := len self) hx32]
+      have : (len v').toNat ≤ MaxLen.toNat := by
+        have : (len self).toNat + 1 ≤ MaxLen.toNat := Nat.succ_le_of_lt hpush
+        simpa [htoNat_v'] using this
+      simpa [bounded] using this
+    have hembed' : embed v' = embed self ++ [elem] := by
+      exact embed_eq_append_of_storage_set_at_len (v := self) (v' := v') (a := elem)
+        (hb := hbounded) (hpush := hpush) (hlen := hlen') (hstorage := hstorage')
+    refine ⟨v', st₁, st₂, hdisj, hunion, hpt, ?_⟩
+    exact ⟨And.intro hb' hembed', hempty⟩
+  exact SLP.star_mono_r hpt
+
+private theorem len_concrete_spec {p T MaxLen self} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len».call h![T, MaxLen] h![self])
       (fun r => r = len self) := by
   enter_decl
   steps
   simpa [len]
+
+theorem len_spec {p T MaxLen self}
+    (hbounded : bounded self) :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len».call h![T, MaxLen] h![self])
+      (fun r => r.toNat = (embed self).length) := by
+  have hlen : (embed self).length = (len self).toNat :=
+    embed_length_eq_len_toNat (v := self) hbounded
+  refine STHoare.consequence
+      (H₁ := (⟦⟧ : SLP (State p)))
+      (H₂ := (⟦⟧ : SLP (State p)))
+      (Q₁ := fun r => (r = len self))
+      (Q₂ := fun r => (r.toNat = (embed self).length))
+      SLP.entails_self ?_ (len_concrete_spec (p := p) (T := T) (MaxLen := MaxLen) (self := self))
+  intro r
+  have h_lift :
+      ((r = len self) : SLP (State p)) ⊢ ((r.toNat = (embed self).length) : SLP (State p)) := by
+    intro st hst
+    rcases hst with ⟨hr, hst⟩
+    refine ⟨?_, hst⟩
+    have hrt : r.toNat = (len self).toNat := by
+      simpa using congrArg BitVec.toNat hr
+    exact hrt.trans hlen.symm
+  exact SLP.star_mono_r h_lift
 
 theorem max_len_spec {p T MaxLen self} :
     STHoare p env ⟦⟧
@@ -417,917 +480,1242 @@ theorem storage_spec {p T MaxLen self} :
   steps
   simpa [storage]
 
-theorem pop_spec {p T MaxLen selfRef self}
+theorem new_spec {p T MaxLen} :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::new».call h![T, MaxLen] h![])
+      (fun r => bounded r ∧ len r = 0 ∧ embed r = []) := by
+  enter_decl
+  steps
+  subst_vars
+  refine And.intro ?_ (And.intro ?_ ?_)
+  · simp [bounded, len]
+  · rfl
+  · simp [embed, active, len, storage]
+
+private lemma pop_preconditions {p T MaxLen} {self : Repr p T MaxLen}
+    (hbounded : bounded self) (hnonempty : embed self ≠ []) :
+    ((0 : U 32) < len self) ∧ ((len self - (1 : U 32)).toNat < MaxLen.toNat) := by
+  have hlen : (embed self).length = (len self).toNat :=
+    embed_length_eq_len_toNat (v := self) hbounded
+  have hpos_embed : 0 < (embed self).length := by
+    cases h : embed self with
+    | nil => cases hnonempty h
+    | cons _ _ => simp
+  have hpos_len : 0 < (len self).toNat := by
+    simpa [hlen] using hpos_embed
+  have hnonzero : (0 : U 32) < len self := by
+    rw [BitVec.lt_def]
+    simpa using hpos_len
+  have h1le : (1 : U 32) ≤ len self := by
+    rw [BitVec.le_def]
+    exact Nat.succ_le_of_lt hpos_len
+  have htoNat_sub : (len self - (1 : U 32)).toNat = (len self).toNat - 1 := by
+    simpa using (BitVec.toNat_sub_of_le (x := len self) (y := (1 : U 32)) h1le)
+  have hpred : (len self).toNat - 1 < (len self).toNat :=
+    Nat.pred_lt (Nat.ne_of_gt hpos_len)
+  have hlastNat : (len self).toNat - 1 < MaxLen.toNat :=
+    lt_of_lt_of_le hpred hbounded
+  have hlast : (len self - (1 : U 32)).toNat < MaxLen.toNat := by
+    rw [htoNat_sub]
+    exact hlastNat
+  exact ⟨hnonzero, hlast⟩
+
+@[simp] private lemma indexTpl_replaceTuple'_head_tail
+    {p} {tp tp' : Tp} {tps : List Tp}
+    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp) :
+    Builtin.indexTpl (Builtin.replaceTuple' tpl Builtin.Member.head v) Builtin.Member.head.tail =
+      Builtin.indexTpl tpl Builtin.Member.head.tail := by
+  rfl
+
+@[simp] private lemma indexTpl_replaceTuple'_headTail_head
+    {p} {tp tp' : Tp} {tps : List Tp}
+    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp') :
+    Builtin.indexTpl (Builtin.replaceTuple' tpl Builtin.Member.head.tail v) Builtin.Member.head =
+      Builtin.indexTpl tpl Builtin.Member.head := by
+  rfl
+
+@[simp] private lemma indexTpl_head
+    {p} {tp : Tp} {tps : List Tp}
+    (tpl : Tp.denoteArgs p (tp :: tps)) :
+    Builtin.indexTpl tpl Builtin.Member.head = tpl.1 := by
+  rfl
+
+@[simp] private lemma indexTpl_head_tail
+    {p} {tp tp' : Tp} {tps : List Tp}
+    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) :
+    Builtin.indexTpl tpl Builtin.Member.head.tail = tpl.2.1 := by
+  rfl
+
+@[simp] private lemma toNat_sub_one_u32 (x : U 32) :
+    BitVec.toNat (x - (1 : U 32)) = (4294967295 + BitVec.toNat x) % 4294967296 := by
+  rfl
+
+@[simp] private lemma coe_one_u32 :
+    ((↑(1 : Nat) : U 32) = (1#32)) := by
+  rfl
+
+@[simp] private lemma coe_one_u32' :
+    ((↑1 : U 32) = (1#32)) := by
+  decide
+
+@[simp] private lemma replaceTuple'_head_fst
+    {p} {tp tp' : Tp} {tps : List Tp}
+    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp) :
+    (Builtin.replaceTuple' tpl Builtin.Member.head v).1 = v := by
+  rfl
+
+@[simp] private lemma replaceTuple'_head_tail_snd
+    {p} {tp tp' : Tp} {tps : List Tp}
+    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp) :
+    (Builtin.replaceTuple' tpl Builtin.Member.head v).2 = tpl.2 := by
+  rfl
+
+@[simp] private lemma replaceTuple'_headTail_fst
+    {p} {tp tp' : Tp} {tps : List Tp}
+    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp') :
+    (Builtin.replaceTuple' tpl Builtin.Member.head.tail v).1 = tpl.1 := by
+  rfl
+
+@[simp] private lemma replaceTuple'_headTail_snd_head
+    {p} {tp tp' : Tp} {tps : List Tp}
+    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp') :
+    (Builtin.replaceTuple' tpl Builtin.Member.head.tail v).2.1 = v := by
+  rfl
+
+private theorem pop_concrete_spec {p T MaxLen selfRef self}
     (hnonzero : (0 : U 32) < len self)
-    (hlast : (len self - 1).toNat < MaxLen.toNat) :
+    (hlast : (len self - (1 : U 32)).toNat < MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::pop».call h![T, MaxLen]
         h![selfRef])
       (fun r =>
-        ⟦r = (storage self)[(len self - 1).toNat]'hlast⟧ ⋆
-        [selfRef ↦ ⟨bvTp T MaxLen, popped self hlast⟩]) := by
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self - (1 : U 32) ∧
+              storage v' =
+                (storage self).set ⟨(len self - (1 : U 32)).toNat, hlast⟩ (Tp.zero p T) ∧
+              r = (storage self)[(len self - (1 : U 32)).toNat]'hlast⟧) := by
   enter_decl
   steps
-  apply (STHoare.letIn_intro (Q := fun _ => [selfRef ↦ ⟨bvTp T MaxLen, popped self hlast⟩]))
+  -- split on the final `let` corresponding to the `Unit`-returning block that zeroes the tail slot
+  apply (STHoare.letIn_intro
+    (Q := fun _ =>
+      (∃∃ v',
+        [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+          ⟦len v' = len self - (1 : U 32) ∧
+            storage v' =
+              (storage self).set ⟨(len self - (1 : U 32)).toNat, hlast⟩ (Tp.zero p T)⟧ : SLP (State p))))
   ·
     steps
     subst_vars
-    simp [popped, withStorageAt, withLen, withStorage, storage, len, withStorageAt_withLen, replaceTuple'_head_tail_comm, bvTp]
-    congr
+    -- At this point `steps` has reduced the heap update to pure projection equalities.
+    cases self
+    simp [
+      Repr, len, storage,
+      Builtin.indexTpl, Builtin.replaceTuple',
+      vector_set_proof_irrel, BitVec.ofNat_eq_ofNat
+    ]
+    exact coe_one_u32'
   ·
-    intro _
+    intro r
     steps
     subst_vars
-    simp [storage, len]
-    rfl
+    -- Add the return-value equation.
+    rename_i v hproj
+    have ha :
+        len v = len self - (1 : U 32) ∧
+          storage v =
+            (storage self).set ⟨BitVec.toNat (len self - (1 : U 32)), hlast⟩ (Tp.zero p T) := by
+      simpa using (by
+        -- `steps` leaves exactly this conjunction as a hypothesis (with an unreadable generated name).
+        assumption :
+          len v = len self - (1 : U 32) ∧
+            storage v =
+              (storage self).set ⟨BitVec.toNat (len self - (1 : U 32)), hlast⟩ (Tp.zero p T))
+    rcases ha with ⟨hlen', hstorage'⟩
+    refine ⟨?_, ?_, ?_⟩
+    · simpa [len, Builtin.indexTpl, BitVec.ofNat_eq_ofNat] using hlen'
+    · simpa [storage, len, Builtin.indexTpl, vector_set_proof_irrel, BitVec.ofNat_eq_ofNat] using hstorage'
+    ·
+      simp [storage, len, Builtin.indexTpl, Builtin.replaceTuple', BitVec.ofNat_eq_ofNat]
+      set i : Nat := (4294967295 + BitVec.toNat self.2.1) % 4294967296
+      -- normalize both sides to `List.Vector.get` at the same `Nat` index, then drop proof differences
+      change List.Vector.get self.1 ⟨i, ?_⟩ = List.Vector.get self.1 ⟨i, ?_⟩
+      exact vector_get_proof_irrel (v := self.1) (i := i) _ _
+
+theorem pop_spec {p T MaxLen selfRef self}
+    (hbounded : bounded self)
+    (hnonempty : embed self ≠ []) :
+    STHoare p env
+      [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::pop».call h![T, MaxLen]
+        h![selfRef])
+      (fun r =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = (embed self).dropLast ∧ r = (embed self).getLast hnonempty⟧) := by
+  obtain ⟨hnonzero, hlast⟩ := pop_preconditions (self := self) hbounded hnonempty
+  -- Run the concrete spec, then reinterpret in terms of `embed`.
+  refine STHoare.consequence
+      (H₁ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (H₂ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
+      (Q₁ := fun r =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦len v' = len self - (1 : U 32) ∧
+              storage v' =
+                (storage self).set ⟨(len self - (1 : U 32)).toNat, hlast⟩ (Tp.zero p T) ∧
+              r = (storage self)[(len self - (1 : U 32)).toNat]'hlast⟧ : SLP (State p)))
+      (Q₂ := fun r =>
+        (∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = (embed self).dropLast ∧ r = (embed self).getLast hnonempty⟧ : SLP (State p)))
+      SLP.entails_self ?_
+      (pop_concrete_spec (p := p) (T := T) (MaxLen := MaxLen)
+        (selfRef := selfRef) (self := self) (hnonzero := hnonzero) (hlast := hlast))
+  intro r st hst
+  -- `STHoare.consequence` asks us to prove `Q₁ r ⋆ ⊤ ⊢ Q₂ r ⋆ ⊤`.
+  unfold SLP.star at hst
+  rcases hst with ⟨stQ1, stTop, hdisj, hunion, hQ1, hTop⟩
+  unfold SLP.exists' at hQ1
+  rcases hQ1 with ⟨v', hQ1⟩
+  rcases hQ1 with ⟨stPt, stPure, hdisj', hunion', hpt, hpure⟩
+  unfold SLP.lift at hpure
+  rcases hpure with ⟨hpure, hempty⟩
+  rcases hpure with ⟨hlen', hstorage', hret⟩
+  have hb' : bounded v' := by
+    have : (len v').toNat ≤ MaxLen.toNat := by
+      have : (len self - (1 : U 32)).toNat ≤ MaxLen.toNat := Nat.le_of_lt hlast
+      simpa [hlen'] using this
+    simpa [bounded] using this
+  have hembed' : embed v' = (embed self).dropLast := by
+    exact embed_eq_dropLast_of_pop_update (v := self) (v' := v')
+      (hb := hbounded) (hnonempty := hnonempty) (hnonzero := hnonzero)
+      (hlen := hlen') (hlast := hlast) (hstorage := hstorage')
+  have hret' : r = (embed self).getLast hnonempty := by
+    have hlastEq := embed_getLast_eq_storage_get (v := self)
+      (hb := hbounded) (hnonempty := hnonempty) (hnonzero := hnonzero) (hlast := hlast)
+    -- `hret` gives `r = storage[...]`; rewrite through `hlastEq`.
+    simpa [hret, hlastEq]
+  -- Rebuild the goal `Q₂ r ⋆ ⊤` on the same split heap.
+  unfold SLP.star
+  refine ⟨stQ1, stTop, hdisj, hunion, ?_, hTop⟩
+  unfold SLP.exists'
+  refine ⟨v', ?_⟩
+  refine ⟨stPt, stPure, hdisj', hunion', hpt, ?_⟩
+  exact ⟨And.intro hb' (And.intro hembed' hret'), hempty⟩
 
 theorem from_parts_unchecked_spec {p T MaxLen array l}
-    (hbounded : l ≤ MaxLen) :
+    (hb : l.toNat ≤ MaxLen.toNat) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::from_parts_unchecked».call
         h![T, MaxLen] h![array, l])
-      (fun r => storage r = array ∧ len r = l ∧ bounded r) := by
+      (fun r => bounded r ∧ embed r = List.take l.toNat array.toList) := by
+  have hble : l ≤ MaxLen := by
+    -- `≤` on `U 32` is by `toNat`.
+    rw [BitVec.le_def]
+    simpa using hb
   enter_decl
   steps
   subst_vars
   constructor
-  · rfl
-  constructor
-  · rfl
-  · simpa [bounded, len] using hbounded
+  · simpa [bounded, len] using hb
+  · simp [embed, active, storage, len]
 
 theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
-    (hspace : len self + Len ≤ MaxLen) :
+    (hspace : (len self).toNat + Len.toNat ≤ MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::extend_from_array».call
         h![T, MaxLen, Len] h![selfRef, array])
-      (fun _ => ∃∃ v', [selfRef ↦ ⟨bvTp T MaxLen, v'⟩]) := by
+      (fun _ =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = embed self ++ array.toList⟧) := by
+  have hb_self : bounded self := by
+    -- `len(self) ≤ len(self) + Len ≤ MaxLen`
+    have : (len self).toNat ≤ (len self).toNat + Len.toNat := by
+      simpa using (Nat.le_add_right (len self).toNat Len.toNat)
+    exact le_trans this hspace
+  have hMax_lt : MaxLen.toNat < 2 ^ 32 := by
+    simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
+  have hLen_lt : Len.toNat < 2 ^ 32 := by
+    simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := Len) (by rfl))
+  have hcastLenNat : ((↑(List.Vector.length array) : U 32)).toNat = Len.toNat := by
+    have : List.Vector.length array = Len.toNat := by rfl
+    simp [this, BitVec.toNat_ofNat, Nat.mod_eq_of_lt hLen_lt]
+  have hsum_lt : (len self).toNat + ((↑(List.Vector.length array) : U 32)).toNat < 2 ^ 32 := by
+    -- `len(self) + Len ≤ MaxLen < 2^32`
+    have : (len self).toNat + Len.toNat < 2 ^ 32 := lt_of_le_of_lt hspace hMax_lt
+    simpa [hcastLenNat] using this
+  have hnew_le : len self + (↑(List.Vector.length array) : U 32) ≤ MaxLen := by
+    rw [BitVec.le_def]
+    -- Avoid `simp` rewriting `toNat` of addition to a modular expression too early.
+    rw [BitVec.toNat_add_of_lt (x := len self) (y := (↑(List.Vector.length array) : U 32)) hsum_lt]
+    -- `≤` on `U 32` is by `toNat`.
+    simpa [hcastLenNat] using hspace
   enter_decl
   steps
-  loop_inv nat fun _ _ _ => ∃∃ v', [selfRef ↦ ⟨bvTp T MaxLen, v'⟩]
+
+  -- Loop writes `array[i]` into `storage[len + i]` for `i < Len`, leaving `len` unchanged.
+  loop_inv nat (fun i _ _ =>
+      ∃∃ v : Repr p T MaxLen,
+        [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆
+          ⟦len v = len self ∧
+            List.take ((len self).toNat + i) (storage v).toList =
+              embed self ++ array.toList.take i⟧)
   · sl
-  · simp
+    simp [Nat.add_zero, embed, active, storage]
+  ·
+    simp
   · intro i hlo hhi
     steps
-  · steps
+    subst_vars
+    -- Rename the tail of the context to get the loop witness and its invariant.
+    rename_i h_isSome
+    rename_i h_dec
+    rename_i u2
+    rename_i h_cast
+    rename_i h_add
+    rename_i hinv
+    rename_i v
+    rcases hinv with ⟨hlenV, htakeV⟩
+    have hhiLen : i < Len.toNat := by
+      simpa [hcastLenNat] using hhi
+    have hi32 : i < 2 ^ 32 := by
+      exact lt_of_lt_of_le hhiLen (Nat.le_of_lt hLen_lt)
+    have hiArr : i < array.toList.length := by
+      simpa [List.Vector.toList_length] using hhiLen
+    have hiMax : (len self).toNat + i < MaxLen.toNat := by
+      have : (len self).toNat + i < (len self).toNat + Len.toNat :=
+        Nat.add_lt_add_left hhiLen (len self).toNat
+      exact lt_of_lt_of_le this hspace
+    have hiStor : (len self).toNat + i < (storage v).toList.length := by
+      simpa [storage, List.Vector.toList_length] using hiMax
+    constructor
+    ·
+      -- `len` does not change when we only update `storage`.
+      simpa [len] using hlenV
+    ·
+      -- Show the updated prefix matches `embed self ++ array.toList.take (i+1)`.
+      have hlenVNat : (len v).toNat = (len self).toNat := by
+        simpa using congrArg BitVec.toNat hlenV
+      have hi32' : i < 4294967296 := by
+        simpa using hi32
+      have htoNat_i : (BitVec.ofNat 32 i).toNat = i := by
+        simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi32']
+      have hsum_lt' : (len v).toNat + (BitVec.ofNat 32 i).toNat < 2 ^ 32 := by
+        have : (len self).toNat + i < 2 ^ 32 := by
+          have : (len self).toNat + i < (len self).toNat + Len.toNat :=
+            Nat.add_lt_add_left hhiLen (len self).toNat
+          exact lt_of_lt_of_le (lt_of_lt_of_le this hspace) (Nat.le_of_lt hMax_lt)
+        simpa [hlenVNat, htoNat_i] using this
+      have htoNat_idx :
+          (len v + BitVec.ofNat 32 i).toNat = (len self).toNat + i := by
+        have htoNat_add :=
+          BitVec.toNat_add_of_lt (x := len v) (y := BitVec.ofNat 32 i) hsum_lt'
+        simpa [hlenVNat, htoNat_i] using htoNat_add
+      have htoNat_idx' :
+          (Builtin.indexTpl v Builtin.Member.head.tail + BitVec.ofNat 32 i).toNat =
+            (len self).toNat + i := by
+        simpa [len] using htoNat_idx
 
-theorem extend_from_slice_spec {p T MaxLen selfRef self slice} :
+      -- Normalize the tuple update performed by the loop body down to a `List.set` on `storage.toList`.
+      simp (config := {contextual := false})
+        [storage, len, List.Vector.toList_set, htoNat_idx', List.Vector.get_eq_get_toList,
+          List.get_eq_getElem]
+
+      -- Reduce the modular index to the plain `Nat` index `(len self).toNat + i`.
+      have hlenVNat' : BitVec.toNat v.2.1 = (len self).toNat := by
+        simpa [len] using hlenVNat
+      have hsum_lt'' : BitVec.toNat v.2.1 + i < 4294967296 := by
+        have : (len self).toNat + i < 2 ^ 32 := by
+          have : (len self).toNat + i < (len self).toNat + Len.toNat :=
+            Nat.add_lt_add_left hhiLen (len self).toNat
+          exact lt_of_lt_of_le (lt_of_lt_of_le this hspace) (Nat.le_of_lt hMax_lt)
+        simpa [hlenVNat'] using this
+      have hmod :
+          ((BitVec.toNat v.2.1 + i) % 4294967296) = (len self).toNat + i := by
+        have hmod' : (BitVec.toNat v.2.1 + i) % 4294967296 = BitVec.toNat v.2.1 + i :=
+          Nat.mod_eq_of_lt hsum_lt''
+        simpa [hlenVNat'] using hmod'
+      try simp [hmod]
+
+      have hiStor_toList : (len self).toNat + i < (List.Vector.toList v.1).length := by
+        simpa [List.Vector.toList_length] using hiMax
+      have htakeV_toList :
+          List.take ((len self).toNat + i) (List.Vector.toList v.1) =
+            embed self ++ List.take i (List.Vector.toList array) := by
+        simpa [storage] using htakeV
+      have hiArr_toList : i < (List.Vector.toList array).length := by
+        simpa [List.Vector.toList_length] using hiArr
+
+      -- Extraction computes `toNat (ofNat 32 i)` as `i % 2^32`; under `i < 2^32` this is just `i`.
+      have hmod_i : i % 4294967296 = i := Nat.mod_eq_of_lt hi32'
+      simp [hmod_i]
+
+      -- Use `take_succ` lemmas plus the loop IH.
+      calc
+        List.take ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + (i + 1))
+            ((List.Vector.toList v.1).set ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + i)
+              ((List.Vector.toList array)[i]'hiArr_toList)) =
+          List.take ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + i) (List.Vector.toList v.1) ++
+            [((List.Vector.toList array)[i]'hiArr_toList)] := by
+          simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+            (List.take_succ_set_eq_take_append
+              (l := (List.Vector.toList v.1))
+              (n := (Builtin.indexTpl self Builtin.Member.head.tail).toNat + i)
+              (a := ((List.Vector.toList array)[i]'hiArr_toList))
+              (hn := by simpa [len] using hiStor_toList))
+        _ =
+          (embed self ++ List.take i (List.Vector.toList array)) ++
+            [((List.Vector.toList array)[i]'hiArr_toList)] := by
+          simpa [len] using
+            congrArg (fun t => t ++ [((List.Vector.toList array)[i]'hiArr_toList)]) htakeV_toList
+        _ =
+          embed self ++ (List.take i (List.Vector.toList array) ++
+            [((List.Vector.toList array)[i]'hiArr_toList)]) := by
+          simp [List.append_assoc]
+        _ =
+          embed self ++ List.take (i + 1) (List.Vector.toList array) := by
+          -- turn `take i ++ [get i]` into `take (i+1)`
+          simpa using
+            (List.take_succ_eq_take_append_get
+              (l := (List.Vector.toList array)) (n := i) (hn := hiArr_toList))
+  ·
+    -- After the loop, `len` is set to `new_len = len + Len`.
+    steps
+    subst_vars
+    rename_i h_isSome
+    rename_i h_dec
+    rename_i hinv
+    rename_i v
+    rcases hinv with ⟨hlenV, htakeV⟩
+    have hsum_lt_final : (len self).toNat + Len.toNat < 4294967296 := by
+      have : (len self).toNat + Len.toNat < 2 ^ 32 := lt_of_le_of_lt hspace hMax_lt
+      simpa using this
+    have hmod :
+        (((len self).toNat + Len.toNat) % 4294967296) = (len self).toNat + Len.toNat := by
+      exact Nat.mod_eq_of_lt hsum_lt_final
+    have hmod_simp :
+        ((BitVec.toNat self.2.1 + BitVec.toNat Len) % 4294967296) =
+          BitVec.toNat self.2.1 + BitVec.toNat Len := by
+      -- `simp [len]` turns `(len self).toNat` into `BitVec.toNat self.2.1`.
+      simpa [len] using hmod
+
+    constructor
+    ·
+      -- boundedness reduces to `len + Len ≤ MaxLen`.
+      simpa [bounded, len, hmod_simp, hcastLenNat] using hspace
+    ·
+      have htakeArr : array.toList.take Len.toNat = array.toList := by
+        simp [List.Vector.toList_length]
+      have htakeV' :
+          List.take ((len self).toNat + Len.toNat) (List.Vector.toList v.1) =
+            embed self ++ List.take Len.toNat (List.Vector.toList array) := by
+        simpa [storage, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using htakeV
+      -- `embed` is `take len storage`; `storage` is unchanged by the final `len` update.
+      simpa [embed, active, storage, len, hmod_simp, htakeArr] using htakeV'
+
+private theorem extend_from_array_from_empty_spec {p T MaxLen Len selfRef self array}
+    (hlen0 : len self = 0)
+    (hspace : Len.toNat ≤ MaxLen.toNat) :
+    STHoare p env
+      [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::extend_from_array».call
+        h![T, MaxLen, Len] h![selfRef, array])
+      (fun _ =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = array.toList⟧) := by
+  have hnew_le : Len ≤ MaxLen := by
+    rw [BitVec.le_def]
+    simpa using hspace
+  have hLen_lt : Len.toNat < 2 ^ 32 := by
+    simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := Len) (by rfl))
+  enter_decl
+  steps
+  all_goals (try (first | exact hnew_le | simp [hlen0]))
+  -- Loop writes `array[i]` into `storage[i]` for `i < Len`, leaving `len` unchanged (still 0).
+  loop_inv nat (fun i _ _ =>
+      ∃∃ v : Repr p T MaxLen,
+        [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆
+          ⟦len v = 0 ∧ List.take i (storage v).toList = array.toList.take i⟧)
+  ·
+    sl
+    simp [hlen0]
+  ·
+    simp
+  ·
+    intro i hlo hhi
+    steps
+    all_goals (try (first | exact hnew_le | simp [hlen0]))
+    subst_vars
+    -- `steps` reduces the heap part; we are left with the pure prefix facts for the invariant.
+    -- `steps` leaves a bunch of inaccessible hypotheses (`v✝`, `a✝`, `#v_12`, ...).
+    -- We rename them from the end of the context, one-by-one, so this is robust to insertion/removal.
+    rename_i h_isSome
+    rename_i h_dec
+    rename_i u2
+    rename_i h_cast
+    rename_i h_add
+    rename_i hinv
+    rename_i v
+    rcases hinv with ⟨hlenV, htakeV⟩
+    have hi32 : i < 2 ^ 32 := lt_of_lt_of_le hhi (Nat.le_of_lt hLen_lt)
+    have hiArr : i < array.toList.length := by
+      simpa [List.Vector.toList_length] using hhi
+    have hiMax : i < MaxLen.toNat := lt_of_lt_of_le hhi hspace
+    have hiStor : i < (storage v).toList.length := by
+      simpa [storage, List.Vector.toList_length] using hiMax
+    constructor
+    ·
+      -- `len` does not change when we only update `storage`.
+      -- (We are replacing the `head` of the tuple.)
+      simpa [len] using hlenV
+    ·
+      -- Show the updated prefix matches `array.toList.take (i+1)`.
+      have hlenVNat : (len v).toNat = 0 := by
+        simpa using congrArg BitVec.toNat hlenV
+      have hi32' : i < 4294967296 := by
+        simpa using hi32
+      have htoNat_i : (BitVec.ofNat 32 i).toNat = i := by
+        simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi32']
+      have hsum_lt : (len v).toNat + (BitVec.ofNat 32 i).toNat < 2 ^ 32 := by
+        simpa [hlenVNat, htoNat_i] using hi32
+      have htoNat_idx :
+          (len v + BitVec.ofNat 32 i).toNat = i := by
+        have htoNat_add :=
+          BitVec.toNat_add_of_lt (x := len v) (y := BitVec.ofNat 32 i) hsum_lt
+        simpa [hlenVNat, htoNat_i] using htoNat_add
+      have htoNat_idx' :
+          (Builtin.indexTpl v Builtin.Member.head.tail + BitVec.ofNat 32 i).toNat = i := by
+        simpa [len] using htoNat_idx
+
+      -- Normalize the tuple update performed by the loop body down to a `List.set` on
+      -- `storage.toList`. This avoids definitional-equality issues from the `Fin` proofs created
+      -- by extraction.
+      simp (config := {contextual := false})
+        [storage, len, List.Vector.toList_set, htoNat_idx', List.Vector.get_eq_get_toList,
+          List.get_eq_getElem]
+
+      -- The index that extraction produces is modular (`toNat` of a `U32` addition); reduce it to `i`
+      -- using `len v = 0` and `i < 2^32`.
+      have hlenVNat0 : BitVec.toNat v.2.1 = 0 := by
+        -- `v.2.1` is the concrete `len` field after simplification.
+        simpa [len] using hlenVNat
+      have hmod_i : ((BitVec.toNat v.2.1 + i) % 4294967296) = i := by
+        simp [hlenVNat0, Nat.mod_eq_of_lt hi32']
+      try simp [hmod_i]
+
+      have hiStor_toList : i < (List.Vector.toList v.1).length := by
+        -- `v.1` is a `Vector` of length `MaxLen.toNat`.
+        simpa [List.Vector.toList_length] using hiMax
+      have htakeV_toList : List.take i (List.Vector.toList v.1) = List.take i (List.Vector.toList array) := by
+        simpa [storage] using htakeV
+      have hiArr_toList : i < (List.Vector.toList array).length := by
+        simpa using hiArr
+
+      -- Extraction indexes `array` via a `u32` cast, so `i` appears as `i % 2^32`.
+      have hmodIdx : i % 4294967296 = i := Nat.mod_eq_of_lt hi32'
+      simp (config := {failIfUnchanged := false}) [hmodIdx]
+
+      -- Now use the standard `take_succ` lemmas plus the loop IH.
+      calc
+        List.take (i + 1) ((List.Vector.toList v.1).set i ((List.Vector.toList array)[i]'hiArr_toList)) =
+        List.take i (List.Vector.toList v.1) ++ [((List.Vector.toList array)[i]'hiArr_toList)] := by
+          simpa using
+            (List.take_succ_set_eq_take_append
+              (l := (List.Vector.toList v.1)) (n := i) (a := ((List.Vector.toList array)[i]'hiArr_toList))
+              (hn := hiStor_toList))
+        _ = List.take i (List.Vector.toList array) ++ [((List.Vector.toList array)[i]'hiArr_toList)] := by
+          -- rewrite the prefix using the loop IH
+          simp [htakeV_toList]
+        _ = List.take (i + 1) (List.Vector.toList array) := by
+          symm
+          simpa using
+            (List.take_succ_eq_take_append_get (l := (List.Vector.toList array)) (n := i) (hn := hiArr_toList))
+  ·
+    -- After the loop, `len` is set to `new_len = Len`.
+    steps
+    all_goals (try (first | exact hnew_le | simp [hlen0]))
+    subst_vars
+    -- Rename the tail of the context to get the loop witness and its invariant.
+    rename_i h_isSome
+    rename_i h_dec
+    rename_i hinv
+    rename_i v
+    rcases hinv with ⟨hlenV, htakeV⟩
+    have hlenSelfNat : (Builtin.indexTpl self Builtin.Member.head.tail).toNat = 0 := by
+      simpa [len] using congrArg BitVec.toNat hlen0
+    have hcastLenNat : ((↑(List.Vector.length array) : U 32)).toNat = Len.toNat := by
+      have : List.Vector.length array = Len.toNat := by rfl
+      simp [this, BitVec.toNat_ofNat, Nat.mod_eq_of_lt hLen_lt]
+    have hsum : (Builtin.indexTpl self Builtin.Member.head.tail).toNat + ((↑(List.Vector.length array) : U 32)).toNat < 2 ^ 32 := by
+      simpa [hlenSelfNat, hcastLenNat] using hLen_lt
+    have htoNat_newLen :
+        (Builtin.indexTpl self Builtin.Member.head.tail + (↑(List.Vector.length array) : U 32)).toNat = Len.toNat := by
+      have htoNat_add :=
+        BitVec.toNat_add_of_lt (x := Builtin.indexTpl self Builtin.Member.head.tail)
+          (y := (↑(List.Vector.length array) : U 32)) hsum
+      simpa [hlenSelfNat, hcastLenNat] using htoNat_add
+    constructor
+    ·
+      -- boundedness reduces to `Len.toNat ≤ MaxLen.toNat`.
+      have hLen_lt' : Len.toNat < 4294967296 := by
+        simpa using hLen_lt
+      have hmod :
+          ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + Len.toNat) % 4294967296 = Len.toNat := by
+        simp [hlenSelfNat, Nat.mod_eq_of_lt hLen_lt']
+      -- `bounded` is about `toNat` of the post-loop `len`, which is modular addition.
+      simpa [bounded, len, hmod] using hspace
+    ·
+      have hLen_lt' : Len.toNat < 4294967296 := by
+        simpa using hLen_lt
+      have hmod :
+          ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + Len.toNat) % 4294967296 = Len.toNat := by
+        simp [hlenSelfNat, Nat.mod_eq_of_lt hLen_lt']
+      have htakeArr : array.toList.take Len.toNat = array.toList := by
+        simp [List.Vector.toList_length]
+      -- `embed` is `take len storage`; `storage` is unchanged by a tail update.
+      have htakeV' :
+          List.take Len.toNat (List.Vector.toList v.1) = List.take Len.toNat (List.Vector.toList array) := by
+        simpa [storage] using htakeV
+      have htakeArr' :
+          List.take Len.toNat (List.Vector.toList array) = List.Vector.toList array := by
+        simpa using htakeArr
+      -- Reduce to the loop invariant prefix equation at `Len`.
+      simpa [embed, active, storage, len, hmod] using (htakeV'.trans htakeArr')
+
+theorem from_array_spec {p T MaxLen Len array}
+    (hbounded : Len.toNat ≤ MaxLen.toNat) :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::from_array».call
+        h![T, MaxLen, Len] h![array])
+      (fun r => bounded r ∧ embed r = array.toList) := by
+  enter_decl
+  steps
+  steps [new_spec]
+  rename_i vecVal
+  -- `vecVal : bounded v ∧ len v = 0 ∧ embed v = []` for the freshly-allocated `v` stored in `vec`.
+  have hlen0 : len _ = 0 := vecVal.2.1
+  apply (STHoare.letIn_intro
+    (Q := fun _ =>
+      ∃∃ v',
+        [vec ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+          ⟦bounded v' ∧ embed v' = array.toList⟧))
+  ·
+    -- call
+    exact extend_from_array_from_empty_spec (p := p) (T := T) (MaxLen := MaxLen) (Len := Len)
+      (selfRef := vec) (array := array) (hlen0 := hlen0) (hspace := hbounded)
+  ·
+    -- read back the updated value
+    intro _
+    steps
+    subst_vars
+    assumption
+
+theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
+    (hspace : (len self).toNat + slice.length ≤ MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::extend_from_slice».call
         h![T, MaxLen] h![selfRef, slice])
-      (fun _ => ∃∃ v', [selfRef ↦ ⟨bvTp T MaxLen, v'⟩]) := by
+      (fun _ =>
+        ∃∃ v',
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = embed self ++ slice⟧) := by
+  have hb_self : bounded self := by
+    have : (len self).toNat ≤ (len self).toNat + slice.length := by
+      simpa using (Nat.le_add_right (len self).toNat slice.length)
+    exact le_trans this hspace
+  have hMax_lt : MaxLen.toNat < 2 ^ 32 := by
+    simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
+  have hslen_lt : slice.length < 2 ^ 32 := by
+    have : slice.length ≤ MaxLen.toNat := by
+      have : slice.length ≤ (len self).toNat + slice.length := by
+        simpa using (Nat.le_add_left slice.length (len self).toNat)
+      exact le_trans this hspace
+    exact lt_of_le_of_lt this hMax_lt
+  have hcastLenNat : ((↑slice.length : U 32)).toNat = slice.length := by
+    have hslen_lt' : slice.length < 4294967296 := by
+      simpa using hslen_lt
+    simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hslen_lt']
+  have hsum_lt : (len self).toNat + ((↑slice.length : U 32)).toNat < 2 ^ 32 := by
+    -- Avoid `simp` rewriting `(↑slice.length : U 32).toNat` to `slice.length % 2^32` too early.
+    rw [hcastLenNat]
+    exact lt_of_le_of_lt hspace hMax_lt
+  have hnew_le : len self + (↑slice.length : U 32) ≤ MaxLen := by
+    rw [BitVec.le_def]
+    rw [BitVec.toNat_add_of_lt (x := len self) (y := (↑slice.length : U 32)) hsum_lt]
+    rw [hcastLenNat]
+    exact hspace
   enter_decl
   steps
-  loop_inv nat fun _ _ _ => ∃∃ v', [selfRef ↦ ⟨bvTp T MaxLen, v'⟩]
-  · sl
-  · simp
-  · intro i hlo hhi
+
+  -- Loop writes `slice[i]` into `storage[len + i]` for `i < slice.length`, leaving `len` unchanged.
+  loop_inv nat (fun i _ _ =>
+      ∃∃ v : Repr p T MaxLen,
+        [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆
+          ⟦len v = len self ∧
+            List.take ((len self).toNat + i) (storage v).toList =
+              embed self ++ slice.take i⟧)
+  ·
+    sl
+    simp [Nat.add_zero, embed, active, storage]
+  ·
+    simp
+  ·
+    intro i hlo hhi
     steps
-  · steps
+    subst_vars
+    rename_i h_isSome
+    rename_i h_dec
+    rename_i u2
+    rename_i h_cast
+    rename_i h_add
+    rename_i hinv
+    rename_i v
+    rcases hinv with ⟨hlenV, htakeV⟩
+    have hi32 : i < 2 ^ 32 := lt_of_lt_of_le hhi (Nat.le_of_lt hslen_lt)
+    have hiSlice : i < slice.length := hhi
+    have hiMax : (len self).toNat + i < MaxLen.toNat := by
+      have : (len self).toNat + i < (len self).toNat + slice.length :=
+        Nat.add_lt_add_left hhi (len self).toNat
+      exact lt_of_lt_of_le this hspace
+    have hiStor : (len self).toNat + i < (storage v).toList.length := by
+      simpa [storage, List.Vector.toList_length] using hiMax
+    constructor
+    ·
+      simpa [len] using hlenV
+    ·
+      have hlenVNat : (len v).toNat = (len self).toNat := by
+        simpa using congrArg BitVec.toNat hlenV
+      have hi32' : i < 4294967296 := by
+        simpa using hi32
+      have htoNat_i : (BitVec.ofNat 32 i).toNat = i := by
+        simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi32']
+      have hsum_lt' : (len v).toNat + (BitVec.ofNat 32 i).toNat < 2 ^ 32 := by
+        have : (len self).toNat + i < 2 ^ 32 := by
+          have : (len self).toNat + i < (len self).toNat + slice.length :=
+            Nat.add_lt_add_left hhi (len self).toNat
+          exact lt_of_lt_of_le (lt_of_lt_of_le this hspace) (Nat.le_of_lt hMax_lt)
+        simpa [hlenVNat, htoNat_i] using this
+      have htoNat_idx :
+          (len v + BitVec.ofNat 32 i).toNat = (len self).toNat + i := by
+        have htoNat_add :=
+          BitVec.toNat_add_of_lt (x := len v) (y := BitVec.ofNat 32 i) hsum_lt'
+        simpa [hlenVNat, htoNat_i] using htoNat_add
+      have htoNat_idx' :
+          (Builtin.indexTpl v Builtin.Member.head.tail + BitVec.ofNat 32 i).toNat =
+            (len self).toNat + i := by
+        simpa [len] using htoNat_idx
+
+      simp (config := {contextual := false})
+        [storage, len, List.Vector.toList_set, htoNat_idx', List.get_eq_getElem]
+
+      have hlenVNat' : BitVec.toNat v.2.1 = (len self).toNat := by
+        simpa [len] using hlenVNat
+      have hsum_lt'' : BitVec.toNat v.2.1 + i < 4294967296 := by
+        have : (len self).toNat + i < 2 ^ 32 := by
+          have : (len self).toNat + i < (len self).toNat + slice.length :=
+            Nat.add_lt_add_left hhi (len self).toNat
+          exact lt_of_lt_of_le (lt_of_lt_of_le this hspace) (Nat.le_of_lt hMax_lt)
+        simpa [hlenVNat'] using this
+      have hmod :
+          ((BitVec.toNat v.2.1 + i) % 4294967296) = (len self).toNat + i := by
+        have hmod' : (BitVec.toNat v.2.1 + i) % 4294967296 = BitVec.toNat v.2.1 + i :=
+          Nat.mod_eq_of_lt hsum_lt''
+        simpa [hlenVNat'] using hmod'
+      try simp [hmod]
+
+      have hiStor_toList : (len self).toNat + i < (List.Vector.toList v.1).length := by
+        simpa [List.Vector.toList_length] using hiMax
+      have htakeV_toList :
+          List.take ((len self).toNat + i) (List.Vector.toList v.1) =
+            embed self ++ slice.take i := by
+        simpa [storage] using htakeV
+
+      -- As above, normalize `i % 2^32` away in the goal.
+      have hmod_i : i % 4294967296 = i := Nat.mod_eq_of_lt hi32'
+      simp [hmod_i]
+
+      calc
+        List.take ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + (i + 1))
+            ((List.Vector.toList v.1).set ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + i)
+              (slice[i]'hiSlice)) =
+          List.take ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + i) (List.Vector.toList v.1) ++
+            [slice[i]'hiSlice] := by
+          simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+            (List.take_succ_set_eq_take_append
+              (l := (List.Vector.toList v.1))
+              (n := (Builtin.indexTpl self Builtin.Member.head.tail).toNat + i)
+              (a := slice[i]'hiSlice)
+              (hn := by simpa [len] using hiStor_toList))
+        _ = (embed self ++ slice.take i) ++ [slice[i]'hiSlice] := by
+          simpa [len] using
+            congrArg (fun t => t ++ [slice[i]'hiSlice]) htakeV_toList
+        _ = embed self ++ (slice.take i ++ [slice[i]'hiSlice]) := by
+          simp [List.append_assoc]
+        _ = embed self ++ slice.take (i + 1) := by
+          symm
+          simpa using
+            (List.take_succ_eq_take_append_get (l := slice) (n := i) (hn := hiSlice))
+  ·
+    steps
+    subst_vars
+    rename_i h_isSome
+    rename_i h_dec
+    rename_i hinv
+    rename_i v
+    rcases hinv with ⟨hlenV, htakeV⟩
+    have hsum_lt_final : (len self).toNat + slice.length < 4294967296 := by
+      have : (len self).toNat + slice.length < 2 ^ 32 := lt_of_le_of_lt hspace hMax_lt
+      simpa using this
+    have hmod :
+        (((len self).toNat + slice.length) % 4294967296) = (len self).toNat + slice.length := by
+      exact Nat.mod_eq_of_lt hsum_lt_final
+    have hmod_simp :
+        ((BitVec.toNat self.2.1 + List.length slice) % 4294967296) =
+          BitVec.toNat self.2.1 + List.length slice := by
+      simpa [len] using hmod
+    constructor
+    ·
+      simpa [bounded, len, hmod_simp, hcastLenNat] using hspace
+    ·
+      have htakeSlice : slice.take slice.length = slice := by
+        simp
+      have hmodSlice : slice.length % 4294967296 = slice.length := by
+        -- `slice.length < 2^32` was established earlier in the proof as `hslen_lt`.
+        have hslen_lt' : slice.length < 4294967296 := by
+          simpa using hslen_lt
+        exact Nat.mod_eq_of_lt hslen_lt'
+      have htakeV' :
+          List.take ((len self).toNat + slice.length) (storage v).toList =
+            embed self ++ slice.take slice.length := by
+        -- The extracted loop index computes `slice.length` via a `u32` truncation; under our bounds
+        -- this truncation is identity.
+        simpa [hmodSlice, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using htakeV
+      simpa [embed, active, storage, len, hmod_simp, htakeSlice] using htakeV'
 
 theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
-    (hbounded_vec : bounded vec) :
+    (hbVec : bounded (p := p) (T := T) (MaxLen := Len) vec)
+    (hspace : (len self).toNat + (len vec).toNat ≤ MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::extend_from_bounded_vec».call
         h![T, MaxLen, Len] h![selfRef, vec])
-      (fun _ => ∃∃ v', [selfRef ↦ ⟨bvTp T MaxLen, v'⟩]) := by
-  enter_decl
-  steps [len_spec]
-  all_goals (try exact ())
-  apply (STHoare.letIn_intro (Q := fun _ => ∃∃ v', [selfRef ↦ ⟨bvTp T MaxLen, v'⟩]))
-  · steps
-    apply STHoare.ite_intro_of_false
-    · simp
-    · steps
-      apply (STHoare.letIn_intro (Q := fun _ =>
+      (fun _ =>
         ∃∃ v',
-          [exceeded_len ↦ ⟨.bool, decide (append_len.toNat < Len.toNat)⟩] ⋆
-          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩]))
-      ·
-        loop_inv nat (fun i _ _ =>
-          ∃∃ v',
-            [exceeded_len ↦ ⟨.bool, decide (append_len.toNat < i)⟩] ⋆
-            [selfRef ↦ ⟨bvTp T MaxLen, v'⟩])
-        ·
-          have hlt0 : ¬ (append_len.toNat < 0) := by
-            exact Nat.not_lt_zero _
-          -- Base case `i = 0`: `append_len.toNat < 0` is false.
-          simp (config := { failIfUnchanged := false }) [hlt0]
-          -- Simplify the ramified-frame entailment produced by `loop_inv nat`.
-          sl unsafe
-          -- Now finish by unfolding `⋆` and instantiating the remaining frame `?Q` with `⊤`.
-          intro st hpre
-          rcases hpre with ⟨st₁, st₂, hdisj, hst, hst₁, hst₂⟩
-          have hst₁' : st₁.vals = Finmap.singleton exceeded_len ⟨Tp.bool, false⟩ := by
-            simpa [State.valSingleton] using hst₁
-          have hst₂' : st₂.vals =
-              Finmap.singleton selfRef ⟨«std-1.0.0-beta.12::collections::bounded_vec::BoundedVec».tp h![T, MaxLen], self⟩ := by
-            simpa [State.valSingleton] using hst₂
+          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
+            ⟦bounded v' ∧ embed v' = embed self ++ embed vec⟧) := by
+  have hMax_lt : MaxLen.toNat < 2 ^ 32 := by
+    simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
+  have hsum_lt : (len self).toNat + (len vec).toNat < 2 ^ 32 := lt_of_le_of_lt hspace hMax_lt
+  have hnew_le : len self + len vec ≤ MaxLen := by
+    rw [BitVec.le_def]
+    rw [BitVec.toNat_add_of_lt (x := len self) (y := len vec) hsum_lt]
+    exact hspace
+  have hLen_lt : Len.toNat < 2 ^ 32 := by
+    simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := Len) (by rfl))
+  have hlenVec : (embed vec).length = (len vec).toNat :=
+    embed_length_eq_len_toNat (v := vec) hbVec
 
-          -- Canonical heap chunk for the `exceeded_len` cell: keep lambdas empty so we can move any
-          -- lambdas from the precondition's left chunk into the right chunk.
-          let vf : State p := ⟨Finmap.singleton exceeded_len ⟨Tp.bool, false⟩, ∅⟩
-          let st₂' : State p := ⟨st₂.vals, st₁.lambdas ∪ st₂.lambdas⟩
-
-          -- `⋆ ?Q` frame: take `?Q` to be `⊤` on the empty heap.
-          refine ⟨st, (∅ : State p), by simp, by simp, ?_, ?_⟩
-          · -- main postcondition heap (the loop invariant package)
-            dsimp
-            refine ⟨st₂', ?_, ?_, ?_, ?_⟩
-            · -- instantiate `?v := vf` and prove disjointness
-              refine (show LawfulHeap.disjoint vf st₂' from ?_)
-              have hvals : (Finmap.singleton exceeded_len ⟨Tp.bool, false⟩).Disjoint st₂.vals := by
-                simpa [hst₁'] using hdisj.1
-              refine And.intro ?_ ?_
-              · simpa [vf, st₂'] using hvals
-              ·
-                rw [Finmap.Disjoint.symm_iff]
-                simp [vf, st₂']
-            · -- heap equality (note `st₂'.lambdas` absorbs `st₁.lambdas`)
-              simpa [vf, st₂', State.union_parts, hst₁'] using hst
-            · refine ⟨(by simp), ?_⟩
-              simp [vf, State.valSingleton]
-            · refine ⟨self, ?_⟩
-              -- `st₂'` preserves `st₂`'s values.
-              simp [st₂', hst₂', State.valSingleton]
-          · trivial
-        ·
-          -- Drop the extra frame `(∃∃ v, ⟦v⟧) ⋆ ?Q`, then drop the unused existential `h`.
-          apply SLP.entails_trans
-          ·
-            -- `A ⋆ ((∃∃ v, ⟦v⟧) ⋆ ?Q) ⊢ A ⋆ ⊤`
-            exact (SLP.ent_drop_left (Q := (∃∃ h,
-              ∃∃ v',
-                [ exceeded_len ↦ ⟨Tp.bool, decide (BitVec.toNat append_len < BitVec.toNat Len)⟩ ] ⋆
-                  [ selfRef ↦ ⟨bvTp T MaxLen, v'⟩ ]))
-              (H := (∃∃ v, ⟦v⟧) ⋆ ?Q))
-          ·
-            -- Now show `A ⋆ ⊤ ⊢ A' ⋆ ⊤` by monotonicity on the left component.
-            apply SLP.star_mono_r
-            intro st hA
-            -- `∃ h, ∃ v', R v'` entails `∃ v', R v'`
-            rcases hA with ⟨h, v', hv'⟩
-            exact ⟨v', hv'⟩
-        ·
-          intro i hlo hhi
-          -- Loop body: update `exceeded_len` then conditionally write into `self`.
-          -- The invariant only tracks the `exceeded_len` ref and `selfRef` as a whole.
-          have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi
-          steps
-          -- FIXME: exact ⟨⟩ "bug" here after steps
-          all_goals (try exact ())
-          apply STHoare.ite_intro
-          · intro hcond
-            steps
-            -- `get_unchecked` needs an index-in-bounds proof; here `i < Len.toNat`.
-            have hindex : (BitVec.ofNat 32 i).toNat < Len.toNat :=
-              toNat_ofNat_lt_of_lt_maxLen (MaxLen := Len) (i := i) hhi
-            -- Important: pass `p`/`T` explicitly so `get_unchecked_spec` doesn't get stuck with
-            -- metavariables in the expected `self` type.
-            steps [get_unchecked_spec (p := p) (T := T) (MaxLen := Len) (self := vec)
-              (index := BitVec.ofNat 32 i) (hindex := hindex)]
-            steps
-            -- normalize the boolean update to match `decide (append_len.toNat < i+1)`
-            simp_all [decide_lt_succ_eq_bv (x := len vec) (pf := pf)]
-            -- At this point the goal is mostly a `let` + `modifyLens` + `skip` sequence.
-            -- `steps` knows the builtin rules for `modifyLens` and `letIn`; the remaining SL
-            -- bookkeeping is handled by `sl`.
-            steps [get_unchecked_spec (p := p) (T := T) (MaxLen := Len) (self := vec)
-              (index := BitVec.ofNat 32 i) (hindex := hindex)]
-          · intro hcond
-            steps
-            simp_all [decide_lt_succ_eq_bv (x := len vec) (pf := pf)]
-      · intro _
-        steps
-  · intro _
-    steps
-
-theorem from_array_spec {p T MaxLen Len array}
-    (hbounded : Len ≤ MaxLen) :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::from_array».call
-        h![T, MaxLen, Len] h![array])
-      (fun r => bounded r) := by
   enter_decl
-  steps [new_spec]
-  rename_i vecVal
-  steps [extend_from_array_spec]
-  · subst_vars
-    simpa using vecVal.2
-  · rw [vecVal.1]
-    simpa using hbounded
+  -- Compute `append_len := vec.len()` and `new_len := self.len + append_len`.
+  steps [len_concrete_spec (p := p) (T := T) (MaxLen := Len) (self := vec)]
+  subst_vars
+  -- Debug: see what `steps` introduced.
+  -- trace_state
+  all_goals (try (first | exact hnew_le | exact ()))
 
--- README: from here onwards we have the `sorry`'ed proofs
-theorem any_spec {p T MaxLen Env self f fb}
-    (hbounded : bounded self)
-    (inv : List (T.denote p) → Bool → SLP (State p))
-    (inv_spec : ∀(ip : List (T.denote p)) (op : Bool) (e : T.denote p),
-      (ip ++ [e] <+: active self) →
-        STHoare p env (inv ip op) (fb h![e]) (fun r => inv (ip ++ [e]) (op ∨ r))) :
-    STHoare p env
-      (inv [] false ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
-        h![self, f])
-      (fun r => inv (active self) r ⋆ [λf ↦ fb]) := by
-  enter_decl
-  steps
-  all_goals (try exact ())
-  step_as
-      ([ret ↦ ⟨.bool, false⟩] ⋆ inv [] false ⋆ [λf ↦ fb])
-      (fun _ => ∃∃ b, [ret ↦ ⟨.bool, b⟩] ⋆ inv (active self) b ⋆ [λf ↦ fb])
-  · steps
+  -- The extracted code is `let _ := (if isUnconstrained then ... else ...) in self.len := new_len`.
+  apply (STHoare.letIn_intro
+    (Q := fun _ =>
+      ∃∃ v : Repr p T MaxLen,
+        [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆
+          ⟦len v = len self ∧
+            List.take ((len self).toNat + (len vec).toNat) (storage v).toList =
+              embed self ++ embed vec⟧))
+  ·
+    -- The `if isUnconstrained() { ... } else { ... }` branch.
     apply STHoare.ite_intro_of_false
     · simp
-    · steps
-      loop_inv nat fun i _ _ =>
-        ∃∃ b,
-          [ret ↦ ⟨.bool, b⟩] ⋆
-          [exceeded_len ↦ ⟨.bool, decide ((len self).toNat < i)⟩] ⋆
-          inv ((active self).take (min i (len self).toNat)) b ⋆
-          [λf ↦ fb]
+    ·
+      -- Constrained branch: `exceeded_len := false; for i in 0..Len { ... }`.
+      steps
+      loop_inv nat (fun i _ _ =>
+          ∃∃ v : Repr p T MaxLen,
+            [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆
+              [exceeded_len ↦ ⟨.bool, decide ((len vec).toNat < i)⟩] ⋆
+                ⟦len v = len self ∧
+                  List.take ((len self).toNat + Nat.min i (len vec).toNat) (storage v).toList =
+                    embed self ++ (embed vec).take (Nat.min i (len vec).toNat)⟧)
       ·
-        have hlt0 : ¬ ((len self).toNat < 0) := by
-          exact Nat.not_lt_zero _
-        simp [hlt0]
+        -- base case `i = 0`
         sl
-      · simp
-      · intro i hlo hhi
+        simp [Nat.min_zero, embed, active, storage]
+      ·
+        simp
+      ·
+        intro i hlo hhi
+        -- One iteration: update `exceeded_len` and (if needed) write `vec[i]` into `self.storage[len+i]`.
         steps
-        all_goals (try exact ())
+        subst_vars
+        all_goals (try (first | exact () | exact hnew_le))
+        -- Pull the loop invariant witness and its pure facts into named hypotheses before we split on the inner `if`.
+        rename_i h_isSome_el
+        rename_i u_el
+        rename_i hinv
+        rename_i v0
+        -- `u_el` is the pure part of the loop invariant for the current `hinv`.
+        rcases u_el with ⟨hlenV, htakeV⟩
         apply STHoare.ite_intro
-        · intro hcond
-          steps
-          simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-            zero_le, Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-            BitVec.toNat_ofNatLT, active, storage, List.Vector.toList_take, List.get_eq_getElem,
-            List.getElem_take]
-          generalize_proofs
-          rename Tp.denote p .bool => b
+        ·
+          intro hcond
+          -- We are in the write branch, so `i < append_len` (expressed as `i ≤ len vec` and `i ≠ len vec`).
+          have pf : i < 2 ^ 32 := lt_of_lt_of_le hhi (Nat.le_of_lt hLen_lt)
           have hcond' := by
-            simpa using hcond
+            -- `hcond` is `bNot exceeded_len = true` after the update `exceeded_len := exceeded_len || (i == append_len)`.
+            -- We keep the simplified shape inferred by `simp` to avoid having to name extraction binders.
+            simpa [Lens.modify, Lens.get, Option.get_some] using hcond
           rcases hcond' with ⟨hi_le, hi_ne_bv⟩
-          have hi_ne : i ≠ (len self).toNat := by
+          have hltVec : i < (len vec).toNat := by
+            refine lt_of_le_of_ne hi_le ?_
             intro hi_eq
             apply hi_ne_bv
-            simpa using
-              (bitvec_ofNat_eq_of_toNat_eq (i := i)
-                (x := Builtin.indexTpl self Builtin.Member.head.tail) hi_eq)
-          have hi_lt : i < (len self).toNat := by
-            exact lt_of_le_of_ne hi_le hi_ne
-          have hi_lt_max : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-          have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-          have := inv_spec
-            ((active self).take i)
-            b
-            ((storage self).toList[i]'(by
-              have : i < (storage self).toList.length := by
-                simpa [storage, List.Vector.toList_length] using hi_lt_max
-              exact this))
-            (by
-              simpa using (active_prefix_storage (self := self) (hbounded := hbounded) (hi := hi_lt)))
-          steps [STHoare.callLambda_intro (hlam := this)]
-          . sorry
-          . sorry
-          . sorry
-          -- steps [STHoare.genericTotalPureBuiltin_intro (b := Builtin.bOr) (h := rfl)]
-          -- steps
-          -- simp_all only [Bool.decide_or, Bool.decide_eq_true, Bool.forall_bool, Bool.false_or,
-          --   Bool.true_or, List.take_append_getElem, Lens.modify, Option.get_some]
-          -- simp [active, List.take_take, Nat.min_eq_left (Nat.le_of_lt hi_lt),
-          --   decide_lt_succ_eq_bv (x := len self) (pf := pf)]
-          -- sl
-        · intro hcond
-          steps
-          have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-          have pf' : i < 4294967296 := by
-            simpa using pf
-          simp [Lens.modify, Lens.get, Option.get_some,
-            decide_lt_succ_eq_bv (x := len self) (pf := pf),
-            bitvec_ofNatLT_eq_ofNat (i := i) pf] at *
-          have hcond' : i ≤ (len self).toNat → BitVec.ofNat 32 i = len self := by
-            simpa using hcond
-          have hnot_lt : ¬ i < (len self).toNat := by
-            intro hlt
-            have h_eq : BitVec.ofNat 32 i = len self := hcond' (Nat.le_of_lt hlt)
-            have h_eq_toNat : (BitVec.ofNat 32 i).toNat = (len self).toNat := by
-              simpa using congrArg BitVec.toNat h_eq
-            have hmod : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-            have : i = (len self).toNat := by
-              have h_eq_toNat' : i % 4294967296 = (len self).toNat := by
-                simpa [BitVec.toNat_ofNat] using h_eq_toNat
-              simpa [hmod] using h_eq_toNat'
-            exact (Nat.ne_of_lt hlt) this
-          have hi_ge : (len self).toNat ≤ i := by
-            exact Nat.le_of_not_lt hnot_lt
-          have hi_ge_succ : (len self).toNat ≤ i + 1 := by
-            exact Nat.le_trans hi_ge (Nat.le_succ i)
-          have hdec :
-              decide ((len self).toNat < i + 1) =
-                (decide ((len self).toNat < i) ||
-                  decide (BitVec.ofNat 32 i = Builtin.indexTpl self Builtin.Member.head.tail)) := by
-            simpa using (decide_lt_succ_eq_bv (x := len self) (pf := pf))
-          simp [active, List.take_take, Nat.min_eq_right hi_ge, min_succ_eq_right hi_ge,
-            hdec, Lens.modify, Lens.get, Option.get_some,
-            bitvec_ofNatLT_eq_ofNat (i := i) pf]
-          sl
-          have pf' : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-          simp [Lens.modify, Lens.get, Option.get_some]
-          have hb := decide_lt_succ_eq_bv (i := i) (x := len self) (pf := pf')
-          exact congrArg (fun b => Sigma.mk Tp.bool b) hb.symm
-      · simp_all only [Bool.decide_or, Bool.decide_eq_true, Bool.forall_bool, Bool.false_or,
-        Bool.true_or, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, zero_le,
-        SLP.star_true, active, List.length_take, List.Vector.toList_length]
-        have hmin := Nat.min_eq_right hbounded
-        simp [hmin, List.take_length, List.take_take]
-        steps
-  · steps
-    subst_vars
-    sl
+            -- Goal is the extraction's bitvector equality `i# = append_len`; rewrite it using local equalities.
+            have hbv : BitVec.ofNat 32 i = len vec := by
+              -- `i = (len vec).toNat` implies `ofNat i = len vec`.
+              simpa [hi_eq] using (BitVec.ofNat_toNat (x := len vec))
+            -- Close by rewriting `i#` and `append_len` with the local context.
+            simp_all [BitVec.ofNatLT_eq_ofNat]
+          have hmin_i : Nat.min i (len vec).toNat = i := Nat.min_eq_left (Nat.le_of_lt hltVec)
+          have hmin_succ : Nat.min (i + 1) (len vec).toNat = i + 1 :=
+            Nat.min_eq_left (Nat.succ_le_of_lt hltVec)
 
-theorem map_spec {p T MaxLen U Env self f fb}
-    (hbounded : bounded self)
-    (inv : List (T.denote p) → List (U.denote p) → SLP (State p))
-    (inv_spec : ∀(ip : List (T.denote p)) (op : List (U.denote p)) (e : T.denote p),
-      (ip ++ [e] <+: active self) →
-        STHoare p env (inv ip op) (fb h![e]) (fun r => inv (ip ++ [e]) (op ++ [r]))) :
-    STHoare p env
-      (inv [] [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, U, Env]
-        h![self, f])
-      (fun r => inv (active self) (active r) ⋆ [λf ↦ fb]) := by
-  enter_decl
-  steps [new_spec]
-  steps [len_spec]
-  all_goals (try exact ())
-  apply (STHoare.letIn_intro
-    (Q := fun _ =>
-      ∃∃ v, [ret ↦ ⟨bvTp U MaxLen, v⟩] ⋆ ⟦len v = len self⟧ ⋆
-        inv (active self) (active v) ⋆ [λf ↦ fb]))
-  · apply STHoare.ite_intro_of_false
-    · simp
-    · steps
-      loop_inv nat fun i _ _ =>
-        ∃∃ v,
-          [ret ↦ ⟨bvTp U MaxLen, v⟩] ⋆
-          ⟦len v = len self⟧ ⋆
-          inv ((active self).take (min i (len self).toNat))
-            ((storage v).toList.take (min i (len self).toNat)) ⋆
-          [λf ↦ fb]
-      · simp [len_modify_head_tail]
-        sl
-        sorry
-      · simp
-      · intro i hlo hhi
-        steps [len_spec]
-        apply STHoare.ite_intro
-        · intro hcond
-          have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-          have hi_lt : i < (len self).toNat := by
-            exact nat_lt_of_bv_lt (x := len self) pf (by simpa using hcond)
-          have hi_lt_max : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-          have hindex : (BitVec.ofNat 32 i).toNat < MaxLen.toNat := by
-            exact toNat_ofNat_lt_of_lt_maxLen (MaxLen := MaxLen) hi_lt_max
-          steps [get_unchecked_spec (hindex := sorry)]
-          have hi_le : i ≤ (len self).toNat := Nat.le_of_lt hi_lt
-          have hi_le_max : i ≤ MaxLen.toNat := Nat.le_of_lt hi_lt_max
-          simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-            zero_le, Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-            BitVec.toNat_ofNatLT, active, storage, List.Vector.toList_take, List.get_eq_getElem,
-            List.getElem_take]
-          simp [Nat.min_eq_left hi_le] at *
-          generalize_proofs
-          rename Tp.denote p (bvTp U MaxLen) => v
-          have := inv_spec
-            ((active self).take i)
-            ((storage v).toList.take i)
-            ((storage self).toList[i]'(by
-              have : i < (storage self).toList.length := by
-                have hi_lt_max' : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-                simpa [storage, List.Vector.toList_length] using hi_lt_max'
-              exact this))
-            (by
-              simpa using (active_prefix_storage (self := self) (hbounded := hbounded) (hi := hi_lt)))
-          have this' :
-              STHoare p env
-                (inv (List.take i (List.take (len self).toNat (storage self).toList))
-                  ((storage v).toList.take i))
-                (fb h![((storage self).toList[i]'(by
-                  have : i < (storage self).toList.length := by
-                    have hi_lt_max' : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-                    simpa [storage, List.Vector.toList_length] using hi_lt_max'
-                  exact this))])
-                (fun r =>
-                  inv
-                    (List.take i (List.take (len self).toNat (storage self).toList) ++
-                      [(storage self).toList[i]'(by
-                        have : i < (storage self).toList.length := by
-                          have hi_lt_max' : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-                          simpa [storage, List.Vector.toList_length] using hi_lt_max'
-                        exact this)])
-                    ((storage v).toList.take i ++ [r])) := by
-            simpa [active, List.take_take, Nat.min_eq_left hi_le] using this
-          steps [STHoare.callLambda_intro (hlam := this')]
-          rename_i r
-          simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-            BitVec.toNat_ofNatLT, List.Vector.toList_take, List.take_append_getElem, Lens.modify,
-            Lens.get, Access.modify, ↓reduceDIte, Option.bind_eq_bind, Option.bind_some,
-            Option.bind_fun_some, Option.get_some, List.Vector.toList_set]
-          -- have hlen : i < ((storage v).toList.set i r).length := by simp_all
-          try
-            (simp [List.take_succ_eq_append_getElem hlen, List.getElem_set hlen,
-              List.take_set_of_le ()])
-          sl
-          . sorry
-          . sorry
-          . sorry
-        · intro hcond
+          -- Run the branch body, using the `get_unchecked` semantic spec for `vec[i]`.
+          steps [get_unchecked_spec (p := p) (T := T) (MaxLen := Len) (self := vec)
+            (index := BitVec.ofNatLT i (lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi))
+            (hindex := by
+              -- `get_unchecked` needs `index.toNat < Len.toNat`; extraction represents the loop index as `i#'pf`.
+              -- Depending on normalization, the goal is either `toNat (ofNatLT ..) < Len.toNat` or
+              -- `toNat (ofNat ..) < Len.toNat`; both reduce to `i < Len.toNat` under `i < 2^32`.
+              have hi32 : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi
+              have hi32' : i < 4294967296 := by simpa using hi32
+              simpa [BitVec.toNat_ofNatLT, BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi32'] using hhi)]
+          all_goals (try (first | exact () | exact hnew_le))
+          subst_vars
+          -- `steps` leaves two pure goals: the `exceeded_len` cell value (`heq`) and the loop-invariant payload.
+          case h₁.heq =>
+            -- `exceeded_len` after the update is `decide (len vec < i+1)`.
+            simp [Lampe.AnyValue, Lens.modify, Lens.get, Option.get_some,
+              decide_lt_succ_eq_bv (x := len vec) pf]
+          case h₁.a =>
+            -- Main invariant payload after the storage write.
+            -- The extracted branch introduces a few `unit`/evidence binders; name the semantic element equation.
+            rename_i _u_post
+            rename_i _h_isSome_set
+            rename_i elemEq
+            rename_i hidx
+            constructor
+            ·
+              -- Only `storage` changes; `len` stays the same.
+              simpa [len] using hlenV
+            ·
+              -- Rewrite mins under `i < len vec`.
+              simp [hmin_i, hmin_succ] at htakeV ⊢
+              have hiMax : (len self).toNat + i < MaxLen.toNat := by
+                have : (len self).toNat + i < (len self).toNat + (len vec).toNat :=
+                  Nat.add_lt_add_left hltVec (len self).toNat
+                exact lt_of_lt_of_le this hspace
+              have hiEmb : i < (embed vec).length := by
+                simpa [hlenVec] using hltVec
+              -- The written element is the `i`th element of `embed vec` (this avoids mentioning the extracted `#v_*` name).
+              have hi32 : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi
+              have hi32' : i < 4294967296 := by simpa using hi32
+              have helem' := elemEq (by
+                -- `elemEq` is stated at `(i#).toNat`, which normalizes to `i % 2^32`.
+                simpa [Nat.mod_eq_of_lt hi32'] using hiEmb)
+              generalize_proofs at helem'
+              have helem'' := (by
+                -- normalize the casted index `(i#).toNat` down to `i`
+                simpa [BitVec.toNat_ofNatLT, BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi32'] using helem')
+
+              -- `toNat (ofNat 32 i) = i` under `i < 2^32`.
+              have hi32' : i < 4294967296 := by
+                have : i < 2 ^ 32 := lt_of_lt_of_le hhi (Nat.le_of_lt hLen_lt)
+                simpa using this
+              have htoNat_i : (BitVec.ofNat 32 i).toNat = i := by
+                simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi32']
+
+              -- Compute the extracted write index `i_3643` in `Nat`.
+              have hlenHinVNat : (len hinv).toNat = (len self).toNat := by
+                simpa using congrArg BitVec.toNat hlenV
+              have hsum_lt' : (len hinv).toNat + (BitVec.ofNat 32 i).toNat < 2 ^ 32 := by
+                have : (len self).toNat + i < 2 ^ 32 := by
+                  have : (len self).toNat + i < (len self).toNat + (len vec).toNat :=
+                    Nat.add_lt_add_left hltVec (len self).toNat
+                  exact lt_trans this hsum_lt
+                simpa [hlenHinVNat, htoNat_i] using this
+              have htoNat_idx : i_3643.toNat = (len self).toNat + i := by
+                have htoNat_add :=
+                  BitVec.toNat_add_of_lt (x := len hinv) (y := BitVec.ofNat 32 i) hsum_lt'
+                have hidx' : i_3643 = len hinv + BitVec.ofNat 32 i := by
+                  simpa [len, bitvec_ofNatLT_eq_ofNat (i := i) (by simpa using hi32')] using hidx
+                calc
+                  i_3643.toNat = (len hinv + BitVec.ofNat 32 i).toNat := by simpa [hidx']
+                  _ = (len hinv).toNat + (BitVec.ofNat 32 i).toNat := htoNat_add
+                  _ = (len self).toNat + i := by simp [hlenHinVNat, htoNat_i]
+
+              have hiStor_toList : (len self).toNat + i < (List.Vector.toList hinv.1).length := by
+                simpa [List.Vector.toList_length] using hiMax
+              have htakeV' :
+                  List.take ((len self).toNat + i) (List.Vector.toList hinv.1) =
+                    embed self ++ List.take i (embed vec) := by
+                simpa [storage] using htakeV
+
+              -- Normalize the extracted tuple update down to a `List.set` on `storage.toList`.
+              simp (config := {contextual := false})
+                [storage, List.Vector.toList_set, htoNat_idx, helem'', List.get_eq_getElem,
+                  Nat.add_assoc, Nat.add_left_comm, Nat.add_comm, Nat.mod_eq_of_lt hi32']
+              have hiStor_toList' : i + (len self).toNat < (List.Vector.toList hinv.1).length := by
+                simpa [Nat.add_comm] using hiStor_toList
+              have htakeV'' :
+                  List.take (i + (len self).toNat) (List.Vector.toList hinv.1) =
+                    embed self ++ List.take i (embed vec) := by
+                simpa [Nat.add_comm] using htakeV'
+              calc
+                List.take (i + (1 + (len self).toNat))
+                    ((List.Vector.toList hinv.1).set (i + (len self).toNat) ((embed vec)[i]'hiEmb)) =
+                  List.take (i + (len self).toNat) (List.Vector.toList hinv.1) ++ [((embed vec)[i]'hiEmb)] := by
+                  simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+                    (List.take_succ_set_eq_take_append
+                      (l := (List.Vector.toList hinv.1)) (n := i + (len self).toNat)
+                      (a := ((embed vec)[i]'hiEmb)) (hn := hiStor_toList'))
+                _ =
+                  (embed self ++ List.take i (embed vec)) ++ [((embed vec)[i]'hiEmb)] := by
+                  simpa [htakeV'']
+                _ =
+                  embed self ++ (List.take i (embed vec) ++ [((embed vec)[i]'hiEmb)]) := by
+                  simp [List.append_assoc]
+                _ = embed self ++ List.take (i + 1) (embed vec) := by
+                  simpa using (List.take_succ_eq_take_append_get (l := embed vec) (n := i) (hn := hiEmb))
+        ·
+          intro hcond
+          -- Skip branch: no write, only the flag update.
           steps
-          have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-          have hi_ge : (len self).toNat ≤ i := by
-            exact nat_le_of_bv_le (x := len self) pf (by simpa using hcond)
-          simp [Nat.min_eq_right, hi_ge]
-          sl
-          . sorry
-          . assumption
-          . sorry
-      · steps
-        all_goals (try sl)
-        simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-          BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, zero_le,
-          List.Vector.toList_take, active, List.length_take, List.Vector.toList_length]
-        rename Tp.denote p (bvTp U MaxLen) => v
-        rename_i a
-        have hlen :
-            Builtin.indexTpl v Builtin.Member.head.tail =
-              Builtin.indexTpl self Builtin.Member.head.tail := by
-          simpa [len] using a
-        have hmin : min MaxLen.toNat (len self).toNat = (len self).toNat := by
-          exact Nat.min_eq_right hbounded
-        simp [hmin, List.take_length, List.take_take, hlen]
-        sl
-        assumption
-  · intro _
-    apply Lampe.Steps.pull_exi
-    intro v
+          subst_vars
+          -- `steps` leaves two pure goals: the updated `exceeded_len` cell value and the invariant payload.
+          case h₁.heq =>
+            have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi
+            simp [Lampe.AnyValue, Lens.modify, Lens.get, Option.get_some,
+              decide_lt_succ_eq_bv (x := len vec) pf]
+          case h₁.a =>
+            have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi
+            -- In the skip branch `(!flag) = false`, hence the updated flag is `true`, i.e.
+            -- `len vec < i` or `i = len vec`.
+            have h_exceeded := (by
+              -- `!x = false` implies `x = true`.
+              simpa using (congrArg Bool.not hcond))
+            have hflag_raw :
+                (len vec).toNat < i ∨ BitVec.ofNatLT i pf = append_len := by
+              simpa [Lens.modify, Lens.get, Option.get_some] using h_exceeded
+            have hge : (len vec).toNat ≤ i := by
+              cases hflag_raw with
+              | inl hlt =>
+                  exact Nat.le_of_lt hlt
+              | inr hbv =>
+                  have pf' : i < 4294967296 := by
+                    simpa using pf
+                  have : i = (len vec).toNat := by
+                    have ht := congrArg BitVec.toNat hbv
+                    have ht' : i = append_len.toNat := by
+                      simpa [BitVec.toNat_ofNatLT, Nat.mod_eq_of_lt pf'] using ht
+                    -- Rewrite `append_len` to `len vec` using the equality from the outer `steps`.
+                    simpa [*] using ht'
+                  exact this.symm.le
+            have hmin_i : Nat.min i (len vec).toNat = (len vec).toNat := Nat.min_eq_right hge
+            have hmin_succ : Nat.min (i + 1) (len vec).toNat = (len vec).toNat := by
+              exact Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ i))
+            constructor
+            · simpa [len] using hlenV
+            ·
+              simp [hmin_i, hmin_succ] at htakeV ⊢
+              simpa using htakeV
+      ·
+        -- After the loop, use `min Len append_len = append_len` (since `bounded vec`).
+        steps
+        subst_vars
+        -- `steps` leaves some `decide` bookkeeping proof terms; name and ignore them to reach the loop invariant.
+        rename_i _hdec
+        rename_i _hsumlt
+        rename_i _u_post
+        rename_i hinv
+        rename_i v
+        rcases hinv with ⟨hlenV, htakeV⟩
+        have hmin : Nat.min Len.toNat (len vec).toNat = (len vec).toNat := Nat.min_eq_right hbVec
+        have htakeVec : List.take (len vec).toNat (embed vec) = embed vec := by
+          -- `bounded vec` implies `length (embed vec) = len vec.toNat`.
+          simpa [hlenVec] using (List.take_length (embed vec))
+        constructor
+        · simpa [len] using hlenV
+        ·
+          have htakeV' :
+              List.take ((len self).toNat + (len vec).toNat) (storage v).toList =
+                embed self ++ List.take (len vec).toNat (embed vec) := by
+            simpa [hmin, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using htakeV
+          simpa [htakeVec] using htakeV'
+  ·
+    intro _
+    -- Final `self.len := new_len`: `storage` unchanged, `len` updated to `len self + len vec`.
     steps
-    all_goals (try sl)
     subst_vars
-    sl
+    -- Name the `steps` products from the end of the context.
+    rename_i h_isSome_set
+    rename_i _hdec
+    rename_i _hsumlt
+    rename_i _u_post
+    rename_i h_pre
+    rcases _u_post with ⟨hlenV, htakeV⟩
+    -- The modified value is `h_pre` with its `len` field overwritten with `len self + len vec`.
+    set v' :=
+      (((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify h_pre
+              (Builtin.indexTpl self Builtin.Member.head.tail + len vec)).get
+          h_isSome_set) with hv'
+    constructor
+    ·
+      have hb : BitVec.toNat (len self + len vec) ≤ MaxLen.toNat :=
+        (BitVec.le_def).1 hnew_le
+      -- `bounded v'` reduces to the `U32` bound on the new length.
+      simpa [v', hv', bounded, len, Lens.modify, Lens.get, Access.get, Access.modify, Option.get_some] using hb
+    ·
+      have hsum_lt' : BitVec.toNat (len self) + BitVec.toNat (len vec) < 4294967296 := by
+        simpa using hsum_lt
+      have hmod :
+          ((BitVec.toNat (len self) + BitVec.toNat (len vec)) % 4294967296) =
+            BitVec.toNat (len self) + BitVec.toNat (len vec) := by
+        exact Nat.mod_eq_of_lt hsum_lt'
+      have hmod' :
+          ((BitVec.toNat (Builtin.indexTpl self Builtin.Member.head.tail) +
+              BitVec.toNat (Builtin.indexTpl vec Builtin.Member.head.tail)) % 4294967296) =
+            BitVec.toNat (Builtin.indexTpl self Builtin.Member.head.tail) +
+              BitVec.toNat (Builtin.indexTpl vec Builtin.Member.head.tail) := by
+        simpa [len] using hmod
+      -- `embed v'` is `take` of the unchanged storage at the new length.
+      simpa [v', hv', embed, active, storage, len, Lens.modify, Lens.get, Access.get, Access.modify,
+        Option.get_some, Builtin.indexTpl, Builtin.replaceTuple', hmod'] using htakeV
 
--- structurally developed but have a few holes
-theorem mapi_spec {p T MaxLen U Env self f fb}
-    (hbounded : bounded self)
-    (inv : List (T.denote p) → List (U.denote p) → SLP (State p))
-    (inv_spec : ∀(ip : List (T.denote p)) (op : List (U.denote p)) (e : T.denote p),
-      (ip ++ [e] <+: active self) →
-        STHoare p env (inv ip op) (fb h![ip.length, e]) (fun r => inv (ip ++ [e]) (op ++ [r]))) :
-    STHoare p env
-      (inv [] [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, U, Env]
-        h![self, f])
-      (fun r => inv (active self) (active r) ⋆ [λf ↦ fb]) := by
-  enter_decl
-  steps [new_spec]
-  steps [len_spec]
-  all_goals (try exact ())
-  apply (STHoare.letIn_intro
-    (Q := fun _ =>
-      ∃∃ v, [ret ↦ ⟨bvTp U MaxLen, v⟩] ⋆ ⟦len v = len self⟧ ⋆
-        inv (active self) (active v) ⋆ [λf ↦ fb]))
-  · apply STHoare.ite_intro_of_false
-    · simp
-    · steps
-      loop_inv nat fun i _ _ =>
-        ∃∃ v,
-          [ret ↦ ⟨bvTp U MaxLen, v⟩] ⋆
-          ⟦len v = len self⟧ ⋆
-          inv ((active self).take (min i (len self).toNat))
-            ((storage v).toList.take (min i (len self).toNat)) ⋆
-          [λf ↦ fb]
-      · simp [len_modify_head_tail]
-        sl
-        sorry
-      · simp
-      · intro i hlo hhi
-        steps [len_spec]
-        apply STHoare.ite_intro
-        · intro hcond
-          have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-          have hi_lt : i < (len self).toNat := by
-            exact nat_lt_of_bv_lt (x := len self) pf (by simpa using hcond)
-          have hi_lt_max : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-          have hindex : (BitVec.ofNat 32 i).toNat < MaxLen.toNat := by
-            exact toNat_ofNat_lt_of_lt_maxLen (MaxLen := MaxLen) hi_lt_max
-          steps [get_unchecked_spec (hindex := sorry)]
-          have hi_le : i ≤ (len self).toNat := Nat.le_of_lt hi_lt
-          have hi_le_max : i ≤ MaxLen.toNat := Nat.le_of_lt hi_lt_max
-          simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
-            EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, List.Vector.toList_take,
-            Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-            BitVec.toNat_ofNatLT, active, storage, List.get_eq_getElem, List.getElem_take]
-          simp [Nat.min_eq_left hi_le] at *
-          generalize_proofs
-          rename Tp.denote p (bvTp U MaxLen) => v
-          have ip_len : ((active self).take i).length = i := by
-            simp [active, List.length_take, List.Vector.toList_length, hbounded, hi_lt,
-              Nat.min_eq_left]
-            sorry
-          have := inv_spec
-            ((active self).take i)
-            ((storage v).toList.take i)
-            ((storage self).toList[i]'(by
-              have : i < (storage self).toList.length := by
-                have hi_lt_max' : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-                simpa [storage, List.Vector.toList_length] using hi_lt_max'
-              exact this))
-            (by
-              simpa using (active_prefix_storage (self := self) (hbounded := hbounded) (hi := hi_lt)))
-          have this' :
-              STHoare p env (inv ((active self).take i) ((storage v).toList.take i))
-                (fb h![BitVec.ofNatLT i pf, (storage self).toList[i]'(by
-                  have : i < (storage self).toList.length := by
-                    have hi_lt_max' : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-                    simpa [storage, List.Vector.toList_length] using hi_lt_max'
-                  exact this)])
-                (fun r => inv ((active self).take i ++ [(storage self).toList[i]'(by
-                  have : i < (storage self).toList.length := by
-                    have hi_lt_max' : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-                    simpa [storage, List.Vector.toList_length] using hi_lt_max'
-                  exact this)])
-                  ((storage v).toList.take i ++ [r])) := by
-            simpa [ip_len, bitvec_ofNatLT_eq_ofNat (i := i) pf] using this
-          have this'' :
-              STHoare p env
-                (inv (List.take i (List.take (len self).toNat (storage self).toList))
-                  ((storage v).toList.take i))
-                (fb h![BitVec.ofNatLT i pf, (storage self).toList[i]'(by
-                  have : i < (storage self).toList.length := by
-                    have hi_lt_max' : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-                    simpa [storage, List.Vector.toList_length] using hi_lt_max'
-                  exact this)])
-                (fun r =>
-                  inv
-                    (List.take i (List.take (len self).toNat (storage self).toList) ++
-                      [(storage self).toList[i]'(by
-                        have : i < (storage self).toList.length := by
-                          have hi_lt_max' : i < MaxLen.toNat := lt_of_lt_of_le hi_lt hbounded
-                          simpa [storage, List.Vector.toList_length] using hi_lt_max'
-                        exact this)])
-                    ((storage v).toList.take i ++ [r])) := by
-            simpa [active, List.take_take, Nat.min_eq_left hi_le, ip_len,
-              bitvec_ofNatLT_eq_ofNat (i := i) pf] using this'
-          steps [STHoare.callLambda_intro (hlam := this'')]
-          rename_i r
-          simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-            List.Vector.toList_take, List.length_take, List.Vector.toList_length, BitVec.toNat_ofNat,
-            Nat.reducePow, List.take_append_getElem, Lens.modify, Lens.get, Access.modify, ↓reduceDIte,
-            Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some, Option.get_some,
-            List.Vector.toList_set]
-          -- have hlen : i < ((storage v).toList.set i r).length := by simp_all
-          try
-            (simp [List.take_succ_eq_append_getElem hlen, List.getElem_set hlen,
-              List.take_set_of_le ⟨⟩])
-          sorry
-        · intro hcond
-          steps
-          have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-          have hi_ge : (len self).toNat ≤ i := by
-            exact nat_le_of_bv_le (x := len self) pf (by simpa using hcond)
-          simp [Nat.min_eq_right, hi_ge]
-          sl
-          . sorry
-          . assumption
-          . sorry
-      · steps
-        all_goals (try sl)
-        simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
-          EuclideanDomain.zero_mod, Int.toNat_zero, BitVec.ofNat_toNat, BitVec.setWidth_eq, zero_le,
-          List.Vector.toList_take, active, List.length_take, List.Vector.toList_length]
-        rename Tp.denote p (bvTp U MaxLen) => v
-        rename_i a
-        have hlen :
-            Builtin.indexTpl v Builtin.Member.head.tail =
-              Builtin.indexTpl self Builtin.Member.head.tail := by
-          simpa [len] using a
-        have hmin : min MaxLen.toNat (len self).toNat = (len self).toNat := by
-          exact Nat.min_eq_right hbounded
-        simp [hmin, List.take_length, List.take_take, hlen]
-        sl
-        assumption
-  · intro _
-    apply Lampe.Steps.pull_exi
-    intro v
-    steps
-    all_goals (try sl)
-    subst_vars
-    sl
-
-theorem for_each_spec {p T MaxLen Env self f fb}
-    (hbounded : bounded self)
-    (inv : List (T.denote p) → SLP (State p))
-    (inv_spec : ∀(ip : List (T.denote p)) (e : T.denote p),
-      (ip ++ [e] <+: active self) →
-        STHoare p env (inv ip) (fb h![e]) (fun _ => inv (ip ++ [e]))) :
-    STHoare p env
-      (inv [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::for_each».call h![T, MaxLen, Env]
-        h![self, f])
-      (fun _ => inv (active self) ⋆ [λf ↦ fb]) := by
-  enter_decl
-  steps
-  all_goals (try exact ())
-  apply STHoare.ite_intro_of_false
-  · simp
-  · steps
-    loop_inv nat fun i _ _ =>
-      inv ((active self).take (min i (len self).toNat)) ⋆ [λf ↦ fb]
-    · simp
-      sl
-    · simp
-    · intro i hlo hhi
-      steps [len_spec]
-      apply STHoare.ite_intro
-      · intro hcond
-        have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-        have pf' : i < 4294967296 := by
-          simpa using pf
-        steps [get_unchecked_spec (hindex := by
-          sorry
-          -- simpa [BitVec.toNat_ofNat, Nat.mod_eq_of_lt pf'] using hhi
-        )]
-        simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-          zero_le, Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-          BitVec.toNat_ofNat, Nat.mod_eq_of_lt pf', active, storage, List.Vector.toList_take,
-          List.get_eq_getElem, List.getElem_take]
-        generalize_proofs
-        have hi_lt : i < (len self).toNat := by
-          exact nat_lt_of_bv_lt (x := len self) pf (by simpa using hcond)
-        have := inv_spec
-          ((active self).take i)
-          ((storage self).toList[i]'(by
-            have : i < (storage self).toList.length := by
-              simpa [storage, List.Vector.toList_length] using hhi
-            exact this))
-          (by
-            simpa using (active_prefix_storage (self := self) (hbounded := hbounded) (hi := hi_lt)))
-        steps [STHoare.callLambda_intro (hlam := this)]
-        -- simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-        --   BitVec.toNat_ofNatLT, List.Vector.toList_take, List.take_append_getElem]
-        sl
-        . sorry
-        . sorry
-        . sorry
-      · intro hcond
-        steps
-        have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-        have hi_ge : (len self).toNat ≤ i := by
-          exact nat_le_of_bv_le (x := len self) pf (by simpa using hcond)
-        have hi_ge_succ : (len self).toNat ≤ i + 1 := by
-          exact Nat.le_trans hi_ge (Nat.le_succ i)
-        simp [active, List.take_take, Nat.min_eq_right hi_ge, min_succ_eq_right hi_ge]
-        sl
-    · steps
-      all_goals (try sl)
-      simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-        BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, zero_le,
-        List.Vector.toList_take, active, List.length_take, List.Vector.toList_length]
-      have hmin : min MaxLen.toNat (len self).toNat = (len self).toNat := by
-        exact Nat.min_eq_right hbounded
-      simp [hmin, List.take_length, List.take_take]
-      sl
-
-theorem for_eachi_spec {p T MaxLen Env self f fb}
-    (hbounded : bounded self)
-    (inv : List (T.denote p) → SLP (State p))
-    (inv_spec : ∀(ip : List (T.denote p)) (e : T.denote p),
-      (ip ++ [e] <+: active self) →
-        STHoare p env (inv ip) (fb h![ip.length, e]) (fun _ => inv (ip ++ [e]))) :
-    STHoare p env
-      (inv [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::for_eachi».call h![T, MaxLen, Env]
-        h![self, f])
-      (fun _ => inv (active self) ⋆ [λf ↦ fb]) := by
-  enter_decl
-  steps
-  all_goals (try exact ())
-  apply STHoare.ite_intro_of_false
-  · simp
-  · steps
-    loop_inv nat fun i _ _ =>
-      inv ((active self).take (min i (len self).toNat)) ⋆ [λf ↦ fb]
-    · simp
-      sl
-    · simp
-    · intro i hlo hhi
-      steps [len_spec]
-      apply STHoare.ite_intro
-      · intro hcond
-        have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-        have pf' : i < 4294967296 := by
-          simpa using pf
-        steps [get_unchecked_spec (hindex := by
-          sorry
-        )]
-        simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
-          EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, List.Vector.toList_take,
-          Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-          BitVec.toNat_ofNat, Nat.mod_eq_of_lt pf', active, storage, List.get_eq_getElem,
-          List.getElem_take]
-        generalize_proofs
-        have hi_lt : i < (len self).toNat := by
-          exact nat_lt_of_bv_lt (x := len self) pf (by simpa using hcond)
-        have hi_le : i ≤ (len self).toNat := Nat.le_of_lt hi_lt
-        have hi_le_max : i ≤ MaxLen.toNat := Nat.le_of_lt hhi
-        have ip_len : ((active self).take i).length = i := by
-          simp [active, List.length_take, List.Vector.toList_length, hbounded, hi_lt,
-            Nat.min_eq_left]
-          sorry
-        have := inv_spec
-          ((active self).take i)
-          ((storage self).toList[i]'(by
-            have : i < (storage self).toList.length := by
-              simpa [storage, List.Vector.toList_length] using hhi
-            exact this))
-          (by
-            simpa using (active_prefix_storage (self := self) (hbounded := hbounded) (hi := hi_lt)))
-        have this' :
-            STHoare p env (inv ((active self).take i))
-              (fb h![BitVec.ofNatLT i pf, (storage self).toList[i]'(by
-                have : i < (storage self).toList.length := by
-                  simpa [storage, List.Vector.toList_length] using hhi
-                exact this)])
-              (fun _ => inv ((active self).take i ++ [(storage self).toList[i]'(by
-                have : i < (storage self).toList.length := by
-                  simpa [storage, List.Vector.toList_length] using hhi
-                exact this)])) := by
-          simpa [ip_len, bitvec_ofNatLT_eq_ofNat (i := i) pf] using this
-        steps [STHoare.callLambda_intro (hlam := this')]
-        simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-          List.Vector.toList_take, List.length_take, List.Vector.toList_length, BitVec.toNat_ofNat,
-          Nat.reducePow, List.take_append_getElem]
-        sl
-        . sorry
-        . sorry
-        . sorry
-      · intro hcond
-        steps
-        have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-        have hi_ge : (len self).toNat ≤ i := by
-          exact nat_le_of_bv_le (x := len self) pf (by simpa using hcond)
-        have hi_ge_succ : (len self).toNat ≤ i + 1 := by
-          exact Nat.le_trans hi_ge (Nat.le_succ i)
-        simp [active, List.take_take, Nat.min_eq_right hi_ge, min_succ_eq_right hi_ge]
-        sl
-    · steps
-      all_goals (try sl)
-      simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
-        EuclideanDomain.zero_mod, Int.toNat_zero, BitVec.ofNat_toNat, BitVec.setWidth_eq, zero_le,
-        List.Vector.toList_take, active, List.length_take, List.Vector.toList_length]
-      have hmin : min MaxLen.toNat (len self).toNat = (len self).toNat := by
-        exact Nat.min_eq_right hbounded
-      simp [hmin, List.take_length, List.take_take]
-      sl
-
-theorem from_parts_spec {p T MaxLen array l}
-    (hbounded : l ≤ MaxLen) :
+theorem from_parts_spec {p T MaxLen arr l}
+    (hb : l.toNat ≤ MaxLen.toNat) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::from_parts».call
-        h![T, MaxLen] h![array, l])
-      (fun r => bounded r) := by
+        h![T, MaxLen] h![arr, l])
+      (fun r => bounded r ∧ embed r = List.take l.toNat arr.toList) := by
+  have hble : l ≤ MaxLen := by
+    rw [BitVec.le_def]
+    simpa using hb
   enter_decl
   steps
   all_goals (try exact ())
   apply (STHoare.letIn_intro
-    (Q := fun _ => ∃∃ a, [array ↦ ⟨Tp.array T MaxLen, a⟩]))
-  · apply STHoare.ite_intro_of_false
+    (Q := fun _ =>
+      ∃∃ a : List.Vector (T.denote p) MaxLen.toNat,
+        [array ↦ ⟨Tp.array T MaxLen, a⟩] ⋆
+          ⟦List.take l.toNat a.toList = List.take l.toNat arr.toList⟧))
+  ·
+    apply STHoare.ite_intro_of_false
     · simp
-    · steps
-      loop_inv nat fun _ _ _ => ∃∃ a, [array ↦ ⟨Tp.array T MaxLen, a⟩]
+    ·
+      steps
+      loop_inv nat (fun _ _ _ =>
+          ∃∃ a : List.Vector (T.denote p) MaxLen.toNat,
+            [array ↦ ⟨Tp.array T MaxLen, a⟩] ⋆
+              ⟦List.take l.toNat a.toList = List.take l.toNat arr.toList⟧)
       · sl
+        simp
       · simp
-      · intro i hlo hhi
+      ·
+        intro i hlo hhi
+        -- The loop body starts with `let b := uGeq i l; if b then ...`.
         apply (STHoare.letIn_intro
-          (Q := fun _ => ∃∃ a, [array ↦ ⟨Tp.array T MaxLen, a⟩]))
-        · apply Lampe.Steps.pull_exi
-          intro arrVal
+          (Q := fun b =>
+            ∃∃ a : List.Vector (T.denote p) MaxLen.toNat,
+              [array ↦ ⟨Tp.array T MaxLen, a⟩] ⋆
+                ⟦List.take l.toNat a.toList = List.take l.toNat arr.toList ∧
+                  b = decide (l.toNat ≤ i)⟧))
+        ·
+          -- Evaluate the pure builtin `uGeq`.
+          apply Lampe.Steps.pull_exi
+          intro a
           apply (STHoare.consequence
-            (H₁ := [array ↦ ⟨Tp.array T MaxLen, arrVal⟩])
-            (Q₁ := fun _ => [array ↦ ⟨Tp.array T MaxLen, arrVal⟩]))
+            (H₁ := [array ↦ ⟨Tp.array T MaxLen, a⟩] ⋆ ⟦List.take l.toNat a.toList = List.take l.toNat arr.toList⟧)
+            (Q₁ := fun b =>
+              [array ↦ ⟨Tp.array T MaxLen, a⟩] ⋆
+                ⟦List.take l.toNat a.toList = List.take l.toNat arr.toList ∧
+                  b = decide (l.toNat ≤ i)⟧))
           · exact SLP.entails_self
-          · intro _
-            sl
-          · steps [STHoare.genericTotalPureBuiltin_intro (b := Builtin.uGeq) (h := rfl)]
-        · intro b
+          ·
+            intro b
+            sl; assumption
+          ·
+            steps [STHoare.genericTotalPureBuiltin_intro (b := Builtin.uGeq) (h := rfl)]
+            simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+              BitVec.toNat_ofNatLT, BitVec.le_def, ge_iff_le]
+            simp
+        ·
+          intro b
           apply STHoare.ite_intro
-          · intro _
+          ·
+            intro hbTrue
             steps
-          · intro _
+            generalize_proofs
+            -- Order for `rename_i`: oldest-to-newest among the last renamable binders.
+            rename_i a hpre h_isSome u pf
+            rcases hpre with ⟨htake, hbdec⟩
+            -- In this branch, `b = true`, so `l.toNat ≤ i`.
+            have hli : l.toNat ≤ i := by
+              have : decide (l.toNat ≤ i) = true := by
+                calc
+                  decide (l.toNat ≤ i) = b := by simpa using (Eq.symm hbdec)
+                  _ = true := hbTrue
+              exact (decide_eq_true_iff).1 this
+            -- Normalize the post-state array update.
+            simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+              BitVec.toNat_ofNatLT, Lens.modify, Lens.get, Access.get, Access.modify, Option.get_some,
+              List.Vector.toList_set]
+            -- `simp_all` leaves some `Option`-monad plumbing; `simp` finishes normalizing it.
+            simp
+            have htake_len : (List.take l.toNat a.toList).length = l.toNat := by
+              simp [List.length_take, List.Vector.toList_length, Nat.min_eq_left hb]
+            have hdrop :
+                List.take l.toNat (a.toList.set i (Tp.zero p T)) = List.take l.toNat a.toList := by
+              have ht :=
+                (List.take_set (l := a.toList) (n := l.toNat) (i := i) (a := Tp.zero p T))
+              have hset :
+                  (List.take l.toNat a.toList).set i (Tp.zero p T) = List.take l.toNat a.toList := by
+                exact List.set_eq_of_length_le (by simpa [htake_len] using hli)
+              simpa [hset] using ht
+            simpa [hdrop] using htake
+          ·
+            intro hbFalse
             steps
-      · steps
-  · intro _
+            generalize_proofs
+            rename_i a hpre u
+            rcases hpre with ⟨htake, _⟩
+            exact htake
+      ·
+        steps; assumption
+        -- the loop invariant is already the postcondition we need here
+  ·
+    intro _
     steps
     subst_vars
-    simpa [bounded, len] using hbounded
-
-theorem eq_spec {p T MaxLen self other}
-    {t_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] T}
-    (array_eq :
-      ∀ a b, STHoare p env ⟦⟧ («std-1.0.0-beta.12::cmp::Eq».eq h![] (T.array MaxLen) h![] h![] h![a, b])
-        (fun r : Bool => ⟦r = (a = b)⟧)) :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::cmp::Eq».eq h![] (bvTp T MaxLen) h![] h![] h![self, other])
-      (fun _ : Bool => ⟦True⟧) := by
-  resolve_trait
-  steps [array_eq]
-  apply STHoare.ite_intro
-  · intro _
-    steps [array_eq]
-  · intro _
-    steps
-
-theorem from_trait_spec {p T Len MaxLen array}
-    (hbounded : Len ≤ MaxLen) :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::convert::From».from h![T.array Len] (bvTp T MaxLen) h![] h![] h![array])
-  (fun r => bounded r) := by
-  resolve_trait
-  steps [from_array_spec (hbounded := hbounded)]
-  assumption
-
-/-! ## Spec Backlog
-
-Theorem shape we want next (in proof-order):
-
-1. Constructors and primitive accessors
-   - `new_spec`: returns `wellFormed` value with `len = 0` and fully zeroed storage.
-   - `get_unchecked_spec`: reads `storage[index]` (requires index-in-array precondition).
-   - `get_spec`: same as `get_unchecked`, with extra checked precondition `index < len`.
-   - `set_unchecked_spec`: updates `storage[index]`, length unchanged.
-   - `set_spec`: same as `set_unchecked`, gated by `index < len`.
-
-2. Core mutators
-   - `push_spec`: pre `len < MaxLen`; post heap is exactly `[selfRef ↦ pushed self elem hpush]`.
-   - `pop_spec`: pre `len > 0`; returns old last element; post heap is exactly `[selfRef ↦ popped self hlast]`.
-
-3. Bulk extension
-   - `extend_from_array_spec`
-   - `extend_from_slice_spec`
-   - `extend_from_bounded_vec_spec`
-   Shared postcondition pattern:
-   `active' = active ++ appendedPrefix` and `len' = len + appendedPrefix.length`.
-   For `extend_from_bounded_vec`, we should prove both execution branches refine to the same
-   abstract append behavior.
-
-4. Higher-order traversal/mapping
-   - `any_spec` (+ pure variant): result is `List.any` over `active`.
-   - `map_spec`, `mapi_spec` (+ pure variants): mapped `active`, same length, zeroed tail.
-   - `for_each_spec`, `for_eachi_spec`: callback is executed exactly over `active`.
-
-5. Smart constructors and trait behavior
-   - `from_array_spec`: static bound + append semantics.
-   - `from_parts_spec`: enforces zeroed tail.
-   - `from_parts_unchecked_spec`: only length bound; no zero-tail guarantee.
-   - `eq_spec`: models Noir impl (`len` equality plus full-storage equality), with note that
-     extensional equality on `active` requires `wellFormed` assumptions.
-   - `from_trait_spec`: delegates to `from_array_spec`.
--/
-
-/-! ## Scope Inventory (From `stdlib/src/collections/bounded_vec.nr`)
-
-`BoundedVec` has no `unconstrained fn` declarations in its API impl.
-So, under "public-facing constrained only", the proof target set is:
-
-- `new`
-- `get`
-- `get_unchecked`
-- `set`
-- `set_unchecked`
-- `push`
-- `len`
-- `max_len`
-- `storage`
-- `extend_from_array`
-- `extend_from_slice`
-- `extend_from_bounded_vec`
-- `from_array`
-- `pop`
-- `any`
-- `map`
-- `mapi`
-- `for_each`
-- `for_eachi`
-- `from_parts`
-- `from_parts_unchecked`
-- trait method `Eq::eq` for `BoundedVec`
-- trait method `From<[T; Len]>::from` for `BoundedVec`
-
-Excluded from proof scope:
-- test module `bounded_vec_tests::*`
-- test-only private helpers (`for_each_map`, `for_eachi_mapi`)
--/
+    rename_i hinv
+    rename_i a
+    constructor
+    · simpa [bounded, len] using hb
+    · simpa [embed, active, storage, len] using hinv
 
 end Lampe.Stdlib.Collections.BoundedVec
