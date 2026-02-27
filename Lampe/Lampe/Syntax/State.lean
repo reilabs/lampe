@@ -26,8 +26,8 @@ structure LambdaParam where
 structure DSLState where
   autoDeref : Std.HashMap Name Bool
   nextFresh : Nat
-  /-- When true, `makeBareIdent` will suppress auto-deref for the next mutable ident it encounters
-  and reset this flag.  Used by `#_ref` to propagate through syntax wrappers (parens, blocks). -/
+  /-- When true, `makeBareIdent` will not automatically dereference the next mutable ident it encounters
+  and then reset this flag.  Used by `#_ref` to propagate through syntax wrappers (parens, blocks). -/
   suppressAutoDeref : Bool := false
 
 /--
@@ -57,7 +57,7 @@ instance [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
 /-- Runs the DSL monad beginning with an empty state. -/
 def MonadDSL.run [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
     (a : StateT DSLState m α) : m α :=
-  StateT.run' a { autoDeref := Std.HashMap.emptyWithCapacity 1000, nextFresh := 0 }
+  StateT.run' a ⟨Std.HashMap.emptyWithCapacity 1000, 0, false⟩
 
 /-- Checks if the provided name `i` is subject to auto-dereferencing. -/
 def isAutoDerefd [MonadDSL m] (i : Name) : m Bool := do -- FIXME name is temporary
