@@ -209,28 +209,28 @@ partial def makeExpr [MonadDSL m]
 -- Builtin Calls
 | `(noir_expr|(#_ $name:ident returning $tp)( $args,* )) =>
   let argsList := args.getElems.toList
-  let isRefBuiltin := name.getId == `ref
   let emitBuiltin : m (TSyntax `term) := makeArgs argsList fun args => do
     let argVals ← makeHListLit args
     wrapInLet
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
-  -- `makeExpr` auto-dereferences mutable locals, so `#_ref(expr)` would lower to
-  -- `ref(readRef id)` — a fresh cell that loses reference identity.  We set
-  -- `suppressAutoDeref` before recursing into the argument; if `makeBareIdent`
-  -- finds a mutable ident it will emit `Expr.var id` and consume the flag,
-  -- letting us skip the outer `ref(...)` wrapper.  This propagates through
-  -- syntax wrappers (parens, blocks) that the recursive `makeExpr` traverses.
-  if isRefBuiltin then
+  -- `makeExpr` auto-dereferences mutable locals, so `#_ref(expr)` would lower to `ref(readRef id)`
+  -- — a fresh cell that loses reference identity. We clear `shouldAutoDeref` before recursing into
+  -- the argument; if `makeBareIdent` finds a mutable ident it will emit `Expr.var id` and restore
+  -- the flag, letting us skip the outer `ref(...)` wrapper. This propagates through syntax wrappers
+  -- (parens, blocks) that the recursive `makeExpr` traverses.
+  if name.getId == `ref then
     match argsList with
     | [arg] => do
-      let _ ← setSuppressAutoDeref true
+      let saved ← getSetShouldAutoDeref false
       makeExpr arg binder fun argVal => do
-        -- Reset the flag and check whether `makeBareIdent` already consumed it.
-        -- Consumed (prev = false) means it emitted `Expr.var id` — the ref itself.
-        let prev ← setSuppressAutoDeref false
-        if !prev then
+        -- Restore to saved and check whether `makeBareIdent` consumed the flag. Consumed (true)
+        -- means it emitted `Expr.var id` — the ref itself. Restoring to saved (not unconditionally
+        -- true) ensures nested #_ref calls compose correctly without clobbering the outer handler's
+        -- signal.
+        let consumed ← getSetShouldAutoDeref saved
+        if consumed then
           match k with
           | some k => k argVal
           | none => pure argVal
@@ -373,10 +373,10 @@ partial def makeBareIdent [MonadDSL m]
     (k : Option $ TSyntax `term → m (TSyntax `term))
   : m (TSyntax `term) := do
   if ←isAutoDerefd ident.getId then
-    -- When suppressAutoDeref is set (inside #_ref), emit the variable directly
-    -- without readRef and consume the flag.  The caller (#_ref handler) will
-    -- see that the flag was consumed and skip the outer ref(...) wrapping.
-    if ←setSuppressAutoDeref false then
+    -- When shouldAutoDeref is false (inside #_ref), emit the variable directly without readRef
+    -- and restore the flag. The caller (#_ref handler) will see that the flag was consumed and
+    -- skip the outer ref(...) wrapping.
+    if !(←getSetShouldAutoDeref true) then
       wrapInLet (←``(Expr.var $ident)) binder k
     else
       wrapInLet (←``(Expr.readRef $ident)) binder k
