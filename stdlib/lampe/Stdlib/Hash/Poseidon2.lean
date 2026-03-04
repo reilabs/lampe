@@ -69,7 +69,9 @@ theorem poseidon2_hasher_write_spec {s : List (Fp p)} {input : Fp p} {r : Ref} :
     («std-1.0.0-beta.12::hash::Hasher».write h![]
       («std-1.0.0-beta.12::hash::poseidon2::Poseidon2Hasher».tp h![])
       h![] h![] h![r, input])
-    (fun _ => [r ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2Hasher».tp h![], (s ++ [input], ())⟩]) := by
+    (fun _ =>
+      [r ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2Hasher».tp h![],
+        (s ++ [input], ())⟩]) := by
   resolve_trait
   steps
 
@@ -259,7 +261,11 @@ theorem absorb_spec_not_full {r : Ref}
           mkPoseidon2 cache state cache_size false⟩]
     («std-1.0.0-beta.12::hash::poseidon2::Poseidon2::absorb».call h![] h![r, input])
     (fun _ => [r ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2».tp h![],
-          mkPoseidon2 (cache.set ⟨cache_size.toNat, h_not_full⟩ input) state (cache_size + 1) false⟩]) := by
+          mkPoseidon2
+            (cache.set ⟨cache_size.toNat, h_not_full⟩ input)
+            state
+            (cache_size + 1)
+            false⟩]) := by
   enter_decl
   set_option maxRecDepth 4096 in
   steps [rate_spec]
@@ -343,7 +349,8 @@ theorem hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
     let (fc, fs, fcs) := spongeAbsorb init_cache init_state (0 : U 32) elems
     let squeezed := Builtin.poseidon2PermFn p 4 (mixCacheIntoState fc fs fcs)
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash_internal».call h![n] h![input, in_len, is_variable_length])
+    («std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash_internal».call h![n]
+      h![input, in_len, is_variable_length])
     (fun result => result = squeezed.get ⟨0, by simp [BitVec.toNat]⟩) := by
   enter_decl
   set_option maxRecDepth 4096 in
@@ -373,7 +380,8 @@ theorem hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
       congr 1; congr 1
       all_goals {
         have h_i_lt : i < input.toList.length := by simpa using hhi
-        have h_take : input.toList.take (i + 1) = input.toList.take i ++ [input.toList.get ⟨i, h_i_lt⟩] := by
+        have h_take :
+            input.toList.take (i + 1) = input.toList.take i ++ [input.toList.get ⟨i, h_i_lt⟩] := by
           rw [List.take_succ]; simp [List.getElem?_eq_getElem h_i_lt]
         rw [h_take, spongeAbsorb_append _ _ _ (by native_decide) _ _]
         simp [List.Vector.get_eq_get_toList]
@@ -405,13 +413,18 @@ theorem hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
       apply STHoare.letIn_intro (Q := fun _ =>
         let sa := spongeAbsorb (p := p) ⟨[0, 0, 0], rfl⟩
           ⟨[0, 0, 0, Builtin.CastTp.cast in_len * ↑18446744073709551616], rfl⟩
-          (0 : U 32) (input.toList.take (min (BitVec.toNat (↑input.length : U 32)) in_len.toNat) ++ [(1 : Fp p)])
+          (0 : U 32)
+            (input.toList.take (min (BitVec.toNat (↑input.length : U 32)) in_len.toNat) ++
+              [(1 : Fp p)])
         [sponge ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2».tp h![],
           mkPoseidon2 sa.1 sa.2.1 sa.2.2 false⟩])
       · apply STHoare.iteTrue_intro
         have h_cs : (spongeAbsorb (p := p) ⟨[0, 0, 0], rfl⟩
           ⟨[0, 0, 0, Builtin.CastTp.cast in_len * ↑18446744073709551616], rfl⟩
-          (0 : U 32) (input.toList.take (min (BitVec.toNat (↑input.length : U 32)) in_len.toNat))).2.2.toNat ≤ 3 :=
+          (0 : U 32)
+            (input.toList.take
+              (min (BitVec.toNat (↑input.length : U 32)) in_len.toNat))).2.2.toNat ≤
+            3 :=
           spongeAbsorb_cache_size_le _ _ _ (by native_decide) _
         steps [absorb_spec h_cs]
         congr 1; congr 1

@@ -4,7 +4,8 @@ open Lampe
 
 namespace Lampe.Tests.Poseidon2
 
-private def bn254P : Nat := 21888242871839275222246405745257275088548364400416034343698204186575808495617
+private def bn254P : Nat :=
+  21888242871839275222246405745257275088548364400416034343698204186575808495617
 private axiom bn254_prime : Nat.Prime bn254P
 private def bn254 : Prime := Prime.ofNat bn254P bn254_prime (by unfold bn254P; omega)
 
