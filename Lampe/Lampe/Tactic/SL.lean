@@ -376,36 +376,50 @@ partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Lean
 
 partial def pullPures (goal : MVarId) (pre post : SLTerm) : SLM (MVarId × List MVarId) :=
   goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
-  let (goal, puller, finalPuller) ← if post.hasMVars then
-    -- Similar to `pullExis`: ensure we pick a *single* metavariable sink.
-    let isUnsafe := (←read).isUnsafe
-    let foundMv ← IO.mkRef false
-    let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
-      | SLTerm.mvar _ => do
-        let already ← foundMv.get
-        if already then
-          if isUnsafe then
+  let isUnsafe := (←read).isUnsafe
+  let (goal, puller, finalPuller) ← if post.hasMVars && isUnsafe then
+      -- Unsafe mode: allow multiple metavariables in the postcondition by selecting a single
+      -- metavariable sink and aggressively collapsing the rest to `⟦True⟧`.
+      let foundMv ← IO.mkRef false
+      let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
+        | SLTerm.mvar _ => do
+          let already ← foundMv.get
+          if already then
             let tp ← inferType t.expr
             let args := tp.getAppArgs'
             let alpha ← liftOption args[0]?
             let inst ← liftOption args[1]?
             let unit ← mkAppOptM ``SLP.lift #[some alpha, some inst, some (mkConst ``True [])]
             discard <| isDefEq t.expr unit
-          pure .left
-        else
-          foundMv.set true
-          pure .right
-      | _ => pure .left
-    ) post
-    match pmv with
-    | .mvar _ => pure ()
-    | _ => throwError "unexpected result in pullPures"
-    let newPost ← mkAppM ``SLP.star #[p.expr, pmv.expr]
-    let preEq ← mkAppM ``Eq.refl #[pre.expr]
-    let goal ← rewriteSides goal pre.expr newPost preEq postEqMVars
-    pure (goal, ←mkConstWithFreshMVarLevels ``Internal.skip_pure_evidence, ←mkConstWithFreshMVarLevels ``Internal.skip_final_pure_evidence)
-  else
-    pure (goal, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left')
+            pure .left
+          else
+            foundMv.set true
+            pure .right
+        | _ => pure .left
+      ) post
+      match pmv with
+      | .mvar _ => pure ()
+      | _ => throwError "unexpected result in pullPures"
+      let newPost ← mkAppM ``SLP.star #[p.expr, pmv.expr]
+      let preEq ← mkAppM ``Eq.refl #[pre.expr]
+      let goal ← rewriteSides goal pre.expr newPost preEq postEqMVars
+      pure (goal, ←mkConstWithFreshMVarLevels ``Internal.skip_pure_evidence, ←mkConstWithFreshMVarLevels ``Internal.skip_final_pure_evidence)
+    else if post.hasMVars then
+      -- Safe mode: keep the old behavior. In particular, multiple metavariable sinks should cause
+      -- `sl` to fail, so that `steps` can roll back rather than leaving the goal in a worse state.
+      let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
+        | SLTerm.mvar _ => pure .right
+        | _ => pure .left
+      ) post
+      match pmv with
+      | .mvar _ => pure ()
+      | _ => throwError "unexpected result in pullPures"
+      let newPost ← mkAppM ``SLP.star #[p.expr, pmv.expr]
+      let preEq ← mkAppM ``Eq.refl #[pre.expr]
+      let goal ← rewriteSides goal pre.expr newPost preEq postEqMVars
+      pure (goal, ←mkConstWithFreshMVarLevels ``Internal.skip_pure_evidence, ←mkConstWithFreshMVarLevels ``Internal.skip_final_pure_evidence)
+    else
+      pure (goal, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left, ←mkConstWithFreshMVarLevels ``Lampe.SLP.pure_left')
   doPullWith pre goal puller finalPuller
 
 partial def doApplyExis (goal : MVarId) (postExis : SLTerm) : SLM (MVarId × List MVarId) := do
@@ -456,40 +470,40 @@ partial def pullExisLoop (goal : MVarId): SLM (MVarId × List MVarId) := goal.wi
 
 partial def pullExis (pre post : SLTerm) (goal : MVarId): SLM (MVarId × List MVarId) :=
   goal.withContext do
-  -- `sl` expects a single "sink" (either `?M` or `⊤`) in the postcondition. However, some goals
-  -- can contain multiple metavariable sinks (e.g. `... ⊢ goals ⋆ ?M₁ ⋆ ?M₂`), in which case the
-  -- old splitter would return a sink of the shape `?M₁ ⋆ ?M₂` and fail with "unsupported sink shape".
-  --
-  -- We instead pick *one* sink (the rightmost, due to right-first traversal in `split_by`) and
-  -- treat any additional metavariable/top terms as regular goals.
   let isUnsafe := (←read).isUnsafe
-  let foundSink ← IO.mkRef false
-  let (goals, sink, postEq) ← Lampe.SL.split_by (fun t => match t with
-  | SLTerm.mvar _ => do
-    let already ← foundSink.get
-    if already then
-      -- In unsafe mode, aggressively collapse extra sink metavariables to `⟦⟧` so that the
-      -- remaining postcondition has a single sink.
-      if isUnsafe then
-        let tp ← inferType t.expr
-        let args := tp.getAppArgs'
-        let alpha ← liftOption args[0]?
-        let inst ← liftOption args[1]?
-        let unit ← mkAppOptM ``SLP.lift #[some alpha, some inst, some (mkConst ``True [])]
-        discard <| isDefEq t.expr unit
-      pure .left
+  let (goals, sink, postEq) ←
+    if isUnsafe then
+      -- Unsafe mode: ensure we pick a *single* sink (either `?M` or `⊤`). Any additional sink-like
+      -- metavariables are collapsed to `⟦True⟧` so we don't get stuck on a sink of the form
+      -- `?M₁ ⋆ ?M₂`.
+      let foundSink ← IO.mkRef false
+      Lampe.SL.split_by (fun t => match t with
+        | SLTerm.mvar _ => do
+          let already ← foundSink.get
+          if already then
+            let tp ← inferType t.expr
+            let args := tp.getAppArgs'
+            let alpha ← liftOption args[0]?
+            let inst ← liftOption args[1]?
+            let unit ← mkAppOptM ``SLP.lift #[some alpha, some inst, some (mkConst ``True [])]
+            discard <| isDefEq t.expr unit
+            pure .left
+          else
+            foundSink.set true
+            pure .right
+        | SLTerm.top _ => do
+          let already ← foundSink.get
+          if already then pure .left else foundSink.set true; pure .right
+        | _ => pure .left
+      ) post
     else
-      foundSink.set true
-      pure .right
-  | SLTerm.top _ => do
-    let already ← foundSink.get
-    if already then
-      pure .left
-    else
-      foundSink.set true
-      pure .right
-  | _ => pure .left
-  ) post
+      -- Safe mode: keep the old behavior. Multiple sinks should make `sl` fail, so that `steps`
+      -- rolls back instead of changing the goal into an unsolved entailment.
+      Lampe.SL.split_by (fun t => match t with
+        | SLTerm.mvar _ => pure .right
+        | SLTerm.top _ => pure .right
+        | _ => pure .left
+      ) post
   let newPost ← mkAppM ``SLP.star #[goals.expr, sink.expr]
   let (pre, preEq) ← Lampe.SL.surfaceExis pre
   let goal ← rewriteSides goal pre newPost preEq postEq
