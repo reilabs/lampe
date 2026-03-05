@@ -7,7 +7,9 @@ open «std-1.0.0-beta.12»
 
 variable {p : Prime}
 
-/-- Helper to construct a Poseidon2 value -/
+/-- Constructs a `Poseidon2` sponge value from its four fields.
+
+Use this when building expected values in postconditions of `poseidon2_new_spec`, `poseidon2_absorb_spec`, etc. -/
 def mkPoseidon2 {p : Prime} (cache : List.Vector (Fp p) 3) (state : List.Vector (Fp p) 4)
     (cache_size : U 32) (squeeze_mode : Bool) :
     Tp.denote p («std-1.0.0-beta.12::hash::poseidon2::Poseidon2».tp h![]) :=
@@ -44,25 +46,24 @@ def mkPoseidon2 {p : Prime} (cache : List.Vector (Fp p) 3) (state : List.Vector 
     Builtin.replaceTuple' (mkPoseidon2 cache state cs sq) Builtin.Member.head.tail.tail new_cs
       = mkPoseidon2 cache state new_cs sq := rfl
 
-theorem rate_spec :
+theorem poseidon2_rate_spec :
     STHoare p env ⟦⟧
     («std-1.0.0-beta.12::hash::poseidon2::RATE».call h![] h![])
     (fun r => r = (3 : U 32)) := by
-  enter_decl
-  steps
-  rename_i h
-  simp only [Nat.cast_ofNat] at h
-  exact h
+  enter_decl; steps; rename_i h; simp only [Nat.cast_ofNat] at h; exact h
 
 theorem poseidon2_hasher_default_spec :
     STHoare p env ⟦⟧
     («std-1.0.0-beta.12::default::Default».default h![]
       («std-1.0.0-beta.12::hash::poseidon2::Poseidon2Hasher».tp h![]) h![] h![] h![])
     (fun r => r = ([], ())) := by
-  resolve_trait
-  steps
-  simp_all
+  resolve_trait; steps; simp_all
 
+/-- Spec for `Hasher::write` on `Poseidon2Hasher`.
+
+Calling `write` on a hasher holding accumulated elements `s` appends `input` to the list.
+Use this when proving programs that incrementally feed field elements into a `Poseidon2Hasher`
+before calling `finish`. -/
 theorem poseidon2_hasher_write_spec {s : List (Fp p)} {input : Fp p} {r : Ref} :
     STHoare p env
     [r ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2Hasher».tp h![], (s, ())⟩]
@@ -75,7 +76,9 @@ theorem poseidon2_hasher_write_spec {s : List (Fp p)} {input : Fp p} {r : Ref} :
   resolve_trait
   steps
 
-/-- Mix cache into state: for i < min(cache_size, RATE), state[i] += cache[i] -/
+/-- Mixes the sponge cache into the state vector before a permutation call.
+For each index `i < min(cache_size, RATE)`, adds `cache[i]` into `state[i]`.
+This is the pre-permutation step of each duplex operation. -/
 def mixCacheIntoState (cache : List.Vector (Fp p) 3) (state : List.Vector (Fp p) 4)
     (cache_size : U 32) : List.Vector (Fp p) 4 :=
   let s0 := if (0 : U 32) < cache_size then
@@ -106,7 +109,7 @@ lemma partialMix_3_eq_mixCacheIntoState
     partialMix cache state cache_size 3 = mixCacheIntoState cache state cache_size := by
   simp [partialMix, mixCacheIntoState]
 
-theorem poseidon2_permutation_4_spec {state : List.Vector (Fp p) 4} :
+theorem poseidon2_permutation_spec {state : List.Vector (Fp p) 4} :
     STHoare p env ⟦⟧
       (Expr.callBuiltin [Tp.field.array 4#32, Tp.u 32] (Tp.field.array 4#32)
         Builtin.poseidon2Permutation h![state, (4 : U 32)])
@@ -119,7 +122,7 @@ theorem poseidon2_permutation_4_spec {state : List.Vector (Fp p) 4} :
       (b := Builtin.poseidon2Permutation) rfl
       (a := (4 : U 32)) (p := p) (Γ := env) (args := h![state, (4 : U 32)]))
 
-theorem perform_duplex_spec
+theorem poseidon2_perform_duplex_spec
     {r : Ref}
     {cache : List.Vector (Fp p) 3} {state : List.Vector (Fp p) 4}
     {cache_size : U 32} {squeeze_mode : Bool} :
@@ -131,7 +134,7 @@ theorem perform_duplex_spec
           mkPoseidon2 cache (Builtin.poseidon2PermFn p 4 (mixCacheIntoState cache state cache_size))
             cache_size squeeze_mode⟩]) := by
   enter_decl
-  steps [rate_spec]
+  steps [poseidon2_rate_spec]
   loop_inv nat fun i _ _ =>
     [r ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2».tp h![],
           mkPoseidon2 cache (partialMix cache state cache_size i) cache_size squeeze_mode⟩]
@@ -160,9 +163,9 @@ theorem perform_duplex_spec
         simpa [BitVec.ofNatLT_eq_ofNat] using hcond'
       steps
       simp [partialMix, hi3, hnic]
-  steps [poseidon2_permutation_4_spec]
+  steps [poseidon2_permutation_spec]
 
-theorem squeeze_spec
+theorem poseidon2_squeeze_spec
     {r : Ref}
     {cache : List.Vector (Fp p) 3} {state : List.Vector (Fp p) 4}
     {cache_size : U 32} :
@@ -175,18 +178,18 @@ theorem squeeze_spec
       [r ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2».tp h![],
             mkPoseidon2 cache permuted cache_size true⟩]) := by
   enter_decl
-  steps [perform_duplex_spec]
+  steps [poseidon2_perform_duplex_spec]
   subst_vars
   simp only [Builtin.indexTpl, Builtin.replaceTuple', Lens.modify, Lens.get,
     Access.modify, mkPoseidon2]
   rfl
 
-theorem new_spec {iv : Fp p} :
+theorem poseidon2_new_spec {iv : Fp p} :
     STHoare p env ⟦⟧
     («std-1.0.0-beta.12::hash::poseidon2::Poseidon2::new».call h![] h![iv])
     (fun r => r = mkPoseidon2 ⟨[0, 0, 0], rfl⟩ ⟨[0, 0, 0, iv], rfl⟩ 0 false) := by
   enter_decl
-  steps [rate_spec]
+  steps [poseidon2_rate_spec]
   subst_vars
   simp_all only [Lens.modify, Access.modify, HList.toTuple,
     List.Vector.replicate, BitVec.toNat]
@@ -194,8 +197,16 @@ theorem new_spec {iv : Fp p} :
   simp [List.Vector.set, mkPoseidon2]
   norm_cast
 
-/-- Absorb a list of field elements into the sponge, returning (cache, state, cache_size).
-    When cache_size = 3, triggers duplex before absorbing. -/
+/-- Pure Lean model of the Poseidon2 sponge absorption step.
+
+Absorbs a list of field elements into `(cache, state, cache_size)`, returning the
+updated triple. When `cache_size = 3` (cache full), triggers a duplex: mixes the cache
+into the state, applies the permutation (`poseidon2PermFn`), and resets the cache.
+Otherwise simply appends the element to the cache.
+
+This function appears in the postconditions of `poseidon2_absorb_spec`, `poseidon2_hash_spec`, and
+`poseidon2_hasher_finish_spec`. Use `spongeAbsorb_append` to split it over list concatenations, and
+`spongeAbsorb_cache_size_le` to maintain the invariant `cache_size.toNat ≤ 3`. -/
 def spongeAbsorb {p : Prime}
     (cache : List.Vector (Fp p) 3) (state : List.Vector (Fp p) 4)
     (cache_size : U 32) : List (Fp p) →
@@ -210,7 +221,7 @@ def spongeAbsorb {p : Prime}
     else
       (cache, state, cache_size)  -- unreachable when cache_size.toNat ≤ 3
 
-private lemma bv32_one_toNat : (1 : BitVec 32).toNat = 1 := by native_decide
+private lemma bv32_one_toNat : (1 : BitVec 32).toNat = 1 := rfl
 
 private lemma cache_size_add_one_le {cache_size : U 32} (h : cache_size.toNat < 3) :
     (cache_size + 1 : BitVec 32).toNat ≤ 3 := by
@@ -252,7 +263,7 @@ lemma spongeAbsorb_append
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
-theorem absorb_spec_not_full {r : Ref}
+theorem poseidon2_absorb_spec_not_full {r : Ref}
     {cache : List.Vector (Fp p) 3} {state : List.Vector (Fp p) 4}
     {cache_size : U 32} {input : Fp p}
     (h_not_full : cache_size.toNat < 3) :
@@ -267,8 +278,7 @@ theorem absorb_spec_not_full {r : Ref}
             (cache_size + 1)
             false⟩]) := by
   enter_decl
-  set_option maxRecDepth 4096 in
-  steps [rate_spec]
+  steps [poseidon2_rate_spec]
   simp only [indexTpl_cache_size]
   apply STHoare.ite_intro
   · intro hcond
@@ -276,7 +286,6 @@ theorem absorb_spec_not_full {r : Ref}
     subst hcond
     simp at h_not_full
   · intro hcond
-    set_option maxRecDepth 4096 in
     apply STHoare.letIn_intro (Q := fun _ =>
       [r ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2».tp h![],
             mkPoseidon2 (cache.set ⟨cache_size.toNat, h_not_full⟩ input) state cache_size false⟩])
@@ -292,7 +301,7 @@ theorem absorb_spec_not_full {r : Ref}
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
-theorem absorb_spec_full {r : Ref}
+theorem poseidon2_absorb_spec_full {r : Ref}
     {cache : List.Vector (Fp p) 3} {state : List.Vector (Fp p) 4}
     {input : Fp p} :
     let permuted := Builtin.poseidon2PermFn p 4 (mixCacheIntoState cache state 3)
@@ -303,18 +312,23 @@ theorem absorb_spec_full {r : Ref}
     (fun _ => [r ↦ ⟨«std-1.0.0-beta.12::hash::poseidon2::Poseidon2».tp h![],
           mkPoseidon2 (cache.set ⟨0, by omega⟩ input) permuted 1 false⟩]) := by
   enter_decl
-  set_option maxRecDepth 4096 in
-  steps [rate_spec]
+  steps [poseidon2_rate_spec]
   simp only [indexTpl_cache_size]
   apply STHoare.ite_intro
   · intro hcond
-    steps [perform_duplex_spec]
+    steps [poseidon2_perform_duplex_spec]
   · intro hcond
     simp at hcond
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
-theorem absorb_spec {r : Ref}
+/-- Spec for `Poseidon2::absorb` absorbing a single field element.
+
+Requires `h_cs : cache_size.toNat ≤ 3` as a precondition (use `spongeAbsorb_cache_size_le`
+to discharge this inductively). The postcondition expresses the updated sponge state via
+`spongeAbsorb cache state cache_size [input]`, which handles both the cache-full duplex
+case and the simple cache-append case. -/
+theorem poseidon2_absorb_spec {r : Ref}
     {cache : List.Vector (Fp p) 3} {state : List.Vector (Fp p) 4}
     {cache_size : U 32} {input : Fp p}
     (h_cs : cache_size.toNat ≤ 3) :
@@ -328,17 +342,17 @@ theorem absorb_spec {r : Ref}
   by_cases h : cache_size = 3
   · subst h
     simp only [spongeAbsorb]
-    exact absorb_spec_full
+    exact poseidon2_absorb_spec_full
   · have h_lt : cache_size.toNat < 3 := by
       have : cache_size.toNat ≠ 3 :=
         fun heq => h (BitVec.eq_of_toNat_eq (by simp_all))
       omega
     simp only [spongeAbsorb, h, h_lt, ↓reduceDIte]
-    exact absorb_spec_not_full h_lt
+    exact poseidon2_absorb_spec_not_full h_lt
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
-theorem hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
+theorem poseidon2_hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
     {in_len : U 32} {is_variable_length : Bool}
     (h_len : in_len.toNat ≤ n.toNat) :
     let iv : Fp p := (in_len.toNat : Fp p) * (18446744073709551616 : Fp p)
@@ -353,8 +367,7 @@ theorem hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
       h![input, in_len, is_variable_length])
     (fun result => result = squeezed.get ⟨0, by simp [BitVec.toNat]⟩) := by
   enter_decl
-  set_option maxRecDepth 4096 in
-  steps [new_spec]
+  steps [poseidon2_new_spec]
   subst_vars
   loop_inv nat fun i _ _ =>
     let sa := spongeAbsorb (p := p) ⟨[0, 0, 0], rfl⟩
@@ -372,7 +385,7 @@ theorem hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
         ⟨[0, 0, 0, Builtin.CastTp.cast in_len * ↑18446744073709551616], rfl⟩
         (0 : U 32) (input.toList.take (min i in_len.toNat))).2.2.toNat ≤ 3 :=
         spongeAbsorb_cache_size_le _ _ _ (by native_decide) _
-      steps [absorb_spec h_cs]
+      steps [poseidon2_absorb_spec h_cs]
       simp only [decide_eq_true_iff, BitVec.lt_def, BitVec.toNat_ofNatLT] at hcond
       have h_min_i : min i in_len.toNat = i := Nat.min_eq_left (by omega)
       have h_min_succ : min (i + 1) in_len.toNat = i + 1 := Nat.min_eq_left (by omega)
@@ -405,7 +418,7 @@ theorem hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
       · apply STHoare.iteFalse_intro
         steps
       · intro _
-        steps [squeeze_spec]
+        steps [poseidon2_squeeze_spec]
         subst_vars
         simp_all [Builtin.CastTp.cast, BitVec.toNat_ofNatLT]
     | true =>
@@ -426,17 +439,35 @@ theorem hash_internal_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
               (min (BitVec.toNat (↑input.length : U 32)) in_len.toNat))).2.2.toNat ≤
             3 :=
           spongeAbsorb_cache_size_le _ _ _ (by native_decide) _
-        steps [absorb_spec h_cs]
+        steps [poseidon2_absorb_spec h_cs]
         congr 1; congr 1
         all_goals simp [spongeAbsorb_append]
       · intro _
-        steps [squeeze_spec]
+        steps [poseidon2_squeeze_spec]
         subst_vars
         simp_all [Builtin.CastTp.cast, BitVec.toNat_ofNatLT]
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
-theorem hash_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
+/-- Spec for `Poseidon2::hash` — the main entry point for users.
+
+**Postcondition:** the result equals `poseidon2PermFn p 4 (mixCacheIntoState fc fs fcs)` at
+index 0, where `(fc, fs, fcs) = spongeAbsorb ⟨[0,0,0]⟩ ⟨[0,0,0,iv]⟩ 0 elems` and:
+- `iv = message_size * 2^64` (the domain separation IV)
+- `elems = input.take(message_size) ++ (if is_variable_length then [1] else [])`
+- `is_variable_length = message_size ≠ n`
+
+**Typical usage:**
+```lean
+-- After enter_decl, apply hash_spec to reduce the Noir call:
+steps [poseidon2_hash_spec (h_len := ...)]
+-- Goal: result = poseidon2PermFn p 4 (mixCacheIntoState (spongeAbsorb ...))
+-- For concrete inputs, close with native_decide.
+-- For symbolic reasoning, poseidon2PermFn is treated as an opaque oracle.
+```
+
+Note: `poseidon2PermFn` is `@[irreducible]`; use `native_decide` for concrete evaluation. -/
+theorem poseidon2_hash_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
     {message_size : U 32}
     (h_len : message_size.toNat ≤ n.toNat) :
     let iv : Fp p := (message_size.toNat : Fp p) * (18446744073709551616 : Fp p)
@@ -451,13 +482,24 @@ theorem hash_spec {n : U 32} {input : List.Vector (Fp p) n.toNat}
     («std-1.0.0-beta.12::hash::poseidon2::Poseidon2::hash».call h![n] h![input, message_size])
     (fun result => result = squeezed.get ⟨0, by simp [BitVec.toNat]⟩) := by
   enter_decl
-  steps [hash_internal_spec h_len]
+  steps [poseidon2_hash_internal_spec h_len]
   subst_vars
   simp [bne_iff_ne]
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
-theorem finish_spec {s : List (Fp p)} :
+/-- Spec for `Hasher::finish` on `Poseidon2Hasher` — entry point for the Hasher trait.
+
+Given a `Poseidon2Hasher` that has accumulated field elements `s` via `write` calls,
+`finish` returns the Poseidon2 hash of `s`.
+
+**Postcondition:** the result equals `poseidon2PermFn p 4 (mixCacheIntoState fc fs fcs)` at
+index 0, where `(fc, fs, fcs) = spongeAbsorb ⟨[0,0,0]⟩ ⟨[0,0,0,iv]⟩ 0 s` and
+`iv = s.length * 2^64`.
+
+**Typical usage:** combine with `poseidon2_hasher_write_spec` to track accumulated elements,
+then apply `poseidon2_hasher_finish_spec` to compute the final hash. -/
+theorem poseidon2_hasher_finish_spec {s : List (Fp p)} :
     let iv : Fp p := (s.length : Fp p) * (18446744073709551616 : Fp p)
     let init_cache : List.Vector (Fp p) 3 := ⟨[0, 0, 0], rfl⟩
     let init_state : List.Vector (Fp p) 4 := ⟨[0, 0, 0, iv], rfl⟩
@@ -469,8 +511,7 @@ theorem finish_spec {s : List (Fp p)} :
       h![] h![] h![(s, ())])
     (fun result => result = squeezed.get ⟨0, by simp [BitVec.toNat]⟩) := by
   resolve_trait
-  set_option maxRecDepth 4096 in
-  steps [new_spec]
+  steps [poseidon2_new_spec]
   loop_inv nat fun i _ _ =>
     let sa := spongeAbsorb (p := p) ⟨[0, 0, 0], rfl⟩
       ⟨[0, 0, 0, iv], rfl⟩
@@ -485,7 +526,7 @@ theorem finish_spec {s : List (Fp p)} :
       ⟨[0, 0, 0, iv], rfl⟩
       (0 : U 32) (s.take i)).2.2.toNat ≤ 3 :=
       spongeAbsorb_cache_size_le _ _ _ (by native_decide) _
-    steps [absorb_spec h_cs]
+    steps [poseidon2_absorb_spec h_cs]
     have h_take : s.take (i + 1) = s.take i ++ [s.get ⟨i, hhi⟩] := by
       rw [List.take_succ]; simp [List.getElem?_eq_getElem hhi]
     congr 1; congr 1
@@ -494,7 +535,7 @@ theorem finish_spec {s : List (Fp p)} :
       simp [Builtin.indexTpl, «std-1.0.0-beta.12::hash::poseidon2::Poseidon2Hasher»,
         Builtin.CastTp.cast, BitVec.toNat_ofNatLT]
     }
-  · steps [squeeze_spec] -- continuation
+  · steps [poseidon2_squeeze_spec] -- continuation
     subst_vars
     simp only [Builtin.indexTpl, «std-1.0.0-beta.12::hash::poseidon2::Poseidon2Hasher»,
       Builtin.CastTp.cast, BitVec.toNat_ofNatLT, List.take_length]
