@@ -11,6 +11,10 @@ open «std-1.0.0-beta.12» (env)
 
 abbrev from_field_unsafe := «std-1.0.0-beta.12::hash::from_field_unsafe»
 
+/-- Spec for `hash::from_field_unsafe` — decomposes a field element into lo/hi 128-bit limbs.
+
+**Postcondition:** `scalar = r.1 + 2^128 * r.2.1`, where `r.1` is the low 128 bits
+and `r.2.1` is the high 128 bits of the field element's canonical representation. -/
 theorem from_field_unsafe_spec {p} [Prime.BitsGT p 129] {scalar : Fp p} :
     STHoare p env ⟦⟧
       (from_field_unsafe.call h![] h![scalar])
@@ -37,6 +41,13 @@ theorem unit_hash_spec {p H self state} :
   resolve_trait
   steps
 
+/-- Spec for `Hash` on `Field` — reduces to one `Hasher::write` call.
+
+**Pattern:** All primitive `Hash` impls follow this shape: take the relevant
+`Hasher::write` (or `Hash::hash`) behaviour as a hypothesis `h_write`/`h_hash_*`,
+then discharge the goal with `steps [h_*]`. Integer specs (`u1_hash_spec`,
+`u8_hash_spec`, …, `i64_hash_spec`) require `∀ x : Fp p` because the value is
+cast to a field element before writing. -/
 theorem field_hash_spec {p H self state}
     (h_write : STHoare p env ⟦⟧
       («std-1.0.0-beta.12::hash::Hasher».write h![] H h![] h![] h![state, self])
@@ -183,6 +194,12 @@ theorem i64_hash_spec {p H self state}
   · exact h_write _
   · intro; steps
 
+/-- Spec for `Hash` on a 2-tuple — hashes each component in order.
+
+Requires `hasImpl` instances for each component type so that `resolve_trait`
+can synthesise the tuple `Hash` implementation. Provide `h_hash_a` and
+`h_hash_b` for the first and second components respectively. Analogous specs
+exist for 3-, 4-, and 5-tuples (`tuple3_hash_spec` … `tuple5_hash_spec`). -/
 theorem tuple2_hash_spec {p A B H self state}
     {A_hash : «std-1.0.0-beta.12::hash::Hash».hasImpl env h![] A}
     {B_hash : «std-1.0.0-beta.12::hash::Hash».hasImpl env h![] B}
@@ -290,6 +307,10 @@ theorem default_build_hasher_default_spec {p H}
   resolve_trait
   steps
 
+/-- Spec for `Hash` on an array — iterates, hashing each element.
+
+`h_hash_elem` must hold for every `elem : Tp.denote p T`; the proof loops over
+the array with a trivial invariant and applies `h_hash_elem` at each step. -/
 theorem array_hash_spec {p N T H self state}
     {T_hash : «std-1.0.0-beta.12::hash::Hash».hasImpl env h![] T}
     (h_hash_elem : ∀ (elem : Tp.denote p T), STHoare p env ⟦⟧
@@ -305,6 +326,11 @@ theorem array_hash_spec {p N T H self state}
   · intros; steps [h_hash_elem]
   · steps
 
+/-- Spec for `Hash` on a slice — hashes the length first, then each element.
+
+Requires two hypotheses: `h_hash_len` for hashing the `u32` length prefix,
+and `h_hash_elem` for hashing each element. The length is hashed before the
+loop so that slices of different lengths produce distinct hashes. -/
 theorem slice_hash_spec {p T H} {self : List (Tp.denote p T)} {state}
     {T_hash : «std-1.0.0-beta.12::hash::Hash».hasImpl env h![] T}
     {u32_hash : «std-1.0.0-beta.12::hash::Hash».hasImpl env h![] (.u 32)}
