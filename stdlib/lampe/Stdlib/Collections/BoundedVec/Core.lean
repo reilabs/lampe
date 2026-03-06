@@ -16,14 +16,20 @@ This file intentionally contains no Hoare triples and no "constructor-style" upd
 (`withLen`, `withStorageAt`, `pushed`, `popped`, ...).
 -/
 
+abbrev bvTp (T : Tp) (MaxLen : U 32) : Tp :=
+  «std-1.0.0-beta.12::collections::bounded_vec::BoundedVec».tp h![T, MaxLen]
+
 abbrev Repr (p : Prime) (T : Tp) (MaxLen : U 32) : Type :=
-  Tp.denoteArgs p [T.array MaxLen, .u 32]
+  Tp.denote p (bvTp T MaxLen)
 
 def storage {p T MaxLen} (v : Repr p T MaxLen) : List.Vector (T.denote p) MaxLen.toNat :=
   Builtin.indexTpl v Builtin.Member.head
 
 def len {p T MaxLen} (v : Repr p T MaxLen) : U 32 :=
   Builtin.indexTpl v Builtin.Member.head.tail
+
+abbrev lenLens {p T MaxLen} : Lens (Tp.denote p) (bvTp T MaxLen) (Tp.u 32) :=
+  Lens.nil.cons (Access.tuple Builtin.Member.head.tail)
 
 def active {p T MaxLen} (v : Repr p T MaxLen) : List (T.denote p) :=
   (storage v).toList.take (len v).toNat
@@ -34,15 +40,76 @@ def embed {p T MaxLen} (v : Repr p T MaxLen) : List (T.denote p) :=
 def bounded {p T MaxLen} (v : Repr p T MaxLen) : Prop :=
   (len v).toNat ≤ MaxLen.toNat
 
+/--
+Semantic “well-formedness” predicate for the concrete representation.
+
+Recall:
+* `storage v` is a `Vector` of length exactly `MaxLen.toNat` (by its type).
+* `embed v = (storage v).toList.take (len v).toNat`.
+
+So `embed` *always* truncates the concrete storage to at most `MaxLen.toNat` elements, and:
+
+`(embed v).length = Nat.min (len v).toNat MaxLen.toNat`.
+
+This means the “obvious” bound `(embed v).length ≤ MaxLen.toNat` is **always true**, even for
+representations where `len v` is out of range.
+
+`wellFormed v` is the *non-trivial* semantic condition “no truncation happened”, i.e.
+`(embed v).length = (len v).toNat`, which is equivalent to the concrete capacity check
+`(len v).toNat ≤ MaxLen.toNat` (see `bounded_iff_wellFormed`).
+-/
+def wellFormed {p T MaxLen} (v : Repr p T MaxLen) : Prop :=
+  (embed v).length = (len v).toNat
+
+lemma embed_length_eq_min_len_toNat {p T MaxLen} (v : Repr p T MaxLen) :
+    (embed v).length = Nat.min (len v).toNat MaxLen.toNat := by
+  -- `embed v` is `take (len v)` of a list of length `MaxLen`.
+  simp [embed, active, List.length_take, storage, List.Vector.toList_length]
+
 lemma embed_length_eq_len_toNat {p T MaxLen} {v : Repr p T MaxLen}
     (hb : bounded v) :
     (embed v).length = (len v).toNat := by
   simp [embed, active, List.length_take, List.Vector.toList_length, Nat.min_eq_left hb]
 
+lemma bounded_iff_embed_length_eq_len_toNat {p T MaxLen} (v : Repr p T MaxLen) :
+    bounded v ↔ (embed v).length = (len v).toNat := by
+  constructor
+  · intro hb
+    exact embed_length_eq_len_toNat (v := v) hb
+  · intro hlen
+    have hmin : Nat.min (len v).toNat MaxLen.toNat = (len v).toNat := by
+      -- `length (take n xs) = min n xs.length`.
+      exact (embed_length_eq_min_len_toNat (v := v)).symm.trans hlen
+    -- `min a b = a` implies `a ≤ b` since `min a b ≤ b`.
+    have : Nat.min (len v).toNat MaxLen.toNat ≤ MaxLen.toNat :=
+      Nat.min_le_right (len v).toNat MaxLen.toNat
+    simpa [hmin] using this
+
+lemma bounded_iff_wellFormed {p T MaxLen} (v : Repr p T MaxLen) :
+    bounded v ↔ wellFormed v := by
+  simpa [wellFormed] using (bounded_iff_embed_length_eq_len_toNat (v := v))
+
+/-! ### Sanity lemmas -/
+
+/-- `embed` never exceeds the concrete `len` (it is a `take`). -/
+lemma embed_length_le_len_toNat {p T MaxLen} (v : Repr p T MaxLen) :
+    (embed v).length ≤ (len v).toNat := by
+  -- `length (take n l) = min n l.length ≤ n`.
+  simpa [embed_length_eq_min_len_toNat (v := v)] using Nat.min_le_left (len v).toNat MaxLen.toNat
+
+/-- `embed` always fits in capacity, regardless of `len`. -/
 lemma embed_length_le_MaxLen {p T MaxLen} (v : Repr p T MaxLen) :
     (embed v).length ≤ MaxLen.toNat := by
   -- `embed` is always a `take` of a list of length `MaxLen`.
   simp [embed, active, List.length_take, storage, List.Vector.toList_length, Nat.min_le_right]
+
+/-- `bounded` implies the semantic no-truncation condition. -/
+lemma wellFormed_of_bounded {p T MaxLen} {v : Repr p T MaxLen} (hb : bounded v) : wellFormed v :=
+  (bounded_iff_wellFormed (v := v)).1 hb
+
+/-- Semantic no-truncation implies the concrete bound on `len`. -/
+lemma bounded_of_wellFormed {p T MaxLen} {v : Repr p T MaxLen} (hwf : wellFormed v) : bounded v :=
+  (bounded_iff_wellFormed (v := v)).2 hwf
 
 /-- If `len v = 0`, then the embedded list is empty (assuming the representation is bounded). -/
 lemma embed_nil_of_len_zero {p T MaxLen} {v : Repr p T MaxLen}
@@ -63,11 +130,8 @@ lemma embed_getElem_toList {p T MaxLen} {self : Repr p T MaxLen} (i : Nat)
     exact Nat.lt_of_lt_of_le hmin (Nat.min_le_left _ _)
   simp [embed, active, List.getElem_take, hxs', hstorage]
 
-abbrev bvTp (T : Tp) (MaxLen : U 32) : Tp :=
-  «std-1.0.0-beta.12::collections::bounded_vec::BoundedVec».tp h![T, MaxLen]
-
 def BV {p : Prime} {T : Tp} {MaxLen : U 32} (selfRef : Ref) (xs : List (Tp.denote p T)) : SLP (State p) :=
-  ∃∃ v : Repr p T MaxLen, [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆ ⟦bounded v ∧ embed v = xs⟧
+  ∃∃ v : Repr p T MaxLen, [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆ ⟦wellFormed v ∧ embed v = xs⟧
 
 /-! ### List/`embed` helper lemmas (non-Hoare) -/
 
@@ -251,8 +315,7 @@ lemma embed_eq_append_of_storage_set_at_len {p T MaxLen} {v v' : Repr p T MaxLen
   have hx32 : (len v).toNat + 1 < 2 ^ 32 := by
     exact lt_of_le_of_lt (Nat.succ_le_of_lt hpush) hmax
   have htoNat_v' : (len v').toNat = (len v).toNat + 1 := by
-    have h1 : (len v').toNat = (len v + 1).toNat := by
-      simpa [hlen]
+    have h1 : (len v').toNat = (len v + 1).toNat := by simp [hlen]
     calc
       (len v').toNat = (len v + 1).toNat := h1
       _ = (len v).toNat + 1 := by
@@ -261,7 +324,7 @@ lemma embed_eq_append_of_storage_set_at_len {p T MaxLen} {v v' : Repr p T MaxLen
     simpa [storage, List.Vector.toList_length] using hpush
   have hstorage_toList :
       (storage v').toList = (storage v).toList.set (len v).toNat a := by
-    simpa [hstorage, List.Vector.toList_set]
+    simp [hstorage, List.Vector.toList_set]
   calc
     embed v' = List.take (len v').toNat (storage v').toList := by
       simp [embed, active]
@@ -274,7 +337,7 @@ lemma embed_eq_append_of_storage_set_at_len {p T MaxLen} {v v' : Repr p T MaxLen
     _ = embed v ++ [a] := by
       simp [embed, active]
 
-/-! ### `pop`-style semantic lemmas (non-Hoare) -/
+/-! ### `pop`-style semantic lemmas -/
 
 lemma toNat_len_sub_one {p T MaxLen} {v : Repr p T MaxLen}
     (hnonzero : (0 : U 32) < len v) :
@@ -375,9 +438,8 @@ lemma embed_eq_dropLast_of_pop_update {p T MaxLen} {v v' : Repr p T MaxLen}
           (i := (len v - 1).toNat) (a := Tp.zero p T))
     _ = List.take (len v').toNat (storage v).toList := hset_noop
     _ = List.take ((len v).toNat - 1) (storage v).toList := by
-      have hv : (len v').toNat = (len v - 1).toNat := by simpa [hlen]
+      have hv : (len v').toNat = (len v - 1).toNat := by simp [hlen]
       rw [hv, htoNat_sub]
-    _ = (embed v).dropLast := by
-      simpa [hdrop]
+    _ = (embed v).dropLast := by simp [hdrop]
 
 end Lampe.Stdlib.Collections.BoundedVec
