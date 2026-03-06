@@ -32,7 +32,8 @@ private theorem get_unchecked_concrete_spec' {p T MaxLen self index}
 private theorem len_modify_head_tail {p T MaxLen}
     {v : Tp.denote p (bvTp T MaxLen)} {l : U 32}
     (h : ((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify v l).isSome = true) :
-    len (((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify v l).get h) = l := by
+    len (p := p) (T := T) (MaxLen := MaxLen)
+        (((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify v l).get h) = l := by
   unfold len
   simp [Lens.modify, Lens.get, Access.modify]
 
@@ -124,7 +125,6 @@ private lemma mapIdx_const_eq_map {α β : Type _} (f : α → β) (xs : List α
   | nil =>
       simp
   | cons x xs ih =>
-      -- Reduce via `mapIdx_cons`; the shifted function is definitional equal for index-ignoring `f`.
       simpa [List.mapIdx_cons, ih]
 
 private lemma take_succ_set_eq_mapIdx {α β : Type _} (f : Nat → α → β) (xs : List α) (l : List β)
@@ -145,7 +145,6 @@ private lemma take_succ_set_eq_mapIdx {α β : Type _} (f : Nat → α → β) (
     _ = (xs.take i).mapIdx f ++ [f i (xs[i]'hi_xs)] := by simpa [htake]
     _ = (xs.take (i + 1)).mapIdx f := by
         rw [htake_xs]
-        -- `mapIdx_concat` uses `l.length` for the last index.
         rw [List.mapIdx_concat]
         simpa [hlen_take]
 
@@ -163,7 +162,6 @@ private lemma skip_postprocess {p} {H Qfinal : SLP (State p)} (hHQ : H ⊢ Qfina
     (h_pre_conseq := SLP.entails_self)
     (h_post_conseq := ?_) hskipH)
   intro v
-  -- Drop the pure `v = ()`, then apply `H ⊢ Qfinal`.
   simpa [SLP.star_assoc] using (show (⟦v = ()⟧ ⋆ (H ⋆ ⊤) ⊢ Qfinal ⋆ ⊤) from by
     apply SLP.pure_left
     intro _
@@ -762,7 +760,6 @@ theorem map_effectful_spec {p T MaxLen Out Env self f fb}
           [λf ↦ fb] ⋆
             ⟦bounded v⟧ ⋆ inv xs (embed v)))
   ·
-    -- Reduce the `isUnconstrained()` branch and prove only the constrained branch.
     apply STHoare.ite_intro_of_false rfl
     steps
     rename_i hmod
@@ -775,7 +772,6 @@ theorem map_effectful_spec {p T MaxLen Out Env self f fb}
       intro ip op _ e hprefix _
       exact inv_step (ip := ip) (op := op) (e := e) hprefix
 
-    -- Constrained branch: `for i in 0..MaxLen { if i < self.len { ret[i] := f(self[i]) } }`.
     simpa [xs] using
       (mapLike_constrained_loop_effectful_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out)
         (Args := [T]) (mkArgs := fun _ a => h![a])
@@ -785,14 +781,11 @@ theorem map_effectful_spec {p T MaxLen Out Env self f fb}
     intro _
     steps
     subst_vars
-    -- The extracted return value and its boundedness proof get fresh names.
     rename_i r hbR
     sl
     ·
-      -- The boundedness proof is for a definitional-equal value; rename and rewrite.
       rename_i hEq r' hb
       have hwf : wellFormed _ := (bounded_iff_wellFormed (v := _)).1 hEq
-      -- `steps` may introduce a definitional-equal return value; transport `wellFormed` across it.
       simpa [hb] using hwf
 
 theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
@@ -816,7 +809,6 @@ theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
   steps [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)]
   all_goals (try exact ())
 
-  -- Peel the `let _ := (if isUnconstrained {..} else {..}) in readRef ret`.
   apply (STHoare.letIn_intro
     (Q := fun _ =>
       ∃∃ v : Repr p Out MaxLen,
@@ -824,12 +816,10 @@ theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
           [λf ↦ fb] ⋆
             ⟦bounded v⟧ ⋆ inv xs (embed v)))
   ·
-    -- Reduce the `isUnconstrained()` branch and prove only the constrained branch.
     apply STHoare.ite_intro_of_false rfl
     steps
     rename_i hmod
 
-    -- Constrained branch: `for i in 0..MaxLen { if i < self.len { ret[i] := f(i, self[i]) } }`.
     simpa [xs] using
       (mapLike_constrained_loop_effectful_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out)
         (Args := [Tp.u 32, T]) (mkArgs := fun i a => h![i, a])

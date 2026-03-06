@@ -111,6 +111,53 @@ lemma wellFormed_of_bounded {p T MaxLen} {v : Repr p T MaxLen} (hb : bounded v) 
 lemma bounded_of_wellFormed {p T MaxLen} {v : Repr p T MaxLen} (hwf : wellFormed v) : bounded v :=
   (bounded_iff_wellFormed (v := v)).2 hwf
 
+/-!
+`lenLens` updates are common in extracted code (`self.len = ...`).  We keep the following small
+projection lemmas to avoid repeatedly unfolding `Lens.modify` / tuple replacement details in proofs.
+-/
+
+lemma len_get_modify_lenLens {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
+    (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true) :
+    len (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) = n := by
+  simp [lenLens, len, Lens.modify, Lens.get, Access.get, Access.modify, Option.get_some,
+    Builtin.replaceTuple', Builtin.indexTpl]
+
+lemma storage_get_modify_lenLens {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
+    (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true) :
+    storage (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) = storage v := by
+  -- Unfold the lens update and then reduce the tuple projection.
+  simp [lenLens, storage, Lens.modify, Lens.get, Access.get, Access.modify, Option.get_some]
+  -- `replaceTuple'` at `.head.tail` does not affect the `.head` projection.
+  cases v <;> rfl
+
+/-- Updating `len` with `lenLens` preserves the concrete `bounded` fact when the new `len` fits. -/
+lemma bounded_get_modify_lenLens_of_toNat_le {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
+    (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true)
+    (hn : n.toNat ≤ MaxLen.toNat) :
+    bounded (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) := by
+  -- `bounded` is a property of `(len _).toNat`; `len_get_modify_lenLens` gives `len = n`.
+  simpa [bounded, len_get_modify_lenLens (v := v) (n := n) (h := h)] using hn
+
+/-- Updating `len` with `lenLens` yields a semantically well-formed representation when the new `len` fits. -/
+lemma wellFormed_get_modify_lenLens_of_toNat_le {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
+    (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true)
+    (hn : n.toNat ≤ MaxLen.toNat) :
+    wellFormed (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) := by
+  exact wellFormed_of_bounded (bounded_get_modify_lenLens_of_toNat_le (v := v) (n := n) (h := h) hn)
+
+/-- Variant of `wellFormed_get_modify_lenLens_of_toNat_le` that takes a `BitVec` inequality. -/
+lemma wellFormed_get_modify_lenLens_of_le {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
+    (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true)
+    (hn : n ≤ MaxLen) :
+    wellFormed (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) := by
+  exact wellFormed_get_modify_lenLens_of_toNat_le (v := v) (n := n) (h := h) ((BitVec.le_def).1 hn)
+
+/-- For an `array : T.array Len`, the runtime `Vector.length` cast back to `U 32` is exactly `Len`. -/
+lemma u32_cast_vector_length_array_eq {p} {T : Tp} {Len : U 32} (array : Tp.denote p (T.array Len)) :
+    (↑(List.Vector.length array) : U 32) = Len := by
+  have : List.Vector.length array = Len.toNat := by rfl
+  simpa [this] using (BitVec.ofNat_toNat (x := Len))
+
 /-- If `len v = 0`, then the embedded list is empty (assuming the representation is bounded). -/
 lemma embed_nil_of_len_zero {p T MaxLen} {v : Repr p T MaxLen}
     (hlen : len v = 0) :

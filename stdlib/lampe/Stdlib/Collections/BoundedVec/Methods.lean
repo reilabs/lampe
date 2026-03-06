@@ -74,17 +74,17 @@ theorem get_unchecked_spec {p T MaxLen self index}
   exact SLP.star_mono_r h_lift
 
 theorem get_spec {p T MaxLen self index}
-    (hwf_self : wellFormed self)
+    (hwf : wellFormed self)
     (hindex : index.toNat < (embed self).length) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get».call h![T, MaxLen]
         h![self, index])
       (fun r => r = (embed self)[index.toNat]'hindex) := by
-  have hbounded : bounded self := bounded_of_wellFormed (v := self) hwf_self
-  have hlen : (embed self).length = (len self).toNat := hwf_self
+  have hb : bounded self := bounded_of_wellFormed hwf
+  have hlen : (embed self).length = (len self).toNat := hwf
   have hindex_len : index.toNat < (len self).toNat := by
     simpa [hlen] using hindex
-  have hindex_max : index.toNat < MaxLen.toNat := lt_of_lt_of_le hindex_len hbounded
+  have hindex_max : index.toNat < MaxLen.toNat := lt_of_lt_of_le hindex_len hb
   have hstorage : index.toNat < (storage self).toList.length := by
     simpa [storage, List.Vector.toList_length] using hindex_max
   have hx_rhs :
@@ -97,7 +97,7 @@ theorem get_spec {p T MaxLen self index}
         (fun r => r = (storage self)[index.toNat]'hindex_max) := by
     simpa using
       (get_concrete_spec (p := p) (T := T) (MaxLen := MaxLen) (self := self) (index := index)
-        (hbounded := hbounded) (hindex := hindex_len))
+        (hbounded := hb) (hindex := hindex_len))
 
   -- Post-compose the concrete storage equality into the semantic `embed` equality.
   refine STHoare.consequence
@@ -168,7 +168,7 @@ private theorem set_unchecked_concrete_spec {p T MaxLen selfRef self index value
   exact SLP.star_mono_r hpt
 
 theorem set_unchecked_spec {p T MaxLen selfRef self index value}
-    (hwf_self : wellFormed self)
+    (hwf : wellFormed self)
     (hindex : index.toNat < MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
@@ -178,7 +178,7 @@ theorem set_unchecked_spec {p T MaxLen selfRef self index value}
         ∃∃ v',
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
             ⟦wellFormed v' ∧ embed v' = (embed self).set index.toNat value⟧) := by
-  have hb : bounded self := bounded_of_wellFormed (v := self) hwf_self
+  have hb : bounded self := bounded_of_wellFormed hwf
   refine STHoare.consequence
       (H₁ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
       (H₂ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
@@ -210,10 +210,10 @@ theorem set_unchecked_spec {p T MaxLen selfRef self index value}
     rcases hpure with ⟨hlen', hstorage'⟩
     have hb' : bounded v' := by
       simpa [bounded, hlen'] using hb
+    have hwf' : wellFormed v' := wellFormed_of_bounded hb'
     have hembed' : embed v' = (embed self).set index.toNat value := by
       exact embed_eq_set_of_storage_set (v := self) (v' := v')
         (i := index.toNat) (hi := hindex) (a := value) (hlen := hlen') (hstorage := hstorage')
-    have hwf' : wellFormed v' := (bounded_iff_wellFormed (v := v')).1 hb'
     refine ⟨v', st₁, st₂, hdisj, hunion, hpt, ?_⟩
     exact ⟨And.intro hwf' hembed', hempty⟩
   exact SLP.star_mono_r hpt
@@ -248,7 +248,7 @@ private theorem set_concrete_spec {p T MaxLen selfRef self index value}
   exact hstorage'.trans hstorageProof
 
 theorem set_spec {p T MaxLen selfRef self index value}
-    (hwf_self : wellFormed self)
+    (hwf : wellFormed self)
     (hindex : index.toNat < (embed self).length) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
@@ -258,8 +258,8 @@ theorem set_spec {p T MaxLen selfRef self index value}
         ∃∃ v',
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
             ⟦wellFormed v' ∧ embed v' = (embed self).set index.toNat value⟧) := by
-  have hbounded : bounded self := bounded_of_wellFormed (v := self) hwf_self
-  have hlen : (embed self).length = (len self).toNat := hwf_self
+  have hbounded : bounded self := bounded_of_wellFormed hwf
+  have hlen : (embed self).length = (len self).toNat := hwf
   have hindex_len : index.toNat < (len self).toNat := by
     simpa [hlen] using hindex
   have hindex_max : index.toNat < MaxLen.toNat := lt_of_lt_of_le hindex_len hbounded
@@ -296,10 +296,10 @@ theorem set_spec {p T MaxLen selfRef self index value}
     rcases hpure with ⟨hlen', hstorage'⟩
     have hb' : bounded v' := by
       simpa [bounded, hlen'] using hbounded
+    have hwf' : wellFormed v' := wellFormed_of_bounded hb'
     have hembed' : embed v' = (embed self).set index.toNat value := by
       exact embed_eq_set_of_storage_set (v := self) (v' := v')
         (i := index.toNat) (hi := hindex_max) (a := value) (hlen := hlen') (hstorage := hstorage')
-    have hwf' : wellFormed v' := (bounded_iff_wellFormed (v := v')).1 hb'
     refine ⟨v', st₁, st₂, hdisj, hunion, hpt, ?_⟩
     exact ⟨And.intro hwf' hembed', hempty⟩
   exact SLP.star_mono_r hpt
@@ -374,7 +374,7 @@ private theorem push_concrete_spec {p T MaxLen selfRef self elem}
   exact SLP.star_mono_r hpt
 
 theorem push_spec {p T MaxLen selfRef self elem}
-    (hwf_self : wellFormed self)
+    (hwf : wellFormed self)
     (hspace : (embed self).length < MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
@@ -384,8 +384,8 @@ theorem push_spec {p T MaxLen selfRef self elem}
         ∃∃ v',
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
             ⟦wellFormed v' ∧ embed v' = embed self ++ [elem]⟧) := by
-  have hbounded : bounded self := bounded_of_wellFormed (v := self) hwf_self
-  have hlen : (embed self).length = (len self).toNat := hwf_self
+  have hbounded : bounded self := bounded_of_wellFormed hwf
+  have hlen : (embed self).length = (len self).toNat := hwf
   have hpush : (len self).toNat < MaxLen.toNat := by
     simpa [hlen] using hspace
   refine STHoare.consequence
@@ -429,10 +429,10 @@ theorem push_spec {p T MaxLen selfRef self elem}
         have : (len self).toNat + 1 ≤ MaxLen.toNat := Nat.succ_le_of_lt hpush
         simpa [htoNat_v'] using this
       simpa [bounded] using this
+    have hwf' : wellFormed v' := wellFormed_of_bounded hb'
     have hembed' : embed v' = embed self ++ [elem] := by
       exact embed_eq_append_of_storage_set_at_len (v := self) (v' := v') (a := elem)
         (hb := hbounded) (hpush := hpush) (hlen := hlen') (hstorage := hstorage')
-    have hwf' : wellFormed v' := (bounded_iff_wellFormed (v := v')).1 hb'
     refine ⟨v', st₁, st₂, hdisj, hunion, hpt, ?_⟩
     exact ⟨And.intro hwf' hembed', hempty⟩
   exact SLP.star_mono_r hpt
@@ -446,11 +446,11 @@ private theorem len_concrete_spec {p T MaxLen self} :
   simpa [len]
 
 theorem len_spec {p T MaxLen self}
-    (hwf_self : wellFormed self) :
+    (hwf : wellFormed self) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len».call h![T, MaxLen] h![self])
       (fun r => r.toNat = (embed self).length) := by
-  have hlen : (embed self).length = (len self).toNat := hwf_self
+  have hlen : (embed self).length = (len self).toNat := hwf
   refine STHoare.consequence
       (H₁ := (⟦⟧ : SLP (State p)))
       (H₂ := (⟦⟧ : SLP (State p)))
@@ -486,44 +486,41 @@ theorem storage_spec {p T MaxLen self} :
   steps
   simpa [storage]
 
-private theorem new_concrete_spec {p T MaxLen} :
+theorem new_spec {p T MaxLen} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::new».call h![T, MaxLen] h![])
-      (fun r => bounded r ∧ len r = 0 ∧ embed r = []) := by
+      (fun r => wellFormed r ∧ len r = 0 ∧ embed r = []) := by
   enter_decl
   steps
   subst_vars
   refine And.intro ?_ (And.intro ?_ ?_)
-  · simp [bounded, len]
+  ·
+    -- The fresh vector has `len = 0`, hence `embed = []` and it is semantically well-formed.
+    set r : Repr p T MaxLen :=
+      HList.toTuple p h![List.Vector.replicate (BitVec.toNat MaxLen) (Tp.zero p T), (↑0 : U 32)]
+        (some «std-1.0.0-beta.12::collections::bounded_vec::BoundedVec».name)
+    have hlen0 : len r = 0 := by
+      rfl
+    have hwf : wellFormed r := by
+      -- `embed r = take 0 _ = []`, so lengths match.
+      simp [wellFormed, embed, active, hlen0]
+    simpa [r] using hwf
   · rfl
-  · simp [embed, active, len, storage]
-
-theorem new_spec {p T MaxLen} :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::new».call h![T, MaxLen] h![])
-      (fun r => wellFormed r ∧ embed r = []) := by
-  refine STHoare.consequence
-      (H₁ := (⟦⟧ : SLP (State p)))
-      (H₂ := (⟦⟧ : SLP (State p)))
-      (Q₁ := fun (r : Repr p T MaxLen) => (bounded r ∧ len r = 0 ∧ embed r = []))
-      (Q₂ := fun (r : Repr p T MaxLen) => (wellFormed r ∧ embed r = []))
-      SLP.entails_self ?_ (new_concrete_spec (p := p) (T := T) (MaxLen := MaxLen))
-  intro (r : Repr p T MaxLen)
-  have h_lift :
-      ((bounded r ∧ len r = 0 ∧ embed r = []) : SLP (State p))
-        ⊢ ((wellFormed r ∧ embed r = []) : SLP (State p)) := by
-    intro st hst
-    rcases hst with ⟨hQ1, hst⟩
-    rcases hQ1 with ⟨hb, _hlen0, hembed⟩
-    refine ⟨?_, hst⟩
-    exact ⟨wellFormed_of_bounded (v := r) hb, hembed⟩
-  exact SLP.star_mono_r h_lift
+  ·
+    set r : Repr p T MaxLen :=
+      HList.toTuple p h![List.Vector.replicate (BitVec.toNat MaxLen) (Tp.zero p T), (↑0 : U 32)]
+        (some «std-1.0.0-beta.12::collections::bounded_vec::BoundedVec».name)
+    have hlen0 : len r = 0 := by
+      rfl
+    have he : embed r = ([] : List (T.denote p)) := by
+      simp [embed, active, hlen0]
+    simpa [r] using he
 
 private lemma pop_preconditions {p T MaxLen} {self : Repr p T MaxLen}
-    (hbounded : bounded self) (hnonempty : embed self ≠ []) :
+    (hwf : wellFormed self) (hnonempty : embed self ≠ []) :
     ((0 : U 32) < len self) ∧ ((len self - (1 : U 32)).toNat < MaxLen.toNat) := by
-  have hlen : (embed self).length = (len self).toNat :=
-    embed_length_eq_len_toNat (v := self) hbounded
+  have hbounded : bounded self := bounded_of_wellFormed hwf
+  have hlen : (embed self).length = (len self).toNat := hwf
   have hpos_embed : 0 < (embed self).length := by
     cases h : embed self with
     | nil => cases hnonempty h
@@ -672,7 +669,7 @@ private theorem pop_concrete_spec {p T MaxLen selfRef self}
       exact vector_get_proof_irrel (v := self.1) (i := i) _ _
 
 theorem pop_spec {p T MaxLen selfRef self}
-    (hwf_self : wellFormed self)
+    (hwf : wellFormed self)
     (hnonempty : embed self ≠ []) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
@@ -682,8 +679,8 @@ theorem pop_spec {p T MaxLen selfRef self}
         ∃∃ v',
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
             ⟦wellFormed v' ∧ embed v' = (embed self).dropLast ∧ r = (embed self).getLast hnonempty⟧) := by
-  have hbounded : bounded self := bounded_of_wellFormed (v := self) hwf_self
-  obtain ⟨hnonzero, hlast⟩ := pop_preconditions (self := self) hbounded hnonempty
+  have hbounded : bounded self := bounded_of_wellFormed hwf
+  obtain ⟨hnonzero, hlast⟩ := pop_preconditions (self := self) hwf hnonempty
   -- Run the concrete spec, then reinterpret in terms of `embed`.
   refine STHoare.consequence
       (H₁ := ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] : SLP (State p)))
@@ -717,6 +714,7 @@ theorem pop_spec {p T MaxLen selfRef self}
       have : (len self - (1 : U 32)).toNat ≤ MaxLen.toNat := Nat.le_of_lt hlast
       simpa [hlen'] using this
     simpa [bounded] using this
+  have hwf' : wellFormed v' := wellFormed_of_bounded hb'
   have hembed' : embed v' = (embed self).dropLast := by
     exact embed_eq_dropLast_of_pop_update (v := self) (v' := v')
       (hb := hbounded) (hnonempty := hnonempty) (hnonzero := hnonzero)
@@ -726,7 +724,6 @@ theorem pop_spec {p T MaxLen selfRef self}
       (hb := hbounded) (hnonempty := hnonempty) (hnonzero := hnonzero) (hlast := hlast)
     -- `hret` gives `r = storage[...]`; rewrite through `hlastEq`.
     simpa [hret, hlastEq]
-  have hwf' : wellFormed v' := (bounded_iff_wellFormed (v := v')).1 hb'
   -- Rebuild the goal `Q₂ r ⋆ ⊤` on the same split heap.
   unfold SLP.star
   refine ⟨stQ1, stTop, hdisj, hunion, ?_, hTop⟩
@@ -750,9 +747,7 @@ theorem from_parts_unchecked_spec {p T MaxLen array l}
   subst_vars
   constructor
   ·
-    have hb' : bounded (p := p) (T := T) (MaxLen := MaxLen) (v := _) := by
-      simpa [bounded, len] using hb
-    exact wellFormed_of_bounded (v := _) hb'
+    exact wellFormed_of_bounded (by simpa [bounded, len] using hb)
   · simp [embed, active, storage, len]
 
 theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
@@ -935,13 +930,13 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
           BitVec.toNat self.2.1 + BitVec.toNat Len := by
       -- `simp [len]` turns `(len self).toNat` into `BitVec.toNat self.2.1`.
       simpa [len] using hmod
-
     constructor
     ·
-      -- Well-formedness follows from the concrete capacity check.
-      have hb_v : bounded (p := p) (T := T) (MaxLen := MaxLen) (v := _) := by
-        simpa [bounded, len, hmod_simp, hcastLenNat] using hspace
-      exact wellFormed_of_bounded (v := _) hb_v
+      simpa [lenLens, len] using
+        (wellFormed_get_modify_lenLens_of_le (v := v)
+          (n := len self + (↑(List.Vector.length array) : U 32))
+          (h := by simpa [lenLens, len] using h_isSome)
+          (hn := hnew_le))
     ·
       have htakeArr : array.toList.take Len.toNat = array.toList := by
         simp [List.Vector.toList_length]
@@ -962,7 +957,7 @@ private theorem extend_from_array_from_empty_spec {p T MaxLen Len selfRef self a
       (fun _ =>
         ∃∃ v',
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
-            ⟦wellFormed v' ∧ embed v' = array.toList⟧) := by
+            ⟦bounded v' ∧ embed v' = array.toList⟧) := by
   have hnew_le : Len ≤ MaxLen := by
     rw [BitVec.le_def]
     simpa using hspace
@@ -986,9 +981,8 @@ private theorem extend_from_array_from_empty_spec {p T MaxLen Len selfRef self a
     steps
     all_goals (try (first | exact hnew_le | simp [hlen0]))
     subst_vars
-    -- `steps` reduces the heap part; we are left with the pure prefix facts for the invariant.
-    -- `steps` leaves a bunch of inaccessible hypotheses (`v✝`, `a✝`, `#v_12`, ...).
-    -- We rename them from the end of the context, one-by-one, so this is robust to insertion/removal.
+    -- TODO: maybe we could make steps take a list of renames and perform
+    -- them automatically?
     rename_i h_isSome
     rename_i h_dec
     rename_i u2
@@ -1086,32 +1080,33 @@ private theorem extend_from_array_from_empty_spec {p T MaxLen Len selfRef self a
     have hcastLenNat : ((↑(List.Vector.length array) : U 32)).toNat = Len.toNat := by
       have : List.Vector.length array = Len.toNat := by rfl
       simp [this, BitVec.toNat_ofNat, Nat.mod_eq_of_lt hLen_lt]
-    have hsum : (Builtin.indexTpl self Builtin.Member.head.tail).toNat + ((↑(List.Vector.length array) : U 32)).toNat < 2 ^ 32 := by
-      simpa [hlenSelfNat, hcastLenNat] using hLen_lt
-    have htoNat_newLen :
-        (Builtin.indexTpl self Builtin.Member.head.tail + (↑(List.Vector.length array) : U 32)).toNat = Len.toNat := by
-      have htoNat_add :=
-        BitVec.toNat_add_of_lt (x := Builtin.indexTpl self Builtin.Member.head.tail)
-          (y := (↑(List.Vector.length array) : U 32)) hsum
-      simpa [hlenSelfNat, hcastLenNat] using htoNat_add
+    have hsum :
+        (Builtin.indexTpl self Builtin.Member.head.tail).toNat +
+            ((↑(List.Vector.length array) : U 32)).toNat <
+          2 ^ 32 := by
+      -- With `len self = 0`, this is just `Len.toNat < 2^32`.
+      have : (len self).toNat + Len.toNat < 2 ^ 32 := by
+        simpa [hlen0, Nat.zero_add] using hLen_lt
+      simpa [len, hcastLenNat] using this
     constructor
     ·
-      -- Well-formedness follows from the concrete capacity check.
+      -- boundedness reduces to `Len.toNat ≤ MaxLen.toNat`.
       have hLen_lt' : Len.toNat < 4294967296 := by
         simpa using hLen_lt
-      have hmod :
-          ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + Len.toNat) % 4294967296 = Len.toNat := by
-        simp [hlenSelfNat, Nat.mod_eq_of_lt hLen_lt']
-      have hb_v : bounded (p := p) (T := T) (MaxLen := MaxLen) (v := _) := by
-        -- `bounded` is about `toNat` of the post-loop `len`, which is modular addition.
-        simpa [bounded, len, hmod] using hspace
-      exact wellFormed_of_bounded (v := _) hb_v
+      have hmod : ((len self).toNat + Len.toNat) % 4294967296 = Len.toNat := by
+        -- `len self = 0`, so the modular addition is identity.
+        simp [hlen0, Nat.mod_eq_of_lt hLen_lt']
+      have hmod_simp : ((BitVec.toNat self.2.1 + BitVec.toNat Len) % 4294967296) = BitVec.toNat Len := by
+        simpa [len] using hmod
+      -- `bounded` is about `toNat` of the post-loop `len`, which is modular addition.
+      simpa [bounded, len, hmod_simp] using hspace
     ·
       have hLen_lt' : Len.toNat < 4294967296 := by
         simpa using hLen_lt
-      have hmod :
-          ((Builtin.indexTpl self Builtin.Member.head.tail).toNat + Len.toNat) % 4294967296 = Len.toNat := by
-        simp [hlenSelfNat, Nat.mod_eq_of_lt hLen_lt']
+      have hmod : ((len self).toNat + Len.toNat) % 4294967296 = Len.toNat := by
+        simp [hlen0, Nat.mod_eq_of_lt hLen_lt']
+      have hmod_simp : ((BitVec.toNat self.2.1 + BitVec.toNat Len) % 4294967296) = BitVec.toNat Len := by
+        simpa [len] using hmod
       have htakeArr : array.toList.take Len.toNat = array.toList := by
         simp [List.Vector.toList_length]
       -- `embed` is `take len storage`; `storage` is unchanged by a tail update.
@@ -1122,7 +1117,7 @@ private theorem extend_from_array_from_empty_spec {p T MaxLen Len selfRef self a
           List.take Len.toNat (List.Vector.toList array) = List.Vector.toList array := by
         simpa using htakeArr
       -- Reduce to the loop invariant prefix equation at `Len`.
-      simpa [embed, active, storage, len, hmod] using (htakeV'.trans htakeArr')
+      simpa [embed, active, storage, len, hmod_simp] using (htakeV'.trans htakeArr')
 
 theorem from_array_spec {p T MaxLen Len array}
     (hbounded : Len.toNat ≤ MaxLen.toNat) :
@@ -1132,7 +1127,7 @@ theorem from_array_spec {p T MaxLen Len array}
       (fun r => wellFormed r ∧ embed r = array.toList) := by
   enter_decl
   steps
-  steps [new_concrete_spec]
+  steps [new_spec]
   rename_i vecVal
   -- `vecVal : bounded v ∧ len v = 0 ∧ embed v = []` for the freshly-allocated `v` stored in `vec`.
   have hlen0 : len _ = 0 := vecVal.2.1
@@ -1140,7 +1135,7 @@ theorem from_array_spec {p T MaxLen Len array}
     (Q := fun _ =>
       ∃∃ v',
         [vec ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
-          ⟦wellFormed v' ∧ embed v' = array.toList⟧))
+          ⟦bounded v' ∧ embed v' = array.toList⟧))
   ·
     -- call
     exact extend_from_array_from_empty_spec (p := p) (T := T) (MaxLen := MaxLen) (Len := Len)
@@ -1150,7 +1145,9 @@ theorem from_array_spec {p T MaxLen Len array}
     intro _
     steps
     subst_vars
-    assumption
+    rename_i r hpost
+    rcases hpost with ⟨hb, he⟩
+    exact ⟨wellFormed_of_bounded hb, he⟩
 
 theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
     (hspace : (len self).toNat + slice.length ≤ MaxLen.toNat) :
@@ -1318,9 +1315,8 @@ theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
       simpa [len] using hmod
     constructor
     ·
-      have hb_v : bounded v := by
-        simpa [bounded, len, hmod_simp, hcastLenNat] using hspace
-      exact wellFormed_of_bounded (v := v) hb_v
+      refine wellFormed_get_modify_lenLens_of_le (v := v) (n := _) (h := h_isSome) ?_
+      simpa [len, bitvec_ofNatLT_eq_ofNat] using hnew_le
     ·
       have htakeSlice : slice.take slice.length = slice := by
         simp
@@ -1338,7 +1334,7 @@ theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
       simpa [embed, active, storage, len, hmod_simp, htakeSlice] using htakeV'
 
 theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
-    (hwf_vec : wellFormed (p := p) (T := T) (MaxLen := Len) vec)
+    (hwfVec : wellFormed (p := p) (T := T) (MaxLen := Len) vec)
     (hspace : (len self).toNat + (len vec).toNat ≤ MaxLen.toNat) :
     STHoare p env
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
@@ -1348,6 +1344,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
         ∃∃ v',
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
             ⟦wellFormed v' ∧ embed v' = embed self ++ embed vec⟧) := by
+  have hbVec : bounded (p := p) (T := T) (MaxLen := Len) vec := bounded_of_wellFormed hwfVec
   have hMax_lt : MaxLen.toNat < 2 ^ 32 := by
     simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
   have hsum_lt : (len self).toNat + (len vec).toNat < 2 ^ 32 := lt_of_le_of_lt hspace hMax_lt
@@ -1357,9 +1354,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
     exact hspace
   have hLen_lt : Len.toNat < 2 ^ 32 := by
     simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := Len) (by rfl))
-  have hbVec : bounded (p := p) (T := T) (MaxLen := Len) vec :=
-    bounded_of_wellFormed (v := vec) hwf_vec
-  have hlenVec : (embed vec).length = (len vec).toNat := hwf_vec
+  have hlenVec : (embed vec).length = (len vec).toNat := hwfVec
 
   enter_decl
   -- Compute `append_len := vec.len()` and `new_len := self.len + append_len`.
@@ -1618,32 +1613,26 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
     rename_i _u_post
     rename_i h_pre
     rcases _u_post with ⟨hlenV, htakeV⟩
-    -- The modified value is `h_pre` with its `len` field overwritten with `len self + len vec`.
+    have h_isSome_set' :
+        ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify h_pre (len self + len vec)).isSome = true := by
+      simpa [lenLens, len] using h_isSome_set
     set v' :=
-      (((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify h_pre
-              (Builtin.indexTpl self Builtin.Member.head.tail + len vec)).get
-          h_isSome_set) with hv'
+      (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify h_pre (len self + len vec)).get
+          h_isSome_set') with hv'
     constructor
     ·
-      have hb : BitVec.toNat (len self + len vec) ≤ MaxLen.toNat :=
+      have hn : (len self + len vec).toNat ≤ MaxLen.toNat :=
         (BitVec.le_def).1 hnew_le
-      have hb_v : bounded v' := by
-        -- `bounded v'` reduces to the `U32` bound on the new length.
-        simpa [v', hv', bounded, len, Lens.modify, Lens.get, Access.get, Access.modify, Option.get_some] using hb
-      exact wellFormed_of_bounded (v := v') hb_v
+      simpa [v', hv'] using
+        (wellFormed_get_modify_lenLens_of_toNat_le (v := h_pre) (n := len self + len vec)
+          (h := h_isSome_set') hn)
     ·
-      have hsum_lt' : BitVec.toNat (len self) + BitVec.toNat (len vec) < 4294967296 := by
-        simpa using hsum_lt
-      have hmod :
-          ((BitVec.toNat (len self) + BitVec.toNat (len vec)) % 4294967296) =
-            BitVec.toNat (len self) + BitVec.toNat (len vec) := by
-        exact Nat.mod_eq_of_lt hsum_lt'
+      have hsum_lt' : BitVec.toNat self.2.1 + BitVec.toNat vec.2.1 < 4294967296 := by
+        simpa [len] using hsum_lt
       have hmod' :
-          ((BitVec.toNat (Builtin.indexTpl self Builtin.Member.head.tail) +
-              BitVec.toNat (Builtin.indexTpl vec Builtin.Member.head.tail)) % 4294967296) =
-            BitVec.toNat (Builtin.indexTpl self Builtin.Member.head.tail) +
-              BitVec.toNat (Builtin.indexTpl vec Builtin.Member.head.tail) := by
-        simpa [len] using hmod
+          ((BitVec.toNat self.2.1 + BitVec.toNat vec.2.1) % 4294967296) =
+            BitVec.toNat self.2.1 + BitVec.toNat vec.2.1 := by
+        exact Nat.mod_eq_of_lt hsum_lt'
       -- `embed v'` is `take` of the unchanged storage at the new length.
       simpa [v', hv', embed, active, storage, len, Lens.modify, Lens.get, Access.get, Access.modify,
         Option.get_some, Builtin.indexTpl, Builtin.replaceTuple', hmod'] using htakeV
@@ -1747,8 +1736,8 @@ theorem from_parts_spec {p T MaxLen arr l}
             rcases hpre with ⟨htake, _⟩
             exact htake
       ·
-        steps; assumption
-        -- the loop invariant is already the postcondition we need here
+        steps
+        assumption
   ·
     intro _
     steps
@@ -1757,9 +1746,7 @@ theorem from_parts_spec {p T MaxLen arr l}
     rename_i a
     constructor
     ·
-      have hb_r : bounded (p := p) (T := T) (MaxLen := MaxLen) (v := _) := by
-        simpa [bounded, len] using hb
-      exact wellFormed_of_bounded (v := _) hb_r
+      exact wellFormed_of_bounded (by simpa [bounded, len] using hb)
     · simpa [embed, active, storage, len] using hinv
 
 end Lampe.Stdlib.Collections.BoundedVec
