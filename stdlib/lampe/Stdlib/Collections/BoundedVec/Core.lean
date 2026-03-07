@@ -177,8 +177,16 @@ lemma embed_getElem_toList {p T MaxLen} {self : Repr p T MaxLen} (i : Nat)
     exact Nat.lt_of_lt_of_le hmin (Nat.min_le_left _ _)
   simp [embed, active, List.getElem_take, hxs', hstorage]
 
-def BV {p : Prime} {T : Tp} {MaxLen : U 32} (selfRef : Ref) (xs : List (Tp.denote p T)) : SLP (State p) :=
+abbrev BV {p : Prime} {T : Tp} {MaxLen : U 32} (selfRef : Ref) (xs : List (Tp.denote p T)) : SLP (State p) :=
   ∃∃ v : Repr p T MaxLen, [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆ ⟦wellFormed v ∧ embed v = xs⟧
+
+/-- Fold a singleton heap into `BV` when wellFormedness and embed equality are known. -/
+lemma BV_of_wellFormed_embed {p : Prime} {T : Tp} {MaxLen : U 32}
+    {selfRef : Ref} {v : Repr p T MaxLen} {xs : List (Tp.denote p T)}
+    (hwf : wellFormed v) (hembed : embed v = xs) :
+    [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⊢ BV (MaxLen := MaxLen) selfRef xs := by
+  intro st hst
+  exact ⟨v, st, ∅, by simp [LawfulHeap.disjoint_empty], by simp, hst, ⟨hwf, hembed⟩, rfl⟩
 
 /-! ### List/`embed` helper lemmas (non-Hoare) -/
 
@@ -488,5 +496,26 @@ lemma embed_eq_dropLast_of_pop_update {p T MaxLen} {v v' : Repr p T MaxLen}
       have hv : (len v').toNat = (len v - 1).toNat := by simp [hlen]
       rw [hv, htoNat_sub]
     _ = (embed v).dropLast := by simp [hdrop]
+
+section BVNat
+
+@[simp] lemma u32_toNat_lt (x : U 32) : x.toNat < 2 ^ 32 :=
+  BitVec.toNat_lt_twoPow_of_le (by rfl)
+
+@[simp] lemma u32_toNat_lt' (x : U 32) : x.toNat < 4294967296 := by
+  simpa using u32_toNat_lt x
+
+lemma ofNat32_toNat {i : Nat} (h : i < 2 ^ 32) :
+    (BitVec.ofNat 32 i).toNat = i := by
+  simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by simpa using h)]
+
+lemma nat_mod_4294967296 {n : Nat} (h : n < 2 ^ 32) :
+    n % 4294967296 = n :=
+  Nat.mod_eq_of_lt (by simpa using h)
+
+lemma nat_lt_4294967296 {n : Nat} (h : n < 2 ^ 32) :
+    n < 4294967296 := by simpa using h
+
+end BVNat
 
 end Lampe.Stdlib.Collections.BoundedVec

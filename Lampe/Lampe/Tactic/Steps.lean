@@ -712,4 +712,27 @@ elab "enter_lambda_as" n:optional(ident) ("=>")? "(" pre:term ")" "(" post:term 
     The returned exception is {e.toMessageData}"
   replaceMainGoal newGoals
 
+/--
+Convenience wrapper combining `steps`, `subst_vars`, and
+`rename_i` into one call.
+
+`steps_named [spec1] as [v, hinv, h_add]` is equivalent to
+`steps [spec1]; subst_vars; rename_i v hinv h_add`.
+
+Without `as`, just runs `steps; subst_vars`.
+-/
+elab "steps_named" ls:(steps_items)? " as " "[" ns:Lean.binderIdent,* "]" : tactic => do
+  match ls with
+  | some l => evalTactic (← `(tactic| steps $l:steps_items))
+  | none => evalTactic (← `(tactic| steps))
+  evalTactic (← `(tactic| subst_vars))
+  let nsArr := ns.getElems
+  evalTactic (← `(tactic| rename_i $nsArr*))
+
+elab "steps_named" ls:(steps_items)? : tactic => do
+  match ls with
+  | some l => evalTactic (← `(tactic| steps $l:steps_items))
+  | none => evalTactic (← `(tactic| steps))
+  evalTactic (← `(tactic| subst_vars))
+
 end Lampe.Steps
