@@ -102,21 +102,9 @@ private lemma storage_get_eq_embed_get_of_toNat {p T MaxLen} (self : Repr p T Ma
 private lemma skip_postprocess {p} {H Qfinal : SLP (State p)} (hHQ : H ⊢ Qfinal) :
     STHoare p env H Expr.skip (fun _ => Qfinal) := by
   have hskipH : STHoare p env H Expr.skip (fun v => (v = ()) ⋆ H) := by
-    -- `skip_intro` is for `⟦True⟧`; frame it and simplify away the pure `True`.
-    simpa using
-      (STHoare.frame (p := p) (Γ := env) (H := H)
-        (h_hoare := (STHoare.skip_intro (p := p) (Γ := env))))
-  refine (STHoare.consequence (p := p) (Γ := env) (tp := Tp.unit) (e := Expr.skip)
-    (H₁ := H) (H₂ := H)
-    (Q₁ := fun v => (v = ()) ⋆ H)
-    (Q₂ := fun _ => Qfinal)
-    (h_pre_conseq := SLP.entails_self)
-    (h_post_conseq := ?_) hskipH)
-  intro v
-  simpa [SLP.star_assoc] using (show (⟦v = ()⟧ ⋆ (H ⋆ ⊤) ⊢ Qfinal ⋆ ⊤) from by
-    apply SLP.pure_left
-    intro _
-    exact SLP.star_mono_r hHQ)
+    simpa using STHoare.frame (p := p) (Γ := env) (H := H) (h_hoare := STHoare.skip_intro)
+  exact STHoare.consequence_post hskipH fun v => by
+    apply SLP.pure_left; intro _; exact hHQ
 
 /-!
 Shared constrained-branch loop proof for effectful `map`/`mapi`-like methods.
@@ -224,57 +212,39 @@ private theorem mapLike_constrained_loop_effectful_spec
       apply STHoare.ite_intro
       ·
         intro hcond
-        have pf32 : i < 2 ^ 32 := by simpa using pf
         have hi_lt : i < n := by
-          have : i < (len self).toNat :=
-            nat_lt_of_decide_bv_lt_trueLT (i := i) (x := len self) pf32 hcond
-          simpa [n] using this
+          simpa [n] using nat_lt_of_decide_bv_lt_trueLT (i := i) (x := len self) pf hcond
         have hi_xs : i < xs.length := by simpa [hx_len] using hi_lt
         have hmin_i : Nat.min i n = i := Nat.min_eq_left (Nat.le_of_lt hi_lt)
         have hmin_succ : Nat.min (i + 1) n = i + 1 := Nat.min_eq_left (Nat.succ_le_of_lt hi_lt)
-
-        -- Read `self[i]` via `get_unchecked`.
-        have hiMax : (BitVec.ofNatLT i pf32).toNat < MaxLen.toNat := by
-          have htoNat : (BitVec.ofNatLT i pf32).toNat = i :=
-            BitVec.toNat_ofNatLT (w := 32) (x := i) (p := pf32)
-          rw [htoNat]
-          exact hhi
+        let i32 : U 32 := BitVec.ofNatLT i pf
+        have hi_toNat : i32.toNat = i := by
+          simpa [i32] using BitVec.toNat_ofNatLT (w := 32) (x := i) (p := pf)
+        have hiMax : i32.toNat < MaxLen.toNat := hi_toNat ▸ hhi
         have hget :=
           get_unchecked_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)
-            (index := BitVec.ofNatLT i pf32) (hindex := hiMax)
+            (index := i32) (hindex := hiMax)
         steps [hget]
 
-        let i32 : U 32 := BitVec.ofNatLT i pf32
-        have hi_toNat : i32.toNat = i := by
-          simpa [i32] using (BitVec.toNat_ofNatLT (w := 32) (x := i) (p := pf32))
+        have hi_embed : i < (embed self).length := by simpa [xs, hx_len] using hi_lt
 
         -- Normalize `x` to the semantic element `xs[i]`.
         let x : T.denote p := (storage self)[i32.toNat]'(by simpa [i32] using hiMax)
-        have hi_embed : i < (embed self).length := by simpa [xs, hx_len] using hi_lt
         have hx' : x = xs[i]'hi_xs := by
-          have hx0 :
-              (storage self)[i32.toNat]'(by simpa [i32] using hiMax) = (embed self)[i]'hi_embed :=
+          simpa [x, xs] using
             storage_get_eq_embed_get_of_toNat (self := self) (idxNat := i32.toNat) (i := i)
               hi_toNat (by simpa [i32] using hiMax) hi_embed
-          simpa [x, xs] using hx0
 
-        -- Now step into `let elem = get_unchecked(self, i)`.
         subst getUncheckedFn
         steps [hget]
         rename_i helemEq
-
-        have helem : elem = x := by
-          simpa [x, i32] using helemEq
-        have helem_xs : elem = xs[i]'hi_xs := by
-          simpa [helem] using hx'
+        have helem_xs : elem = xs[i]'hi_xs := by simpa [x, i32] using (helemEq ▸ hx')
 
         -- Instantiate the callback spec on this step.
         have hip_len : (xs.take i).length = i := by
-          have hi_le : i ≤ xs.length := Nat.le_of_lt hi_xs
-          simpa [List.length_take, Nat.min_eq_left hi_le]
+          simpa [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi_xs)]
         let idx : U 32 := BitVec.ofNat 32 i
-        have hidx_toNat : idx.toNat = i := by
-          simpa [idx] using toNat_ofNat32 (i := i) pf32
+        have hidx_toNat : idx.toNat = i := by simpa [idx] using toNat_ofNat32 (i := i) pf
         have hprefix : xs.take i ++ [elem] <+: xs := by
           simpa [helem_xs] using (by simp [List.take_prefix])
 
@@ -282,58 +252,35 @@ private theorem mapLike_constrained_loop_effectful_spec
             (inv (xs.take i) (List.take i (storage v).toList))
             (fb (mkArgs idx elem))
             (fun r => inv (xs.take i ++ [elem]) (List.take i (storage v).toList ++ [r])) := by
-          have :=
+          simpa [hmin_i] using
             inv_step (ip := xs.take i) (op := List.take i (storage v).toList) (i := idx) (e := elem)
               (by simpa [xs] using hprefix) (by simpa [hidx_toNat, hip_len])
-          simpa [hmin_i] using this
 
-        -- Help `sl` by normalizing the `min` expressions.
         simp [hmin_i, hmin_succ] at *
         steps [STHoare.callLambda_intro (hlam := hlam)]
 
         have htake_xs : xs.take (i + 1) = xs.take i ++ [elem] := by
-          -- `take (i+1) xs = take i xs ++ [xs[i]]`.
-          have := List.take_succ_eq_take_append_get (l := xs) (n := i) (hn := hi_xs)
-          simpa [helem_xs] using this
-        have hstor_len : i < (storage v).toList.length := by
-          simpa [storage, List.Vector.toList_length] using hhi
+          simpa [helem_xs] using List.take_succ_eq_take_append_get (l := xs) (n := i) (hn := hi_xs)
 
         have hset (a : Out.denote p) :
             List.take (i + 1) ((List.Vector.toList v.1).set i a) =
               List.take i (List.Vector.toList v.1) ++ [a] := by
-          have hstor_len' : i < (List.Vector.toList v.1).length := by
-            simpa [List.Vector.toList_length] using hhi
-          simpa using
-            (List.take_succ_set_eq_take_append (l := (List.Vector.toList v.1)) (n := i) (a := a) hstor_len')
+          simpa using List.take_succ_set_eq_take_append (l := (List.Vector.toList v.1)) (n := i)
+            (a := a) (by simpa [List.Vector.toList_length] using hhi)
 
-        -- Discharge the final entailment to establish `Inv (i+1)` from the `inv_step` result and
-        -- the storage update.
-        case R =>
-          exact ⟦len v = len self ∧ bounded v⟧
-        case h.h₁.a =>
-          constructor
-          · simpa [len] using hlenV
-          · simpa [bounded, len] using hbV
+        case R => exact ⟦len v = len self ∧ bounded v⟧
+        case h.h₁.a => exact ⟨by simpa [len] using hlenV, by simpa [bounded, len] using hbV⟩
         rw [SLP.star_comm]
         refine SLP.pure_right ⟨hlenV, hbV⟩ ?_
         intro st hinv
-        -- `BitVec.toNat` introduces `% 2^32`; rewrite it away since `i < 2^32`.
-        have pf' : i < 4294967296 := by simpa using pf32
-        have hmod : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
+        have hmod : i % 4294967296 = i := Nat.mod_eq_of_lt (by simpa using pf)
         simpa [htake_xs, storage, hmod, hset] using hinv
       ·
         intro hcond
-        -- i ≥ len self: no write, and `min` saturates at `n`.
         steps
-        have pf32 : i < 2 ^ 32 := by simpa using pf
         have hge : n ≤ i := by
-          have : (len self).toNat ≤ i :=
-            nat_le_of_decide_bv_lt_falseLT (i := i) (x := len self) pf32 hcond
-          simpa [n] using this
-        have hmin_i : Nat.min i n = n := Nat.min_eq_right hge
-        have hmin_succ : Nat.min (i + 1) n = n :=
-          Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))
-        simp [hmin_i, hmin_succ] at *
+          simpa [n] using nat_le_of_decide_bv_lt_falseLT (i := i) (x := len self) pf hcond
+        simp [Nat.min_eq_right hge, Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))] at *
         sl
         exact ⟨hlenV, hbV⟩
   ·
@@ -344,26 +291,13 @@ private theorem mapLike_constrained_loop_effectful_spec
         [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆ [λf ↦ fb] ⋆ ⟦bounded v⟧ ⋆ inv xs (embed v)
     have hInv_to_Q : Inv MaxLen.toNat ⊢ Qfinal := by
       dsimp [Inv, Qfinal]
-      apply SLP.exists_intro_l
-      intro v
-      apply SLP.exists_intro_r (a := v)
-      refine SLP.star_mono SLP.entails_self ?_
-      refine SLP.star_mono SLP.entails_self ?_
-      rw [SLP.star_comm]
-      apply SLP.pure_left
-      intro hpure
-      rcases hpure with ⟨hlenV, hbV⟩
-      have hmin : Nat.min MaxLen.toNat n = n := Nat.min_eq_right hn_le
-      have htake_xs : xs.take n = xs := by
-        apply List.take_of_length_le
-        exact Nat.le_of_eq hx_len
-      have hlenNat : (len v).toNat = n := by
-        simpa [n] using congrArg BitVec.toNat hlenV
-      have hembed : embed v = List.take n (storage v).toList := by
-        simp [embed, active, hlenNat]
-      refine SLP.pure_right hbV ?_
-      intro st hinv
-      simpa [hmin, htake_xs, hembed] using hinv
+      refine SLP.exists_mono fun v => ?_
+      refine SLP.star_mono SLP.entails_self (SLP.star_mono SLP.entails_self ?_)
+      rw [SLP.star_comm]; apply SLP.pure_left; intro ⟨hlenV, hbV⟩
+      have hlenNat : (len v).toNat = n := by simpa [n] using congrArg BitVec.toNat hlenV
+      refine SLP.pure_right hbV fun st hinv => ?_
+      simpa [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len),
+        embed, active, hlenNat] using hinv
     exact skip_postprocess (p := p) (H := Inv MaxLen.toNat) (Qfinal := Qfinal) hInv_to_Q
 
 /-!
@@ -625,12 +559,8 @@ theorem any_spec {p T MaxLen Env self f fb}
       -- `loop_inv` may introduce a trailing frame; absorb it into `⊤`.
       apply SLP.ent_star_top
     ·
-      -- Postcondition weakening: rewrite `take (min MaxLen n)` to `xs`, and absorb `exceeded_len` into `⊤`.
-      have hmin : Nat.min MaxLen.toNat n = n := Nat.min_eq_right hn_le
-      have htake_xs : xs.take n = xs := by
-        apply List.take_of_length_le
-        exact Nat.le_of_eq hx_len
-      simp [hmin, htake_xs]
+      -- Postcondition weakening: rewrite `take (min MaxLen n)` to `xs`, absorb `exceeded_len` into `⊤`.
+      simp [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)]
       sl
     ·
       simpa using (Nat.zero_le MaxLen.toNat)
@@ -641,12 +571,10 @@ theorem any_spec {p T MaxLen Env self f fb}
       simp_all only [BitVec.toNat_ofNatLT, Nat.reducePow, Bool.decide_or, Bool.decide_eq_true,
         Bool.decide_eq_false, Bool.false_or, Bool.true_or]
 
-      have pf32 : i < 2 ^ 32 := by
-        simpa using (lt_two_pow_of_lt_maxLen (i := i) (MaxLen := MaxLen) hhi)
+      have pf32 : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
       have hEq_dec :
           decide (BitVec.ofNat 32 i = len self) = decide (i = (len self).toNat) := by
-        simpa using (decide_ofNat_eq_toNat (i := i) (x := len self) pf32)
-
+        simpa using decide_ofNat_eq_toNat (i := i) (x := len self) pf32
       have hexceeded_next :
           (decide (n < i) || decide (BitVec.ofNat 32 i = len self)) = decide (n < i + 1) := by
         simp [hEq_dec, n, Nat.lt_succ_iff, Nat.le_iff_lt_or_eq, eq_comm]
@@ -660,15 +588,10 @@ theorem any_spec {p T MaxLen Env self f fb}
       ·
         intro hcond
         have hor : (decide (n < i) || decide (BitVec.ofNat 32 i = len self)) = false := by
-          -- `!exceeded_len` is true, so `exceeded_len` is false after the update.
           simpa [Lens.modify, len] using hcond
-        have hnot : decide (n < i + 1) = false := by
-          simpa [hexceeded_next] using hor
-        have hle_succ : i + 1 ≤ n := by
-          have : ¬ n < i + 1 := of_decide_eq_false hnot
-          -- `¬ (n < i+1)` is `i+1 ≤ n`.
-          exact Nat.le_of_not_gt this
-        have hi_lt : i < n := Nat.lt_of_lt_of_le (Nat.lt_succ_self i) hle_succ
+        have hi_lt : i < n := by
+          have := of_decide_eq_false (hexceeded_next ▸ hor)
+          omega
         have hi_xs : i < xs.length := by simpa [hx_len] using hi_lt
         have hmin_i : Nat.min i n = i := Nat.min_eq_left (Nat.le_of_lt hi_lt)
         have hmin_succ : Nat.min (i + 1) n = i + 1 :=
@@ -688,23 +611,12 @@ theorem any_spec {p T MaxLen Env self f fb}
         let e : T.denote p := xs[i]'hi_xs
         have hi_embed : i < (embed self).length := by
           simpa [xs] using hi_xs
-        have htoNat : i % 4294967296 = i := by
-          have hi_lt' : i < 4294967296 := by
-            simpa using pf32
-          simpa using (Nat.mod_eq_of_lt hi_lt')
+        have htoNat : i % 4294967296 = i := Nat.mod_eq_of_lt (by simpa using pf32)
         have harg : List.Vector.get self.1 ⟨i % 4294967296, hiIdx⟩ = e := by
-          have h :=
-            storage_get_eq_embed_get_of_toNat (self := self) (idxNat := i % 4294967296) (i := i) htoNat hiIdx hi_embed
-          -- Rewrite `storage`/`embed` projections and discharge proof-irrelevance in the indexing proof.
-          simpa using h
+          simpa using storage_get_eq_embed_get_of_toNat (self := self)
+            (idxNat := i % 4294967296) (i := i) htoNat hiIdx hi_embed
         have hprefix : xs.take i ++ [e] <+: xs := by
-          have he : e = xs[i]'hi_xs := by
-            simp [e]
-          have htake : xs.take i ++ [xs[i]'hi_xs] = xs.take (i + 1) := by
-            simpa using (List.take_append_getElem (l := xs) (i := i) hi_xs)
-          have htake' : xs.take i ++ [e] = xs.take (i + 1) := by
-            simpa [he] using htake
-          simpa [htake'] using (List.take_prefix (i := i + 1) (l := xs))
+          simp [e]; exact List.take_prefix ..
         have hlam : STHoare p env
             (inv (xs.take i) b)
             (fb h![e])
@@ -736,42 +648,24 @@ theorem any_spec {p T MaxLen Env self f fb}
           exact ()
       ·
         intro hcond
-        -- `!exceeded_len = false` means the updated `exceeded_len` is true, i.e. `i ≥ n`.
+        -- `!exceeded_len = false` means the updated exceeded_len is true, i.e. `i >= n`.
         have himp : i ≤ n → BitVec.ofNat 32 i = len self := by
           simpa [Lens.modify, len] using hcond
         have hge : n ≤ i := by
-          apply Nat.le_of_not_gt
-          intro hi_lt
-          have hbv : BitVec.ofNat 32 i = len self := himp (Nat.le_of_lt hi_lt)
-          have htoNat : (BitVec.ofNat 32 i).toNat = (len self).toNat := congrArg BitVec.toNat hbv
-          have hi_lt' : i < 4294967296 := by
-            simpa using pf32
-          have htoNat_ofNat : (BitVec.ofNat 32 i).toNat = i := by
-            simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hi_lt']
-          have hi_eq : i = n := by
-            have : i = (len self).toNat := by
-              simpa [htoNat_ofNat] using htoNat
-            simpa [n] using this
-          exact Nat.ne_of_lt hi_lt hi_eq
-        have hmin_i : Nat.min i n = n := Nat.min_eq_right hge
-        have hmin_succ : Nat.min (i + 1) n = n :=
-          Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))
+          apply Nat.le_of_not_gt; intro hi_lt
+          have := congrArg BitVec.toNat (himp (Nat.le_of_lt hi_lt))
+          simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by simpa using pf32), n] at this
+          exact Nat.ne_of_lt hi_lt this
         steps
-        simp [hmin_i, hmin_succ] at *
+        simp [Nat.min_eq_right hge, Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))] at *
         sl
-        ·
-          -- Side condition generated by `steps`/`subst_vars` about the updated `exceeded_len`.
-          have h :
+        · have h :
               (decide (n < i) || decide (BitVec.ofNat 32 i = self.2.1)) = decide (n < i + 1) := by
             simpa [len] using hexceeded_next
           simp [len, h]
     ·
       -- Loop finished.
-      have hmin : Nat.min MaxLen.toNat n = n := Nat.min_eq_right hn_le
-      have htake_xs : xs.take n = xs := by
-        apply List.take_of_length_le
-        exact Nat.le_of_eq hx_len
-      simp [hmin, htake_xs] at *
+      simp [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)] at *
       steps
   ·
     -- `readRef ret` returns the final boolean.
@@ -791,23 +685,8 @@ theorem any_pure_spec {p T MaxLen Env self f fb fEmb}
       (H₁ := (⟦false = ([] : List (T.denote p)).any fEmb⟧ ⋆ [λf ↦ fb]))
       (Q₁ := fun r => (⟦r = (embed self).any fEmb⟧ ⋆ [λf ↦ fb]))
       ?_ ?_ ?_
-  ·
-    -- Initial invariant holds since `[].any fEmb = false`.
-    have hp : false = ([] : List (T.denote p)).any fEmb := by simp
-    exact SLP.pure_right (P := false = ([] : List (T.denote p)).any fEmb) hp SLP.entails_self
-  ·
-    intro r
-    -- Drop the framed lambda predicate (it can be absorbed by `⊤`).
-    -- `(⟦P⟧ ⋆ R) ⋆ ⊤ ⊢ ⟦P⟧ ⋆ ⊤` since `R ⊢ ⊤`.
-    have hdrop : ([λf ↦ fb] ⋆ (⊤ : SLP (State p))) ⊢ (⊤ : SLP (State p)) := SLP.entails_top
-    have h :=
-      SLP.star_mono (H₁ := (⟦r = (embed self).any fEmb⟧ : SLP (State p)))
-        (H₂ := (⟦r = (embed self).any fEmb⟧ : SLP (State p)))
-        (Q₁ := ([λf ↦ fb] ⋆ (⊤ : SLP (State p))))
-        (Q₂ := (⊤ : SLP (State p)))
-        SLP.entails_self hdrop
-    -- Normalize associativity.
-    simpa [SLP.star_assoc] using h
+  · exact SLP.pure_right (by simp) SLP.entails_self
+  · intro r; simpa [SLP.star_assoc] using SLP.star_mono SLP.entails_self SLP.entails_top
   ·
     exact any_spec (p := p) (T := T) (MaxLen := MaxLen) (Env := Env) (self := self) (f := f) (fb := fb)
       (hwf_self := hwf_self)
@@ -878,17 +757,11 @@ private theorem forEachLike_constrained_loop_spec
       simp [Nat.min_zero, Nat.zero_min]
       sl
     ·
-      -- postcondition weakening for `loop_inv` boilerplate
-      rw [SLP.star_comm]
-      apply SLP.pure_left
-      intro _
-      apply SLP.exists_intro_l
-      intro _
-      have hmin : Nat.min MaxLen.toNat n = n := Nat.min_eq_right hn_le
-      have htake_xs : xs.take n = xs := by
-        apply List.take_of_length_le
-        exact Nat.le_of_eq hx_len
-      simpa [hmin, htake_xs] using (SLP.ent_star_top (H := Inv (embed self) ⋆ [λf ↦ fb]))
+      -- postcondition weakening
+      rw [SLP.star_comm]; apply SLP.pure_left; intro _
+      apply SLP.exists_intro_l; intro _
+      simpa [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)] using
+        SLP.ent_star_top (H := Inv (embed self) ⋆ [λf ↦ fb])
     ·
       simp [Nat.zero_le MaxLen.toNat]
     ·
@@ -902,58 +775,39 @@ private theorem forEachLike_constrained_loop_spec
       apply STHoare.ite_intro
       ·
         intro hcond
-        have pf32 : i < 2 ^ 32 := by simpa using pf
         have hi_lt : i < n := by
-          have : i < (len self).toNat :=
-            nat_lt_of_decide_bv_lt_trueLT (i := i) (x := len self) pf32 hcond
-          simpa [n] using this
-        have hi_xs : i < xs.length := by
-          simpa [hx_len] using hi_lt
-        have hi_embed : i < (embed self).length := by
-          simpa [xs] using hi_xs
-        -- Reduce `get_unchecked` to a direct read from `storage self`.
-        have hiMax : (BitVec.ofNatLT i pf32).toNat < MaxLen.toNat := by
-          have pf' : i < 4294967296 := by simpa using pf32
-          have hmodNat : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-          simpa [BitVec.toNat_ofNatLT, hmodNat] using hhi
+          simpa [n] using nat_lt_of_decide_bv_lt_trueLT (i := i) (x := len self) pf hcond
+        have hi_xs : i < xs.length := by simpa [hx_len] using hi_lt
+        have hi_embed : i < (embed self).length := by simpa [xs] using hi_xs
+        have hmodNat : i % 4294967296 = i := Nat.mod_eq_of_lt (by simpa using pf)
+        have hiMax : (BitVec.ofNatLT i pf).toNat < MaxLen.toNat := by
+          simp [BitVec.toNat_ofNatLT, hmodNat]; exact hhi
         have hget :=
           get_unchecked_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)
-            (index := BitVec.ofNatLT i pf32) (hindex := hiMax)
+            (index := BitVec.ofNatLT i pf) (hindex := hiMax)
         steps [hget]
-        -- Now step into `let elem = get_unchecked(self, i)`.
         subst getUncheckedFn
         steps [hget]
         rename_i helemEq
-        have pf' : i < 4294967296 := by simpa using pf32
-        have hmodNat : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
 
         -- Normalize `elem` to the semantic element `xs[i]`.
         let x : T.denote p := (storage self)[i]'hhi
         have hx' : x = xs[i]'hi_xs := by
-          have hx0 :
-              (storage self)[i]'hhi = (embed self)[i]'hi_embed :=
+          simpa [x, xs] using
             storage_get_eq_embed_get_of_toNat (self := self) (idxNat := i) (i := i) rfl hhi hi_embed
-          simpa [x, xs] using hx0
-        have helem : elem = x := by
-          simpa [x, hmodNat] using helemEq
-        subst helem
-        simp [hmodNat]
+        have helem : elem = x := by simpa [x, hmodNat] using helemEq
+        subst helem; simp [hmodNat]
 
         have hprefix : xs.take i ++ [x] <+: xs := by
           simpa [hx'] using (by simp [List.take_prefix])
-        -- Instantiate the callback spec on this step.
         have hip_len : (xs.take i).length = i := by
-          have hi_le : i ≤ xs.length := Nat.le_of_lt hi_xs
-          simpa [List.length_take, Nat.min_eq_left hi_le]
+          simpa [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi_xs)]
         let idx : U 32 := BitVec.ofNat 32 i
-        have hidx_toNat : idx.toNat = i := by
-          simpa [idx] using toNat_ofNat32 (i := i) pf32
+        have hidx_toNat : idx.toNat = i := by simpa [idx] using toNat_ofNat32 (i := i) pf
         have hlam : STHoare p env (Inv (xs.take i)) (fb (mkArgs idx x)) (fun _ => Inv (xs.take i ++ [x])) := by
-          have :=
-            inv_step (ip := xs.take i) (i := idx) (e := x)
-              (by simpa [xs] using hprefix) (by simpa [hidx_toNat, hip_len])
-          simp [this]
-        -- Help `sl`: rewrite `min` and `take` around the processed prefix.
+          simpa using inv_step (ip := xs.take i) (i := idx) (e := x)
+            (by simpa [xs] using hprefix) (by simpa [hidx_toNat, hip_len])
+
         have hmin_i : Nat.min i n = i := Nat.min_eq_left (Nat.le_of_lt hi_lt)
         have hmin_succ : Nat.min (i + 1) n = i + 1 := Nat.min_eq_left (Nat.succ_le_of_lt hi_lt)
         simp [hmin_i, hmin_succ] at *
@@ -967,16 +821,9 @@ private theorem forEachLike_constrained_loop_spec
             trivial SLP.entails_self
       ·
         intro hcond
-        -- i >= self.len(): do nothing.
-        have pf32 : i < 2 ^ 32 := by simpa using pf
         have hge : n ≤ i := by
-          have : (len self).toNat ≤ i :=
-            nat_le_of_decide_bv_lt_falseLT (i := i) (x := len self) pf32 hcond
-          simpa [n] using this
-        have hmin_i : Nat.min i n = n := Nat.min_eq_right hge
-        have hmin_succ : Nat.min (i + 1) n = n :=
-          Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))
-        simp [hmin_i, hmin_succ] at *
+          simpa [n] using nat_le_of_decide_bv_lt_falseLT (i := i) (x := len self) pf hcond
+        simp [Nat.min_eq_right hge, Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))] at *
         steps
   ·
     intro _
