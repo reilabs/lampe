@@ -41,7 +41,7 @@ def bounded {p T MaxLen} (v : Repr p T MaxLen) : Prop :=
   (len v).toNat ≤ MaxLen.toNat
 
 /--
-Semantic “well-formedness” predicate for the concrete representation.
+Semantic "well-formedness" predicate for the concrete representation.
 
 Recall:
 * `storage v` is a `Vector` of length exactly `MaxLen.toNat` (by its type).
@@ -51,10 +51,10 @@ So `embed` *always* truncates the concrete storage to at most `MaxLen.toNat` ele
 
 `(embed v).length = Nat.min (len v).toNat MaxLen.toNat`.
 
-This means the “obvious” bound `(embed v).length ≤ MaxLen.toNat` is **always true**, even for
+This means the "obvious" bound `(embed v).length ≤ MaxLen.toNat` is **always true**, even for
 representations where `len v` is out of range.
 
-`wellFormed v` is the *non-trivial* semantic condition “no truncation happened”, i.e.
+`wellFormed v` is the *non-trivial* semantic condition "no truncation happened", i.e.
 `(embed v).length = (len v).toNat`, which is equivalent to the concrete capacity check
 `(len v).toNat ≤ MaxLen.toNat` (see `bounded_iff_wellFormed`).
 -/
@@ -63,7 +63,6 @@ def wellFormed {p T MaxLen} (v : Repr p T MaxLen) : Prop :=
 
 lemma embed_length_eq_min_len_toNat {p T MaxLen} (v : Repr p T MaxLen) :
     (embed v).length = Nat.min (len v).toNat MaxLen.toNat := by
-  -- `embed v` is `take (len v)` of a list of length `MaxLen`.
   simp [embed, active, List.length_take, storage, List.Vector.toList_length]
 
 lemma embed_length_eq_len_toNat {p T MaxLen} {v : Repr p T MaxLen}
@@ -78,9 +77,7 @@ lemma bounded_iff_embed_length_eq_len_toNat {p T MaxLen} (v : Repr p T MaxLen) :
     exact embed_length_eq_len_toNat (v := v) hb
   · intro hlen
     have hmin : Nat.min (len v).toNat MaxLen.toNat = (len v).toNat := by
-      -- `length (take n xs) = min n xs.length`.
       exact (embed_length_eq_min_len_toNat (v := v)).symm.trans hlen
-    -- `min a b = a` implies `a ≤ b` since `min a b ≤ b`.
     have : Nat.min (len v).toNat MaxLen.toNat ≤ MaxLen.toNat :=
       Nat.min_le_right (len v).toNat MaxLen.toNat
     simpa [hmin] using this
@@ -94,13 +91,11 @@ lemma bounded_iff_wellFormed {p T MaxLen} (v : Repr p T MaxLen) :
 /-- `embed` never exceeds the concrete `len` (it is a `take`). -/
 lemma embed_length_le_len_toNat {p T MaxLen} (v : Repr p T MaxLen) :
     (embed v).length ≤ (len v).toNat := by
-  -- `length (take n l) = min n l.length ≤ n`.
   simpa [embed_length_eq_min_len_toNat (v := v)] using Nat.min_le_left (len v).toNat MaxLen.toNat
 
 /-- `embed` always fits in capacity, regardless of `len`. -/
 lemma embed_length_le_MaxLen {p T MaxLen} (v : Repr p T MaxLen) :
     (embed v).length ≤ MaxLen.toNat := by
-  -- `embed` is always a `take` of a list of length `MaxLen`.
   simp [embed, active, List.length_take, storage, List.Vector.toList_length, Nat.min_le_right]
 
 /-- `bounded` implies the semantic no-truncation condition. -/
@@ -125,9 +120,7 @@ lemma len_get_modify_lenLens {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
 lemma storage_get_modify_lenLens {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
     (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true) :
     storage (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) = storage v := by
-  -- Unfold the lens update and then reduce the tuple projection.
   simp [lenLens, storage, Lens.modify, Lens.get, Access.get, Access.modify, Option.get_some]
-  -- `replaceTuple'` at `.head.tail` does not affect the `.head` projection.
   cases v <;> rfl
 
 /-- Updating `len` with `lenLens` preserves the concrete `bounded` fact when the new `len` fits. -/
@@ -135,22 +128,21 @@ lemma bounded_get_modify_lenLens_of_toNat_le {p T MaxLen} (v : Repr p T MaxLen) 
     (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true)
     (hn : n.toNat ≤ MaxLen.toNat) :
     bounded (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) := by
-  -- `bounded` is a property of `(len _).toNat`; `len_get_modify_lenLens` gives `len = n`.
   simpa [bounded, len_get_modify_lenLens (v := v) (n := n) (h := h)] using hn
 
 /-- Updating `len` with `lenLens` yields a semantically well-formed representation when the new `len` fits. -/
 lemma wellFormed_get_modify_lenLens_of_toNat_le {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
     (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true)
     (hn : n.toNat ≤ MaxLen.toNat) :
-    wellFormed (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) := by
-  exact wellFormed_of_bounded (bounded_get_modify_lenLens_of_toNat_le (v := v) (n := n) (h := h) hn)
+    wellFormed (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) :=
+  wellFormed_of_bounded (bounded_get_modify_lenLens_of_toNat_le (v := v) (n := n) (h := h) hn)
 
 /-- Variant of `wellFormed_get_modify_lenLens_of_toNat_le` that takes a `BitVec` inequality. -/
 lemma wellFormed_get_modify_lenLens_of_le {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
     (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true)
     (hn : n ≤ MaxLen) :
-    wellFormed (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) := by
-  exact wellFormed_get_modify_lenLens_of_toNat_le (v := v) (n := n) (h := h) ((BitVec.le_def).1 hn)
+    wellFormed (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) :=
+  wellFormed_get_modify_lenLens_of_toNat_le (v := v) (n := n) (h := h) ((BitVec.le_def).1 hn)
 
 /-- For an `array : T.array Len`, the runtime `Vector.length` cast back to `U 32` is exactly `Len`. -/
 lemma u32_cast_vector_length_array_eq {p} {T : Tp} {Len : U 32} (array : Tp.denote p (T.array Len)) :
@@ -167,9 +159,7 @@ lemma embed_nil_of_len_zero {p T MaxLen} {v : Repr p T MaxLen}
 lemma embed_getElem_toList {p T MaxLen} {self : Repr p T MaxLen} (i : Nat)
     (hxs : i < (embed self).length) (hstorage : i < (storage self).toList.length) :
     (embed self)[i]'hxs = (storage self).toList[i]'hstorage := by
-  -- `embed self` is `take (len self)` of `storage.toList`.
   have hxs' : i < (len self).toNat := by
-    -- `length (take n l) = min n l.length`
     have : (embed self).length = Nat.min (len self).toNat (storage self).toList.length := by
       simp [embed, active, List.length_take]
     have hmin : i < Nat.min (len self).toNat (storage self).toList.length := by
@@ -193,29 +183,23 @@ lemma BV_of_wellFormed_embed {p : Prime} {T : Tp} {MaxLen : U 32}
 theorem List.take_set {α : Type _} (l : List α) (n i : Nat) (a : α) :
     List.take n (l.set i a) = (List.take n l).set i a := by
   induction l generalizing n i with
-  | nil =>
-    cases n <;> cases i <;> simp [List.take, List.set]
+  | nil => cases n <;> cases i <;> simp [List.take, List.set]
   | cons x xs ih =>
     cases n with
-    | zero =>
-      simp [List.take]
+    | zero => simp [List.take]
     | succ n =>
       cases i with
-      | zero =>
-        simp [List.take, List.set]
-      | succ i =>
-        simp [List.take, List.set, ih]
+      | zero => simp [List.take, List.set]
+      | succ i => simp [List.take, List.set, ih]
 
 theorem List.take_succ_set_eq_take_append {α : Type _} (l : List α) (n : Nat) (a : α)
     (hn : n < l.length) :
     List.take (n + 1) (l.set n a) = List.take n l ++ [a] := by
   induction l generalizing n with
-  | nil =>
-    cases hn
+  | nil => cases hn
   | cons x xs ih =>
     cases n with
-    | zero =>
-      simp [List.take, List.set]
+    | zero => simp [List.take, List.set]
     | succ n =>
       have hn' : n < xs.length := by simpa using hn
       simpa [List.take, List.set] using (ih (n := n) hn')
@@ -227,8 +211,7 @@ theorem List.take_succ_eq_take_append_get {α : Type _} (l : List α) (n : Nat)
   | nil => cases hn
   | cons x xs ih =>
     cases n with
-    | zero =>
-      simp [List.take]
+    | zero => simp [List.take]
     | succ n =>
       have hn' : n < xs.length := by simpa using hn
       simpa [List.take] using (ih (n := n) hn')
@@ -236,14 +219,12 @@ theorem List.take_succ_eq_take_append_get {α : Type _} (l : List α) (n : Nat)
 theorem BitVec.toNat_add_one_of_lt {x : U 32} (hx : x.toNat + 1 < 2 ^ 32) :
     (x + 1).toNat = x.toNat + 1 := by
   simp only [BitVec.ofNat_eq_ofNat, BitVec.toNat_add, BitVec.toNat_ofNat, Nat.add_mod_mod]
-  have hx' : x.toNat + 1 < 4294967296 := by linarith [hx]
-  rw [Nat.mod_eq_of_lt hx']
+  rw [Nat.mod_eq_of_lt (by linarith [hx])]
 
 theorem BitVec.toNat_add_of_lt {x y : U 32} (hxy : x.toNat + y.toNat < 2 ^ 32) :
     (x + y).toNat = x.toNat + y.toNat := by
   simp only [BitVec.ofNat_eq_ofNat, BitVec.toNat_add, BitVec.toNat_ofNat, Nat.add_mod_mod]
-  have hxy' : x.toNat + y.toNat < 4294967296 := by linarith [hxy]
-  rw [Nat.mod_eq_of_lt hxy']
+  rw [Nat.mod_eq_of_lt (by linarith [hxy])]
 
 lemma bitvec_ofNat_eq_of_toNat_eq {i : Nat} {x : U 32} (h : i = x.toNat) :
     BitVec.ofNat 32 i = x := by
@@ -254,70 +235,32 @@ lemma bitvec_ofNat_eq_of_toNat_eq {i : Nat} {x : U 32} (h : i = x.toNat) :
   simpa using (BitVec.ofNatLT_eq_ofNat (w := 32) (n := i) h)
 
 lemma lt_two_pow_of_lt_maxLen {i : Nat} {MaxLen : U 32} (hhi : i < MaxLen.toNat) :
-    i < 2 ^ 32 := by
-  have hmax : MaxLen.toNat < 2 ^ 32 := by
-    simpa using
-      (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
-  exact lt_trans hhi hmax
+    i < 2 ^ 32 :=
+  lt_trans hhi (by simpa using BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
 
 lemma nat_lt_of_bv_lt {i : Nat} {x : U 32}
     (hhi : i < 2 ^ 32) (hcond : (BitVec.ofNat 32 i) < x) : i < x.toNat := by
-  have hcond' : (BitVec.ofNat 32 i).toNat < x.toNat := by
-    simpa [BitVec.lt_def] using hcond
-  have hhi' : i < 4294967296 := by
-    simpa using hhi
-  have hcond'' : i % 4294967296 < x.toNat := by
-    simpa [BitVec.toNat_ofNat] using hcond'
-  simpa [Nat.mod_eq_of_lt hhi'] using hcond''
+  rw [BitVec.lt_def, BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by simpa using hhi)] at hcond
+  exact hcond
 
 lemma nat_le_of_bv_le {i : Nat} {x : U 32}
     (hhi : i < 2 ^ 32) (hcond : x ≤ BitVec.ofNat 32 i) : x.toNat ≤ i := by
-  have hcond' : x.toNat ≤ (BitVec.ofNat 32 i).toNat := by
-    simpa [BitVec.le_def] using hcond
-  have hhi' : i < 4294967296 := by
-    simpa using hhi
-  have hcond'' : x.toNat ≤ i % 4294967296 := by
-    simpa [BitVec.toNat_ofNat] using hcond'
-  simpa [Nat.mod_eq_of_lt hhi'] using hcond''
+  rw [BitVec.le_def, BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by simpa using hhi)] at hcond
+  exact hcond
 
 lemma decide_ofNat_eq_toNat {i : Nat} {x : U 32} (pf : i < 2 ^ 32) :
     decide (BitVec.ofNat 32 i = x) = decide (i = x.toNat) := by
-  by_cases hxi : i = x.toNat
-  ·
-    have hbx : BitVec.ofNat 32 i = x := by
-      simpa using (bitvec_ofNat_eq_of_toNat_eq (i := i) (x := x) hxi)
-    simp [hxi, hbx]
-  ·
-    have pf' : i < 4294967296 := by simpa using pf
-    have hbx : BitVec.ofNat 32 i ≠ x := by
-      intro hbx
-      have hbx_toNat : (BitVec.ofNat 32 i).toNat = x.toNat := by
-        simpa using congrArg BitVec.toNat hbx
-      have hmod : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-      have : i = x.toNat := by
-        have hbx_toNat' : i % 4294967296 = x.toNat := by
-          simpa [BitVec.toNat_ofNat] using hbx_toNat
-        simpa [hmod] using hbx_toNat'
-      exact hxi this
-    simp [hxi, hbx]
+  simp only [decide_eq_decide]
+  exact ⟨fun h => by rw [← h, BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by simpa using pf)],
+         bitvec_ofNat_eq_of_toNat_eq⟩
 
 lemma decide_lt_succ_eq {a b : Nat} :
     decide (a < b + 1) = (decide (a < b) || decide (a = b)) := by
-  by_cases h1 : a < b
-  ·
-    have h2 : a < b + 1 := Nat.lt_trans h1 (Nat.lt_succ_self b)
-    simp [h1, h2, Nat.ne_of_lt h1]
-  ·
-    have h1' : a = b ∨ b < a := Nat.eq_or_lt_of_not_lt h1
-    cases h1' with
-    | inl hEq =>
-        have h2 : a < b + 1 := by simpa [hEq] using Nat.lt_succ_self b
-        simp [h1, hEq, h2]
-    | inr hGt =>
-        have h2 : ¬ a < b + 1 := by
-          have hle : b + 1 ≤ a := Nat.succ_le_iff.mpr hGt
-          exact Nat.not_lt_of_ge hle
-        simp [h1, h2, Nat.ne_of_gt hGt]
+  rcases Nat.lt_or_ge a b with h | h
+  · simp [h, Nat.lt_trans h (Nat.lt_succ_self b), Nat.ne_of_lt h]
+  · rcases Nat.eq_or_lt_of_not_lt (Nat.not_lt_of_ge h) with rfl | h'
+    · simp
+    · simp [Nat.not_lt_of_ge h, Nat.not_lt_of_ge (Nat.succ_le_of_lt h'), Nat.ne_of_gt h']
 
 lemma decide_lt_succ_eq_bv {i : Nat} {x : U 32} (pf : i < 2 ^ 32) :
     decide (x.toNat < i + 1) =
@@ -330,33 +273,19 @@ lemma decide_lt_succ_eq_bv {i : Nat} {x : U 32} (pf : i < 2 ^ 32) :
 theorem vector_set_proof_irrel {n : Nat} {α : Type _} (v : List.Vector α n) (i : Nat)
     (h1 h2 : i < n) (x : α) :
     List.Vector.set v ⟨i, h1⟩ x = List.Vector.set v ⟨i, h2⟩ x := by
-  have : (⟨i, h1⟩ : Fin n) = ⟨i, h2⟩ := by apply Fin.ext; rfl
-  simp [this]
+  simp [show (⟨i, h1⟩ : Fin n) = ⟨i, h2⟩ from Fin.ext rfl]
 
 theorem vector_get_proof_irrel {n : Nat} {α : Type _} (v : List.Vector α n) (i : Nat)
     (h1 h2 : i < n) :
     List.Vector.get v ⟨i, h1⟩ = List.Vector.get v ⟨i, h2⟩ := by
-  have : (⟨i, h1⟩ : Fin n) = ⟨i, h2⟩ := by apply Fin.ext; rfl
-  simp [this]
+  simp [show (⟨i, h1⟩ : Fin n) = ⟨i, h2⟩ from Fin.ext rfl]
 
 lemma embed_eq_set_of_storage_set {p T MaxLen} {v v' : Repr p T MaxLen}
     (i : Nat) (hi : i < MaxLen.toNat) (a : T.denote p)
     (hlen : len v' = len v)
     (hstorage : storage v' = (storage v).set ⟨i, hi⟩ a) :
     embed v' = (embed v).set i a := by
-  calc
-    embed v' = List.take (len v').toNat (storage v').toList := by
-      simp [embed, active]
-    _ = List.take (len v).toNat (storage v').toList := by
-      simp [hlen]
-    _ = List.take (len v).toNat ((storage v).set ⟨i, hi⟩ a).toList := by
-      simp [hstorage]
-    _ = List.take (len v).toNat ((storage v).toList.set i a) := by
-      simp [List.Vector.toList_set]
-    _ = (List.take (len v).toNat (storage v).toList).set i a := by
-      simp [List.take_set (l := (storage v).toList) (n := (len v).toNat) (i := i) (a := a)]
-    _ = (embed v).set i a := by
-      simp [embed, active]
+  simp only [embed, active, hstorage, hlen, List.Vector.toList_set, List.take_set]
 
 lemma embed_eq_append_of_storage_set_at_len {p T MaxLen} {v v' : Repr p T MaxLen}
     (a : T.denote p)
@@ -367,30 +296,20 @@ lemma embed_eq_append_of_storage_set_at_len {p T MaxLen} {v v' : Repr p T MaxLen
     embed v' = embed v ++ [a] := by
   have hmax : MaxLen.toNat < 2 ^ 32 := by
     simpa using (BitVec.toNat_lt_twoPow_of_le (m := 32) (n := 32) (x := MaxLen) (by rfl))
-  have hx32 : (len v).toNat + 1 < 2 ^ 32 := by
-    exact lt_of_le_of_lt (Nat.succ_le_of_lt hpush) hmax
+  have hx32 : (len v).toNat + 1 < 2 ^ 32 :=
+    lt_of_le_of_lt (Nat.succ_le_of_lt hpush) hmax
   have htoNat_v' : (len v').toNat = (len v).toNat + 1 := by
-    have h1 : (len v').toNat = (len v + 1).toNat := by simp [hlen]
-    calc
-      (len v').toNat = (len v + 1).toNat := h1
-      _ = (len v).toNat + 1 := by
-        simpa using (BitVec.toNat_add_one_of_lt (x := len v) hx32)
+    simp [hlen]; simpa using (BitVec.toNat_add_one_of_lt (x := len v) hx32)
   have hstor_len : (len v).toNat < (storage v).toList.length := by
     simpa [storage, List.Vector.toList_length] using hpush
-  have hstorage_toList :
-      (storage v').toList = (storage v).toList.set (len v).toNat a := by
-    simp [hstorage, List.Vector.toList_set]
   calc
     embed v' = List.take (len v').toNat (storage v').toList := by
       simp [embed, active]
     _ = List.take ((len v).toNat + 1) ((storage v).toList.set (len v).toNat a) := by
-      simp [htoNat_v', hstorage_toList]
+      simp [htoNat_v', hstorage, List.Vector.toList_set]
     _ = List.take (len v).toNat (storage v).toList ++ [a] := by
-      simpa using
-        (List.take_succ_set_eq_take_append (l := (storage v).toList) (n := (len v).toNat) (a := a)
-          (hn := hstor_len))
-    _ = embed v ++ [a] := by
-      simp [embed, active]
+      simpa using List.take_succ_set_eq_take_append (storage v).toList (len v).toNat a hstor_len
+    _ = embed v ++ [a] := by simp [embed, active]
 
 /-! ### `pop`-style semantic lemmas -/
 
@@ -398,70 +317,46 @@ lemma toNat_len_sub_one {p T MaxLen} {v : Repr p T MaxLen}
     (hnonzero : (0 : U 32) < len v) :
     (len v - 1).toNat = (len v).toNat - 1 := by
   have h1le : (1 : U 32) ≤ len v := by
-    rw [BitVec.le_def]
-    have : 0 < (len v).toNat := by
-      rw [BitVec.lt_def] at hnonzero
-      simpa using hnonzero
-    exact Nat.succ_le_of_lt this
-  simpa using (BitVec.toNat_sub_of_le (x := len v) (y := (1 : U 32)) h1le)
+    rw [BitVec.le_def]; simpa [BitVec.lt_def] using hnonzero
+  simpa using BitVec.toNat_sub_of_le h1le
 
 lemma embed_dropLast_eq_take_pred {p T MaxLen} {v : Repr p T MaxLen}
     (hb : bounded v) (hnonempty : embed v ≠ []) :
     (embed v).dropLast = List.take ((len v).toNat - 1) (storage v).toList := by
-  have hlenE : (embed v).length = (len v).toNat := embed_length_eq_len_toNat (v := v) hb
-  calc
-    (embed v).dropLast = List.take ((embed v).length - 1) (embed v) := by
-      simp [List.dropLast_eq_take]
-    _ = List.take ((len v).toNat - 1) (embed v) := by
-      simp [hlenE]
+  have hlenE := embed_length_eq_len_toNat hb
+  calc (embed v).dropLast
+      = List.take ((embed v).length - 1) (embed v) := by simp [List.dropLast_eq_take]
+    _ = List.take ((len v).toNat - 1) (embed v) := by simp [hlenE]
     _ = List.take ((len v).toNat - 1) (List.take (len v).toNat (storage v).toList) := by
-      simp [embed, active]
+        simp [embed, active]
     _ = List.take (Nat.min ((len v).toNat - 1) (len v).toNat) (storage v).toList := by
-      simp [List.take_take]
+        simp [List.take_take]
     _ = List.take ((len v).toNat - 1) (storage v).toList := by
-      have : (len v).toNat - 1 ≤ (len v).toNat := Nat.sub_le _ _
-      simp [Nat.min_eq_left this]
+        simp [Nat.min_eq_left (Nat.sub_le _ _)]
 
 lemma embed_getLast_eq_storage_get {p T MaxLen} {v : Repr p T MaxLen}
     (hb : bounded v) (hnonempty : embed v ≠ [])
     (hnonzero : (0 : U 32) < len v) (hlast : (len v - 1).toNat < MaxLen.toNat) :
     (embed v).getLast hnonempty = (storage v)[(len v - 1).toNat]'hlast := by
-  have hlenE : (embed v).length = (len v).toNat := embed_length_eq_len_toNat (v := v) hb
-  have htoNat_sub : (len v - 1).toNat = (len v).toNat - 1 := toNat_len_sub_one (v := v) hnonzero
+  have hlenE := embed_length_eq_len_toNat hb
+  have htoNat_sub := toNat_len_sub_one (v := v) hnonzero
   have hpos_len : 0 < (len v).toNat := by
-    rw [BitVec.lt_def] at hnonzero
-    simpa using hnonzero
+    rw [BitVec.lt_def] at hnonzero; simpa using hnonzero
   have hidx_lt_len : (len v - 1).toNat < (embed v).length := by
-    have hpred : (len v).toNat - 1 < (len v).toNat :=
-      Nat.pred_lt (Nat.ne_of_gt hpos_len)
-    have : (len v - 1).toNat < (len v).toNat := by
-      -- avoid expanding `BitVec.toNat` subtraction into modular arithmetic
-      rw [htoNat_sub]
-      exact hpred
-    simpa [hlenE] using this
+    rw [hlenE, htoNat_sub]; exact Nat.sub_lt hpos_len Nat.one_pos
   have hstorageLen : (len v - 1).toNat < (storage v).toList.length := by
     simpa [storage, List.Vector.toList_length] using hlast
-  have hget :
-      (embed v)[(len v - 1).toNat]'hidx_lt_len =
-        (storage v).toList[(len v - 1).toNat]'hstorageLen := by
-    simpa using
-      (embed_getElem_toList (self := v) (i := (len v - 1).toNat)
-        (hxs := hidx_lt_len) (hstorage := hstorageLen))
   have hlenIdx : (embed v).length - 1 = (len v - 1).toNat := by
-    calc
-      (embed v).length - 1 = (len v).toNat - 1 := by simp [hlenE]
-      _ = (len v - 1).toNat := by simpa using (Eq.symm htoNat_sub)
-  have hlastEq :
-      (embed v).getLast hnonempty = (embed v)[(len v - 1).toNat]'hidx_lt_len := by
+    calc (embed v).length - 1 = (len v).toNat - 1 := by simp [hlenE]
+      _ = (len v - 1).toNat := by simpa using htoNat_sub.symm
+  have hlastEq : (embed v).getLast hnonempty = (embed v)[(len v - 1).toNat]'hidx_lt_len := by
     simpa [hlenIdx] using (List.getLast_eq_getElem (l := embed v) hnonempty)
-  calc
-    (embed v).getLast hnonempty
-        = (embed v)[(len v - 1).toNat]'hidx_lt_len := by
-          simpa using hlastEq
+  calc (embed v).getLast hnonempty
+      = (embed v)[(len v - 1).toNat]'hidx_lt_len := by simpa using hlastEq
     _ = (storage v).toList[(len v - 1).toNat]'hstorageLen := by
-          simpa using hget
+        simpa using embed_getElem_toList _ hidx_lt_len hstorageLen
     _ = (storage v)[(len v - 1).toNat]'hlast := by
-          simp [List.Vector.getElem_def, storage]
+        simp [List.Vector.getElem_def, storage]
 
 lemma embed_eq_dropLast_of_pop_update {p T MaxLen} {v v' : Repr p T MaxLen}
     (hb : bounded v) (hnonempty : embed v ≠ [])
@@ -470,32 +365,12 @@ lemma embed_eq_dropLast_of_pop_update {p T MaxLen} {v v' : Repr p T MaxLen}
     (hlast : (len v - 1).toNat < MaxLen.toNat)
     (hstorage : storage v' = (storage v).set ⟨(len v - 1).toNat, hlast⟩ (Tp.zero p T)) :
     embed v' = (embed v).dropLast := by
-  have htoNat_sub : (len v - 1).toNat = (len v).toNat - 1 := toNat_len_sub_one (v := v) hnonzero
-  have hdrop : (embed v).dropLast = List.take ((len v).toNat - 1) (storage v).toList :=
-    embed_dropLast_eq_take_pred (v := v) hb hnonempty
-  -- `embed v'` is `take (len-1)` of the updated storage; setting at index `len-1` is not observed.
-  have hset_noop :
-      (List.take (len v').toNat (storage v).toList).set (len v - 1).toNat (Tp.zero p T) =
-        List.take (len v').toNat (storage v).toList := by
-    apply List.set_eq_of_length_le
-    have ht : (List.take (len v').toNat (storage v).toList).length ≤ (len v').toNat := by
-      simpa using (List.length_take_le (n := (len v').toNat) (l := (storage v).toList))
-    -- `len v' = len v - 1` so the index is exactly `len v'`
-    simpa [hlen] using ht
-  calc
-    embed v' = List.take (len v').toNat (storage v').toList := by
-      simp [embed, active]
-    _ = List.take (len v').toNat ((storage v).toList.set (len v - 1).toNat (Tp.zero p T)) := by
-      simp [hstorage, List.Vector.toList_set]
-    _ = (List.take (len v').toNat (storage v).toList).set (len v - 1).toNat (Tp.zero p T) := by
-      simpa using
-        (List.take_set (l := (storage v).toList) (n := (len v').toNat)
-          (i := (len v - 1).toNat) (a := Tp.zero p T))
-    _ = List.take (len v').toNat (storage v).toList := hset_noop
-    _ = List.take ((len v).toNat - 1) (storage v).toList := by
-      have hv : (len v').toNat = (len v - 1).toNat := by simp [hlen]
-      rw [hv, htoNat_sub]
-    _ = (embed v).dropLast := by simp [hdrop]
+  have htoNat_sub := toNat_len_sub_one (v := v) hnonzero
+  rw [embed_dropLast_eq_take_pred hb hnonempty]
+  simp only [embed, active, hstorage, List.Vector.toList_set, List.take_set]
+  conv_lhs => rw [List.set_eq_of_length_le (by simp [hlen, List.length_take_le])]
+  have hv : (len v').toNat = (len v - 1).toNat := by simp [hlen]
+  rw [hv, htoNat_sub]
 
 section BVNat
 
