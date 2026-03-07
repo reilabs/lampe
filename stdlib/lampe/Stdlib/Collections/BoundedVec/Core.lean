@@ -518,4 +518,47 @@ lemma nat_lt_4294967296 {n : Nat} (h : n < 2 ^ 32) :
 
 end BVNat
 
+/-! ### List helper for extend_from loop bodies -/
+
+/-- One step of the extend_from copy-loop: given that `take (offset + i) storage = prefix ++ source.take i`,
+setting `storage[offset + i] := source[i]` extends the equation to `i + 1`. -/
+theorem List.take_set_extends {α : Type _} {l : List α} {prefix_ source : List α}
+    {offset i : Nat}
+    (h_take : l.take (offset + i) = prefix_ ++ source.take i)
+    (h_stor : offset + i < l.length)
+    (h_src : i < source.length) :
+    (l.set (offset + i) (source[i]'h_src)).take (offset + (i + 1)) =
+      prefix_ ++ source.take (i + 1) := by
+  calc
+    (l.set (offset + i) (source[i]'h_src)).take (offset + (i + 1)) =
+      l.take (offset + i) ++ [source[i]'h_src] := by
+      simpa using List.take_succ_set_eq_take_append l (offset + i) (source[i]'h_src) h_stor
+    _ = (prefix_ ++ source.take i) ++ [source[i]'h_src] := by rw [h_take]
+    _ = prefix_ ++ (source.take i ++ [source[i]'h_src]) := by rw [List.append_assoc]
+    _ = prefix_ ++ source.take (i + 1) := by
+      congr 1; symm
+      simpa using List.take_succ_eq_take_append_get source i h_src
+
+/-- Given `len v = len self` and `(len self).toNat + i < 2^32`,
+compute that `(v.2.1 + i) % 4294967296 = (len self).toNat + i`. -/
+theorem extend_loop_idx_mod {p T MaxLen} {v self : Repr p T MaxLen} {i : Nat}
+    (hlenV : len v = len self)
+    (hi_lt : (len self).toNat + i < 2 ^ 32) :
+    (BitVec.toNat v.2.1 + i) % 4294967296 = (len self).toNat + i := by
+  have hlenVNat' : BitVec.toNat v.2.1 = (len self).toNat := by simpa [len] using congrArg BitVec.toNat hlenV
+  simpa [hlenVNat'] using nat_mod_4294967296 (by simpa [hlenVNat'] using hi_lt)
+
+/-- Given `len v = len self` and `(len self).toNat + i < 2^32`,
+the index `len v + ofNat 32 i` has toNat equal to `(len self).toNat + i`. -/
+theorem extend_loop_idx_toNat {p T MaxLen} {v self : Repr p T MaxLen} {i : Nat}
+    (hlenV : len v = len self) (hi32 : i < 2 ^ 32)
+    (hi_lt : (len self).toNat + i < 2 ^ 32) :
+    (len v + BitVec.ofNat 32 i).toNat = (len self).toNat + i := by
+  have hlenVNat : (len v).toNat = (len self).toNat := by simpa using congrArg BitVec.toNat hlenV
+  have htoNat_i := ofNat32_toNat hi32
+  have hsum_lt' : (len v).toNat + (BitVec.ofNat 32 i).toNat < 2 ^ 32 := by
+    simpa [hlenVNat, htoNat_i] using hi_lt
+  simpa [hlenVNat, htoNat_i] using BitVec.toNat_add_of_lt (x := len v) (y := BitVec.ofNat 32 i) hsum_lt'
+
+
 end Lampe.Stdlib.Collections.BoundedVec
