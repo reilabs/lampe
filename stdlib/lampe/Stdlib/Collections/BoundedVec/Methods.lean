@@ -165,10 +165,7 @@ theorem set_unchecked_spec {p T MaxLen selfRef self index value}
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::set_unchecked».call h![T, MaxLen]
         h![selfRef, index, value])
-      (fun _ =>
-        ∃∃ v',
-          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
-            ⟦wellFormed v' ∧ embed v' = (embed self).set index.toNat value⟧) := by
+      (fun _ => BV (MaxLen := MaxLen) selfRef ((embed self).set index.toNat value)) := by
   have hb : bounded self := bounded_of_wellFormed hwf
   exact STHoare.consequence_post
     (set_unchecked_concrete_spec (p := p) (T := T) (MaxLen := MaxLen)
@@ -216,10 +213,7 @@ theorem set_spec {p T MaxLen selfRef self index value}
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::set».call h![T, MaxLen]
         h![selfRef, index, value])
-      (fun _ =>
-        ∃∃ v',
-          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
-            ⟦wellFormed v' ∧ embed v' = (embed self).set index.toNat value⟧) := by
+      (fun _ => BV (MaxLen := MaxLen) selfRef ((embed self).set index.toNat value)) := by
   have hbounded : bounded self := bounded_of_wellFormed hwf
   have hlen : (embed self).length = (len self).toNat := hwf
   have hindex_len : index.toNat < (len self).toNat := by
@@ -295,10 +289,7 @@ theorem push_spec {p T MaxLen selfRef self elem}
       [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
       («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::push».call h![T, MaxLen]
         h![selfRef, elem])
-      (fun _ =>
-        ∃∃ v',
-          [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
-            ⟦wellFormed v' ∧ embed v' = embed self ++ [elem]⟧) := by
+      (fun _ => BV (MaxLen := MaxLen) selfRef (embed self ++ [elem])) := by
   have hbounded : bounded self := bounded_of_wellFormed hwf
   have hlen : (embed self).length = (len self).toNat := hwf
   have hpush : (len self).toNat < MaxLen.toNat := by
@@ -630,7 +621,6 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
     ·
       have hlenVNat : (len v).toNat = (len self).toNat := by
         simpa using congrArg BitVec.toNat hlenV
-      have hi32' := nat_lt_4294967296 hi32
       have htoNat_i := ofNat32_toNat hi32
       have hsum_lt' : (len v).toNat + (BitVec.ofNat 32 i).toNat < 2 ^ 32 := by
         have : (len self).toNat + i < 2 ^ 32 := by
@@ -705,10 +695,9 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
     rcases hinv with ⟨hlenV, htakeV⟩
     have hsum_lt_final : (len self).toNat + Len.toNat < 2 ^ 32 :=
       lt_of_le_of_lt hspace hMax_lt
-    have hmod := nat_mod_4294967296 hsum_lt_final
     have hmod_simp : ((BitVec.toNat self.2.1 + BitVec.toNat Len) % 4294967296) =
         BitVec.toNat self.2.1 + BitVec.toNat Len := by
-      simpa [len] using hmod
+      simpa [len] using nat_mod_4294967296 hsum_lt_final
     constructor
     ·
       simpa [lenLens, len] using
@@ -815,7 +804,6 @@ theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
     ·
       have hlenVNat : (len v).toNat = (len self).toNat := by
         simpa using congrArg BitVec.toNat hlenV
-      have hi32' := nat_lt_4294967296 hi32
       have htoNat_i := ofNat32_toNat hi32
       have hsum_lt' : (len v).toNat + (BitVec.ofNat 32 i).toNat < 2 ^ 32 := by
         have : (len self).toNat + i < 2 ^ 32 := by
@@ -882,10 +870,9 @@ theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
     rcases hinv with ⟨hlenV, htakeV⟩
     have hsum_lt_final : (len self).toNat + slice.length < 2 ^ 32 :=
       lt_of_le_of_lt hspace hMax_lt
-    have hmod := nat_mod_4294967296 hsum_lt_final
     have hmod_simp : ((BitVec.toNat self.2.1 + List.length slice) % 4294967296) =
         BitVec.toNat self.2.1 + List.length slice := by
-      simpa [len] using hmod
+      simpa [len] using nat_mod_4294967296 hsum_lt_final
     constructor
     ·
       refine wellFormed_get_modify_lenLens_of_le (v := v) (n := _) (h := h_isSome) ?_
@@ -893,11 +880,11 @@ theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
     ·
       have htakeSlice : slice.take slice.length = slice := by
         simp
-      have hmodSlice := nat_mod_4294967296 hslen_lt
       have htakeV' :
           List.take ((len self).toNat + slice.length) (storage v).toList =
             embed self ++ slice.take slice.length := by
-        simpa [hmodSlice, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using htakeV
+        simpa [nat_mod_4294967296 hslen_lt, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+          using htakeV
       simpa [embed, active, storage, len, hmod_simp, htakeSlice] using htakeV'
 
 theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
@@ -1127,9 +1114,9 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
     ·
       have hsum_lt' : BitVec.toNat self.2.1 + BitVec.toNat vec.2.1 < 2 ^ 32 := by
         simpa [len] using hsum_lt
-      have hmod' := nat_mod_4294967296 hsum_lt'
       simpa [v', hv', embed, active, storage, len, Lens.modify, Lens.get, Access.get, Access.modify,
-        Option.get_some, Builtin.indexTpl, Builtin.replaceTuple', hmod'] using htakeV
+        Option.get_some, Builtin.indexTpl, Builtin.replaceTuple', nat_mod_4294967296 hsum_lt']
+        using htakeV
 
 theorem from_parts_spec {p T MaxLen arr l}
     (hb : l.toNat ≤ MaxLen.toNat) :

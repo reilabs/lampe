@@ -99,55 +99,6 @@ private lemma storage_get_eq_embed_get_of_toNat {p T MaxLen} (self : Repr p T Ma
     _ = (storage self).toList[i]'hstorage := by simp [htoNat]
     _ = (embed self)[i]'hi := by simpa using hembed.symm
 
-private lemma take_succ_set_eq_map {α β : Type _} (f : α → β) (xs : List α) (l : List β) (i : Nat)
-    (hi_xs : i < xs.length) (hi_l : i < l.length)
-    (htake : List.take i l = (xs.take i).map f) :
-    List.take (i + 1) (l.set i (f (xs[i]'hi_xs))) = (xs.take (i + 1)).map f := by
-  have htake_set :
-      List.take (i + 1) (l.set i (f (xs[i]'hi_xs))) = List.take i l ++ [f (xs[i]'hi_xs)] := by
-    simpa using
-      (List.take_succ_set_eq_take_append (l := l) (n := i) (a := f (xs[i]'hi_xs)) hi_l)
-  have htake_xs : xs.take (i + 1) = xs.take i ++ [xs[i]'hi_xs] := by
-    simpa using (List.take_succ_eq_take_append_get (l := xs) (n := i) (hn := hi_xs))
-  calc
-    List.take (i + 1) (l.set i (f (xs[i]'hi_xs))) =
-        List.take i l ++ [f (xs[i]'hi_xs)] := htake_set
-    _ = (xs.take i).map f ++ [f (xs[i]'hi_xs)] := by simp [htake]
-    _ = ((xs.take i ++ [xs[i]'hi_xs]).map f) := by
-        symm
-        simpa using (List.map_append (f := f) (l₁ := xs.take i) (l₂ := [xs[i]'hi_xs]))
-    _ = (xs.take (i + 1)).map f := by
-        rw [htake_xs]
-
-private lemma mapIdx_const_eq_map {α β : Type _} (f : α → β) (xs : List α) :
-    xs.mapIdx (fun _ a => f a) = xs.map f := by
-  induction xs with
-  | nil =>
-      simp
-  | cons x xs ih =>
-      simpa [List.mapIdx_cons, ih]
-
-private lemma take_succ_set_eq_mapIdx {α β : Type _} (f : Nat → α → β) (xs : List α) (l : List β)
-    (i : Nat) (hi_xs : i < xs.length) (hi_l : i < l.length)
-    (htake : List.take i l = (xs.take i).mapIdx f) :
-    List.take (i + 1) (l.set i (f i (xs[i]'hi_xs))) = (xs.take (i + 1)).mapIdx f := by
-  have htake_set :
-      List.take (i + 1) (l.set i (f i (xs[i]'hi_xs))) = List.take i l ++ [f i (xs[i]'hi_xs)] := by
-    simpa using
-      (List.take_succ_set_eq_take_append (l := l) (n := i) (a := f i (xs[i]'hi_xs)) hi_l)
-  have htake_xs : xs.take (i + 1) = xs.take i ++ [xs[i]'hi_xs] := by
-    simpa using (List.take_succ_eq_take_append_get (l := xs) (n := i) (hn := hi_xs))
-  have hlen_take : (xs.take i).length = i := by
-    simp [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi_xs)]
-  calc
-    List.take (i + 1) (l.set i (f i (xs[i]'hi_xs))) =
-        List.take i l ++ [f i (xs[i]'hi_xs)] := htake_set
-    _ = (xs.take i).mapIdx f ++ [f i (xs[i]'hi_xs)] := by simpa [htake]
-    _ = (xs.take (i + 1)).mapIdx f := by
-        rw [htake_xs]
-        rw [List.mapIdx_concat]
-        simpa [hlen_take]
-
 private lemma skip_postprocess {p} {H Qfinal : SLP (State p)} (hHQ : H ⊢ Qfinal) :
     STHoare p env H Expr.skip (fun _ => Qfinal) := by
   have hskipH : STHoare p env H Expr.skip (fun v => (v = ()) ⋆ H) := by
@@ -166,226 +117,6 @@ private lemma skip_postprocess {p} {H Qfinal : SLP (State p)} (hHQ : H ⊢ Qfina
     apply SLP.pure_left
     intro _
     exact SLP.star_mono_r hHQ)
-
-/-!
-Shared constrained-branch loop proof for `map`/`mapi`-like methods.
-
-The constrained branch for both methods has the shape:
-`for i in 0..MaxLen { if i < self.len { ret[i] := f(..., self[i]) } }`.
--/
-
-private theorem mapLike_constrained_loop_spec
-    {p : Prime}
-    {T : Tp} {MaxLen : U 32} {Out : Tp}
-    {Args : List Tp}
-    {self : Repr p T MaxLen}
-    {f : FuncRef Args Out}
-    {fb : HList (Tp.denote p) Args → Expr (Tp.denote p) Out}
-    {fEmb : Nat → Tp.denote p T → Tp.denote p Out}
-    {mkArgs : U 32 → Tp.denote p T → HList (Tp.denote p) Args}
-    {ret : Ref}
-    {vnew : Tp.denote p (bvTp Out MaxLen)}
-    (hb : bounded self)
-    (hmod :
-      ((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify vnew (len self)).isSome = true)
-    (inv_pure :
-      ∀ (i : U 32) (a : Tp.denote p T),
-        (hi : i.toNat < (embed self).length) →
-          STHoare p env ⟦⟧ (fb (mkArgs i a)) (fun r => r = fEmb i.toNat a)) :
-    STHoare p env
-      ([ret ↦ ⟨bvTp Out MaxLen,
-        ((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify vnew (len self)).get hmod⟩] ⋆
-        [λf ↦ fb])
-      (Expr.letIn
-        (Expr.loop (↑0) MaxLen fun i =>
-          expr!![
-            {
-              let lenFn =
-                («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
-                  as λ(${bvTp T MaxLen}) -> u32);
-              let selfLen = (lenFn as λ(${bvTp T MaxLen}) -> u32)(self);
-              let cond = (#_uLt returning bool)(i, selfLen);
-              if cond then {
-                let getUncheckedFn =
-                  («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
-                    as λ(${bvTp T MaxLen}, u32) -> T);
-                let elem = (getUncheckedFn as λ(${bvTp T MaxLen}, u32) -> T)(self, i);
-                let tmp = ${Expr.call Args Out f (mkArgs i elem)};
-                ${Expr.modifyLens (tp₁ := bvTp Out MaxLen) (tp₂ := Out) ret tmp
-                  ((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons (Access.array i))};
-                #_skip
-              }
-            }
-          ])
-        fun _ => Expr.skip)
-      (fun _ =>
-        ∃∃ v : Repr p Out MaxLen,
-          [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆ [λf ↦ fb] ⋆ ⟦bounded v ∧ embed v = (embed self).mapIdx fEmb⟧) := by
-  set xs : List (T.denote p) := embed self
-  set n : Nat := (len self).toNat
-  have hn_le : n ≤ MaxLen.toNat := by
-    simpa [n, bounded] using hb
-  have hx_len : xs.length = n := by
-    simpa [xs, n] using embed_length_eq_len_toNat (v := self) hb
-
-  let Inv : Nat → SLP (State p) :=
-    fun i =>
-      ∃∃ v : Repr p Out MaxLen,
-        [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆
-          [λf ↦ fb] ⋆
-            ⟦len v = len self ∧ bounded v ∧
-              List.take (Nat.min i n) (storage v).toList = (xs.take (Nat.min i n)).mapIdx fEmb⟧
-
-  apply (STHoare.letIn_intro (Q := fun _ => Inv MaxLen.toNat))
-  ·
-    loop_inv nat (fun i _ _ => Inv i)
-    ·
-      dsimp [Inv]
-      sl
-      constructor
-      · simp [len]
-      · constructor
-        · simpa [bounded, len] using hb
-        · simp [Nat.min_zero, Nat.zero_min]
-    ·
-      rw [SLP.star_comm]
-      apply SLP.pure_left
-      intro _
-      apply SLP.exists_intro_l
-      intro _
-      exact SLP.ent_star_top (H := Inv MaxLen.toNat)
-    ·
-      simp [Nat.zero_le MaxLen.toNat]
-    ·
-      intro i hlo hhi
-      have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-      dsimp [Inv] at *
-      steps unsafe 1 [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)] +strict
-      subst lenFn
-      steps unsafe 2 [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)] +strict
-      subst_vars
-      rename_i v hpure
-      rcases hpure with ⟨hlenV, hbV, htakeV⟩
-
-      apply STHoare.ite_intro
-      ·
-        intro hcond
-        have pf32 : i < 2 ^ 32 := by simpa using pf
-        have hi_lt : i < n := by
-          have : i < (len self).toNat :=
-            nat_lt_of_decide_bv_lt_trueLT (i := i) (x := len self) pf32 hcond
-          simpa [n] using this
-        have hi_xs : i < xs.length := by simpa [hx_len] using hi_lt
-        have hmin_i : Nat.min i n = i := Nat.min_eq_left (Nat.le_of_lt hi_lt)
-        have hmin_succ : Nat.min (i + 1) n = i + 1 := Nat.min_eq_left (Nat.succ_le_of_lt hi_lt)
-
-        have hiMax : (BitVec.ofNatLT i pf32).toNat < MaxLen.toNat := by
-          have htoNat : (BitVec.ofNatLT i pf32).toNat = i :=
-            BitVec.toNat_ofNatLT (w := 32) (x := i) (p := pf32)
-          rw [htoNat]
-          exact hhi
-        have hget :=
-          get_unchecked_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)
-            (index := BitVec.ofNatLT i pf32) (hindex := hiMax)
-        steps [hget]
-
-        let i32 : U 32 := BitVec.ofNatLT i pf32
-        have hi_toNat : i32.toNat = i := by
-          simpa [i32] using (BitVec.toNat_ofNatLT (w := 32) (x := i) (p := pf32))
-        let x : T.denote p := (storage self)[i32.toNat]'(by simpa [i32] using hiMax)
-        have hi_embed : i < (embed self).length := by simpa [xs, hx_len] using hi_lt
-        have hx' : x = xs[i]'hi_xs := by
-          have hx0 :
-              (storage self)[i32.toNat]'(by simpa [i32] using hiMax) = (embed self)[i]'hi_embed :=
-            storage_get_eq_embed_get_of_toNat (self := self) (idxNat := i32.toNat) (i := i)
-              hi_toNat (by simpa [i32] using hiMax) hi_embed
-          simpa [x, xs] using hx0
-
-        have hi_lambda_elem : i32.toNat < xs.length := by
-          simpa [hi_toNat] using hi_xs
-        subst getUncheckedFn
-        steps [hget]
-        rename_i helemEq
-        have hlamElem := inv_pure i32 elem hi_lambda_elem
-        steps [STHoare.callLambda_intro (hlam := hlamElem)]
-        rename_i uUnit
-        clear uUnit
-        rename_i hmodSome
-        rename_i htmpEq
-
-        constructor
-        ·
-          simpa [len, Lens.modify, Lens.get, Access.modify] using hlenV
-        ·
-          constructor
-          ·
-            simpa [bounded, len, Lens.modify, Lens.get, Access.modify] using hbV
-          ·
-            have helem : elem = x := by
-              simpa [x, i32] using helemEq
-            have htmp : tmp = fEmb i (xs[i]'hi_xs) := by
-              simpa [hi_toNat, helem, hx'] using htmpEq
-
-            simp [hmin_succ, storage, Lens.modify, Lens.get, Access.modify, List.Vector.toList_set, htmp]
-            have htake_i :
-                List.take i (List.Vector.toList v.1) = (xs.take i).mapIdx fEmb := by
-              simpa [storage, hmin_i] using htakeV
-            have hstor_len : i < (List.Vector.toList v.1).length := by
-              simpa [storage, List.Vector.toList_length] using hhi
-            have hstep :
-                List.take (i + 1) ((List.Vector.toList v.1).set i (fEmb i (xs[i]'hi_xs))) =
-                  (xs.take (i + 1)).mapIdx fEmb :=
-              take_succ_set_eq_mapIdx (f := fEmb) (xs := xs) (l := List.Vector.toList v.1)
-                (i := i) hi_xs hstor_len htake_i
-            have pf' : i < 4294967296 := by
-              simpa using pf32
-            have hmod : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-            simpa [hmod, hi_toNat, hx'] using hstep
-      ·
-        intro hcond
-        steps
-        have pf32 : i < 2 ^ 32 := by simpa using pf
-        have hge : n ≤ i := by
-          have : (len self).toNat ≤ i :=
-            nat_le_of_decide_bv_lt_falseLT (i := i) (x := len self) pf32 hcond
-          simpa [n] using this
-        have hmin_i : Nat.min i n = n := Nat.min_eq_right hge
-        have hmin_succ : Nat.min (i + 1) n = n :=
-          Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))
-        refine ⟨hlenV, hbV, ?_⟩
-        simpa [hmin_i, hmin_succ] using htakeV
-  ·
-    intro _
-    let Qfinal : SLP (State p) :=
-      ∃∃ v : Repr p Out MaxLen,
-        [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆ [λf ↦ fb] ⋆ ⟦bounded v ∧ embed v = xs.mapIdx fEmb⟧
-
-    have hInv_to_Q : Inv MaxLen.toNat ⊢ Qfinal := by
-      dsimp [Inv, Qfinal]
-      apply SLP.exists_intro_l
-      intro v
-      apply SLP.exists_intro_r (a := v)
-      have hpure :
-          (len v = len self ∧ bounded v ∧
-              List.take (MaxLen.toNat.min n) (storage v).toList =
-                List.mapIdx fEmb (List.take (MaxLen.toNat.min n) xs)) →
-            (bounded v ∧ embed v = xs.mapIdx fEmb) := by
-        intro hp
-        rcases hp with ⟨hlenV, hbV, htakeV⟩
-        refine ⟨hbV, ?_⟩
-        have hmin : Nat.min MaxLen.toNat n = n := Nat.min_eq_right hn_le
-        have htake_xs : xs.take n = xs := by
-          apply List.take_of_length_le
-          exact Nat.le_of_eq hx_len
-        have hlenNat : (len v).toNat = n := by
-          simpa [n] using congrArg BitVec.toNat hlenV
-        simpa [embed, active, hlenNat, hmin, htake_xs] using htakeV
-      refine SLP.star_mono SLP.entails_self ?_
-      ·
-        refine SLP.star_mono SLP.entails_self ?_
-        intro st h
-        refine ⟨hpure h.1, h.2⟩
-    exact skip_postprocess (p := p) (H := Inv MaxLen.toNat) (Qfinal := Qfinal) hInv_to_Q
 
 /-!
 Shared constrained-branch loop proof for effectful `map`/`mapi`-like methods.
@@ -635,89 +366,6 @@ private theorem mapLike_constrained_loop_effectful_spec
       simpa [hmin, htake_xs, hembed, xs] using hinv
     exact skip_postprocess (p := p) (H := Inv MaxLen.toNat) (Qfinal := Qfinal) hInv_to_Q
 
-theorem map_pure_spec {p T MaxLen Out Env self f fb fEmb}
-    (hwf_self : wellFormed self)
-    (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
-  : STHoare p env [λf ↦ fb]
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
-        h![self, f])
-      (fun r => wellFormed r ∧ embed r = (embed self).map fEmb) := by
-  enter_decl
-  -- `map` is the index-ignoring special case of `mapIdx`.
-  let fIdx : Nat → T.denote p → Out.denote p := fun _ a => fEmb a
-  have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
-
-  steps [new_spec (p := p) (T := Out) (MaxLen := MaxLen)]
-  steps [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)]
-  all_goals (try exact ())
-
-  apply (STHoare.letIn_intro
-    (Q := fun _ =>
-      ∃∃ v : Repr p Out MaxLen,
-        [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆
-          [λf ↦ fb] ⋆
-            ⟦bounded v ∧ embed v = (embed self).mapIdx fIdx⟧))
-  ·
-    apply STHoare.ite_intro_of_false rfl
-    steps
-    rename_i hmod
-
-    have inv_pure' :
-        ∀ (i : U 32) (a : Tp.denote p T),
-          (hi : i.toNat < (embed self).length) →
-            STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fIdx i.toNat a) := by
-      intro _ a _
-      simpa [fIdx] using inv_pure a
-
-    simpa [fIdx] using
-      (mapLike_constrained_loop_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out)
-        (Args := [T]) (mkArgs := fun _ a => h![a])
-        (hb := hb) (hmod := hmod) (inv_pure := inv_pure'))
-  ·
-    intro _
-    steps
-    subst_vars
-    rename_i h
-    rcases h with ⟨hb_out, hEmb⟩
-    exact ⟨(bounded_iff_wellFormed (v := _)).1 hb_out, by simpa [fIdx, mapIdx_const_eq_map] using hEmb⟩
-
-theorem mapi_pure_spec {p T MaxLen Out Env self f fb fEmb}
-    (hwf_self : wellFormed self)
-    (inv_pure : ∀ (i : U 32) (a : Tp.denote p T),
-        (hi : i.toNat < (embed self).length) →
-          STHoare p env ⟦⟧ (fb h![i, a]) (fun r => r = fEmb i.toNat a))
-  : STHoare p env [λf ↦ fb]
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
-        h![self, f])
-      (fun r => wellFormed r ∧ embed r = (embed self).mapIdx fEmb) := by
-  enter_decl
-  have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
-  steps [new_spec (p := p) (T := Out) (MaxLen := MaxLen)]
-  steps [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)]
-  all_goals (try exact ())
-
-  apply (STHoare.letIn_intro
-    (Q := fun _ =>
-      ∃∃ v : Repr p Out MaxLen,
-        [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆
-          [λf ↦ fb] ⋆
-            ⟦bounded v ∧ embed v = (embed self).mapIdx fEmb⟧))
-  ·
-    apply STHoare.ite_intro_of_false rfl
-    steps
-    rename_i hmod
-    -- Constrained branch: `for i in 0..MaxLen { if i < self.len { ret[i] := f(i, self[i]) } }`.
-    simpa using
-      (mapLike_constrained_loop_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out)
-        (Args := [Tp.u 32, T]) (mkArgs := fun i a => h![i, a])
-        (hb := hb) (hmod := hmod) (inv_pure := inv_pure))
-  ·
-    intro _
-    steps
-    subst_vars
-    rcases ‹bounded _ ∧ _› with ⟨hb_out, hEmb⟩
-    exact ⟨(bounded_iff_wellFormed (v := _)).1 hb_out, hEmb⟩
-
 /-!
 ## Effectful map spec
 
@@ -779,9 +427,7 @@ theorem map_effectful_spec {p T MaxLen Out Env self f fb}
         (hb := hb) (hmod := hmod) (inv := inv) (inv_step := inv_step'))
   ·
     intro _
-    steps
-    subst_vars
-    rename_i r hbR
+    steps_named as [r, hbR]
     sl
     ·
       rename_i hEq r' hb
@@ -827,14 +473,106 @@ theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
         (hb := hb) (hmod := hmod) (inv := inv) (inv_step := inv_step))
   ·
     intro _
-    steps
-    subst_vars
-    rename_i r hbR
+    steps_named as [r, hbR]
     sl
     ·
       rename_i hEq r' hb
       have hwf : wellFormed _ := (bounded_iff_wellFormed (v := _)).1 hEq
       simpa [hb] using hwf
+
+-- Helper entailment: `[λf ↦ fb] ⊢ ⟦P⟧ ⋆ [λf ↦ fb]` when `P` holds.
+-- Used by `map_pure_spec` and `mapi_pure_spec` to bridge from the pure precondition
+-- `[λf ↦ fb]` to the effectful precondition `⟦[] = ...⟧ ⋆ [λf ↦ fb]`.
+private lemma lambda_entails_lift_star_left
+    {p : Prime} {Args : List Tp} {Out : Tp}
+    {f : FuncRef Args Out}
+    {fb : HList (Tp.denote p) Args → Expr (Tp.denote p) Out}
+    {P : Prop} (hP : P) :
+    ([λf ↦ fb] : SLP (State p)) ⊢ ⟦P⟧ ⋆ [λf ↦ fb] :=
+  SLP.pure_right hP SLP.entails_self
+
+theorem map_pure_spec {p T MaxLen Out Env self f fb fEmb}
+    (hwf_self : wellFormed self)
+    (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
+  : STHoare p env [λf ↦ fb]
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
+        h![self, f])
+      (fun r => wellFormed r ∧ embed r = (embed self).map fEmb) := by
+  -- Corollary of `map_effectful_spec` with the pure invariant `inv ip op := ⟦op = ip.map fEmb⟧`.
+  refine STHoare.consequence
+      (H₁ := ⟦([] : List (Out.denote p)) = ([] : List (T.denote p)).map fEmb⟧ ⋆ [λf ↦ fb])
+      (Q₁ := fun r => ⟦wellFormed r⟧ ⋆ ⟦embed r = (embed self).map fEmb⟧)
+      ?_ ?_ ?_
+  · -- Pre: `[λf ↦ fb] ⊢ ⟦[] = [].map fEmb⟧ ⋆ [λf ↦ fb]`.
+    exact lambda_entails_lift_star_left (by simp)
+  · -- Post: `(⟦wellFormed r⟧ ⋆ ⟦embed r = ...⟧) ⋆ ⊤ ⊢ ⟦wellFormed r ∧ embed r = ...⟧ ⋆ ⊤`.
+    intro r
+    simp only [SLP.lift_star_lift]
+    exact SLP.entails_self
+  · refine map_effectful_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out) (Env := Env)
+        (self := self) (f := f) (fb := fb) hwf_self
+        (inv := fun ip op => ⟦op = ip.map fEmb⟧)
+        (inv_step := ?_)
+    intro ip op e _
+    -- Frame `⟦op = ip.map fEmb⟧` through `inv_pure e`, then close with pure reasoning.
+    have hspec : STHoare p env ⟦⟧ (fb h![e]) (fun r => r = fEmb e) := by simpa using inv_pure e
+    refine STHoare.consequence
+        (H₁ := ⟦⟧ ⋆ ⟦op = ip.map fEmb⟧)
+        (Q₁ := fun r => (r = fEmb e) ⋆ ⟦op = ip.map fEmb⟧)
+        (by simp only [SLP.true_star]; exact SLP.entails_self) ?_
+        (STHoare.frame (h_hoare := hspec))
+    intro r
+    simp only [SLP.lift_star_lift, SLP.star_assoc]
+    apply SLP.pure_left
+    intro ⟨hr, hop⟩
+    exact SLP.pure_right (by simp [hr, hop, List.map_append]) SLP.entails_top
+
+theorem mapi_pure_spec {p T MaxLen Out Env self f fb fEmb}
+    (hwf_self : wellFormed self)
+    (inv_pure : ∀ (i : U 32) (a : Tp.denote p T),
+        (hi : i.toNat < (embed self).length) →
+          STHoare p env ⟦⟧ (fb h![i, a]) (fun r => r = fEmb i.toNat a))
+  : STHoare p env [λf ↦ fb]
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
+        h![self, f])
+      (fun r => wellFormed r ∧ embed r = (embed self).mapIdx fEmb) := by
+  -- Corollary of `mapi_effectful_spec` with the pure invariant `inv ip op := ⟦op = ip.mapIdx fEmb⟧`.
+  refine STHoare.consequence
+      (H₁ := ⟦([] : List (Out.denote p)) = ([] : List (T.denote p)).mapIdx fEmb⟧ ⋆ [λf ↦ fb])
+      (Q₁ := fun r => ⟦wellFormed r⟧ ⋆ ⟦embed r = (embed self).mapIdx fEmb⟧)
+      ?_ ?_ ?_
+  · -- Pre: `[λf ↦ fb] ⊢ ⟦[] = [].mapIdx fEmb⟧ ⋆ [λf ↦ fb]`.
+    exact lambda_entails_lift_star_left (by simp)
+  · -- Post: `(⟦wellFormed r⟧ ⋆ ⟦embed r = ...⟧) ⋆ ⊤ ⊢ ⟦wellFormed r ∧ embed r = ...⟧ ⋆ ⊤`.
+    intro r
+    simp only [SLP.lift_star_lift]
+    exact SLP.entails_self
+  · refine mapi_effectful_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out) (Env := Env)
+        (self := self) (f := f) (fb := fb) hwf_self
+        (inv := fun ip op => ⟦op = ip.mapIdx fEmb⟧)
+        (inv_step := ?_)
+    intro ip op i e hprefix hip_len
+    -- `ip ++ [e] <+: embed self` implies `ip.length < (embed self).length`.
+    have hi_lt : ip.length < (embed self).length := by
+      have h := List.IsPrefix.length_le hprefix
+      simp [List.length_append] at h
+      omega
+    -- Frame `⟦op = ip.mapIdx fEmb⟧` through `inv_pure i e`, then close with pure reasoning.
+    have hspec : STHoare p env ⟦⟧ (fb h![i, e]) (fun r => r = fEmb i.toNat e) := by
+      simpa using inv_pure i e (hip_len ▸ hi_lt)
+    refine STHoare.consequence
+        (H₁ := ⟦⟧ ⋆ ⟦op = ip.mapIdx fEmb⟧)
+        (Q₁ := fun r => (r = fEmb i.toNat e) ⋆ ⟦op = ip.mapIdx fEmb⟧)
+        (by simp only [SLP.true_star]; exact SLP.entails_self) ?_
+        (STHoare.frame (h_hoare := hspec))
+    intro r
+    simp only [SLP.lift_star_lift, SLP.star_assoc]
+    apply SLP.pure_left
+    intro ⟨hr, hop⟩
+    apply SLP.pure_right _ SLP.entails_top
+    -- `op ++ [r] = (ip ++ [e]).mapIdx fEmb`, given `r = fEmb i.toNat e`,
+    -- `op = ip.mapIdx fEmb`, and `i.toNat = ip.length`.
+    simp [List.mapIdx_append, List.mapIdx_singleton, ← hip_len, hr, hop]
 
 theorem any_spec {p T MaxLen Env self f fb}
     (hwf_self : wellFormed self)
@@ -1038,8 +776,7 @@ theorem any_spec {p T MaxLen Env self f fb}
   ·
     -- `readRef ret` returns the final boolean.
     intro _
-    steps
-    subst_vars
+    steps_named
     sl
 
 theorem any_pure_spec {p T MaxLen Env self f fb fEmb}
