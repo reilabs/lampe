@@ -818,33 +818,57 @@ theorem any_pure_spec {p T MaxLen Env self f fb fEmb}
         simp_all only [List.any_append, List.any_cons, List.any_nil, Bool.or_false, Bool.decide_or,
           Bool.decide_eq_true, Bool.forall_bool, Bool.false_or, Bool.true_or])
 
-theorem for_each_spec {T Env p MaxLen self f fb}
-    (hwf_self : wellFormed self)
-    (Inv : List (Tp.denote p T) → SLP (State p))
-    (h_inv :
-      ∀ (lp : List (Tp.denote p T)) (e : T.denote p),
-        (lp ++ [e] <+: embed self) →
-          STHoare p env (Inv lp) (fb h![e]) (fun _ => Inv (lp ++ [e])))
+/-!
+Shared constrained-branch loop proof for effectful `for_each`/`for_eachi`-like methods.
+
+The two methods differ only in the callback argument construction:
+- `for_each`:  `f(elem)`      i.e. `Args = [T]`,       `mkArgs = fun _ a => h![a]`
+- `for_eachi`: `f(i, elem)`   i.e. `Args = [u32, T]`,  `mkArgs = fun i a => h![i, a]`
+-/
+private theorem forEachLike_constrained_loop_spec
+    {p : Prime}
+    {T : Tp} {MaxLen : U 32}
+    {Args : List Tp}
+    {self : Repr p T MaxLen}
+    {f : FuncRef Args Tp.unit}
+    {fb : HList (Tp.denote p) Args → Expr (Tp.denote p) Tp.unit}
+    {mkArgs : U 32 → Tp.denote p T → HList (Tp.denote p) Args}
+    (hb : bounded self)
+    (Inv : List (T.denote p) → SLP (State p))
+    (inv_step :
+      ∀ (ip : List (T.denote p)) (i : U 32) (e : T.denote p),
+        (ip ++ [e] <+: embed self) →
+        i.toNat = ip.length →
+          STHoare p env (Inv ip) (fb (mkArgs i e)) (fun _ => Inv (ip ++ [e])))
   : STHoare p env
       (Inv [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::for_each».call h![T, MaxLen, Env]
-        h![self, f])
+      (Expr.letIn
+        (Expr.loop (↑0) MaxLen fun i =>
+          expr!![
+            {
+              let lenFn =
+                («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
+                  as λ(${bvTp T MaxLen}) -> u32);
+              let selfLen = (lenFn as λ(${bvTp T MaxLen}) -> u32)(self);
+              let cond = (#_uLt returning bool)(i, selfLen);
+              if cond then {
+                let getUncheckedFn =
+                  («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
+                    as λ(${bvTp T MaxLen}, u32) -> T);
+                let elem = (getUncheckedFn as λ(${bvTp T MaxLen}, u32) -> T)(self, i);
+                ${Expr.call Args Tp.unit f (mkArgs i elem)};
+                #_skip
+              }
+            }
+          ])
+        fun _ => Expr.skip)
       (fun _ => Inv (embed self) ⋆ [λf ↦ fb]) := by
-  enter_decl
-  have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
   set xs : List (T.denote p) := embed self
   set n : Nat := (len self).toNat
   have hn_le : n ≤ MaxLen.toNat := by
     simpa [n, bounded] using hb
   have hx_len : xs.length = n := by
     simpa [xs, n] using embed_length_eq_len_toNat (v := self) hb
-
-  -- Reduce `isUnconstrained()` (always `false`) and enter the constrained branch.
-  steps
-  all_goals (try exact ())
-  apply STHoare.ite_intro_of_false rfl
-  steps
-
   -- Peel `let _ := (for i in 0..MaxLen { ... }) in skip`.
   apply (STHoare.letIn_intro (Q := fun _ => Inv xs ⋆ [λf ↦ fb]))
   ·
@@ -871,7 +895,10 @@ theorem for_each_spec {T Env p MaxLen self f fb}
       intro i hlo hhi
       have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
       -- The loop body checks `i < self.len()`.
-      steps [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)]
+      steps unsafe 1 [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)] +strict
+      subst lenFn
+      steps unsafe 2 [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)] +strict
+      subst_vars
       apply STHoare.ite_intro
       ·
         intro hcond
@@ -884,57 +911,63 @@ theorem for_each_spec {T Env p MaxLen self f fb}
           simpa [hx_len] using hi_lt
         have hi_embed : i < (embed self).length := by
           simpa [xs] using hi_xs
-
         -- Reduce `get_unchecked` to a direct read from `storage self`.
         have hiMax : (BitVec.ofNatLT i pf32).toNat < MaxLen.toNat := by
           have pf' : i < 4294967296 := by simpa using pf32
           have hmodNat : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-          -- `BitVec.toNat` for `u32`-typed loop indices can show up as `% 2^32`; kill that.
           simpa [BitVec.toNat_ofNatLT, hmodNat] using hhi
         have hget :=
           get_unchecked_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)
             (index := BitVec.ofNatLT i pf32) (hindex := hiMax)
         steps [hget]
+        -- Now step into `let elem = get_unchecked(self, i)`.
+        subst getUncheckedFn
+        steps [hget]
+        rename_i helemEq
         have pf' : i < 4294967296 := by simpa using pf32
         have hmodNat : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-        simp [hmodNat]
 
-        -- Normalize `x` to the semantic element `xs[i]`.
+        -- Normalize `elem` to the semantic element `xs[i]`.
         let x : T.denote p := (storage self)[i]'hhi
         have hx' : x = xs[i]'hi_xs := by
           have hx0 :
               (storage self)[i]'hhi = (embed self)[i]'hi_embed :=
             storage_get_eq_embed_get_of_toNat (self := self) (idxNat := i) (i := i) rfl hhi hi_embed
           simpa [x, xs] using hx0
+        have helem : elem = x := by
+          simpa [x, hmodNat] using helemEq
+        subst helem
+        simp [hmodNat]
 
         have hprefix : xs.take i ++ [x] <+: xs := by
           simpa [hx'] using (by simp [List.take_prefix])
-
-        have hlam : STHoare p env (Inv (xs.take i)) (fb h![x]) (fun _ => Inv (xs.take i ++ [x])) := by
-          have h :=
-            h_inv (lp := xs.take i) (e := x) (by simpa [xs] using hprefix)
-          simpa using h
-
+        -- Instantiate the callback spec on this step.
+        have hip_len : (xs.take i).length = i := by
+          have hi_le : i ≤ xs.length := Nat.le_of_lt hi_xs
+          simpa [List.length_take, Nat.min_eq_left hi_le]
+        let idx : U 32 := BitVec.ofNat 32 i
+        have hidx_toNat : idx.toNat = i := by
+          simpa [idx] using toNat_ofNat32 (i := i) pf32
+        have hlam : STHoare p env (Inv (xs.take i)) (fb (mkArgs idx x)) (fun _ => Inv (xs.take i ++ [x])) := by
+          have :=
+            inv_step (ip := xs.take i) (i := idx) (e := x)
+              (by simpa [xs] using hprefix) (by simpa [hidx_toNat, hip_len])
+          simpa using this
         -- Help `sl`: rewrite `min` and `take` around the processed prefix.
         have hmin_i : Nat.min i n = i := Nat.min_eq_left (Nat.le_of_lt hi_lt)
         have hmin_succ : Nat.min (i + 1) n = i + 1 := Nat.min_eq_left (Nat.succ_le_of_lt hi_lt)
         simp [hmin_i, hmin_succ] at *
-
         have htake_xs : xs.take (i + 1) = xs.take i ++ [x] := by
           simpa [hx'] using (List.take_succ_eq_take_append_get (l := xs) (n := i) (hn := hi_xs))
         steps [STHoare.callLambda_intro (hlam := hlam)]
-        -- `steps` leaves a small `?R` frame to fix, plus the entailment that rewrites the
-        -- invariant argument from `take i ++ [x]` to `take (i+1)`.
-        case R =>
-          exact ⟦True⟧
+        case R => exact ⟦True⟧
         simp [htake_xs]
-        -- Discharge `H ⊢ H ⋆ ⟦True⟧` without inspecting `H`.
         simpa [SLP.star_comm] using
-          (SLP.pure_right (H₁ := Inv (xs.take i ++ [x])) (H₂ := Inv (xs.take i ++ [x])) (P := True)
-            trivial SLP.entails_self)
+          SLP.pure_right (H₁ := Inv (xs.take i ++ [x])) (H₂ := Inv (xs.take i ++ [x])) (P := True)
+            trivial SLP.entails_self
       ·
         intro hcond
-        -- i ≥ self.len(): do nothing.
+        -- i >= self.len(): do nothing.
         have pf32 : i < 2 ^ 32 := by simpa using pf
         have hge : n ≤ i := by
           have : (len self).toNat ≤ i :=
@@ -948,6 +981,33 @@ theorem for_each_spec {T Env p MaxLen self f fb}
   ·
     intro _
     steps
+
+theorem for_each_spec {T Env p MaxLen self f fb}
+    (hwf_self : wellFormed self)
+    (Inv : List (Tp.denote p T) → SLP (State p))
+    (h_inv :
+      ∀ (lp : List (Tp.denote p T)) (e : T.denote p),
+        (lp ++ [e] <+: embed self) →
+          STHoare p env (Inv lp) (fb h![e]) (fun _ => Inv (lp ++ [e])))
+  : STHoare p env
+      (Inv [] ⋆ [λf ↦ fb])
+      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::for_each».call h![T, MaxLen, Env]
+        h![self, f])
+      (fun _ => Inv (embed self) ⋆ [λf ↦ fb]) := by
+  enter_decl
+  have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
+  -- Reduce `isUnconstrained()` (always `false`) and enter the constrained branch.
+  steps
+  all_goals (try exact ())
+  apply STHoare.ite_intro_of_false rfl
+  steps
+  rw [SLP.star_comm]
+  apply forEachLike_constrained_loop_spec (p := p) (T := T) (MaxLen := MaxLen)
+    (Args := [T]) (mkArgs := fun _ a => h![a])
+    (self := self) (f := f) (fb := fb)
+    (hb := hb) (Inv := Inv) (inv_step := by
+      intro ip i e hprefix _
+      exact h_inv (lp := ip) (e := e) hprefix)
 
 theorem for_eachi_spec {T Env p MaxLen self f fb}
     (hwf_self : wellFormed self)
@@ -963,123 +1023,19 @@ theorem for_eachi_spec {T Env p MaxLen self f fb}
       (fun _ => inv (embed self) ⋆ [λf ↦ fb]) := by
   enter_decl
   have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
-  set xs : List (T.denote p) := embed self
-  set n : Nat := (len self).toNat
-  have hn_le : n ≤ MaxLen.toNat := by
-    simpa [n, bounded] using hb
-  have hx_len : xs.length = n := by
-    simpa [xs, n] using embed_length_eq_len_toNat (v := self) hb
-
   -- Reduce `isUnconstrained()` (always `false`) and enter the constrained branch.
   steps
   all_goals (try exact ())
   apply STHoare.ite_intro_of_false rfl
   steps
-
-  -- Peel `let _ := (for i in 0..MaxLen { ... }) in skip`.
-  apply (STHoare.letIn_intro (Q := fun _ => inv xs ⋆ [λf ↦ fb]))
-  ·
-    loop_inv nat (fun i _ _ => inv (xs.take (Nat.min i n)) ⋆ [λf ↦ fb])
-    ·
-      -- i = 0
-      simp [Nat.min_zero, Nat.zero_min]
-      sl
-    ·
-      -- postcondition weakening for `loop_inv` boilerplate
-      rw [SLP.star_comm]
-      apply SLP.pure_left
-      intro _
-      apply SLP.exists_intro_l
-      intro _
-      have hmin : Nat.min MaxLen.toNat n = n := Nat.min_eq_right hn_le
-      have htake_xs : xs.take n = xs := by
-        apply List.take_of_length_le
-        exact Nat.le_of_eq hx_len
-      simpa [xs, hmin, htake_xs] using (SLP.ent_star_top (H := inv (embed self) ⋆ [λf ↦ fb]))
-    ·
-      simp [Nat.zero_le MaxLen.toNat]
-    ·
-      intro i hlo hhi
-      have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
-      -- The loop body checks `i < self.len()`.
-      steps [len_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)]
-      apply STHoare.ite_intro
-      ·
-        intro hcond
-        have pf32 : i < 2 ^ 32 := by simpa using pf
-        have hi_lt : i < n := by
-          have : i < (len self).toNat :=
-            nat_lt_of_decide_bv_lt_trueLT (i := i) (x := len self) pf32 hcond
-          simpa [n] using this
-        have hi_xs : i < xs.length := by
-          simpa [hx_len] using hi_lt
-        have hi_embed : i < (embed self).length := by
-          simpa [xs] using hi_xs
-
-        -- Reduce `get_unchecked` to a direct read from `storage self`.
-        have hiMax : (BitVec.ofNatLT i pf32).toNat < MaxLen.toNat := by
-          have pf' : i < 4294967296 := by simpa using pf32
-          have hmodNat : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-          simpa [BitVec.toNat_ofNatLT, hmodNat] using hhi
-        have hget :=
-          get_unchecked_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)
-            (index := BitVec.ofNatLT i pf32) (hindex := hiMax)
-        steps [hget]
-        have pf' : i < 4294967296 := by simpa using pf32
-        have hmodNat : i % 4294967296 = i := Nat.mod_eq_of_lt pf'
-        simp [hmodNat]
-
-        -- Normalize `x` to the semantic element `xs[i]`.
-        let x : T.denote p := (storage self)[i]'hhi
-        have hx' : x = xs[i]'hi_xs := by
-          have hx0 :
-              (storage self)[i]'hhi = (embed self)[i]'hi_embed :=
-            storage_get_eq_embed_get_of_toNat (self := self) (idxNat := i) (i := i) rfl hhi hi_embed
-          simpa [x, xs] using hx0
-
-        have hprefix : xs.take i ++ [x] <+: xs := by
-          simpa [hx'] using (by simp [List.take_prefix])
-
-        -- One callback step.
-        have hlam : STHoare p env (inv (xs.take i)) (fb h![i, x]) (fun _ => inv (xs.take i ++ [x])) := by
-          have h :=
-            inv_spec (ip := xs.take i) (e := x) (by simpa [xs] using hprefix)
-          have i_eq_len : (xs.take i).length = i := by
-            simp [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi_xs)]
-          -- Align `ip.length` with the actual index `i`.
-          simpa [i_eq_len] using h
-
-        -- Help `sl`: rewrite `min` and `take` around the processed prefix.
-        have hmin_i : Nat.min i n = i := Nat.min_eq_left (Nat.le_of_lt hi_lt)
-        have hmin_succ : Nat.min (i + 1) n = i + 1 := Nat.min_eq_left (Nat.succ_le_of_lt hi_lt)
-        simp [hmin_i, hmin_succ] at *
-
-        have htake_xs : xs.take (i + 1) = xs.take i ++ [x] := by
-          simpa [hx'] using (List.take_succ_eq_take_append_get (l := xs) (n := i) (hn := hi_xs))
-        steps [STHoare.callLambda_intro (hlam := hlam)]
-        -- Fix the small `?R` frame left by `steps`.
-        case R =>
-          exact ⟦True⟧
-        simp [htake_xs]
-        -- Discharge `H ⊢ H ⋆ ⟦True⟧` without inspecting `H`.
-        simpa [SLP.star_comm] using
-          (SLP.pure_right (H₁ := inv (xs.take i ++ [x])) (H₂ := inv (xs.take i ++ [x])) (P := True)
-            trivial SLP.entails_self)
-      ·
-        intro hcond
-        -- i ≥ self.len(): do nothing.
-        have pf32 : i < 2 ^ 32 := by simpa using pf
-        have hge : n ≤ i := by
-          have : (len self).toNat ≤ i :=
-            nat_le_of_decide_bv_lt_falseLT (i := i) (x := len self) pf32 hcond
-          simpa [n] using this
-        have hmin_i : Nat.min i n = n := Nat.min_eq_right hge
-        have hmin_succ : Nat.min (i + 1) n = n :=
-          Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))
-        simp [hmin_i, hmin_succ] at *
-        steps
-  ·
-    intro _
-    steps
+  rw [SLP.star_comm]
+  apply forEachLike_constrained_loop_spec (p := p) (T := T) (MaxLen := MaxLen)
+    (Args := [Tp.u 32, T]) (mkArgs := fun i a => h![i, a])
+    (self := self) (f := f) (fb := fb)
+    (hb := hb) (Inv := inv) (inv_step := by
+      intro ip i e hprefix hip_len
+      have i_eq_len : (ip).length = i.toNat := by omega
+      have h := inv_spec (ip := ip) (e := e) hprefix
+      simpa [i_eq_len] using h)
 
 end Lampe.Stdlib.Collections.BoundedVec

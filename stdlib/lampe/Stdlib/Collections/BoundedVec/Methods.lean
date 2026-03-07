@@ -933,7 +933,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
                     embed self ++ (embed vec).take (Nat.min i (len vec).toNat)⟧)
       ·
         sl
-        simp [Nat.min_zero, embed, active, storage]
+        simp [embed, active]
       ·
         simp
       ·
@@ -947,7 +947,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
           intro hcond
           have pf : i < 2 ^ 32 := lt_of_lt_of_le hhi (Nat.le_of_lt hLen_lt)
           have hcond' := by
-            simpa [Lens.modify, Lens.get, Option.get_some] using hcond
+            simpa [] using hcond
           rcases hcond' with ⟨hi_le, hi_ne_bv⟩
           have hltVec : i < (len vec).toNat := by
             refine lt_of_le_of_ne hi_le ?_
@@ -964,7 +964,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
             (index := BitVec.ofNatLT i (lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi))
             (hindex := by
               have hi32 : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi
-              simpa [BitVec.toNat_ofNatLT, BitVec.toNat_ofNat, nat_mod_4294967296 hi32] using hhi)]
+              simpa [nat_mod_4294967296 hi32] using hhi)]
           all_goals (try (first | exact () | exact hnew_le))
           subst_vars
           case h₁.heq =>
@@ -1033,7 +1033,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
                 List.take (i + (1 + (len self).toNat))
                     ((List.Vector.toList hinv.1).set (i + (len self).toNat) ((embed vec)[i]'hiEmb)) =
                   List.take (i + (len self).toNat) (List.Vector.toList hinv.1) ++ [((embed vec)[i]'hiEmb)] := by
-                  simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+                  simpa [Nat.add_left_comm, Nat.add_comm] using
                     (List.take_succ_set_eq_take_append
                       (l := (List.Vector.toList hinv.1)) (n := i + (len self).toNat)
                       (a := ((embed vec)[i]'hiEmb)) (hn := hiStor_toList'))
@@ -1058,7 +1058,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
               simpa using (congrArg Bool.not hcond))
             have hflag_raw :
                 (len vec).toNat < i ∨ BitVec.ofNatLT i pf = append_len := by
-              simpa [Lens.modify, Lens.get, Option.get_some] using h_exceeded
+              simpa [] using h_exceeded
             have hge : (len vec).toNat ≤ i := by
               cases hflag_raw with
               | inl hlt =>
@@ -1092,7 +1092,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
           have htakeV' :
               List.take ((len self).toNat + (len vec).toNat) (storage v).toList =
                 embed self ++ List.take (len vec).toNat (embed vec) := by
-            simpa [hmin, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using htakeV
+            simpa [hmin] using htakeV
           simpa [htakeVec] using htakeV'
   ·
     intro _
@@ -1192,7 +1192,7 @@ theorem from_parts_spec {p T MaxLen arr l}
               List.Vector.toList_set]
             simp
             have htake_len : (List.take l.toNat a.toList).length = l.toNat := by
-              simp [List.length_take, List.Vector.toList_length, Nat.min_eq_left hb]
+              simp [Nat.min_eq_left hb]
             have hdrop :
                 List.take l.toNat (a.toList.set i (Tp.zero p T)) = List.take l.toNat a.toList := by
               have ht :=
