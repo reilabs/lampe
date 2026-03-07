@@ -267,8 +267,7 @@ private theorem push_concrete_spec {p T MaxLen selfRef self elem}
         [selfRef ↦ ⟨bvTp T MaxLen, vStor⟩]))
     ·
       steps_named
-      simp [vStor, modify_head_array_some (v := self) (idx := len self) (value := elem) hpush,
-        storage, len]
+      simp [vStor, storage, len]
     ·
       intro _
       steps
@@ -574,8 +573,7 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
   have hMax_lt := u32_toNat_lt MaxLen
   have hLen_lt := u32_toNat_lt Len
   have hcastLenNat : ((↑(List.Vector.length array) : U 32)).toNat = Len.toNat := by
-    simp [show List.Vector.length array = Len.toNat from rfl,
-      BitVec.toNat_ofNat, nat_mod_4294967296 hLen_lt]
+    simp [show List.Vector.length array = Len.toNat from rfl]
   have hsum_lt : (len self).toNat + ((↑(List.Vector.length array) : U 32)).toNat < 2 ^ 32 := by
     have : (len self).toNat + Len.toNat < 2 ^ 32 := lt_of_le_of_lt hspace hMax_lt
     simpa [hcastLenNat] using this

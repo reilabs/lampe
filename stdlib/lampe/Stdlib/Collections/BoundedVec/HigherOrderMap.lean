@@ -662,7 +662,7 @@ theorem any_spec {p T MaxLen Env self f fb}
         · have h :
               (decide (n < i) || decide (BitVec.ofNat 32 i = self.2.1)) = decide (n < i + 1) := by
             simpa [len] using hexceeded_next
-          simp [len, h]
+          simp [h]
     ·
       -- Loop finished.
       simp [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)] at *
