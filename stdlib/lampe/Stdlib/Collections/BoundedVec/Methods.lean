@@ -398,20 +398,6 @@ private lemma pop_preconditions {p T MaxLen} {self : Repr p T MaxLen}
     exact hlastNat
   exact ⟨hnonzero, hlast⟩
 
-@[simp] private lemma indexTpl_replaceTuple'_head_tail
-    {p} {tp tp' : Tp} {tps : List Tp}
-    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp) :
-    Builtin.indexTpl (Builtin.replaceTuple' tpl Builtin.Member.head v) Builtin.Member.head.tail =
-      Builtin.indexTpl tpl Builtin.Member.head.tail := by
-  rfl
-
-@[simp] private lemma indexTpl_replaceTuple'_headTail_head
-    {p} {tp tp' : Tp} {tps : List Tp}
-    (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp') :
-    Builtin.indexTpl (Builtin.replaceTuple' tpl Builtin.Member.head.tail v) Builtin.Member.head =
-      Builtin.indexTpl tpl Builtin.Member.head := by
-  rfl
-
 @[simp] private lemma indexTpl_head
     {p} {tp : Tp} {tps : List Tp}
     (tpl : Tp.denoteArgs p (tp :: tps)) :
@@ -422,14 +408,6 @@ private lemma pop_preconditions {p T MaxLen} {self : Repr p T MaxLen}
     {p} {tp tp' : Tp} {tps : List Tp}
     (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) :
     Builtin.indexTpl tpl Builtin.Member.head.tail = tpl.2.1 := by
-  rfl
-
-@[simp] private lemma toNat_sub_one_u32 (x : U 32) :
-    BitVec.toNat (x - (1 : U 32)) = (4294967295 + BitVec.toNat x) % 4294967296 := by
-  rfl
-
-@[simp] private lemma coe_one_u32 :
-    ((↑(1 : Nat) : U 32) = (1#32)) := by
   rfl
 
 @[simp] private lemma coe_one_u32' :
@@ -568,8 +546,6 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
         ∃∃ v',
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
             ⟦wellFormed v' ∧ embed v' = embed self ++ array.toList⟧) := by
-  have hb_self : bounded self :=
-    le_trans (Nat.le_add_right ..) hspace
   have hMax_lt := u32_toNat_lt MaxLen
   have hLen_lt := u32_toNat_lt Len
   have hcastLenNat : ((↑(List.Vector.length array) : U 32)).toNat = Len.toNat := by
@@ -601,62 +577,36 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
       simpa [hcastLenNat] using hhi
     have hi32 : i < 2 ^ 32 := by
       exact lt_of_lt_of_le hhiLen (Nat.le_of_lt hLen_lt)
-    have hiArr : i < array.toList.length := by
-      simpa [List.Vector.toList_length] using hhiLen
-    have hiMax : (len self).toNat + i < MaxLen.toNat := by
-      have : (len self).toNat + i < (len self).toNat + Len.toNat :=
-        Nat.add_lt_add_left hhiLen (len self).toNat
-      exact lt_of_lt_of_le this hspace
-    have hiStor : (len self).toNat + i < (storage v).toList.length := by
-      simpa [storage, List.Vector.toList_length] using hiMax
+    have hiMax : (len self).toNat + i < MaxLen.toNat :=
+      lt_of_lt_of_le (Nat.add_lt_add_left hhiLen _) hspace
+    have hi_lt_32 : (len self).toNat + i < 2 ^ 32 := lt_of_lt_of_le hiMax (Nat.le_of_lt hMax_lt)
+    have htoNat_idx := extend_loop_idx_toNat hlenV hi32 hi_lt_32
     constructor
-    ·
-      simpa [len] using hlenV
-    ·
-      have htoNat_idx := extend_loop_idx_toNat hlenV hi32
-          (lt_of_lt_of_le hiMax (Nat.le_of_lt hMax_lt))
-
-      simp (config := {contextual := false})
-        [storage, len, List.Vector.toList_set, show (Builtin.indexTpl v Builtin.Member.head.tail +
-          BitVec.ofNat 32 i).toNat = (len self).toNat + i from by simpa [len] using htoNat_idx,
-          List.Vector.get_eq_get_toList, List.get_eq_getElem]
-
-      try simp [extend_loop_idx_mod hlenV (lt_of_lt_of_le hiMax (Nat.le_of_lt hMax_lt))]
-
-      have hiStor_toList : (len self).toNat + i < (List.Vector.toList v.1).length := by
-        simpa [List.Vector.toList_length] using hiMax
-      have htakeV_toList :
-          List.take ((len self).toNat + i) (List.Vector.toList v.1) =
-            embed self ++ List.take i (List.Vector.toList array) := by
-        simpa [storage] using htakeV
-      have hiArr_toList : i < (List.Vector.toList array).length := by
-        simpa [List.Vector.toList_length] using hiArr
-
-      simp [nat_mod_4294967296 hi32]
-      simpa [len] using List.take_set_extends htakeV_toList hiStor_toList hiArr_toList
+    · simpa [len] using hlenV
+    · simp (config := {contextual := false})
+        [storage, len, List.Vector.toList_set,
+          show (Builtin.indexTpl v Builtin.Member.head.tail +
+            BitVec.ofNat 32 i).toNat = (len self).toNat + i from by simpa [len] using htoNat_idx,
+          List.Vector.get_eq_get_toList, List.get_eq_getElem, nat_mod_4294967296 hi32]
+      try simp [extend_loop_idx_mod hlenV hi_lt_32]
+      simpa [len] using List.take_set_extends
+        (by simpa [storage] using htakeV)
+        (by simpa [List.Vector.toList_length] using hiMax)
+        (by simpa [List.Vector.toList_length] using hhiLen)
   ·
     steps_named as [v, hinv, h_dec, h_isSome]
     rcases hinv with ⟨hlenV, htakeV⟩
-    have hsum_lt_final : (len self).toNat + Len.toNat < 2 ^ 32 :=
-      lt_of_le_of_lt hspace hMax_lt
-    have hmod_simp : ((BitVec.toNat self.2.1 + BitVec.toNat Len) % 4294967296) =
-        BitVec.toNat self.2.1 + BitVec.toNat Len := by
-      simpa [len] using nat_mod_4294967296 hsum_lt_final
-    constructor
-    ·
-      simpa [lenLens, len] using
-        (wellFormed_get_modify_lenLens_of_le (v := v)
-          (n := len self + (↑(List.Vector.length array) : U 32))
-          (h := by simpa [lenLens, len] using h_isSome)
-          (hn := hnew_le))
-    ·
-      have htakeArr : array.toList.take Len.toNat = array.toList := by
-        simp [List.Vector.toList_length]
-      have htakeV' :
-          List.take ((len self).toNat + Len.toNat) (List.Vector.toList v.1) =
-            embed self ++ List.take Len.toNat (List.Vector.toList array) := by
-        simpa using htakeV
-      simpa [embed, active, len, hmod_simp, htakeArr] using htakeV'
+    have htakeV' : List.take ((len self).toNat + array.toList.length) (storage v).toList =
+        embed self ++ array.toList := by
+      have : array.toList.take Len.toNat = array.toList := by simp [List.Vector.toList_length]
+      simpa [hcastLenNat, List.Vector.toList_length, this] using htakeV
+    exact extend_from_finalize hlenV htakeV'
+      (by simpa [lenLens, len] using h_isSome)
+      (by have : (len self).toNat + Len.toNat < 2 ^ 32 := lt_of_le_of_lt hspace hMax_lt
+          simpa [len, hcastLenNat, List.Vector.toList_length,
+            BitVec.toNat_add_of_lt hsum_lt])
+      (by rw [BitVec.le_def] at hnew_le
+          simpa [hcastLenNat, List.Vector.toList_length] using hnew_le)
 
 theorem from_array_spec {p T MaxLen Len array}
     (hbounded : Len.toNat ≤ MaxLen.toNat) :
@@ -701,8 +651,6 @@ theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
         ∃∃ v',
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
             ⟦wellFormed v' ∧ embed v' = embed self ++ slice⟧) := by
-  have hb_self : bounded self :=
-    le_trans (Nat.le_add_right ..) hspace
   have hMax_lt := u32_toNat_lt MaxLen
   have hslen_lt : slice.length < 2 ^ 32 :=
     lt_of_le_of_lt (le_trans (Nat.le_add_left ..) hspace) hMax_lt
@@ -735,57 +683,34 @@ theorem extend_from_slice_spec {p T MaxLen selfRef self slice}
     steps_named as [v, hinv, h_add, h_cast, u2, h_dec, h_isSome]
     rcases hinv with ⟨hlenV, htakeV⟩
     have hi32 : i < 2 ^ 32 := lt_of_lt_of_le hhi (Nat.le_of_lt hslen_lt)
-    have hiSlice : i < slice.length := hhi
-    have hiMax : (len self).toNat + i < MaxLen.toNat := by
-      have : (len self).toNat + i < (len self).toNat + slice.length :=
-        Nat.add_lt_add_left hhi (len self).toNat
-      exact lt_of_lt_of_le this hspace
-    have hiStor : (len self).toNat + i < (storage v).toList.length := by
-      simpa [storage, List.Vector.toList_length] using hiMax
+    have hiMax : (len self).toNat + i < MaxLen.toNat :=
+      lt_of_lt_of_le (Nat.add_lt_add_left hhi _) hspace
+    have hi_lt_32 : (len self).toNat + i < 2 ^ 32 := lt_of_lt_of_le hiMax (Nat.le_of_lt hMax_lt)
+    have htoNat_idx := extend_loop_idx_toNat hlenV hi32 hi_lt_32
     constructor
-    ·
-      simpa [len] using hlenV
-    ·
-      have htoNat_idx := extend_loop_idx_toNat hlenV hi32
-          (lt_of_lt_of_le hiMax (Nat.le_of_lt hMax_lt))
-
-      simp (config := {contextual := false})
-        [storage, len, List.Vector.toList_set, show (Builtin.indexTpl v Builtin.Member.head.tail +
-          BitVec.ofNat 32 i).toNat = (len self).toNat + i from by simpa [len] using htoNat_idx,
-          List.get_eq_getElem]
-
-      try simp [extend_loop_idx_mod hlenV (lt_of_lt_of_le hiMax (Nat.le_of_lt hMax_lt))]
-
-      have hiStor_toList : (len self).toNat + i < (List.Vector.toList v.1).length := by
-        simpa [List.Vector.toList_length] using hiMax
-      have htakeV_toList :
-          List.take ((len self).toNat + i) (List.Vector.toList v.1) =
-            embed self ++ slice.take i := by
-        simpa [storage] using htakeV
-
-      simp [nat_mod_4294967296 hi32]
-      simpa [len] using List.take_set_extends htakeV_toList hiStor_toList hiSlice
+    · simpa [len] using hlenV
+    · simp (config := {contextual := false})
+        [storage, len, List.Vector.toList_set,
+          show (Builtin.indexTpl v Builtin.Member.head.tail +
+            BitVec.ofNat 32 i).toNat = (len self).toNat + i from by simpa [len] using htoNat_idx,
+          List.get_eq_getElem, nat_mod_4294967296 hi32]
+      try simp [extend_loop_idx_mod hlenV hi_lt_32]
+      simpa [len] using List.take_set_extends
+        (by simpa [storage] using htakeV)
+        (by simpa [List.Vector.toList_length] using hiMax)
+        hhi
   ·
     steps_named as [v, hinv, h_dec, h_isSome]
     rcases hinv with ⟨hlenV, htakeV⟩
-    have hsum_lt_final : (len self).toNat + slice.length < 2 ^ 32 :=
-      lt_of_le_of_lt hspace hMax_lt
-    have hmod_simp : ((BitVec.toNat self.2.1 + List.length slice) % 4294967296) =
-        BitVec.toNat self.2.1 + List.length slice := by
-      simpa [len] using nat_mod_4294967296 hsum_lt_final
-    constructor
-    ·
-      refine wellFormed_get_modify_lenLens_of_le (v := v) (n := _) (h := h_isSome) ?_
-      simpa [len, bitvec_ofNatLT_eq_ofNat] using hnew_le
-    ·
-      have htakeSlice : slice.take slice.length = slice := by
-        simp
-      have htakeV' :
-          List.take ((len self).toNat + slice.length) (storage v).toList =
-            embed self ++ slice.take slice.length := by
-        simpa [nat_mod_4294967296 hslen_lt]
-          using htakeV
-      simpa [embed, active, len, hmod_simp, htakeSlice] using htakeV'
+    have htakeV' : List.take ((len self).toNat + slice.length) (storage v).toList =
+        embed self ++ slice := by
+      simpa [nat_mod_4294967296 hslen_lt] using htakeV
+    exact extend_from_finalize hlenV htakeV'
+      (by simpa [lenLens, len, bitvec_ofNatLT_eq_ofNat] using h_isSome)
+      (by have : (len self).toNat + slice.length < 2 ^ 32 := lt_of_le_of_lt hspace hMax_lt
+          simpa [len, BitVec.toNat_add_of_lt hsum_lt])
+      (by rw [BitVec.le_def] at hnew_le
+          simpa [hcastLenNat] using hnew_le)
 
 theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
     (hwfVec : wellFormed (p := p) (T := T) (MaxLen := Len) vec)
@@ -867,7 +792,6 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
               (lt_two_pow_of_lt_maxLen (MaxLen := Len) hhi))
             (hindex := by
               simpa [nat_mod_4294967296 hi32] using hhi)]
-          all_goals (try (first | exact () | exact hnew_le))
           subst_vars
           case h₁.heq =>
             simp [decide_lt_succ_eq_bv (x := len vec) hi32]
@@ -888,48 +812,30 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
                   (nat_lt_4294967296 hi32)] using hidx
               simpa [this] using extend_loop_idx_toNat
                 hlenV hi32 (lt_trans hiMax hMax_lt)
-            have hiStor :
-                (len self).toNat + i <
-                  (List.Vector.toList hinv.1).length := by
-              simpa [List.Vector.toList_length] using hiMax
-            have htakeV' : List.take ((len self).toNat + i)
-                (List.Vector.toList hinv.1) =
-                embed self ++ List.take i (embed vec) := by
-              simpa [storage] using htakeV
             constructor
             · simpa [len] using hlenV
-            ·
-              simp (config := {contextual := false})
-                [storage, List.Vector.toList_set,
-                  htoNat_idx, helem',
-                  List.get_eq_getElem,
-                  Nat.add_assoc, Nat.add_left_comm,
-                  Nat.add_comm,
-                  nat_mod_4294967296 hi32]
-              simpa [Nat.add_comm, Nat.add_assoc] using
-                List.take_set_extends htakeV' hiStor hiEmb
+            · simp (config := {contextual := false})
+                [storage, List.Vector.toList_set, htoNat_idx, helem',
+                  List.get_eq_getElem, nat_mod_4294967296 hi32]
+              have := List.take_set_extends
+                (by simpa [storage] using htakeV)
+                (by simpa [List.Vector.toList_length] using hiMax)
+                hiEmb
+              simpa [Nat.add_comm, Nat.add_assoc] using this
         ·
           intro hcond
           steps_named
           case h₁.heq =>
             simp [decide_lt_succ_eq_bv (x := len vec) hi32]
           case h₁.a =>
-            have hflag_raw :
-                (len vec).toNat < i ∨
-                  BitVec.ofNatLT i hi32 = append_len := by
-              simpa [] using
-                (by simpa using congrArg Bool.not hcond)
             have hge : (len vec).toNat ≤ i := by
+              have hflag_raw : (len vec).toNat < i ∨ BitVec.ofNatLT i hi32 = append_len := by
+                simpa [] using (by simpa using congrArg Bool.not hcond)
               rcases hflag_raw with hlt | hbv
               · exact Nat.le_of_lt hlt
-              · have pf' : i < 4294967296 :=
-                  nat_lt_4294967296 hi32
-                have : i = (len vec).toNat := by
-                  have ht := congrArg BitVec.toNat hbv
-                  have ht' : i = append_len.toNat := by
-                    simpa [BitVec.toNat_ofNatLT,
-                      Nat.mod_eq_of_lt pf'] using ht
-                  simpa [*] using ht'
+              · have : i = (len vec).toNat := by
+                  have := congrArg BitVec.toNat hbv
+                  simpa [BitVec.toNat_ofNatLT, Nat.mod_eq_of_lt (nat_lt_4294967296 hi32), *] using this
                 exact this.symm.le
             have hmin_i :=
               Nat.min_eq_right (a := i) hge
@@ -947,32 +853,19 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
         constructor
         · simpa [len] using hlenV
         ·
-          have : List.take (len vec).toNat (embed vec) = embed vec := by
-            simpa [hlenVec]
+          have : List.take (len vec).toNat (embed vec) = embed vec := by simp [hlenVec]
           simpa [Nat.min_eq_right hbVec, this] using htakeV
   ·
     intro _
     steps_named as [h_pre, _u, _hsl, _hdec, h_isSome]
     rcases _u with ⟨hlenV, htakeV⟩
-    have h_isSome' :
-        ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify
-          h_pre (len self + len vec)).isSome = true := by
-      simpa [lenLens, len] using h_isSome
-    constructor
-    ·
-      simpa using
-        wellFormed_get_modify_lenLens_of_toNat_le
-          (v := h_pre)
-          (n := len self + len vec)
-          (h := h_isSome')
-          ((BitVec.le_def).1 hnew_le)
-    ·
-      simpa [embed, active, len,
-        nat_mod_4294967296
-          (show BitVec.toNat self.2.1 +
-              BitVec.toNat vec.2.1 < 2 ^ 32 by
-            simpa [len] using hsum_lt)]
-        using htakeV
+    have htakeV' : List.take ((len self).toNat + (embed vec).length) (storage h_pre).toList =
+        embed self ++ embed vec := by
+      simpa [hlenVec, Nat.min_eq_right hbVec] using htakeV
+    exact extend_from_finalize hlenV htakeV'
+      (by simpa [lenLens, len] using h_isSome)
+      (by simpa [len, hlenVec, BitVec.toNat_add_of_lt hsum_lt])
+      ((BitVec.le_def).1 hnew_le)
 
 theorem from_parts_spec {p T MaxLen arr l}
     (hb : l.toNat ≤ MaxLen.toNat) :

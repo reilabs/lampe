@@ -450,4 +450,25 @@ lemma exceeded_len_lt_of_cond_true
   exact hi_ne (by
     simpa [hi_eq] using BitVec.ofNat_toNat (x := x))
 
+/-- Post-loop finalization for all `extend_from_*` proofs:
+given the loop invariant at completion, derive `wellFormed` and correct `embed` after updating `len`. -/
+theorem extend_from_finalize {p T MaxLen} {self v : Repr p T MaxLen}
+    {newLen : U 32} {source : List (T.denote p)}
+    (hlenV : len v = len self)
+    (htakeV : List.take ((len self).toNat + source.length) (storage v).toList =
+              embed self ++ source)
+    (h_isSome : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v newLen).isSome = true)
+    (hnew_toNat : newLen.toNat = (len self).toNat + source.length)
+    (hnew_le : newLen.toNat ≤ MaxLen.toNat) :
+    let v' := ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v newLen).get h_isSome
+    wellFormed v' ∧ embed v' = embed self ++ source := by
+  intro v'
+  have hwf : wellFormed v' :=
+    wellFormed_get_modify_lenLens_of_toNat_le v newLen h_isSome hnew_le
+  have hembed : embed v' = embed self ++ source := by
+    have hlen' : len v' = newLen := len_get_modify_lenLens v newLen h_isSome
+    have hstor' : storage v' = storage v := storage_get_modify_lenLens v newLen h_isSome
+    simp [embed, active, hlen', hstor', hnew_toNat, htakeV]
+  exact ⟨hwf, hembed⟩
+
 end Lampe.Stdlib.Collections.BoundedVec
