@@ -436,4 +436,18 @@ theorem extend_loop_idx_toNat {p T MaxLen} {v self : Repr p T MaxLen} {i : Nat}
   simpa [hlenVNat, htoNat_i] using BitVec.toNat_add_of_lt (x := len v) (y := BitVec.ofNat 32 i) hsum_lt'
 
 
+/-- In the `extend_from_bounded_vec` constrained loop,
+the negated condition `¬(exceeded_len)` after the OR-update
+gives `i ≤ x.toNat` and `ofNatLT i ≠ x`, hence `i < x.toNat`. -/
+lemma exceeded_len_lt_of_cond_true
+    {i : Nat} {x : U 32}
+    (pf : i < 2 ^ 32)
+    (hi_le : i ≤ x.toNat)
+    (hi_ne : ¬(BitVec.ofNatLT i pf = x)) :
+    i < x.toNat := by
+  refine lt_of_le_of_ne hi_le ?_
+  intro hi_eq
+  exact hi_ne (by
+    simpa [hi_eq] using BitVec.ofNat_toNat (x := x))
+
 end Lampe.Stdlib.Collections.BoundedVec
