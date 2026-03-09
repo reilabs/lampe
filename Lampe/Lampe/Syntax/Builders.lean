@@ -208,12 +208,49 @@ partial def makeExpr [MonadDSL m]
 
 -- Builtin Calls
 | `(noir_expr|(#_ $name:ident returning $tp)( $args,* )) =>
-  makeArgs args.getElems.toList fun args => do
+  let argsList := args.getElems.toList
+  let emitBuiltin : m (TSyntax `term) := makeArgs argsList fun args => do
     let argVals ← makeHListLit args
     wrapInLet
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
+  -- `#_ref(#_readRef(x))` should collapse to `x`: taking a reference to a dereference is identity.
+  -- Additionally, `makeExpr` auto-dereferences mutable locals, so `#_ref(id)` on a mutable local
+  -- would lower to `ref(readRef id)` unless we suppress auto-deref while elaborating the argument.
+  if name.getId == `ref then
+    match argsList with
+    | [arg] => do
+      -- Syntactic identity: #_ref(#_readRef(x)) = x.
+      let inner? : Option _ :=
+        if let `(noir_expr|(#_readRef returning $_)( $readArgs,* )) := arg then
+          readArgs.getElems.toList.head?
+        else none
+      if let some inner := inner? then
+        return ← makeExpr inner binder k
+      let saved ← getSetShouldAutoDeref false
+      makeExpr arg binder fun argVal => do
+          -- Restore to saved and check whether `makeBareIdent` consumed the flag. Consumed (true)
+          -- means it emitted `Expr.var id` — the ref itself. Not restoring unconditionally
+          -- ensures nested #_ref calls compose correctly.
+          let consumed ← getSetShouldAutoDeref saved
+          if consumed then
+            match k with
+            | some k => k argVal
+            | none => pure argVal
+          else do
+            -- Argument was not a mutable ident; wrap in ref(...) as normal.
+            let argVals ← makeHListLit [argVal]
+            wrapInLet
+              (←``(Expr.callBuiltin _
+                $(←makeNoirType tp)
+                $(←makeBuiltin name.getId.toString)
+                $argVals))
+              binder
+              k
+    | _ => emitBuiltin
+  else
+    emitBuiltin
 
 -- Bare function refs
 | `(noir_expr|$ref:noir_funcref) => match ref with
@@ -343,7 +380,13 @@ partial def makeBareIdent [MonadDSL m]
     (k : Option $ TSyntax `term → m (TSyntax `term))
   : m (TSyntax `term) := do
   if ←isAutoDerefd ident.getId then
-    wrapInLet (←``(Expr.readRef $ident)) binder k
+    -- When shouldAutoDeref is false (inside #_ref), emit the variable directly without readRef
+    -- and restore the flag. The caller (#_ref handler) will see that the flag was consumed and
+    -- skip the outer ref(...) wrapping.
+    if !(←getSetShouldAutoDeref true) then
+      wrapInLet (←``(Expr.var $ident)) binder k
+    else
+      wrapInLet (←``(Expr.readRef $ident)) binder k
   else match binder with
   | none => match k with
     | some k => k ident

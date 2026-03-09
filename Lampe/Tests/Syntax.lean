@@ -683,6 +683,237 @@ theorem returns_string_correct {p}
   subst_vars
   rfl
 
+-- Regression test: #_ref on a mutable local must preserve reference identity. Before the fix,
+-- #_ref(x) on a `let mut x` would auto-deref x and allocate a fresh cell (`ref(readRef(x))`),
+-- so mutations through the new ref were lost.
+noir_def increment_ref<>(r: & Field) -> Unit := {
+  (*r: Field) = (#_fAdd returning Field)((#_readRef returning Field)(r), (1: Field));
+  #_skip
+}
+
+noir_def mut_ref_loop<>() -> Field := {
+  let mut acc = (0: Field);
+  for _ in (0: u32) .. (3: u32) do {
+    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)(acc));
+  };
+  acc
+}
+
+-- Same test with parenthesized #_ref argument: #_ref((acc))
+noir_def mut_ref_loop_parens<>() -> Field := {
+  let mut acc = (0: Field);
+  for _ in (0: u32) .. (3: u32) do {
+    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)((acc)));
+  };
+  acc
+}
+
+-- Same test with block-wrapped #_ref argument: #_ref({ acc })
+noir_def mut_ref_loop_block<>() -> Field := {
+  let mut acc = (0: Field);
+  for _ in (0: u32) .. (3: u32) do {
+    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)({ acc }));
+  };
+  acc
+}
+
+-- Deeply nested parens exercise multiple `makeExpr` recursion levels.
+noir_def mut_ref_loop_nested<>() -> Field := {
+  let mut acc = (0: Field);
+  for _ in (0: u32) .. (3: u32) do {
+    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)((((acc)))));
+  };
+  acc
+}
+
+-- Explicit ref/deref/ref chain should collapse: #_ref(#_readRef(#_ref(acc))) = #_ref(acc).
+noir_def mut_ref_chain<>() -> Field := {
+  let mut acc = (0: Field);
+  (increment_ref<> as λ(& Field) -> Unit)(
+    (#_ref returning & Field)((#_readRef returning Field)((#_ref returning & Field)(acc)))
+  );
+  acc
+}
+
+-- Same collapse behavior when the chain starts from a non-autoderef ref parameter.
+noir_def mut_ref_chain_non_autoderef<>() -> Field := {
+  let mut x = (0: Field);
+  let r = (#_ref returning & Field)(x);
+  let r2 = (#_ref returning & Field)((#_readRef returning Field)(r));
+  let r3 = (#_ref returning & Field)((#_readRef returning Field)(r2));
+  (increment_ref<> as λ(& Field) -> Unit)(r3);
+  x
+}
+
+-- Mirrors probe::chain_mutate_copy_smoke (inlined): same collapse with a non-zero
+-- initial value to rule out coincidental zeros (x goes from 7 to 8).
+noir_def chain_mutate_copy_smoke<>() -> Field := {
+  let mut x = (7: Field);
+  let r = (#_ref returning & Field)(x);
+  let r2 = (#_ref returning & Field)((#_readRef returning Field)(r));
+  let r3 = (#_ref returning & Field)((#_readRef returning Field)(r2));
+  (increment_ref<> as λ(& Field) -> Unit)(r3);
+  x
+}
+
+-- Matches the extracted Noir pattern: r2 collapses to r (ref-param, not in autoDeref map),
+-- v is a fresh mutable copy of r's value, r3 collapses to v.
+-- Returns the value at v (= original value at r).
+noir_def chain_from_explicit_readref<>(r: & Field) -> Field := {
+  let r2 = (#_ref returning & Field)((#_readRef returning Field)(r));
+  let mut v = (#_readRef returning Field)(r2);
+  let r3 = (#_ref returning & Field)(v);
+  (#_readRef returning Field)(r3)
+}
+
+-- Smoke: x=5, call chain_from_explicit_readref with &x, result should be 5.
+noir_def chain_from_explicit_readref_smoke<>() -> Field := {
+  let mut x = (5: Field);
+  (chain_from_explicit_readref<> as λ(& Field) -> Field)((#_ref returning & Field)(x))
+}
+
+def mutRefLoopEnv : Env :=
+  ⟨[
+    increment_ref,
+    mut_ref_loop,
+    mut_ref_loop_parens,
+    mut_ref_loop_block,
+    mut_ref_loop_nested,
+    mut_ref_chain,
+    mut_ref_chain_non_autoderef,
+    chain_mutate_copy_smoke,
+    chain_from_explicit_readref,
+    chain_from_explicit_readref_smoke
+  ], []⟩
+
+theorem increment_ref_spec {r : Ref} {v : Fp p} :
+    STHoare p mutRefLoopEnv
+    [r ↦ ⟨.field, v⟩]
+    (increment_ref.call h![] h![r])
+    (fun _ => [r ↦ ⟨.field, v + 1⟩]) := by
+  enter_decl
+  steps
+
+theorem mut_ref_loop_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_loop.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 3) := by
+  enter_decl
+  steps
+  loop_inv nat (fun i _ _ => [acc ↦ ⟨.field, (i : Fp p)⟩])
+  · simp
+  · intros i _ _
+    steps [increment_ref_spec]
+    push_cast
+    ring_nf
+  · steps
+    simp_all
+
+theorem mut_ref_loop_parens_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_loop_parens.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 3) := by
+  enter_decl
+  steps
+  loop_inv nat (fun i _ _ => [acc ↦ ⟨.field, (i : Fp p)⟩])
+  · simp
+  · intros i _ _
+    steps [increment_ref_spec]
+    push_cast
+    ring_nf
+  · steps
+    simp_all
+
+theorem mut_ref_loop_block_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_loop_block.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 3) := by
+  enter_decl
+  steps
+  loop_inv nat (fun i _ _ => [acc ↦ ⟨.field, (i : Fp p)⟩])
+  · simp
+  · intros i _ _
+    steps [increment_ref_spec]
+    push_cast
+    ring_nf
+  · steps
+    simp_all
+
+theorem mut_ref_loop_nested_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_loop_nested.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 3) := by
+  enter_decl
+  steps
+  loop_inv nat (fun i _ _ => [acc ↦ ⟨.field, (i : Fp p)⟩])
+  · simp
+  · intros i _ _
+    steps [increment_ref_spec]
+    push_cast
+    ring_nf
+  · steps
+    simp_all
+
+theorem mut_ref_chain_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_chain.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 1) := by
+  enter_decl
+  steps [increment_ref_spec]
+  simp_all
+
+theorem mut_ref_chain_non_autoderef_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (mut_ref_chain_non_autoderef.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 1) := by
+  enter_decl
+  steps
+  subst_vars
+  steps [increment_ref_spec]
+  simp_all
+
+-- Same propagation with a non-zero initial value (x: 7 → 8).
+theorem chain_mutate_copy_smoke_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (chain_mutate_copy_smoke.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 8) := by
+  enter_decl
+  steps
+  subst_vars
+  steps [increment_ref_spec]
+  simp_all
+  ring
+
+-- chain_from_explicit_readref: reading a ref through an r2 collapse + fresh mutable copy
+-- preserves the original value (returns val).
+-- The two collapses (r2=r and r3=v) are non-# variables, so steps stops early with an
+-- unresolved frame entailment at each readRef. We alternate subst_vars (to substitute the
+-- equality into the frame goal) with sl (to close it), then subst into the continuation.
+lemma chain_from_explicit_readref_spec {r : Tp.denote p Tp.field.ref} {val : Fp p}
+  : STHoare p mutRefLoopEnv [r ↦ ⟨.field, val⟩]
+    (chain_from_explicit_readref.call h![] h![r])
+    (fun result => result = val) := by
+  enter_decl
+  steps         -- stops at readRef r2 (r2 = r propositionally); goals: [frame-ent, triple]
+  subst_vars    -- subst r2 → r in the frame entailment (goal 1)
+  · sl          -- close frame entailment: [r ↦ val] ⊢ [r ↦ ?val'] ⋆ ?frame
+  · subst_vars  -- subst r2 → r in the continuation (goal 2), now that ?val' and ?frame are assigned
+    steps       -- stops at readRef r3 (r3 = v propositionally); goals: [frame-ent, qEnt]
+    subst_vars  -- subst r3 → v in the frame entailment (goal 1)
+    · sl        -- close frame entailment: [r ↦ val] ⋆ [v ↦ val] ⊢ [v ↦ ?val''] ⋆ ?frame2
+    · sl; assumption -- sl extracts ⟦v✝ = val⟧ as Prop subgoal; assumption closes it
+
+-- Smoke: x=5 passed as &x, chain_from_explicit_readref reads through the ref chain,
+-- result is 5 (x unchanged).
+theorem chain_from_explicit_readref_smoke_correct
+  : STHoare p mutRefLoopEnv ⟦⟧
+    (chain_from_explicit_readref_smoke.call h![] h![])
+    (fun (v : Tp.denote p .field) => v = 5) := by
+  enter_decl
+  steps
+  steps [chain_from_explicit_readref_spec]
+  simp_all
+
 noir_def integer_shifts<>(a: i32, b: i32) -> i32 := {
   let x = (#_iShl returning i32)(a, b);
   let y = (#_iShr returning i32)(a, b);

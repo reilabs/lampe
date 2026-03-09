@@ -26,6 +26,10 @@ structure LambdaParam where
 structure DSLState where
   autoDeref : Std.HashMap Name Bool
   nextFresh : Nat
+  /-- When false, `makeBareIdent` will not automatically dereference the next mutable ident it
+  encounters and then reset this flag. Used by `#_ref` to propagate through syntax wrappers
+  (parens, blocks). -/
+  shouldAutoDeref : Bool
 
 /--
 The monad under which the desugaring operations all operate.
@@ -54,7 +58,7 @@ instance [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
 /-- Runs the DSL monad beginning with an empty state. -/
 def MonadDSL.run [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
     (a : StateT DSLState m α) : m α :=
-  StateT.run' a ⟨Std.HashMap.emptyWithCapacity 1000, 0⟩
+  StateT.run' a ⟨Std.HashMap.emptyWithCapacity 1000, 0, true⟩
 
 /-- Checks if the provided name `i` is subject to auto-dereferencing. -/
 def isAutoDerefd [MonadDSL m] (i : Name) : m Bool := do -- FIXME name is temporary
@@ -64,6 +68,10 @@ def isAutoDerefd [MonadDSL m] (i : Name) : m Bool := do -- FIXME name is tempora
 /-- Registers the provided name `i` for auto-dereferencing. -/
 def regAutoDeref [MonadDSL m] (i : Name) : m Unit := do
   modify fun st => { st with autoDeref := st.autoDeref.insert i True }
+
+/-- Sets `shouldAutoDeref` and returns the previous value. -/
+def getSetShouldAutoDeref [MonadDSL m] (v : Bool) : m Bool := do
+  modifyGet fun st => (st.shouldAutoDeref, { st with shouldAutoDeref := v })
 
 /--
 Retrieves the name if provided, or generates a fresh name if none is available.
