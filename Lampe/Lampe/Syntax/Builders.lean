@@ -215,32 +215,39 @@ partial def makeExpr [MonadDSL m]
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
-  -- `makeExpr` auto-dereferences mutable locals, so `#_ref(expr)` would lower to `ref(readRef id)`
-  -- — a fresh cell that loses reference identity. We clear `shouldAutoDeref` before recursing into
-  -- the argument; if `makeBareIdent` finds a mutable ident it will emit `Expr.var id` and restore
-  -- the flag, letting us skip the outer `ref(...)` wrapper. This propagates through syntax wrappers
-  -- (parens, blocks) that the recursive `makeExpr` traverses.
+  -- `#_ref(#_readRef(x))` should collapse to `x`: taking a reference to a dereference is identity.
+  -- Additionally, `makeExpr` auto-dereferences mutable locals, so `#_ref(id)` on a mutable local
+  -- would lower to `ref(readRef id)` unless we suppress auto-deref while elaborating the argument.
   if name.getId == `ref then
     match argsList with
     | [arg] => do
+      -- Syntactic identity: #_ref(#_readRef(x)) = x.
+      let inner? : Option _ :=
+        if let `(noir_expr|(#_readRef returning $_)( $readArgs,* )) := arg then
+          readArgs.getElems.toList.head?
+        else none
+      if let some inner := inner? then
+        return ← makeExpr inner binder k
       let saved ← getSetShouldAutoDeref false
       makeExpr arg binder fun argVal => do
-        -- Restore to saved and check whether `makeBareIdent` consumed the flag. Consumed (true)
-        -- means it emitted `Expr.var id` — the ref itself. Restoring to saved (not unconditionally
-        -- true) ensures nested #_ref calls compose correctly without clobbering the outer handler's
-        -- signal.
-        let consumed ← getSetShouldAutoDeref saved
-        if consumed then
-          match k with
-          | some k => k argVal
-          | none => pure argVal
-        else do
-          -- Argument was not a mutable ident; wrap in ref(...) as normal.
-          let argVals ← makeHListLit [argVal]
-          wrapInLet
-            (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
-            binder
-            k
+          -- Restore to saved and check whether `makeBareIdent` consumed the flag. Consumed (true)
+          -- means it emitted `Expr.var id` — the ref itself. Not restoring unconditionally
+          -- ensures nested #_ref calls compose correctly.
+          let consumed ← getSetShouldAutoDeref saved
+          if consumed then
+            match k with
+            | some k => k argVal
+            | none => pure argVal
+          else do
+            -- Argument was not a mutable ident; wrap in ref(...) as normal.
+            let argVals ← makeHListLit [argVal]
+            wrapInLet
+              (←``(Expr.callBuiltin _
+                $(←makeNoirType tp)
+                $(←makeBuiltin name.getId.toString)
+                $argVals))
+              binder
+              k
     | _ => emitBuiltin
   else
     emitBuiltin
