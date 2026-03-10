@@ -230,7 +230,7 @@ lemma bitvec_ofNat_eq_of_toNat_eq {i : Nat} {x : U 32} (h : i = x.toNat) :
     BitVec.ofNat 32 i = x := by
   simpa [h] using (BitVec.ofNat_toNat (x := x))
 
-@[simp] lemma bitvec_ofNatLT_eq_ofNat {i : Nat} (h : i < 2 ^ 32) :
+@[scoped simp] lemma bitvec_ofNatLT_eq_ofNat {i : Nat} (h : i < 2 ^ 32) :
     BitVec.ofNatLT i h = BitVec.ofNat 32 i := by
   simpa using (BitVec.ofNatLT_eq_ofNat (w := 32) (n := i) h)
 
@@ -374,10 +374,10 @@ lemma embed_eq_dropLast_of_pop_update {p T MaxLen} {v v' : Repr p T MaxLen}
 
 section BVNat
 
-@[simp] lemma u32_toNat_lt (x : U 32) : x.toNat < 2 ^ 32 :=
+@[scoped simp] lemma u32_toNat_lt (x : U 32) : x.toNat < 2 ^ 32 :=
   BitVec.toNat_lt_twoPow_of_le (by rfl)
 
-@[simp] lemma u32_toNat_lt' (x : U 32) : x.toNat < 4294967296 := by
+@[scoped simp] lemma u32_toNat_lt' (x : U 32) : x.toNat < 4294967296 := by
   simpa using u32_toNat_lt x
 
 lemma ofNat32_toNat {i : Nat} (h : i < 2 ^ 32) :

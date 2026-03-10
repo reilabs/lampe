@@ -300,7 +300,7 @@ partial def makeNoirType [MonadUtil m] : TSyntax `noir_type → m (TSyntax `term
     let structIdent := makeStructDefIdent (←makeNoirIdent structName)
     let generics := (←makeGenericVals genericsList).map fun g => g.value
     ``(Lampe.Struct.tp $structIdent $(←makeHListLit generics))
-| `(noir_type|${ $i }) => pure i
+| `(noir_type|splice!( $i )) => pure i
 | `(noir_type|λ( $param_types,* ) -> $ret:noir_type)
 | `(noir_type|λ( $param_types,* ) → $ret:noir_type) => do
   let paramTypes ← makeListLit (←param_types.getElems.toList.mapM makeNoirType)

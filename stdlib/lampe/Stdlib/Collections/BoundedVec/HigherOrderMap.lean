@@ -143,17 +143,17 @@ private theorem mapLike_constrained_loop_effectful_spec
             {
               let lenFn =
                 («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
-                  as λ(${bvTp T MaxLen}) -> u32);
-              let selfLen = (lenFn as λ(${bvTp T MaxLen}) -> u32)(self);
+                  as λ(splice!(bvTp T MaxLen)) -> u32);
+              let selfLen = (lenFn as λ(splice!(bvTp T MaxLen)) -> u32)(self);
               let cond = (#_uLt returning bool)(i, selfLen);
               if cond then {
                 let getUncheckedFn =
                   («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
-                    as λ(${bvTp T MaxLen}, u32) -> T);
-                let elem = (getUncheckedFn as λ(${bvTp T MaxLen}, u32) -> T)(self, i);
-                let tmp = ${Expr.call Args Out f (mkArgs i elem)};
-                ${Expr.modifyLens (tp₁ := bvTp Out MaxLen) (tp₂ := Out) ret tmp
-                  ((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons (Access.array i))};
+                    as λ(splice!(bvTp T MaxLen), u32) -> T);
+                let elem = (getUncheckedFn as λ(splice!(bvTp T MaxLen), u32) -> T)(self, i);
+                let tmp = splice!(Expr.call Args Out f (mkArgs i elem));
+                splice!(Expr.modifyLens (tp₁ := bvTp Out MaxLen) (tp₂ := Out) ret tmp
+                  ((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons (Access.array i)));
                 #_skip
               }
             }
@@ -727,15 +727,15 @@ private theorem forEachLike_constrained_loop_spec
             {
               let lenFn =
                 («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
-                  as λ(${bvTp T MaxLen}) -> u32);
-              let selfLen = (lenFn as λ(${bvTp T MaxLen}) -> u32)(self);
+                  as λ(splice!(bvTp T MaxLen)) -> u32);
+              let selfLen = (lenFn as λ(splice!(bvTp T MaxLen)) -> u32)(self);
               let cond = (#_uLt returning bool)(i, selfLen);
               if cond then {
                 let getUncheckedFn =
                   («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
-                    as λ(${bvTp T MaxLen}, u32) -> T);
-                let elem = (getUncheckedFn as λ(${bvTp T MaxLen}, u32) -> T)(self, i);
-                ${Expr.call Args Tp.unit f (mkArgs i elem)};
+                    as λ(splice!(bvTp T MaxLen), u32) -> T);
+                let elem = (getUncheckedFn as λ(splice!(bvTp T MaxLen), u32) -> T)(self, i);
+                splice!(Expr.call Args Tp.unit f (mkArgs i elem));
                 #_skip
               }
             }
