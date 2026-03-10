@@ -163,6 +163,10 @@ partial def makeExpr [MonadDSL m]
 -- Sorry
 | `(noir_expr|sorry) => do ``(sorry)
 
+-- Lean splice (escape hatch): expects a Lampe `Expr` term.
+| `(noir_expr|${ $t }) => do
+  wrapInLet t binder k
+
 -- Literals
 | `(noir_expr|$n:num : $tp) => do wrapInLet (←``(Expr.litNum $(←makeNoirType tp) $n)) binder k
 | `(noir_expr|-$n:num : $tp) => do wrapInLet (←``(Expr.litNum $(←makeNoirType tp) (-$n))) binder k
