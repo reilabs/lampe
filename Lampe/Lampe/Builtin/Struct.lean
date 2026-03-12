@@ -53,6 +53,20 @@ example (tpl : Tp.denote p (.tuple (some "Complex") [.field, .field])) (h : tpl 
     indexTpl (p := p) tpl Member.head.tail = ai := by
   subst h; simp only [indexTpl_tail, indexTpl_head]
 
+-- simp works when the tuple has an explicit Tp.denoteArgs annotation (as in exampleTuple above).
+-- With an untyped literal, the elaborator can't infer the implicit `tps` list, because
+-- unification of `Bool × U 32 × U 32 × Unit` with `Tp.denoteArgs p tps` doesn't solve for tps
+-- even though Tp.denoteArgs is @[reducible].
+--
+-- The line below elaboration-fails (no annotation):
+--   indexTpl (p := p) (s, n, d, ()) Member.head.tail
+--
+-- With a type ascription, simp fires normally:
+example (p : Prime) (s : Bool) (n d : U 32) :
+    let tpl : Tp.denoteArgs p [.bool, .u 32, .u 32] := (s, n, d, ())
+    indexTpl (p := p) tpl Member.head.tail = n := by
+  simp [indexTpl_tail, indexTpl_head]
+
 @[simp]
 theorem index_replaced_tpl :
   indexTpl (replaceTuple' tpl mem v') mem = v' := by
