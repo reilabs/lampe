@@ -118,4 +118,22 @@ def sliceRemove := newGenericPureBuiltin
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
 
+/-- Alias for `slicePushBack`. In newer Noir versions the builtin is called `vectorPushBack`. -/
+abbrev vectorPushBack := @slicePushBack
+
+/-- Alias for `slicePushFront`. In newer Noir versions the builtin is called `vectorPushFront`. -/
+abbrev vectorPushFront := @slicePushFront
+
+/-- Alias for `slicePopBack`. In newer Noir versions the builtin is called `vectorPopBack`. -/
+abbrev vectorPopBack := @slicePopBack
+
+/-- Alias for `slicePopFront`. In newer Noir versions the builtin is called `vectorPopFront`. -/
+abbrev vectorPopFront := @slicePopFront
+
+/-- Alias for `sliceInsert`. In newer Noir versions the builtin is called `vectorInsert`. -/
+abbrev vectorInsert := @sliceInsert
+
+/-- Alias for `sliceRemove`. In newer Noir versions the builtin is called `vectorRemove`. -/
+abbrev vectorRemove := @sliceRemove
+
 end Lampe.Builtin
