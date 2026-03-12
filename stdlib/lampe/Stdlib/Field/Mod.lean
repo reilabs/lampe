@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 import Lampe
 import Lampe.Data.Digits
 import Stdlib.Field.Basic
@@ -8,7 +8,7 @@ import Stdlib.Ext
 
 namespace Lampe.Stdlib.Field
 
-open «std-1.0.0-beta.12» (env)
+open «std-1.0.0-beta.14» (env)
 
 lemma bits_lt_of_lex_lt {data pdata : List (BitVec 1)}
     (hlen : data.length = pdata.length)
@@ -75,7 +75,7 @@ lemma ofDigitsBE'_lt_of_shorter_than_modulus {r : Radix} {data : List (Digit r)}
 
 theorem to_be_radix_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_be_radix».call h![N] h![f, 256])
+    («std-1.0.0-beta.14::field::to_be_radix».call h![N] h![f, 256])
     fun o =>
       ∃∃ (v : List.Vector (Digit R256) N.toNat),
       o = v.map BitVec.ofFin ⋆
@@ -104,7 +104,7 @@ theorem to_be_radix_intro :
 
 theorem to_le_radix_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_le_radix».call h![N] h![f, 256])
+    («std-1.0.0-beta.14::field::to_le_radix».call h![N] h![f, 256])
     fun o =>
       ∃∃ (v : List.Vector (Digit R256) N.toNat),
       o = v.reverse.map BitVec.ofFin ⋆
@@ -132,7 +132,7 @@ theorem to_le_radix_intro :
 
 theorem to_be_bits_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_be_bits».call h![N] h![f])
+    («std-1.0.0-beta.14::field::to_be_bits».call h![N] h![f])
     fun r => ∃∃(lt : f.val < (2 ^ N.toNat)),
       r = (RadixVec.toDigitsBE (d := N.toNat) (r := 2)
         ⟨f.val, by simp_all [OfNat.ofNat]⟩ |>.map (BitVec.ofFin (w := 1))) := by
@@ -250,7 +250,7 @@ theorem to_be_bits_intro :
 set_option maxHeartbeats 300000
 theorem to_le_bits_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_le_bits».call h![N] h![f])
+    («std-1.0.0-beta.14::field::to_le_bits».call h![N] h![f])
     fun r => ∃∃(lt : f.val < (2 ^ N.toNat)),
       r = (RadixVec.toDigitsBE (d := N.toNat) (r := 2)
         ⟨f.val, by simp_all [OfNat.ofNat]⟩ |>.map (BitVec.ofFin (w := 1)) |>.reverse) := by
@@ -425,7 +425,7 @@ theorem to_le_bits_intro :
 
 theorem to_be_bytes_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_be_bytes».call h![N] h![f])
+    («std-1.0.0-beta.14::field::to_be_bytes».call h![N] h![f])
     fun o =>
       ∃∃(lt : f.val < (256 ^ N.toNat)), o = (RadixVec.toDigitsBE
         (d := N.toNat)
@@ -562,7 +562,7 @@ theorem to_be_bytes_intro :
 set_option maxHeartbeats 500000
 theorem to_le_bytes_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::to_le_bytes».call h![N] h![f])
+    («std-1.0.0-beta.14::field::to_le_bytes».call h![N] h![f])
     fun o =>
       ∃∃(lt : f.val < (256 ^ N.toNat)), o = (RadixVec.toDigitsBE
         (d := N.toNat)
@@ -720,7 +720,7 @@ theorem to_le_bytes_intro :
 set_option maxHeartbeats 2000000
 theorem pow_32_intro {p self exponent} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::field::pow_32».call h![] h![self, exponent])
+      («std-1.0.0-beta.14::field::pow_32».call h![] h![self, exponent])
       (fun r => ∃∃ hlt : exponent.val < 2^32, r = self ^ exponent.val) := by
   enter_decl
   steps [to_le_bits_intro]
@@ -905,7 +905,7 @@ theorem lt_intro {p self another} [Prime.BitsGT p 129]
     (hmod : p.natVal = Lampe.Stdlib.Field.Bn254.ploNat +
       Lampe.Stdlib.Field.Bn254.pow128 * Lampe.Stdlib.Field.Bn254.phiNat) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::field::lt».call h![] h![self, another])
+      («std-1.0.0-beta.14::field::lt».call h![] h![self, another])
       (fun r => r = decide (self.val < another.val)) := by
   enter_decl
   steps [Lampe.Stdlib.Compat.is_bn254_spec]
@@ -916,7 +916,7 @@ theorem lt_intro {p self another} [Prime.BitsGT p 129]
 
 theorem from_le_bytes_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::from_le_bytes».call h![N] h![bytes])
+    («std-1.0.0-beta.14::field::from_le_bytes».call h![N] h![bytes])
     fun output => output = Fp.ofBytesLE (P := p) bytes.toList := by
   rcases N with ⟨⟨N, hN⟩⟩
   enter_decl
@@ -945,7 +945,7 @@ theorem from_le_bytes_intro :
 
 theorem from_be_bytes_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::from_be_bytes».call h![N] h![bytes])
+    («std-1.0.0-beta.14::field::from_be_bytes».call h![N] h![bytes])
     fun output => output = Fp.ofBytesLE (P := p) bytes.toList.reverse := by
   rcases N with ⟨⟨N, hN⟩⟩
   enter_decl
@@ -976,8 +976,17 @@ theorem from_be_bytes_intro :
 
 theorem sgn0_intro :
     STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::field::sgn0».call h![] h![f])
+    («std-1.0.0-beta.14::field::sgn0».call h![] h![f])
     (fun r => r = @Builtin.CastTp.cast Tp.field (Tp.u 1) _ p f) := by
   enter_decl
   simpa using
     (Lampe.STHoare.cast_intro (p := p) (Γ := env) (tp := Tp.field) (tp' := Tp.u 1) (v := f))
+
+theorem bytes32_to_field_spec {p bytes} :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::field::bytes32_to_field».call h![] h![bytes])
+      (fun r => r = (bytes.toList.enum.foldl
+        (fun (acc : ZMod (p : ℕ)) (ib : ℕ × BitVec 8) =>
+          acc + (ib.2.toNat : ZMod (p : ℕ)) * (256 : ZMod (p : ℕ)) ^ (31 - ib.1))
+        (0 : ZMod (p : ℕ)))) := by
+  sorry
