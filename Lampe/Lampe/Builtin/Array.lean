@@ -111,5 +111,7 @@ def asSlice := newGenericTotalPureBuiltin
   (fun (tp, n) => ⟨[.array tp n], .slice tp⟩)
   (fun (_, _) h![a] => a.toList)
 
+/-- Alias for `asSlice`. In newer Noir versions the builtin is called `asVector`. -/
+abbrev asVector := @asSlice
 
 end Lampe.Builtin

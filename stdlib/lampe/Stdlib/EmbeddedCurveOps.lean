@@ -1,15 +1,15 @@
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.EmbeddedCurveOps
 
-open «std-1.0.0-beta.12»
+open «std-1.0.0-beta.14»
 
 namespace Point
 
 /-- A useful shorthand for the type of the embedded curve point. -/
 @[reducible]
-def type := «std-1.0.0-beta.12::embedded_curve_ops::EmbeddedCurvePoint».tp h![]
+def type := «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint».tp h![]
 
 /-- A useful shorthand for declaring the type of values of the embedded curve point. -/
 @[reducible]
@@ -28,7 +28,7 @@ namespace Scalar
 
 /-- A useful shorthand for the type of the embedded curve scalar. -/
 @[reducible]
-def type := «std-1.0.0-beta.12::embedded_curve_ops::EmbeddedCurveScalar».tp h![]
+def type := «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar».tp h![]
 
 /-- A useful shorthand for declaring the type of values of the embedded curve scalar. -/
 @[reducible]
