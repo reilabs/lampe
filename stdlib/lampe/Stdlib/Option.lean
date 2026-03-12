@@ -688,13 +688,29 @@ theorem expect_spec {p T N MT v message}
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::option::Option::expect».call h![T, N, MT] h![v, message])
       (fun r => r = (toOption v).get v_is_some) := by
-  sorry
+  enter_decl
+  steps [is_some_spec]
+  subst_vars
+  simp_all
 
 theorem unwrap_or_spec {p T v default} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::option::Option::unwrap_or».call h![T] h![v, default])
       (fun r => r = (toOption v).getD default) := by
-  sorry
+  enter_decl
+  steps
+  apply STHoare.ite_intro
+  · intro cond
+    rw [option_fst_eq_toOption_isSome] at cond
+    steps
+    subst_vars
+    rcases v with ⟨(_|_), _, _⟩
+    · contradiction
+    · rfl
+  · intro cond
+    rw [option_fst_eq_toOption_isSome] at cond
+    steps
+    simp_all
 
 theorem unwrap_or_else_none_spec {p T E v default default_b P Q}
     (v_is_none : (toOption v).isNone)
@@ -703,18 +719,38 @@ theorem unwrap_or_else_none_spec {p T E v default default_b P Q}
       (P ⋆ [λdefault ↦ default_b])
       («std-1.0.0-beta.14::option::Option::unwrap_or_else».call h![T, E] h![v, default])
       (fun r => Q r ⋆ [λdefault ↦ default_b]) := by
-  sorry
+  enter_decl
+  steps
+  apply STHoare.ite_intro_of_false
+  · simp_all
+
+  steps [STHoare.callLambda_intro (hlam := h_lam)]
 
 theorem unwrap_or_else_some_spec {p T E v default}
     (v_is_some : (toOption v).isSome) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::option::Option::unwrap_or_else».call h![T, E] h![v, default])
       (fun r => r = (toOption v).get v_is_some) := by
-  sorry
+  enter_decl
+  steps
+  apply STHoare.ite_intro_of_true
+  · simp_all
+
+  steps
+  subst_vars
+  rcases v with ⟨(_|_), _, _⟩
+  · contradiction
+  · rfl
 
 theorem unwrap_unchecked_spec {p T v} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::option::Option::unwrap_unchecked».call h![T] h![v])
       (fun r => ∀ h : (toOption v).isSome, r = (toOption v).get h) := by
-  sorry
+  enter_decl
+  steps
+  subst_vars
+  intro h
+  rcases v with ⟨(_|_), _, _⟩
+  · contradiction
+  · rfl
 
