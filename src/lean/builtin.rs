@@ -121,7 +121,7 @@ impl TryInto<BuiltinType> for NoirType {
                 Ok(BuiltinType::Uint(integer_bit_size_to_u8(s)))
             }
             NoirType::Array(..) => Ok(BuiltinType::Array),
-            NoirType::Slice(_) => Ok(BuiltinType::Slice),
+            NoirType::Vector(_) => Ok(BuiltinType::Slice),
             NoirType::String(_) => Ok(BuiltinType::String),
             NoirType::TypeVariable(tv) => match &*tv.borrow() {
                 TypeBinding::Bound(ty) => TryInto::<BuiltinType>::try_into(ty.clone()),
