@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 import Lampe
 
 import Mathlib.Order.Compare
@@ -12,7 +12,7 @@ import Stdlib.Tuple
 
 namespace Lampe.Stdlib.Cmp
 
-open «std-1.0.0-beta.12»
+open «std-1.0.0-beta.14»
 open Lampe.Stdlib
 
 namespace Eq
@@ -23,19 +23,19 @@ set_option Lampe.pp.STHoare true
 /-- A shorthand for a call to the `std::cmp::Eq::eq` method. -/
 @[reducible]
 def eq {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.12::cmp::Eq».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.14::cmp::Eq».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::cmp::Eq».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::cmp::Eq».«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::cmp::Eq».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::cmp::Eq».«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.12::cmp::Eq».eq.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.14::cmp::Eq».eq.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.12::cmp::Eq».eq.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.12::cmp::Eq».eq generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.14::cmp::Eq».eq.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.14::cmp::Eq».eq generics Self associatedTypes fnGenerics
 
 /-- Asserts that the provided `tp` has an implementation of `std::cmp::Eq` in the environment. -/
 @[reducible]
-def hasImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] tp
+def hasImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.14::cmp::Eq».hasImpl env h![] tp
 
 theorem field_eq_spec {p a b}
   : STHoare p env ⟦⟧
@@ -247,7 +247,7 @@ theorem slice_eq_pure_spec {p T a b}
     simp_all
 
 theorem string_eq_pure_spec {p N a b}
-    {u8_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] (.u 8)}
+    {u8_eq : «std-1.0.0-beta.14::cmp::Eq».hasImpl env h![] (.u 8)}
   : STHoare p env ⟦⟧
     (eq h![] (.str N) h![] h![] h![a, b])
     (fun r : Bool => ⟦r ↔ a = b⟧) := by
@@ -346,7 +346,7 @@ theorem tuple5_eq_pure_spec {p A B C D E self other}
 
 theorem ordering_eq_spec {p self other}
   : STHoare p env ⟦⟧
-    (eq h![] («std-1.0.0-beta.12::cmp::Ordering».tp h![]) h![] h![] h![self, other])
+    (eq h![] («std-1.0.0-beta.14::cmp::Ordering».tp h![]) h![] h![] h![self, other])
     (fun r : Bool => ⟦r ↔ self = other⟧) := by
   resolve_trait
   steps
@@ -362,20 +362,20 @@ namespace Ord
 set_option Lampe.pp.Expr true
 set_option Lampe.pp.STHoare true
 
-abbrev NoirOrdering := «std-1.0.0-beta.12::cmp::Ordering».tp h![]
+abbrev NoirOrdering := «std-1.0.0-beta.14::cmp::Ordering».tp h![]
 
 /-- A shorthand for a call to the `std::cmp::Ord::cmp` method. -/
 @[reducible]
 def cmp {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.12::cmp::Ord».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.14::cmp::Ord».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::cmp::Ord».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::cmp::Ord».cmp.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::cmp::Ord».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::cmp::Ord».cmp.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.12::cmp::Ord».cmp.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.14::cmp::Ord».cmp.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.12::cmp::Ord».cmp.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.12::cmp::Ord».cmp generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.14::cmp::Ord».cmp.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.14::cmp::Ord».cmp generics Self associatedTypes fnGenerics
 
 /--
 Convert a Lean ordering into a Noir `std::cmp::Ordering`.
@@ -423,9 +423,9 @@ lemma fromOrdering_eq_eq_iff {p} {o} : @fromOrdering p o = fromOrdering .eq ↔ 
     norm_num at hp
 
 /--
-Convert a Noir `std-1.0.0-beta.12::cmp::Ordering` into a Lean ordering.
+Convert a Noir `std-1.0.0-beta.14::cmp::Ordering` into a Lean ordering.
 
-We recommend converting user-provided `std-1.0.0-beta.12::cmp::Ordering`s from the user, and
+We recommend converting user-provided `std-1.0.0-beta.14::cmp::Ordering`s from the user, and
 converting them within the theorem.
 
 Note that in order to ensure that `toOrdering` is total, we calculate the input field element that
@@ -439,7 +439,7 @@ def toOrdering {p} : (NoirOrdering.denote p) → Ordering
 
 /-- Asserts that the provided `tp` has an implementation of `std::cmp::Ord` in the environment. -/
 @[reducible]
-def hasImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::cmp::Ord».hasImpl env h![] tp
+def hasImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.14::cmp::Ord».hasImpl env h![] tp
 
 /--
 A shorthand of the pure semantics for calling an embedded function implementing the ordering
@@ -520,7 +520,7 @@ lemma ge_emb_trans {p T} (t_cmp_emb : Tp.comparator p T) (t_cmp_trans : Std.Tran
 
 theorem less_spec {p}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Ordering::less».call h![] h![])
+    («std-1.0.0-beta.14::cmp::Ordering::less».call h![] h![])
     (fun r => r = fromOrdering .lt) := by
   enter_decl
   steps
@@ -529,7 +529,7 @@ theorem less_spec {p}
 
 theorem equal_spec {p}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Ordering::equal».call h![] h![])
+    («std-1.0.0-beta.14::cmp::Ordering::equal».call h![] h![])
     (fun r => r = fromOrdering .eq) := by
   enter_decl
   steps
@@ -538,7 +538,7 @@ theorem equal_spec {p}
 
 theorem greater_spec {p}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::Ordering::greater».call h![] h![])
+    («std-1.0.0-beta.14::cmp::Ordering::greater».call h![] h![])
     (fun r => r = fromOrdering .gt) := by
   enter_decl
   steps
@@ -1489,7 +1489,7 @@ theorem max_pure_spec {p T v1 v2}
     {T_ord_emb : Tp.comparator p T}
     {T_ord_f : ∀a b, pureOrdSemantics env T_ord_emb a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::max».call h![T] h![v1, v2])
+    («std-1.0.0-beta.14::cmp::max».call h![T] h![v1, v2])
     (fun r => r = if T_ord_emb v1 v2 = .gt then v1 else v2) := by
   enter_decl
   step_as (⟦⟧) (fun r : Bool => r = (T_ord_emb v1 v2 = .gt))
@@ -1514,7 +1514,7 @@ theorem min_pure_spec {p T v1 v2}
     {T_ord_emb : Tp.comparator p T}
     {T_ord_f : ∀a b, pureOrdSemantics env T_ord_emb a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.12::cmp::min».call h![T] h![v1, v2])
+    («std-1.0.0-beta.14::cmp::min».call h![T] h![v1, v2])
     (fun r => r = if T_ord_emb v1 v2 = .gt then v2 else v1) := by
   enter_decl
   step_as (⟦⟧) (fun r : Bool => r = (T_ord_emb v1 v2 = .gt))

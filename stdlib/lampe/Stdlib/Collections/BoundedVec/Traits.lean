@@ -4,7 +4,7 @@ import Stdlib.Convert
 
 namespace Lampe.Stdlib.Collections.BoundedVec
 
-open «std-1.0.0-beta.12»
+open «std-1.0.0-beta.14»
 
 /-!
 Trait-method specs for `BoundedVec`.
@@ -14,7 +14,7 @@ the extracted stdlib. We provide a first version of their specs here; proofs are
 -/
 
 theorem eq_trait_spec {p T MaxLen self other}
-    {t_eq : «std-1.0.0-beta.12::cmp::Eq».hasImpl env h![] T}
+    {t_eq : «std-1.0.0-beta.14::cmp::Eq».hasImpl env h![] T}
     {t_eq_f :
       ∀ a b,
         STHoare p env ⟦⟧ (Lampe.Stdlib.Cmp.Eq.eq h![] T h![] h![] h![a, b])

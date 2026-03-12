@@ -152,7 +152,7 @@ pub fn get_lean_dependency(
     dependency_config: &DependencyConfig,
 ) -> Result<Box<dyn LeanDependency>> {
     match dependency_config {
-        DependencyConfig::Github {
+        DependencyConfig::Git {
             git,
             tag,
             directory,

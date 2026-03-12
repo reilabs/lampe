@@ -59,6 +59,7 @@ use noirc_frontend::{
         GlobalId,
         StmtId,
         TraitId,
+        TraitImplId,
         TypeAliasId,
         TypeId,
     },
@@ -446,7 +447,7 @@ impl LeanGenerator<'_, '_, '_> {
                 self.generate_lean_type_value(typ, bindings),
                 self.generate_lean_type_value(count, bindings),
             ),
-            NoirType::Slice(typ) => Type::slice(self.generate_lean_type_value(typ, bindings)),
+            NoirType::Vector(typ) => Type::slice(self.generate_lean_type_value(typ, bindings)),
             NoirType::Integer(signedness, bit_size) => Type::integer(
                 u64::from(bit_size.bit_size()),
                 *signedness == Signedness::Signed,
@@ -581,7 +582,6 @@ impl LeanGenerator<'_, '_, '_> {
             match typ {
                 QuotedType::Expr => "Expr",
                 QuotedType::Quoted => "Quoted",
-                QuotedType::TopLevelItem => "TopLevelItem",
                 QuotedType::Type => "Type",
                 QuotedType::TypedExpr => "TypedExpr",
                 QuotedType::TypeDefinition => "TypeDefinition",
@@ -834,6 +834,7 @@ impl LeanGenerator<'_, '_, '_> {
             type_var: dummy_tv.clone(),
             name:     Rc::new("LOOKUP_DUMMY".to_string()),
             implicit: false,
+            original_type_var_id: None,
         });
 
         // We then create the "method keys" for the builtin types; these are NoirType
@@ -856,7 +857,7 @@ impl LeanGenerator<'_, '_, '_> {
                 false,
             ),
             NoirType::Integer(Signedness::Unsigned, IntegerBitSize::One),
-            NoirType::Slice(Box::new(dummy_generic.clone())),
+            NoirType::Vector(Box::new(dummy_generic.clone())),
             NoirType::String(Box::new(dummy_generic.clone())),
             NoirType::Tuple(vec![dummy_generic; 0]),
             NoirType::Unit,
@@ -902,7 +903,7 @@ impl LeanGenerator<'_, '_, '_> {
             .into_iter()
             .flat_map(|def| match def {
                 ModuleDefId::TypeId(id) => {
-                    let type_data_ref = self.context.def_interner.get_type(id);
+                    let type_data_ref = self.context.def_interner.get_type(*id);
                     let struct_data = type_data_ref.borrow();
                     let generics = struct_data
                         .generics
@@ -912,6 +913,7 @@ impl LeanGenerator<'_, '_, '_> {
                                 type_var: g.type_var.clone(),
                                 name:     g.name.clone(),
                                 implicit: false,
+                                original_type_var_id: None,
                             })
                         })
                         .collect_vec();
@@ -937,7 +939,7 @@ impl LeanGenerator<'_, '_, '_> {
                         vec![]
                     }
                 }
-                _ => vec![def],
+                _ => vec![*def],
             })
             .collect_vec();
 
@@ -1220,7 +1222,7 @@ impl LeanGenerator<'_, '_, '_> {
         seen: &mut HashSet<TypeVariableId>,
     ) -> Vec<Type> {
         match typ {
-            NoirType::String(a) | NoirType::Slice(a) | NoirType::Reference(a, _) => {
+            NoirType::String(a) | NoirType::Vector(a) | NoirType::Reference(a, _) => {
                 self.gather_unbound_vars_values(a, seen)
             }
             NoirType::Array(a, b) | NoirType::FmtString(a, b) => self
@@ -1273,7 +1275,7 @@ impl LeanGenerator<'_, '_, '_> {
         seen: &mut HashSet<TypeVariableId>,
     ) -> Vec<TypePattern> {
         match typ {
-            NoirType::String(a) | NoirType::Slice(a) | NoirType::Reference(a, _) => {
+            NoirType::String(a) | NoirType::Vector(a) | NoirType::Reference(a, _) => {
                 self.gather_unbound_vars_patterns(a, seen)
             }
             NoirType::Array(a, b) | NoirType::FmtString(a, b) => self
@@ -1423,7 +1425,7 @@ impl LeanGenerator<'_, '_, '_> {
                 let location = trait_impl.borrow().location;
                 Some((
                     location,
-                    self.generate_trait_impl(name, trait_impl.borrow()),
+                    self.generate_trait_impl(name, *id, trait_impl.borrow()),
                 ))
             })
             .collect_vec()
@@ -1433,6 +1435,7 @@ impl LeanGenerator<'_, '_, '_> {
     pub fn generate_trait_impl(
         &self,
         name: String,
+        impl_id: TraitImplId,
         trait_impl: Ref<TraitImpl>,
     ) -> TraitImplementation {
         let trait_def_id = trait_impl.trait_id;
@@ -1469,15 +1472,15 @@ impl LeanGenerator<'_, '_, '_> {
             })
             .collect_vec();
 
-        let generic_vals = trait_impl
-            .trait_generics
+        let trait_generics_from_interner = self.context.def_interner.get_ordered_generics_for_impl(impl_id);
+        let generic_vals = trait_generics_from_interner
             .iter()
             .map(|g| self.generate_lean_type_value(g, None))
             .collect_vec();
 
         // If type patterns have the same name and kind, they are the same variable at
         // the definition site, so we can correctly unique them.
-        let generic_vars = self.gather_trait_impl_generics(&trait_impl);
+        let generic_vars = self.gather_trait_impl_generics(impl_id, &trait_impl);
 
         let methods = trait_impl
             .methods
@@ -1496,17 +1499,18 @@ impl LeanGenerator<'_, '_, '_> {
         }
     }
 
-    pub fn gather_trait_impl_generics(&self, trait_impl: &TraitImpl) -> Vec<TypePattern> {
+    pub fn gather_trait_impl_generics(&self, impl_id: TraitImplId, trait_impl: &TraitImpl) -> Vec<TypePattern> {
         let mut seen = HashSet::<TypeVariableId>::new();
         let mut patterns = Vec::default();
 
-        for typ in &trait_impl.trait_generics {
+        let trait_generics = self.context.def_interner.get_ordered_generics_for_impl(impl_id);
+        for typ in trait_generics {
             patterns.extend(self.gather_unbound_vars_patterns(typ, &mut seen));
         }
 
         patterns.extend(self.gather_unbound_vars_patterns(&trait_impl.typ, &mut seen));
 
-        for typ in &trait_impl.trait_generics {
+        for typ in trait_generics {
             patterns.extend(self.gather_unbound_vars_patterns(typ, &mut seen));
         }
 
@@ -2472,7 +2476,7 @@ impl LeanGenerator<'_, '_, '_> {
                     Expression::Call(call)
                 }
             },
-            HirLiteral::Slice(arr) => match arr {
+            HirLiteral::Vector(arr) => match arr {
                 HirArrayLiteral::Standard(elems) => {
                     let elems = elems.iter().map(|e| self.generate_expr(*e)).collect_vec();
                     let call = Call {
@@ -2613,13 +2617,10 @@ impl LeanGenerator<'_, '_, '_> {
                         |t| self.generate_lean_type_value(t, Some(bindings)),
                     );
                     let trait_generics = if func_meta.trait_impl.is_some() {
-                        let trait_impl = self
-                            .context
+                        let trait_impl_id = func_meta.trait_impl.unwrap();
+                        self.context
                             .def_interner
-                            .get_trait_implementation(func_meta.trait_impl.unwrap());
-                        let trait_impl = trait_impl.borrow();
-                        trait_impl
-                            .trait_generics
+                            .get_ordered_generics_for_impl(trait_impl_id)
                             .iter()
                             .map(|t| self.generate_lean_type_value(t, Some(bindings)))
                             .collect_vec()
@@ -2918,6 +2919,7 @@ impl LeanGenerator<'_, '_, '_> {
                     | HirLValue::Dereference {
                         element_type: typ, ..
                     } => typ,
+                    HirLValue::Error { .. } => panic!("Encountered Error lvalue in index"),
                 };
                 let array = Box::new(self.generate_lvalue(array));
                 let index = self.generate_expr(*index);
@@ -2925,7 +2927,7 @@ impl LeanGenerator<'_, '_, '_> {
 
                 match lhs_type {
                     NoirType::Array(..) => LValue::ArrayIndex { array, index, typ },
-                    NoirType::Slice(_) => LValue::SliceIndex {
+                    NoirType::Vector(_) => LValue::SliceIndex {
                         slice: array,
                         index,
                         typ,
@@ -2945,6 +2947,7 @@ impl LeanGenerator<'_, '_, '_> {
                     element_type,
                 }
             }
+            HirLValue::Error { .. } => panic!("Encountered Error lvalue"),
         }
     }
 
@@ -2993,8 +2996,8 @@ impl LeanGenerator<'_, '_, '_> {
                 Box::new(self.substitute_bindings(n.as_ref(), bindings)),
                 Box::new(self.substitute_bindings(e.as_ref(), bindings)),
             ),
-            NoirType::Slice(e) => {
-                NoirType::Slice(Box::new(self.substitute_bindings(e.as_ref(), bindings)))
+            NoirType::Vector(e) => {
+                NoirType::Vector(Box::new(self.substitute_bindings(e.as_ref(), bindings)))
             }
             NoirType::String(n) => {
                 NoirType::String(Box::new(self.substitute_bindings(n, bindings)))

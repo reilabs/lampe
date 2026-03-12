@@ -6,7 +6,6 @@ import Stdlib.Cmp
 import Stdlib.Collections.BoundedVec
 import Stdlib.Collections.Map
 import Stdlib.Collections.Umap
-import Stdlib.Collections.Vec
 import Stdlib.Compat
 import Stdlib.Convert
 import Stdlib.Default
@@ -30,9 +29,9 @@ import Stdlib.Tp
 import Stdlib.TraitMethods
 import Stdlib.Tuple
 
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 
 namespace Lampe.Stdlib
 
-export «std-1.0.0-beta.12» (env)
+export «std-1.0.0-beta.14» (env)
 

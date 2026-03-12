@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 import Lampe
 
 import Stdlib.Slice
@@ -6,7 +6,7 @@ import Stdlib.TraitMethods
 
 namespace Lampe.Stdlib.Append
 
-open «std-1.0.0-beta.12»
+open «std-1.0.0-beta.14»
 open Lampe.Stdlib
 
 set_option Lampe.pp.Expr true

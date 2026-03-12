@@ -2,7 +2,7 @@ import Stdlib.Collections.BoundedVec.Methods
 
 namespace Lampe.Stdlib.Collections.BoundedVec
 
-open «std-1.0.0-beta.12»
+open «std-1.0.0-beta.14»
 
 /-!
 Higher-order method specs for Noir `BoundedVec`: `map` and `mapi` (pure variants).
@@ -12,7 +12,7 @@ This module is imported by `Stdlib.Collections.BoundedVec` as part of the public
 
 private theorem len_concrete_spec' {p T MaxLen self} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len».call h![T, MaxLen] h![self])
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::len».call h![T, MaxLen] h![self])
       (fun r => r = len self) := by
   enter_decl
   steps
@@ -21,7 +21,7 @@ private theorem len_concrete_spec' {p T MaxLen self} :
 private theorem get_unchecked_concrete_spec' {p T MaxLen self index}
     (hindex : index.toNat < MaxLen.toNat) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked».call h![T, MaxLen]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::get_unchecked».call h![T, MaxLen]
         h![self, index])
       (fun r => r = (storage self)[index.toNat]'hindex) := by
   enter_decl
@@ -142,13 +142,13 @@ private theorem mapLike_constrained_loop_effectful_spec
           expr!![
             {
               let lenFn =
-                («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
+                («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
                   as λ(splice!(bvTp T MaxLen)) -> u32);
               let selfLen = (lenFn as λ(splice!(bvTp T MaxLen)) -> u32)(self);
               let cond = (#_uLt returning bool)(i, selfLen);
               if cond then {
                 let getUncheckedFn =
-                  («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
+                  («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
                     as λ(splice!(bvTp T MaxLen), u32) -> T);
                 let elem = (getUncheckedFn as λ(splice!(bvTp T MaxLen), u32) -> T)(self, i);
                 let tmp = splice!(Expr.call Args Out f (mkArgs i elem));
@@ -322,7 +322,7 @@ theorem map_effectful_spec {p T MaxLen Out Env self f fb}
         (ip ++ [e] <+: embed self) →
           STHoare p env (inv ip op) (fb h![e]) (fun r => inv (ip ++ [e]) (op ++ [r])))
   : STHoare p env (inv [] [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
         h![self, f])
       (fun r => ⟦wellFormed r⟧ ⋆ inv (embed self) (embed r)) := by
   enter_decl
@@ -377,7 +377,7 @@ theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
         i.toNat = ip.length →
           STHoare p env (inv ip op) (fb h![i, e]) (fun r => inv (ip ++ [e]) (op ++ [r])))
   : STHoare p env (inv [] [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
         h![self, f])
       (fun r => ⟦wellFormed r⟧ ⋆ inv (embed self) (embed r)) := by
   enter_decl
@@ -429,7 +429,7 @@ theorem map_pure_spec {p T MaxLen Out Env self f fb fEmb}
     (hwf_self : wellFormed self)
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
   : STHoare p env [λf ↦ fb]
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
         h![self, f])
       (fun r => wellFormed r ∧ embed r = (embed self).map fEmb) := by
   -- Corollary of `map_effectful_spec` with the pure invariant `inv ip op := ⟦op = ip.map fEmb⟧`.
@@ -467,7 +467,7 @@ theorem mapi_pure_spec {p T MaxLen Out Env self f fb fEmb}
         (hi : i.toNat < (embed self).length) →
           STHoare p env ⟦⟧ (fb h![i, a]) (fun r => r = fEmb i.toNat a))
   : STHoare p env [λf ↦ fb]
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
         h![self, f])
       (fun r => wellFormed r ∧ embed r = (embed self).mapIdx fEmb) := by
   -- Corollary of `mapi_effectful_spec` with the pure invariant `inv ip op := ⟦op = ip.mapIdx fEmb⟧`.
@@ -517,7 +517,7 @@ theorem any_spec {p T MaxLen Env self f fb}
           STHoare p env (inv ip op) (fb h![e]) (fun r => inv (ip ++ [e]) (op ∨ r)))
   : STHoare p env
       (inv [] false ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
         h![self, f])
       (fun r => inv (embed self) r ⋆ [λf ↦ fb]) := by
   enter_decl
@@ -677,7 +677,7 @@ theorem any_pure_spec {p T MaxLen Env self f fb fEmb}
     (hwf_self : wellFormed self)
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
   : STHoare p env [λf ↦ fb]
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
         h![self, f])
       (fun r => r = (embed self).any fEmb) := by
   -- Specialize `any_spec` with a pure invariant `op = ip.any fEmb`.
@@ -726,13 +726,13 @@ private theorem forEachLike_constrained_loop_spec
           expr!![
             {
               let lenFn =
-                («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
+                («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
                   as λ(splice!(bvTp T MaxLen)) -> u32);
               let selfLen = (lenFn as λ(splice!(bvTp T MaxLen)) -> u32)(self);
               let cond = (#_uLt returning bool)(i, selfLen);
               if cond then {
                 let getUncheckedFn =
-                  («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
+                  («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
                     as λ(splice!(bvTp T MaxLen), u32) -> T);
                 let elem = (getUncheckedFn as λ(splice!(bvTp T MaxLen), u32) -> T)(self, i);
                 splice!(Expr.call Args Tp.unit f (mkArgs i elem));
@@ -838,7 +838,7 @@ theorem for_each_spec {T Env p MaxLen self f fb}
           STHoare p env (Inv lp) (fb h![e]) (fun _ => Inv (lp ++ [e])))
   : STHoare p env
       (Inv [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::for_each».call h![T, MaxLen, Env]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::for_each».call h![T, MaxLen, Env]
         h![self, f])
       (fun _ => Inv (embed self) ⋆ [λf ↦ fb]) := by
   enter_decl
@@ -865,7 +865,7 @@ theorem for_eachi_spec {T Env p MaxLen self f fb}
           STHoare p env (inv ip) (fb h![ip.length, e]) (fun _ => inv (ip ++ [e])))
   : STHoare p env
       (inv [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.12::collections::bounded_vec::BoundedVec::for_eachi».call h![T, MaxLen, Env]
+      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::for_eachi».call h![T, MaxLen, Env]
         h![self, f])
       (fun _ => inv (embed self) ⋆ [λf ↦ fb]) := by
   enter_decl
