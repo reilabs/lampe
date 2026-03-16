@@ -75,21 +75,21 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_0]<> «std-1.0.0-beta.14»::hash::Has
     let iv = (#_fMul returning Field)((#_cast returning Field)((#_arrayLen returning u32)(self.0)), (18446744073709551616: Field));
     let mut sponge = («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::new<> as λ(Field) -> «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(iv);
     for i in (0: u32) .. (#_arrayLen returning u32)(self.0) do {
-      («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::absorb<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(sponge), (#_sliceIndex returning Field)(self.0, (#_cast returning u32)(i)));
+      («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::absorb<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(sponge), (#_vectorIndex returning Field)(self.0, (#_cast returning u32)(i)));
       #_skip
     };
     («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::squeeze<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>) -> Field)((#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(sponge))
   };
   
   noir_def write<>(self: & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>, input: Field) -> Unit := {
-    ((*self: «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>).0: Slice<Field>) = (#_vectorPushBack returning Slice<Field>)((#_readRef returning «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>)(self).0, input);
+    ((*self: «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>).0: Vector<Field>) = (#_vectorPushBack returning Vector<Field>)((#_readRef returning «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>)(self).0, input);
     #_skip
   };
 }
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_1]<> «std-1.0.0-beta.14»::default::Default<> for «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> where [] := {
   noir_def default<>() -> «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> := {
-    (#_makeData returning «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)()))
+    (#_makeData returning «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)()))
   };
 }
 

@@ -193,13 +193,13 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_17]<N: u32, T: Type> «std-1.0.0-beta
   };
 }
 
-noir_trait_impl[«std-1.0.0-beta.14».impl_18]<T: Type> «std-1.0.0-beta.14»::hash::Hash<> for Slice<T> where [T: «std-1.0.0-beta.14»::hash::Hash<>] := {
-  noir_def hash<H: Type>(self: Slice<T>, state: & H) -> Unit := {
+noir_trait_impl[«std-1.0.0-beta.14».impl_18]<T: Type> «std-1.0.0-beta.14»::hash::Hash<> for Vector<T> where [T: «std-1.0.0-beta.14»::hash::Hash<>] := {
+  noir_def hash<H: Type>(self: Vector<T>, state: & H) -> Unit := {
     ((u32 as «std-1.0.0-beta.14»::hash::Hash<>)::hash<H> as λ(u32, & H) -> Unit)((#_arrayLen returning u32)(self), state);
     {
       let ζi0 = self;
       for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-        let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+        let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
         {
           ((T as «std-1.0.0-beta.14»::hash::Hash<>)::hash<H> as λ(T, & H) -> Unit)(elem, state);
           #_skip

@@ -6,7 +6,7 @@ import Lampe.Builtin.Cmp
 import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
-import Lampe.Builtin.Slice
+import Lampe.Builtin.Vector
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 
@@ -27,11 +27,11 @@ def Expr.readRef (ref : rep tp.ref) : Lampe.Expr rep tp :=
 def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Lampe.Expr rep .unit :=
   Lampe.Expr.callBuiltin _ .unit .writeRef h![ref, val]
 
-/-- A utility function for creating a slice expression. -/
+/-- A utility function for creating a vector expression. -/
 @[reducible]
-def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp))
-  : Lampe.Expr rep (.slice tp) :=
-  Lampe.Expr.callBuiltin _ (.slice tp) .mkSlice vals
+def Expr.mkVector (n : Nat) (vals : HList rep (List.replicate n tp))
+  : Lampe.Expr rep (.vector tp) :=
+  Lampe.Expr.callBuiltin _ (.vector tp) .mkVector vals
 
 /-- A utility function for creating an array expression. -/
 @[reducible]
@@ -39,10 +39,10 @@ def Expr.mkArray (n : Lampe.U 32) (vals : HList rep (List.replicate n.toNat tp))
   : Lampe.Expr rep (.array tp n) :=
   Lampe.Expr.callBuiltin _ (.array tp n) .mkArray vals
 
-/-- A utility function for creating a replicated slice expression. -/
+/-- A utility function for creating a replicated vector expression. -/
 @[reducible]
-def Expr.mkRepSlice (n : Nat) (val : rep tp) : Lampe.Expr rep (.slice tp) :=
-  Lampe.Expr.callBuiltin _ (.slice tp) .mkSlice (HList.replicate val n)
+def Expr.mkRepVector (n : Nat) (val : rep tp) : Lampe.Expr rep (.vector tp) :=
+  Lampe.Expr.callBuiltin _ (.vector tp) .mkVector (HList.replicate val n)
 
 /-- A utility function for creating a replicated array expression. -/
 @[reducible]

@@ -6,21 +6,21 @@ import Stdlib.TraitMethods
 namespace Lampe.Stdlib.Slice
 open «std-1.0.0-beta.14»
 
-set_option maxRecDepth 1000
+set_option maxRecDepth 2000
 
 set_option Lampe.pp.Expr true
 set_option Lampe.pp.STHoare true
 
 theorem append_spec {p T a b}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::slice::append».call h![T] h![a, b])
+    («std-1.0.0-beta.14::vector::append».call h![T] h![a, b])
     (fun r => r = a ++ b) := by
   enter_decl
   steps
-  step_as ([self ↦ ⟨T.slice, a⟩]) (fun _ => [self ↦ ⟨T.slice, a ++ b⟩])
+  step_as ([self ↦ ⟨T.vector, a⟩]) (fun _ => [self ↦ ⟨T.vector, a ++ b⟩])
   · steps
 
-    loop_inv nat fun i hlo hhi => [self ↦ ⟨T.slice, a ++ (b.take i)⟩]
+    loop_inv nat fun i hlo hhi => [self ↦ ⟨T.vector, a ++ (b.take i)⟩]
     · simp
     · simp
     · intro cond hlo hhi
@@ -33,7 +33,7 @@ theorem append_spec {p T a b}
 
 theorem as_array_spec {p T N input}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::slice::as_array».call h![T, N] h![input])
+    («std-1.0.0-beta.14::vector::as_array».call h![T, N] h![input])
     (fun r => r.toList = input) := by
   enter_decl
   steps
@@ -82,14 +82,14 @@ theorem map_spec {T U Env p f fb l}
         (fun r => Inv (ip ++ [e]) (rp ++ [r])))
   : STHoare p env
     (Inv [] [] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::map».call h![T, U, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::map».call h![T, U, Env] h![l, f])
     (fun v => Inv l v ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  step_as ([ret ↦ ⟨U.slice, []⟩] ⋆ [λf ↦ fb] ⋆ Inv [] [])
-    (fun _ => ∃∃v, [ret ↦ ⟨U.slice, v⟩] ⋆ [λf ↦ fb] ⋆ Inv l v)
+  step_as ([ret ↦ ⟨U.vector, []⟩] ⋆ [λf ↦ fb] ⋆ Inv [] [])
+    (fun _ => ∃∃v, [ret ↦ ⟨U.vector, v⟩] ⋆ [λf ↦ fb] ⋆ Inv l v)
   · steps
-    loop_inv nat fun i _ _ => ∃∃v, [ret ↦ ⟨U.slice, v⟩] ⋆ [λf ↦ fb] ⋆ Inv (l.take i) v
+    loop_inv nat fun i _ _ => ∃∃v, [ret ↦ ⟨U.vector, v⟩] ⋆ [λf ↦ fb] ⋆ Inv (l.take i) v
     · sl
     · simp
     · intro i ihl ihg
@@ -98,7 +98,7 @@ theorem map_spec {T U Env p f fb l}
         zero_le, Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat,
         BitVec.setWidth_eq, BitVec.toNat_ofNatLT, List.get_eq_getElem]
       generalize_proofs
-      rename U.slice.denote p => v
+      rename U.vector.denote p => v
       have := h_inv (l.take i) v l[i] (by simp [List.take_prefix])
       steps [STHoare.callLambda_intro (hlam := this)]
       simp_all only [List.take_append_getElem, Lens.modify, Option.get_some]
@@ -113,7 +113,7 @@ theorem map_spec {T U Env p f fb l}
 theorem map_pure_spec {T U Env p f fb func l}
     (h_pure : ∀x, STHoare p env ⟦⟧ (fb h![x]) (fun r => r = func x))
   : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::slice::map».call h![T, U, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::map».call h![T, U, Env] h![l, f])
     (fun v => v = l.map func) := by
   steps [map_spec (Inv := fun i o => o = i.map func)]
   · rfl
@@ -127,15 +127,15 @@ theorem mapi_spec {T U Env p f fb l}
         (fun r => inv (ip ++ [e]) (op ++ [r])))
   : STHoare p env
     (inv [] [] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::mapi».call h![T, U, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::mapi».call h![T, U, Env] h![l, f])
     (fun v => inv l v ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  step_as ([ret ↦ ⟨U.slice, []⟩] ⋆ [index ↦ ⟨.u 32, 0⟩] ⋆ [λf ↦ fb] ⋆ inv [] [])
-    (fun _ => ∃∃v, [ret ↦ ⟨U.slice, v⟩] ⋆ [index ↦ ⟨.u 32, l.length⟩] ⋆ [λf ↦ fb] ⋆ inv l v)
+  step_as ([ret ↦ ⟨U.vector, []⟩] ⋆ [index ↦ ⟨.u 32, 0⟩] ⋆ [λf ↦ fb] ⋆ inv [] [])
+    (fun _ => ∃∃v, [ret ↦ ⟨U.vector, v⟩] ⋆ [index ↦ ⟨.u 32, l.length⟩] ⋆ [λf ↦ fb] ⋆ inv l v)
   · steps
     loop_inv nat fun i _ _ =>
-      ∃∃v, [ret ↦ ⟨U.slice, v⟩] ⋆ [index ↦ ⟨.u 32, i⟩] ⋆ [λf ↦ fb] ⋆ (inv (l.take i) v)
+      ∃∃v, [ret ↦ ⟨U.vector, v⟩] ⋆ [index ↦ ⟨.u 32, i⟩] ⋆ [λf ↦ fb] ⋆ (inv (l.take i) v)
     · sl
     · simp
     · intro i hlo hhi
@@ -144,7 +144,7 @@ theorem mapi_spec {T U Env p f fb l}
         EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, Builtin.instCastTpU,
         BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, BitVec.toNat_ofNatLT, List.get_eq_getElem]
       generalize_proofs
-      rename Tp.denote p U.slice => v
+      rename Tp.denote p U.vector => v
       have := inv_sem (l.take i) v l[i] (by simp [List.take_prefix])
       have i_eq_len : (l.take i).length = i := by simp only [List.length_take, inf_eq_left]; omega
       rw [i_eq_len] at this
@@ -171,7 +171,7 @@ theorem mapi_spec {T U Env p f fb l}
 theorem mapi_pure_spec {T U Env p f fb fEmb l}
     (inv_pure : ∀i x, (h : i < l.length) → STHoare p env ⟦⟧ (fb h![i, x]) (fun r => r = fEmb i x))
   : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::slice::mapi».call h![T, U, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::mapi».call h![T, U, Env] h![l, f])
     (fun v => v = l.mapIdx fEmb) := by
   steps [mapi_spec (inv := fun i o => o = i.mapIdx fEmb)]
   · rfl
@@ -195,7 +195,7 @@ theorem for_each_spec {T Env p f fb l}
       ((lp ++ [e]) <+: l) → STHoare p env (Inv lp) (fb h![e]) (fun _ => Inv (lp ++ [e])))
   : STHoare p env
     (Inv [] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::for_each».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::for_each».call h![T, Env] h![l, f])
     (fun _ => Inv l ⋆ [λf ↦ fb]) := by
   enter_decl
   steps []
@@ -222,7 +222,7 @@ theorem for_eachi_spec {T Env p f fb l}
       ((ip ++ [e]) <+: l) → STHoare p env (inv ip) (fb h![ip.length, e]) (fun _ => inv (ip ++ [e])))
   : STHoare p env
     (inv [] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::for_eachi».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::for_eachi».call h![T, Env] h![l, f])
     (fun _ => inv l ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
@@ -261,7 +261,7 @@ theorem fold_spec {p T U Env l a f fb}
         (fun r => inv (ip ++ [e]) r)))
   : STHoare p env
     (inv [] a ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::fold».call h![T, U, Env] h![l, a, f])
+    («std-1.0.0-beta.14::vector::fold».call h![T, U, Env] h![l, a, f])
     (fun r => (inv l r) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
@@ -294,7 +294,7 @@ theorem fold_spec {p T U Env l a f fb}
 theorem fold_pure_spec {p T U Env l a f fb fEmb}
     (inv_pure : ∀a x, STHoare p env ⟦⟧ (fb h![a, x]) (fun r => r = fEmb a x))
   : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::slice::fold».call h![T, U, Env] h![l, a, f])
+    («std-1.0.0-beta.14::vector::fold».call h![T, U, Env] h![l, a, f])
     (fun r => r = l.foldl fEmb a ⋆ [λf ↦ fb]) := by
   steps [fold_spec (inv := fun xs v => v = xs.foldl fEmb a)]
   · rfl
@@ -309,7 +309,7 @@ theorem reduce_spec {p T Env l f fb}
         (fun r => inv (ip ++ [e]) r)))
   : STHoare p env
     ((inv [] l[0]) ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::reduce».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::reduce».call h![T, Env] h![l, f])
     (fun r => (inv l.tail r) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
@@ -348,7 +348,7 @@ theorem reduce_pure_spec {p T Env l f fb fEmb}
     (l_len_gt : l.length > 0)
     (inv_pure : ∀a x, STHoare p env ⟦⟧ (fb h![a, x]) (fun r => r = fEmb a x))
   : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::slice::reduce».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::reduce».call h![T, Env] h![l, f])
     (fun r => r = l.tail.foldl fEmb l[0] ⋆ [λf ↦ fb]) := by
   steps [reduce_spec (inv := fun xs v => v = xs.foldl fEmb l[0])]
   · rfl
@@ -364,14 +364,14 @@ theorem filter_spec {p T Env l f fb}
         (fun r => inv (ip ++ [e]) (if r then (op ++ [e]) else op))))
   : STHoare p env
     (inv [] [] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::filter».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::filter».call h![T, Env] h![l, f])
     (fun r => (inv l r) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  step_as ([ret ↦ ⟨T.slice, []⟩] ⋆ [λf ↦ fb] ⋆ (inv [] []))
-    (fun _ => ∃∃v, [ret ↦ ⟨T.slice, v⟩] ⋆ [λf ↦ fb] ⋆ (inv l v))
+  step_as ([ret ↦ ⟨T.vector, []⟩] ⋆ [λf ↦ fb] ⋆ (inv [] []))
+    (fun _ => ∃∃v, [ret ↦ ⟨T.vector, v⟩] ⋆ [λf ↦ fb] ⋆ (inv l v))
   · steps
-    loop_inv nat fun i _ _ => ∃∃v, [ret ↦ ⟨T.slice, v⟩] ⋆ [λf ↦ fb] ⋆ (inv (l.take i) v)
+    loop_inv nat fun i _ _ => ∃∃v, [ret ↦ ⟨T.vector, v⟩] ⋆ [λf ↦ fb] ⋆ (inv (l.take i) v)
     · sl
     · simp
     · intro i hlo hhi
@@ -380,7 +380,7 @@ theorem filter_spec {p T Env l f fb}
         zero_le, Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
         BitVec.toNat_ofNatLT, List.get_eq_getElem]
       generalize_proofs
-      rename Tp.denote p (T.slice) => v
+      rename Tp.denote p (T.vector) => v
 
       have := inv_spec (l.take i) v l[i] (by simp [List.take_prefix])
       steps [STHoare.callLambda_intro (hlam := this)]
@@ -406,7 +406,7 @@ theorem filter_spec {p T Env l f fb}
 theorem filter_pure_spec {p T Env l f fb fEmb}
     (inv_pure : ∀x, STHoare p env ⟦⟧ (fb h![x]) (fun r => r = fEmb x))
   : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::slice::filter».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::filter».call h![T, Env] h![l, f])
     (fun r => (r = l.filter fEmb)) := by
   steps [filter_spec (inv := fun xs v => v = xs.filter fEmb)]
   · rfl
@@ -425,7 +425,7 @@ theorem join_spec {p T a s}
     (t_app_sem : ∀a b, STHoare p env ⟦⟧ (Append.append h![] T h![] h![] h![a, b])
       (fun r => r = t_app_emb a b))
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::slice::join».call h![T] h![a, s])
+    («std-1.0.0-beta.14::vector::join».call h![T] h![a, s])
     (fun r => r = if h : a.length > 0 then
       a.tail.foldl (fun l r => t_app_emb (t_app_emb l s) r) a[0]
     else t_empty_emb) := by
@@ -498,7 +498,7 @@ theorem all_spec {p T Env l f fb}
       (ip ++ [e] <+: l) → STHoare p env (inv ip op) (fb h![e]) (fun r => inv (ip ++ [e]) (op ∧ r)))
   : STHoare p env
     ((inv [] true) ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::all».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::all».call h![T, Env] h![l, f])
     (fun r => (inv l r) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
@@ -536,7 +536,7 @@ theorem all_spec {p T Env l f fb}
 theorem all_pure_spec {p T Env l f fb fEmb}
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
   : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::slice::all».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::all».call h![T, Env] h![l, f])
     (fun r => r = l.all fEmb) := by
   steps [all_spec (inv := fun x r => r = x.all fEmb)]
   · simp
@@ -553,7 +553,7 @@ theorem any_spec {p T Env l f fb}
       (ip ++ [e] <+: l) → STHoare p env (inv ip op) (fb h![e]) (fun r => inv (ip ++ [e]) (op ∨ r)))
   : STHoare p env
     ((inv [] false) ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::slice::any».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::any».call h![T, Env] h![l, f])
     (fun r => (inv l r) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
@@ -591,7 +591,7 @@ theorem any_spec {p T Env l f fb}
 theorem any_pure_spec {p T Env l f fb fEmb}
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
   : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::slice::any».call h![T, Env] h![l, f])
+    («std-1.0.0-beta.14::vector::any».call h![T, Env] h![l, f])
     (fun r => r = l.any fEmb) := by
   steps [any_spec (inv := fun x r => r = x.any fEmb)]
   · simp

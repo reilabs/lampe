@@ -25,7 +25,7 @@ noir_struct_def «std-1.0.0-beta.14»::collections::umap::Slot<K: Type, V: Type>
 }
 
 noir_struct_def «std-1.0.0-beta.14»::collections::umap::UHashMap<K: Type, V: Type, B: Type> {
-  Slice<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >,
+  Vector<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >,
   u32,
   B,
 }
@@ -68,7 +68,7 @@ noir_struct_def «std-1.0.0-beta.14»::«meta»::op::BinaryOp<> {
 }
 
 noir_struct_def «std-1.0.0-beta.14»::collections::vec::Vec<T: Type> {
-  Slice<T>,
+  Vector<T>,
 }
 
 noir_struct_def «std-1.0.0-beta.14»::cmp::Ordering<> {
@@ -80,7 +80,7 @@ noir_struct_def «std-1.0.0-beta.14»::«meta»::tests::MyStruct<> {
 }
 
 noir_struct_def «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> {
-  Slice<Field>,
+  Vector<Field>,
 }
 
 noir_struct_def «std-1.0.0-beta.14»::«meta»::op::UnaryOp<> {

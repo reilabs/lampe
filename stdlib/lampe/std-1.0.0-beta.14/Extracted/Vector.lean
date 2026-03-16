@@ -5,13 +5,13 @@ import Lampe
 
 open Lampe
 
-noir_def «std-1.0.0-beta.14»::slice::append<T: Type>(mut self: Slice<T>, other: Slice<T>) -> Slice<T> := {
+noir_def «std-1.0.0-beta.14»::vector::append<T: Type>(mut self: Vector<T>, other: Vector<T>) -> Vector<T> := {
   {
     let ζi0 = other;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        self = (#_vectorPushBack returning Slice<T>)(self, elem);
+        self = (#_vectorPushBack returning Vector<T>)(self, elem);
         #_skip
       }
     };
@@ -20,24 +20,24 @@ noir_def «std-1.0.0-beta.14»::slice::append<T: Type>(mut self: Slice<T>, other
   self
 }
 
-noir_def «std-1.0.0-beta.14»::slice::as_array<T: Type, N: u32>(self: Slice<T>) -> Array<T, N: u32> := {
+noir_def «std-1.0.0-beta.14»::vector::as_array<T: Type, N: u32>(self: Vector<T>) -> Array<T, N: u32> := {
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(self), uConst!(N: u32)));
   let mut array = (#_mkRepeatedArray returning Array<T, N: u32>)((#_zeroed returning T)());
   for i in (0: u32) .. uConst!(N: u32) do {
-    (array[i]: T) = (#_sliceIndex returning T)(self, (#_cast returning u32)(i));
+    (array[i]: T) = (#_vectorIndex returning T)(self, (#_cast returning u32)(i));
     #_skip
   };
   array
 }
 
-noir_def «std-1.0.0-beta.14»::slice::map<T: Type, U: Type, Env: Type>(self: Slice<T>, f: λ(T) -> U) -> Slice<U> := {
-  let mut ret = (#_asVector returning Slice<U>)((#_mkArray returning Array<U, 0: u32>)());
+noir_def «std-1.0.0-beta.14»::vector::map<T: Type, U: Type, Env: Type>(self: Vector<T>, f: λ(T) -> U) -> Vector<U> := {
+  let mut ret = (#_asVector returning Vector<U>)((#_mkArray returning Array<U, 0: u32>)());
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        ret = (#_vectorPushBack returning Slice<U>)(ret, (f as λ(T) -> U)(elem));
+        ret = (#_vectorPushBack returning Vector<U>)(ret, (f as λ(T) -> U)(elem));
         #_skip
       }
     };
@@ -46,15 +46,15 @@ noir_def «std-1.0.0-beta.14»::slice::map<T: Type, U: Type, Env: Type>(self: Sl
   ret
 }
 
-noir_def «std-1.0.0-beta.14»::slice::mapi<T: Type, U: Type, Env: Type>(self: Slice<T>, f: λ(u32, T) -> U) -> Slice<U> := {
-  let mut ret = (#_asVector returning Slice<U>)((#_mkArray returning Array<U, 0: u32>)());
+noir_def «std-1.0.0-beta.14»::vector::mapi<T: Type, U: Type, Env: Type>(self: Vector<T>, f: λ(u32, T) -> U) -> Vector<U> := {
+  let mut ret = (#_asVector returning Vector<U>)((#_mkArray returning Array<U, 0: u32>)());
   let mut index = (0: u32);
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        ret = (#_vectorPushBack returning Slice<U>)(ret, (f as λ(u32, T) -> U)(index, elem));
+        ret = (#_vectorPushBack returning Vector<U>)(ret, (f as λ(u32, T) -> U)(index, elem));
         index = (#_uAdd returning u32)(index, (1: u32));
         #_skip
       }
@@ -64,10 +64,10 @@ noir_def «std-1.0.0-beta.14»::slice::mapi<T: Type, U: Type, Env: Type>(self: S
   ret
 }
 
-noir_def «std-1.0.0-beta.14»::slice::for_each<T: Type, Env: Type>(self: Slice<T>, f: λ(T) -> Unit) -> Unit := {
+noir_def «std-1.0.0-beta.14»::vector::for_each<T: Type, Env: Type>(self: Vector<T>, f: λ(T) -> Unit) -> Unit := {
   let ζi0 = self;
   for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-    let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+    let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
     {
       (f as λ(T) -> Unit)(elem);
       #_skip
@@ -76,12 +76,12 @@ noir_def «std-1.0.0-beta.14»::slice::for_each<T: Type, Env: Type>(self: Slice<
   #_skip
 }
 
-noir_def «std-1.0.0-beta.14»::slice::for_eachi<T: Type, Env: Type>(self: Slice<T>, f: λ(u32, T) -> Unit) -> Unit := {
+noir_def «std-1.0.0-beta.14»::vector::for_eachi<T: Type, Env: Type>(self: Vector<T>, f: λ(u32, T) -> Unit) -> Unit := {
   let mut index = (0: u32);
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
         (f as λ(u32, T) -> Unit)(index, elem);
         index = (#_uAdd returning u32)(index, (1: u32));
@@ -92,11 +92,11 @@ noir_def «std-1.0.0-beta.14»::slice::for_eachi<T: Type, Env: Type>(self: Slice
   }
 }
 
-noir_def «std-1.0.0-beta.14»::slice::fold<T: Type, U: Type, Env: Type>(self: Slice<T>, mut accumulator: U, f: λ(U, T) -> U) -> U := {
+noir_def «std-1.0.0-beta.14»::vector::fold<T: Type, U: Type, Env: Type>(self: Vector<T>, mut accumulator: U, f: λ(U, T) -> U) -> U := {
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
         accumulator = (f as λ(U, T) -> U)(accumulator, elem);
         #_skip
@@ -107,24 +107,24 @@ noir_def «std-1.0.0-beta.14»::slice::fold<T: Type, U: Type, Env: Type>(self: S
   accumulator
 }
 
-noir_def «std-1.0.0-beta.14»::slice::reduce<T: Type, Env: Type>(self: Slice<T>, f: λ(T, T) -> T) -> T := {
-  let mut accumulator = (#_sliceIndex returning T)(self, (0: u32));
+noir_def «std-1.0.0-beta.14»::vector::reduce<T: Type, Env: Type>(self: Vector<T>, f: λ(T, T) -> T) -> T := {
+  let mut accumulator = (#_vectorIndex returning T)(self, (0: u32));
   for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
-    accumulator = (f as λ(T, T) -> T)(accumulator, (#_sliceIndex returning T)(self, (#_cast returning u32)(i)));
+    accumulator = (f as λ(T, T) -> T)(accumulator, (#_vectorIndex returning T)(self, (#_cast returning u32)(i)));
     #_skip
   };
   accumulator
 }
 
-noir_def «std-1.0.0-beta.14»::slice::filter<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> Slice<T> := {
-  let mut ret = (#_asVector returning Slice<T>)((#_mkArray returning Array<T, 0: u32>)());
+noir_def «std-1.0.0-beta.14»::vector::filter<T: Type, Env: Type>(self: Vector<T>, predicate: λ(T) -> bool) -> Vector<T> := {
+  let mut ret = (#_asVector returning Vector<T>)((#_mkArray returning Array<T, 0: u32>)());
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
         if (predicate as λ(T) -> bool)(elem) then {
-          ret = (#_vectorPushBack returning Slice<T>)(ret, elem);
+          ret = (#_vectorPushBack returning Vector<T>)(ret, elem);
           #_skip
         }
       }
@@ -134,12 +134,12 @@ noir_def «std-1.0.0-beta.14»::slice::filter<T: Type, Env: Type>(self: Slice<T>
   ret
 }
 
-noir_def «std-1.0.0-beta.14»::slice::join<T: Type>(self: Slice<T>, separator: T) -> T := {
+noir_def «std-1.0.0-beta.14»::vector::join<T: Type>(self: Vector<T>, separator: T) -> T := {
   let mut ret = ((T as «std-1.0.0-beta.14»::append::Append<>)::empty<> as λ() -> T)();
   if (#_uNeq returning bool)((#_arrayLen returning u32)(self), (0: u32)) then {
-    ret = (#_sliceIndex returning T)(self, (0: u32));
+    ret = (#_vectorIndex returning T)(self, (0: u32));
     for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
-      ret = ((T as «std-1.0.0-beta.14»::append::Append<>)::append<> as λ(T, T) -> T)(((T as «std-1.0.0-beta.14»::append::Append<>)::append<> as λ(T, T) -> T)(ret, separator), (#_sliceIndex returning T)(self, (#_cast returning u32)(i)));
+      ret = ((T as «std-1.0.0-beta.14»::append::Append<>)::append<> as λ(T, T) -> T)(((T as «std-1.0.0-beta.14»::append::Append<>)::append<> as λ(T, T) -> T)(ret, separator), (#_vectorIndex returning T)(self, (#_cast returning u32)(i)));
       #_skip
     };
     #_skip
@@ -147,12 +147,12 @@ noir_def «std-1.0.0-beta.14»::slice::join<T: Type>(self: Slice<T>, separator: 
   ret
 }
 
-noir_def «std-1.0.0-beta.14»::slice::«all»<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
+noir_def «std-1.0.0-beta.14»::vector::«all»<T: Type, Env: Type>(self: Vector<T>, predicate: λ(T) -> bool) -> bool := {
   let mut ret = #_true;
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
         ret = (#_bAnd returning bool)(ret, (predicate as λ(T) -> bool)(elem));
         #_skip
@@ -163,12 +163,12 @@ noir_def «std-1.0.0-beta.14»::slice::«all»<T: Type, Env: Type>(self: Slice<T
   ret
 }
 
-noir_def «std-1.0.0-beta.14»::slice::any<T: Type, Env: Type>(self: Slice<T>, predicate: λ(T) -> bool) -> bool := {
+noir_def «std-1.0.0-beta.14»::vector::any<T: Type, Env: Type>(self: Vector<T>, predicate: λ(T) -> bool) -> bool := {
   let mut ret = #_false;
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
+      let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
         ret = (#_bOr returning bool)(ret, (predicate as λ(T) -> bool)(elem));
         #_skip
@@ -180,385 +180,385 @@ noir_def «std-1.0.0-beta.14»::slice::any<T: Type, Env: Type>(self: Slice<T>, p
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::map_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)((«std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)()), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)())));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((«std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)()), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)())));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::mapi_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)((«std-1.0.0-beta.14»::vector::mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)((#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 0: u32>)()), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 0: u32>)())));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)((«std-1.0.0-beta.14»::vector::mapi<u32, Unit> as λ(Vector<u32>, λ(u32, u32) -> u32) -> Vector<u32>)((#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)()), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)())));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::for_each_empty<>() -> Unit := {
-  let empty_vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  («std-1.0.0-beta.14»::vector::for_each<Field, Unit> as λ(Slice<Field>, λ(Field) -> Unit) -> Unit)(empty_vector, (fn(_x: Field): Unit := (#_assert returning Unit)(#_false)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(empty_vector, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)())));
+  let empty_vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  («std-1.0.0-beta.14»::vector::for_each<Field, Unit> as λ(Vector<Field>, λ(Field) -> Unit) -> Unit)(empty_vector, (fn(_x: Field): Unit := (#_assert returning Unit)(#_false)));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(empty_vector, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)())));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::for_eachi_empty<>() -> Unit := {
-  let empty_vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  («std-1.0.0-beta.14»::vector::for_eachi<Field, Unit> as λ(Slice<Field>, λ(u32, Field) -> Unit) -> Unit)(empty_vector, (fn(_i: u32, _x: Field): Unit := (#_assert returning Unit)(#_false)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(empty_vector, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)())));
+  let empty_vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  («std-1.0.0-beta.14»::vector::for_eachi<Field, Unit> as λ(Vector<Field>, λ(u32, Field) -> Unit) -> Unit)(empty_vector, (fn(_i: u32, _x: Field): Unit := (#_assert returning Unit)(#_false)));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(empty_vector, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)())));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::map_example<>() -> Unit := {
-  let a = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let b = («std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field)))));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(a, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)))));
+  let a = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let b = («std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(b, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(a, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::mapi_example<>() -> Unit := {
-  let a = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)));
-  let b = («std-1.0.0-beta.14»::vector::mapi<u32, Unit> as λ(Slice<u32>, λ(u32, u32) -> u32) -> Slice<u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32)))));
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(a, (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)))));
+  let a = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)));
+  let b = («std-1.0.0-beta.14»::vector::mapi<u32, Unit> as λ(Vector<u32>, λ(u32, u32) -> u32) -> Vector<u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(b, (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32)))));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(a, (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::for_each_example<>() -> Unit := {
-  let a = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let mut b = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let b_ref = (#_ref returning & Slice<Field>)(b);
-  («std-1.0.0-beta.14»::vector::for_each<Field, Tuple<& Slice<Field> > > as λ(Slice<Field>, λ(Field) -> Unit) -> Unit)(a, (fn(a: Field): Unit := {
-    (*b_ref: Slice<Field>) = (#_vectorPushBack returning Slice<Field>)((#_readRef returning Slice<Field>)(b_ref), (#_fMul returning Field)(a, (2: Field)));
+  let a = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let mut b = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let b_ref = (#_ref returning & Vector<Field>)(b);
+  («std-1.0.0-beta.14»::vector::for_each<Field, Tuple<& Vector<Field> > > as λ(Vector<Field>, λ(Field) -> Unit) -> Unit)(a, (fn(a: Field): Unit := {
+    (*b_ref: Vector<Field>) = (#_vectorPushBack returning Vector<Field>)((#_readRef returning Vector<Field>)(b_ref), (#_fMul returning Field)(a, (2: Field)));
     #_skip
   }));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(b, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(b, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::for_eachi_example<>() -> Unit := {
-  let a = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)));
-  let mut b = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 0: u32>)());
-  let b_ref = (#_ref returning & Slice<u32>)(b);
-  («std-1.0.0-beta.14»::vector::for_eachi<u32, Tuple<& Slice<u32> > > as λ(Slice<u32>, λ(u32, u32) -> Unit) -> Unit)(a, (fn(i: u32, a: u32): Unit := {
-    (*b_ref: Slice<u32>) = (#_vectorPushBack returning Slice<u32>)((#_readRef returning Slice<u32>)(b_ref), (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32))));
+  let a = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)));
+  let mut b = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)());
+  let b_ref = (#_ref returning & Vector<u32>)(b);
+  («std-1.0.0-beta.14»::vector::for_eachi<u32, Tuple<& Vector<u32> > > as λ(Vector<u32>, λ(u32, u32) -> Unit) -> Unit)(a, (fn(i: u32, a: u32): Unit := {
+    (*b_ref: Vector<u32>) = (#_vectorPushBack returning Vector<u32>)((#_readRef returning Vector<u32>)(b_ref), (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32))));
     #_skip
   }));
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(b, (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32)))));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(b, (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::len_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let empty = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(empty), (0: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::len_single<>() -> Unit := {
-  (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)))), (1: u32)));
+  (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)))), (1: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::len_multiple<>() -> Unit := {
-  (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)))), (5: u32)));
+  (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)))), (5: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::push_back_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let result = (#_vectorPushBack returning Slice<Field>)(empty, (42: Field));
+  let empty = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let result = (#_vectorPushBack returning Vector<Field>)(empty, (42: Field));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (1: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((#_sliceIndex returning Field)(result, (0: u32)), (42: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((#_vectorIndex returning Field)(result, (0: u32)), (42: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::push_back_non_empty<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let result = (#_vectorPushBack returning Slice<Field>)(vector, (4: Field));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let result = (#_vectorPushBack returning Vector<Field>)(vector, (4: Field));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (4: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::push_front_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let result = (#_vectorPushFront returning Slice<Field>)(empty, (42: Field));
+  let empty = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let result = (#_vectorPushFront returning Vector<Field>)(empty, (42: Field));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (1: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((#_sliceIndex returning Field)(result, (0: u32)), (42: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((#_vectorIndex returning Field)(result, (0: u32)), (42: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::push_front_non_empty<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let result = (#_vectorPushFront returning Slice<Field>)(vector, (0: Field));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let result = (#_vectorPushFront returning Vector<Field>)(vector, (0: Field));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (4: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((0: Field), (1: Field), (2: Field), (3: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((0: Field), (1: Field), (2: Field), (3: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::pop_back_empty<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let (__0, __1) = (#_vectorPopBack returning Tuple<Slice<Field>, Field>)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let (__0, __1) = (#_vectorPopBack returning Tuple<Vector<Field>, Field>)(vector);
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::pop_back_one<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
-  let (result, elem) = (#_vectorPopBack returning Tuple<Slice<Field>, Field>)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
+  let (result, elem) = (#_vectorPopBack returning Tuple<Vector<Field>, Field>)(vector);
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (0: u32)));
   (#_assert returning Unit)((#_fEq returning bool)(elem, (42: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::pop_back_multiple<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let (result, elem) = (#_vectorPopBack returning Tuple<Slice<Field>, Field>)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let (result, elem) = (#_vectorPopBack returning Tuple<Vector<Field>, Field>)(vector);
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (2: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)))));
   (#_assert returning Unit)((#_fEq returning bool)(elem, (3: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::pop_front_empty<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let (__0, __1) = (#_vectorPopFront returning Tuple<Field, Slice<Field> >)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let (__0, __1) = (#_vectorPopFront returning Tuple<Field, Vector<Field> >)(vector);
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::pop_front_one<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
-  let (elem, result) = (#_vectorPopFront returning Tuple<Field, Slice<Field> >)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
+  let (elem, result) = (#_vectorPopFront returning Tuple<Field, Vector<Field> >)(vector);
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (0: u32)));
   (#_assert returning Unit)((#_fEq returning bool)(elem, (42: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::pop_front_multiple<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let (elem, result) = (#_vectorPopFront returning Tuple<Field, Slice<Field> >)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let (elem, result) = (#_vectorPopFront returning Tuple<Field, Vector<Field> >)(vector);
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (2: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)))));
   (#_assert returning Unit)((#_fEq returning bool)(elem, (1: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::insert_beginning<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let result = (#_vectorInsert returning Slice<Field>)(vector, (0: u32), (0: Field));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let result = (#_vectorInsert returning Vector<Field>)(vector, (0: u32), (0: Field));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (4: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((0: Field), (1: Field), (2: Field), (3: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((0: Field), (1: Field), (2: Field), (3: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::insert_middle<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let result = (#_vectorInsert returning Slice<Field>)(vector, (1: u32), (99: Field));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let result = (#_vectorInsert returning Vector<Field>)(vector, (1: u32), (99: Field));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (4: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (99: Field), (2: Field), (3: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (99: Field), (2: Field), (3: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::insert_end<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let result = (#_vectorInsert returning Slice<Field>)(vector, (3: u32), (4: Field));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let result = (#_vectorInsert returning Vector<Field>)(vector, (3: u32), (4: Field));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (4: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::insert_end_out_of_bounds<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)));
-  let __0 = (#_vectorInsert returning Slice<Field>)(vector, (3: u32), (4: Field));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)));
+  let __0 = (#_vectorInsert returning Vector<Field>)(vector, (3: u32), (4: Field));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::remove_empty<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let (__0, __1) = (#_vectorRemove returning Tuple<Slice<Field>, Field>)(vector, (0: u32));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let (__0, __1) = (#_vectorRemove returning Tuple<Vector<Field>, Field>)(vector, (0: u32));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::remove_beginning<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let (result, elem) = (#_vectorRemove returning Tuple<Slice<Field>, Field>)(vector, (0: u32));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let (result, elem) = (#_vectorRemove returning Tuple<Vector<Field>, Field>)(vector, (0: u32));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (2: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)))));
   (#_assert returning Unit)((#_fEq returning bool)(elem, (1: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::remove_middle<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let (result, elem) = (#_vectorRemove returning Tuple<Slice<Field>, Field>)(vector, (1: u32));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let (result, elem) = (#_vectorRemove returning Tuple<Vector<Field>, Field>)(vector, (1: u32));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (2: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (3: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (3: Field)))));
   (#_assert returning Unit)((#_fEq returning bool)(elem, (2: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::remove_end<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let (result, elem) = (#_vectorRemove returning Tuple<Slice<Field>, Field>)(vector, (2: u32));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let (result, elem) = (#_vectorRemove returning Tuple<Vector<Field>, Field>)(vector, (2: u32));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (2: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)))));
   (#_assert returning Unit)((#_fEq returning bool)(elem, (3: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::remove_end_out_of_bounds<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)));
-  let (__0, __1) = (#_vectorRemove returning Tuple<Slice<Field>, Field>)(vector, (2: u32));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)));
+  let (__0, __1) = (#_vectorRemove returning Tuple<Vector<Field>, Field>)(vector, (2: u32));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::fold_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Slice<Field>, Field, λ(Field, Field) -> Field) -> Field)(empty, (10: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
+  let empty = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(empty, (10: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
   (#_assert returning Unit)((#_fEq returning bool)(result, (10: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::fold_single<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 1: u32>)((5: Field)));
-  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Slice<Field>, Field, λ(Field, Field) -> Field) -> Field)(vector, (10: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((5: Field)));
+  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(vector, (10: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
   (#_assert returning Unit)((#_fEq returning bool)(result, (15: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::fold_multiple<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)));
-  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Slice<Field>, Field, λ(Field, Field) -> Field) -> Field)(vector, (0: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)));
+  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(vector, (0: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
   (#_assert returning Unit)((#_fEq returning bool)(result, (10: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::reduce_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let __0 = («std-1.0.0-beta.14»::vector::reduce<Field, Unit> as λ(Slice<Field>, λ(Field, Field) -> Field) -> Field)(empty, (fn(a: Field, b: Field): Field := (#_fAdd returning Field)(a, b)));
+  let empty = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let __0 = («std-1.0.0-beta.14»::vector::reduce<Field, Unit> as λ(Vector<Field>, λ(Field, Field) -> Field) -> Field)(empty, (fn(a: Field, b: Field): Field := (#_fAdd returning Field)(a, b)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::reduce_single<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
-  let result = («std-1.0.0-beta.14»::vector::reduce<Field, Unit> as λ(Slice<Field>, λ(Field, Field) -> Field) -> Field)(vector, (fn(a: Field, b: Field): Field := (#_fAdd returning Field)(a, b)));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
+  let result = («std-1.0.0-beta.14»::vector::reduce<Field, Unit> as λ(Vector<Field>, λ(Field, Field) -> Field) -> Field)(vector, (fn(a: Field, b: Field): Field := (#_fAdd returning Field)(a, b)));
   (#_assert returning Unit)((#_fEq returning bool)(result, (42: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::reduce_multiple<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)));
-  let result = («std-1.0.0-beta.14»::vector::reduce<Field, Unit> as λ(Slice<Field>, λ(Field, Field) -> Field) -> Field)(vector, (fn(a: Field, b: Field): Field := (#_fAdd returning Field)(a, b)));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)));
+  let result = («std-1.0.0-beta.14»::vector::reduce<Field, Unit> as λ(Vector<Field>, λ(Field, Field) -> Field) -> Field)(vector, (fn(a: Field, b: Field): Field := (#_fAdd returning Field)(a, b)));
   (#_assert returning Unit)((#_fEq returning bool)(result, (10: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::filter_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 0: u32>)());
-  let result = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> Slice<u32>)(empty, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
+  let empty = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)());
+  let result = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(empty, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (0: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::filter_all_true<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
-  let result = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> Slice<u32>)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(result, vector));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
+  let result = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(result, vector));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::filter_all_false<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
-  let result = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> Slice<u32>)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (10: u32))));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
+  let result = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (10: u32))));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (0: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::filter_some<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 5: u32>)((1: u32), (2: u32), (3: u32), (4: u32), (5: u32)));
-  let result = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> Slice<u32>)(vector, (fn(x: u32): bool := (#_uEq returning bool)((#_uRem returning u32)(x, (2: u32)), (0: u32))));
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(result, (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 2: u32>)((2: u32), (4: u32)))));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 5: u32>)((1: u32), (2: u32), (3: u32), (4: u32), (5: u32)));
+  let result = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_uEq returning bool)((#_uRem returning u32)(x, (2: u32)), (0: u32))));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(result, (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 2: u32>)((2: u32), (4: u32)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::all_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 0: u32>)());
-  let result = («std-1.0.0-beta.14»::vector::«all»<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> bool)(empty, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
+  let empty = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)());
+  let result = («std-1.0.0-beta.14»::vector::«all»<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> bool)(empty, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
   (#_assert returning Unit)((#_bEq returning bool)(result, #_true));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::all_true<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
-  let result = («std-1.0.0-beta.14»::vector::«all»<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
+  let result = («std-1.0.0-beta.14»::vector::«all»<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
   (#_assert returning Unit)((#_bEq returning bool)(result, #_true));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::all_false<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
-  let result = («std-1.0.0-beta.14»::vector::«all»<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (2: u32))));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
+  let result = («std-1.0.0-beta.14»::vector::«all»<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (2: u32))));
   (#_assert returning Unit)((#_bEq returning bool)(result, #_false));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::any_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 0: u32>)());
-  let result = («std-1.0.0-beta.14»::vector::any<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> bool)(empty, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
+  let empty = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)());
+  let result = («std-1.0.0-beta.14»::vector::any<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> bool)(empty, (fn(x: u32): bool := (#_uGt returning bool)(x, (0: u32))));
   (#_assert returning Unit)((#_bEq returning bool)(result, #_false));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::any_true<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
-  let result = («std-1.0.0-beta.14»::vector::any<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (3: u32))));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
+  let result = («std-1.0.0-beta.14»::vector::any<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (3: u32))));
   (#_assert returning Unit)((#_bEq returning bool)(result, #_true));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::any_false<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
-  let result = («std-1.0.0-beta.14»::vector::any<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (10: u32))));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
+  let result = («std-1.0.0-beta.14»::vector::any<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (10: u32))));
   (#_assert returning Unit)((#_bEq returning bool)(result, #_false));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::append_empty_to_empty<>() -> Unit := {
-  let empty1 = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let empty2 = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let result = («std-1.0.0-beta.14»::vector::append<Field> as λ(Slice<Field>, Slice<Field>) -> Slice<Field>)(empty1, empty2);
+  let empty1 = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let empty2 = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let result = («std-1.0.0-beta.14»::vector::append<Field> as λ(Vector<Field>, Vector<Field>) -> Vector<Field>)(empty1, empty2);
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(result), (0: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::append_empty_to_non_empty<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let empty = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let result = («std-1.0.0-beta.14»::vector::append<Field> as λ(Slice<Field>, Slice<Field>) -> Slice<Field>)(vector, empty);
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, vector));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let empty = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let result = («std-1.0.0-beta.14»::vector::append<Field> as λ(Vector<Field>, Vector<Field>) -> Vector<Field>)(vector, empty);
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, vector));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::append_non_empty_to_empty<>() -> Unit := {
-  let empty = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let result = («std-1.0.0-beta.14»::vector::append<Field> as λ(Slice<Field>, Slice<Field>) -> Slice<Field>)(empty, vector);
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, vector));
+  let empty = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let result = («std-1.0.0-beta.14»::vector::append<Field> as λ(Vector<Field>, Vector<Field>) -> Vector<Field>)(empty, vector);
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, vector));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::append_two_non_empty<>() -> Unit := {
-  let vector1 = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)));
-  let vector2 = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((3: Field), (4: Field), (5: Field)));
-  let result = («std-1.0.0-beta.14»::vector::append<Field> as λ(Slice<Field>, Slice<Field>) -> Slice<Field>)(vector1, vector2);
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(result, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)))));
+  let vector1 = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)));
+  let vector2 = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((3: Field), (4: Field), (5: Field)));
+  let result = («std-1.0.0-beta.14»::vector::append<Field> as λ(Vector<Field>, Vector<Field>) -> Vector<Field>)(vector1, vector2);
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(result, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::as_array_single<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
-  let array = («std-1.0.0-beta.14»::vector::as_array<Field, 1: u32> as λ(Slice<Field>) -> Array<Field, 1: u32>)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
+  let array = («std-1.0.0-beta.14»::vector::as_array<Field, 1: u32> as λ(Vector<Field>) -> Array<Field, 1: u32>)(vector);
   (#_assert returning Unit)((#_fEq returning bool)((#_arrayIndex returning Field)(array, (0: u32)), (42: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::as_array_multiple<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let array = («std-1.0.0-beta.14»::vector::as_array<Field, 3: u32> as λ(Slice<Field>) -> Array<Field, 3: u32>)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let array = («std-1.0.0-beta.14»::vector::as_array<Field, 3: u32> as λ(Vector<Field>) -> Array<Field, 3: u32>)(vector);
   (#_assert returning Unit)((#_fEq returning bool)((#_arrayIndex returning Field)(array, (0: u32)), (1: Field)));
   (#_assert returning Unit)((#_fEq returning bool)((#_arrayIndex returning Field)(array, (1: u32)), (2: Field)));
   (#_assert returning Unit)((#_fEq returning bool)((#_arrayIndex returning Field)(array, (2: u32)), (3: Field)));
@@ -566,85 +566,85 @@ noir_def «std-1.0.0-beta.14»::vector::test::as_array_multiple<>() -> Unit := {
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::chain_operations<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 5: u32>)((1: u32), (2: u32), (3: u32), (4: u32), (5: u32)));
-  let result = («std-1.0.0-beta.14»::vector::fold<u32, Unit> as λ(Slice<u32>, u32, λ(u32, u32) -> u32) -> u32)((«std-1.0.0-beta.14»::vector::map<u32, Unit> as λ(Slice<u32>, λ(u32) -> u32) -> Slice<u32>)((«std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> Slice<u32>)(vector, (fn(x: u32): bool := (#_uEq returning bool)((#_uRem returning u32)(x, (2: u32)), (0: u32)))), (fn(x: u32): u32 := (#_uMul returning u32)(x, (2: u32)))), (0: u32), (fn(acc: u32, x: u32): u32 := (#_uAdd returning u32)(acc, x)));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 5: u32>)((1: u32), (2: u32), (3: u32), (4: u32), (5: u32)));
+  let result = («std-1.0.0-beta.14»::vector::fold<u32, Unit> as λ(Vector<u32>, u32, λ(u32, u32) -> u32) -> u32)((«std-1.0.0-beta.14»::vector::map<u32, Unit> as λ(Vector<u32>, λ(u32) -> u32) -> Vector<u32>)((«std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_uEq returning bool)((#_uRem returning u32)(x, (2: u32)), (0: u32)))), (fn(x: u32): u32 := (#_uMul returning u32)(x, (2: u32)))), (0: u32), (fn(acc: u32, x: u32): u32 := (#_uAdd returning u32)(acc, x)));
   (#_assert returning Unit)((#_uEq returning bool)(result, (12: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::nested_operations<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
-  let filtered = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> Slice<u32>)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (1: u32))));
-  let mapped = («std-1.0.0-beta.14»::vector::map<u32, Unit> as λ(Slice<u32>, λ(u32) -> u32) -> Slice<u32>)(filtered, (fn(x: u32): u32 := (#_uMul returning u32)(x, x)));
-  let sum = («std-1.0.0-beta.14»::vector::fold<u32, Unit> as λ(Slice<u32>, u32, λ(u32, u32) -> u32) -> u32)(mapped, (0: u32), (fn(acc: u32, x: u32): u32 := (#_uAdd returning u32)(acc, x)));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
+  let filtered = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (1: u32))));
+  let mapped = («std-1.0.0-beta.14»::vector::map<u32, Unit> as λ(Vector<u32>, λ(u32) -> u32) -> Vector<u32>)(filtered, (fn(x: u32): u32 := (#_uMul returning u32)(x, x)));
+  let sum = («std-1.0.0-beta.14»::vector::fold<u32, Unit> as λ(Vector<u32>, u32, λ(u32, u32) -> u32) -> u32)(mapped, (0: u32), (fn(acc: u32, x: u32): u32 := (#_uAdd returning u32)(acc, x)));
   (#_assert returning Unit)((#_uEq returning bool)(sum, (29: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::single_element_operations<>() -> Unit := {
-  let single = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
+  let single = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field)));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(single), (1: u32)));
-  let pushed_back = (#_vectorPushBack returning Slice<Field>)(single, (99: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(pushed_back, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((42: Field), (99: Field)))));
-  let pushed_front = (#_vectorPushFront returning Slice<Field>)(single, (0: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(pushed_front, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((0: Field), (42: Field)))));
-  let (popped_back_vector, popped_back_elem) = (#_vectorPopBack returning Tuple<Slice<Field>, Field>)(single);
+  let pushed_back = (#_vectorPushBack returning Vector<Field>)(single, (99: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(pushed_back, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((42: Field), (99: Field)))));
+  let pushed_front = (#_vectorPushFront returning Vector<Field>)(single, (0: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(pushed_front, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((0: Field), (42: Field)))));
+  let (popped_back_vector, popped_back_elem) = (#_vectorPopBack returning Tuple<Vector<Field>, Field>)(single);
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(popped_back_vector), (0: u32)));
   (#_assert returning Unit)((#_fEq returning bool)(popped_back_elem, (42: Field)));
-  let (popped_front_elem, popped_front_vector) = (#_vectorPopFront returning Tuple<Field, Slice<Field> >)(single);
+  let (popped_front_elem, popped_front_vector) = (#_vectorPopFront returning Tuple<Field, Vector<Field> >)(single);
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(popped_front_vector), (0: u32)));
   (#_assert returning Unit)((#_fEq returning bool)(popped_front_elem, (42: Field)));
-  let inserted = (#_vectorInsert returning Slice<Field>)(single, (0: u32), (0: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(inserted, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((0: Field), (42: Field)))));
-  let (removed_vector, removed_elem) = (#_vectorRemove returning Tuple<Slice<Field>, Field>)(single, (0: u32));
+  let inserted = (#_vectorInsert returning Vector<Field>)(single, (0: u32), (0: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(inserted, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((0: Field), (42: Field)))));
+  let (removed_vector, removed_elem) = (#_vectorRemove returning Tuple<Vector<Field>, Field>)(single, (0: u32));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(removed_vector), (0: u32)));
   (#_assert returning Unit)((#_fEq returning bool)(removed_elem, (42: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::boundary_conditions<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let at_start = (#_vectorInsert returning Slice<Field>)(vector, (0: u32), (0: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(at_start, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((0: Field), (1: Field), (2: Field), (3: Field)))));
-  let at_end = (#_vectorInsert returning Slice<Field>)(vector, (3: u32), (4: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(at_end, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)))));
-  let (removed_start, elem_start) = (#_vectorRemove returning Tuple<Slice<Field>, Field>)(vector, (0: u32));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(removed_start, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)))));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let at_start = (#_vectorInsert returning Vector<Field>)(vector, (0: u32), (0: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(at_start, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((0: Field), (1: Field), (2: Field), (3: Field)))));
+  let at_end = (#_vectorInsert returning Vector<Field>)(vector, (3: u32), (4: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(at_end, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)))));
+  let (removed_start, elem_start) = (#_vectorRemove returning Tuple<Vector<Field>, Field>)(vector, (0: u32));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(removed_start, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((2: Field), (3: Field)))));
   (#_assert returning Unit)((#_fEq returning bool)(elem_start, (1: Field)));
-  let (removed_end, elem_end) = (#_vectorRemove returning Tuple<Slice<Field>, Field>)(vector, (2: u32));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(removed_end, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)))));
+  let (removed_end, elem_end) = (#_vectorRemove returning Tuple<Vector<Field>, Field>)(vector, (2: u32));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(removed_end, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)))));
   (#_assert returning Unit)((#_fEq returning bool)(elem_end, (3: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::complex_predicates<>() -> Unit := {
-  let vector = (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 10: u32>)((1: u32), (2: u32), (3: u32), (4: u32), (5: u32), (6: u32), (7: u32), (8: u32), (9: u32), (10: u32)));
-  let even_greater_than_5 = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> Slice<u32>)(vector, (fn(x: u32): bool := (#_bAnd returning bool)((#_uEq returning bool)((#_uRem returning u32)(x, (2: u32)), (0: u32)), (#_uGt returning bool)(x, (5: u32)))));
-  (#_assert returning Unit)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<u32>, Slice<u32>) -> bool)(even_greater_than_5, (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((6: u32), (8: u32), (10: u32)))));
-  let all_positive_and_less_than_20 = («std-1.0.0-beta.14»::vector::«all»<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_bAnd returning bool)((#_uGt returning bool)(x, (0: u32)), (#_uLt returning bool)(x, (20: u32)))));
+  let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 10: u32>)((1: u32), (2: u32), (3: u32), (4: u32), (5: u32), (6: u32), (7: u32), (8: u32), (9: u32), (10: u32)));
+  let even_greater_than_5 = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_bAnd returning bool)((#_uEq returning bool)((#_uRem returning u32)(x, (2: u32)), (0: u32)), (#_uGt returning bool)(x, (5: u32)))));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(even_greater_than_5, (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((6: u32), (8: u32), (10: u32)))));
+  let all_positive_and_less_than_20 = («std-1.0.0-beta.14»::vector::«all»<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_bAnd returning bool)((#_uGt returning bool)(x, (0: u32)), (#_uLt returning bool)(x, (20: u32)))));
   (#_assert returning Unit)((#_bEq returning bool)(all_positive_and_less_than_20, #_true));
-  let any_divisible_by_7 = («std-1.0.0-beta.14»::vector::any<u32, Unit> as λ(Slice<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uEq returning bool)((#_uRem returning u32)(x, (7: u32)), (0: u32))));
+  let any_divisible_by_7 = («std-1.0.0-beta.14»::vector::any<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> bool)(vector, (fn(x: u32): bool := (#_uEq returning bool)((#_uRem returning u32)(x, (7: u32)), (0: u32))));
   (#_assert returning Unit)((#_bEq returning bool)(any_divisible_by_7, #_true));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::identity_operations<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)));
-  let mapped_identity = («std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Slice<Field>, λ(Field) -> Field) -> Slice<Field>)(vector, (fn(x: Field): Field := x));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(mapped_identity, vector));
-  let filtered_all = («std-1.0.0-beta.14»::vector::filter<Field, Unit> as λ(Slice<Field>, λ(Field) -> bool) -> Slice<Field>)(vector, (fn(__0: Field): bool := #_true));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(filtered_all, vector));
-  let filtered_none = («std-1.0.0-beta.14»::vector::filter<Field, Unit> as λ(Slice<Field>, λ(Field) -> bool) -> Slice<Field>)(vector, (fn(__1: Field): bool := #_false));
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)));
+  let mapped_identity = («std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)(vector, (fn(x: Field): Field := x));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(mapped_identity, vector));
+  let filtered_all = («std-1.0.0-beta.14»::vector::filter<Field, Unit> as λ(Vector<Field>, λ(Field) -> bool) -> Vector<Field>)(vector, (fn(__0: Field): bool := #_true));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(filtered_all, vector));
+  let filtered_none = («std-1.0.0-beta.14»::vector::filter<Field, Unit> as λ(Vector<Field>, λ(Field) -> bool) -> Vector<Field>)(vector, (fn(__1: Field): bool := #_false));
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(filtered_none), (0: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::as_array_size_mismatch<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let __0 = («std-1.0.0-beta.14»::vector::as_array<Field, 5: u32> as λ(Slice<Field>) -> Array<Field, 5: u32>)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let __0 = («std-1.0.0-beta.14»::vector::as_array<Field, 5: u32> as λ(Vector<Field>) -> Array<Field, 5: u32>)(vector);
   #_skip
 }
 
 def «std-1.0.0-beta.14».Vector.env : Env := Env.mk
-  [«std-1.0.0-beta.14::slice::append», «std-1.0.0-beta.14::slice::as_array», «std-1.0.0-beta.14::slice::map», «std-1.0.0-beta.14::slice::mapi», «std-1.0.0-beta.14::slice::for_each», «std-1.0.0-beta.14::slice::for_eachi», «std-1.0.0-beta.14::slice::fold», «std-1.0.0-beta.14::slice::reduce», «std-1.0.0-beta.14::slice::filter», «std-1.0.0-beta.14::slice::join», «std-1.0.0-beta.14::slice::all», «std-1.0.0-beta.14::slice::any», «std-1.0.0-beta.14::vector::test::map_empty», «std-1.0.0-beta.14::vector::test::mapi_empty», «std-1.0.0-beta.14::vector::test::for_each_empty», «std-1.0.0-beta.14::vector::test::for_eachi_empty», «std-1.0.0-beta.14::vector::test::map_example», «std-1.0.0-beta.14::vector::test::mapi_example», «std-1.0.0-beta.14::vector::test::for_each_example», «std-1.0.0-beta.14::vector::test::for_eachi_example», «std-1.0.0-beta.14::vector::test::len_empty», «std-1.0.0-beta.14::vector::test::len_single», «std-1.0.0-beta.14::vector::test::len_multiple», «std-1.0.0-beta.14::vector::test::push_back_empty», «std-1.0.0-beta.14::vector::test::push_back_non_empty», «std-1.0.0-beta.14::vector::test::push_front_empty», «std-1.0.0-beta.14::vector::test::push_front_non_empty», «std-1.0.0-beta.14::vector::test::pop_back_empty», «std-1.0.0-beta.14::vector::test::pop_back_one», «std-1.0.0-beta.14::vector::test::pop_back_multiple», «std-1.0.0-beta.14::vector::test::pop_front_empty», «std-1.0.0-beta.14::vector::test::pop_front_one», «std-1.0.0-beta.14::vector::test::pop_front_multiple», «std-1.0.0-beta.14::vector::test::insert_beginning», «std-1.0.0-beta.14::vector::test::insert_middle», «std-1.0.0-beta.14::vector::test::insert_end», «std-1.0.0-beta.14::vector::test::insert_end_out_of_bounds», «std-1.0.0-beta.14::vector::test::remove_empty», «std-1.0.0-beta.14::vector::test::remove_beginning», «std-1.0.0-beta.14::vector::test::remove_middle», «std-1.0.0-beta.14::vector::test::remove_end», «std-1.0.0-beta.14::vector::test::remove_end_out_of_bounds», «std-1.0.0-beta.14::vector::test::fold_empty», «std-1.0.0-beta.14::vector::test::fold_single», «std-1.0.0-beta.14::vector::test::fold_multiple», «std-1.0.0-beta.14::vector::test::reduce_empty», «std-1.0.0-beta.14::vector::test::reduce_single», «std-1.0.0-beta.14::vector::test::reduce_multiple», «std-1.0.0-beta.14::vector::test::filter_empty», «std-1.0.0-beta.14::vector::test::filter_all_true», «std-1.0.0-beta.14::vector::test::filter_all_false», «std-1.0.0-beta.14::vector::test::filter_some», «std-1.0.0-beta.14::vector::test::all_empty», «std-1.0.0-beta.14::vector::test::all_true», «std-1.0.0-beta.14::vector::test::all_false», «std-1.0.0-beta.14::vector::test::any_empty», «std-1.0.0-beta.14::vector::test::any_true», «std-1.0.0-beta.14::vector::test::any_false», «std-1.0.0-beta.14::vector::test::append_empty_to_empty», «std-1.0.0-beta.14::vector::test::append_empty_to_non_empty», «std-1.0.0-beta.14::vector::test::append_non_empty_to_empty», «std-1.0.0-beta.14::vector::test::append_two_non_empty», «std-1.0.0-beta.14::vector::test::as_array_single», «std-1.0.0-beta.14::vector::test::as_array_multiple», «std-1.0.0-beta.14::vector::test::chain_operations», «std-1.0.0-beta.14::vector::test::nested_operations», «std-1.0.0-beta.14::vector::test::single_element_operations», «std-1.0.0-beta.14::vector::test::boundary_conditions», «std-1.0.0-beta.14::vector::test::complex_predicates», «std-1.0.0-beta.14::vector::test::identity_operations», «std-1.0.0-beta.14::vector::test::as_array_size_mismatch»]
+  [«std-1.0.0-beta.14::vector::append», «std-1.0.0-beta.14::vector::as_array», «std-1.0.0-beta.14::vector::map», «std-1.0.0-beta.14::vector::mapi», «std-1.0.0-beta.14::vector::for_each», «std-1.0.0-beta.14::vector::for_eachi», «std-1.0.0-beta.14::vector::fold», «std-1.0.0-beta.14::vector::reduce», «std-1.0.0-beta.14::vector::filter», «std-1.0.0-beta.14::vector::join», «std-1.0.0-beta.14::vector::all», «std-1.0.0-beta.14::vector::any», «std-1.0.0-beta.14::vector::test::map_empty», «std-1.0.0-beta.14::vector::test::mapi_empty», «std-1.0.0-beta.14::vector::test::for_each_empty», «std-1.0.0-beta.14::vector::test::for_eachi_empty», «std-1.0.0-beta.14::vector::test::map_example», «std-1.0.0-beta.14::vector::test::mapi_example», «std-1.0.0-beta.14::vector::test::for_each_example», «std-1.0.0-beta.14::vector::test::for_eachi_example», «std-1.0.0-beta.14::vector::test::len_empty», «std-1.0.0-beta.14::vector::test::len_single», «std-1.0.0-beta.14::vector::test::len_multiple», «std-1.0.0-beta.14::vector::test::push_back_empty», «std-1.0.0-beta.14::vector::test::push_back_non_empty», «std-1.0.0-beta.14::vector::test::push_front_empty», «std-1.0.0-beta.14::vector::test::push_front_non_empty», «std-1.0.0-beta.14::vector::test::pop_back_empty», «std-1.0.0-beta.14::vector::test::pop_back_one», «std-1.0.0-beta.14::vector::test::pop_back_multiple», «std-1.0.0-beta.14::vector::test::pop_front_empty», «std-1.0.0-beta.14::vector::test::pop_front_one», «std-1.0.0-beta.14::vector::test::pop_front_multiple», «std-1.0.0-beta.14::vector::test::insert_beginning», «std-1.0.0-beta.14::vector::test::insert_middle», «std-1.0.0-beta.14::vector::test::insert_end», «std-1.0.0-beta.14::vector::test::insert_end_out_of_bounds», «std-1.0.0-beta.14::vector::test::remove_empty», «std-1.0.0-beta.14::vector::test::remove_beginning», «std-1.0.0-beta.14::vector::test::remove_middle», «std-1.0.0-beta.14::vector::test::remove_end», «std-1.0.0-beta.14::vector::test::remove_end_out_of_bounds», «std-1.0.0-beta.14::vector::test::fold_empty», «std-1.0.0-beta.14::vector::test::fold_single», «std-1.0.0-beta.14::vector::test::fold_multiple», «std-1.0.0-beta.14::vector::test::reduce_empty», «std-1.0.0-beta.14::vector::test::reduce_single», «std-1.0.0-beta.14::vector::test::reduce_multiple», «std-1.0.0-beta.14::vector::test::filter_empty», «std-1.0.0-beta.14::vector::test::filter_all_true», «std-1.0.0-beta.14::vector::test::filter_all_false», «std-1.0.0-beta.14::vector::test::filter_some», «std-1.0.0-beta.14::vector::test::all_empty», «std-1.0.0-beta.14::vector::test::all_true», «std-1.0.0-beta.14::vector::test::all_false», «std-1.0.0-beta.14::vector::test::any_empty», «std-1.0.0-beta.14::vector::test::any_true», «std-1.0.0-beta.14::vector::test::any_false», «std-1.0.0-beta.14::vector::test::append_empty_to_empty», «std-1.0.0-beta.14::vector::test::append_empty_to_non_empty», «std-1.0.0-beta.14::vector::test::append_non_empty_to_empty», «std-1.0.0-beta.14::vector::test::append_two_non_empty», «std-1.0.0-beta.14::vector::test::as_array_single», «std-1.0.0-beta.14::vector::test::as_array_multiple», «std-1.0.0-beta.14::vector::test::chain_operations», «std-1.0.0-beta.14::vector::test::nested_operations», «std-1.0.0-beta.14::vector::test::single_element_operations», «std-1.0.0-beta.14::vector::test::boundary_conditions», «std-1.0.0-beta.14::vector::test::complex_predicates», «std-1.0.0-beta.14::vector::test::identity_operations», «std-1.0.0-beta.14::vector::test::as_array_size_mismatch»]
   []

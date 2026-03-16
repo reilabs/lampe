@@ -8,11 +8,11 @@ open «std-1.0.0-beta.14»
 /-!
 Core semantic interface for Noir `collections::vec::Vec`.
 
-Vec wraps a single `Slice<T>`, which denotes as `List (T.denote p)`.
+Vec wraps a single `Vector<T>`, which denotes as `List (T.denote p)`.
 Unlike `BoundedVec`, there is no capacity constraint, so no `wellFormed` predicate is needed.
 
 We keep:
-- the concrete representation projection (`slice`)
+- the concrete representation projection (`vector`)
 - the semantic view (`embed`)
 -/
 
@@ -22,11 +22,11 @@ abbrev vecTp (T : Tp) : Tp :=
 abbrev Repr (p : Prime) (T : Tp) : Type :=
   Tp.denote p (vecTp T)
 
-def slice {p T} (v : Repr p T) : List (T.denote p) :=
+def vector {p T} (v : Repr p T) : List (T.denote p) :=
   Builtin.indexTpl v Builtin.Member.head
 
 def embed {p T} (v : Repr p T) : List (T.denote p) :=
-  slice v
+  vector v
 
 abbrev V {p : Prime} {T : Tp} (selfRef : Ref) (xs : List (Tp.denote p T)) : SLP (State p) :=
   ∃∃ v : Repr p T, [selfRef ↦ ⟨vecTp T, v⟩] ⋆ ⟦embed v = xs⟧

@@ -14,13 +14,13 @@ noir_def «std-1.0.0-beta.14»::field::assert_max_bit_size<BIT_SIZE: u32>(self: 
 noir_def «std-1.0.0-beta.14»::field::to_le_bits<N: u32>(self: Field) -> Array<u1, N: u32> := {
   let bits = (#_toLeBits returning Array<u1, N: u32>)(self);
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let p = (#_modulusLeBits returning Slice<u1>)();
+    let p = (#_modulusLeBits returning Vector<u1>)();
     (#_assert returning Unit)((#_uLeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p)));
     let mut ok = (#_uNeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p));
     for i in (0: u32) .. uConst!(N: u32) do {
       if (#_bNot returning bool)(ok) then {
-        if (#_uNeq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (#_sliceIndex returning u1)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))) then {
-          (#_assert returning Unit)((#_uEq returning bool)((#_sliceIndex returning u1)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (1: u1)));
+        if (#_uNeq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (#_vectorIndex returning u1)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))) then {
+          (#_assert returning Unit)((#_uEq returning bool)((#_vectorIndex returning u1)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (1: u1)));
           ok = #_true;
           #_skip
         }
@@ -35,13 +35,13 @@ noir_def «std-1.0.0-beta.14»::field::to_le_bits<N: u32>(self: Field) -> Array<
 noir_def «std-1.0.0-beta.14»::field::to_be_bits<N: u32>(self: Field) -> Array<u1, N: u32> := {
   let bits = (#_toBeBits returning Array<u1, N: u32>)(self);
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let p = (#_modulusBeBits returning Slice<u1>)();
+    let p = (#_modulusBeBits returning Vector<u1>)();
     (#_assert returning Unit)((#_uLeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p)));
     let mut ok = (#_uNeq returning bool)((#_arrayLen returning u32)(bits), (#_arrayLen returning u32)(p));
     for i in (0: u32) .. uConst!(N: u32) do {
       if (#_bNot returning bool)(ok) then {
-        if (#_uNeq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)(i)), (#_sliceIndex returning u1)(p, (#_cast returning u32)(i))) then {
-          (#_assert returning Unit)((#_uEq returning bool)((#_sliceIndex returning u1)(p, (#_cast returning u32)(i)), (1: u1)));
+        if (#_uNeq returning bool)((#_arrayIndex returning u1)(bits, (#_cast returning u32)(i)), (#_vectorIndex returning u1)(p, (#_cast returning u32)(i))) then {
+          (#_assert returning Unit)((#_uEq returning bool)((#_vectorIndex returning u1)(p, (#_cast returning u32)(i)), (1: u1)));
           ok = #_true;
           #_skip
         }
@@ -54,16 +54,16 @@ noir_def «std-1.0.0-beta.14»::field::to_be_bits<N: u32>(self: Field) -> Array<
 }
 
 noir_def «std-1.0.0-beta.14»::field::to_le_bytes<N: u32>(self: Field) -> Array<u8, N: u32> := {
-  (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Slice<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
+  (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Vector<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
   let bytes = («std-1.0.0-beta.14»::field::to_le_radix<N: u32> as λ(Field, u32) -> Array<u8, N: u32>)(self, (256: u32));
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let p = (#_modulusLeBytes returning Slice<u8>)();
+    let p = (#_modulusLeBytes returning Vector<u8>)();
     (#_assert returning Unit)((#_uLeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p)));
     let mut ok = (#_uNeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p));
     for i in (0: u32) .. uConst!(N: u32) do {
       if (#_bNot returning bool)(ok) then {
-        if (#_uNeq returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (#_sliceIndex returning u8)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))) then {
-          (#_assert returning Unit)((#_uLt returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (#_sliceIndex returning u8)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))));
+        if (#_uNeq returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (#_vectorIndex returning u8)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))) then {
+          (#_assert returning Unit)((#_uLt returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i))), (#_vectorIndex returning u8)(p, (#_cast returning u32)((#_uSub returning u32)((#_uSub returning u32)(uConst!(N: u32), (1: u32)), i)))));
           ok = #_true;
           #_skip
         }
@@ -76,16 +76,16 @@ noir_def «std-1.0.0-beta.14»::field::to_le_bytes<N: u32>(self: Field) -> Array
 }
 
 noir_def «std-1.0.0-beta.14»::field::to_be_bytes<N: u32>(self: Field) -> Array<u8, N: u32> := {
-  (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Slice<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
+  (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Vector<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
   let bytes = («std-1.0.0-beta.14»::field::to_be_radix<N: u32> as λ(Field, u32) -> Array<u8, N: u32>)(self, (256: u32));
   if (#_bNot returning bool)((#_isUnconstrained returning bool)()) then {
-    let p = (#_modulusBeBytes returning Slice<u8>)();
+    let p = (#_modulusBeBytes returning Vector<u8>)();
     (#_assert returning Unit)((#_uLeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p)));
     let mut ok = (#_uNeq returning bool)((#_arrayLen returning u32)(bytes), (#_arrayLen returning u32)(p));
     for i in (0: u32) .. uConst!(N: u32) do {
       if (#_bNot returning bool)(ok) then {
-        if (#_uNeq returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)), (#_sliceIndex returning u8)(p, (#_cast returning u32)(i))) then {
-          (#_assert returning Unit)((#_uLt returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)), (#_sliceIndex returning u8)(p, (#_cast returning u32)(i))));
+        if (#_uNeq returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)), (#_vectorIndex returning u8)(p, (#_cast returning u32)(i))) then {
+          (#_assert returning Unit)((#_uLt returning bool)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)), (#_vectorIndex returning u8)(p, (#_cast returning u32)(i))));
           ok = #_true;
           #_skip
         }
@@ -141,7 +141,7 @@ noir_def «std-1.0.0-beta.14»::field::lt<>(self: Field, another: Field) -> bool
 }
 
 noir_def «std-1.0.0-beta.14»::field::from_le_bytes<N: u32>(bytes: Array<u8, N: u32>) -> Field := {
-  (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Slice<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
+  (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBytes returning Vector<u8>)())), "N must be less than or equal to modulus_le_bytes().len()");
   let mut v = (1: Field);
   let mut result = (0: Field);
   for i in (0: u32) .. uConst!(N: u32) do {
@@ -388,7 +388,7 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_byte_decomposition_overflow<>
 
 noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_be_bytes_bn254_edge_cases<>() -> Unit := {
   if («std-1.0.0-beta.14»::compat::is_bn254<> as λ() -> bool)() then {
-    let mut p_minus_1_bytes = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Slice<u8>) -> Array<u8, 32: u32>)((#_modulusBeBytes returning Slice<u8>)());
+    let mut p_minus_1_bytes = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_modulusBeBytes returning Vector<u8>)());
     (#_assert returning Unit)((#_uGt returning bool)((#_arrayIndex returning u8)(p_minus_1_bytes, (#_cast returning u32)((#_uSub returning u32)((32: u32), (1: u32)))), (0: u8)));
     {
       let i_3469 = (#_uSub returning u32)((32: u32), (1: u32));
@@ -399,7 +399,7 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_be_bytes_bn254_edge_c
     (#_assert returning Unit)((#_fEq returning bool)((#_fAdd returning Field)(p_minus_1, (1: Field)), (0: Field)));
     let p_minus_1_converted_bytes = («std-1.0.0-beta.14»::field::to_be_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(p_minus_1);
     (#_assert returning Unit)(((Array<u8, 32: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 32: u32>, Array<u8, 32: u32>) -> bool)(p_minus_1_converted_bytes, p_minus_1_bytes));
-    let mut p_plus_1_bytes = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Slice<u8>) -> Array<u8, 32: u32>)((#_modulusBeBytes returning Slice<u8>)());
+    let mut p_plus_1_bytes = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_modulusBeBytes returning Vector<u8>)());
     (#_assert returning Unit)((#_uLt returning bool)((#_arrayIndex returning u8)(p_plus_1_bytes, (#_cast returning u32)((#_uSub returning u32)((32: u32), (1: u32)))), (255: u8)));
     {
       let i_3473 = (#_uSub returning u32)((32: u32), (1: u32));
@@ -416,8 +416,8 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_be_bytes_bn254_edge_c
       #_skip
     };
     (#_assert returning Unit)(((Array<u8, 32: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 32: u32>, Array<u8, 32: u32>) -> bool)(p_plus_1_converted_bytes, (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8))));
-    (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_modulusBeBytes returning Slice<u8>)()), (32: u32)));
-    let p = («std-1.0.0-beta.14»::field::from_be_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)((«std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Slice<u8>) -> Array<u8, 32: u32>)((#_modulusBeBytes returning Slice<u8>)()));
+    (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_modulusBeBytes returning Vector<u8>)()), (32: u32)));
+    let p = («std-1.0.0-beta.14»::field::from_be_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)((«std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_modulusBeBytes returning Vector<u8>)()));
     (#_assert returning Unit)((#_fEq returning bool)(p, (0: Field)));
     let p_bytes = («std-1.0.0-beta.14»::field::to_be_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)((0: Field));
     (#_assert returning Unit)(((Array<u8, 32: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 32: u32>, Array<u8, 32: u32>) -> bool)(p_bytes, (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8))));
@@ -427,14 +427,14 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_be_bytes_bn254_edge_c
 
 noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_le_bytes_bn254_edge_cases<>() -> Unit := {
   if («std-1.0.0-beta.14»::compat::is_bn254<> as λ() -> bool)() then {
-    let mut p_minus_1_bytes = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Slice<u8>) -> Array<u8, 32: u32>)((#_modulusLeBytes returning Slice<u8>)());
+    let mut p_minus_1_bytes = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_modulusLeBytes returning Vector<u8>)());
     (#_assert returning Unit)((#_uGt returning bool)((#_arrayIndex returning u8)(p_minus_1_bytes, (0: u32)), (0: u8)));
     (p_minus_1_bytes[(0: u32)]: u8) = (#_uSub returning u8)((#_arrayIndex returning u8)(p_minus_1_bytes, (0: u32)), (1: u8));
     let p_minus_1 = («std-1.0.0-beta.14»::field::from_le_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)(p_minus_1_bytes);
     (#_assert returning Unit)((#_fEq returning bool)((#_fAdd returning Field)(p_minus_1, (1: Field)), (0: Field)));
     let p_minus_1_converted_bytes = («std-1.0.0-beta.14»::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(p_minus_1);
     (#_assert returning Unit)(((Array<u8, 32: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 32: u32>, Array<u8, 32: u32>) -> bool)(p_minus_1_converted_bytes, p_minus_1_bytes));
-    let mut p_plus_1_bytes = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Slice<u8>) -> Array<u8, 32: u32>)((#_modulusLeBytes returning Slice<u8>)());
+    let mut p_plus_1_bytes = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_modulusLeBytes returning Vector<u8>)());
     (#_assert returning Unit)((#_uLt returning bool)((#_arrayIndex returning u8)(p_plus_1_bytes, (0: u32)), (255: u8)));
     (p_plus_1_bytes[(0: u32)]: u8) = (#_uAdd returning u8)((#_arrayIndex returning u8)(p_plus_1_bytes, (0: u32)), (1: u8));
     let p_plus_1 = («std-1.0.0-beta.14»::field::from_le_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)(p_plus_1_bytes);
@@ -443,8 +443,8 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_le_bytes_bn254_edge_c
     (#_assert returning Unit)((#_uEq returning bool)((#_arrayIndex returning u8)(p_plus_1_converted_bytes, (0: u32)), (1: u8)));
     (p_plus_1_converted_bytes[(0: u32)]: u8) = (0: u8);
     (#_assert returning Unit)(((Array<u8, 32: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 32: u32>, Array<u8, 32: u32>) -> bool)(p_plus_1_converted_bytes, (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8))));
-    (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_modulusLeBytes returning Slice<u8>)()), (32: u32)));
-    let p = («std-1.0.0-beta.14»::field::from_le_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)((«std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Slice<u8>) -> Array<u8, 32: u32>)((#_modulusLeBytes returning Slice<u8>)()));
+    (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_modulusLeBytes returning Vector<u8>)()), (32: u32)));
+    let p = («std-1.0.0-beta.14»::field::from_le_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)((«std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_modulusLeBytes returning Vector<u8>)()));
     (#_assert returning Unit)((#_fEq returning bool)(p, (0: Field)));
     let p_bytes = («std-1.0.0-beta.14»::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)((0: Field));
     (#_assert returning Unit)(((Array<u8, 32: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 32: u32>, Array<u8, 32: u32>) -> bool)(p_bytes, (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8))));
@@ -453,7 +453,7 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_le_bytes_bn254_edge_c
 }
 
 noir_def «std-1.0.0-beta.14»::field::tests::from_le_bits<N: u32>(bits: Array<u1, N: u32>) -> Field := {
-  (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBits returning Slice<u1>)())), "N must be less than or equal to modulus_le_bits().len()");
+  (#_staticAssert returning Unit)((#_uLeq returning bool)(uConst!(N: u32), (#_arrayLen returning u32)((#_modulusLeBits returning Vector<u1>)())), "N must be less than or equal to modulus_le_bits().len()");
   let mut v = (1: Field);
   let mut result = (0: Field);
   for i in (0: u32) .. uConst!(N: u32) do {
@@ -477,7 +477,7 @@ noir_def «std-1.0.0-beta.14»::field::tests::from_be_bits<N: u32>(bits: Array<u
 
 noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_be_bits_bn254_edge_cases<>() -> Unit := {
   if («std-1.0.0-beta.14»::compat::is_bn254<> as λ() -> bool)() then {
-    let mut p_minus_1_bits = («std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Slice<u1>) -> Array<u1, 254: u32>)((#_modulusBeBits returning Slice<u1>)());
+    let mut p_minus_1_bits = («std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Vector<u1>) -> Array<u1, 254: u32>)((#_modulusBeBits returning Vector<u1>)());
     (#_assert returning Unit)((#_uGt returning bool)((#_arrayIndex returning u1)(p_minus_1_bits, (#_cast returning u32)((#_uSub returning u32)((254: u32), (1: u32)))), (0: u1)));
     {
       let i_3496 = (#_uSub returning u32)((254: u32), (1: u32));
@@ -488,7 +488,7 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_be_bits_bn254_edge_ca
     (#_assert returning Unit)((#_fEq returning bool)((#_fAdd returning Field)(p_minus_1, (1: Field)), (0: Field)));
     let p_minus_1_converted_bits = («std-1.0.0-beta.14»::field::to_be_bits<254: u32> as λ(Field) -> Array<u1, 254: u32>)(p_minus_1);
     (#_assert returning Unit)(((Array<u1, 254: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u1, 254: u32>, Array<u1, 254: u32>) -> bool)(p_minus_1_converted_bits, p_minus_1_bits));
-    let mut p_plus_4_bits = («std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Slice<u1>) -> Array<u1, 254: u32>)((#_modulusBeBits returning Slice<u1>)());
+    let mut p_plus_4_bits = («std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Vector<u1>) -> Array<u1, 254: u32>)((#_modulusBeBits returning Vector<u1>)());
     (#_assert returning Unit)((#_uLt returning bool)((#_arrayIndex returning u1)(p_plus_4_bits, (#_cast returning u32)((#_uSub returning u32)((254: u32), (3: u32)))), (1: u1)));
     {
       let i_3500 = (#_uSub returning u32)((254: u32), (3: u32));
@@ -505,8 +505,8 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_be_bits_bn254_edge_ca
       #_skip
     };
     (#_assert returning Unit)(((Array<u1, 254: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u1, 254: u32>, Array<u1, 254: u32>) -> bool)(p_plus_4_converted_bits, (#_mkRepeatedArray returning Array<u1, 254: u32>)((0: u1))));
-    (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_modulusBeBits returning Slice<u1>)()), (254: u32)));
-    let p = («std-1.0.0-beta.14»::field::tests::from_be_bits<254: u32> as λ(Array<u1, 254: u32>) -> Field)((«std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Slice<u1>) -> Array<u1, 254: u32>)((#_modulusBeBits returning Slice<u1>)()));
+    (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_modulusBeBits returning Vector<u1>)()), (254: u32)));
+    let p = («std-1.0.0-beta.14»::field::tests::from_be_bits<254: u32> as λ(Array<u1, 254: u32>) -> Field)((«std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Vector<u1>) -> Array<u1, 254: u32>)((#_modulusBeBits returning Vector<u1>)()));
     (#_assert returning Unit)((#_fEq returning bool)(p, (0: Field)));
     let p_bits = («std-1.0.0-beta.14»::field::to_be_bits<254: u32> as λ(Field) -> Array<u1, 254: u32>)((0: Field));
     (#_assert returning Unit)(((Array<u1, 254: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u1, 254: u32>, Array<u1, 254: u32>) -> bool)(p_bits, (#_mkRepeatedArray returning Array<u1, 254: u32>)((0: u1))));
@@ -516,14 +516,14 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_be_bits_bn254_edge_ca
 
 noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_le_bits_bn254_edge_cases<>() -> Unit := {
   if («std-1.0.0-beta.14»::compat::is_bn254<> as λ() -> bool)() then {
-    let mut p_minus_1_bits = («std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Slice<u1>) -> Array<u1, 254: u32>)((#_modulusLeBits returning Slice<u1>)());
+    let mut p_minus_1_bits = («std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Vector<u1>) -> Array<u1, 254: u32>)((#_modulusLeBits returning Vector<u1>)());
     (#_assert returning Unit)((#_uGt returning bool)((#_arrayIndex returning u1)(p_minus_1_bits, (0: u32)), (0: u1)));
     (p_minus_1_bits[(0: u32)]: u1) = (#_uSub returning u1)((#_arrayIndex returning u1)(p_minus_1_bits, (0: u32)), (1: u1));
     let p_minus_1 = («std-1.0.0-beta.14»::field::tests::from_le_bits<254: u32> as λ(Array<u1, 254: u32>) -> Field)(p_minus_1_bits);
     (#_assert returning Unit)((#_fEq returning bool)((#_fAdd returning Field)(p_minus_1, (1: Field)), (0: Field)));
     let p_minus_1_converted_bits = («std-1.0.0-beta.14»::field::to_le_bits<254: u32> as λ(Field) -> Array<u1, 254: u32>)(p_minus_1);
     (#_assert returning Unit)(((Array<u1, 254: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u1, 254: u32>, Array<u1, 254: u32>) -> bool)(p_minus_1_converted_bits, p_minus_1_bits));
-    let mut p_plus_4_bits = («std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Slice<u1>) -> Array<u1, 254: u32>)((#_modulusLeBits returning Slice<u1>)());
+    let mut p_plus_4_bits = («std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Vector<u1>) -> Array<u1, 254: u32>)((#_modulusLeBits returning Vector<u1>)());
     (#_assert returning Unit)((#_uLt returning bool)((#_arrayIndex returning u1)(p_plus_4_bits, (2: u32)), (1: u1)));
     (p_plus_4_bits[(2: u32)]: u1) = (#_uAdd returning u1)((#_arrayIndex returning u1)(p_plus_4_bits, (2: u32)), (1: u1));
     let p_plus_4 = («std-1.0.0-beta.14»::field::tests::from_le_bits<254: u32> as λ(Array<u1, 254: u32>) -> Field)(p_plus_4_bits);
@@ -532,8 +532,8 @@ noir_def «std-1.0.0-beta.14»::field::tests::test_to_from_le_bits_bn254_edge_ca
     (#_assert returning Unit)((#_uEq returning bool)((#_arrayIndex returning u1)(p_plus_4_converted_bits, (2: u32)), (1: u1)));
     (p_plus_4_converted_bits[(2: u32)]: u1) = (0: u1);
     (#_assert returning Unit)(((Array<u1, 254: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u1, 254: u32>, Array<u1, 254: u32>) -> bool)(p_plus_4_converted_bits, (#_mkRepeatedArray returning Array<u1, 254: u32>)((0: u1))));
-    (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_modulusLeBits returning Slice<u1>)()), (254: u32)));
-    let p = («std-1.0.0-beta.14»::field::tests::from_le_bits<254: u32> as λ(Array<u1, 254: u32>) -> Field)((«std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Slice<u1>) -> Array<u1, 254: u32>)((#_modulusLeBits returning Slice<u1>)()));
+    (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)((#_modulusLeBits returning Vector<u1>)()), (254: u32)));
+    let p = («std-1.0.0-beta.14»::field::tests::from_le_bits<254: u32> as λ(Array<u1, 254: u32>) -> Field)((«std-1.0.0-beta.14»::vector::as_array<u1, 254: u32> as λ(Vector<u1>) -> Array<u1, 254: u32>)((#_modulusLeBits returning Vector<u1>)()));
     (#_assert returning Unit)((#_fEq returning bool)(p, (0: Field)));
     let p_bits = («std-1.0.0-beta.14»::field::to_le_bits<254: u32> as λ(Field) -> Array<u1, 254: u32>)((0: Field));
     (#_assert returning Unit)(((Array<u1, 254: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u1, 254: u32>, Array<u1, 254: u32>) -> bool)(p_bits, (#_mkRepeatedArray returning Array<u1, 254: u32>)((0: u1))));

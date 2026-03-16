@@ -94,12 +94,12 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_91]<N: u32, T: Type> «std-1.0.0-beta
   };
 }
 
-noir_trait_impl[«std-1.0.0-beta.14».impl_92]<T: Type> «std-1.0.0-beta.14»::cmp::Eq<> for Slice<T> where [T: «std-1.0.0-beta.14»::cmp::Eq<>] := {
-  noir_def eq<>(self: Slice<T>, other: Slice<T>) -> bool := {
+noir_trait_impl[«std-1.0.0-beta.14».impl_92]<T: Type> «std-1.0.0-beta.14»::cmp::Eq<> for Vector<T> where [T: «std-1.0.0-beta.14»::cmp::Eq<>] := {
+  noir_def eq<>(self: Vector<T>, other: Vector<T>) -> bool := {
     let mut result = (#_uEq returning bool)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
     if result then {
       for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
-        result = (#_bAnd returning bool)(result, ((T as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i))));
+        result = (#_bAnd returning bool)(result, ((T as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_vectorIndex returning T)(self, (#_cast returning u32)(i)), (#_vectorIndex returning T)(other, (#_cast returning u32)(i))));
         #_skip
       };
       #_skip
@@ -301,8 +301,8 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_110]<N: u32, T: Type> «std-1.0.0-bet
   };
 }
 
-noir_trait_impl[«std-1.0.0-beta.14».impl_111]<T: Type> «std-1.0.0-beta.14»::cmp::Ord<> for Slice<T> where [T: «std-1.0.0-beta.14»::cmp::Ord<>] := {
-  noir_def cmp<>(self: Slice<T>, other: Slice<T>) -> «std-1.0.0-beta.14»::cmp::Ordering<> := {
+noir_trait_impl[«std-1.0.0-beta.14».impl_111]<T: Type> «std-1.0.0-beta.14»::cmp::Ord<> for Vector<T> where [T: «std-1.0.0-beta.14»::cmp::Ord<>] := {
+  noir_def cmp<>(self: Vector<T>, other: Vector<T>) -> «std-1.0.0-beta.14»::cmp::Ordering<> := {
     let self_len = (#_arrayLen returning u32)(self);
     let other_len = (#_arrayLen returning u32)(other);
     let min_len = if (#_uLt returning bool)(self_len, other_len) then {
@@ -313,7 +313,7 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_111]<T: Type> «std-1.0.0-beta.14»::
     let mut result = («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)();
     for i in (0: u32) .. min_len do {
       if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
-        result = ((T as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_sliceIndex returning T)(self, (#_cast returning u32)(i)), (#_sliceIndex returning T)(other, (#_cast returning u32)(i)));
+        result = ((T as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_vectorIndex returning T)(self, (#_cast returning u32)(i)), (#_vectorIndex returning T)(other, (#_cast returning u32)(i)));
         #_skip
       }
     };
@@ -434,15 +434,15 @@ noir_def «std-1.0.0-beta.14»::cmp::cmp_tests::sanity_check_max<>() -> Unit := 
 }
 
 noir_def «std-1.0.0-beta.14»::cmp::cmp_tests::correctly_handles_unequal_length_vectors<>() -> Unit := {
-  let vector_1 = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((0: Field), (1: Field), (2: Field), (3: Field)));
-  let vector_2 = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((0: Field), (1: Field), (2: Field)));
-  (#_assert returning Unit)((#_bNot returning bool)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vector_1, vector_2)));
+  let vector_1 = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((0: Field), (1: Field), (2: Field), (3: Field)));
+  let vector_2 = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((0: Field), (1: Field), (2: Field)));
+  (#_assert returning Unit)((#_bNot returning bool)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vector_1, vector_2)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::cmp::cmp_tests::lexicographic_ordering_for_vectors<>() -> Unit := {
-  (#_assert returning Unit)(((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(Slice<u32>, Slice<u32>) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 1: u32>)((2: u32))), (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (1: u32), (1: u32)))), («std-1.0.0-beta.14»::cmp::Ordering::greater<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()));
-  (#_assert returning Unit)(((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(((Slice<u32> as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(Slice<u32>, Slice<u32>) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 2: u32>)((1: u32), (2: u32))), (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)))), («std-1.0.0-beta.14»::cmp::Ordering::less<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()));
+  (#_assert returning Unit)(((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(Vector<u32>, Vector<u32>) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 1: u32>)((2: u32))), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (1: u32), (1: u32)))), («std-1.0.0-beta.14»::cmp::Ordering::greater<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()));
+  (#_assert returning Unit)(((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(Vector<u32>, Vector<u32>) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 2: u32>)((1: u32), (2: u32))), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)))), («std-1.0.0-beta.14»::cmp::Ordering::less<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()));
   #_skip
 }
 
