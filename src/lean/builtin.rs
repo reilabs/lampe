@@ -164,7 +164,7 @@ impl BuiltinType {
             BuiltinType::Bool => "b".to_string(),
             BuiltinType::Unit => "unit".to_string(),
             BuiltinType::Array => "array".to_string(),
-            BuiltinType::Vector => "slice".to_string(),
+            BuiltinType::Vector => "vector".to_string(),
             BuiltinType::String => "str".to_string(),
         }
     }

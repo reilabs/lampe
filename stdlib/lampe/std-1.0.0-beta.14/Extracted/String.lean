@@ -5,8 +5,8 @@ import Lampe
 
 open Lampe
 
-noir_def «std-1.0.0-beta.14»::string::as_bytes_vec<N: u32>(self: String<N: u32>) -> Slice<u8> := {
-  (#_asVector returning Slice<u8>)((#_strAsBytes returning Array<u8, N: u32>)(self))
+noir_def «std-1.0.0-beta.14»::string::as_bytes_vec<N: u32>(self: String<N: u32>) -> Vector<u8> := {
+  (#_asVector returning Vector<u8>)((#_strAsBytes returning Array<u8, N: u32>)(self))
 }
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_77]<N: u32> «std-1.0.0-beta.14»::convert::From<Array<u8, N: u32> > for String<N: u32> where [] := {

@@ -2924,8 +2924,8 @@ impl LeanGenerator<'_, '_, '_> {
 
                 match lhs_type {
                     NoirType::Array(..) => LValue::ArrayIndex { array, index, typ },
-                    NoirType::Vector(_) => LValue::SliceIndex {
-                        slice: array,
+                    NoirType::Vector(_) => LValue::VectorIndex {
+                        vector: array,
                         index,
                         typ,
                     },
@@ -3141,7 +3141,7 @@ impl LeanGenerator<'_, '_, '_> {
             BuiltinTag::I(w) => format!("i{w}"),
             BuiltinTag::Quoted(a) => format!("quoted<{a}>"),
             BuiltinTag::Reference(_) => "ref".to_string(),
-            BuiltinTag::Slice => "slice".to_string(),
+            BuiltinTag::Vector => "vector".to_string(),
             BuiltinTag::String => "string".to_string(),
             BuiltinTag::Tuple => "tuple".to_string(),
             BuiltinTag::U(w) => format!("u{w}"),

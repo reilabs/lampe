@@ -115,13 +115,13 @@ noir_def «std-1.0.0-beta.14»::field::bn254::tests::check_gt<>() -> Unit := {
 
 noir_def «std-1.0.0-beta.14»::field::bn254::tests::check_plo_phi<>() -> Unit := {
   (#_assert returning Unit)((#_fEq returning bool)((#_fAdd returning Field)((«std-1.0.0-beta.14»::field::bn254::PLO<> as λ() -> Field)(), (#_fMul returning Field)((«std-1.0.0-beta.14»::field::bn254::PHI<> as λ() -> Field)(), («std-1.0.0-beta.14»::field::bn254::TWO_POW_128<> as λ() -> Field)())), (0: Field)));
-  let p_bytes = (#_modulusLeBytes returning Slice<u8>)();
+  let p_bytes = (#_modulusLeBytes returning Vector<u8>)();
   let mut p_low = (0: Field);
   let mut p_high = (0: Field);
   let mut offset = (1: Field);
   for i in (0: u32) .. (16: u32) do {
-    p_low = (#_fAdd returning Field)(p_low, (#_fMul returning Field)((#_cast returning Field)((#_sliceIndex returning u8)(p_bytes, (#_cast returning u32)(i))), offset));
-    p_high = (#_fAdd returning Field)(p_high, (#_fMul returning Field)((#_cast returning Field)((#_sliceIndex returning u8)(p_bytes, (#_cast returning u32)((#_uAdd returning u32)(i, (16: u32))))), offset));
+    p_low = (#_fAdd returning Field)(p_low, (#_fMul returning Field)((#_cast returning Field)((#_vectorIndex returning u8)(p_bytes, (#_cast returning u32)(i))), offset));
+    p_high = (#_fAdd returning Field)(p_high, (#_fMul returning Field)((#_cast returning Field)((#_vectorIndex returning u8)(p_bytes, (#_cast returning u32)((#_uAdd returning u32)(i, (16: u32))))), offset));
     offset = (#_fMul returning Field)(offset, (256: Field));
     #_skip
   };
