@@ -166,20 +166,17 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
           | Tp.slice _ => return some (←``(slice_arrayLen_intro))
           | Tp.array _ _ => return some (←``(array_arrayLen_intro))
           | _ => return none
-        | ``Lampe.Builtin.asSlice => return some (←``(genericTotalPureBuiltin_intro Builtin.asSlice (a := (_,_)) rfl))
-        | ``Lampe.Builtin.asVector => return some (←``(genericTotalPureBuiltin_intro Builtin.asSlice (a := (_,_)) rfl))
+        | ``Lampe.Builtin.asVector => return some (←``(genericTotalPureBuiltin_intro Builtin.asVector (a := (_,_)) rfl))
 
-        -- Slice builtins
+        -- Vector/Slice builtins
         | ``Lampe.Builtin.mkSlice =>
           let some argTypes := val.getAppArgs[1]? | throwError "malformed mkSlice"
           let argTypes ← argTypes.toSyntax
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkSlice (a := (List.length $argTypes, _)) rfl))
         | ``Lampe.Builtin.mkRepeatedSlice =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedSlice (a := _) rfl))
-        | ``Lampe.Builtin.slicePushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushBack rfl))
-        | ``Lampe.Builtin.slicePushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushFront rfl))
-        | ``Lampe.Builtin.vectorPushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushBack rfl))
-        | ``Lampe.Builtin.vectorPushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.slicePushFront rfl))
+        | ``Lampe.Builtin.vectorPushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.vectorPushBack rfl))
+        | ``Lampe.Builtin.vectorPushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.vectorPushFront rfl))
         | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro))
         | ``Lampe.Builtin.ref => return some (←``(ref_intro))
         | ``Lampe.Builtin.readRef => return some (←``(readRef_intro))

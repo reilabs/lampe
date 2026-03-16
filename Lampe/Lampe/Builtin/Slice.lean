@@ -44,96 +44,78 @@ def sliceIndex := newGenericPureBuiltin
     fun h => l.get (Fin.mk i.toNat h)⟩)
 
 /--
-Defines the builtin that pushes back an element `e : Tp.denote tp` to a slice `l : List tp`.
+Defines the builtin that pushes back an element `e : Tp.denote tp` to a vector `l : List tp`.
 On these inputs, the builtin is assumed to return `l ++ [e]`.
 
-In Noir, this builtin corresponds to `fn push_back(self, elem: T) -> Self` implemented for `[T]`.
+In Noir (≥ beta.14), this builtin corresponds to `fn push_back(self, elem: T) -> Self` implemented for `[T]`.
 -/
-def slicePushBack := newGenericTotalPureBuiltin
+def vectorPushBack := newGenericTotalPureBuiltin
   (fun tp => ⟨[.slice tp, tp], .slice tp⟩)
   (fun _ h![l, e] => l ++ [e])
 
 /--
-Defines the builtin that pushes front an element `e : Tp.denote tp` to a slice `l : List tp`.
+Defines the builtin that pushes front an element `e : Tp.denote tp` to a vector `l : List tp`.
 On these inputs, the builtin is assumed to return `[e] ++ l`.
 
-In Noir, this builtin corresponds to `fn push_front(self, elem: T) -> Self` implemented for `[T]`.
+In Noir (≥ beta.14), this builtin corresponds to `fn push_front(self, elem: T) -> Self` implemented for `[T]`.
 -/
-def slicePushFront := newGenericTotalPureBuiltin
+def vectorPushFront := newGenericTotalPureBuiltin
   (fun tp => ⟨[.slice tp, tp], .slice tp⟩)
   (fun _ h![l, e] => [e] ++ l)
 
 /--
-Defines the insertion of an element `e : Tp.denote tp` at index `i : U 32` to a slice `l : List tp`.
+Defines the insertion of an element `e : Tp.denote tp` at index `i : U 32` to a vector `l : List tp`.
 We make the following assumptions:
 - If `0 ≤ i < l.length`, then the builtin returns `l'`
 where `l'` is `l` except that `e` is inserted at index `i`, and all the elements with indices larger than `i` are shifted to the right.
 - Else (out of bounds access), an exception is thrown.
 
-In Noir, this builtin corresponds to `fn insert(self, index: u32, elem: T) -> Self` implemented for `[T]`.
+In Noir (≥ beta.14), this builtin corresponds to `fn insert(self, index: u32, elem: T) -> Self` implemented for `[T]`.
 -/
-def sliceInsert := newGenericPureBuiltin
+def vectorInsert := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp, .u 32, tp], .slice tp⟩)
   (fun _ h![l, i, e] => ⟨i.toNat < l.length,
     fun _ => l.insertIdx i.toNat e⟩)
 
 
 /--
-Defines the builtin that pops the first element of a slice `l : List tp`.
+Defines the builtin that pops the first element of a vector `l : List tp`.
 We make the following assumptions:
 - If `l ≠ []`, then the builtin returns `(l[0], l[1:])`.
-- Else (empty slice), an exception is thrown.
+- Else (empty vector), an exception is thrown.
 
-In Noir, this builtin corresponds to `fn pop_front(self) -> (T, Self)` implemented for `[T]`.
+In Noir (≥ beta.14), this builtin corresponds to `fn pop_front(self) -> (T, Self)` implemented for `[T]`.
 -/
-def slicePopFront := newGenericPureBuiltin
+def vectorPopFront := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp], .tuple none [tp, .slice tp]⟩)
   (fun _ h![l] => ⟨l ≠ [],
     fun h => (l.head h, l.tail, ())⟩)
 
 /--
-Defines the builtin that pops the last element of a slice `l : List tp`.
+Defines the builtin that pops the last element of a vector `l : List tp`.
 We make the following assumptions:
 - If `l ≠ []`, then the builtin returns `(l[:l.length-1], l[l.length-1])`.
-- Else (empty slice), an exception is thrown.
+- Else (empty vector), an exception is thrown.
 
-In Noir, this builtin corresponds to `fn pop_back(self) -> (Self, T)` implemented for `[T]`.
+In Noir (≥ beta.14), this builtin corresponds to `fn pop_back(self) -> (Self, T)` implemented for `[T]`.
 -/
-def slicePopBack := newGenericPureBuiltin
+def vectorPopBack := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l] => ⟨l ≠ [],
     fun h => (l.dropLast, l.getLast h, ())⟩)
 
 /--
-Defines the removal of the element at the index `i : U 32` from a slice `l : List tp`.
+Defines the removal of the element at the index `i : U 32` from a vector `l : List tp`.
 We make the following assumptions:
 - If `i < l.length`, then the builtin returns `(l', l[i])`
 where `l'` is `l` except that the element at index `i` is removed, and all the elements with indices larger than `i` are shifted to the left.
 - Else (out of bounds access), an exception is thrown.
 
-In Noir, this builtin corresponds to `fn remove(self, index: u32) -> (Self, T)` implemented for `[T]`.
+In Noir (≥ beta.14), this builtin corresponds to `fn remove(self, index: u32) -> (Self, T)` implemented for `[T]`.
 -/
-def sliceRemove := newGenericPureBuiltin
+def vectorRemove := newGenericPureBuiltin
   (fun tp => ⟨[.slice tp, .u 32], .tuple none [.slice tp, tp]⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
-
-/-- Alias for `slicePushBack`. In newer Noir versions the builtin is called `vectorPushBack`. -/
-abbrev vectorPushBack := @slicePushBack
-
-/-- Alias for `slicePushFront`. In newer Noir versions the builtin is called `vectorPushFront`. -/
-abbrev vectorPushFront := @slicePushFront
-
-/-- Alias for `slicePopBack`. In newer Noir versions the builtin is called `vectorPopBack`. -/
-abbrev vectorPopBack := @slicePopBack
-
-/-- Alias for `slicePopFront`. In newer Noir versions the builtin is called `vectorPopFront`. -/
-abbrev vectorPopFront := @slicePopFront
-
-/-- Alias for `sliceInsert`. In newer Noir versions the builtin is called `vectorInsert`. -/
-abbrev vectorInsert := @sliceInsert
-
-/-- Alias for `sliceRemove`. In newer Noir versions the builtin is called `vectorRemove`. -/
-abbrev vectorRemove := @sliceRemove
 
 end Lampe.Builtin

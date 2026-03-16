@@ -103,15 +103,12 @@ def arrayIndex := newGenericPureBuiltin
     fun h => l.get (Fin.mk i.toNat h)⟩)
 
 /--
-Defines the function that converts an array to a slice.
+Defines the function that converts an array to a vector (slice).
 
-In Noir, this corresponds to `fn as_slice(self) -> [T]` implemented for `[T; n]`.
+In Noir (≥ beta.14), this corresponds to `fn as_vector(self) -> [T]` implemented for `[T; n]`.
 -/
-def asSlice := newGenericTotalPureBuiltin
+def asVector := newGenericTotalPureBuiltin
   (fun (tp, n) => ⟨[.array tp n], .slice tp⟩)
   (fun (_, _) h![a] => a.toList)
-
-/-- Alias for `asSlice`. In newer Noir versions the builtin is called `asVector`. -/
-abbrev asVector := @asSlice
 
 end Lampe.Builtin

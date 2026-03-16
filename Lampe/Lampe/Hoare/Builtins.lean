@@ -212,10 +212,11 @@ theorem slice_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (
   sl
   assumption
 
-theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![arr] (a := (tp, n)) := by
+theorem asVector_intro : STHoarePureBuiltin p Γ Builtin.asVector (by tauto) h![arr] (a := (tp, n)) := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
+
 
 -- Bitwise
 
@@ -369,35 +370,36 @@ theorem sliceIndex_intro : STHoarePureBuiltin p Γ Builtin.sliceIndex (by tauto)
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem slicePushBack_intro : STHoarePureBuiltin p Γ Builtin.slicePushBack (by tauto) h![sl, e] := by
+theorem vectorPushBack_intro : STHoarePureBuiltin p Γ Builtin.vectorPushBack (by tauto) h![sl, e] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem slicePushFront_intro : STHoarePureBuiltin p Γ Builtin.slicePushFront (by tauto) h![sl, e] := by
+theorem vectorPushFront_intro : STHoarePureBuiltin p Γ Builtin.vectorPushFront (by tauto) h![sl, e] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem sliceInsert_intro : STHoarePureBuiltin p Γ Builtin.sliceInsert (by tauto) h![sl, i, e] := by
+theorem vectorInsert_intro : STHoarePureBuiltin p Γ Builtin.vectorInsert (by tauto) h![sl, i, e] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem slicePopFront_intro : STHoarePureBuiltin p Γ Builtin.slicePopFront (by tauto) h![sl] := by
+theorem vectorPopFront_intro : STHoarePureBuiltin p Γ Builtin.vectorPopFront (by tauto) h![sl] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem slicePopBack_intro : STHoarePureBuiltin p Γ Builtin.slicePopBack (by tauto) h![sl] := by
+theorem vectorPopBack_intro : STHoarePureBuiltin p Γ Builtin.vectorPopBack (by tauto) h![sl] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by tauto) h![sl, i]  := by
+theorem vectorRemove_intro : STHoarePureBuiltin p Γ Builtin.vectorRemove (by tauto) h![sl, i]  := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
+
 
 -- String
 
