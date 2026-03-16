@@ -30,8 +30,8 @@ def Expr.writeRef (ref : rep tp.ref) (val : rep tp) : Lampe.Expr rep .unit :=
 /-- A utility function for creating a slice expression. -/
 @[reducible]
 def Expr.mkSlice (n : Nat) (vals : HList rep (List.replicate n tp))
-  : Lampe.Expr rep (.slice tp) :=
-  Lampe.Expr.callBuiltin _ (.slice tp) .mkSlice vals
+  : Lampe.Expr rep (.vector tp) :=
+  Lampe.Expr.callBuiltin _ (.vector tp) .mkSlice vals
 
 /-- A utility function for creating an array expression. -/
 @[reducible]
@@ -41,8 +41,8 @@ def Expr.mkArray (n : Lampe.U 32) (vals : HList rep (List.replicate n.toNat tp))
 
 /-- A utility function for creating a replicated slice expression. -/
 @[reducible]
-def Expr.mkRepSlice (n : Nat) (val : rep tp) : Lampe.Expr rep (.slice tp) :=
-  Lampe.Expr.callBuiltin _ (.slice tp) .mkSlice (HList.replicate val n)
+def Expr.mkRepSlice (n : Nat) (val : rep tp) : Lampe.Expr rep (.vector tp) :=
+  Lampe.Expr.callBuiltin _ (.vector tp) .mkSlice (HList.replicate val n)
 
 /-- A utility function for creating a replicated array expression. -/
 @[reducible]

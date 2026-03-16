@@ -244,7 +244,7 @@ inductive ArrayLenCase where
 | array (tp : Tp) (N : U 32)
 
 def arrayLenSgn : ArrayLenCase → List Tp × Tp
-| .slice tp => ⟨[Tp.slice tp], Tp.u 32⟩
+| .slice tp => ⟨[Tp.vector tp], Tp.u 32⟩
 | .array tp N => ⟨[Tp.array tp N], Tp.u 32⟩
 
 def arrayLenDesc : {p : Prime}

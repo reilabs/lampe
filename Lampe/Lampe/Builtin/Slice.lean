@@ -3,7 +3,7 @@ import Lampe.Builtin.Basic
 namespace Lampe.Builtin
 
 @[reducible]
-def replaceSlice' (s : Tp.denote p $ .slice tp) (i : Fin s.length) (v : Tp.denote p tp) : Tp.denote p $ .slice tp :=
+def replaceSlice' (s : Tp.denote p $ .vector tp) (i : Fin s.length) (v : Tp.denote p tp) : Tp.denote p $ .vector tp :=
   List.modify s i (fun _ => v)
 
 @[simp]
@@ -20,14 +20,14 @@ theorem index_replaced_slice :
 Defines the builtin slice constructor.
 -/
 def mkSlice := newGenericTotalPureBuiltin
-  (fun (n, tp) => ⟨List.replicate n tp, (.slice tp)⟩)
+  (fun (n, tp) => ⟨List.replicate n tp, (.vector tp)⟩)
   (fun _ args => HList.toList args rfl)
 
 /--
 Defines the builtin for repeated slices
 -/
 def mkRepeatedSlice := newGenericTotalPureBuiltin
-  (fun (a : Tp)=> ⟨[Tp.u 32, a], (.slice a)⟩)
+  (fun (a : Tp)=> ⟨[Tp.u 32, a], (.vector a)⟩)
   (fun _ h![n, val] => List.replicate n.toNat val)
 
 /--
@@ -38,8 +38,8 @@ We make the following assumptions:
 
 In Noir, this builtin corresponds to `T[i]` for `T: [T]` and `i: uint32`.
 -/
-def sliceIndex := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp, .u 32], tp⟩)
+def vectorIndex := newGenericPureBuiltin
+  (fun tp => ⟨[.vector tp, .u 32], tp⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => l.get (Fin.mk i.toNat h)⟩)
 
@@ -50,7 +50,7 @@ On these inputs, the builtin is assumed to return `l ++ [e]`.
 In Noir (≥ beta.14), this builtin corresponds to `fn push_back(self, elem: T) -> Self` implemented for `[T]`.
 -/
 def vectorPushBack := newGenericTotalPureBuiltin
-  (fun tp => ⟨[.slice tp, tp], .slice tp⟩)
+  (fun tp => ⟨[.vector tp, tp], .vector tp⟩)
   (fun _ h![l, e] => l ++ [e])
 
 /--
@@ -60,7 +60,7 @@ On these inputs, the builtin is assumed to return `[e] ++ l`.
 In Noir (≥ beta.14), this builtin corresponds to `fn push_front(self, elem: T) -> Self` implemented for `[T]`.
 -/
 def vectorPushFront := newGenericTotalPureBuiltin
-  (fun tp => ⟨[.slice tp, tp], .slice tp⟩)
+  (fun tp => ⟨[.vector tp, tp], .vector tp⟩)
   (fun _ h![l, e] => [e] ++ l)
 
 /--
@@ -73,7 +73,7 @@ where `l'` is `l` except that `e` is inserted at index `i`, and all the elements
 In Noir (≥ beta.14), this builtin corresponds to `fn insert(self, index: u32, elem: T) -> Self` implemented for `[T]`.
 -/
 def vectorInsert := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp, .u 32, tp], .slice tp⟩)
+  (fun tp => ⟨[.vector tp, .u 32, tp], .vector tp⟩)
   (fun _ h![l, i, e] => ⟨i.toNat < l.length,
     fun _ => l.insertIdx i.toNat e⟩)
 
@@ -87,7 +87,7 @@ We make the following assumptions:
 In Noir (≥ beta.14), this builtin corresponds to `fn pop_front(self) -> (T, Self)` implemented for `[T]`.
 -/
 def vectorPopFront := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp], .tuple none [tp, .slice tp]⟩)
+  (fun tp => ⟨[.vector tp], .tuple none [tp, .vector tp]⟩)
   (fun _ h![l] => ⟨l ≠ [],
     fun h => (l.head h, l.tail, ())⟩)
 
@@ -100,7 +100,7 @@ We make the following assumptions:
 In Noir (≥ beta.14), this builtin corresponds to `fn pop_back(self) -> (Self, T)` implemented for `[T]`.
 -/
 def vectorPopBack := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp], .tuple none [.slice tp, tp]⟩)
+  (fun tp => ⟨[.vector tp], .tuple none [.vector tp, tp]⟩)
   (fun _ h![l] => ⟨l ≠ [],
     fun h => (l.dropLast, l.getLast h, ())⟩)
 
@@ -114,7 +114,7 @@ where `l'` is `l` except that the element at index `i` is removed, and all the e
 In Noir (≥ beta.14), this builtin corresponds to `fn remove(self, index: u32) -> (Self, T)` implemented for `[T]`.
 -/
 def vectorRemove := newGenericPureBuiltin
-  (fun tp => ⟨[.slice tp, .u 32], .tuple none [.slice tp, tp]⟩)
+  (fun tp => ⟨[.vector tp, .u 32], .tuple none [.vector tp, tp]⟩)
   (fun _ h![l, i] => ⟨i.toNat < l.length,
     fun h => (l.eraseIdx i.toNat, l.get (Fin.mk i.toNat h), ())⟩)
 

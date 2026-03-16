@@ -108,7 +108,7 @@ Defines the function that converts an array to a vector (slice).
 In Noir (≥ beta.14), this corresponds to `fn as_vector(self) -> [T]` implemented for `[T; n]`.
 -/
 def asVector := newGenericTotalPureBuiltin
-  (fun (tp, n) => ⟨[.array tp n], .slice tp⟩)
+  (fun (tp, n) => ⟨[.array tp n], .vector tp⟩)
   (fun (_, _) h![a] => a.toList)
 
 end Lampe.Builtin

@@ -2,13 +2,13 @@ import Lampe
 
 open Lampe
 
-noir_def std::slice::append<T: Type>(mut self: Slice<T>, other: Slice<T>) -> Slice<T> := {
+noir_def std::slice::append<T: Type>(mut self: Vector<T>, other: Vector<T>) -> Vector<T> := {
   {
     let ζi0 = other;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_sliceIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        self = (#_slicePushBack returning Slice<T>)(self, elem);
+        self = (#_vectorPushBack returning Vector<T>)(self, elem);
         #_skip
       }
     };
@@ -27,9 +27,9 @@ example  : STHoare p thmEnv ⟦⟧ («std::slice::append».call h![T] h![s₁, s
     fun v => v = s₁ ++ s₂ := by
   enter_decl
   steps
-  step_as ([self ↦ ⟨Tp.slice T, s₁⟩]) (fun (v : Tp.denote p Tp.unit) => ⟦v = ()⟧ ⋆ [self ↦ ⟨Tp.slice T, s₁ ++ s₂⟩])
+  step_as ([self ↦ ⟨Tp.vector T, s₁⟩]) (fun (v : Tp.denote p Tp.unit) => ⟦v = ()⟧ ⋆ [self ↦ ⟨Tp.vector T, s₁ ++ s₂⟩])
   · steps
-    loop_inv nat (fun i _ _ => [self ↦ ⟨Tp.slice T, s₁ ++ (s₂.take i)⟩])
+    loop_inv nat (fun i _ _ => [self ↦ ⟨Tp.vector T, s₁ ++ (s₂.take i)⟩])
     · simp
     · simp
     · intros i hlo hhi

@@ -11,7 +11,7 @@ Instructs how to access a inner value from another value, e.g., a particular val
 inductive Access (rep : Tp → Type _) : Tp → Tp → Type _
 | tuple : (mem : Builtin.Member tp tps) → Access rep (.tuple name tps) tp
 | array : (idx : rep $ .u 32) → Access rep (.array tp n) tp
-| slice : (idx : rep $ .u 32) → Access rep (.slice tp) tp
+| slice : (idx : rep $ .u 32) → Access rep (.vector tp) tp
 
 @[simp]
 def Access.get (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) : Option $ Tp.denote p tp₂ := match acc with

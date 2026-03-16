@@ -163,7 +163,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
           let some (_, argTps) := argTps.listLit? | throwError "malformed arrayLen"
           let some argTp := argTps.head? | throwError "malformed arrayLen"
           match_expr argTp with
-          | Tp.slice _ => return some (←``(slice_arrayLen_intro))
+          | Tp.vector _ => return some (←``(slice_arrayLen_intro))
           | Tp.array _ _ => return some (←``(array_arrayLen_intro))
           | _ => return none
         | ``Lampe.Builtin.asVector => return some (←``(genericTotalPureBuiltin_intro Builtin.asVector (a := (_,_)) rfl))
@@ -177,7 +177,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedSlice (a := _) rfl))
         | ``Lampe.Builtin.vectorPushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.vectorPushBack rfl))
         | ``Lampe.Builtin.vectorPushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.vectorPushFront rfl))
-        | ``Lampe.Builtin.sliceIndex => return some (←``(sliceIndex_intro))
+        | ``Lampe.Builtin.vectorIndex => return some (←``(vectorIndex_intro))
         | ``Lampe.Builtin.ref => return some (←``(ref_intro))
         | ``Lampe.Builtin.readRef => return some (←``(readRef_intro))
 

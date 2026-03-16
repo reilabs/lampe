@@ -203,7 +203,7 @@ theorem array_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.array tp N]
   intro h
   simp [Builtin.arrayLenDesc]
 
-theorem slice_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (Tp.u 32) Builtin.arrayLen h![x])
+theorem slice_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.vector tp] (Tp.u 32) Builtin.arrayLen h![x])
     fun v => ∃∃h, ⟦v = BitVec.ofNatLT x.length h⟧ := by
   apply STHoare.consequence_frame
   apply pureBuiltin_intro (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) (a := Builtin.ArrayLenCase.slice tp)
@@ -365,7 +365,7 @@ theorem iAsField_intro {p Γ s f} : STHoarePureBuiltin p Γ Builtin.iAsField (by
 
 -- Slice
 
-theorem sliceIndex_intro : STHoarePureBuiltin p Γ Builtin.sliceIndex (by tauto) h![sl, i] := by
+theorem vectorIndex_intro : STHoarePureBuiltin p Γ Builtin.vectorIndex (by tauto) h![sl, i] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
