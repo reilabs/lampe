@@ -1,0 +1,7 @@
+[package]
+name = "noir_sort"
+type = "lib"
+authors = [""]
+
+[dependencies]
+check_shuffle = { path = "./deps/check_shuffle" }

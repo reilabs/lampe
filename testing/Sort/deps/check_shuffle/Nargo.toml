@@ -1,0 +1,6 @@
+[package]
+name = "check_shuffle"
+type = "lib"
+authors = [""]
+
+[dependencies]
