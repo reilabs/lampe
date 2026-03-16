@@ -33,15 +33,15 @@ noir_def «std-1.0.0-beta.14»::collections::umap::Slot::mark_deleted<K: Type, V
 }
 
 noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::with_hasher<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(_build_hasher: B) -> «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B> := {
-  let _table = (#_asVector returning Slice<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)((#_mkArray returning Array<«std-1.0.0-beta.14»::collections::umap::Slot<K, V>, 1: u32>)(((«std-1.0.0-beta.14»::collections::umap::Slot<K, V> as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)()));
+  let _table = (#_asVector returning Vector<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)((#_mkArray returning Array<«std-1.0.0-beta.14»::collections::umap::Slot<K, V>, 1: u32>)(((«std-1.0.0-beta.14»::collections::umap::Slot<K, V> as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)()));
   let _len = (0: u32);
   (#_makeData returning «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(_table, _len, _build_hasher)
 }
 
 noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::with_hasher_and_capacity<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(_build_hasher: B, capacity: u32) -> «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B> := {
-  let mut _table = (#_asVector returning Slice<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)((#_mkArray returning Array<«std-1.0.0-beta.14»::collections::umap::Slot<K, V>, 0: u32>)());
+  let mut _table = (#_asVector returning Vector<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)((#_mkArray returning Array<«std-1.0.0-beta.14»::collections::umap::Slot<K, V>, 0: u32>)());
   for _ in (0: u32) .. capacity do {
-    _table = (#_vectorPushBack returning Slice<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)(_table, ((«std-1.0.0-beta.14»::collections::umap::Slot<K, V> as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)());
+    _table = (#_vectorPushBack returning Vector<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)(_table, ((«std-1.0.0-beta.14»::collections::umap::Slot<K, V> as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)());
     #_skip
   };
   let _len = (0: u32);
@@ -49,7 +49,7 @@ noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::with_hasher_and_cap
 }
 
 noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::clear<K: Type, V: Type, B: Type>(self: & «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>) -> Unit := {
-  ((*self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>).0: Slice<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >) = (#_asVector returning Slice<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)((#_mkArray returning Array<«std-1.0.0-beta.14»::collections::umap::Slot<K, V>, 1: u32>)(((«std-1.0.0-beta.14»::collections::umap::Slot<K, V> as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)()));
+  ((*self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>).0: Vector<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >) = (#_asVector returning Vector<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)((#_mkArray returning Array<«std-1.0.0-beta.14»::collections::umap::Slot<K, V>, 1: u32>)(((«std-1.0.0-beta.14»::collections::umap::Slot<K, V> as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)()));
   ((*self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>).1: u32) = (0: u32);
   #_skip
 }
@@ -64,15 +64,15 @@ noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::is_empty<K: Type, V
   (#_uEq returning bool)(self.1, (0: u32))
 }
 
-noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::entries<K: Type, V: Type, B: Type>(self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>) -> Slice<Tuple<K, V> > := {
-  let mut entries = (#_asVector returning Slice<Tuple<K, V> >)((#_mkArray returning Array<Tuple<K, V>, 0: u32>)());
+noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::entries<K: Type, V: Type, B: Type>(self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>) -> Vector<Tuple<K, V> > := {
+  let mut entries = (#_asVector returning Vector<Tuple<K, V> >)((#_mkArray returning Array<Tuple<K, V>, 0: u32>)());
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let slot = (#_sliceIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
+      let slot = (#_vectorIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
         if («std-1.0.0-beta.14»::collections::umap::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::umap::Slot<K, V>) -> bool)(slot) then {
-          entries = (#_vectorPushBack returning Slice<Tuple<K, V> >)(entries, (#_makeData returning Tuple<K, V>)(slot.0, slot.1));
+          entries = (#_vectorPushBack returning Vector<Tuple<K, V> >)(entries, (#_makeData returning Tuple<K, V>)(slot.0, slot.1));
           #_skip
         }
       }
@@ -86,15 +86,15 @@ noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::entries<K: Type, V:
   entries
 }
 
-noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::keys<K: Type, V: Type, B: Type>(self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>) -> Slice<K> := {
-  let mut keys = (#_asVector returning Slice<K>)((#_mkArray returning Array<K, 0: u32>)());
+noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::keys<K: Type, V: Type, B: Type>(self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>) -> Vector<K> := {
+  let mut keys = (#_asVector returning Vector<K>)((#_mkArray returning Array<K, 0: u32>)());
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let slot = (#_sliceIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
+      let slot = (#_vectorIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
         if («std-1.0.0-beta.14»::collections::umap::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::umap::Slot<K, V>) -> bool)(slot) then {
-          keys = (#_vectorPushBack returning Slice<K>)(keys, slot.0);
+          keys = (#_vectorPushBack returning Vector<K>)(keys, slot.0);
           #_skip
         }
       }
@@ -108,15 +108,15 @@ noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::keys<K: Type, V: Ty
   keys
 }
 
-noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::values<K: Type, V: Type, B: Type>(self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>) -> Slice<V> := {
-  let mut values = (#_asVector returning Slice<V>)((#_mkArray returning Array<V, 0: u32>)());
+noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::values<K: Type, V: Type, B: Type>(self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>) -> Vector<V> := {
+  let mut values = (#_asVector returning Vector<V>)((#_mkArray returning Array<V, 0: u32>)());
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-      let slot = (#_sliceIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
+      let slot = (#_vectorIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
         if («std-1.0.0-beta.14»::collections::umap::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::umap::Slot<K, V>) -> bool)(slot) then {
-          values = (#_vectorPushBack returning Slice<V>)(values, slot.1);
+          values = (#_vectorPushBack returning Vector<V>)(values, slot.1);
           #_skip
         }
       }
@@ -140,10 +140,10 @@ noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::iter_keys_mut<K: Ty
 
 noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::iter_values_mut<K: Type, V: Type, B: Type>(self: & «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>, f: λ(V) -> V) -> Unit := {
   for i in (0: u32) .. (#_arrayLen returning u32)((#_readRef returning «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(self).0) do {
-    let mut slot = (#_sliceIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(self).0, (#_cast returning u32)(i));
+    let mut slot = (#_vectorIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(self).0, (#_cast returning u32)(i));
     if («std-1.0.0-beta.14»::collections::umap::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::umap::Slot<K, V>) -> bool)(slot) then {
       («std-1.0.0-beta.14»::collections::umap::Slot::set<K, V> as λ(& «std-1.0.0-beta.14»::collections::umap::Slot<K, V>, K, V) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(slot), slot.0, (f as λ(V) -> V)(slot.1));
-      (((*self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>).0: Slice<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)[[i]]: «std-1.0.0-beta.14»::collections::umap::Slot<K, V>) = slot;
+      (((*self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>).0: Vector<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)[[i]]: «std-1.0.0-beta.14»::collections::umap::Slot<K, V>) = slot;
       #_skip
     }
   };
@@ -152,12 +152,12 @@ noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::iter_values_mut<K: 
 
 noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::retain<K: Type, V: Type, B: Type>(self: & «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>, f: λ(K, V) -> bool) -> Unit := {
   for index in (0: u32) .. (#_arrayLen returning u32)((#_readRef returning «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(self).0) do {
-    let mut slot = (#_sliceIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(self).0, (#_cast returning u32)(index));
+    let mut slot = (#_vectorIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(self).0, (#_cast returning u32)(index));
     if («std-1.0.0-beta.14»::collections::umap::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::umap::Slot<K, V>) -> bool)(slot) then {
       if (#_bNot returning bool)((f as λ(K, V) -> bool)(slot.0, slot.1)) then {
         («std-1.0.0-beta.14»::collections::umap::Slot::mark_deleted<K, V> as λ(& «std-1.0.0-beta.14»::collections::umap::Slot<K, V>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(slot));
         ((*self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>).1: u32) = (#_uSub returning u32)((#_readRef returning «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(self).1, (1: u32));
-        (((*self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>).0: Slice<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)[[index]]: «std-1.0.0-beta.14»::collections::umap::Slot<K, V>) = slot;
+        (((*self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>).0: Vector<«std-1.0.0-beta.14»::collections::umap::Slot<K, V> >)[[index]]: «std-1.0.0-beta.14»::collections::umap::Slot<K, V>) = slot;
         #_skip
       }
     }
@@ -207,7 +207,7 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_38]<K: Type, V: Type, B: Type, B_as_B
       {
         let ζi0 = self.0;
         for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
-          let slot = (#_sliceIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
+          let slot = (#_vectorIndex returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
           {
             if (#_bAnd returning bool)(equal, («std-1.0.0-beta.14»::collections::umap::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::umap::Slot<K, V>) -> bool)(slot)) then {
               let other_value = {

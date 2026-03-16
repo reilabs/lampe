@@ -10,7 +10,7 @@ import Lampe.Builtin.Cmp
 import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
-import Lampe.Builtin.Slice
+import Lampe.Builtin.Vector
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 import Lampe.Semantics.Env
@@ -52,10 +52,10 @@ partial def makeLens [MonadUtil m]
   let (lhsLens, a'') ← makeLens arrayExpr a'
   let lens' ← ``(Lens.cons $lhsLens (Access.array $idx))
   pure (lens', a'')
-| `(noir_lval|($sliceExpr:noir_lval [[ $idxExpr:noir_expr ]] : $_)), a => do
+| `(noir_lval|($vectorExpr:noir_lval [[ $idxExpr:noir_expr ]] : $_)), a => do
   let (idx, a') := a.next idxExpr
-  let (lhsLens, a'') ← makeLens sliceExpr a'
-  let lens' ← ``(Lens.cons $lhsLens (Access.slice $idx))
+  let (lhsLens, a'') ← makeLens vectorExpr a'
+  let lens' ← ``(Lens.cons $lhsLens (Access.vector $idx))
   pure (lens', a'')
 | `(noir_lval|(* $_:noir_expr : $_)), a => do pure ((←``(Lens.nil)), a)
 | a , _ => throwError "Invalid LValue syntax {a}"

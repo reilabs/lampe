@@ -188,7 +188,7 @@ pub enum LValue {
     Ident(Identifier),
     MemberAccess { object: Box<LValue>, index: usize, typ: Type },
     ArrayIndex { array: Box<LValue>, index: Expression, typ: Type },
-    SliceIndex { slice: Box<LValue>, index: Expression, typ: Type },
+    VectorIndex { vector: Box<LValue>, index: Expression, typ: Type },
     Dereference { object: Box<LValue>, element_type: Type },
 }
 
@@ -381,7 +381,7 @@ impl Type {
     #[must_use]
     pub fn slice(elem: Type) -> Self {
         Type {
-            expr: TypeExpr::builtin(BuiltinTag::Slice, &[elem]),
+            expr: TypeExpr::builtin(BuiltinTag::Vector, &[elem]),
             kind: Kind::Type,
         }
     }
@@ -558,7 +558,7 @@ pub enum BuiltinTag {
     I(u64),
     Quoted(String),
     Reference(Mutability),
-    Slice,
+    Vector,
     String,
     Tuple,
     U(u64),

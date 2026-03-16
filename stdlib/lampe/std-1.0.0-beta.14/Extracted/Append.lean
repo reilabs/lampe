@@ -5,13 +5,13 @@ import Lampe
 
 open Lampe
 
-noir_trait_impl[«std-1.0.0-beta.14».impl_315]<T: Type> «std-1.0.0-beta.14»::append::Append<> for Slice<T> where [] := {
-  noir_def empty<>() -> Slice<T> := {
-    (#_asVector returning Slice<T>)((#_mkArray returning Array<T, 0: u32>)())
+noir_trait_impl[«std-1.0.0-beta.14».impl_315]<T: Type> «std-1.0.0-beta.14»::append::Append<> for Vector<T> where [] := {
+  noir_def empty<>() -> Vector<T> := {
+    (#_asVector returning Vector<T>)((#_mkArray returning Array<T, 0: u32>)())
   };
   
-  noir_def append<>(self: Slice<T>, other: Slice<T>) -> Slice<T> := {
-    («std-1.0.0-beta.14»::vector::append<T> as λ(Slice<T>, Slice<T>) -> Slice<T>)(self, other)
+  noir_def append<>(self: Vector<T>, other: Vector<T>) -> Vector<T> := {
+    («std-1.0.0-beta.14»::vector::append<T> as λ(Vector<T>, Vector<T>) -> Vector<T>)(self, other)
   };
 }
 

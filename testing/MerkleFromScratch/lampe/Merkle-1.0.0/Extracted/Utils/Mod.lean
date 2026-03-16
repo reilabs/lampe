@@ -33,10 +33,10 @@ noir_def «Merkle-1.0.0»::utils::sgn0<>(self: Field) -> u1 := {
   (#_cast returning u1)(self)
 }
 
-noir_def «Merkle-1.0.0»::utils::as_array<>(self: Slice<u8>) -> Array<u8, 32: u32> := {
+noir_def «Merkle-1.0.0»::utils::as_array<>(self: Vector<u8>) -> Array<u8, 32: u32> := {
   let mut array = (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8));
   for i in (0: u32) .. (32: u32) do {
-    (array[i]: u8) = (#_sliceIndex returning u8)(self, (#_cast returning u32)(i));
+    (array[i]: u8) = (#_vectorIndex returning u8)(self, (#_cast returning u32)(i));
     #_skip
   };
   array

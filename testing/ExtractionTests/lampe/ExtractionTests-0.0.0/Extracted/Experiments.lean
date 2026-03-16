@@ -43,7 +43,7 @@ noir_def «ExtractionTests-0.0.0»::experiments::literal_test<>() -> Unit := {
   let b = #_true;
   let _c = #_false;
   let _d = (#_mkRepeatedArray returning Array<Field, 5: u32>)((1: Field));
-  let _e = (#_mkRepeatedSlice returning Slice<Field>)((1: Field), (5: u32));
+  let _e = (#_mkRepeatedVector returning Vector<Field>)((1: Field), (5: u32));
   let _f = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
   let _h = "asdf";
   let _i = (#_mkFormatString returning FmtString<4: u32, Tuple<bool> >)("${}{b}", b);
@@ -67,7 +67,7 @@ noir_def «ExtractionTests-0.0.0»::experiments::check<>(x: u8) -> Unit := {
   #_skip
 }
 
-noir_trait_impl[«ExtractionTests-0.0.0».impl_431]<T: Type> «std-1.0.0-beta.12»::default::Default<> for «ExtractionTests-0.0.0»::experiments::Option2<T> where [] := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_433]<T: Type> «std-1.0.0-beta.14»::default::Default<> for «ExtractionTests-0.0.0»::experiments::Option2<T> where [] := {
   noir_def default<>() -> «ExtractionTests-0.0.0»::experiments::Option2<T> := {
     («ExtractionTests-0.0.0»::experiments::Option2::none<T> as λ() -> «ExtractionTests-0.0.0»::experiments::Option2<T>)()
   };
@@ -89,13 +89,13 @@ noir_def «ExtractionTests-0.0.0»::experiments::Option2::is_some<T: Type>(self:
   self.0
 }
 
-noir_trait_impl[«ExtractionTests-0.0.0».impl_432]<T: Type> «ExtractionTests-0.0.0»::experiments::MyTrait<> for «ExtractionTests-0.0.0»::experiments::Option2<T> where [] := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_434]<T: Type> «ExtractionTests-0.0.0»::experiments::MyTrait<> for «ExtractionTests-0.0.0»::experiments::Option2<T> where [] := {
   noir_def foo<>(self: «ExtractionTests-0.0.0»::experiments::Option2<T>) -> «ExtractionTests-0.0.0»::experiments::Option2<T> := {
     self
   };
 }
 
-noir_trait_impl[«ExtractionTests-0.0.0».impl_433]<T: Type> «ExtractionTests-0.0.0»::experiments::MyTrait<> for Tuple<T, bool> where [T: «ExtractionTests-0.0.0»::experiments::MyTrait<>] := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_435]<T: Type> «ExtractionTests-0.0.0»::experiments::MyTrait<> for Tuple<T, bool> where [T: «ExtractionTests-0.0.0»::experiments::MyTrait<>] := {
   noir_def foo<>(self: Tuple<T, bool>) -> Tuple<T, bool> := {
     self
   };
@@ -118,7 +118,7 @@ noir_def «ExtractionTests-0.0.0»::experiments::is_alias_some<T: Type>(x: @«Ex
 
 noir_def «ExtractionTests-0.0.0»::experiments::main<>() -> Unit := {
   let mut op1 = («ExtractionTests-0.0.0»::experiments::Option2::some<Field> as λ(Field) -> «ExtractionTests-0.0.0»::experiments::Option2<Field>)((5: Field));
-  let op2 = ((«ExtractionTests-0.0.0»::experiments::Option2<Field> as «std-1.0.0-beta.12»::default::Default<>)::default<> as λ() -> «ExtractionTests-0.0.0»::experiments::Option2<Field>)();
+  let op2 = ((«ExtractionTests-0.0.0»::experiments::Option2<Field> as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «ExtractionTests-0.0.0»::experiments::Option2<Field>)();
   let _op3 = ((«ExtractionTests-0.0.0»::experiments::Option2<Field> as «ExtractionTests-0.0.0»::experiments::MyTrait<>)::foo<> as λ(«ExtractionTests-0.0.0»::experiments::Option2<Field>) -> «ExtractionTests-0.0.0»::experiments::Option2<Field>)(if #_true then {
     op1
   } else {
@@ -138,4 +138,4 @@ noir_def «ExtractionTests-0.0.0»::experiments::main<>() -> Unit := {
 
 def «ExtractionTests-0.0.0».Experiments.env : Env := Env.mk
   [«ExtractionTests-0.0.0::experiments::my_func3», «ExtractionTests-0.0.0::experiments::my_func», «ExtractionTests-0.0.0::experiments::my_func2», «ExtractionTests-0.0.0::experiments::get_unchecked», «ExtractionTests-0.0.0::experiments::my_fn», «ExtractionTests-0.0.0::experiments::cast_test», «ExtractionTests-0.0.0::experiments::tuple_test», «ExtractionTests-0.0.0::experiments::literal_test», «ExtractionTests-0.0.0::experiments::assigns», «ExtractionTests-0.0.0::experiments::uncons», «ExtractionTests-0.0.0::experiments::check», «ExtractionTests-0.0.0::experiments::Option2::none», «ExtractionTests-0.0.0::experiments::Option2::some», «ExtractionTests-0.0.0::experiments::Option2::is_none», «ExtractionTests-0.0.0::experiments::Option2::is_some», «ExtractionTests-0.0.0::experiments::string_test», «ExtractionTests-0.0.0::experiments::fmtstr_test», «ExtractionTests-0.0.0::experiments::is_alias_some», «ExtractionTests-0.0.0::experiments::main»]
-  [«ExtractionTests-0.0.0».impl_431, «ExtractionTests-0.0.0».impl_432, «ExtractionTests-0.0.0».impl_433]
+  [«ExtractionTests-0.0.0».impl_433, «ExtractionTests-0.0.0».impl_434, «ExtractionTests-0.0.0».impl_435]

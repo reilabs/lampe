@@ -64,12 +64,12 @@ noir_def «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_fro
   #_skip
 }
 
-noir_def «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_vector<T: Type, MaxLen: u32>(self: & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32>, vector: Slice<T>) -> Unit := {
+noir_def «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_vector<T: Type, MaxLen: u32>(self: & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32>, vector: Vector<T>) -> Unit := {
   let new_len = (#_uAdd returning u32)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32>)(self).1, (#_arrayLen returning u32)(vector));
   (#_assert returning Unit)((#_uLeq returning bool)(new_len, uConst!(MaxLen: u32)));
   for i in (0: u32) .. (#_arrayLen returning u32)(vector) do {
     let i_4260 = (#_uAdd returning u32)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32>)(self).1, i);
-    (((*self: «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32>).0: Array<T, MaxLen: u32>)[i_4260]: T) = (#_sliceIndex returning T)(vector, (#_cast returning u32)(i));
+    (((*self: «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32>).0: Array<T, MaxLen: u32>)[i_4260]: T) = (#_vectorIndex returning T)(vector, (#_cast returning u32)(i));
     #_skip
   };
   ((*self: «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32>).1: u32) = new_len;
@@ -788,7 +788,7 @@ noir_def «std-1.0.0-beta.14»::collections::bounded_vec::bounded_vec_tests::ext
 noir_def «std-1.0.0-beta.14»::collections::bounded_vec::bounded_vec_tests::extend::extend_from_vector<>() -> Unit := {
   let mut vec = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<u32, 5: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>)();
   («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::push<u32, 5: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, u32) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>)(vec), (1: u32));
-  («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_vector<u32, 5: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, Slice<u32>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>)(vec), (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 2: u32>)((2: u32), (3: u32))));
+  («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_vector<u32, 5: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, Vector<u32>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>)(vec), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 2: u32>)((2: u32), (3: u32))));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<u32, 5: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>) -> u32)(vec), (3: u32)));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::get<u32, 5: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, u32) -> u32)(vec, (0: u32)), (1: u32)));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::get<u32, 5: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, u32) -> u32)(vec, (1: u32)), (2: u32)));
@@ -820,7 +820,7 @@ noir_def «std-1.0.0-beta.14»::collections::bounded_vec::bounded_vec_tests::ext
 noir_def «std-1.0.0-beta.14»::collections::bounded_vec::bounded_vec_tests::extend::extend_vector_beyond_max_len<>() -> Unit := {
   let mut vec = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<u32, 3: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>)();
   («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::push<u32, 3: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>, u32) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>)(vec), (1: u32));
-  («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_vector<u32, 3: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>, Slice<u32>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>)(vec), (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (3: u32), (4: u32))));
+  («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_vector<u32, 3: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>, Vector<u32>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>)(vec), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (3: u32), (4: u32))));
   #_skip
 }
 
@@ -836,7 +836,7 @@ noir_def «std-1.0.0-beta.14»::collections::bounded_vec::bounded_vec_tests::ext
   let original_len = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<u32, 5: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>) -> u32)(vec);
   («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_array<u32, 5: u32, 0: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, Array<u32, 0: u32>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>)(vec), (#_mkArray returning Array<u32, 0: u32>)());
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<u32, 5: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>) -> u32)(vec), original_len));
-  («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_vector<u32, 5: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, Slice<u32>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>)(vec), (#_asVector returning Slice<u32>)((#_mkArray returning Array<u32, 0: u32>)()));
+  («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_vector<u32, 5: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, Vector<u32>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>)(vec), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)()));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<u32, 5: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>) -> u32)(vec), original_len));
   let empty = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<u32, 3: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>)();
   («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::extend_from_bounded_vec<u32, 5: u32, 3: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>, «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 3: u32>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u32, 5: u32>)(vec), empty);

@@ -831,9 +831,9 @@ impl LeanGenerator<'_, '_, '_> {
             NoirKind::Any,
         );
         let dummy_generic = NoirType::NamedGeneric(NamedGeneric {
-            type_var: dummy_tv.clone(),
-            name:     Rc::new("LOOKUP_DUMMY".to_string()),
-            implicit: false,
+            type_var:             dummy_tv.clone(),
+            name:                 Rc::new("LOOKUP_DUMMY".to_string()),
+            implicit:             false,
             original_type_var_id: None,
         });
 
@@ -900,7 +900,7 @@ impl LeanGenerator<'_, '_, '_> {
         let module_defs = module
             .definitions()
             .definitions()
-            .into_iter()
+            .iter()
             .flat_map(|def| match def {
                 ModuleDefId::TypeId(id) => {
                     let type_data_ref = self.context.def_interner.get_type(*id);
@@ -910,9 +910,9 @@ impl LeanGenerator<'_, '_, '_> {
                         .iter()
                         .map(|g| {
                             NoirType::NamedGeneric(NamedGeneric {
-                                type_var: g.type_var.clone(),
-                                name:     g.name.clone(),
-                                implicit: false,
+                                type_var:             g.type_var.clone(),
+                                name:                 g.name.clone(),
+                                implicit:             false,
                                 original_type_var_id: None,
                             })
                         })
@@ -1472,7 +1472,8 @@ impl LeanGenerator<'_, '_, '_> {
             })
             .collect_vec();
 
-        let trait_generics_from_interner = self.context.def_interner.get_ordered_generics_for_impl(impl_id);
+        let trait_generics_from_interner =
+            self.context.def_interner.get_ordered_generics_for_impl(impl_id);
         let generic_vals = trait_generics_from_interner
             .iter()
             .map(|g| self.generate_lean_type_value(g, None))
@@ -1499,7 +1500,11 @@ impl LeanGenerator<'_, '_, '_> {
         }
     }
 
-    pub fn gather_trait_impl_generics(&self, impl_id: TraitImplId, trait_impl: &TraitImpl) -> Vec<TypePattern> {
+    pub fn gather_trait_impl_generics(
+        &self,
+        impl_id: TraitImplId,
+        trait_impl: &TraitImpl,
+    ) -> Vec<TypePattern> {
         let mut seen = HashSet::<TypeVariableId>::new();
         let mut patterns = Vec::default();
 
@@ -2927,8 +2932,8 @@ impl LeanGenerator<'_, '_, '_> {
 
                 match lhs_type {
                     NoirType::Array(..) => LValue::ArrayIndex { array, index, typ },
-                    NoirType::Vector(_) => LValue::SliceIndex {
-                        slice: array,
+                    NoirType::Vector(_) => LValue::VectorIndex {
+                        vector: array,
                         index,
                         typ,
                     },
@@ -3144,7 +3149,7 @@ impl LeanGenerator<'_, '_, '_> {
             BuiltinTag::I(w) => format!("i{w}"),
             BuiltinTag::Quoted(a) => format!("quoted<{a}>"),
             BuiltinTag::Reference(_) => "ref".to_string(),
-            BuiltinTag::Slice => "slice".to_string(),
+            BuiltinTag::Vector => "vector".to_string(),
             BuiltinTag::String => "string".to_string(),
             BuiltinTag::Tuple => "tuple".to_string(),
             BuiltinTag::U(w) => format!("u{w}"),
@@ -3367,6 +3372,7 @@ impl LeanGenerator<'_, '_, '_> {
 /// but valid generic name.
 #[must_use]
 pub fn sanitize_generic_name(name: &str) -> String {
+    let name = name.strip_prefix("Self::").unwrap_or(name);
     name.replace("::", "_").replace(' ', "_").replace(['<', '>'], "")
 }
 

@@ -10,10 +10,10 @@ import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
 import Lampe.Builtin.Runtime
-import Lampe.Builtin.Slice
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 import Lampe.Builtin.Stubs
+import Lampe.Builtin.Vector
 import Lampe.Data.Digits
 import Lampe.Data.Field
 import Lampe.Data.HList

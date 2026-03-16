@@ -16,8 +16,8 @@ pub const BUILTIN_PREFIX: &str = "#_";
 pub const CAST_BUILTIN_NAME: &str = "cast";
 pub const MAKE_ARRAY_BUILTIN_NAME: &str = "mkArray";
 pub const MAKE_REPEATED_ARRAY_BUILTIN_NAME: &str = "mkRepeatedArray";
-pub const MAKE_REPEATED_SLICE_BUILTIN_NAME: &str = "mkRepeatedSlice";
-pub const MAKE_SLICE_BUILTIN_NAME: &str = "mkSlice";
+pub const MAKE_REPEATED_SLICE_BUILTIN_NAME: &str = "mkRepeatedVector";
+pub const MAKE_SLICE_BUILTIN_NAME: &str = "mkVector";
 pub const MAKE_STRUCT_BUILTIN_NAME: &str = "makeData";
 pub const SKIP_BUILTIN_NAME: &str = "skip";
 pub const UNIT_TYPE_NAME: &str = "Unit";
@@ -91,7 +91,7 @@ pub enum BuiltinType {
     Bool,
     Unit,
     Array,
-    Slice,
+    Vector,
     String,
 }
 
@@ -121,7 +121,7 @@ impl TryInto<BuiltinType> for NoirType {
                 Ok(BuiltinType::Uint(integer_bit_size_to_u8(s)))
             }
             NoirType::Array(..) => Ok(BuiltinType::Array),
-            NoirType::Vector(_) => Ok(BuiltinType::Slice),
+            NoirType::Vector(_) => Ok(BuiltinType::Vector),
             NoirType::String(_) => Ok(BuiltinType::String),
             NoirType::TypeVariable(tv) => match &*tv.borrow() {
                 TypeBinding::Bound(ty) => TryInto::<BuiltinType>::try_into(ty.clone()),
@@ -151,7 +151,7 @@ impl BuiltinType {
 
     #[must_use]
     fn is_collection(self) -> bool {
-        matches!(self, BuiltinType::Array | BuiltinType::Slice)
+        matches!(self, BuiltinType::Array | BuiltinType::Vector)
     }
 
     #[must_use]
@@ -164,7 +164,7 @@ impl BuiltinType {
             BuiltinType::Bool => "b".to_string(),
             BuiltinType::Unit => "unit".to_string(),
             BuiltinType::Array => "array".to_string(),
-            BuiltinType::Slice => "slice".to_string(),
+            BuiltinType::Vector => "vector".to_string(),
             BuiltinType::String => "str".to_string(),
         }
     }
@@ -218,7 +218,7 @@ pub fn try_infix_into_builtin_name(
         BinaryOpKind::Equal => {
             if matches!(
                 lhs_type,
-                BuiltinType::Array | BuiltinType::String | BuiltinType::Slice
+                BuiltinType::Array | BuiltinType::String | BuiltinType::Vector
             ) {
                 None
             } else {
@@ -228,7 +228,7 @@ pub fn try_infix_into_builtin_name(
         BinaryOpKind::NotEqual => {
             if matches!(
                 lhs_type,
-                BuiltinType::Array | BuiltinType::String | BuiltinType::Slice
+                BuiltinType::Array | BuiltinType::String | BuiltinType::Vector
             ) {
                 None
             } else {

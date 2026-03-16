@@ -59,20 +59,20 @@ example {x y : Tp.denote p .field} :
   steps
   simp_all
 
-noir_def slice_append<I: Type>(x: Slice<I>, y: Slice<I>) → Slice<I> := {
+noir_def slice_append<I: Type>(x: Vector<I>, y: Vector<I>) → Vector<I> := {
   let mut self = x;
   for i in (0 : u32) .. (#_arrayLen returning u32)(y) do {
-    self = (#_slicePushBack returning Slice<I>)(self, (#_sliceIndex returning I)(y, i));
+    self = (#_vectorPushBack returning Vector<I>)(self, (#_vectorIndex returning I)(y, i));
   };
   self
 }
 
-example {selfV that : Tp.denote p (.slice tp)}
+example {selfV that : Tp.denote p (.vector tp)}
   : STHoare p Γ ⟦⟧ (slice_append.fn.body _ h![tp] |>.body h![selfV, that])
     fun v => v = selfV ++ that := by
   simp only [slice_append]
   steps
-  loop_inv nat (fun i _ _ => [self ↦ ⟨.slice tp, selfV ++ that.take i⟩])
+  loop_inv nat (fun i _ _ => [self ↦ ⟨.vector tp, selfV ++ that.take i⟩])
   . simp_all
   · simp
   . intros i _ _
@@ -292,8 +292,8 @@ example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![])
   aesop
 
 noir_def simple_slice<>() -> bool := {
-  let s = (#_mkSlice returning Slice<bool>)(#_true, #_false);
-  (#_sliceIndex returning bool)(s, (1: u32))
+  let s = (#_mkVector returning Vector<bool>)(#_true, #_false);
+  (#_vectorIndex returning bool)(s, (1: u32))
 }
 
 example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![])
@@ -327,8 +327,8 @@ example : STHoare p Γ ⟦⟧ (use_array.fn.body _ h![] |>.body h![])
 
 -- Note that repeated slices are not currently supported in the extractor
 noir_def repeated_slice<>() -> Field := {
-  let a = (#_mkRepeatedSlice returning Slice<Field>)((4: u32), (1: Field));
-  (#_sliceIndex returning Field)(a, (0: u32))
+  let a = (#_mkRepeatedVector returning Vector<Field>)((4: u32), (1: Field));
+  (#_vectorIndex returning Field)(a, (0: u32))
 }
 
 example : STHoare p Γ ⟦⟧ (repeated_slice.fn.body _ h![] |>.body h![])
@@ -350,8 +350,8 @@ example : STHoare p Γ ⟦⟧ (simple_tuple_access.fn.body _ h![] |>.body h![])
   aesop
 
 noir_def simple_slice_of_values<>() → bool := {
-  let s = (#_mkSlice returning Slice<bool>)(#_true, #_false);
-  (#_sliceIndex returning bool)(s, 1: u32)
+  let s = (#_mkVector returning Vector<bool>)(#_true, #_false);
+  (#_vectorIndex returning bool)(s, 1: u32)
 }
 
 example : STHoare p Γ ⟦⟧ (simple_slice_of_values.fn.body _ h![] |>.body h![])
@@ -420,14 +420,14 @@ example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![])
   aesop
 
 noir_def slice_lens<>() → Field := {
-  let mut a = (#_makeData returning Tuple<Slice<Field>, Field>)(
-    (#_mkSlice returning Slice<Field>)(1: Field, 2: Field),
+  let mut a = (#_makeData returning Tuple<Vector<Field>, Field>)(
+    (#_mkVector returning Vector<Field>)(1: Field, 2: Field),
     3: Field
   );
 
-  ((a.0: Slice<Field>)[[1: u32]]: Field) = 40: Field;
+  ((a.0: Vector<Field>)[[1: u32]]: Field) = 40: Field;
 
-  (#_sliceIndex returning Field)(a.0, 1: u32)
+  (#_vectorIndex returning Field)(a.0, 1: u32)
 }
 
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
@@ -630,12 +630,12 @@ noir_def unused_arg<>(_x: Field) -> Unit := {
   #_unit
 }
 
-noir_def generic_fconst<N: Field>() -> Slice<Field> := {
-  (#_mkRepeatedSlice returning Slice<Field>)(0: Field, fConst!(N: Field))
+noir_def generic_fconst<N: Field>() -> Vector<Field> := {
+  (#_mkRepeatedVector returning Vector<Field>)(0: Field, fConst!(N: Field))
 }
 
-noir_def generic_uconst<N: u32>() -> Slice<Field> := {
-  (#_mkRepeatedSlice returning Slice<Field>)(0: Field, uConst!(N: u32))
+noir_def generic_uconst<N: u32>() -> Vector<Field> := {
+  (#_mkRepeatedVector returning Vector<Field>)(0: Field, uConst!(N: u32))
 }
 
 noir_struct_def has::«from»::name::«meta»<> {

@@ -159,7 +159,7 @@ theorem array_default_spec {p T N}
 theorem slice_default_spec {p}
     {T : Tp}
   : STHoare p env ⟦⟧
-    (default h![] T.slice h![] h![] h![])
+    (default h![] T.vector h![] h![] h![])
     (fun r => r = []) := by
   resolve_trait
   steps

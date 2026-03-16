@@ -89,9 +89,9 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_285]<N: u32, T: Type> «std-1.0.0-bet
   };
 }
 
-noir_trait_impl[«std-1.0.0-beta.14».impl_286]<T: Type> «std-1.0.0-beta.14»::default::Default<> for Slice<T> where [] := {
-  noir_def default<>() -> Slice<T> := {
-    (#_asVector returning Slice<T>)((#_mkArray returning Array<T, 0: u32>)())
+noir_trait_impl[«std-1.0.0-beta.14».impl_286]<T: Type> «std-1.0.0-beta.14»::default::Default<> for Vector<T> where [] := {
+  noir_def default<>() -> Vector<T> := {
+    (#_asVector returning Vector<T>)((#_mkArray returning Array<T, 0: u32>)())
   };
 }
 

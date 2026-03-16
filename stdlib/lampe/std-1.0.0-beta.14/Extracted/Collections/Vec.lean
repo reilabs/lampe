@@ -7,48 +7,48 @@ open Lampe
 
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
 noir_def «std-1.0.0-beta.14»::collections::vec::Vec::new<T: Type>() -> «std-1.0.0-beta.14»::collections::vec::Vec<T> := {
-  (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)((#_asVector returning Slice<T>)((#_mkArray returning Array<T, 0: u32>)()))
+  (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)((#_asVector returning Vector<T>)((#_mkArray returning Array<T, 0: u32>)()))
 }
 
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
-noir_def «std-1.0.0-beta.14»::collections::vec::Vec::from_vector<T: Type>(vector: Slice<T>) -> «std-1.0.0-beta.14»::collections::vec::Vec<T> := {
+noir_def «std-1.0.0-beta.14»::collections::vec::Vec::from_vector<T: Type>(vector: Vector<T>) -> «std-1.0.0-beta.14»::collections::vec::Vec<T> := {
   (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(vector)
 }
 
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
 noir_def «std-1.0.0-beta.14»::collections::vec::Vec::get<T: Type>(self: «std-1.0.0-beta.14»::collections::vec::Vec<T>, index: u32) -> T := {
-  (#_sliceIndex returning T)(self.0, (#_cast returning u32)(index))
+  (#_vectorIndex returning T)(self.0, (#_cast returning u32)(index))
 }
 
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
 noir_def «std-1.0.0-beta.14»::collections::vec::Vec::set<T: Type>(self: & «std-1.0.0-beta.14»::collections::vec::Vec<T>, index: u32, value: T) -> Unit := {
-  (((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Slice<T>)[[index]]: T) = value;
+  (((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Vector<T>)[[index]]: T) = value;
   #_skip
 }
 
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
 noir_def «std-1.0.0-beta.14»::collections::vec::Vec::push<T: Type>(self: & «std-1.0.0-beta.14»::collections::vec::Vec<T>, elem: T) -> Unit := {
-  ((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Slice<T>) = (#_vectorPushBack returning Slice<T>)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(self).0, elem);
+  ((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Vector<T>) = (#_vectorPushBack returning Vector<T>)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(self).0, elem);
   #_skip
 }
 
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
 noir_def «std-1.0.0-beta.14»::collections::vec::Vec::pop<T: Type>(self: & «std-1.0.0-beta.14»::collections::vec::Vec<T>) -> T := {
-  let (popped_vector, last_elem) = (#_vectorPopBack returning Tuple<Slice<T>, T>)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(self).0);
-  ((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Slice<T>) = popped_vector;
+  let (popped_vector, last_elem) = (#_vectorPopBack returning Tuple<Vector<T>, T>)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(self).0);
+  ((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Vector<T>) = popped_vector;
   last_elem
 }
 
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
 noir_def «std-1.0.0-beta.14»::collections::vec::Vec::insert<T: Type>(self: & «std-1.0.0-beta.14»::collections::vec::Vec<T>, index: u32, elem: T) -> Unit := {
-  ((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Slice<T>) = (#_vectorInsert returning Slice<T>)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(self).0, index, elem);
+  ((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Vector<T>) = (#_vectorInsert returning Vector<T>)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(self).0, index, elem);
   #_skip
 }
 
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
 noir_def «std-1.0.0-beta.14»::collections::vec::Vec::remove<T: Type>(self: & «std-1.0.0-beta.14»::collections::vec::Vec<T>, index: u32) -> T := {
-  let (new_vector, elem) = (#_vectorRemove returning Tuple<Slice<T>, T>)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(self).0, index);
-  ((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Slice<T>) = new_vector;
+  let (new_vector, elem) = (#_vectorRemove returning Tuple<Vector<T>, T>)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)(self).0, index);
+  ((*self: «std-1.0.0-beta.14»::collections::vec::Vec<T>).0: Vector<T>) = new_vector;
   elem
 }
 
@@ -64,15 +64,15 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::new::creates_empty_
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::from_vector::creates_vector_with_elements<>() -> Unit := {
-  let vector = (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)));
-  let vec = («std-1.0.0-beta.14»::collections::vec::Vec::from_vector<Field> as λ(Slice<Field>) -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vector);
+  let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)));
+  let vec = («std-1.0.0-beta.14»::collections::vec::Vec::from_vector<Field> as λ(Vector<Field>) -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vector);
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (5: u32)));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, vector));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, vector));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::get::retrieves_elements_correctly<>() -> Unit := {
-  let vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((10: Field), (20: Field), (30: Field), (40: Field), (50: Field))));
+  let vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((10: Field), (20: Field), (30: Field), (40: Field), (50: Field))));
   (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (10: Field)));
   (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (20: Field)));
   (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (30: Field)));
@@ -82,23 +82,23 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::get::retrieves_elem
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::get::panics_on_out_of_bounds<>() -> Unit := {
-  let vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
+  let vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
   let __0 = («std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::set::updates_values_properly<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (0: Field), (0: Field), (0: Field), (0: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (0: Field), (0: Field), (0: Field), (0: Field))));
   («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32), (42: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (0: Field), (0: Field), (0: Field), (0: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (0: Field), (0: Field), (0: Field), (0: Field)))));
   («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32), (43: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (43: Field), (0: Field), (0: Field), (0: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (43: Field), (0: Field), (0: Field), (0: Field)))));
   («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32), (44: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (43: Field), (44: Field), (0: Field), (0: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (43: Field), (44: Field), (0: Field), (0: Field)))));
   («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32), (10: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (10: Field), (44: Field), (0: Field), (0: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (10: Field), (44: Field), (0: Field), (0: Field)))));
   («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32), (0: Field));
-  (#_assert returning Unit)(((Slice<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Slice<Field>, Slice<Field>) -> bool)(vec.0, (#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (10: Field), (44: Field), (0: Field), (0: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (10: Field), (44: Field), (0: Field), (0: Field)))));
   #_skip
 }
 
@@ -110,7 +110,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::set::panics_when_wr
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::push::adds_element_to_end<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
   let original_len = («std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec);
   («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (4: Field));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (#_uAdd returning u32)(original_len, (1: u32))));
@@ -127,7 +127,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::push::on_empty_vect
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::pop::removes_last_element<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
   let original_len = («std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec);
   let popped = («std-1.0.0-beta.14»::collections::vec::Vec::pop<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec));
   (#_assert returning Unit)((#_fEq returning bool)(popped, (5: Field)));
@@ -143,7 +143,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::pop::on_empty_vecto
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_beginning<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
   («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32), (0: Field));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
   (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (0: Field)));
@@ -154,7 +154,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_beginnin
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_middle<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (4: Field), (5: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (4: Field), (5: Field))));
   («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32), (3: Field));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (5: u32)));
   (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
@@ -166,7 +166,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_middle<>
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_end<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
   («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32), (4: Field));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
   (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
@@ -177,13 +177,13 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_end<>() 
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::beyond_length_panics<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
   («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (4: u32), (5: Field));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_beginning<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field))));
   let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32));
   (#_assert returning Unit)((#_fEq returning bool)(removed, (0: Field)));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
@@ -195,7 +195,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_beginn
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_middle<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
   let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32));
   (#_assert returning Unit)((#_fEq returning bool)(removed, (3: Field)));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
@@ -207,7 +207,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_middle
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_end<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
   let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (4: u32));
   (#_assert returning Unit)((#_fEq returning bool)(removed, (5: Field)));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
@@ -219,7 +219,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_end<>(
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::beyond_length_panics<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
   let __0 = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32));
   #_skip
 }
@@ -227,9 +227,9 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::beyond_leng
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::len::returns_correct_length<>() -> Unit := {
   let empty_vec = («std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)();
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(empty_vec), (0: u32)));
-  let single_vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field))));
+  let single_vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((42: Field))));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(single_vec), (1: u32)));
-  let multi_vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Slice<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
+  let multi_vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(multi_vec), (5: u32)));
   #_skip
 }
@@ -266,7 +266,7 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::vec_integration::mu
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::vec_integration::vector_with_custom_types<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)((#_asVector returning Slice<bool>)((#_mkArray returning Array<bool, 3: u32>)(#_true, #_false, #_true)));
+  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)((#_asVector returning Vector<bool>)((#_mkArray returning Array<bool, 3: u32>)(#_true, #_false, #_true)));
   (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>) -> u32)(vec), (3: u32)));
   (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)(vec, (0: u32)), #_true));
   (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)(vec, (1: u32)), #_false));
