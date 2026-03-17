@@ -10,7 +10,7 @@ name = "«std-1.0.0-beta.14»"
 name = "Stdlib"
 
 [leanOptions]
-maxRecDepth = 1000
+maxRecDepth = 2000
 linter.unusedVariables = false
 
 [[require]]
