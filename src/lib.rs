@@ -638,6 +638,28 @@ fn leq<A: Ord>(a: A, b: A) -> bool {
     }
 
     #[test]
+    fn checked_cast_in_type_arith() {
+        let source = r"
+fn foo<let N: u32>(arr: [u8; (N * 2 - 1) - 1]) -> u8 {
+    arr[0]
+}
+";
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn infix_type_expr_generic_and_literal() {
+        let source = r"
+fn foo<let N: u32>(arr: [u8; N - 1]) -> u8 {
+    arr[0]
+}
+";
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn trait_where_bounds() {
         let source = r"
 trait MyFrom<T> {

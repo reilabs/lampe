@@ -556,12 +556,19 @@ impl LeanGenerator<'_, '_, '_> {
                 let left = self.generate_lean_type_value(left, bindings);
                 let right = self.generate_lean_type_value(right, bindings);
 
-                assert_eq!(
-                    left.kind, right.kind,
-                    "Type-level infix expression had operands with differing kinds"
-                );
-
-                let kind = left.kind;
+                // When one operand is a generic type variable (Kind::Type) and the other
+                // is a concrete numeric kind (e.g. Kind::U(32)), the type variable must
+                // be numeric in this context. Use the concrete kind.
+                let kind = match (&left.kind, &right.kind) {
+                    (Kind::Type, k) | (k, Kind::Type) => k.clone(),
+                    (kl, kr) => {
+                        assert_eq!(
+                            kl, kr,
+                            "Type-level infix expression had operands with differing kinds"
+                        );
+                        kl.clone()
+                    }
+                };
 
                 let op = match op {
                     BinaryTypeOperator::Addition => TypeArithOp::Add,

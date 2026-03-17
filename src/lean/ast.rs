@@ -479,11 +479,18 @@ impl Type {
 
     #[must_use]
     pub fn cast(target: Type) -> Self {
+        // Propagate the inner kind so that the outer Type level knows what
+        // kind annotation to emit (if any).  Previously this was always
+        // Kind::Type, which suppressed the outer kind annotation and forced
+        // write_cast_type_expression to emit it via write_type_value(…, true),
+        // causing a double annotation when the cast was nested inside an arith
+        // expression (e.g. `((N * 2 - 1): u32 - 1): u32`).
+        let kind = target.kind.clone();
         Type {
             expr: TypeExpr::Cast(CastTypeExpr {
                 target: Box::new(target),
             }),
-            kind: Kind::Type,
+            kind,
         }
     }
 
