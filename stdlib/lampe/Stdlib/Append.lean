@@ -14,7 +14,7 @@ set_option Lampe.pp.STHoare true
 
 theorem slice_empty_spec {p T }
   : STHoare p env ⟦⟧
-    (empty h![] (Tp.slice T) h![] h![] h![])
+    (empty h![] (Tp.vector T) h![] h![] h![])
     (fun r => r = []) := by
   resolve_trait
   steps
@@ -22,7 +22,7 @@ theorem slice_empty_spec {p T }
 
 theorem slice_append_spec {p T self other}
   : STHoare p env ⟦⟧
-    (append h![] (Tp.slice T) h![] h![] h![self, other])
+    (append h![] (Tp.vector T) h![] h![] h![self, other])
     (fun r => r = self ++ other) := by
   resolve_trait
   steps [Slice.append_spec]

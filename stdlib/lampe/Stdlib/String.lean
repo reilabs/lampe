@@ -1,16 +1,13 @@
 import «std-1.0.0-beta.14».Extracted
 import Lampe
-import Stdlib.Collections.Vec.Core
-
 namespace Lampe.Stdlib.String
 
 open «std-1.0.0-beta.14»
-open Lampe.Stdlib
 
 theorem as_bytes_vec_spec {p N self} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::string::as_bytes_vec».call h![N] h![self])
-      (fun r => Collections.Vec.embed r = self.toList) := by
+      (fun r => r = self.toList) := by
   sorry
 
 set_option maxRecDepth 1500 in

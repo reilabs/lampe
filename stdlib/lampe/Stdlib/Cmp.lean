@@ -198,7 +198,7 @@ theorem slice_eq_pure_spec {p T a b}
     (h_trait_res : hasImpl env T)
     (h_eq_child: ∀a b, STHoare p env ⟦⟧ (eq h![] T h![] h![] h![a, b]) fun r : Bool => ⟦r ↔ a = b⟧)
   : STHoare p env ⟦⟧
-    (eq h![] T.slice h![] h![] h![a, b])
+    (eq h![] T.vector h![] h![] h![a, b])
     fun r : Bool => ⟦r ↔ a = b⟧ := by
   resolve_trait
   steps
@@ -1028,7 +1028,7 @@ theorem slice_ord_pure_spec {p T a b}
       (cmp h![] T h![] h![] h![a, b])
       (fun r => r = fromOrdering (t_ord_emb a b))}
   : STHoare p env ⟦⟧
-    (cmp h![] T.slice h![] h![] h![a, b])
+    (cmp h![] T.vector h![] h![] h![a, b])
     (fun r => r = fromOrdering (List.compareWith t_ord_emb a b)) := by
   resolve_trait
   steps

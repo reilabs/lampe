@@ -27,7 +27,6 @@ def add {p}
       («std-1.0.0-beta.14::ops::arith::Add».add.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::Add».add generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1050 in
 theorem field_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] .field h![] h![] h![a, b])
@@ -36,7 +35,6 @@ theorem field_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u128_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.u 128) h![] h![] h![a, b])
@@ -45,7 +43,6 @@ theorem u128_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u64_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.u 64) h![] h![] h![a, b])
@@ -54,7 +51,6 @@ theorem u64_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u32_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.u 32) h![] h![] h![a, b])
@@ -63,7 +59,6 @@ theorem u32_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u16_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.u 16) h![] h![] h![a, b])
@@ -72,7 +67,6 @@ theorem u16_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u8_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.u 8) h![] h![] h![a, b])
@@ -81,7 +75,6 @@ theorem u8_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u1_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.u 1) h![] h![] h![a, b])
@@ -90,7 +83,6 @@ theorem u1_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem i8_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.i 8) h![] h![] h![a, b])
@@ -99,7 +91,6 @@ theorem i8_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem i16_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.i 16) h![] h![] h![a, b])
@@ -108,7 +99,6 @@ theorem i16_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem i32_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.i 32) h![] h![] h![a, b])
@@ -117,7 +107,6 @@ theorem i32_add_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem i64_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.i 32) h![] h![] h![a, b])
@@ -139,7 +128,6 @@ def sub {p}
       («std-1.0.0-beta.14::ops::arith::Sub».sub.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::Sub».sub generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1050 in
 theorem field_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] .field h![] h![] h![a, b])
@@ -148,7 +136,6 @@ theorem field_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u128_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.u 128) h![] h![] h![a, b])
@@ -157,7 +144,6 @@ theorem u128_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u64_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.u 64) h![] h![] h![a, b])
@@ -166,7 +152,6 @@ theorem u64_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1050 in
 theorem u32_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.u 32) h![] h![] h![a, b])
@@ -175,7 +160,6 @@ theorem u32_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem u16_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.u 16) h![] h![] h![a, b])
@@ -184,7 +168,6 @@ theorem u16_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem u8_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.u 8) h![] h![] h![a, b])
@@ -193,7 +176,6 @@ theorem u8_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem u1_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.u 1) h![] h![] h![a, b])
@@ -202,7 +184,6 @@ theorem u1_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem i8_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.i 8) h![] h![] h![a, b])
@@ -211,7 +192,6 @@ theorem i8_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem i16_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.i 16) h![] h![] h![a, b])
@@ -220,7 +200,6 @@ theorem i16_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem i32_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.i 32) h![] h![] h![a, b])
@@ -229,7 +208,6 @@ theorem i32_sub_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem i64_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.i 32) h![] h![] h![a, b])
@@ -251,7 +229,6 @@ def mul {p}
       («std-1.0.0-beta.14::ops::arith::Mul».mul.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::Mul».mul generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1100 in
 theorem field_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] .field h![] h![] h![a, b])
@@ -260,7 +237,6 @@ theorem field_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem u128_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.u 128) h![] h![] h![a, b])
@@ -269,7 +245,6 @@ theorem u128_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem u64_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.u 64) h![] h![] h![a, b])
@@ -278,7 +253,6 @@ theorem u64_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem u32_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.u 32) h![] h![] h![a, b])
@@ -287,7 +261,6 @@ theorem u32_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem u16_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.u 16) h![] h![] h![a, b])
@@ -296,7 +269,6 @@ theorem u16_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem u8_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.u 8) h![] h![] h![a, b])
@@ -305,7 +277,6 @@ theorem u8_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem u1_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.u 1) h![] h![] h![a, b])
@@ -314,7 +285,6 @@ theorem u1_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem i8_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.i 8) h![] h![] h![a, b])
@@ -323,7 +293,6 @@ theorem i8_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1100 in
 theorem i16_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.i 16) h![] h![] h![a, b])
@@ -332,7 +301,6 @@ theorem i16_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem i32_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.i 32) h![] h![] h![a, b])
@@ -341,7 +309,6 @@ theorem i32_mul_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem i64_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.i 32) h![] h![] h![a, b])
@@ -363,7 +330,6 @@ def div {p}
       («std-1.0.0-beta.14::ops::arith::Div».div.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::Div».div generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1150 in
 theorem field_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] .field h![] h![] h![a, b])
@@ -372,7 +338,6 @@ theorem field_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem u128_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.u 128) h![] h![] h![a, b])
@@ -381,7 +346,6 @@ theorem u128_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem u64_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.u 64) h![] h![] h![a, b])
@@ -390,7 +354,6 @@ theorem u64_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem u32_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.u 32) h![] h![] h![a, b])
@@ -399,7 +362,6 @@ theorem u32_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem u16_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.u 16) h![] h![] h![a, b])
@@ -408,7 +370,6 @@ theorem u16_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem u8_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.u 8) h![] h![] h![a, b])
@@ -417,7 +378,6 @@ theorem u8_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem u1_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.u 1) h![] h![] h![a, b])
@@ -426,7 +386,6 @@ theorem u1_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i8_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.i 8) h![] h![] h![a, b])
@@ -435,7 +394,6 @@ theorem i8_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i16_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.i 16) h![] h![] h![a, b])
@@ -444,7 +402,6 @@ theorem i16_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i32_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.i 32) h![] h![] h![a, b])
@@ -453,7 +410,6 @@ theorem i32_div_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i64_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.i 32) h![] h![] h![a, b])
@@ -475,7 +431,6 @@ def rem {p}
       («std-1.0.0-beta.14::ops::arith::Rem».rem.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::Rem».rem generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1150 in
 theorem u128_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.u 128) h![] h![] h![a, b])
@@ -484,7 +439,6 @@ theorem u128_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem u64_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.u 64) h![] h![] h![a, b])
@@ -493,7 +447,6 @@ theorem u64_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1150 in
 theorem u32_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.u 32) h![] h![] h![a, b])
@@ -502,7 +455,6 @@ theorem u32_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem u16_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.u 16) h![] h![] h![a, b])
@@ -511,7 +463,6 @@ theorem u16_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem u8_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.u 8) h![] h![] h![a, b])
@@ -520,7 +471,6 @@ theorem u8_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem u1_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.u 1) h![] h![] h![a, b])
@@ -529,7 +479,6 @@ theorem u1_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i8_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.i 8) h![] h![] h![a, b])
@@ -538,7 +487,6 @@ theorem i8_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i16_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.i 16) h![] h![] h![a, b])
@@ -547,7 +495,6 @@ theorem i16_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i32_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.i 32) h![] h![] h![a, b])
@@ -556,7 +503,6 @@ theorem i32_rem_spec {p a b}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i64_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.i 32) h![] h![] h![a, b])
@@ -578,7 +524,6 @@ def neg {p}
       («std-1.0.0-beta.14::ops::arith::Neg».neg.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::Neg».neg generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1200 in
 theorem field_neg_spec {p a}
   : STHoare p env ⟦⟧
     (neg h![] .field h![] h![] h![a])
@@ -587,7 +532,6 @@ theorem field_neg_spec {p a}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i8_neg_spec {p a}
   : STHoare p env ⟦⟧
     (neg h![] (.i 8) h![] h![] h![a])
@@ -596,7 +540,6 @@ theorem i8_neg_spec {p a}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i16_neg_spec {p a}
   : STHoare p env ⟦⟧
     (neg h![] (.i 16) h![] h![] h![a])
@@ -605,7 +548,6 @@ theorem i16_neg_spec {p a}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i32_neg_spec {p a}
   : STHoare p env ⟦⟧
     (neg h![] (.i 32) h![] h![] h![a])
@@ -614,7 +556,6 @@ theorem i32_neg_spec {p a}
   steps
   simp_all
 
-set_option maxRecDepth 1200 in
 theorem i64_neg_spec {p a}
   : STHoare p env ⟦⟧
     (neg h![] (.i 32) h![] h![] h![a])
@@ -636,7 +577,6 @@ def wrapping_add {p}
       («std-1.0.0-beta.14::ops::arith::WrappingAdd».wrapping_add.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::WrappingAdd».wrapping_add generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1200 in
 theorem u1_wrapping_add_spec {p a b}
   : STHoare p env ⟦⟧
     (wrapping_add h![] (.u 1) h![] h![] h![a, b])
@@ -647,7 +587,6 @@ theorem u1_wrapping_add_spec {p a b}
   simp only [BitVec.xor_eq]
   rw [←BitVec.add_eq_xor]
 
-set_option maxRecDepth 1200 in
 theorem u8_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 9]
   : STHoare p env ⟦⟧
@@ -671,7 +610,6 @@ theorem u8_wrapping_add_spec {p a b}
 
   conv_lhs => rw [ZMod.val_natCast_of_lt (by linarith)]
 
-set_option maxRecDepth 1200 in
 theorem u16_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 17]
   : STHoare p env ⟦⟧
@@ -695,7 +633,6 @@ theorem u16_wrapping_add_spec {p a b}
 
   conv_lhs => rw [ZMod.val_natCast_of_lt (by linarith)]
 
-set_option maxRecDepth 1200 in
 theorem u32_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 33]
   : STHoare p env ⟦⟧
@@ -719,7 +656,6 @@ theorem u32_wrapping_add_spec {p a b}
 
   conv_lhs => rw [ZMod.val_natCast_of_lt (by linarith)]
 
-set_option maxRecDepth 1200 in
 theorem u64_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 65]
   : STHoare p env ⟦⟧
@@ -743,7 +679,6 @@ theorem u64_wrapping_add_spec {p a b}
 
   conv_lhs => rw [ZMod.val_natCast_of_lt (by linarith)]
 
-set_option maxRecDepth 1200 in
 theorem u128_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -767,7 +702,6 @@ theorem u128_wrapping_add_spec {p a b}
 
   conv_lhs => rw [ZMod.val_natCast_of_lt (by linarith)]
 
-set_option maxRecDepth 1250 in
 theorem i8_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 9]
   : STHoare p env ⟦⟧
@@ -777,7 +711,6 @@ theorem i8_wrapping_add_spec {p a b}
   steps [u8_wrapping_add_spec (p := p)]
   simp_all
 
-set_option maxRecDepth 1250 in
 theorem i16_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 17]
   : STHoare p env ⟦⟧
@@ -787,7 +720,6 @@ theorem i16_wrapping_add_spec {p a b}
   steps [u16_wrapping_add_spec (p := p)]
   simp_all
 
-set_option maxRecDepth 1250 in
 theorem i32_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 33]
   : STHoare p env ⟦⟧
@@ -797,7 +729,6 @@ theorem i32_wrapping_add_spec {p a b}
   steps [u32_wrapping_add_spec (p := p)]
   simp_all
 
-set_option maxRecDepth 1250 in
 theorem i64_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 65]
   : STHoare p env ⟦⟧
@@ -807,7 +738,6 @@ theorem i64_wrapping_add_spec {p a b}
   steps [u64_wrapping_add_spec (p := p)]
   simp_all
 
-set_option maxRecDepth 1250 in
 theorem field_wrapping_add_spec {p a b}
   : STHoare p env ⟦⟧
     (wrapping_add h![] .field h![] h![] h![a, b])
@@ -829,7 +759,6 @@ def wrapping_sub {p}
       («std-1.0.0-beta.14::ops::arith::WrappingSub».wrapping_sub.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::WrappingSub».wrapping_sub generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1250 in
 theorem u1_wrapping_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (wrapping_sub h![] (.u 1) h![] h![] h![a, b])
@@ -840,7 +769,6 @@ theorem u1_wrapping_sub_spec {p a b}
   simp only [BitVec.xor_eq]
   rw [←BitVec.sub_eq_xor]
 
-set_option maxRecDepth 1250 in
 theorem u8_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -880,7 +808,6 @@ theorem u8_wrapping_sub_spec {p a b}
   repeat rw [ZMod.val_natCast_of_lt (by linarith)]
   linarith
 
-set_option maxRecDepth 1250 in
 theorem u16_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -920,7 +847,6 @@ theorem u16_wrapping_sub_spec {p a b}
   repeat rw [ZMod.val_natCast_of_lt (by linarith)]
   linarith
 
-set_option maxRecDepth 1250 in
 theorem u32_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -960,7 +886,6 @@ theorem u32_wrapping_sub_spec {p a b}
   repeat rw [ZMod.val_natCast_of_lt (by linarith)]
   linarith
 
-set_option maxRecDepth 1250 in
 theorem u64_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -1000,7 +925,6 @@ theorem u64_wrapping_sub_spec {p a b}
   repeat rw [ZMod.val_natCast_of_lt (by linarith)]
   linarith
 
-set_option maxRecDepth 1250 in
 theorem u128_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -1040,7 +964,6 @@ theorem u128_wrapping_sub_spec {p a b}
   repeat rw [ZMod.val_natCast_of_lt (by linarith)]
   linarith
 
-set_option maxRecDepth 1250 in
 theorem i8_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -1050,7 +973,6 @@ theorem i8_wrapping_sub_spec {p a b}
   steps [u8_wrapping_sub_spec (p := p)]
   simp_all
 
-set_option maxRecDepth 1250 in
 theorem i16_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -1060,7 +982,6 @@ theorem i16_wrapping_sub_spec {p a b}
   steps [u16_wrapping_sub_spec (p := p)]
   simp_all
 
-set_option maxRecDepth 1250 in
 theorem i32_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -1070,7 +991,6 @@ theorem i32_wrapping_sub_spec {p a b}
   steps [u32_wrapping_sub_spec (p := p)]
   simp_all
 
-set_option maxRecDepth 1250 in
 theorem i64_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -1080,7 +1000,6 @@ theorem i64_wrapping_sub_spec {p a b}
   steps [u64_wrapping_sub_spec (p := p)]
   simp_all
 
-set_option maxRecDepth 1250 in
 theorem field_wrapping_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (wrapping_sub h![] .field h![] h![] h![a, b])
@@ -1102,7 +1021,6 @@ def wrapping_mul {p}
       («std-1.0.0-beta.14::ops::arith::WrappingMul».wrapping_mul.«#output» generics Self associatedTypes fnGenerics) :=
   «std-1.0.0-beta.14::ops::arith::WrappingMul».wrapping_mul generics Self associatedTypes fnGenerics
 
-set_option maxRecDepth 1300 in
 theorem u1_wrapping_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (wrapping_mul h![] (.u 1) h![] h![] h![a, b])
@@ -1112,7 +1030,6 @@ theorem u1_wrapping_mul_spec {p a b}
   subst_vars
   rw [←BitVec.mul_eq_and]
 
-set_option maxRecDepth 1300 in
 theorem u8_wrapping_mul {p a b}
     [gt : Prime.BitsGT p 16]
   : STHoare p env ⟦⟧
@@ -1132,7 +1049,6 @@ theorem u8_wrapping_mul {p a b}
   simp_all only [Nat.reducePow]
   rfl
 
-set_option maxRecDepth 1300 in
 theorem u16_wrapping_mul {p a b}
     [gt : Prime.BitsGT p 32]
   : STHoare p env ⟦⟧
@@ -1152,7 +1068,6 @@ theorem u16_wrapping_mul {p a b}
   simp_all only [Nat.reducePow]
   rfl
 
-set_option maxRecDepth 1300 in
 theorem u32_wrapping_mul {p a b}
     [gt : Prime.BitsGT p 64]
   : STHoare p env ⟦⟧
@@ -1172,7 +1087,6 @@ theorem u32_wrapping_mul {p a b}
   simp_all only [Nat.reducePow]
   rfl
 
-set_option maxRecDepth 1300 in
 theorem u64_wrapping_mul {p a b}
     [gt : Prime.BitsGT p 128]
   : STHoare p env ⟦⟧
@@ -1255,7 +1169,6 @@ theorem split_into_64_bit_limbs_spec {p a} [gt : Prime.BitsGT p 128]
   subst this
   rw [Integer.split64_combine64_id]
 
-set_option maxRecDepth 1300 in
 theorem u128_wrapping_mul {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -1442,7 +1355,6 @@ theorem u128_wrapping_mul {p a b}
     congr 4
     rw [←Nat.div_eq_sub_mod_div]
 
-set_option maxRecDepth 1300 in
 theorem field_wrapping_mul {p a b}
   : STHoare p env ⟦⟧
     (wrapping_mul h![] .field h![] h![] h![a, b])
