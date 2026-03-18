@@ -28,7 +28,7 @@ noir_def «check_shuffle-0.0.0»::check_shuffle<T: Type, N: u32>(lhs: Array<T, N
     let idx = (#_arrayIndex returning u32)(shuffle_indices, (#_cast returning u32)(i));
     let expected = (#_arrayIndex returning T)(rhs, (#_cast returning u32)(idx));
     let result = (#_arrayIndex returning T)(lhs, (#_cast returning u32)(i));
-    (#_assert returning Unit)(((T as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)(expected, result));
+    (#_assert returning Unit)(((T as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)(expected, result));
     #_skip
   };
   #_skip
@@ -49,13 +49,13 @@ noir_def «check_shuffle-0.0.0»::get_shuffle_indices<T: Type, N: u32>(lhs: Arra
     let idx = (#_arrayIndex returning u32)(shuffle_indices, (#_cast returning u32)(i));
     let expected = (#_arrayIndex returning T)(rhs, (#_cast returning u32)(idx));
     let result = (#_arrayIndex returning T)(lhs, (#_cast returning u32)(i));
-    (#_assert returning Unit)(((T as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)(expected, result));
+    (#_assert returning Unit)(((T as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)(expected, result));
     #_skip
   };
   shuffle_indices
 }
 
-noir_trait_impl[«check_shuffle-0.0.0».impl_430]<> «std-1.0.0-beta.12»::cmp::Eq<> for «check_shuffle-0.0.0»::test::CompoundStruct<> where [] := {
+noir_trait_impl[«check_shuffle-0.0.0».impl_432]<> «std-1.0.0-beta.14»::cmp::Eq<> for «check_shuffle-0.0.0»::test::CompoundStruct<> where [] := {
   noir_def eq<>(self: «check_shuffle-0.0.0»::test::CompoundStruct<>, other: «check_shuffle-0.0.0»::test::CompoundStruct<>) -> bool := {
     (#_bAnd returning bool)((#_bAnd returning bool)((#_bEq returning bool)(self.0, other.0), (#_fEq returning bool)(self.1, other.1)), (#_uEq returning bool)(self.2, other.2))
   };
@@ -103,4 +103,4 @@ noir_def «check_shuffle-0.0.0»::benchmark::bench_shuffle<>(lhs: Array<Field, 5
 
 def «check_shuffle-0.0.0».Lib.env : Env := Env.mk
   [«check_shuffle-0.0.0::__get_shuffle_indices», «check_shuffle-0.0.0::__get_index», «check_shuffle-0.0.0::check_shuffle», «check_shuffle-0.0.0::get_shuffle_indices», «check_shuffle-0.0.0::test::test_shuffle», «check_shuffle-0.0.0::test::test_shuffle_identity», «check_shuffle-0.0.0::test::test_shuffle_fail», «check_shuffle-0.0.0::test::test_shuffle_duplicates», «check_shuffle-0.0.0::test::test_shuffle_compound_struct», «check_shuffle-0.0.0::benchmark::bench_shuffle»]
-  [«check_shuffle-0.0.0».impl_430]
+  [«check_shuffle-0.0.0».impl_432]
