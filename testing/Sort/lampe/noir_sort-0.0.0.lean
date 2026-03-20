@@ -9,9 +9,6 @@ set_option linter.unusedVariables false
 set_option autoImplicit false
 set_option maxRecDepth 4096
 
-/-
-  sort_u32: a ≤ b
--/
 theorem sort_u32_spec {p} (a b : U 32) :
     STHoare p «noir_sort-0.0.0».env ⟦⟧
       («noir_sort-0.0.0::test::sort_u32».call h![] h![a, b])
@@ -34,10 +31,6 @@ private lemma u32_check_shuffle_spec {p} {N : U 32}
       solve_env_subset)
     exact Eq.u32_eq_spec
 
-/-
-  sort_via<u32, N>(input, sort_u32):
-  The output is a permutation of the input and is sorted (adjacent elements satisfy ≤).
--/
 theorem sort_via_u32_sorted_spec {p} (N : U 32) (hN : 0 < N.toNat)
     (input : List.Vector (U 32) N.toNat) :
     STHoare p «noir_sort-0.0.0».env ⟦⟧

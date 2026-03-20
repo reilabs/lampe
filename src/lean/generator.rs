@@ -1402,7 +1402,10 @@ impl LeanGenerator<'_, '_, '_> {
 
                 Some(GlobalDefinition { name, typ, expr })
             }
-            _ => panic!("Encountered invalid statement {statement:?} in global binding"),
+            _ => {
+                eprintln!("Skipping global with invalid statement: {statement:?}");
+                None
+            }
         }
     }
 
