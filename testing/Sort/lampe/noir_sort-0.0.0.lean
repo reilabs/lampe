@@ -25,7 +25,7 @@ private lemma u32_check_shuffle_spec {p} {N : U 32}
   apply STHoare.is_mono (show «check_shuffle-0.0.0».env ⊆ «noir_sort-0.0.0».env from by
     solve_env_subset)
   apply check_shuffle_spec
-  · prove_trait_resolvable
+  · resolve_trait bySearch
   · intro a b
     apply STHoare.is_mono (show «std-1.0.0-beta.12».env ⊆ «check_shuffle-0.0.0».env from by
       solve_env_subset)

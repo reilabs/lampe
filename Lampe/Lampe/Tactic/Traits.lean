@@ -253,8 +253,18 @@ partial def doResolve (resolutionGoal : ResolutionGoal) (env : Lean.Expr): Tacti
 
 end
 
-elab "resolve_trait" : tactic => do
-  let mainGoal ← getMainGoal
+private def resolveTraitStandalone (mainGoal : MVarId) : TacticM Unit := do
+  try
+    mainGoal.assumption
+    replaceMainGoal []
+  catch _ =>
+    let traitGoal :: _ ← mainGoal.apply (mkConst ``resolvable_of_resolution [])
+      | throwError "resolve_trait bySearch: expected a TraitResolvable goal"
+    let goal ← ResolutionGoal.ofGoal traitGoal
+    let _ ← doResolve goal goal.env
+    replaceMainGoal []
+
+private def resolveTraitSTHoare (mainGoal : MVarId) : TacticM Unit := do
   let target ← mainGoal.instantiateMVarsInType
 
   let ng ← mainGoal.withContext $ do
@@ -294,38 +304,16 @@ elab "resolve_trait" : tactic => do
 
   replaceMainGoal ng
 
+syntax (name := resolveTrait) "resolve_trait" (" bySearch")? : tactic
+
 /--
-Proves a standalone `TraitResolvable Γ ref` (a.k.a. `hasImpl Γ T`) goal by searching the
-concrete environment `Γ` for a matching trait implementation.
-
-## Why not `resolve_trait`?
-
-`resolve_trait` only closes STHoare `callTrait` goals: internally it applies
-`STHoare.callTrait_direct_intro`, so it fails immediately on any goal that is not an STHoare
-triple. Use `prove_trait_resolvable` when you need to provide a `hasImpl` witness as an
-**explicit argument** to a generic spec lemma (e.g. `check_shuffle_spec` takes
-`t_eq : Eq.hasImpl env T`).
-
-## Why not `decide` / `native_decide`?
-
-`TraitImpl` does not have a `DecidableEq` instance, so `decide` / `native_decide` cannot
-evaluate `TraitResolvable` propositions.
-
-## Why not remove the explicit `hasImpl` argument from the spec?
-
-For abstract type parameters (e.g. `T : Tp`), `doResolve` cannot search the environment
-for a matching implementation because the self type is not yet concrete. The explicit
-`hasImpl` argument lets callers supply the evidence themselves; `proveConstraint` then closes
-it via `assumption` when processing the `Eq::eq` callTrait sub-goal.
+Closes trait resolution goals. Without arguments, handles STHoare `callTrait` goals;
+with `bySearch`, handles standalone `TraitResolvable` goals.
 -/
-elab "prove_trait_resolvable" : tactic => do
-  let mainGoal ← getMainGoal
-  try
-    mainGoal.assumption
-    replaceMainGoal []
-  catch _ =>
-    let traitGoal :: _ ← mainGoal.apply (mkConst ``resolvable_of_resolution [])
-      | throwError "prove_trait_resolvable: expected a TraitResolvable goal"
-    let goal ← ResolutionGoal.ofGoal traitGoal
-    let _ ← doResolve goal goal.env
-    replaceMainGoal []
+@[tactic resolveTrait] elab_rules : tactic
+  | `(tactic| resolve_trait) => do
+    let mainGoal ← getMainGoal
+    resolveTraitSTHoare mainGoal
+  | `(tactic| resolve_trait bySearch) => do
+    let mainGoal ← getMainGoal
+    resolveTraitStandalone mainGoal

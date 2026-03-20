@@ -8,11 +8,11 @@ name = "«noir_sort-0.0.0»"
 
 [[require]]
 name = "Lampe"
-path = "../../Lampe"
+path = "../../../Lampe"
 
 [[require]]
 name = "std-1.0.0-beta.12"
-path = "../../stdlib/lampe"
+path = "../../../stdlib/lampe"
 
 [[require]]
 name = "check_shuffle-0.0.0"
