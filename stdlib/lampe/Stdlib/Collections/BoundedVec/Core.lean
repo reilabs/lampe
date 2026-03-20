@@ -1,9 +1,9 @@
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Collections.BoundedVec
 
-open «std-1.0.0-beta.12»
+open «std-1.0.0-beta.14»
 
 /-!
 Core semantic interface for Noir `collections::bounded_vec::BoundedVec`.
@@ -17,7 +17,7 @@ This file intentionally contains no Hoare triples and no "constructor-style" upd
 -/
 
 abbrev bvTp (T : Tp) (MaxLen : U 32) : Tp :=
-  «std-1.0.0-beta.12::collections::bounded_vec::BoundedVec».tp h![T, MaxLen]
+  «std-1.0.0-beta.14::collections::bounded_vec::BoundedVec».tp h![T, MaxLen]
 
 abbrev Repr (p : Prime) (T : Tp) (MaxLen : U 32) : Type :=
   Tp.denote p (bvTp T MaxLen)

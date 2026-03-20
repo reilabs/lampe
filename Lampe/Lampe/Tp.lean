@@ -27,7 +27,7 @@ inductive Tp where
 | str (size: U 32)
 | fmtStr (size : U 32) (argTps : Tp)
 | field
-| slice (element : Tp)
+| vector (element : Tp)
 | array (element: Tp) (size: U 32)
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
@@ -166,7 +166,7 @@ def Tp.denote : Tp → Type
 | .str n => NoirStr n.toNat
 | .fmtStr n tps => FormatString n tps
 | .field => Fp p
-| .slice tp => List (denote tp)
+| .vector tp => List (denote tp)
 | .array tp n => List.Vector (denote tp) n.toNat
 | .ref _ => Ref
 | .tuple _ fields => Tp.denoteArgs fields
@@ -206,7 +206,7 @@ def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplie
     let len ← mkAppM `BitVec.toNat #[n]
     mkAppM `FixedLenStr #[len]
   | Tp.fmtStr n tps => mkAppM `Lampe.FormatString #[n, tps]
-  | Tp.slice tp => mkAppM `List #[← mkAppM `Lampe.Tp.denote #[p, tp]]
+  | Tp.vector tp => mkAppM `List #[← mkAppM `Lampe.Tp.denote #[p, tp]]
   | Tp.array tp n =>
     let len ← mkAppM `BitVec.toNat #[n]
     mkAppM `List.Vector #[← mkAppM `Lampe.Tp.denote #[p, tp], len]
@@ -240,7 +240,7 @@ match tp with
 | .unit => ()
 | .str n => List.Vector.replicate n.toNat 0
 | .fmtStr _ _ => ""
-| .slice _ => []
+| .vector _ => []
 | .array tp n => List.Vector.replicate n.toNat tp.zero
 | .ref _ => ⟨0⟩
 | .tuple name fields => HList.toTuple p (Tp.zeroArgs fields) name
@@ -266,7 +266,7 @@ unif_hint (p q : Prime) (tp : Tp) where
   ⊢ Tp.denote p tp =?= Fin (q.val + 1)
 
 unif_hint (p : Prime) (tp tp' : Tp) where
-  Tp.slice tp' =?= tp
+  Tp.vector tp' =?= tp
   ⊢ Tp.denote p tp =?= List (Tp.denote p tp')
 
 unif_hint (n : U 32) (p : Prime) (tp tp' : Tp) where
@@ -295,5 +295,9 @@ elab "tuple_unif_hints" : command => do
 tuple_unif_hints
 
 end unificationHints
+
+-- Deprecated alias for backward compatibility
+@[deprecated Tp.vector (since := "2025-03-19")]
+abbrev Tp.slice := Tp.vector
 
 end Lampe

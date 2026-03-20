@@ -9,7 +9,7 @@ import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
 import Lampe.Builtin.Runtime
-import Lampe.Builtin.Slice
+import Lampe.Builtin.Vector
 import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 
@@ -203,19 +203,20 @@ theorem array_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.array tp N]
   intro h
   simp [Builtin.arrayLenDesc]
 
-theorem slice_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.slice tp] (Tp.u 32) Builtin.arrayLen h![x])
+theorem vector_arrayLen_intro : STHoare p Γ ⟦⟧ (.callBuiltin [Tp.vector tp] (Tp.u 32) Builtin.arrayLen h![x])
     fun v => ∃∃h, ⟦v = BitVec.ofNatLT x.length h⟧ := by
   apply STHoare.consequence_frame
-  apply pureBuiltin_intro (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) (a := Builtin.ArrayLenCase.slice tp)
+  apply pureBuiltin_intro (sgn := Builtin.arrayLenSgn) (desc := Builtin.arrayLenDesc) (a := Builtin.ArrayLenCase.vector tp)
   sl
   intro
   sl
   assumption
 
-theorem asSlice_intro : STHoarePureBuiltin p Γ Builtin.asSlice (by tauto) h![arr] (a := (tp, n)) := by
+theorem asVector_intro : STHoarePureBuiltin p Γ Builtin.asVector (by tauto) h![arr] (a := (tp, n)) := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
+
 
 -- Bitwise
 
@@ -362,42 +363,43 @@ theorem iAsField_intro {p Γ s f} : STHoarePureBuiltin p Γ Builtin.iAsField (by
   apply pureBuiltin_intro_consequence <;> try tauto
   tauto
 
--- Slice
+-- Vector
 
-theorem sliceIndex_intro : STHoarePureBuiltin p Γ Builtin.sliceIndex (by tauto) h![sl, i] := by
+theorem vectorIndex_intro : STHoarePureBuiltin p Γ Builtin.vectorIndex (by tauto) h![sl, i] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem slicePushBack_intro : STHoarePureBuiltin p Γ Builtin.slicePushBack (by tauto) h![sl, e] := by
+theorem vectorPushBack_intro : STHoarePureBuiltin p Γ Builtin.vectorPushBack (by tauto) h![sl, e] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem slicePushFront_intro : STHoarePureBuiltin p Γ Builtin.slicePushFront (by tauto) h![sl, e] := by
+theorem vectorPushFront_intro : STHoarePureBuiltin p Γ Builtin.vectorPushFront (by tauto) h![sl, e] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem sliceInsert_intro : STHoarePureBuiltin p Γ Builtin.sliceInsert (by tauto) h![sl, i, e] := by
+theorem vectorInsert_intro : STHoarePureBuiltin p Γ Builtin.vectorInsert (by tauto) h![sl, i, e] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem slicePopFront_intro : STHoarePureBuiltin p Γ Builtin.slicePopFront (by tauto) h![sl] := by
+theorem vectorPopFront_intro : STHoarePureBuiltin p Γ Builtin.vectorPopFront (by tauto) h![sl] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem slicePopBack_intro : STHoarePureBuiltin p Γ Builtin.slicePopBack (by tauto) h![sl] := by
+theorem vectorPopBack_intro : STHoarePureBuiltin p Γ Builtin.vectorPopBack (by tauto) h![sl] := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
 
-theorem sliceRemove_intro : STHoarePureBuiltin p Γ Builtin.sliceRemove (by tauto) h![sl, i]  := by
+theorem vectorRemove_intro : STHoarePureBuiltin p Γ Builtin.vectorRemove (by tauto) h![sl, i]  := by
   simp only [STHoarePureBuiltin, SLP.exists_pure]
   apply pureBuiltin_intro_consequence <;> try rfl
   tauto
+
 
 -- String
 
@@ -646,5 +648,15 @@ theorem cast_intro [Builtin.CastTp tp tp'] : STHoare p Γ ⟦⟧ (.callBuiltin [
    simp only [mapToValHeapCondition]
    apply SLP.ent_star_top
    simp_all
+
+-- Deprecated aliases for backward compatibility (old "slice" names)
+@[deprecated asVector_intro (since := "2025-03-19")] abbrev asSlice_intro := @asVector_intro
+@[deprecated vectorIndex_intro (since := "2025-03-19")] abbrev sliceIndex_intro := @vectorIndex_intro
+@[deprecated vectorPushBack_intro (since := "2025-03-19")] abbrev slicePushBack_intro := @vectorPushBack_intro
+@[deprecated vectorPushFront_intro (since := "2025-03-19")] abbrev slicePushFront_intro := @vectorPushFront_intro
+@[deprecated vectorInsert_intro (since := "2025-03-19")] abbrev sliceInsert_intro := @vectorInsert_intro
+@[deprecated vectorPopFront_intro (since := "2025-03-19")] abbrev slicePopFront_intro := @vectorPopFront_intro
+@[deprecated vectorPopBack_intro (since := "2025-03-19")] abbrev slicePopBack_intro := @vectorPopBack_intro
+@[deprecated vectorRemove_intro (since := "2025-03-19")] abbrev sliceRemove_intro := @vectorRemove_intro
 
 end Lampe.STHoare

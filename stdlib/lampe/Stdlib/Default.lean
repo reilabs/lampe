@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 
 import Lampe
 import Stdlib.Tuple
 
 namespace Lampe.Stdlib.Default
 
-open «std-1.0.0-beta.12»
+open «std-1.0.0-beta.14»
 open Lampe.Stdlib
 
 set_option Lampe.pp.Expr true
@@ -14,21 +14,21 @@ set_option Lampe.pp.STHoare true
 /-- A shorthand for a call to the `std::default::Default::default` method. -/
 @[reducible]
 def default {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.12::default::Default».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.14::default::Default».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::default::Default».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::default::Default».default.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::default::Default».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::default::Default».default.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.12::default::Default».default.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.14::default::Default».default.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.12::default::Default».default.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.12::default::Default».default generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.14::default::Default».default.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.14::default::Default».default generics Self associatedTypes fnGenerics
 
 /--
 Asserts that the provided `tp` has an implementation of `std::default::Default` in the environment.
 -/
 @[reducible]
-def hasDefaultImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.12::default::Default».hasImpl env h![] tp
+def hasDefaultImpl (env : Env) (tp : Tp) := «std-1.0.0-beta.14::default::Default».hasImpl env h![] tp
 
 theorem field_default_spec {p}
   : STHoare p env ⟦⟧
@@ -159,7 +159,7 @@ theorem array_default_spec {p T N}
 theorem slice_default_spec {p}
     {T : Tp}
   : STHoare p env ⟦⟧
-    (default h![] T.slice h![] h![] h![])
+    (default h![] T.vector h![] h![] h![])
     (fun r => r = []) := by
   resolve_trait
   steps

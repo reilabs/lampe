@@ -13,12 +13,12 @@ license = "MIT"
 [dependencies]
 # When update noir version used in here please remember about changing the
 # `ci-noir` workflow and standard library to pull from the same version.
-fm = { git = "https://github.com/noir-lang/noir", rev = "9a5b3695b42e391fa27c48e87b9bbb07523d664d" }
-nargo = { git = "https://github.com/noir-lang/noir", rev = "9a5b3695b42e391fa27c48e87b9bbb07523d664d" }
-nargo_toml = { git = "https://github.com/noir-lang/noir", rev = "9a5b3695b42e391fa27c48e87b9bbb07523d664d" }
-noirc_driver = { git = "https://github.com/noir-lang/noir", rev = "9a5b3695b42e391fa27c48e87b9bbb07523d664d" }
-noirc_errors = { git = "https://github.com/noir-lang/noir", rev = "9a5b3695b42e391fa27c48e87b9bbb07523d664d" }
-noirc_frontend = { git = "https://github.com/noir-lang/noir", rev = "9a5b3695b42e391fa27c48e87b9bbb07523d664d" }
+fm = { git = "https://github.com/noir-lang/noir", rev = "74d6be658e1ad252f87943292ba09bdd4da80bd4" }
+nargo = { git = "https://github.com/noir-lang/noir", rev = "74d6be658e1ad252f87943292ba09bdd4da80bd4" }
+nargo_toml = { git = "https://github.com/noir-lang/noir", rev = "74d6be658e1ad252f87943292ba09bdd4da80bd4" }
+noirc_driver = { git = "https://github.com/noir-lang/noir", rev = "74d6be658e1ad252f87943292ba09bdd4da80bd4" }
+noirc_errors = { git = "https://github.com/noir-lang/noir", rev = "74d6be658e1ad252f87943292ba09bdd4da80bd4" }
+noirc_frontend = { git = "https://github.com/noir-lang/noir", rev = "74d6be658e1ad252f87943292ba09bdd4da80bd4" }
 
 # Left behind to enable easier local development when needed
 # fm = { path = "../noir/compiler/fm" }

@@ -10,7 +10,7 @@ import «Merkle-1.0.0».Extracted.Skyscraper.Mod
 import «Merkle-1.0.0».Extracted.Utils.Mod
 import «Merkle-1.0.0».Extracted.Witness.Mod
 import «Merkle-1.0.0».Extracted.Witness.Uncons
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 
 namespace «Merkle-1.0.0»
 
@@ -23,4 +23,4 @@ def env := Bar.env
   ++ Utils.Mod.env
   ++ Witness.Mod.env
   ++ Witness.Uncons.env
-  ++ «std-1.0.0-beta.12».env
+  ++ «std-1.0.0-beta.14».env

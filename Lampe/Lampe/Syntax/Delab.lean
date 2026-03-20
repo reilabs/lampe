@@ -40,7 +40,7 @@ partial def ppTp (expr : Lean.Expr) : DelabM <| TSyntax `noir_type := do
   | Tp.field => return ⟨mkIdent `Field⟩
   | Tp.bool => return ⟨mkIdent `bool⟩
   | Tp.unit => return ⟨mkIdent `Unit⟩
-  | Tp.slice tp => return ←`(noir_type|$(⟨mkIdent `Slice⟩):noir_ident<$(⟨← ppTp tp⟩)>)
+  | Tp.vector tp => return ←`(noir_type|$(⟨mkIdent `Vector⟩):noir_ident<$(⟨← ppTp tp⟩)>)
   | Tp.array tp n => return ←`(noir_type|$(⟨mkIdent `Array⟩):noir_ident<$(⟨←ppTp tp⟩), $(⟨← delab n⟩)>)
   | Tp.tuple _name fields => do
       let some (_, fields) := fields.listLit? | throwError "fields in `Tp.tuple` expected to be a list lit, got {← ppExpr fields}"
@@ -130,7 +130,7 @@ def delabReadRef : Delab := whenDelabExprOption getExpr >>= fun expr =>
 inductive LensStep
   | tuple (idx : Nat)
   | array (idx : TSyntax `noir_expr)
-  | slice (idx : TSyntax `noir_expr)
+  | vector (idx : TSyntax `noir_expr)
 
 /-- Descends through a `Member.head/tail` access pattern to determine the projection indexes -/
 partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat := do
@@ -154,9 +154,9 @@ partial def deconstructLens (lens : Lean.Expr) (acc : List LensStep := []) : Del
     | Access.array _ _ _ idx =>
       let idx := extractInnerLampeExpr (← delab idx)
       deconstructLens lens (.array idx :: acc)
-    | Access.slice _ _ idx =>
+    | Access.vector _ _ idx =>
       let idx := extractInnerLampeExpr (← delab idx)
-      deconstructLens lens (.slice idx :: acc)
+      deconstructLens lens (.vector idx :: acc)
     | _ => throwError "Invalid lens access, got {← ppExpr access}"
   | _ => throwError "Invalid lens access, got {← ppExpr lens}"
 
@@ -172,7 +172,7 @@ def buildLVal (lval : TSyntax `noir_lval) (lensSteps : List LensStep) (type : TS
   | LensStep.array idx :: rest => do
     let lval ← buildLVal lval rest type
     `(noir_lval|($lval[$idx] : $type))
-  | LensStep.slice idx :: rest => do
+  | LensStep.vector idx :: rest => do
     let lval ← buildLVal lval rest type
     `(noir_lval|($lval[[$idx]]: $type))
 

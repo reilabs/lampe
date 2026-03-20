@@ -7,7 +7,7 @@ import «skyscraper-0.0.0».Extracted.Globals
 import «skyscraper-0.0.0».Extracted.Lib
 import «skyscraper-0.0.0».Extracted.Permute
 import «hasher-0.0.0».Extracted
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 
 namespace «skyscraper-0.0.0»
 
@@ -17,4 +17,4 @@ def env := Bar.env
   ++ Lib.env
   ++ Permute.env
   ++ «hasher-0.0.0».env
-  ++ «std-1.0.0-beta.12».env
+  ++ «std-1.0.0-beta.14».env
