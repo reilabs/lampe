@@ -555,13 +555,7 @@ impl LeanGenerator<'_, '_, '_> {
             NoirType::InfixExpr(left, op, right, _) => {
                 let left = self.generate_lean_type_value(left, bindings);
                 let right = self.generate_lean_type_value(right, bindings);
-
-                assert_eq!(
-                    left.kind, right.kind,
-                    "Type-level infix expression had operands with differing kinds"
-                );
-
-                let kind = left.kind;
+                let kind = self.generate_kind(&typ.kind());
 
                 let op = match op {
                     BinaryTypeOperator::Addition => TypeArithOp::Add,
@@ -671,6 +665,21 @@ impl LeanGenerator<'_, '_, '_> {
         }
     }
 
+    /// Generates a Lean-side kind from Noir kind information.
+    ///
+    /// # Panics
+    ///
+    /// - If a non-concrete kind is encountered.
+    pub fn generate_kind(&self, kind: &NoirKind) -> Kind {
+        match kind {
+            NoirKind::Any | NoirKind::Normal => Kind::Type,
+            NoirKind::IntegerOrField | NoirKind::Integer => {
+                panic!("Kinds should be concrete at this stage")
+            }
+            NoirKind::Numeric(_) => self.expect_constant_numeric_kind(kind),
+        }
+    }
+
     /// Generates a type corresponding to the provided Type Variable `tv`.
     ///
     /// # Panics
@@ -683,13 +692,7 @@ impl LeanGenerator<'_, '_, '_> {
                 self.generate_lean_type_value(&b, None)
             }
             TypeBinding::Unbound(id, kind) => {
-                let kind = match kind {
-                    NoirKind::Any | NoirKind::Normal => Kind::Type,
-                    NoirKind::IntegerOrField | NoirKind::Integer => {
-                        panic!("Kinds should be concrete at this stage")
-                    }
-                    NoirKind::Numeric(_) => self.expect_constant_numeric_kind(kind),
-                };
+                let kind = self.generate_kind(kind);
                 let name = name.unwrap_or_else(|| {
                     panic!("Type variable {id:?} had no name but is required to")
                 });
@@ -1381,22 +1384,22 @@ impl LeanGenerator<'_, '_, '_> {
         let statement = self.context.def_interner.statement(&global_data.let_statement);
         let def_info = self.context.def_interner.definition(global_data.definition_id);
 
-        match statement {
-            HirStatement::Let(binding) => {
-                // Skip comptime globals with non-identifier patterns (e.g. tuple
-                // destructuring) as they cannot be represented as named globals.
-                if def_info.comptime && !matches!(binding.pattern, HirPattern::Identifier(_)) {
-                    return None;
-                }
+        let HirStatement::Let(binding) = statement else {
+            eprintln!("Skipping global with invalid statement: {statement:?}");
+            return None;
+        };
 
-                let name = self.fully_qualified_global_name(id);
-                let typ = self.generate_lean_type_value(&binding.r#type, None);
-                let expr = self.generate_expr(binding.expression);
-
-                Some(GlobalDefinition { name, typ, expr })
-            }
-            _ => panic!("Encountered invalid statement {statement:?} in global binding"),
+        // Skip comptime globals with non-identifier patterns (e.g. tuple
+        // destructuring) as they cannot be represented as named globals.
+        if def_info.comptime && !matches!(binding.pattern, HirPattern::Identifier(_)) {
+            return None;
         }
+
+        let name = self.fully_qualified_global_name(id);
+        let typ = self.generate_lean_type_value(&binding.r#type, None);
+        let expr = self.generate_expr(binding.expression);
+
+        Some(GlobalDefinition { name, typ, expr })
     }
 
     pub fn generate_module_trait_impls(

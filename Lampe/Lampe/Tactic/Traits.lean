@@ -253,8 +253,18 @@ partial def doResolve (resolutionGoal : ResolutionGoal) (env : Lean.Expr): Tacti
 
 end
 
-elab "resolve_trait" : tactic => do
-  let mainGoal ← getMainGoal
+private def resolveTraitStandalone (mainGoal : MVarId) : TacticM Unit := do
+  try
+    mainGoal.assumption
+    replaceMainGoal []
+  catch _ =>
+    let traitGoal :: _ ← mainGoal.apply (mkConst ``resolvable_of_resolution [])
+      | throwError "resolve_trait bySearch: expected a TraitResolvable goal"
+    let goal ← ResolutionGoal.ofGoal traitGoal
+    let _ ← doResolve goal goal.env
+    replaceMainGoal []
+
+private def resolveTraitSTHoare (mainGoal : MVarId) : TacticM Unit := do
   let target ← mainGoal.instantiateMVarsInType
 
   let ng ← mainGoal.withContext $ do
@@ -293,3 +303,17 @@ elab "resolve_trait" : tactic => do
   trace[Lampe.Traits] "Main mvars: {←Lean.Meta.getMVars mgAss}"
 
   replaceMainGoal ng
+
+syntax (name := resolveTrait) "resolve_trait" (" bySearch")? : tactic
+
+/--
+Closes trait resolution goals. Without arguments, handles STHoare `callTrait` goals;
+with `bySearch`, handles standalone `TraitResolvable` goals.
+-/
+@[tactic resolveTrait] elab_rules : tactic
+  | `(tactic| resolve_trait) => do
+    let mainGoal ← getMainGoal
+    resolveTraitSTHoare mainGoal
+  | `(tactic| resolve_trait bySearch) => do
+    let mainGoal ← getMainGoal
+    resolveTraitStandalone mainGoal

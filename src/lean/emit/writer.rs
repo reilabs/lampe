@@ -538,9 +538,15 @@ impl Writer<'_> {
     /// Directly writes the contents of the cast type expression into the
     /// builder.
     pub fn write_cast_type_expression(&mut self, cast: &CastTypeExpr) {
-        // Cast expressions seem to be used solely with type level arithmetic
-        // expressions.
-        self.write_type_value(&cast.target, true);
+        // Cast expressions are used with type-level arithmetic expressions.
+        // We emit only the inner expression here; the kind annotation is
+        // provided by the outer write_type_value call (whose include_kind
+        // flag is driven by the Cast's kind, which is now propagated from
+        // the inner type in Type::cast).  Previously this called
+        // write_type_value(…, true), which produced a spurious nested kind
+        // annotation when the cast was used as an operand of an arith
+        // expression (e.g. `((N * 2 - 1): u32 - 1): u32`).
+        self.write_type_expression(&cast.target.expr);
     }
 
     /// Directly writes the contents of the builtin type expression into the
