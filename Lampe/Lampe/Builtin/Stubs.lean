@@ -2,6 +2,7 @@ import Lampe.SeparationLogic.ValHeap
 import Lampe.Data.Field
 import Lampe.Data.HList
 import Lampe.Builtin.Basic
+import Lampe.Builtin.Poseidon2
 import Mathlib.Tactic.Lemma
 
 namespace Lampe.Builtin
@@ -44,7 +45,20 @@ def fmtstrAsCtstring := stub
 def keccakf1600 := stub
 def mkFormatString := stub
 def multiScalarMul := stub
-def poseidon2Permutation := stub
+/-- Poseidon2 permutation function.
+For t=4, computes the concrete BN254 Poseidon2 permutation (8 full + 56 partial rounds).
+For other widths, returns the input unchanged. -/
+def poseidon2PermFn (p : Prime) (n : U 32) (state : List.Vector (Fp p) n.toNat)
+    : List.Vector (Fp p) n.toNat :=
+  if h : n.toNat = 4 then
+    h ▸ Poseidon2.permute (h ▸ state)
+  else
+    state
+attribute [irreducible] poseidon2PermFn
+
+def poseidon2Permutation := newGenericTotalPureBuiltin
+  (fun n : U 32 => ⟨[.array .field n, .u 32], .array .field n⟩)
+  (fun n h![state, _width] => poseidon2PermFn _ n state)
 def recursiveAggregation := stub
 def sha256Compression := stub
 def sliceRefcount := stub

@@ -216,7 +216,10 @@ partial def makeExpr [MonadDSL m]
   let emitBuiltin : m (TSyntax `term) := makeArgs argsList fun args => do
     let argVals ← makeHListLit args
     wrapInLet
-      (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
+      (←``(Expr.callBuiltin _
+        $(←makeNoirType tp)
+        $(←makeBuiltin name.getId.toString)
+        $argVals))
       binder
       k
   -- `#_ref(#_readRef(x))` should collapse to `x`: taking a reference to a dereference is identity.
