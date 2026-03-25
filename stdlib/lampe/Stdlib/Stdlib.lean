@@ -23,7 +23,7 @@ import Stdlib.Ops.Arith
 import Stdlib.Ops.Bit
 import Stdlib.Option
 import Stdlib.Panic
-import Stdlib.Slice
+import Stdlib.Vector
 import Stdlib.String
 import Stdlib.Tp
 import Stdlib.TraitMethods
