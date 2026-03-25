@@ -304,13 +304,13 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
   steps
 
   step_as v =>
-    ( [new_bytes ↦ ⟨(Tp.u 8).slice, List.Vector.toList v⟩ ] ⋆
+    ( [new_bytes ↦ ⟨(Tp.u 8).vector, List.Vector.toList v⟩ ] ⋆
     [ new_right ↦ ⟨(Tp.u 8).array 16, List.Vector.map Ref.sbox (List.Vector.drop 16 bytes)⟩ ] ⋆
       [ new_left ↦ ⟨(Tp.u 8).array 16, List.Vector.map Ref.sbox (List.Vector.take 16 bytes)⟩ ])
-    (fun _ => [new_bytes ↦ ⟨(Tp.u 8).slice, v.toList ++ (List.Vector.map Ref.sbox (List.Vector.take 16 bytes)).toList⟩])
+    (fun _ => [new_bytes ↦ ⟨(Tp.u 8).vector, v.toList ++ (List.Vector.map Ref.sbox (List.Vector.take 16 bytes)).toList⟩])
   steps
 
-  · loop_inv fun i _ _ => [new_bytes ↦ ⟨(Tp.u 8).slice,  (List.Vector.map Ref.sbox (List.Vector.drop 16 bytes)).toList ++ ζi0.toList.take i.toNat⟩]
+  · loop_inv fun i _ _ => [new_bytes ↦ ⟨(Tp.u 8).vector,  (List.Vector.map Ref.sbox (List.Vector.drop 16 bytes)).toList ++ ζi0.toList.take i.toNat⟩]
     · subst_vars; simp
     · simp [*]
     · intro i _ hlt

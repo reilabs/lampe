@@ -6,7 +6,7 @@ import «noir_sort-0.0.0».Extracted.Quicksort
 import «noir_sort-0.0.0».Extracted.Quicksort.Quicksort
 import «noir_sort-0.0.0».Extracted.Quicksort.QuicksortExplicit
 import «check_shuffle-0.0.0».Extracted
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 
 namespace «noir_sort-0.0.0»
 
@@ -15,4 +15,4 @@ def env := Lib.env
   ++ Quicksort.QuicksortExplicit.env
   ++ Quicksort.env
   ++ «check_shuffle-0.0.0».env
-  ++ «std-1.0.0-beta.12».env
+  ++ «std-1.0.0-beta.14».env

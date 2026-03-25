@@ -14,7 +14,7 @@ import «LocalDep-2.0.0».Extracted
 import «LocalDepWithLampe-0.0.0».Extracted
 import «LocalDepWithLampe-1.0.0».Extracted
 import «LocalDepWithLampe-2.0.0».Extracted
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 
 namespace «TestDep-0.0.0»
 
@@ -31,4 +31,4 @@ def env := Main.env
   ++ «LocalDepWithLampe-0.0.0».env
   ++ «LocalDepWithLampe-1.0.0».env
   ++ «LocalDepWithLampe-2.0.0».env
-  ++ «std-1.0.0-beta.12».env
+  ++ «std-1.0.0-beta.14».env

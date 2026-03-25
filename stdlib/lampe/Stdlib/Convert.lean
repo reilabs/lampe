@@ -1,9 +1,9 @@
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Convert
 
-open «std-1.0.0-beta.12»
+open «std-1.0.0-beta.14»
 
 set_option Lampe.pp.Expr true
 set_option Lampe.pp.STHoare true
@@ -11,62 +11,62 @@ set_option Lampe.pp.STHoare true
 /-- A shorthand for a call to the `std::convert::From::from` method. -/
 @[reducible]
 def «from» {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.12::convert::From».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.14::convert::From».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::convert::From».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::convert::From».«from».«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::convert::From».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::convert::From».«from».«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.12::convert::From».«from».«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.14::convert::From».«from».«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.12::convert::From».«from».«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.12::convert::From».«from» generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.14::convert::From».«from».«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.14::convert::From».«from» generics Self associatedTypes fnGenerics
 
 /--
 Asserts that the provided `tp` has an implementation of `std::convert::From` in the environment.
 -/
 @[reducible]
 def hasFromImpl (env : Env) (source : Tp) (self : Tp) :=
-  «std-1.0.0-beta.12::convert::From».hasImpl env h![source] self
+  «std-1.0.0-beta.14::convert::From».hasImpl env h![source] self
 
 /-- A shorthand for a call to the `std::convert::Into::into` method. -/
 @[reducible]
 def into {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.12::convert::Into».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.14::convert::Into».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::convert::Into».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::convert::Into».into.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::convert::Into».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::convert::Into».into.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.12::convert::Into».into.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.14::convert::Into».into.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.12::convert::Into».into.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.12::convert::Into».into generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.14::convert::Into».into.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.14::convert::Into».into generics Self associatedTypes fnGenerics
 
 /--
 Asserts that the provided `tp` has an implementation of `std::convert::Into` in the environment.
 -/
 @[reducible]
 def hasIntoImpl (env : Env) (target : Tp) (self : Tp) :=
-  «std-1.0.0-beta.12::convert::Into».hasImpl env h![target] self
+  «std-1.0.0-beta.14::convert::Into».hasImpl env h![target] self
 
 /-- A shorthand for a call to the `std::convert::AsPrimitive::as_` method. -/
 @[reducible]
 def as_ {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.12::convert::AsPrimitive».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.14::convert::AsPrimitive».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.12::convert::AsPrimitive».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.12::convert::AsPrimitive».as_.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::convert::AsPrimitive».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::convert::AsPrimitive».as_.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.12::convert::AsPrimitive».as_.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.14::convert::AsPrimitive».as_.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.12::convert::AsPrimitive».as_.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.12::convert::AsPrimitive».as_ generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.14::convert::AsPrimitive».as_.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.14::convert::AsPrimitive».as_ generics Self associatedTypes fnGenerics
 
 /--
 Asserts that the provided `tp` has an implementation of `std::convert::Into` in the environment.
 -/
 @[reducible]
 def hasAsPrimitiveImpl (env : Env) (target : Tp) (self : Tp) :=
-  «std-1.0.0-beta.12::convert::AsPrimitive».hasImpl env h![target] self
+  «std-1.0.0-beta.14::convert::AsPrimitive».hasImpl env h![target] self
 
 theorem from_T_for_T_spec {p T i}
   : STHoare p env ⟦⟧

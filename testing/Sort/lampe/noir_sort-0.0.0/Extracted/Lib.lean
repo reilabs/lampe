@@ -11,11 +11,11 @@ noir_def «noir_sort-0.0.0»::sort<T: Type, N: u32>(input: Array<T, N: u32>) -> 
   };
   for i in (0: u32) .. (#_uSub returning u32)(uConst!(N: u32), (1: u32)) do {
     (#_assert returning Unit)({
-      let __0 = ((T as «std-1.0.0-beta.12»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.12»::cmp::Ordering<>)((#_arrayIndex returning T)(sorted, (#_cast returning u32)(i)), (#_arrayIndex returning T)(sorted, (#_cast returning u32)((#_uAdd returning u32)(i, (1: u32)))));
-      let __1 = («std-1.0.0-beta.12»::cmp::Ordering::less<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)();
-      let __3 = («std-1.0.0-beta.12»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.12»::cmp::Ordering<>)();
-      let __7 = ((«std-1.0.0-beta.12»::cmp::Ordering<> as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.12»::cmp::Ordering<>, «std-1.0.0-beta.12»::cmp::Ordering<>) -> bool)(__0, __1);
-      let __15 = ((«std-1.0.0-beta.12»::cmp::Ordering<> as «std-1.0.0-beta.12»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.12»::cmp::Ordering<>, «std-1.0.0-beta.12»::cmp::Ordering<>) -> bool)(__0, __3);
+      let __0 = ((T as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_arrayIndex returning T)(sorted, (#_cast returning u32)(i)), (#_arrayIndex returning T)(sorted, (#_cast returning u32)((#_uAdd returning u32)(i, (1: u32)))));
+      let __1 = («std-1.0.0-beta.14»::cmp::Ordering::less<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)();
+      let __3 = («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)();
+      let __7 = ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(__0, __1);
+      let __15 = ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(__0, __3);
       (#_bOr returning bool)(__7, __15)
     });
     #_skip
@@ -72,7 +72,7 @@ noir_def «noir_sort-0.0.0»::test::unconditional_lt<>(_a: u32, _b: u32) -> Unit
   let a = (#_cast returning Field)(_a);
   let b = (#_cast returning Field)(_b);
   let diff = (#_fSub returning Field)(b, a);
-  («std-1.0.0-beta.12»::field::assert_max_bit_size<32: u32> as λ(Field) -> Unit)(diff);
+  («std-1.0.0-beta.14»::field::assert_max_bit_size<32: u32> as λ(Field) -> Unit)(diff);
   #_skip
 }
 

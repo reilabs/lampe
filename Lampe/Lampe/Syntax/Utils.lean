@@ -286,13 +286,13 @@ partial def makeNoirType [MonadUtil m] : TSyntax `noir_type → m (TSyntax `term
         throwError "Array size {genericsList[1]!} not a const generic"
 
       ``(Lampe.Tp.array $(elemGeneric.value) $(sizeGeneric.value))
-  | "Slice" => do
+  | "Vector" => do
     if gensLen != 1 then
-      throwError "Slice had wrong number of generic args {gensLen}"
+      throwError "Vector had wrong number of generic args {gensLen}"
 
     let elemGeneric ← makeGenericVal genericsList[0]!
 
-    ``(Lampe.Tp.slice $(elemGeneric.value))
+    ``(Lampe.Tp.vector $(elemGeneric.value))
   | "Tuple" => do
     let generics := (←makeGenericVals genericsList).map fun g => g.value
     ``(Lampe.Tp.tuple none $(←makeListLit generics))

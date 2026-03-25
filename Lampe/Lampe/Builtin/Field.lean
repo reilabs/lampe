@@ -32,7 +32,7 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit r
 In Noir, this builtin corresponds to `fn modulus_le_bits() -> [u1]` implemented for `Field`.
 -/
 def fModLeBits := newTotalPureBuiltin
-  ⟨[.field], (.slice (.u 1))⟩
+  ⟨[.field], (.vector (.u 1))⟩
   (@fun p h![_] => (RadixVec.toDigitsLE' 2 p.natVal).map BitVec.ofFin)
 
 /--
@@ -41,7 +41,7 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit r
 In Noir, this builtin corresponds to `fn modulus_be_bits() -> [u1]` implemented for `Field`.
 -/
 def fModBeBits := newTotalPureBuiltin
-  ⟨[.field], (.slice (.u 1))⟩
+  ⟨[.field], (.vector (.u 1))⟩
   (@fun p h![_] => (RadixVec.toDigitsBE' 2 p.natVal).map BitVec.ofFin)
 
 /--
@@ -50,7 +50,7 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the byte 
 In Noir, this builtin corresponds to `fn modulus_le_bytes() -> [u8]` implemented for `Field`.
 -/
 def fModLeBytes := newTotalPureBuiltin
-  ⟨[.field], (.slice (.u 8))⟩
+  ⟨[.field], (.vector (.u 8))⟩
   (@fun p h![_] => (RadixVec.toDigitsLE' R256 p.natVal).map BitVec.ofFin)
 
 /--
@@ -59,7 +59,7 @@ For a prime `p`, a field element `a : Fp p`, this builtin evaluates to the bit r
 In Noir, this builtin corresponds to `fn modulus_be_bytes() -> [u8]` implemented for `Field`.
 -/
 def fModBeBytes := newTotalPureBuiltin
-  ⟨[.field], (.slice (.u 8))⟩
+  ⟨[.field], (.vector (.u 8))⟩
   (@fun p h![_] => (RadixVec.toDigitsBE' R256 p.natVal).map BitVec.ofFin)
 
 /--
@@ -133,7 +133,7 @@ Represents the builtin that returns the bit representation of the modulus of a f
 little-endian format.
 -/
 def modulusLeBits : Builtin := newTotalPureBuiltin
-  ⟨[], (.slice (.u 1))⟩
+  ⟨[], (.vector (.u 1))⟩
   (fun {p} h![] => (RadixVec.toDigitsLE' 2 p.natVal).map BitVec.ofFin)
 
 /--
@@ -141,7 +141,7 @@ Represents the builtin that returns the bit representation of the modulus of a f
 big-endian format.
 -/
 def modulusBeBits : Builtin := newTotalPureBuiltin
-  ⟨[], (.slice (.u 1))⟩
+  ⟨[], (.vector (.u 1))⟩
   (fun {p} h![] => (RadixVec.toDigitsBE' 2 p.natVal).map BitVec.ofFin)
 
 /--
@@ -149,7 +149,7 @@ Represents the builtin that returns the byte representation of the modulus of a 
 little-endian format.
 -/
 def modulusLeBytes : Builtin := newTotalPureBuiltin
-  ⟨[], (.slice (.u 8))⟩
+  ⟨[], (.vector (.u 8))⟩
   (fun {p} h![] => (RadixVec.toDigitsLE' R256 p.natVal).map BitVec.ofFin)
 
 /--
@@ -157,7 +157,7 @@ Represents the builtin that returns the byte representation of the modulus of a 
 big-endian format.
 -/
 def modulusBeBytes : Builtin := newTotalPureBuiltin
-  ⟨[], (.slice (.u 8))⟩
+  ⟨[], (.vector (.u 8))⟩
   (fun {p} h![] => (RadixVec.toDigitsBE' R256 p.natVal).map BitVec.ofFin)
 
 /--

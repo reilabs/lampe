@@ -221,9 +221,9 @@ impl Writer<'_> {
                 self.write_type_value(typ, false);
                 self.append_to_line(")");
             }
-            LValue::SliceIndex { slice, index, typ } => {
+            LValue::VectorIndex { vector, index, typ } => {
                 self.append_to_line("(");
-                self.write_lvalue(slice);
+                self.write_lvalue(vector);
                 self.append_to_line("[[");
                 self.write_expression(index);
                 self.append_to_line("]]");
@@ -591,8 +591,8 @@ impl Writer<'_> {
                 assert_eq!(builtin.generics.len(), 1, "Reference had too many generics");
                 self.write_type_value(&builtin.generics[0], false);
             }
-            BuiltinTag::Slice => {
-                self.append_to_line("Slice");
+            BuiltinTag::Vector => {
+                self.append_to_line("Vector");
                 self.append_to_line("<");
                 self.write_sep_by(
                     builtin.generics.as_slice(),

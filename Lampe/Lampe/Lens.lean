@@ -1,29 +1,29 @@
 import Lampe.Ast
 import Lampe.Builtin.Struct
 import Lampe.Builtin.Array
-import Lampe.Builtin.Slice
+import Lampe.Builtin.Vector
 
 namespace Lampe
 
 /--
-Instructs how to access a inner value from another value, e.g., a particular value of a slice.
+Instructs how to access a inner value from another value, e.g., a particular value of a vector.
 -/
 inductive Access (rep : Tp → Type _) : Tp → Tp → Type _
 | tuple : (mem : Builtin.Member tp tps) → Access rep (.tuple name tps) tp
 | array : (idx : rep $ .u 32) → Access rep (.array tp n) tp
-| slice : (idx : rep $ .u 32) → Access rep (.slice tp) tp
+| vector : (idx : rep $ .u 32) → Access rep (.vector tp) tp
 
 @[simp]
 def Access.get (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) : Option $ Tp.denote p tp₂ := match acc with
 | .tuple mem => Builtin.indexTpl s mem
 | .array (n := n) idx => if h : idx.toNat < n.toNat then s.get ⟨idx.toNat, h⟩ else none
-| .slice idx => if h : idx.toNat < s.length then s.get ⟨idx.toNat, h⟩ else none
+| .vector idx => if h : idx.toNat < s.length then s.get ⟨idx.toNat, h⟩ else none
 
 @[simp]
 def Access.modify (acc : Access (Tp.denote p) tp₁ tp₂) (s : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Option $ Tp.denote p tp₁ := match acc with
 | .tuple mem => Builtin.replaceTuple' s mem v'
 | .array (n := n) idx => if h : idx.toNat < n.toNat then s.set ⟨idx.toNat, h⟩ v' else none
-| .slice idx => if h : idx.toNat < s.length then Builtin.replaceSlice' s ⟨idx.toNat, h⟩ v' else none
+| .vector idx => if h : idx.toNat < s.length then Builtin.replaceVector' s ⟨idx.toNat, h⟩ v' else none
 
 @[simp]
 theorem Access.modify_get {acc : Access (Tp.denote p) tp₁ tp₂} {h : acc.modify s v' = some s'} :
@@ -34,13 +34,13 @@ theorem Access.modify_get {acc : Access (Tp.denote p) tp₁ tp₂} {h : acc.modi
   case array =>
     rename_i n idx
     cases em (idx.toNat < n.toNat) <;> aesop
-  case slice =>
+  case vector =>
     rename_i idx
     cases em (idx.toNat < s.length)
     . simp_all only [reduceDIte, Option.some.injEq, List.get_eq_getElem, Option.dite_none_right_eq_some]
       subst h
       simp_all only [List.length_modify, exists_true_left]
-      apply Builtin.index_replaced_slice
+      apply Builtin.index_replaced_vector
     . aesop
 
 /--

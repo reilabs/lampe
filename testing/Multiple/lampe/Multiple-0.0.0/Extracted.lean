@@ -7,7 +7,7 @@ import «Multiple-0.0.0».Extracted.Baz.Mod
 import «Multiple-0.0.0».Extracted.Foo
 import «Multiple-0.0.0».Extracted.GeneratedTypes
 import «Multiple-0.0.0».Extracted.Main
-import «std-1.0.0-beta.12».Extracted
+import «std-1.0.0-beta.14».Extracted
 
 namespace «Multiple-0.0.0»
 
@@ -17,4 +17,4 @@ def env := Bar.Mod.env
   ++ Baz.Mod.env
   ++ Foo.env
   ++ Main.env
-  ++ «std-1.0.0-beta.12».env
+  ++ «std-1.0.0-beta.14».env

@@ -27,7 +27,7 @@ private lemma u32_check_shuffle_spec {p} {N : U 32}
   apply check_shuffle_spec
   · resolve_trait bySearch
   · intro a b
-    apply STHoare.is_mono (show «std-1.0.0-beta.12».env ⊆ «check_shuffle-0.0.0».env from by
+    apply STHoare.is_mono (show «std-1.0.0-beta.14».env ⊆ «check_shuffle-0.0.0».env from by
       solve_env_subset)
     exact Eq.u32_eq_spec
 

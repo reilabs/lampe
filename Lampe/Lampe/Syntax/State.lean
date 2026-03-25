@@ -152,7 +152,7 @@ partial def getLValueRef [MonadUtil m] (lVal : TSyntax `noir_lval) : m LValueRef
 | `(noir_lval|(*$e:noir_expr : $_)) => do pure $ .expr e
 | `(noir_lval|($dataExpr . $_ : $_)) => getLValueRef dataExpr
 | `(noir_lval|($arrayExpr [ $_ ] : $_)) => getLValueRef arrayExpr
-| `(noir_lval|($sliceExpr [[ $_ ]] : $_)) => getLValueRef sliceExpr
+| `(noir_lval|($vectorExpr [[ $_ ]] : $_)) => getLValueRef vectorExpr
 | `(noir_lval|$id:ident) => pure $ .ident id
 | l => throwError "Encountered invalid lvalue reference {l}"
 
