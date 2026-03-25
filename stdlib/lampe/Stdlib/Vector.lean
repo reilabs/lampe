@@ -3,7 +3,7 @@ import Lampe
 import Stdlib.List
 import Stdlib.TraitMethods
 
-namespace Lampe.Stdlib.Slice
+namespace Lampe.Stdlib.Vector
 open «std-1.0.0-beta.14»
 
 set_option maxRecDepth 2000
