@@ -1,7 +1,7 @@
 import «std-1.0.0-beta.14».Extracted
 import Lampe
 
-import Stdlib.Slice
+import Stdlib.Vector
 import Stdlib.TraitMethods
 
 namespace Lampe.Stdlib.Append
@@ -25,6 +25,6 @@ theorem slice_append_spec {p T self other}
     (append h![] (Tp.vector T) h![] h![] h![self, other])
     (fun r => r = self ++ other) := by
   resolve_trait
-  steps [Slice.append_spec]
+  steps [Vector.append_spec]
   simp_all
 
