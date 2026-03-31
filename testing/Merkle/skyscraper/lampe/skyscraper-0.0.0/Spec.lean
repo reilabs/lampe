@@ -111,7 +111,7 @@ end components
 section bar
 
 set_option maxHeartbeats 800000 in
-open Lampe.Stdlib.Field Lampe.Stdlib.Slice in
+open Lampe.Stdlib.Field Lampe.Stdlib.Vector in
 theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h![] h![input])
     fun output => output = Ref.bar input := by
   enter_decl
@@ -254,7 +254,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
       simp_all [List.Vector.toList_length, hlt', ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true, List.Vector.get_eq_get_toList]
     · subst_vars
       steps
-  steps [Lampe.Stdlib.Slice.as_array_spec, Lampe.Stdlib.Field.from_le_bytes_intro]
+  steps [Lampe.Stdlib.Vector.as_array_spec, Lampe.Stdlib.Field.from_le_bytes_intro]
 
   all_goals subst_vars
   show Fp.ofBytesLE (List.Vector.toList new_bytes_array) = Ref.bar input

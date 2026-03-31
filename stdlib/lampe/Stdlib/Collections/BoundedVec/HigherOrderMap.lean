@@ -312,7 +312,7 @@ threading an invariant `inv` over:
 The key postcondition is `inv (embed self) (embed out)`.
 
 Note: `inv` must describe only external state effects; it is framed disjointly from the internal
-`ret` heaplet used to build the output vector (same assumption as `Stdlib.Slice.map_spec`).
+`ret` heaplet used to build the output vector (same assumption as `Stdlib.Vector.map_spec`).
 -/
 theorem map_effectful_spec {p T MaxLen Out Env self f fb}
     (hwf_self : wellFormed self)
