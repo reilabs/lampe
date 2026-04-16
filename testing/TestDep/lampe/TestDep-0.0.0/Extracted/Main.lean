@@ -6,7 +6,7 @@ import Lampe
 open Lampe
 
 noir_def «TestDep-0.0.0»::make_point<>(x: Field, y: Field) -> «LocalDep-0.0.0»::Point<> := {
-  (#_makeData returning «TestDep-0.0.0»::local_dependency::Point<>)(x, y)
+  (#_makeData returning «LocalDep-0.0.0»::Point<>)(x, y)
 }
 
 noir_def «TestDep-0.0.0»::main<>(x: Field, y: Field) -> Unit := {
