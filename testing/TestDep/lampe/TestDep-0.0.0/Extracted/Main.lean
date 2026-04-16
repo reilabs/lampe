@@ -5,6 +5,10 @@ import Lampe
 
 open Lampe
 
+noir_def «TestDep-0.0.0»::make_point<>(x: Field, y: Field) -> «LocalDep-0.0.0»::Point<> := {
+  (#_makeData returning «TestDep-0.0.0»::local_dependency::Point<>)(x, y)
+}
+
 noir_def «TestDep-0.0.0»::main<>(x: Field, y: Field) -> Unit := {
   (#_assert returning Unit)((#_fNeq returning bool)(x, y));
   #_skip
@@ -16,5 +20,5 @@ noir_def «TestDep-0.0.0»::test_main<>() -> Unit := {
 }
 
 def «TestDep-0.0.0».Main.env : Env := Env.mk
-  [«TestDep-0.0.0::main», «TestDep-0.0.0::test_main»]
+  [«TestDep-0.0.0::make_point», «TestDep-0.0.0::main», «TestDep-0.0.0::test_main»]
   []

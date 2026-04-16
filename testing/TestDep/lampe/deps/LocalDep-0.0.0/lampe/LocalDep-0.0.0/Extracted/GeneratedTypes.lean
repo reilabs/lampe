@@ -5,3 +5,8 @@ import Lampe
 
 open Lampe
 
+noir_struct_def «LocalDep-0.0.0»::Point<> {
+  Field,
+  Field,
+}
+

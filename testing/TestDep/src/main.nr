@@ -1,3 +1,9 @@
+use local_dependency::Point;
+
+fn make_point(x: Field, y: Field) -> Point {
+    Point { x, y }
+}
+
 fn main(x: Field, y: pub Field) {
     assert(x != y);
 }
