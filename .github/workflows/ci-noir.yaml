@@ -13,7 +13,7 @@ jobs:
     uses: ./.github/workflows/build-ci-image.yaml
     with:
       allow_push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-  
+
   run-tests:
     name: Test Noir
     needs: build-ci-image
@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: noir-lang/noir
-          ref: 74d6be658e1ad252f87943292ba09bdd4da80bd4
+          ref: b4236c1957d0c26cb65d82adc9e5447b6ff1d629
           path: noir
       - name: Ensure Test Programs Up To Date
         working-directory: noir/test_programs

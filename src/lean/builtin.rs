@@ -1,8 +1,7 @@
 use noirc_frontend::{
-    ast::{BinaryOpKind, IntegerBitSize, UnaryOp},
+    ast::{BinaryOpKind, UnaryOp},
     shared::Signedness,
-    Type as NoirType,
-    TypeBinding,
+    Type as NoirType, TypeBinding,
 };
 
 use crate::lean::ast::{BuiltinCallRef, Call, DeclCallRef, Expression, Type};
@@ -44,8 +43,8 @@ pub fn make_ordering_const(crate_name: &str, ordering_name: &str) -> Expression 
 
     Expression::Call(Call {
         function: Box::new(Expression::DeclCallRef(DeclCallRef {
-            function:    format!("{crate_name}::{ordering_name}"),
-            generics:    vec![],
+            function: format!("{crate_name}::{ordering_name}"),
+            generics: vec![],
             param_types: vec![],
             return_type: return_type.clone(),
         })),
@@ -59,11 +58,11 @@ pub fn make_ordering_const(crate_name: &str, ordering_name: &str) -> Expression 
 #[must_use]
 pub fn make_beq(left: Expression, right: Expression) -> Expression {
     Expression::Call(Call {
-        function:    Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
-            name:        BEQ_NAME.to_string(),
+        function: Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
+            name: BEQ_NAME.to_string(),
             return_type: Type::bool(),
         })),
-        params:      vec![left, right],
+        params: vec![left, right],
         return_type: Type::bool(),
     })
 }
@@ -73,11 +72,11 @@ pub fn make_beq(left: Expression, right: Expression) -> Expression {
 #[must_use]
 pub fn make_bor(left: Expression, right: Expression) -> Expression {
     Expression::Call(Call {
-        function:    Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
-            name:        BOR_NAME.to_string(),
+        function: Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
+            name: BOR_NAME.to_string(),
             return_type: Type::bool(),
         })),
-        params:      vec![left, right],
+        params: vec![left, right],
         return_type: Type::bool(),
     })
 }
@@ -95,17 +94,6 @@ pub enum BuiltinType {
     String,
 }
 
-const fn integer_bit_size_to_u8(s: IntegerBitSize) -> u8 {
-    match s {
-        IntegerBitSize::One => 1,
-        IntegerBitSize::Eight => 8,
-        IntegerBitSize::Sixteen => 16,
-        IntegerBitSize::ThirtyTwo => 32,
-        IntegerBitSize::SixtyFour => 64,
-        IntegerBitSize::HundredTwentyEight => 128,
-    }
-}
-
 impl TryInto<BuiltinType> for NoirType {
     type Error = String;
 
@@ -114,12 +102,8 @@ impl TryInto<BuiltinType> for NoirType {
             NoirType::FieldElement => Ok(BuiltinType::Field),
             NoirType::Bool => Ok(BuiltinType::Bool),
             NoirType::Unit => Ok(BuiltinType::Unit),
-            NoirType::Integer(Signedness::Signed, s) => {
-                Ok(BuiltinType::Int(integer_bit_size_to_u8(s)))
-            }
-            NoirType::Integer(Signedness::Unsigned, s) => {
-                Ok(BuiltinType::Uint(integer_bit_size_to_u8(s)))
-            }
+            NoirType::Integer(Signedness::Signed, s) => Ok(BuiltinType::Int(s.bit_size())),
+            NoirType::Integer(Signedness::Unsigned, s) => Ok(BuiltinType::Uint(s.bit_size())),
             NoirType::Array(..) => Ok(BuiltinType::Array),
             NoirType::Vector(_) => Ok(BuiltinType::Vector),
             NoirType::String(_) => Ok(BuiltinType::String),

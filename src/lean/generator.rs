@@ -15,147 +15,62 @@ use itertools::Itertools;
 use nargo::workspace::Workspace;
 use noirc_errors::Location;
 use noirc_frontend::{
-    ast::{BinaryOpKind, FunctionKind, Ident, IntegerBitSize},
+    ast::{BinaryOpKind, FunctionKind, Ident},
     graph::CrateId,
     hir::{
+        comptime::Integer as NoirInteger,
         def_map::{LocalModuleId, ModuleData, ModuleDefId},
         type_check::generics::TraitGenerics,
         Context,
     },
     hir_def::{
         expr::{
-            HirArrayLiteral,
-            HirBlockExpression,
-            HirCallExpression,
-            HirCastExpression,
-            HirConstrainExpression,
-            HirConstructorExpression,
-            HirExpression,
-            HirIdent,
-            HirIfExpression,
-            HirIndexExpression,
-            HirInfixExpression,
-            HirLambda,
-            HirLiteral,
-            HirMemberAccess,
-            HirPrefixExpression,
+            HirArrayLiteral, HirBlockExpression, HirCallExpression, HirCastExpression,
+            HirConstrainExpression, HirConstructorExpression, HirExpression, HirIdent,
+            HirIfExpression, HirIndexExpression, HirInfixExpression, HirLambda, HirLiteral,
+            HirMemberAccess, HirPrefixExpression,
         },
         function::{FuncMeta, Param},
         stmt::{
-            HirAssignStatement,
-            HirForStatement,
-            HirLValue,
-            HirLetStatement,
-            HirPattern,
+            HirAssignStatement, HirForStatement, HirLValue, HirLetStatement, HirPattern,
             HirStatement,
         },
         traits::{NamedType, TraitConstraint, TraitImpl},
     },
     node_interner::{
-        DefinitionKind,
-        DependencyId,
-        ExprId,
-        FuncId,
-        GlobalId,
-        StmtId,
-        TraitId,
-        TraitImplId,
-        TypeAliasId,
-        TypeId,
+        DefinitionKind, DependencyId, ExprId, FuncId, GlobalId, StmtId, TraitId, TraitImplId,
+        TypeAliasId, TypeId,
     },
     shared::Signedness,
     token::{FunctionAttributeKind, SecondaryAttributeKind},
-    BinaryTypeOperator,
-    DataType,
-    Kind as NoirKind,
-    NamedGeneric,
-    QuotedType,
-    ResolvedGeneric,
-    Shared,
-    StructField,
-    Type as NoirType,
-    TypeBinding,
-    TypeBindings,
-    TypeVariable,
-    TypeVariableId,
+    BinaryTypeOperator, DataType, Kind as NoirKind, NamedGeneric, QuotedType, ResolvedGeneric,
+    Shared, StructField, Type as NoirType, TypeBinding, TypeBindings, TypeVariable, TypeVariableId,
 };
 use petgraph::data::DataMap;
 
 use crate::{
     constants::{
-        LAMPE_STRUCT_METHOD_SEPARATOR,
-        NOIR_PATH_SEPARATOR,
-        NONE_DEPENDENCY_VERSION,
-        STDLIB_TOML,
+        LAMPE_STRUCT_METHOD_SEPARATOR, NOIR_PATH_SEPARATOR, NONE_DEPENDENCY_VERSION, STDLIB_TOML,
     },
     file_generator::to_import_from_noir_path,
     lean::{
         ast::{
-            AssignStatement,
-            Block,
-            BuiltinCallRef,
-            BuiltinTag,
-            BuiltinTypeExpr,
-            Call,
-            Cast,
-            ConstGenericLiteral,
-            Crate,
-            DeclCallRef,
-            Deprecation,
-            Expression,
-            ForStatement,
-            FunctionDefinition,
-            GlobalCallRef,
-            GlobalDefinition,
-            IdentCallRef,
-            Identifier,
-            IfThenElse,
-            Kind,
-            LValue,
-            Lambda,
-            LetStatement,
-            Literal,
-            MemberAccess,
-            Module,
-            ModuleDefinition,
-            NumericLiteral,
-            ParamDef,
-            Pattern,
-            Statement,
-            StructDefinition,
-            StructPattern,
-            TraitCallRef,
-            TraitDefinition,
-            TraitImplementation,
-            TraitMethodDeclaration,
-            Type,
-            TypeAlias,
-            TypeArithOp,
-            TypeDefinition,
-            TypeExpr,
-            TypePattern,
-            WhereClause,
+            AssignStatement, Block, BuiltinCallRef, BuiltinTag, BuiltinTypeExpr, Call, Cast,
+            ConstGenericLiteral, Crate, DeclCallRef, Deprecation, Expression, ForStatement,
+            FunctionDefinition, GlobalCallRef, GlobalDefinition, IdentCallRef, Identifier,
+            IfThenElse, Kind, LValue, Lambda, LetStatement, Literal, MemberAccess, Module,
+            ModuleDefinition, NumericLiteral, ParamDef, Pattern, Statement, StructDefinition,
+            StructPattern, TraitCallRef, TraitDefinition, TraitImplementation,
+            TraitMethodDeclaration, Type, TypeAlias, TypeArithOp, TypeDefinition, TypeExpr,
+            TypePattern, WhereClause,
         },
         builtin::{
-            self,
-            make_bor,
-            make_ordering_const,
-            make_ordering_type,
-            BuiltinType,
-            ASSERT_BUILTIN_NAME,
-            MAKE_ARRAY_BUILTIN_NAME,
-            MAKE_EQUAL_NAME,
-            MAKE_GREATER_NAME,
-            MAKE_LESS_NAME,
-            MAKE_REPEATED_ARRAY_BUILTIN_NAME,
-            MAKE_REPEATED_SLICE_BUILTIN_NAME,
-            MAKE_SLICE_BUILTIN_NAME,
-            MAKE_STRUCT_BUILTIN_NAME,
-            UNIT_TYPE_NAME,
+            self, make_bor, make_ordering_const, make_ordering_type, BuiltinType,
+            ASSERT_BUILTIN_NAME, MAKE_ARRAY_BUILTIN_NAME, MAKE_EQUAL_NAME, MAKE_GREATER_NAME,
+            MAKE_LESS_NAME, MAKE_REPEATED_ARRAY_BUILTIN_NAME, MAKE_REPEATED_SLICE_BUILTIN_NAME,
+            MAKE_SLICE_BUILTIN_NAME, MAKE_STRUCT_BUILTIN_NAME, UNIT_TYPE_NAME,
         },
-        conflicts_with_lean_keyword,
-        LEAN_QUOTE_END,
-        LEAN_QUOTE_START,
+        conflicts_with_lean_keyword, LEAN_QUOTE_END, LEAN_QUOTE_START,
     },
 };
 
@@ -261,7 +176,7 @@ impl LeanGenerator<'_, '_, '_> {
             if let Some(dep_id) = g.node_weight(node_idx) {
                 matches!(
                     *dep_id,
-                    DependencyId::Struct(_) | DependencyId::Alias(_) | DependencyId::Trait(_)
+                    DependencyId::DataType(_) | DependencyId::Alias(_) | DependencyId::Trait(_)
                 )
             } else {
                 false
@@ -306,7 +221,7 @@ impl LeanGenerator<'_, '_, '_> {
                         let def_order = dep_weights
                             .clone()
                             .into_iter()
-                            .position(|item| *item == DependencyId::Struct(id));
+                            .position(|item| *item == DependencyId::DataType(id));
                         self.name_supply.reset();
                         let struct_def = self.generate_struct_def(id);
                         let name = quote_lean_keywords(&struct_def.name);
@@ -376,7 +291,7 @@ impl LeanGenerator<'_, '_, '_> {
             .collect_vec()
     }
 
-    /// Generates the definition of a `struct` that is describeed by the
+    /// Generates the definition of a `struct` that is described by the
     /// provided `id`.
     pub fn generate_struct_def(&self, id: TypeId) -> StructDefinition {
         let deprecation = Deprecation::from_noir(
@@ -385,7 +300,7 @@ impl LeanGenerator<'_, '_, '_> {
                 .type_attributes(&id)
                 .iter()
                 .find_map(|attr| match &attr.kind {
-                    SecondaryAttributeKind::Deprecated(msg) => Some(msg.clone()),
+                    SecondaryAttributeKind::Deprecated(_, msg) => Some(msg.clone()),
                     _ => None,
                 }),
         );
@@ -547,9 +462,13 @@ impl LeanGenerator<'_, '_, '_> {
                     Type::immutable_reference(typ)
                 }
             }
-            NoirType::Constant(felt, kind) => {
-                let felt_value = felt.to_string();
-                let kind = self.expect_constant_numeric_kind(kind);
+            NoirType::Constant(value) => {
+                let felt_value = match value {
+                    // `Integer::to_string` displays Field as hex.
+                    NoirInteger::Field(field) => field.to_string(),
+                    i => i.to_string(),
+                };
+                let kind = self.expect_constant_numeric_kind(&value.numeric_kind());
 
                 Type::numeric_const(&felt_value, kind)
             }
@@ -831,9 +750,9 @@ impl LeanGenerator<'_, '_, '_> {
             NoirKind::Any,
         );
         let dummy_generic = NoirType::NamedGeneric(NamedGeneric {
-            type_var:             dummy_tv.clone(),
-            name:                 Rc::new("LOOKUP_DUMMY".to_string()),
-            implicit:             false,
+            type_var: dummy_tv.clone(),
+            name: Rc::new("LOOKUP_DUMMY".to_string()),
+            implicit: false,
             original_type_var_id: None,
         });
 
@@ -856,7 +775,6 @@ impl LeanGenerator<'_, '_, '_> {
                 Box::new(NoirType::Unit),
                 false,
             ),
-            NoirType::Integer(Signedness::Unsigned, IntegerBitSize::One),
             NoirType::Vector(Box::new(dummy_generic.clone())),
             NoirType::String(Box::new(dummy_generic.clone())),
             NoirType::Tuple(vec![dummy_generic; 0]),
@@ -910,9 +828,9 @@ impl LeanGenerator<'_, '_, '_> {
                         .iter()
                         .map(|g| {
                             NoirType::NamedGeneric(NamedGeneric {
-                                type_var:             g.type_var.clone(),
-                                name:                 g.name.clone(),
-                                implicit:             false,
+                                type_var: g.type_var.clone(),
+                                name: g.name.clone(),
+                                implicit: false,
                                 original_type_var_id: None,
                             })
                         })
@@ -1000,7 +918,7 @@ impl LeanGenerator<'_, '_, '_> {
         let functions = functions.into_iter().sorted().collect_vec();
 
         ModuleDefs {
-            func_defs:   functions,
+            func_defs: functions,
             global_defs: globals,
         }
     }
@@ -1035,7 +953,8 @@ impl LeanGenerator<'_, '_, '_> {
             self.context
                 .def_interner
                 .function_attributes(id)
-                .get_deprecated_note(),
+                .get_deprecated()
+                .map(|(_, msg)| msg),
         );
 
         let generics = self.gather_function_generic_patterns(function_meta);
@@ -1086,7 +1005,7 @@ impl LeanGenerator<'_, '_, '_> {
         return_type: Type,
     ) -> Expression {
         let call_identifier = Expression::BuiltinCallRef(BuiltinCallRef {
-            name:        name.to_string(),
+            name: name.to_string(),
             return_type: return_type.clone(),
         });
         let params = params
@@ -1683,7 +1602,7 @@ impl LeanGenerator<'_, '_, '_> {
         let return_type = Type::tuple(&elem_types);
 
         let call_ref = Expression::BuiltinCallRef(BuiltinCallRef {
-            name:        MAKE_STRUCT_BUILTIN_NAME.to_string(),
+            name: MAKE_STRUCT_BUILTIN_NAME.to_string(),
             return_type: return_type.clone(),
         });
 
@@ -1704,7 +1623,7 @@ impl LeanGenerator<'_, '_, '_> {
         let else_expr = cond.alternative.map(|e| Box::new(self.generate_expr(e)));
 
         let ite = IfThenElse {
-            condition:   Box::new(if_cond),
+            condition: Box::new(if_cond),
             then_branch: Box::new(then_expr),
             else_branch: else_expr,
         };
@@ -1720,8 +1639,8 @@ impl LeanGenerator<'_, '_, '_> {
         let constraint_expr = self.generate_expr(constrain.0);
         let builtin_ref = Expression::builtin_call_ref(ASSERT_BUILTIN_NAME, output_type);
         let call = Call {
-            function:    Box::new(builtin_ref),
-            params:      vec![constraint_expr],
+            function: Box::new(builtin_ref),
+            params: vec![constraint_expr],
             return_type: output_type.clone(),
         };
 
@@ -1821,7 +1740,7 @@ impl LeanGenerator<'_, '_, '_> {
         let return_type = Type::data_type(&name, generic_args);
 
         let call_ref = Expression::BuiltinCallRef(BuiltinCallRef {
-            name:        MAKE_STRUCT_BUILTIN_NAME.to_string(),
+            name: MAKE_STRUCT_BUILTIN_NAME.to_string(),
             return_type: return_type.clone(),
         });
 
@@ -1864,32 +1783,32 @@ impl LeanGenerator<'_, '_, '_> {
                                 index_expr
                             } else {
                                 Expression::Cast(Cast {
-                                    lhs:    Box::new(index_expr),
+                                    lhs: Box::new(index_expr),
                                     target: Type::integer(32, false),
                                 })
                             }
                         }
                         _ => Expression::Cast(Cast {
-                            lhs:    Box::new(index_expr),
+                            lhs: Box::new(index_expr),
                             target: Type::integer(32, false),
                         }),
                     },
                     _ => Expression::Cast(Cast {
-                        lhs:    Box::new(index_expr),
+                        lhs: Box::new(index_expr),
                         target: Type::integer(32, false),
                     }),
                 },
                 _ => panic!("Non numeric literal {lit:?} encountered as index in index expression"),
             },
             _ => Expression::Cast(Cast {
-                lhs:    Box::new(index_expr),
+                lhs: Box::new(index_expr),
                 target: Type::integer(32, false),
             }),
         };
 
         let call = Call {
-            function:    Box::new(call_target),
-            params:      vec![collection_expr, index_expr],
+            function: Box::new(call_target),
+            params: vec![collection_expr, index_expr],
             return_type: output_type.clone(),
         };
 
@@ -1916,8 +1835,8 @@ impl LeanGenerator<'_, '_, '_> {
         if let Some(builtin_name) = maybe_builtin {
             let builtin_target = Expression::builtin_call_ref(builtin_name.as_str(), output_type);
             let call = Call {
-                function:    Box::new(builtin_target),
-                params:      vec![lhs, rhs],
+                function: Box::new(builtin_target),
+                params: vec![lhs, rhs],
                 return_type: output_type.clone(),
             };
             Expression::Call(call)
@@ -1972,12 +1891,12 @@ impl LeanGenerator<'_, '_, '_> {
                     });
 
                     let negation_call_ref = Expression::BuiltinCallRef(BuiltinCallRef {
-                        name:        "bNot".to_string(),
+                        name: "bNot".to_string(),
                         return_type: Type::bool(),
                     });
                     Expression::Call(Call {
-                        function:    Box::new(negation_call_ref),
-                        params:      vec![eq_call],
+                        function: Box::new(negation_call_ref),
+                        params: vec![eq_call],
                         return_type: Type::bool(),
                     })
                 }
@@ -2002,11 +1921,11 @@ impl LeanGenerator<'_, '_, '_> {
                     });
                     let cmp_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let cmp_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(cmp_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(cmp_call),
                     });
 
@@ -2016,25 +1935,25 @@ impl LeanGenerator<'_, '_, '_> {
                     );
                     let make_less_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_less_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(make_less_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(make_less_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(make_less_call),
                     });
 
                     let eq_call = Expression::Call(Call {
-                        function:    Box::new(Expression::TraitCallRef(TraitCallRef {
-                            trait_name:     format!("{stdlib_name}::cmp::Eq"),
-                            function_name:  "eq".to_string(),
-                            self_type:      ordering_type.clone(),
+                        function: Box::new(Expression::TraitCallRef(TraitCallRef {
+                            trait_name: format!("{stdlib_name}::cmp::Eq"),
+                            function_name: "eq".to_string(),
+                            self_type: ordering_type.clone(),
                             trait_generics: vec![],
-                            fun_generics:   vec![],
-                            param_types:    vec![ordering_type.clone(), ordering_type.clone()],
-                            return_type:    Type::bool(),
+                            fun_generics: vec![],
+                            param_types: vec![ordering_type.clone(), ordering_type.clone()],
+                            return_type: Type::bool(),
                         })),
-                        params:      vec![
+                        params: vec![
                             Expression::Ident(cmp_result_ident),
                             Expression::Ident(make_less_result_ident),
                         ],
@@ -2067,11 +1986,11 @@ impl LeanGenerator<'_, '_, '_> {
                     });
                     let cmp_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let cmp_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(cmp_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(cmp_call),
                     });
 
@@ -2081,25 +2000,25 @@ impl LeanGenerator<'_, '_, '_> {
                     );
                     let make_greater_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_greater_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(make_greater_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(make_greater_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(make_greater_call),
                     });
 
                     let eq_call = Expression::Call(Call {
-                        function:    Box::new(Expression::TraitCallRef(TraitCallRef {
-                            trait_name:     format!("{stdlib_name}::cmp::Eq"),
-                            function_name:  "eq".to_string(),
-                            self_type:      ordering_type.clone(),
+                        function: Box::new(Expression::TraitCallRef(TraitCallRef {
+                            trait_name: format!("{stdlib_name}::cmp::Eq"),
+                            function_name: "eq".to_string(),
+                            self_type: ordering_type.clone(),
                             trait_generics: vec![],
-                            fun_generics:   vec![],
-                            param_types:    vec![ordering_type.clone(), ordering_type.clone()],
-                            return_type:    Type::bool(),
+                            fun_generics: vec![],
+                            param_types: vec![ordering_type.clone(), ordering_type.clone()],
+                            return_type: Type::bool(),
                         })),
-                        params:      vec![
+                        params: vec![
                             Expression::Ident(cmp_result_ident),
                             Expression::Ident(make_greater_result_ident),
                         ],
@@ -2133,11 +2052,11 @@ impl LeanGenerator<'_, '_, '_> {
                     });
                     let cmp_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let cmp_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(cmp_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(cmp_call),
                     });
 
@@ -2147,11 +2066,11 @@ impl LeanGenerator<'_, '_, '_> {
                     );
                     let make_less_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_less_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(make_less_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(make_less_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(make_less_call),
                     });
 
@@ -2161,25 +2080,25 @@ impl LeanGenerator<'_, '_, '_> {
                     );
                     let make_eq_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_eq_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(make_eq_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(make_eq_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(make_eq_call),
                     });
 
                     let eq_to_less_call = Expression::Call(Call {
-                        function:    Box::new(Expression::TraitCallRef(TraitCallRef {
-                            trait_name:     format!("{stdlib_name}::cmp::Eq"),
-                            function_name:  "eq".to_string(),
-                            self_type:      ordering_type.clone(),
+                        function: Box::new(Expression::TraitCallRef(TraitCallRef {
+                            trait_name: format!("{stdlib_name}::cmp::Eq"),
+                            function_name: "eq".to_string(),
+                            self_type: ordering_type.clone(),
                             trait_generics: vec![],
-                            fun_generics:   vec![],
-                            param_types:    vec![ordering_type.clone(), ordering_type.clone()],
-                            return_type:    Type::bool(),
+                            fun_generics: vec![],
+                            param_types: vec![ordering_type.clone(), ordering_type.clone()],
+                            return_type: Type::bool(),
                         })),
-                        params:      vec![
+                        params: vec![
                             Expression::Ident(cmp_result_ident.clone()),
                             Expression::Ident(make_less_result_ident),
                         ],
@@ -2187,25 +2106,25 @@ impl LeanGenerator<'_, '_, '_> {
                     });
                     let eq_to_less_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_eq_to_less_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(eq_to_less_result_ident.clone()),
-                        typ:        Type::bool(),
+                        pattern: Pattern::Identifier(eq_to_less_result_ident.clone()),
+                        typ: Type::bool(),
                         expression: Box::new(eq_to_less_call),
                     });
 
                     let eq_to_eq_call = Expression::Call(Call {
-                        function:    Box::new(Expression::TraitCallRef(TraitCallRef {
-                            trait_name:     format!("{stdlib_name}::cmp::Eq"),
-                            function_name:  "eq".to_string(),
-                            self_type:      ordering_type.clone(),
+                        function: Box::new(Expression::TraitCallRef(TraitCallRef {
+                            trait_name: format!("{stdlib_name}::cmp::Eq"),
+                            function_name: "eq".to_string(),
+                            self_type: ordering_type.clone(),
                             trait_generics: vec![],
-                            fun_generics:   vec![],
-                            param_types:    vec![ordering_type.clone(), ordering_type.clone()],
-                            return_type:    Type::bool(),
+                            fun_generics: vec![],
+                            param_types: vec![ordering_type.clone(), ordering_type.clone()],
+                            return_type: Type::bool(),
                         })),
-                        params:      vec![
+                        params: vec![
                             Expression::Ident(cmp_result_ident.clone()),
                             Expression::Ident(make_eq_result_ident),
                         ],
@@ -2213,11 +2132,11 @@ impl LeanGenerator<'_, '_, '_> {
                     });
                     let eq_to_eq_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_eq_to_eq_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(eq_to_eq_result_ident.clone()),
-                        typ:        Type::bool(),
+                        pattern: Pattern::Identifier(eq_to_eq_result_ident.clone()),
+                        typ: Type::bool(),
                         expression: Box::new(eq_to_eq_call),
                     });
 
@@ -2259,11 +2178,11 @@ impl LeanGenerator<'_, '_, '_> {
                     });
                     let cmp_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let cmp_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(cmp_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(cmp_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(cmp_call),
                     });
 
@@ -2273,11 +2192,11 @@ impl LeanGenerator<'_, '_, '_> {
                     );
                     let make_greater_result_id = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_greater_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(make_greater_result_id.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(make_greater_result_id.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(make_greater_call),
                     });
 
@@ -2287,25 +2206,25 @@ impl LeanGenerator<'_, '_, '_> {
                     );
                     let make_eq_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_eq_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(make_eq_result_ident.clone()),
-                        typ:        ordering_type.clone(),
+                        pattern: Pattern::Identifier(make_eq_result_ident.clone()),
+                        typ: ordering_type.clone(),
                         expression: Box::new(make_eq_call),
                     });
 
                     let eq_to_greater_call = Expression::Call(Call {
-                        function:    Box::new(Expression::TraitCallRef(TraitCallRef {
-                            trait_name:     format!("{stdlib_name}::cmp::Eq"),
-                            function_name:  "eq".to_string(),
-                            self_type:      ordering_type.clone(),
+                        function: Box::new(Expression::TraitCallRef(TraitCallRef {
+                            trait_name: format!("{stdlib_name}::cmp::Eq"),
+                            function_name: "eq".to_string(),
+                            self_type: ordering_type.clone(),
                             trait_generics: vec![],
-                            fun_generics:   vec![],
-                            param_types:    vec![ordering_type.clone(), ordering_type.clone()],
-                            return_type:    Type::bool(),
+                            fun_generics: vec![],
+                            param_types: vec![ordering_type.clone(), ordering_type.clone()],
+                            return_type: Type::bool(),
                         })),
-                        params:      vec![
+                        params: vec![
                             Expression::Ident(cmp_result_ident.clone()),
                             Expression::Ident(make_greater_result_id),
                         ],
@@ -2313,25 +2232,25 @@ impl LeanGenerator<'_, '_, '_> {
                     });
                     let eq_to_greater_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_eq_to_greater_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(eq_to_greater_result_ident.clone()),
-                        typ:        Type::bool(),
+                        pattern: Pattern::Identifier(eq_to_greater_result_ident.clone()),
+                        typ: Type::bool(),
                         expression: Box::new(eq_to_greater_call),
                     });
 
                     let eq_to_eq_call = Expression::Call(Call {
-                        function:    Box::new(Expression::TraitCallRef(TraitCallRef {
-                            trait_name:     format!("{stdlib_name}::cmp::Eq"),
-                            function_name:  "eq".to_string(),
-                            self_type:      ordering_type.clone(),
+                        function: Box::new(Expression::TraitCallRef(TraitCallRef {
+                            trait_name: format!("{stdlib_name}::cmp::Eq"),
+                            function_name: "eq".to_string(),
+                            self_type: ordering_type.clone(),
                             trait_generics: vec![],
-                            fun_generics:   vec![],
-                            param_types:    vec![ordering_type.clone(), ordering_type.clone()],
-                            return_type:    Type::bool(),
+                            fun_generics: vec![],
+                            param_types: vec![ordering_type.clone(), ordering_type.clone()],
+                            return_type: Type::bool(),
                         })),
-                        params:      vec![
+                        params: vec![
                             Expression::Ident(cmp_result_ident.clone()),
                             Expression::Ident(make_eq_result_ident),
                         ],
@@ -2339,11 +2258,11 @@ impl LeanGenerator<'_, '_, '_> {
                     });
                     let eq_to_eq_result_ident = Identifier {
                         name: self.name_supply.get_name(),
-                        typ:  ordering_type.clone(),
+                        typ: ordering_type.clone(),
                     };
                     let make_eq_to_eq_result = Statement::Let(LetStatement {
-                        pattern:    Pattern::Identifier(eq_to_eq_result_ident.clone()),
-                        typ:        Type::bool(),
+                        pattern: Pattern::Identifier(eq_to_eq_result_ident.clone()),
+                        typ: Type::bool(),
                         expression: Box::new(eq_to_eq_call),
                     });
 
@@ -2402,8 +2321,8 @@ impl LeanGenerator<'_, '_, '_> {
         {
             let builtin_target = Expression::builtin_call_ref(builtin_name.as_str(), output_type);
             let call = Call {
-                function:    Box::new(builtin_target),
-                params:      vec![rhs],
+                function: Box::new(builtin_target),
+                params: vec![rhs],
                 return_type: output_type.clone(),
             };
             Expression::Call(call)
@@ -2435,8 +2354,8 @@ impl LeanGenerator<'_, '_, '_> {
             };
 
             let call = Call {
-                function:    Box::new(Expression::TraitCallRef(call_target)),
-                params:      vec![rhs],
+                function: Box::new(Expression::TraitCallRef(call_target)),
+                params: vec![rhs],
                 return_type: output_type.clone(),
             };
 
@@ -2457,11 +2376,11 @@ impl LeanGenerator<'_, '_, '_> {
                 HirArrayLiteral::Standard(elems) => {
                     let elems = elems.iter().map(|e| self.generate_expr(*e)).collect_vec();
                     let call = Call {
-                        function:    Box::new(Expression::builtin_call_ref(
+                        function: Box::new(Expression::builtin_call_ref(
                             MAKE_ARRAY_BUILTIN_NAME,
                             output_type,
                         )),
-                        params:      elems,
+                        params: elems,
                         return_type: output_type.clone(),
                     };
                     Expression::Call(call)
@@ -2471,11 +2390,11 @@ impl LeanGenerator<'_, '_, '_> {
                 } => {
                     let elem_expr = self.generate_expr(*repeated_element);
                     let call = Call {
-                        function:    Box::new(Expression::builtin_call_ref(
+                        function: Box::new(Expression::builtin_call_ref(
                             MAKE_REPEATED_ARRAY_BUILTIN_NAME,
                             output_type,
                         )),
-                        params:      vec![elem_expr],
+                        params: vec![elem_expr],
                         return_type: output_type.clone(),
                     };
                     Expression::Call(call)
@@ -2485,11 +2404,11 @@ impl LeanGenerator<'_, '_, '_> {
                 HirArrayLiteral::Standard(elems) => {
                     let elems = elems.iter().map(|e| self.generate_expr(*e)).collect_vec();
                     let call = Call {
-                        function:    Box::new(Expression::builtin_call_ref(
+                        function: Box::new(Expression::builtin_call_ref(
                             MAKE_SLICE_BUILTIN_NAME,
                             output_type,
                         )),
-                        params:      elems,
+                        params: elems,
                         return_type: output_type.clone(),
                     };
                     Expression::Call(call)
@@ -2506,7 +2425,7 @@ impl LeanGenerator<'_, '_, '_> {
                     let length_lit = match length.expr {
                         TypeExpr::NumericConst(n) => Literal::Numeric(NumericLiteral {
                             value: n,
-                            typ:   length.kind.into_type(),
+                            typ: length.kind.into_type(),
                         }),
                         TypeExpr::TypeVariable(name) => {
                             Literal::ConstGeneric(ConstGenericLiteral {
@@ -2535,12 +2454,8 @@ impl LeanGenerator<'_, '_, '_> {
                 }
             },
             HirLiteral::Bool(bool) => Expression::Literal(Literal::Bool(*bool)),
-            HirLiteral::Integer(signed_field) => {
-                let value = format!(
-                    "{}{}",
-                    if signed_field.is_negative() { "-" } else { "" },
-                    signed_field.absolute_value()
-                );
+            HirLiteral::Integer(field) => {
+                let value = field.to_string();
 
                 let literal = NumericLiteral {
                     value,
@@ -2558,11 +2473,8 @@ impl LeanGenerator<'_, '_, '_> {
                 let all_vars = vec![template].into_iter().chain(vars).collect_vec();
 
                 let call = Call {
-                    function:    Box::new(Expression::builtin_call_ref(
-                        "mkFormatString",
-                        output_type,
-                    )),
-                    params:      all_vars,
+                    function: Box::new(Expression::builtin_call_ref("mkFormatString", output_type)),
+                    params: all_vars,
                     return_type: output_type.clone(),
                 };
                 Expression::Call(call)
@@ -2741,7 +2653,7 @@ impl LeanGenerator<'_, '_, '_> {
 
                 let global_call = GlobalCallRef {
                     name: global_name,
-                    typ:  global_type,
+                    typ: global_type,
                 };
 
                 Expression::GlobalCallRef(global_call)
@@ -2751,7 +2663,7 @@ impl LeanGenerator<'_, '_, '_> {
 
                 if let TypeExpr::Function(_) = &typ.expr {
                     let ident = IdentCallRef {
-                        name:      sanitize_variable_name(&name),
+                        name: sanitize_variable_name(&name),
                         func_type: typ.expr,
                     };
 
@@ -2759,7 +2671,7 @@ impl LeanGenerator<'_, '_, '_> {
                 } else {
                     let identifier = Identifier {
                         name: sanitize_variable_name(&name),
-                        typ:  output_type.clone(),
+                        typ: output_type.clone(),
                     };
 
                     Expression::Ident(identifier)
@@ -2890,7 +2802,7 @@ impl LeanGenerator<'_, '_, '_> {
         match lvalue {
             HirLValue::Ident(ident, typ) => LValue::Ident(Identifier {
                 name: self.context.def_interner.definition_name(ident.id).to_string(),
-                typ:  self.generate_lean_type_value(typ, None),
+                typ: self.generate_lean_type_value(typ, None),
             }),
             HirLValue::MemberAccess {
                 object,
@@ -3043,12 +2955,12 @@ impl LeanGenerator<'_, '_, '_> {
                         .iter()
                         .map(|t| self.substitute_bindings(t, bindings))
                         .collect(),
-                    named:   generics
+                    named: generics
                         .named
                         .iter()
                         .map(|t| NamedType {
                             name: t.name.clone(),
-                            typ:  self.substitute_bindings(&t.typ, bindings),
+                            typ: self.substitute_bindings(&t.typ, bindings),
                         })
                         .collect(),
                 },
