@@ -1,3 +1,8 @@
+pub struct Point {
+    pub x: Field,
+    pub y: Field,
+}
+
 fn not_equal(x: Field, y: Field) -> bool {
     x != y
 }
