@@ -64,7 +64,7 @@ def mkPoseidon2HasherRepr {p} (inputs : List (Fp p)) : Poseidon2HasherRepr p :=
     h![inputs]
 
 private lemma mkPoseidon2HasherRepr_head {p} (inputs : List (Fp p)) :
-    Builtin.indexTpl (mkPoseidon2HasherRepr inputs) Builtin.Member.head = inputs := by
+    Builtin.indexTpl (mkPoseidon2HasherRepr inputs) Member.head = inputs := by
   rfl
 
 def performDuplexRepr {p} (s : Poseidon2Repr p) : Poseidon2Repr p :=
@@ -159,16 +159,16 @@ private lemma mkPoseidon2Repr_state_set_active {p}
     (hactive : i < cacheSize.toNat) :
     Builtin.replaceTuple'
         (mkPoseidon2Repr cache (addCachePrefixToState cache state cacheSize i) cacheSize squeezeMode)
-        Builtin.Member.head.tail
+        Member.head.tail
         ((Builtin.indexTpl
             (mkPoseidon2Repr cache (addCachePrefixToState cache state cacheSize i) cacheSize squeezeMode)
-            Builtin.Member.head.tail).set ⟨i, hiState⟩
+            Member.head.tail).set ⟨i, hiState⟩
           ((Builtin.indexTpl
               (mkPoseidon2Repr cache (addCachePrefixToState cache state cacheSize i) cacheSize squeezeMode)
-              Builtin.Member.head.tail).get ⟨i, hiState⟩ +
+              Member.head.tail).get ⟨i, hiState⟩ +
             (Builtin.indexTpl
-              (mkPoseidon2Repr cache (addCachePrefixToState cache state cacheSize i) cacheSize squeezeMode)
-              Builtin.Member.head).get ⟨i, hiRate⟩)) =
+                (mkPoseidon2Repr cache (addCachePrefixToState cache state cacheSize i) cacheSize squeezeMode)
+                Member.head).get ⟨i, hiRate⟩)) =
       mkPoseidon2Repr cache (addCachePrefixToState cache state cacheSize (i + 1)) cacheSize squeezeMode := by
   change (cache,
       (addCachePrefixToState cache state cacheSize i).set ⟨i, hiState⟩
@@ -185,10 +185,10 @@ private lemma mkPoseidon2Repr_cache_set_get {p}
     (input : Fp p)
     (hspace : cacheSize.toNat < 3)
     (hmod :
-      (((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons
+      (((Lens.nil.cons (Access.tuple Member.head)).cons
           (Access.array cacheSize)).modify
           (mkPoseidon2Repr cache state cacheSize false) input).isSome = true) :
-    (((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons
+    (((Lens.nil.cons (Access.tuple Member.head)).cons
         (Access.array cacheSize)).modify
         (mkPoseidon2Repr cache state cacheSize false) input).get hmod =
       mkPoseidon2Repr (cache.set ⟨cacheSize.toNat, hspace⟩ input) state cacheSize false := by
@@ -423,7 +423,7 @@ private abbrev HashInternalLoopInv {p} {N : U 32}
     (input : List.Vector (Fp p) N.toNat)
     (inLen : U 32)
     (iv : Fp p)
-    (spongeRef : Ref)
+    (spongeRef : Ref Poseidon2Tp)
     (i : Nat) : SLP (State p) :=
   ∃∃ s : Crypto.Poseidon2.Sponge (Fp p) (Crypto.Poseidon2.noirParams4 p),
     [spongeRef ↦ ⟨Poseidon2Tp, spongeToRepr s⟩] ⋆
@@ -435,7 +435,7 @@ private abbrev HashInternalLoopInv {p} {N : U 32}
 private abbrev HasherFinishLoopInv {p}
     (inputs : List (Fp p))
     (iv : Fp p)
-    (spongeRef : Ref)
+    (spongeRef : Ref Poseidon2Tp)
     (i : Nat) : SLP (State p) :=
   ∃∃ s : Crypto.Poseidon2.Sponge (Fp p) (Crypto.Poseidon2.noirParams4 p),
     [spongeRef ↦ ⟨Poseidon2Tp, spongeToRepr s⟩] ⋆
