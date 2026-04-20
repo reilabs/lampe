@@ -14,6 +14,8 @@ import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 import Lampe.Builtin.Stubs
 import Lampe.Builtin.Vector
+import Lampe.Crypto.Poseidon2
+import Lampe.Crypto.Poseidon2.BN254T4
 import Lampe.Data.Digits
 import Lampe.Data.Field
 import Lampe.Data.HList
