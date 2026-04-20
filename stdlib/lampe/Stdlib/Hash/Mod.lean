@@ -1,6 +1,7 @@
 import «std-1.0.0-beta.14».Extracted
 import Lampe
 import Stdlib.Default
+import Stdlib.Hash.Poseidon2
 
 namespace Lampe.Stdlib.Hash
 
@@ -17,6 +18,16 @@ abbrev HashTrait.hasImpl (env : Env) (tp : Tp) :=
 
 def buildHasherDefaultRepr {p H} : Tp.denote p (BuildHasherDefaultTp H) :=
   HList.toTuple p h![] (some «std-1.0.0-beta.14::hash::BuildHasherDefault».name)
+
+theorem poseidon2_permutation4_spec {p}
+    {input : Tp.denote p (Tp.field.array (4 : U 32))}
+    : STHoare p env ⟦⟧
+        («std-1.0.0-beta.14::hash::poseidon2_permutation».call h![(4 : U 32)]
+          h![input, (4 : U 32)])
+        (fun r => r = Lampe.Crypto.Poseidon2.noirPermutation4 input) := by
+  enter_decl
+  steps [Lampe.Stdlib.Hash.Poseidon2.poseidon2_permutation_builtin_spec]
+  assumption
 
 theorem buildHasherDefault_default_spec {p H}
     {h_hasher : Hasher.hasImpl env H}
