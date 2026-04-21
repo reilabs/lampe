@@ -1,5 +1,5 @@
 use noirc_frontend::{
-    ast::{BinaryOpKind, IntegerBitSize, UnaryOp},
+    ast::{BinaryOpKind, UnaryOp},
     shared::Signedness,
     Type as NoirType,
     TypeBinding,
@@ -95,17 +95,6 @@ pub enum BuiltinType {
     String,
 }
 
-const fn integer_bit_size_to_u8(s: IntegerBitSize) -> u8 {
-    match s {
-        IntegerBitSize::One => 1,
-        IntegerBitSize::Eight => 8,
-        IntegerBitSize::Sixteen => 16,
-        IntegerBitSize::ThirtyTwo => 32,
-        IntegerBitSize::SixtyFour => 64,
-        IntegerBitSize::HundredTwentyEight => 128,
-    }
-}
-
 impl TryInto<BuiltinType> for NoirType {
     type Error = String;
 
@@ -114,12 +103,8 @@ impl TryInto<BuiltinType> for NoirType {
             NoirType::FieldElement => Ok(BuiltinType::Field),
             NoirType::Bool => Ok(BuiltinType::Bool),
             NoirType::Unit => Ok(BuiltinType::Unit),
-            NoirType::Integer(Signedness::Signed, s) => {
-                Ok(BuiltinType::Int(integer_bit_size_to_u8(s)))
-            }
-            NoirType::Integer(Signedness::Unsigned, s) => {
-                Ok(BuiltinType::Uint(integer_bit_size_to_u8(s)))
-            }
+            NoirType::Integer(Signedness::Signed, s) => Ok(BuiltinType::Int(s.bit_size())),
+            NoirType::Integer(Signedness::Unsigned, s) => Ok(BuiltinType::Uint(s.bit_size())),
             NoirType::Array(..) => Ok(BuiltinType::Array),
             NoirType::Vector(_) => Ok(BuiltinType::Vector),
             NoirType::String(_) => Ok(BuiltinType::String),

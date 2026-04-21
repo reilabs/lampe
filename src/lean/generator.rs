@@ -15,9 +15,10 @@ use itertools::Itertools;
 use nargo::workspace::Workspace;
 use noirc_errors::Location;
 use noirc_frontend::{
-    ast::{BinaryOpKind, FunctionKind, Ident, IntegerBitSize},
+    ast::{BinaryOpKind, FunctionKind, Ident},
     graph::CrateId,
     hir::{
+        comptime::Integer as NoirInteger,
         def_map::{LocalModuleId, ModuleData, ModuleDefId},
         type_check::generics::TraitGenerics,
         Context,
@@ -261,7 +262,7 @@ impl LeanGenerator<'_, '_, '_> {
             if let Some(dep_id) = g.node_weight(node_idx) {
                 matches!(
                     *dep_id,
-                    DependencyId::Struct(_) | DependencyId::Alias(_) | DependencyId::Trait(_)
+                    DependencyId::DataType(_) | DependencyId::Alias(_) | DependencyId::Trait(_)
                 )
             } else {
                 false
@@ -306,7 +307,7 @@ impl LeanGenerator<'_, '_, '_> {
                         let def_order = dep_weights
                             .clone()
                             .into_iter()
-                            .position(|item| *item == DependencyId::Struct(id));
+                            .position(|item| *item == DependencyId::DataType(id));
                         self.name_supply.reset();
                         let struct_def = self.generate_struct_def(id);
                         let name = quote_lean_keywords(&struct_def.name);
@@ -376,7 +377,7 @@ impl LeanGenerator<'_, '_, '_> {
             .collect_vec()
     }
 
-    /// Generates the definition of a `struct` that is describeed by the
+    /// Generates the definition of a `struct` that is described by the
     /// provided `id`.
     pub fn generate_struct_def(&self, id: TypeId) -> StructDefinition {
         let deprecation = Deprecation::from_noir(
@@ -385,7 +386,7 @@ impl LeanGenerator<'_, '_, '_> {
                 .type_attributes(&id)
                 .iter()
                 .find_map(|attr| match &attr.kind {
-                    SecondaryAttributeKind::Deprecated(msg) => Some(msg.clone()),
+                    SecondaryAttributeKind::Deprecated(_, msg) => Some(msg.clone()),
                     _ => None,
                 }),
         );
@@ -547,9 +548,13 @@ impl LeanGenerator<'_, '_, '_> {
                     Type::immutable_reference(typ)
                 }
             }
-            NoirType::Constant(felt, kind) => {
-                let felt_value = felt.to_string();
-                let kind = self.expect_constant_numeric_kind(kind);
+            NoirType::Constant(value) => {
+                let felt_value = match value {
+                    // `Integer::to_string` displays Field as hex.
+                    NoirInteger::Field(field) => field.to_string(),
+                    i => i.to_string(),
+                };
+                let kind = self.expect_constant_numeric_kind(&value.numeric_kind());
 
                 Type::numeric_const(&felt_value, kind)
             }
@@ -856,7 +861,6 @@ impl LeanGenerator<'_, '_, '_> {
                 Box::new(NoirType::Unit),
                 false,
             ),
-            NoirType::Integer(Signedness::Unsigned, IntegerBitSize::One),
             NoirType::Vector(Box::new(dummy_generic.clone())),
             NoirType::String(Box::new(dummy_generic.clone())),
             NoirType::Tuple(vec![dummy_generic; 0]),
@@ -1035,7 +1039,8 @@ impl LeanGenerator<'_, '_, '_> {
             self.context
                 .def_interner
                 .function_attributes(id)
-                .get_deprecated_note(),
+                .get_deprecated()
+                .map(|(_, msg)| msg),
         );
 
         let generics = self.gather_function_generic_patterns(function_meta);
@@ -2535,12 +2540,8 @@ impl LeanGenerator<'_, '_, '_> {
                 }
             },
             HirLiteral::Bool(bool) => Expression::Literal(Literal::Bool(*bool)),
-            HirLiteral::Integer(signed_field) => {
-                let value = format!(
-                    "{}{}",
-                    if signed_field.is_negative() { "-" } else { "" },
-                    signed_field.absolute_value()
-                );
+            HirLiteral::Integer(field) => {
+                let value = field.to_string();
 
                 let literal = NumericLiteral {
                     value,
