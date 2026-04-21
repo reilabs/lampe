@@ -1802,7 +1802,7 @@ impl LeanGenerator<'_, '_, '_> {
     pub fn generate_constructor(&self, constructor: &HirConstructorExpression) -> Expression {
         let struct_def = &constructor.r#type;
         let struct_def = struct_def.borrow();
-        let crate_id = self.root_crate;
+        let crate_id = struct_def.id.krate();
         let name = self.fully_qualified_struct_path(&crate_id, &struct_def.id);
         let fields = &constructor.fields;
 
