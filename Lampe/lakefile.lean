@@ -5,6 +5,7 @@ package Lampe where
   leanOptions := #[
     ⟨`pp.unicode.fun, true⟩
   ]
+  moreLeanArgs := #["--tstack=65536"]
   testDriver := "Tests"
 
 require "leanprover-community" / "batteries" @ git "v4.21.0"
