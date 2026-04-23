@@ -163,6 +163,19 @@ partial def makeExpr [MonadDSL m]
 -- Sorry
 | `(noir_expr|sorry) => do ``(sorry)
 
+-- Array/vector literal constructors (flat list, no HList).
+| `(noir_expr|#_ arrayLit $tp:noir_type, $sz:noir_gen_val, [ $elems,* ]) =>
+  let elemsList := elems.getElems.toList
+  makeArgsFlat elemsList fun args => do
+    let elemList ← makeListLitIter args
+    let szVal := (←makeGenericVal sz).value
+    wrapInLet (←``(Expr.arrayLit $(←makeNoirType tp) $szVal $elemList)) binder k
+| `(noir_expr|#_ vectorLit $tp:noir_type, [ $elems,* ]) =>
+  let elemsList := elems.getElems.toList
+  makeArgsFlat elemsList fun args => do
+    let elemList ← makeListLitIter args
+    wrapInLet (←``(Expr.vectorLit $(←makeNoirType tp) $elemList)) binder k
+
 -- Lean splice (escape hatch): embeds an arbitrary Lampe `Expr` term.
 | `(noir_expr|splice!( $t )) => do
   wrapInLet t binder k
@@ -219,10 +232,20 @@ partial def makeExpr [MonadDSL m]
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
+  -- Array and vector literal optimization: use Expr.arrayLit/vectorLit with a homogeneous List
+  -- instead of HList to avoid O(n) type-level recursion that causes stack overflow (#270).
+  if name.getId == `mkArray || name.getId == `mkVector then
+    makeArgsFlat argsList fun args => do
+      let elemList ← makeListLitIter args
+      let expr ← if name.getId == `mkArray then
+        ``(Expr.arrayLit _ _ $elemList)
+      else
+        ``(Expr.vectorLit _ $elemList)
+      wrapInLet expr binder k
   -- `#_ref(#_readRef(x))` should collapse to `x`: taking a reference to a dereference is identity.
   -- Additionally, `makeExpr` auto-dereferences mutable locals, so `#_ref(id)` on a mutable local
   -- would lower to `ref(readRef id)` unless we suppress auto-deref while elaborating the argument.
-  if name.getId == `ref then
+  else if name.getId == `ref then
     match argsList with
     | [arg] => do
       -- Syntactic identity: #_ref(#_readRef(x)) = x.
@@ -425,6 +448,32 @@ partial def makeArgs [MonadDSL m]
   : m (TSyntax `term) := match args with
 | [] => k []
 | h :: t => makeExpr h none (some fun h => makeArgs t fun t => k (h :: t))
+
+/--
+Like `makeArgs` but builds a flat chain of letIn bindings iteratively to avoid deep meta-level
+recursion. Each argument expression is evaluated via `makeExpr` and bound to a fresh name; the
+continuation `k` receives the list of bound identifiers. This is used for array/vector literal
+construction where the number of arguments can be very large (1000+).
+-/
+partial def makeArgsFlat [MonadDSL m]
+    (args : List (TSyntax `noir_expr))
+    (k : List (TSyntax `term) → m (TSyntax `term))
+  : m (TSyntax `term) := do
+  let argsArr := args.toArray
+  let mut idents : Array Lean.Ident := Array.mkEmpty argsArr.size
+  for _ in argsArr do
+    let ident ← nameOf none
+    idents := idents.push ident
+  let identTerms : List (TSyntax `term) := idents.toList.map fun i => i
+  let mut result ← k identTerms
+  for i in [:argsArr.size] do
+    let idx := argsArr.size - 1 - i
+    let arg := argsArr[idx]!
+    let ident := idents[idx]!
+    let body := result
+    let argExpr ← makeExpr arg none none
+    result ← ``(Expr.letIn $argExpr fun $ident => $body)
+  pure result
 
 end
 

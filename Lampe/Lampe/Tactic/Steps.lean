@@ -73,6 +73,10 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
     | ``Expr.modifyLens => return some (←``(modifyLens_intro))
     | ``Expr.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl))
     | ``Lampe.Expr.fn => return some (←``(fn_intro))
+    | ``Lampe.Expr.arrayLit => return some (←``(arrayLit_intro (h := by native_decide)))
+    | ``Lampe.Expr.vectorLit => return some (←``(vectorLit_intro))
+    | ``Lampe.Expr.arrayFromList => return some (←``(arrayLit_intro (h := by native_decide)))
+    | ``Lampe.Expr.vectorFromList => return some (←``(vectorLit_intro))
     | ``Lampe.Expr.callBuiltin =>
       let some builtin := val.getAppArgs[3]? | throwError "malformed builtin"
       let builtinName := builtin.getAppFn

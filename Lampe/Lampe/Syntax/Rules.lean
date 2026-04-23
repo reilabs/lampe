@@ -185,5 +185,8 @@ syntax "(" "*" noir_expr ":" noir_type ")" : noir_lval -- A dereferenced value.
 -- The following are splices that can be used to write Lean code directly in place of other kinds of
 -- syntax, or to evaluate the DSL syntax in place.
 
+syntax "#_" "arrayLit" noir_type "," noir_gen_val "," "[" noir_expr,* "]" : noir_expr
+syntax "#_" "vectorLit" noir_type "," "[" noir_expr,* "]" : noir_expr
+
 syntax "splice!(" term ")" : noir_expr -- Lean code in place of an expression.
 syntax "splice!(" term ")" : noir_type -- Lean code in place of a type.

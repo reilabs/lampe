@@ -80,6 +80,8 @@ inductive Omni : (Γ : Env) → (st : State p) → (expr : Expr (Tp.denote p) tp
 | callBuiltin {Q} :
   (b.omni p st argTps outTp args (mapToValHeapCondition st.lambdas Q)) →
   Omni Γ st (Expr.callBuiltin argTps outTp b args) Q
+| arrayLit {Q} {h : elems.length = n.toNat} : Q (some (st, ⟨elems, h⟩)) → Omni Γ st (.arrayLit tp n elems) Q
+| vectorLit {Q} : Q (some (st, elems)) → Omni Γ st (.vectorLit tp elems) Q
 | loopDone :
   lo ≥ hi →
   Omni Γ st (.loop lo hi body) Q
@@ -140,7 +142,9 @@ theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} 
   | fmtStr hq
   | skip hq
   | fn
-  | var hq =>
+  | var hq
+  | arrayLit
+  | vectorLit =>
     intro
     constructor
     simp only

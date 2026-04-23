@@ -49,6 +49,18 @@ def Expr.mkRepVector (n : Nat) (val : rep tp) : Lampe.Expr rep (.vector tp) :=
 def Expr.mkRepArray (n : Lampe.U 32) (val : rep tp) : Lampe.Expr rep (.array tp n) :=
   Lampe.Expr.callBuiltin _ (.array tp n) .mkArray (HList.replicate val n.toNat)
 
+/-- A utility function for creating an array from a homogeneous list, avoiding HList recursion. -/
+@[reducible]
+def Expr.arrayFromList (tp : Tp) (n : Lampe.U 32) (elems : List (rep tp))
+  : Lampe.Expr rep (.array tp n) :=
+  Lampe.Expr.arrayLit tp n elems
+
+/-- A utility function for creating a vector from a homogeneous list, avoiding HList recursion. -/
+@[reducible]
+def Expr.vectorFromList (tp : Tp) (elems : List (rep tp))
+  : Lampe.Expr rep (.vector tp) :=
+  Lampe.Expr.vectorLit tp elems
+
 /-- A utility function for creating a tuple expression. -/
 @[reducible]
 def Expr.mkTuple (name : Option String) (args : HList rep tps)

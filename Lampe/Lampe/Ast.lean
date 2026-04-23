@@ -31,6 +31,8 @@ inductive Expr (rep : Tp → Type) : Tp → Type where
 | skip : Expr rep .unit
 | loop : rep (.u s) → rep (.u s) → (rep (.u s) → Expr rep r) → Expr rep .unit
 | lam : (argTps : List Tp) → (outTp : Tp) → (HList rep argTps → Expr rep outTp) → Expr rep (.fn argTps outTp)
+| arrayLit : (tp : Tp) → (n : U 32) → (elems : List (rep tp)) → Expr rep (.array tp n)
+| vectorLit : (tp : Tp) → (elems : List (rep tp)) → Expr rep (.vector tp)
 
 -- TODO (MP): This helps with debugging the generated AST. It may be worth keeping this in the future
 -- but we should talk about it and/or delete it when we merge

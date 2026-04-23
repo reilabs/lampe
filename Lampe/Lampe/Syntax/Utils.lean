@@ -72,6 +72,15 @@ def makeHListLit [MonadUtil m] : List (TSyntax `term) → m (TSyntax `term)
   let tail ← makeHListLit xs
   ``(HList.cons $x $tail)
 
+/-- Makes a list literal iteratively, building from the tail to avoid deep recursion. -/
+def makeListLitIter [MonadUtil m] (items : List (TSyntax `term)) : m (TSyntax `term) := do
+  let arr := items.toArray
+  let mut result ← `([])
+  for i in [:arr.size] do
+    let idx := arr.size - 1 - i
+    result ← ``(List.cons $(arr[idx]!) $result)
+  pure result
+
 /--
 Builds a numeric constant from the provided syntax term.
 

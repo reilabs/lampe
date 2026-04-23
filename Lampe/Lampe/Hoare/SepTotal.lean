@@ -280,6 +280,20 @@ lemma BitVec.not_lt {a b : BitVec w}: ¬ a < b ↔ b ≤ a := by
   cases_type* BitVec
   simp [BitVec.le_ofFin, BitVec.lt_ofFin] at *
 
+theorem arrayLit_intro (h : elems.length = n.toNat) :
+    STHoare p Γ ⟦⟧ (.arrayLit tp n elems) fun v => v = ⟨elems, h⟩ := by
+  unfold STHoare THoare
+  intro H st hp
+  exact Omni.arrayLit (h := h) (by simp only; apply SLP.ent_star_top; assumption)
+
+theorem vectorLit_intro : STHoare p Γ ⟦⟧ (.vectorLit tp elems) fun v => v = elems := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
 theorem loopDone_intro : STHoare p Γ ⟦⟧ (.loop lo lo body) (fun _ => ⟦⟧) := by
   intro _ _ _
   apply Omni.loopDone

@@ -376,6 +376,37 @@ def delabBuiltinCall : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let callExpr ← `(noir_expr| (#_$(⟨builtinName⟩):ident returning $(←ppTp outTp))($args,*))
     return ←``(⸨$callExpr⸩)
 
+@[app_delab Lampe.Expr.arrayLit]
+def delabArrayLit : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let tp := expr.getArg! 1
+    let n := expr.getArg! 2
+    let elems := expr.getArg! 3
+    let elemsTerm ← delab elems
+    let tpStx ← ppTp tp
+    let nStx ← delab n
+    let nGenVal ← `(noir_gen_val|$(⟨nStx⟩):noir_const_num : u32)
+    let elemsExpr ← match elemsTerm with
+    | `([$args,*]) =>
+      let args ← args.getElems.mapM fun arg => `(noir_expr|$(⟨arg⟩))
+      `(noir_expr|#_ arrayLit $tpStx, $nGenVal, [$args,*])
+    | _ => `(noir_expr|#_ arrayLit $tpStx, $nGenVal, [$(⟨elemsTerm⟩)])
+    return ←``(⸨$elemsExpr⸩)
+
+@[app_delab Lampe.Expr.vectorLit]
+def delabVectorLit : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let tp := expr.getArg! 1
+    let elems := expr.getArg! 2
+    let elemsTerm ← delab elems
+    let tpStx ← ppTp tp
+    let elemsExpr ← match elemsTerm with
+    | `([$args,*]) =>
+      let args ← args.getElems.mapM fun arg => `(noir_expr|$(⟨arg⟩))
+      `(noir_expr|#_ vectorLit $tpStx, [$args,*])
+    | _ => `(noir_expr|#_ vectorLit $tpStx, [$(⟨elemsTerm⟩)])
+    return ←``(⸨$elemsExpr⸩)
+
 @[app_delab Lampe.Expr.loop]
 def delabLoop : Delab := whenDelabExprOption getExpr >>= fun expr =>
   whenFullyApplied expr do
