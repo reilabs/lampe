@@ -1,3 +1,4 @@
+mod alias_member_access;
 mod associated_type;
 mod const_generics;
 mod experiments;

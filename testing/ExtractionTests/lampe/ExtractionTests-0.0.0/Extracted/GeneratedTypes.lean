@@ -35,6 +35,8 @@ noir_struct_def «ExtractionTests-0.0.0»::struct_namespaces::test::Foo<> {
   Field,
 }
 
+noir_type_alias «ExtractionTests-0.0.0»::alias_member_access::Foo<A: Type, B: Type> := Tuple<A, B>;
+
 noir_struct_def «ExtractionTests-0.0.0»::multiple_generics::Pair<I: Type> {
   I,
   I,
