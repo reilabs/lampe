@@ -2,19 +2,20 @@ import Lampe
 
 open Lampe
 
-noir_def std::slice::append<T: Type>(mut self: Vector<T>, other: Vector<T>) -> Vector<T> := {
+noir_def std::slice::append<T: Type>(self: Vector<T>, other: Vector<T>) -> Vector<T> := {
+  let self = (#_ref returning & Vector<T>)(self);
   {
     let ζi0 = other;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        self = (#_vectorPushBack returning Vector<T>)(self, elem);
+        self = (#_vectorPushBack returning Vector<T>)((#_readRef returning Vector<T>)(self), elem);
         #_skip
       }
     };
     #_skip
   };
-  self
+  (#_readRef returning Vector<T>)(self)
 }
 
 noir_def simple_array<T: Type, N: u32>(x: Array<T, N: u32>) -> u32 := {

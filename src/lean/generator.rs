@@ -15,7 +15,7 @@ use itertools::Itertools;
 use nargo::workspace::Workspace;
 use noirc_errors::Location;
 use noirc_frontend::{
-    ast::{BinaryOpKind, FunctionKind, Ident, IntegerBitSize},
+    ast::{BinaryOpKind, FunctionKind, Ident, IntegerBitSize, UnaryOp},
     graph::CrateId,
     hir::{
         def_map::{LocalModuleId, ModuleData, ModuleDefId},
@@ -2394,6 +2394,24 @@ impl LeanGenerator<'_, '_, '_> {
     ///
     /// - If no trait is found corresponding to the prefix operator.
     pub fn generate_prefix(&self, prefix: &HirPrefixExpression, output_type: &Type) -> Expression {
+        // For `&mut x` where `x` is a mutable local, `x` is already a ref — just return it.
+        if matches!(prefix.operator, UnaryOp::Reference { .. }) {
+            if let HirExpression::Ident(ref rhs_ident, _) =
+                self.context.def_interner.expression(&prefix.rhs)
+            {
+                let rhs_def = self.context.def_interner.definition(rhs_ident.id);
+                if rhs_def.mutable && matches!(rhs_def.kind, DefinitionKind::Local(_)) {
+                    let name =
+                        quote_lean_keywords(self.context.def_interner.definition_name(rhs_ident.id));
+                    let identifier = Identifier {
+                        name: sanitize_variable_name(&name),
+                        typ:  output_type.clone(),
+                    };
+                    return Expression::Ident(identifier);
+                }
+            }
+        }
+
         let rhs = self.generate_expr(prefix.rhs);
         let rhs_ty = self.resolve_bound_type(prefix.rhs);
         let rhs_unfolded = self.unfold_alias(rhs_ty.clone()).try_into().ok();
@@ -2756,6 +2774,20 @@ impl LeanGenerator<'_, '_, '_> {
                     };
 
                     Expression::IdentCallRef(ident)
+                } else if ident_def.mutable {
+                    // Mutable locals are refs; emit readRef(x) to dereference.
+                    let identifier = Identifier {
+                        name: sanitize_variable_name(&name),
+                        typ:  Type::mutable_reference(output_type.clone()),
+                    };
+                    let read_ref_target =
+                        Expression::builtin_call_ref("readRef", output_type);
+                    let call = Call {
+                        function:    Box::new(read_ref_target),
+                        params:      vec![Expression::Ident(identifier)],
+                        return_type: output_type.clone(),
+                    };
+                    Expression::Call(call)
                 } else {
                     let identifier = Identifier {
                         name: sanitize_variable_name(&name),
@@ -2975,10 +3007,28 @@ impl LeanGenerator<'_, '_, '_> {
         let typ = self.generate_lean_type_value(&lets.r#type, None);
         let pattern = self.generate_pattern(&lets.pattern, Some(typ.clone()));
 
+        // For mutable bindings, desugar `let mut x = expr` into `let x = ref(expr)`.
+        // This makes the variable a reference in Lean, so reads must use readRef and
+        // assignments use modifyLens on the ref directly.
+        let (pattern, typ, expression) = match pattern {
+            Pattern::Mutable(inner) => {
+                let ref_type = Type::mutable_reference(typ);
+                let ref_call_target =
+                    Expression::builtin_call_ref("ref", &ref_type);
+                let ref_call = Call {
+                    function:    Box::new(ref_call_target),
+                    params:      vec![bound_expr],
+                    return_type: ref_type.clone(),
+                };
+                (*inner, ref_type, Box::new(Expression::Call(ref_call)))
+            }
+            _ => (pattern, typ, Box::new(bound_expr)),
+        };
+
         let stmt = LetStatement {
             pattern,
             typ,
-            expression: Box::new(bound_expr),
+            expression,
         };
 
         Statement::Let(stmt)

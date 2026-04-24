@@ -10,7 +10,6 @@ open Lampe
 /-- Carries information on patterns that can be used for destructuring. -/
 inductive Binder where
 | variable (name : Lean.Ident)
-| mutable (name : Lean.Ident)
 | tuple (elems : List Binder)
 | invalid
 
@@ -24,12 +23,7 @@ structure LambdaParam where
 
 /-- The state for the desugaring process from the DSL syntax into native Lean/lampe constructs. -/
 structure DSLState where
-  autoDeref : Std.HashMap Name Bool
   nextFresh : Nat
-  /-- When false, `makeBareIdent` will not automatically dereference the next mutable ident it
-  encounters and then reset this flag. Used by `#_ref` to propagate through syntax wrappers
-  (parens, blocks). -/
-  shouldAutoDeref : Bool
 
 /--
 The monad under which the desugaring operations all operate.
@@ -58,20 +52,7 @@ instance [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
 /-- Runs the DSL monad beginning with an empty state. -/
 def MonadDSL.run [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
     (a : StateT DSLState m α) : m α :=
-  StateT.run' a ⟨Std.HashMap.emptyWithCapacity 1000, 0, true⟩
-
-/-- Checks if the provided name `i` is subject to auto-dereferencing. -/
-def isAutoDerefd [MonadDSL m] (i : Name) : m Bool := do -- FIXME name is temporary
-  let st ← get
-  pure $ st.autoDeref.getD i False
-
-/-- Registers the provided name `i` for auto-dereferencing. -/
-def regAutoDeref [MonadDSL m] (i : Name) : m Unit := do
-  modify fun st => { st with autoDeref := st.autoDeref.insert i True }
-
-/-- Sets `shouldAutoDeref` and returns the previous value. -/
-def getSetShouldAutoDeref [MonadDSL m] (v : Bool) : m Bool := do
-  modifyGet fun st => (st.shouldAutoDeref, { st with shouldAutoDeref := v })
+  StateT.run' a ⟨0⟩
 
 /--
 Retrieves the name if provided, or generates a fresh name if none is available.
@@ -129,7 +110,7 @@ instance : Inhabited Args where
 
 /-- An LValue reference, namely the value that `modifyLens` should be called with. -/
 inductive LValueRef where
-/-- The source is a mutable let binding. -/
+/-- The source is a mutable let binding, already represented as a reference. -/
 | ident (id : TSyntax `ident)
 /-- The source is the result of an expression which returns a reference. -/
 | expr (expr : TSyntax `noir_expr)

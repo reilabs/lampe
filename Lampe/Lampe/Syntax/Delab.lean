@@ -195,7 +195,7 @@ def delabLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
       if val.isAppOf ``Lampe.Expr.ref then
         whenFullyApplied val do
           let val ← delab <| val.getArg! 2
-          `(noir_expr|let mut $(⟨var⟩) = $(extractInnerLampeExpr val))
+          `(noir_expr|let $(⟨var⟩) = $(extractInnerLampeExpr val))
       else if val.isAppOf ``Lampe.Expr.readRef then
         whenFullyApplied val do
           let val := val.getArg! 3

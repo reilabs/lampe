@@ -8,6 +8,6 @@ noir_def foo<>() → Unit := {
 }
 
 noir_def bar<>() → Unit := {
-  let mut a = 3: Field;
+  let a = (#_ref returning & Field)(3: Field);
   #_skip
 }

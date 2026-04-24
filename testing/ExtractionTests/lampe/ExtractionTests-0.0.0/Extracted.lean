@@ -2,6 +2,7 @@
 
 import «ExtractionTests-0.0.0».Extracted.AliasMemberAccess
 import «ExtractionTests-0.0.0».Extracted.AssociatedType
+import «ExtractionTests-0.0.0».Extracted.BlackBoxMut
 import «ExtractionTests-0.0.0».Extracted.ConstGenerics
 import «ExtractionTests-0.0.0».Extracted.Experiments
 import «ExtractionTests-0.0.0».Extracted.FieldGenerics
@@ -20,6 +21,7 @@ namespace «ExtractionTests-0.0.0»
 
 def env := AliasMemberAccess.env
   ++ AssociatedType.env
+  ++ BlackBoxMut.env
   ++ ConstGenerics.env
   ++ Experiments.env
   ++ FieldGenerics.env

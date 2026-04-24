@@ -11,7 +11,7 @@ noir_def «ExtractionTests-0.0.0»::unit_return::foo2<>() -> Unit := {
 }
 
 noir_def «ExtractionTests-0.0.0»::unit_return::bar<>() -> Unit := {
-  let mut x = (3: Field);
+  let x = (#_ref returning & Field)((3: Field));
   x = (4: Field);
   #_skip
 }

@@ -79,9 +79,6 @@ partial def makePat [MonadDSL m] : TSyntax `noir_pat -> m Binder
 | `(noir_pat|$i:noir_ident) => do
   let name ← makeNoirIdent i
   pure $ Binder.variable name
-| `(noir_pat|mut $i:noir_ident) => do
-  let name ← makeNoirIdent i
-  pure $ Binder.mutable name
 | `(noir_pat|( $pats,* )) => do pure $ Binder.tuple (←pats.getElems.toList.mapM makePat)
 | p => throwError "Invalid pattern syntax {p}"
 
@@ -120,9 +117,6 @@ partial def makeBinder' [MonadDSL m]
     (rhsIdent : TSyntax `term)
     (k : m (TSyntax `term))
   : m (TSyntax `term) := match binder with
-| .mutable v => do
-  regAutoDeref $ v.getId
-  wrapInLet (←``(Expr.ref $rhsIdent)) v (some fun _ => k)
 | .tuple xs => do
     makeTupleBinders 0 xs rhsIdent k
 | _ => throwError "Encountered invalid binder"
@@ -219,42 +213,7 @@ partial def makeExpr [MonadDSL m]
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
-  -- `#_ref(#_readRef(x))` should collapse to `x`: taking a reference to a dereference is identity.
-  -- Additionally, `makeExpr` auto-dereferences mutable locals, so `#_ref(id)` on a mutable local
-  -- would lower to `ref(readRef id)` unless we suppress auto-deref while elaborating the argument.
-  if name.getId == `ref then
-    match argsList with
-    | [arg] => do
-      -- Syntactic identity: #_ref(#_readRef(x)) = x.
-      let inner? : Option _ :=
-        if let `(noir_expr|(#_readRef returning $_)( $readArgs,* )) := arg then
-          readArgs.getElems.toList.head?
-        else none
-      if let some inner := inner? then
-        return ← makeExpr inner binder k
-      let saved ← getSetShouldAutoDeref false
-      makeExpr arg binder fun argVal => do
-          -- Restore to saved and check whether `makeBareIdent` consumed the flag. Consumed (true)
-          -- means it emitted `Expr.var id` — the ref itself. Not restoring unconditionally
-          -- ensures nested #_ref calls compose correctly.
-          let consumed ← getSetShouldAutoDeref saved
-          if consumed then
-            match k with
-            | some k => k argVal
-            | none => pure argVal
-          else do
-            -- Argument was not a mutable ident; wrap in ref(...) as normal.
-            let argVals ← makeHListLit [argVal]
-            wrapInLet
-              (←``(Expr.callBuiltin _
-                $(←makeNoirType tp)
-                $(←makeBuiltin name.getId.toString)
-                $argVals))
-              binder
-              k
-    | _ => emitBuiltin
-  else
-    emitBuiltin
+  emitBuiltin
 
 -- Bare function refs
 | `(noir_expr|$ref:noir_funcref) => match ref with
@@ -362,7 +321,6 @@ partial def makeLambda [MonadDSL m]
   let paramTypes ← makeListLit paramTypes
   let paramNames ← params.mapM fun b => match b.binder with
   | .variable n => ``($n)
-  | .mutable _ => throwError "Mutable binders not currently supported in lambda parameters"
   | .tuple _ => throwError "Tuple binders not currently supported in lambda parameters"
   | .invalid => throwError "Encountered invalid binder"
   let args : TSyntax `term ← makeHListLit paramNames
@@ -375,23 +333,14 @@ partial def makeLambda [MonadDSL m]
 | l, _, _ => throwError "Invalid lambda syntax {l} encountered"
 
 /--
-Handles the wrapping of a bare identifier in an automatic dereference if necessary, and otherwise
-continues with the provided identifier.
+Handles the wrapping of a bare identifier, continuing with the provided identifier.
 -/
 partial def makeBareIdent [MonadDSL m]
     (ident : TSyntax `ident)
     (binder : Option Lean.Ident)
     (k : Option $ TSyntax `term → m (TSyntax `term))
   : m (TSyntax `term) := do
-  if ←isAutoDerefd ident.getId then
-    -- When shouldAutoDeref is false (inside #_ref), emit the variable directly without readRef
-    -- and restore the flag. The caller (#_ref handler) will see that the flag was consumed and
-    -- skip the outer ref(...) wrapping.
-    if !(←getSetShouldAutoDeref true) then
-      wrapInLet (←``(Expr.var $ident)) binder k
-    else
-      wrapInLet (←``(Expr.readRef $ident)) binder k
-  else match binder with
+  match binder with
   | none => match k with
     | some k => k ident
     | none => ``(Expr.var $ident)
@@ -428,19 +377,6 @@ partial def makeArgs [MonadDSL m]
 
 end
 
-/--
-Handles the registration of mutable arguments for proper handling, or returns an error if invalid.
--/
-def makeMutableArgs [MonadDSL m]
-    (mutArgs : List (TSyntax `term))
-    (k : m (TSyntax `term))
-  : m (TSyntax `term) := match mutArgs with
-| [] => k
-| h :: t => match h with
-  | `($h:ident) => do
-    regAutoDeref h.getId
-    ``(Expr.letIn (Expr.ref $h) fun $h => $(←makeMutableArgs t k))
-  | _ => throwUnsupportedSyntax
 
 /--
 Builds a function declaration from the provided syntax, or returns an error if the syntax is
@@ -452,8 +388,7 @@ def makeFnDecl [MonadUtil m] (syn : Syntax) : m (Lean.Ident × TSyntax `term) :=
   let name ← makeNoirIdent name
   let (genericKinds, genericDefs) ← makeGenericDefTerms generics.getElems.toList
   let params ← params.getElems.toList.mapM makeFuncParam
-  let mutParams := params.filterMap fun ⟨i, _, isMut⟩ => if isMut then some i else none
-  let body ← MonadDSL.run $ makeMutableArgs mutParams do
+  let body ← MonadDSL.run do
     makeExpr body none none
   let lambda ← ``(fun rep generics => match generics with
   | $(genericDefs) => ⟨

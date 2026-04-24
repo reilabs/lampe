@@ -1,4 +1,5 @@
 mod alias_member_access;
+mod black_box_mut;
 mod nested_member_access;
 mod associated_type;
 mod const_generics;

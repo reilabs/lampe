@@ -14,12 +14,12 @@ noir_def «ExtractionTests-0.0.0»::const_generics::nat_generic_test<N: u32>() -
 }
 
 noir_def «ExtractionTests-0.0.0»::const_generics::nat_generic_test_2<N: u8>(x: Field) -> Field := {
-  let mut res = x;
+  let res = (#_ref returning & Field)(x);
   for _ in (0: u8) .. uConst!(N: u8) do {
-    res = (#_fMul returning Field)(res, (2: Field));
+    res = (#_fMul returning Field)((#_readRef returning Field)(res), (2: Field));
     #_skip
   };
-  res
+  (#_readRef returning Field)(res)
 }
 
 def «ExtractionTests-0.0.0».ConstGenerics.env : Env := Env.mk

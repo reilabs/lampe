@@ -34,11 +34,11 @@ example : Lampe.STHoare p basicFnEnv ⟦⟧ (basic_fn_call.fn.body _ h![] |>.bod
   simp_all; subst_vars; norm_cast
 
 noir_def basic_muts<>(x: Field) -> Field := {
-  let mut y = x;
-  let mut z = x;
-  z = z;
-  y = z;
-  y
+  let y = (#_ref returning & Field)(x);
+  let z = (#_ref returning & Field)(x);
+  z = (#_readRef returning Field)(z);
+  y = (#_readRef returning Field)(z);
+  (#_readRef returning Field)(y)
 }
 
 example : Lampe.STHoare p Γ ⟦⟧ (basic_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
@@ -60,11 +60,11 @@ example {x y : Tp.denote p .field} :
   simp_all
 
 noir_def slice_append<I: Type>(x: Vector<I>, y: Vector<I>) → Vector<I> := {
-  let mut self = x;
+  let self = (#_ref returning & Vector<I>)(x);
   for i in (0 : u32) .. (#_arrayLen returning u32)(y) do {
-    self = (#_vectorPushBack returning Vector<I>)(self, (#_vectorIndex returning I)(y, i));
+    self = (#_vectorPushBack returning Vector<I>)((#_readRef returning Vector<I>)(self), (#_vectorIndex returning I)(y, i));
   };
-  self
+  (#_readRef returning Vector<I>)(self)
 }
 
 example {selfV that : Tp.denote p (.vector tp)}
@@ -82,11 +82,11 @@ example {selfV that : Tp.denote p (.vector tp)}
     simp_all [Nat.mod_eq_of_lt]
 
 noir_def simple_if<>(x: Field, y: Field) -> Field := {
-  let mut z = x;
+  let z = (#_ref returning & Field)(x);
   if (#_fEq returning bool)(x, x) then {
     z = y;
   };
-  z
+  (#_readRef returning Field)(z)
 }
 
 example : STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, y]) fun v => v = y := by
@@ -361,15 +361,18 @@ example : STHoare p Γ ⟦⟧ (simple_slice_of_values.fn.body _ h![] |>.body h![
   aesop
 
 noir_def tuple_lens<>() → Field := {
-  let mut p = (#_makeData returning Tuple<Tuple<Field, Field>, Field>)(
-    (#_makeData returning Tuple<Field, Field>)(1: Field, 2: Field),
-    3: Field
+  let p = (#_ref returning & Tuple<Tuple<Field, Field>, Field>)(
+    (#_makeData returning Tuple<Tuple<Field, Field>, Field>)(
+      (#_makeData returning Tuple<Field, Field>)(1: Field, 2: Field),
+      3: Field
+    )
   );
 
   (p.1: Field) = 5: Field;
   ((p.0: Tuple<Field, Field>).1: Field) = 10: Field;
 
-  (p.0).1
+  let p_val = (#_readRef returning Tuple<Tuple<Field, Field>, Field>)(p);
+  (p_val.0).1
 }
 
 example : STHoare p Γ ⟦⟧ (tuple_lens.fn.body _ h![] |>.body h![])
@@ -385,14 +388,17 @@ noir_struct_def Pair<E: Type> {
 }
 
 noir_def struct_lens<>() → Field := {
-  let mut p = (#_makeData returning Tuple<Pair<Field>, Field>)(
-    (#_makeData returning Pair<Field>)(1: Field, 2: Field),
-    3: Field
+  let p = (#_ref returning & Tuple<Pair<Field>, Field>)(
+    (#_makeData returning Tuple<Pair<Field>, Field>)(
+      (#_makeData returning Pair<Field>)(1: Field, 2: Field),
+      3: Field
+    )
   );
 
   ((p.0: Pair<Field>).1: Field) = 20: Field;
 
-  (p.0).1
+  let p_val = (#_readRef returning Tuple<Pair<Field>, Field>)(p);
+  (p_val.0).1
 }
 
 example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![])
@@ -403,14 +409,17 @@ example : STHoare p Γ ⟦⟧ (struct_lens.fn.body _ h![] |>.body h![])
   rfl
 
 noir_def array_lens<>() → Field := {
-  let mut a = (#_makeData returning Tuple<Array<Field, 2: u32>, Field>)(
-    (#_mkArray returning Array<Field, 2: u32>)(1: Field, 2: Field),
-    3: Field
+  let a = (#_ref returning & Tuple<Array<Field, 2: u32>, Field>)(
+    (#_makeData returning Tuple<Array<Field, 2: u32>, Field>)(
+      (#_mkArray returning Array<Field, 2: u32>)(1: Field, 2: Field),
+      3: Field
+    )
   );
 
   ((a.0: Array<Field, 2: u32>)[1: u32]: Field) = 30: Field;
 
-  (#_arrayIndex returning Field)(a.0, 1: u32)
+  let a_val = (#_readRef returning Tuple<Array<Field, 2: u32>, Field>)(a);
+  (#_arrayIndex returning Field)(a_val.0, 1: u32)
 }
 
 example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![])
@@ -420,14 +429,17 @@ example : STHoare p Γ ⟦⟧ (array_lens.fn.body _ h![] |>.body h![])
   aesop
 
 noir_def slice_lens<>() → Field := {
-  let mut a = (#_makeData returning Tuple<Vector<Field>, Field>)(
-    (#_mkVector returning Vector<Field>)(1: Field, 2: Field),
-    3: Field
+  let a = (#_ref returning & Tuple<Vector<Field>, Field>)(
+    (#_makeData returning Tuple<Vector<Field>, Field>)(
+      (#_mkVector returning Vector<Field>)(1: Field, 2: Field),
+      3: Field
+    )
   );
 
   ((a.0: Vector<Field>)[[1: u32]]: Field) = 40: Field;
 
-  (#_vectorIndex returning Field)(a.0, 1: u32)
+  let a_val = (#_readRef returning Tuple<Vector<Field>, Field>)(a);
+  (#_vectorIndex returning Field)(a_val.0, 1: u32)
 }
 
 example : STHoare p Γ ⟦⟧ (slice_lens.fn.body _ h![] |>.body h![])
@@ -518,13 +530,13 @@ example : STHoare p aliasTestEnv ⟦⟧ (alias_test.call h![] h![⟨[1, 2, 3], b
   aesop
 
 noir_def const_test<N: u8>(x: Field) → Field := {
-  let mut res = x;
+  let res = (#_ref returning & Field)(x);
 
   for _ in (0: u8) .. uConst!(N: u8) do {
-    res = (#_fMul returning Field)(res, 2: Field);
+    res = (#_fMul returning Field)((#_readRef returning Field)(res), 2: Field);
   };
 
-  res
+  (#_readRef returning Field)(res)
 }
 
 def constTestEnv : Env := ⟨[const_test], []⟩
@@ -544,9 +556,10 @@ example : STHoare p constTestEnv ⟦⟧ (const_test.call h![3] h![2])
     norm_num
 
 noir_def tuple_pattern<>(x: Field) → Field := {
-  let (mut x, y) = (#_makeData returning Tuple<Field, Field>)(x, x);
+  let (x, y) = (#_makeData returning Tuple<Field, Field>)(x, x);
+  let x = (#_ref returning & Field)(x);
   x = y;
-  x
+  (#_readRef returning Field)(x)
 }
 
 def tuplePatternEnv : Env := ⟨[tuple_pattern], []⟩
@@ -683,93 +696,83 @@ theorem returns_string_correct {p}
   subst_vars
   rfl
 
--- Regression test: #_ref on a mutable local must preserve reference identity. Before the fix,
--- #_ref(x) on a `let mut x` would auto-deref x and allocate a fresh cell (`ref(readRef(x))`),
--- so mutations through the new ref were lost.
+-- Tests for explicit ref/readRef patterns (previously used auto-deref).
 noir_def increment_ref<>(r: & Field) -> Unit := {
   (*r: Field) = (#_fAdd returning Field)((#_readRef returning Field)(r), (1: Field));
   #_skip
 }
 
+-- Pass acc (already a ref) directly to increment_ref.
 noir_def mut_ref_loop<>() -> Field := {
-  let mut acc = (0: Field);
+  let acc = (#_ref returning & Field)((0: Field));
   for _ in (0: u32) .. (3: u32) do {
-    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)(acc));
+    (increment_ref<> as λ(& Field) -> Unit)(acc);
   };
-  acc
+  (#_readRef returning Field)(acc)
 }
 
--- Same test with parenthesized #_ref argument: #_ref((acc))
+-- Same as mut_ref_loop (variants collapsed now that auto-deref is removed).
 noir_def mut_ref_loop_parens<>() -> Field := {
-  let mut acc = (0: Field);
+  let acc = (#_ref returning & Field)((0: Field));
   for _ in (0: u32) .. (3: u32) do {
-    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)((acc)));
+    (increment_ref<> as λ(& Field) -> Unit)(acc);
   };
-  acc
+  (#_readRef returning Field)(acc)
 }
 
--- Same test with block-wrapped #_ref argument: #_ref({ acc })
+-- Same as mut_ref_loop.
 noir_def mut_ref_loop_block<>() -> Field := {
-  let mut acc = (0: Field);
+  let acc = (#_ref returning & Field)((0: Field));
   for _ in (0: u32) .. (3: u32) do {
-    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)({ acc }));
+    (increment_ref<> as λ(& Field) -> Unit)(acc);
   };
-  acc
+  (#_readRef returning Field)(acc)
 }
 
--- Deeply nested parens exercise multiple `makeExpr` recursion levels.
+-- Same as mut_ref_loop.
 noir_def mut_ref_loop_nested<>() -> Field := {
-  let mut acc = (0: Field);
+  let acc = (#_ref returning & Field)((0: Field));
   for _ in (0: u32) .. (3: u32) do {
-    (increment_ref<> as λ(& Field) -> Unit)((#_ref returning & Field)((((acc)))));
+    (increment_ref<> as λ(& Field) -> Unit)(acc);
   };
-  acc
+  (#_readRef returning Field)(acc)
 }
 
--- Explicit ref/deref/ref chain should collapse: #_ref(#_readRef(#_ref(acc))) = #_ref(acc).
+-- Direct pass of ref to increment_ref (chain collapse is no longer relevant).
 noir_def mut_ref_chain<>() -> Field := {
-  let mut acc = (0: Field);
-  (increment_ref<> as λ(& Field) -> Unit)(
-    (#_ref returning & Field)((#_readRef returning Field)((#_ref returning & Field)(acc)))
-  );
-  acc
+  let acc = (#_ref returning & Field)((0: Field));
+  (increment_ref<> as λ(& Field) -> Unit)(acc);
+  (#_readRef returning Field)(acc)
 }
 
--- Same collapse behavior when the chain starts from a non-autoderef ref parameter.
+-- Aliasing: r = x (same ref), increment through r modifies x.
 noir_def mut_ref_chain_non_autoderef<>() -> Field := {
-  let mut x = (0: Field);
-  let r = (#_ref returning & Field)(x);
-  let r2 = (#_ref returning & Field)((#_readRef returning Field)(r));
-  let r3 = (#_ref returning & Field)((#_readRef returning Field)(r2));
-  (increment_ref<> as λ(& Field) -> Unit)(r3);
-  x
+  let x = (#_ref returning & Field)((0: Field));
+  let r = x;
+  (increment_ref<> as λ(& Field) -> Unit)(r);
+  (#_readRef returning Field)(x)
 }
 
--- Mirrors probe::chain_mutate_copy_smoke (inlined): same collapse with a non-zero
--- initial value to rule out coincidental zeros (x goes from 7 to 8).
+-- Same as above with non-zero initial value (x goes from 7 to 8).
 noir_def chain_mutate_copy_smoke<>() -> Field := {
-  let mut x = (7: Field);
-  let r = (#_ref returning & Field)(x);
-  let r2 = (#_ref returning & Field)((#_readRef returning Field)(r));
-  let r3 = (#_ref returning & Field)((#_readRef returning Field)(r2));
-  (increment_ref<> as λ(& Field) -> Unit)(r3);
-  x
+  let x = (#_ref returning & Field)((7: Field));
+  let r = x;
+  (increment_ref<> as λ(& Field) -> Unit)(r);
+  (#_readRef returning Field)(x)
 }
 
--- Matches the extracted Noir pattern: r2 collapses to r (ref-param, not in autoDeref map),
--- v is a fresh mutable copy of r's value, r3 collapses to v.
--- Returns the value at v (= original value at r).
+-- r2 is a copy of r's value. v is a ref to a copy of r2's value.
+-- Returns value at v (= original value at r).
 noir_def chain_from_explicit_readref<>(r: & Field) -> Field := {
   let r2 = (#_ref returning & Field)((#_readRef returning Field)(r));
-  let mut v = (#_readRef returning Field)(r2);
-  let r3 = (#_ref returning & Field)(v);
-  (#_readRef returning Field)(r3)
+  let v = (#_ref returning & Field)((#_readRef returning Field)(r2));
+  (#_readRef returning Field)(v)
 }
 
--- Smoke: x=5, call chain_from_explicit_readref with &x, result should be 5.
+-- Smoke: x=5, call chain_from_explicit_readref with x (already a ref), result should be 5.
 noir_def chain_from_explicit_readref_smoke<>() -> Field := {
-  let mut x = (5: Field);
-  (chain_from_explicit_readref<> as λ(& Field) -> Field)((#_ref returning & Field)(x))
+  let x = (#_ref returning & Field)((5: Field));
+  (chain_from_explicit_readref<> as λ(& Field) -> Field)(x)
 }
 
 def mutRefLoopEnv : Env :=
@@ -884,24 +887,14 @@ theorem chain_mutate_copy_smoke_correct
   simp_all
   ring
 
--- chain_from_explicit_readref: reading a ref through an r2 collapse + fresh mutable copy
--- preserves the original value (returns val).
--- The two collapses (r2=r and r3=v) are non-# variables, so steps stops early with an
--- unresolved frame entailment at each readRef. We alternate subst_vars (to substitute the
--- equality into the frame goal) with sl (to close it), then subst into the continuation.
+-- chain_from_explicit_readref: reading through two ref copies preserves the original value.
 lemma chain_from_explicit_readref_spec {r : Tp.denote p Tp.field.ref} {val : Fp p}
   : STHoare p mutRefLoopEnv [r ↦ ⟨.field, val⟩]
     (chain_from_explicit_readref.call h![] h![r])
     (fun result => result = val) := by
   enter_decl
-  steps         -- stops at readRef r2 (r2 = r propositionally); goals: [frame-ent, triple]
-  subst_vars    -- subst r2 → r in the frame entailment (goal 1)
-  · sl          -- close frame entailment: [r ↦ val] ⊢ [r ↦ ?val'] ⋆ ?frame
-  · subst_vars  -- subst r2 → r in the continuation (goal 2), now that ?val' and ?frame are assigned
-    steps       -- stops at readRef r3 (r3 = v propositionally); goals: [frame-ent, qEnt]
-    subst_vars  -- subst r3 → v in the frame entailment (goal 1)
-    · sl        -- close frame entailment: [r ↦ val] ⋆ [v ↦ val] ⊢ [v ↦ ?val''] ⋆ ?frame2
-    · sl; assumption -- sl extracts ⟦v✝ = val⟧ as Prop subgoal; assumption closes it
+  steps
+  simp_all
 
 -- Smoke: x=5 passed as &x, chain_from_explicit_readref reads through the ref chain,
 -- result is 5 (x unchanged).
