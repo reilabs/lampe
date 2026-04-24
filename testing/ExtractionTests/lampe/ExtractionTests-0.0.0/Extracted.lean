@@ -8,6 +8,7 @@ import «ExtractionTests-0.0.0».Extracted.FieldGenerics
 import «ExtractionTests-0.0.0».Extracted.GeneratedTypes
 import «ExtractionTests-0.0.0».Extracted.Lib
 import «ExtractionTests-0.0.0».Extracted.MultipleGenerics
+import «ExtractionTests-0.0.0».Extracted.NestedMemberAccess
 import «ExtractionTests-0.0.0».Extracted.Patterns
 import «ExtractionTests-0.0.0».Extracted.StructNamespaces
 import «ExtractionTests-0.0.0».Extracted.TypeOrder
@@ -24,6 +25,7 @@ def env := AliasMemberAccess.env
   ++ FieldGenerics.env
   ++ Lib.env
   ++ MultipleGenerics.env
+  ++ NestedMemberAccess.env
   ++ Patterns.env
   ++ StructNamespaces.env
   ++ TypeOrder.env
