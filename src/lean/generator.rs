@@ -3489,7 +3489,12 @@ pub fn sanitize_generic_name(name: &str) -> String {
 /// valid variable name.
 #[must_use]
 pub fn sanitize_variable_name(name: &str) -> String {
-    name.replace('$', "ζ")
+    let name = name.replace('$', "ζ");
+    if conflicts_with_lean_keyword(&name) {
+        format!("{LEAN_QUOTE_START}{name}{LEAN_QUOTE_END}")
+    } else {
+        name
+    }
 }
 
 /// Quotes the Lean keywords in the fully qualified name to avoid conflicts with

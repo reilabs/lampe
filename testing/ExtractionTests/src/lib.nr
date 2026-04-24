@@ -10,5 +10,6 @@ mod patterns;
 mod struct_namespaces;
 mod type_order;
 mod unconstrained_return;
+mod reserved_keywords;
 mod shadow_mut;
 mod unit_return;
