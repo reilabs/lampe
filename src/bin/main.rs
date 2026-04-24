@@ -13,8 +13,7 @@
 
 use std::{
     collections::HashSet,
-    fs,
-    panic,
+    fs, panic,
     path::{Path, PathBuf},
     process::ExitCode,
 };

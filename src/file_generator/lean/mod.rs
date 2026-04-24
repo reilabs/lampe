@@ -12,11 +12,7 @@ use itertools::Itertools;
 use crate::file_generator::{
     self,
     lake::dependency::{LeanDependency, LeanDependencyPath},
-    DependencyInfo,
-    Error,
-    LeanFile,
-    NoirPackageIdentifier,
-    EXTRACTED_MODULE_NAME,
+    DependencyInfo, Error, LeanFile, NoirPackageIdentifier, EXTRACTED_MODULE_NAME,
     LAMPE_GENERATED_COMMENT,
 };
 
@@ -44,18 +40,18 @@ macro_rules! overwrite_check {
 /// Noir project
 struct FileGenerator {
     /// The root directory of the Lampe project where files will be generated.
-    lampe_root_dir:          path::PathBuf,
+    lampe_root_dir: path::PathBuf,
     /// The identifier of the Noir package being processed.
     noir_package_identifier: NoirPackageIdentifier,
     /// Information about the standard library, if applicable (if not the
     /// standard library itself)
-    stdlib_info:             Option<NoirPackageIdentifier>,
+    stdlib_info: Option<NoirPackageIdentifier>,
     /// The local dependencies of the Noir package being processed.
-    local_dependencies:      Vec<NoirPackageIdentifier>,
+    local_dependencies: Vec<NoirPackageIdentifier>,
     /// The external dependencies of the Noir package being processed.
-    external_dependencies:   Vec<NoirPackageIdentifier>,
+    external_dependencies: Vec<NoirPackageIdentifier>,
     /// Configuration option on whether to overwrite existing files.
-    overwrite:               bool,
+    overwrite: bool,
 }
 
 impl FileGenerator {

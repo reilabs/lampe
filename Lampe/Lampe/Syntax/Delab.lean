@@ -121,11 +121,6 @@ def delabVar : Delab := whenDelabExprOption getExpr >>= fun expr =>
       let var ← `(noir_expr|$(⟨← delab val⟩))
       return ←``(⸨$var⸩)
 
-@[app_delab Lampe.Expr.readRef]
-def delabReadRef : Delab := whenDelabExprOption getExpr >>= fun expr =>
-  whenFullyApplied expr do
-    let val := expr.getArg! 2
-    ``(⸨$(⟨← delab val⟩)⸩)
 
 inductive LensStep
   | tuple (idx : Nat)
@@ -192,15 +187,7 @@ def delabLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
     let morebody := extractBlock? body
 
     let letBinding ←
-      if val.isAppOf ``Lampe.Expr.ref then
-        whenFullyApplied val do
-          let val ← delab <| val.getArg! 2
-          `(noir_expr|let $(⟨var⟩) = $(extractInnerLampeExpr val))
-      else if val.isAppOf ``Lampe.Expr.readRef then
-        whenFullyApplied val do
-          let val := val.getArg! 3
-          `(noir_expr|let $(⟨var⟩) = $(extractInnerLampeExpr (← delab val)))
-      else if val.isAppOf ``Lampe.Expr.modifyLens then
+      if val.isAppOf ``Lampe.Expr.modifyLens then
         whenFullyApplied val do
           let modifiedVal ← delab <| val.getArg! 3
           let newVal ← delab <| val.getArg! 4
@@ -213,10 +200,6 @@ def delabLetIn : Delab := whenDelabExprOption getExpr >>= fun expr =>
             buildLVal ⟨modifiedVal⟩ lensSteps.reverse (← ppTp (val.getArg! 2))
 
           `(noir_expr|$lval:noir_lval = $(⟨newVal⟩))
-      else if val.isAppOf ``Lampe.Expr.readRef then
-        whenFullyApplied val do
-          let val := val.getArg! 3
-          `(noir_expr|let $(⟨var⟩) = $(extractInnerLampeExpr (← delab val)))
       else if val.isAppOf ``Lampe.Expr.loop then
         whenFullyApplied val do
           `(noir_expr|$(extractInnerLampeExpr (← delab val)))

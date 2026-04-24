@@ -46,7 +46,7 @@ pub trait LeanDependency {
                 ))?;
 
         Ok(NoirPackageIdentifier {
-            name:    name.to_string(),
+            name: name.to_string(),
             version: version.to_string(),
         })
     }

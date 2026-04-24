@@ -6,9 +6,9 @@ use crate::file_generator::lake::dependency::LeanDependency;
 /// rev.
 #[derive(Debug, Clone)]
 pub struct LeanDependencyReservoirGit {
-    name:  String,
+    name: String,
     scope: Option<String>,
-    rev:   Option<String>,
+    rev: Option<String>,
 }
 
 pub struct LeanDependencyReservoirGitBuilder {
@@ -21,9 +21,9 @@ impl LeanDependencyReservoirGitBuilder {
     fn new(name: &str) -> Self {
         Self {
             dependency: LeanDependencyReservoirGit {
-                name:  name.to_string(),
+                name: name.to_string(),
                 scope: None,
-                rev:   None,
+                rev: None,
             },
         }
     }

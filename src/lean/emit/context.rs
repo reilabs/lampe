@@ -29,9 +29,9 @@ impl EmitContext {
     #[must_use]
     pub fn new(indent_level_contents: &str) -> Self {
         Self {
-            source_buffer:           String::new(),
-            indent_level:            0,
-            indent_level_contents:   indent_level_contents.to_owned(),
+            source_buffer: String::new(),
+            indent_level: 0,
+            indent_level_contents: indent_level_contents.to_owned(),
             current_line_has_indent: false,
         }
     }

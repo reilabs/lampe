@@ -2,11 +2,7 @@ use crate::{
     file_generator::NoirPackageIdentifier,
     lean::{
         ast::{
-            FunctionDefinition,
-            GlobalDefinition,
-            Module,
-            ModuleDefinition,
-            TraitImplementation,
+            FunctionDefinition, GlobalDefinition, Module, ModuleDefinition, TraitImplementation,
             WhereClause,
         },
         emit::{context::EmitContext, writer::Writer},
@@ -97,14 +93,13 @@ impl ModuleEmitter {
 
         // Wrap body with `let param = ref(param);` for each mutable parameter.
         let mut_params: Vec<_> = function.parameters.iter().filter(|p| p.is_mut).collect();
-        if !mut_params.is_empty() {
+        if mut_params.is_empty() {
+            writer.write_expression(&function.body);
+        } else {
             writer.append_to_line("{");
             for p in &mut_params {
                 writer.end_line();
-                writer.append_to_line(&format!(
-                    "  let {} = (#_ref returning & ",
-                    p.name
-                ));
+                writer.append_to_line(&format!("  let {} = (#_ref returning & ", p.name));
                 writer.write_type_value(&p.typ, false);
                 writer.append_to_line(&format!(")({})", p.name));
                 writer.append_to_line(";");
@@ -114,8 +109,6 @@ impl ModuleEmitter {
             writer.write_expression(&function.body);
             writer.end_line();
             writer.append_to_line("}");
-        } else {
-            writer.write_expression(&function.body);
         }
         if with_semi {
             writer.append_to_line(";");

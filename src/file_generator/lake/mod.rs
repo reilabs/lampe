@@ -9,9 +9,7 @@ use serde::Deserialize;
 use crate::{
     file_generator::{
         lake::dependency::{LeanDependency, LeanDependencyGit},
-        Error,
-        NoirPackageIdentifier,
-        LAMPE_GENERATED_COMMENT,
+        Error, NoirPackageIdentifier, LAMPE_GENERATED_COMMENT,
     },
     lean::{LEAN_QUOTE_END, LEAN_QUOTE_START},
 };

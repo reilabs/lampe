@@ -60,7 +60,7 @@ type LeanFileContent = String;
 #[derive(Clone, Debug)]
 pub struct LeanFile {
     pub file_path: LeanFilePath,
-    pub content:   LeanFileContent,
+    pub content: LeanFileContent,
 }
 
 impl LeanFile {
