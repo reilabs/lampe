@@ -38,12 +38,12 @@ noir_def «complexnr-0.0.0»::sqrt<>(value: Field, iterations: u32) -> Field := 
   if (#_fEq returning bool)(value, (0: Field)) then {
     (0: Field)
   } else {
-    let mut x = (#_fDiv returning Field)(value, (2: Field));
+    let x = (#_ref returning & Field)((#_fDiv returning Field)(value, (2: Field)));
     for _ in (0: u32) .. iterations do {
-      x = (#_fDiv returning Field)((#_fAdd returning Field)(x, (#_fDiv returning Field)(value, x)), (2: Field));
+      x = (#_fDiv returning Field)((#_fAdd returning Field)((#_readRef returning Field)(x), (#_fDiv returning Field)(value, (#_readRef returning Field)(x))), (2: Field));
       #_skip
     };
-    x
+    (#_readRef returning Field)(x)
   }
 }
 
@@ -53,15 +53,15 @@ noir_def «complexnr-0.0.0»::magnitude<>(complex: «complexnr-0.0.0»::Complex<
 }
 
 noir_def «complexnr-0.0.0»::evaluate_polynomial<>(coefficients: Array<Field, 10: u32>, x: «complexnr-0.0.0»::Complex<>) -> «complexnr-0.0.0»::Complex<> := {
-  let mut result = (#_makeData returning «complexnr-0.0.0»::Complex<>)((0: Field), (0: Field));
-  let mut current_term = (#_makeData returning «complexnr-0.0.0»::Complex<>)((1: Field), (0: Field));
+  let result = (#_ref returning & «complexnr-0.0.0»::Complex<>)((#_makeData returning «complexnr-0.0.0»::Complex<>)((0: Field), (0: Field)));
+  let current_term = (#_ref returning & «complexnr-0.0.0»::Complex<>)((#_makeData returning «complexnr-0.0.0»::Complex<>)((1: Field), (0: Field)));
   for i in (0: u32) .. (10: u32) do {
     let coeff = (#_arrayIndex returning Field)(coefficients, (#_cast returning u32)(i));
-    result = («complexnr-0.0.0»::add<> as λ(«complexnr-0.0.0»::Complex<>, «complexnr-0.0.0»::Complex<>) -> «complexnr-0.0.0»::Complex<>)(result, («complexnr-0.0.0»::scalar_multiply<> as λ(«complexnr-0.0.0»::Complex<>, Field) -> «complexnr-0.0.0»::Complex<>)(current_term, coeff));
-    current_term = («complexnr-0.0.0»::multiply<> as λ(«complexnr-0.0.0»::Complex<>, «complexnr-0.0.0»::Complex<>) -> «complexnr-0.0.0»::Complex<>)(current_term, x);
+    result = («complexnr-0.0.0»::add<> as λ(«complexnr-0.0.0»::Complex<>, «complexnr-0.0.0»::Complex<>) -> «complexnr-0.0.0»::Complex<>)((#_readRef returning «complexnr-0.0.0»::Complex<>)(result), («complexnr-0.0.0»::scalar_multiply<> as λ(«complexnr-0.0.0»::Complex<>, Field) -> «complexnr-0.0.0»::Complex<>)((#_readRef returning «complexnr-0.0.0»::Complex<>)(current_term), coeff));
+    current_term = («complexnr-0.0.0»::multiply<> as λ(«complexnr-0.0.0»::Complex<>, «complexnr-0.0.0»::Complex<>) -> «complexnr-0.0.0»::Complex<>)((#_readRef returning «complexnr-0.0.0»::Complex<>)(current_term), x);
     #_skip
   };
-  result
+  (#_readRef returning «complexnr-0.0.0»::Complex<>)(result)
 }
 
 noir_def «complexnr-0.0.0»::test_add_simple<>() -> Unit := {

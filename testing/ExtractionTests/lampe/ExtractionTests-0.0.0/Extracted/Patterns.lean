@@ -12,7 +12,8 @@ noir_def «ExtractionTests-0.0.0»::patterns::Option2::some<T: Type>(value: T) -
 noir_def «ExtractionTests-0.0.0»::patterns::pattern_test<>() -> Unit := {
   let opt = («ExtractionTests-0.0.0»::patterns::Option2::some<bool> as λ(bool) -> «ExtractionTests-0.0.0»::patterns::Option2<bool>)(#_true);
   let t = (#_makeData returning Tuple<Field, «ExtractionTests-0.0.0»::patterns::Option2<bool>, Field>)((1: Field), opt, (3: Field));
-  let (_x, (__0, __1), mut _z) = t;
+  let (_x, (__0, __1), _z) = t;
+  let _z = (#_ref returning & Field)(_z);
   #_skip
 }
 

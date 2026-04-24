@@ -426,7 +426,6 @@ impl Writer<'_> {
                 self.write_identifier(ident, false);
             }
             Pattern::Mutable(ident) => {
-                self.append_to_line("mut ");
                 self.write_pattern(ident);
             }
             Pattern::Tuple(pats) => {

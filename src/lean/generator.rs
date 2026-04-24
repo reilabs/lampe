@@ -2831,7 +2831,7 @@ impl LeanGenerator<'_, '_, '_> {
             .statements
             .iter()
             .dropping_back(num_to_drop)
-            .map(|stmt| self.generate_statement(*stmt))
+            .flat_map(|stmt| self.generate_statement(*stmt))
             .collect_vec();
 
         let return_expr = if let Some(stmt) = block.statements.last() {
@@ -2860,10 +2860,10 @@ impl LeanGenerator<'_, '_, '_> {
     /// - If it encounters a compile-time evaluated statement which should have
     ///   been eliminated at this point.
     /// - If it encounters an error-marked statement.
-    pub fn generate_statement(&self, stmt: StmtId) -> Statement {
-        let statement_data = self.context.def_interner.statement(&stmt);
-        match statement_data {
-            HirStatement::Let(lets) => self.generate_let_statement(&lets),
+    pub fn generate_statement(&self, stmt_id: StmtId) -> Vec<Statement> {
+        let statement_data = self.context.def_interner.statement(&stmt_id);
+        let stmt = match statement_data {
+            HirStatement::Let(lets) => return self.generate_let_statement(&lets),
             HirStatement::Assign(assign) => self.generate_assign_statement(&assign),
             HirStatement::For(fors) => self.generate_for(&fors),
             HirStatement::Break => panic!("Encountered break statement in constrained code"),
@@ -2877,7 +2877,9 @@ impl LeanGenerator<'_, '_, '_> {
                 panic!("Encountered comptime statement during compilation when none should exist")
             }
             HirStatement::Error => panic!("Encountered error statement during compilation"),
-        }
+        };
+
+        vec![stmt]
     }
 
     pub fn generate_for(&self, fors: &HirForStatement) -> Statement {
@@ -3003,7 +3005,7 @@ impl LeanGenerator<'_, '_, '_> {
             .collect::<HashMap<_, usize>>()
     }
 
-    pub fn generate_let_statement(&self, lets: &HirLetStatement) -> Statement {
+    pub fn generate_let_statement(&self, lets: &HirLetStatement) -> Vec<Statement> {
         let bound_expr = self.generate_expr(lets.expression);
         let typ = self.generate_lean_type_value(&lets.r#type, None);
         let pattern = self.generate_pattern(&lets.pattern, Some(typ.clone()));
@@ -3025,13 +3027,70 @@ impl LeanGenerator<'_, '_, '_> {
             _ => (pattern, typ, Box::new(bound_expr)),
         };
 
+        // Collect any Pattern::Mutable bindings nested inside the pattern (e.g. in
+        // tuple destructuring `let (a, mut b) = expr`). After the main destructuring
+        // let, we emit `let b = (#_ref returning & T)(b)` for each such binding,
+        // analogous to how mutable function parameters are handled.
+        let mut mutable_bindings = Vec::new();
+        Self::collect_and_strip_mutable_bindings(&pattern, &mut mutable_bindings);
+
         let stmt = LetStatement {
             pattern,
             typ,
             expression,
         };
 
-        Statement::Let(stmt)
+        let mut result = vec![Statement::Let(stmt)];
+
+        for (name, inner_typ) in mutable_bindings {
+            let ref_type = Type::mutable_reference(inner_typ.clone());
+            let ref_call_target = Expression::builtin_call_ref("ref", &ref_type);
+            let ref_call = Call {
+                function:    Box::new(ref_call_target),
+                params:      vec![Expression::Ident(Identifier {
+                    name: name.clone(),
+                    typ:  inner_typ,
+                })],
+                return_type: ref_type.clone(),
+            };
+            result.push(Statement::Let(LetStatement {
+                pattern:    Pattern::Identifier(Identifier {
+                    name,
+                    typ: ref_type.clone(),
+                }),
+                typ:        ref_type,
+                expression: Box::new(Expression::Call(ref_call)),
+            }));
+        }
+
+        result
+    }
+
+    /// Recursively collects `(name, type)` pairs for any `Pattern::Mutable`
+    /// bindings inside a pattern tree, without stripping them (the writer
+    /// already strips `mut` from emitted patterns).
+    fn collect_and_strip_mutable_bindings(pattern: &Pattern, out: &mut Vec<(String, Type)>) {
+        match pattern {
+            Pattern::Mutable(inner) => {
+                // The inner pattern should be an identifier for a mutable binding.
+                if let Pattern::Identifier(ident) = inner.as_ref() {
+                    out.push((ident.name.clone(), ident.typ.clone()));
+                }
+                // Also recurse in case of deeper nesting.
+                Self::collect_and_strip_mutable_bindings(inner, out);
+            }
+            Pattern::Tuple(pats) => {
+                for p in pats {
+                    Self::collect_and_strip_mutable_bindings(p, out);
+                }
+            }
+            Pattern::Struct(sp) => {
+                for (_, p) in &sp.fields {
+                    Self::collect_and_strip_mutable_bindings(p, out);
+                }
+            }
+            Pattern::Identifier(_) => {}
+        }
     }
 }
 

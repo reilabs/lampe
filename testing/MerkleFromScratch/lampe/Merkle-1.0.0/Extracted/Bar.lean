@@ -7,8 +7,8 @@ open Lampe
 
 noir_def «Merkle-1.0.0»::bar::bar<>(a: Field) -> Field := {
   let bytes = («std-1.0.0-beta.14»::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(a);
-  let mut new_left = (#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8));
-  let mut new_right = (#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8));
+  let new_left = (#_ref returning & Array<u8, 16: u32>)((#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8)));
+  let new_right = (#_ref returning & Array<u8, 16: u32>)((#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8)));
   for i in (0: u32) .. (16: u32) do {
     (new_left[i]: u8) = («Merkle-1.0.0»::utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)(i)));
     #_skip
@@ -17,19 +17,19 @@ noir_def «Merkle-1.0.0»::bar::bar<>(a: Field) -> Field := {
     (new_right[i]: u8) = («Merkle-1.0.0»::utils::sbox<> as λ(u8) -> u8)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uAdd returning u32)((16: u32), i))));
     #_skip
   };
-  let mut new_bytes = (#_asVector returning Vector<u8>)(new_right);
+  let new_bytes = (#_ref returning & Vector<u8>)((#_asVector returning Vector<u8>)((#_readRef returning Array<u8, 16: u32>)(new_right)));
   {
-    let ζi0 = new_left;
+    let ζi0 = (#_readRef returning Array<u8, 16: u32>)(new_left);
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_arrayIndex returning u8)(ζi0, (#_cast returning u32)(ζi1));
       {
-        new_bytes = (#_vectorPushBack returning Vector<u8>)(new_bytes, elem);
+        new_bytes = (#_vectorPushBack returning Vector<u8>)((#_readRef returning Vector<u8>)(new_bytes), elem);
         #_skip
       }
     };
     #_skip
   };
-  let new_bytes_array = («Merkle-1.0.0»::utils::as_array<> as λ(Vector<u8>) -> Array<u8, 32: u32>)(new_bytes);
+  let new_bytes_array = («Merkle-1.0.0»::utils::as_array<> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_readRef returning Vector<u8>)(new_bytes));
   («std-1.0.0-beta.14»::field::from_le_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
 }
 
