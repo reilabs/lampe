@@ -64,16 +64,16 @@ noir_def «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar::from_fi
 }
 
 noir_def «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar::from_bytes<>(bytes: Array<u8, 64: u32>, offset: u32) -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<> := {
-  let mut v = (1: Field);
-  let mut lo = (#_cast returning Field)((0: Field));
-  let mut hi = (#_cast returning Field)((0: Field));
+  let v = (#_ref returning & Field)((1: Field));
+  let lo = (#_ref returning & Field)((#_cast returning Field)((0: Field)));
+  let hi = (#_ref returning & Field)((#_cast returning Field)((0: Field)));
   for i in (0: u32) .. (16: u32) do {
-    lo = (#_fAdd returning Field)(lo, (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uAdd returning u32)(offset, (31: u32)), i)))), v));
-    hi = (#_fAdd returning Field)(hi, (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uAdd returning u32)(offset, (15: u32)), i)))), v));
-    v = (#_fMul returning Field)(v, (256: Field));
+    lo = (#_fAdd returning Field)((#_readRef returning Field)(lo), (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uAdd returning u32)(offset, (31: u32)), i)))), (#_readRef returning Field)(v)));
+    hi = (#_fAdd returning Field)((#_readRef returning Field)(hi), (#_fMul returning Field)((#_cast returning Field)((#_arrayIndex returning u8)(bytes, (#_cast returning u32)((#_uSub returning u32)((#_uAdd returning u32)(offset, (15: u32)), i)))), (#_readRef returning Field)(v)));
+    v = (#_fMul returning Field)((#_readRef returning Field)(v), (256: Field));
     #_skip
   };
-  let sig_s = (#_makeData returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>)(lo, hi);
+  let sig_s = (#_makeData returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>)((#_readRef returning Field)(lo), (#_readRef returning Field)(hi));
   sig_s
 }
 

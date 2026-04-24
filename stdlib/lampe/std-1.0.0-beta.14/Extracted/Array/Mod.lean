@@ -7,22 +7,22 @@ open Lampe
 
 noir_def «std-1.0.0-beta.14»::array::map<T: Type, N: u32, U: Type, Env: Type>(self: Array<T, N: u32>, f: λ(T) -> U) -> Array<U, N: u32> := {
   let uninitialized = (#_zeroed returning U)();
-  let mut ret = (#_mkRepeatedArray returning Array<U, N: u32>)(uninitialized);
+  let ret = (#_ref returning & Array<U, N: u32>)((#_mkRepeatedArray returning Array<U, N: u32>)(uninitialized));
   for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
     (ret[i]: U) = (f as λ(T) -> U)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)));
     #_skip
   };
-  ret
+  (#_readRef returning Array<U, N: u32>)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::array::mapi<T: Type, N: u32, U: Type, Env: Type>(self: Array<T, N: u32>, f: λ(u32, T) -> U) -> Array<U, N: u32> := {
   let uninitialized = (#_zeroed returning U)();
-  let mut ret = (#_mkRepeatedArray returning Array<U, N: u32>)(uninitialized);
+  let ret = (#_ref returning & Array<U, N: u32>)((#_mkRepeatedArray returning Array<U, N: u32>)(uninitialized));
   for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
     (ret[i]: U) = (f as λ(u32, T) -> U)(i, (#_arrayIndex returning T)(self, (#_cast returning u32)(i)));
     #_skip
   };
-  ret
+  (#_readRef returning Array<U, N: u32>)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::array::for_each<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>, f: λ(T) -> Unit) -> Unit := {
@@ -41,64 +41,67 @@ noir_def «std-1.0.0-beta.14»::array::for_eachi<T: Type, N: u32, Env: Type>(sel
   #_skip
 }
 
-noir_def «std-1.0.0-beta.14»::array::fold<T: Type, N: u32, U: Type, Env: Type>(self: Array<T, N: u32>, mut accumulator: U, f: λ(U, T) -> U) -> U := {
+noir_def «std-1.0.0-beta.14»::array::fold<T: Type, N: u32, U: Type, Env: Type>(self: Array<T, N: u32>, accumulator: U, f: λ(U, T) -> U) -> U := {
+  let accumulator = (#_ref returning & U)(accumulator);
+  {
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_arrayIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        accumulator = (f as λ(U, T) -> U)(accumulator, elem);
+        accumulator = (f as λ(U, T) -> U)((#_readRef returning U)(accumulator), elem);
         #_skip
       }
     };
     #_skip
   };
-  accumulator
+  (#_readRef returning U)(accumulator)
+}
 }
 
 noir_def «std-1.0.0-beta.14»::array::reduce<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>, f: λ(T, T) -> T) -> T := {
-  let mut accumulator = (#_arrayIndex returning T)(self, (0: u32));
+  let accumulator = (#_ref returning & T)((#_arrayIndex returning T)(self, (0: u32)));
   for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
-    accumulator = (f as λ(T, T) -> T)(accumulator, (#_arrayIndex returning T)(self, (#_cast returning u32)(i)));
+    accumulator = (f as λ(T, T) -> T)((#_readRef returning T)(accumulator), (#_arrayIndex returning T)(self, (#_cast returning u32)(i)));
     #_skip
   };
-  accumulator
+  (#_readRef returning T)(accumulator)
 }
 
 noir_def «std-1.0.0-beta.14»::array::«all»<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>, predicate: λ(T) -> bool) -> bool := {
-  let mut ret = #_true;
+  let ret = (#_ref returning & bool)(#_true);
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_arrayIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        ret = (#_bAnd returning bool)(ret, (predicate as λ(T) -> bool)(elem));
+        ret = (#_bAnd returning bool)((#_readRef returning bool)(ret), (predicate as λ(T) -> bool)(elem));
         #_skip
       }
     };
     #_skip
   };
-  ret
+  (#_readRef returning bool)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::array::any<T: Type, N: u32, Env: Type>(self: Array<T, N: u32>, predicate: λ(T) -> bool) -> bool := {
-  let mut ret = #_false;
+  let ret = (#_ref returning & bool)(#_false);
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_arrayIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        ret = (#_bOr returning bool)(ret, (predicate as λ(T) -> bool)(elem));
+        ret = (#_bOr returning bool)((#_readRef returning bool)(ret), (predicate as λ(T) -> bool)(elem));
         #_skip
       }
     };
     #_skip
   };
-  ret
+  (#_readRef returning bool)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::array::concat<T: Type, N: u32, M: u32>(self: Array<T, N: u32>, array2: Array<T, M: u32>) -> Array<T, (N + M): u32> := {
-  let mut result = (#_mkRepeatedArray returning Array<T, (N + M): u32>)((#_zeroed returning T)());
+  let result = (#_ref returning & Array<T, (N + M): u32>)((#_mkRepeatedArray returning Array<T, (N + M): u32>)((#_zeroed returning T)()));
   for i in (0: u32) .. uConst!(N: u32) do {
     (result[i]: T) = (#_arrayIndex returning T)(self, (#_cast returning u32)(i));
     #_skip
@@ -108,7 +111,7 @@ noir_def «std-1.0.0-beta.14»::array::concat<T: Type, N: u32, M: u32>(self: Arr
     (result[i_4238]: T) = (#_arrayIndex returning T)(array2, (#_cast returning u32)(i));
     #_skip
   };
-  result
+  (#_readRef returning Array<T, (N + M): u32>)(result)
 }
 
 noir_def «std-1.0.0-beta.14»::array::sort<T: Type, N: u32>(self: Array<T, N: u32>) -> Array<T, N: u32> := {
@@ -157,16 +160,16 @@ noir_def «std-1.0.0-beta.14»::array::test::sort_u32<>(a: u32, b: u32) -> bool 
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::test_sort<>() -> Unit := {
-  let mut arr = (#_mkArray returning Array<u32, 7: u32>)((3: u32), (6: u32), (8: u32), (10: u32), (1: u32), (2: u32), (1: u32));
-  let sorted = («std-1.0.0-beta.14»::array::sort<u32, 7: u32> as λ(Array<u32, 7: u32>) -> Array<u32, 7: u32>)(arr);
+  let arr = (#_ref returning & Array<u32, 7: u32>)((#_mkArray returning Array<u32, 7: u32>)((3: u32), (6: u32), (8: u32), (10: u32), (1: u32), (2: u32), (1: u32)));
+  let sorted = («std-1.0.0-beta.14»::array::sort<u32, 7: u32> as λ(Array<u32, 7: u32>) -> Array<u32, 7: u32>)((#_readRef returning Array<u32, 7: u32>)(arr));
   let expected = (#_mkArray returning Array<u32, 7: u32>)((1: u32), (1: u32), (2: u32), (3: u32), (6: u32), (8: u32), (10: u32));
   (#_assert returning Unit)(((Array<u32, 7: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 7: u32>, Array<u32, 7: u32>) -> bool)(sorted, expected));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::test_sort_100_values<>() -> Unit := {
-  let mut arr = (#_mkArray returning Array<u32, 100: u32>)((42: u32), (123: u32), (87: u32), (93: u32), (48: u32), (80: u32), (50: u32), (5: u32), (104: u32), (84: u32), (70: u32), (47: u32), (119: u32), (66: u32), (71: u32), (121: u32), (3: u32), (29: u32), (42: u32), (118: u32), (2: u32), (54: u32), (89: u32), (44: u32), (81: u32), (0: u32), (26: u32), (106: u32), (68: u32), (96: u32), (84: u32), (48: u32), (95: u32), (54: u32), (45: u32), (32: u32), (89: u32), (100: u32), (109: u32), (19: u32), (37: u32), (41: u32), (19: u32), (98: u32), (53: u32), (114: u32), (107: u32), (66: u32), (6: u32), (74: u32), (13: u32), (19: u32), (105: u32), (64: u32), (123: u32), (28: u32), (44: u32), (50: u32), (89: u32), (58: u32), (123: u32), (126: u32), (21: u32), (43: u32), (86: u32), (35: u32), (21: u32), (62: u32), (82: u32), (0: u32), (108: u32), (120: u32), (72: u32), (72: u32), (62: u32), (80: u32), (12: u32), (71: u32), (70: u32), (86: u32), (116: u32), (73: u32), (38: u32), (15: u32), (127: u32), (81: u32), (30: u32), (8: u32), (125: u32), (28: u32), (26: u32), (69: u32), (114: u32), (63: u32), (27: u32), (28: u32), (61: u32), (42: u32), (13: u32), (32: u32));
-  let sorted = («std-1.0.0-beta.14»::array::sort<u32, 100: u32> as λ(Array<u32, 100: u32>) -> Array<u32, 100: u32>)(arr);
+  let arr = (#_ref returning & Array<u32, 100: u32>)((#_mkArray returning Array<u32, 100: u32>)((42: u32), (123: u32), (87: u32), (93: u32), (48: u32), (80: u32), (50: u32), (5: u32), (104: u32), (84: u32), (70: u32), (47: u32), (119: u32), (66: u32), (71: u32), (121: u32), (3: u32), (29: u32), (42: u32), (118: u32), (2: u32), (54: u32), (89: u32), (44: u32), (81: u32), (0: u32), (26: u32), (106: u32), (68: u32), (96: u32), (84: u32), (48: u32), (95: u32), (54: u32), (45: u32), (32: u32), (89: u32), (100: u32), (109: u32), (19: u32), (37: u32), (41: u32), (19: u32), (98: u32), (53: u32), (114: u32), (107: u32), (66: u32), (6: u32), (74: u32), (13: u32), (19: u32), (105: u32), (64: u32), (123: u32), (28: u32), (44: u32), (50: u32), (89: u32), (58: u32), (123: u32), (126: u32), (21: u32), (43: u32), (86: u32), (35: u32), (21: u32), (62: u32), (82: u32), (0: u32), (108: u32), (120: u32), (72: u32), (72: u32), (62: u32), (80: u32), (12: u32), (71: u32), (70: u32), (86: u32), (116: u32), (73: u32), (38: u32), (15: u32), (127: u32), (81: u32), (30: u32), (8: u32), (125: u32), (28: u32), (26: u32), (69: u32), (114: u32), (63: u32), (27: u32), (28: u32), (61: u32), (42: u32), (13: u32), (32: u32)));
+  let sorted = («std-1.0.0-beta.14»::array::sort<u32, 100: u32> as λ(Array<u32, 100: u32>) -> Array<u32, 100: u32>)((#_readRef returning Array<u32, 100: u32>)(arr));
   let expected = (#_mkArray returning Array<u32, 100: u32>)((0: u32), (0: u32), (2: u32), (3: u32), (5: u32), (6: u32), (8: u32), (12: u32), (13: u32), (13: u32), (15: u32), (19: u32), (19: u32), (19: u32), (21: u32), (21: u32), (26: u32), (26: u32), (27: u32), (28: u32), (28: u32), (28: u32), (29: u32), (30: u32), (32: u32), (32: u32), (35: u32), (37: u32), (38: u32), (41: u32), (42: u32), (42: u32), (42: u32), (43: u32), (44: u32), (44: u32), (45: u32), (47: u32), (48: u32), (48: u32), (50: u32), (50: u32), (53: u32), (54: u32), (54: u32), (58: u32), (61: u32), (62: u32), (62: u32), (63: u32), (64: u32), (66: u32), (66: u32), (68: u32), (69: u32), (70: u32), (70: u32), (71: u32), (71: u32), (72: u32), (72: u32), (73: u32), (74: u32), (80: u32), (80: u32), (81: u32), (81: u32), (82: u32), (84: u32), (84: u32), (86: u32), (86: u32), (87: u32), (89: u32), (89: u32), (89: u32), (93: u32), (95: u32), (96: u32), (98: u32), (100: u32), (104: u32), (105: u32), (106: u32), (107: u32), (108: u32), (109: u32), (114: u32), (114: u32), (116: u32), (118: u32), (119: u32), (120: u32), (121: u32), (123: u32), (123: u32), (123: u32), (125: u32), (126: u32), (127: u32));
   (#_assert returning Unit)(((Array<u32, 100: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 100: u32>, Array<u32, 100: u32>) -> bool)(sorted, expected));
   #_skip
@@ -179,16 +182,16 @@ noir_def «std-1.0.0-beta.14»::array::test::test_sort_100_values_comptime<>() -
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::test_sort_via<>() -> Unit := {
-  let mut arr = (#_mkArray returning Array<u32, 7: u32>)((3: u32), (6: u32), (8: u32), (10: u32), (1: u32), (2: u32), (1: u32));
-  let sorted = («std-1.0.0-beta.14»::array::sort_via<u32, 7: u32, Unit> as λ(Array<u32, 7: u32>, λ(u32, u32) -> bool) -> Array<u32, 7: u32>)(arr, («std-1.0.0-beta.14»::array::test::sort_u32<> as λ(u32, u32) -> bool));
+  let arr = (#_ref returning & Array<u32, 7: u32>)((#_mkArray returning Array<u32, 7: u32>)((3: u32), (6: u32), (8: u32), (10: u32), (1: u32), (2: u32), (1: u32)));
+  let sorted = («std-1.0.0-beta.14»::array::sort_via<u32, 7: u32, Unit> as λ(Array<u32, 7: u32>, λ(u32, u32) -> bool) -> Array<u32, 7: u32>)((#_readRef returning Array<u32, 7: u32>)(arr), («std-1.0.0-beta.14»::array::test::sort_u32<> as λ(u32, u32) -> bool));
   let expected = (#_mkArray returning Array<u32, 7: u32>)((1: u32), (1: u32), (2: u32), (3: u32), (6: u32), (8: u32), (10: u32));
   (#_assert returning Unit)(((Array<u32, 7: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 7: u32>, Array<u32, 7: u32>) -> bool)(sorted, expected));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::test_sort_via_100_values<>() -> Unit := {
-  let mut arr = (#_mkArray returning Array<u32, 100: u32>)((42: u32), (123: u32), (87: u32), (93: u32), (48: u32), (80: u32), (50: u32), (5: u32), (104: u32), (84: u32), (70: u32), (47: u32), (119: u32), (66: u32), (71: u32), (121: u32), (3: u32), (29: u32), (42: u32), (118: u32), (2: u32), (54: u32), (89: u32), (44: u32), (81: u32), (0: u32), (26: u32), (106: u32), (68: u32), (96: u32), (84: u32), (48: u32), (95: u32), (54: u32), (45: u32), (32: u32), (89: u32), (100: u32), (109: u32), (19: u32), (37: u32), (41: u32), (19: u32), (98: u32), (53: u32), (114: u32), (107: u32), (66: u32), (6: u32), (74: u32), (13: u32), (19: u32), (105: u32), (64: u32), (123: u32), (28: u32), (44: u32), (50: u32), (89: u32), (58: u32), (123: u32), (126: u32), (21: u32), (43: u32), (86: u32), (35: u32), (21: u32), (62: u32), (82: u32), (0: u32), (108: u32), (120: u32), (72: u32), (72: u32), (62: u32), (80: u32), (12: u32), (71: u32), (70: u32), (86: u32), (116: u32), (73: u32), (38: u32), (15: u32), (127: u32), (81: u32), (30: u32), (8: u32), (125: u32), (28: u32), (26: u32), (69: u32), (114: u32), (63: u32), (27: u32), (28: u32), (61: u32), (42: u32), (13: u32), (32: u32));
-  let sorted = («std-1.0.0-beta.14»::array::sort_via<u32, 100: u32, Unit> as λ(Array<u32, 100: u32>, λ(u32, u32) -> bool) -> Array<u32, 100: u32>)(arr, («std-1.0.0-beta.14»::array::test::sort_u32<> as λ(u32, u32) -> bool));
+  let arr = (#_ref returning & Array<u32, 100: u32>)((#_mkArray returning Array<u32, 100: u32>)((42: u32), (123: u32), (87: u32), (93: u32), (48: u32), (80: u32), (50: u32), (5: u32), (104: u32), (84: u32), (70: u32), (47: u32), (119: u32), (66: u32), (71: u32), (121: u32), (3: u32), (29: u32), (42: u32), (118: u32), (2: u32), (54: u32), (89: u32), (44: u32), (81: u32), (0: u32), (26: u32), (106: u32), (68: u32), (96: u32), (84: u32), (48: u32), (95: u32), (54: u32), (45: u32), (32: u32), (89: u32), (100: u32), (109: u32), (19: u32), (37: u32), (41: u32), (19: u32), (98: u32), (53: u32), (114: u32), (107: u32), (66: u32), (6: u32), (74: u32), (13: u32), (19: u32), (105: u32), (64: u32), (123: u32), (28: u32), (44: u32), (50: u32), (89: u32), (58: u32), (123: u32), (126: u32), (21: u32), (43: u32), (86: u32), (35: u32), (21: u32), (62: u32), (82: u32), (0: u32), (108: u32), (120: u32), (72: u32), (72: u32), (62: u32), (80: u32), (12: u32), (71: u32), (70: u32), (86: u32), (116: u32), (73: u32), (38: u32), (15: u32), (127: u32), (81: u32), (30: u32), (8: u32), (125: u32), (28: u32), (26: u32), (69: u32), (114: u32), (63: u32), (27: u32), (28: u32), (61: u32), (42: u32), (13: u32), (32: u32)));
+  let sorted = («std-1.0.0-beta.14»::array::sort_via<u32, 100: u32, Unit> as λ(Array<u32, 100: u32>, λ(u32, u32) -> bool) -> Array<u32, 100: u32>)((#_readRef returning Array<u32, 100: u32>)(arr), («std-1.0.0-beta.14»::array::test::sort_u32<> as λ(u32, u32) -> bool));
   let expected = (#_mkArray returning Array<u32, 100: u32>)((0: u32), (0: u32), (2: u32), (3: u32), (5: u32), (6: u32), (8: u32), (12: u32), (13: u32), (13: u32), (15: u32), (19: u32), (19: u32), (19: u32), (21: u32), (21: u32), (26: u32), (26: u32), (27: u32), (28: u32), (28: u32), (28: u32), (29: u32), (30: u32), (32: u32), (32: u32), (35: u32), (37: u32), (38: u32), (41: u32), (42: u32), (42: u32), (42: u32), (43: u32), (44: u32), (44: u32), (45: u32), (47: u32), (48: u32), (48: u32), (50: u32), (50: u32), (53: u32), (54: u32), (54: u32), (58: u32), (61: u32), (62: u32), (62: u32), (63: u32), (64: u32), (66: u32), (66: u32), (68: u32), (69: u32), (70: u32), (70: u32), (71: u32), (71: u32), (72: u32), (72: u32), (73: u32), (74: u32), (80: u32), (80: u32), (81: u32), (81: u32), (82: u32), (84: u32), (84: u32), (86: u32), (86: u32), (87: u32), (89: u32), (89: u32), (89: u32), (93: u32), (95: u32), (96: u32), (98: u32), (100: u32), (104: u32), (105: u32), (106: u32), (107: u32), (108: u32), (109: u32), (114: u32), (114: u32), (116: u32), (118: u32), (119: u32), (120: u32), (121: u32), (123: u32), (123: u32), (123: u32), (125: u32), (126: u32), (127: u32));
   (#_assert returning Unit)(((Array<u32, 100: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 100: u32>, Array<u32, 100: u32>) -> bool)(sorted, expected));
   #_skip
@@ -227,10 +230,10 @@ noir_def «std-1.0.0-beta.14»::array::test::mapi_example<>() -> Unit := {
 
 noir_def «std-1.0.0-beta.14»::array::test::for_each_example<>() -> Unit := {
   let a = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
-  let mut b = (#_mkArray returning Array<Field, 3: u32>)((0: Field), (0: Field), (0: Field));
-  let b_ref = (#_ref returning & Array<Field, 3: u32>)(b);
-  let mut i = (0: u32);
-  let i_ref = (#_ref returning & u32)(i);
+  let b = (#_ref returning & Array<Field, 3: u32>)((#_mkArray returning Array<Field, 3: u32>)((0: Field), (0: Field), (0: Field)));
+  let b_ref = b;
+  let i = (#_ref returning & u32)((0: u32));
+  let i_ref = i;
   («std-1.0.0-beta.14»::array::for_each<Field, 3: u32, Tuple<& u32, & Array<Field, 3: u32> > > as λ(Array<Field, 3: u32>, λ(Field) -> Unit) -> Unit)(a, (fn(x: Field): Unit := {
     {
       let i_3190 = (#_readRef returning u32)(i_ref);
@@ -240,20 +243,20 @@ noir_def «std-1.0.0-beta.14»::array::test::for_each_example<>() -> Unit := {
     (*i_ref: u32) = (#_uAdd returning u32)((#_readRef returning u32)(i_ref), (1: u32));
     #_skip
   }));
-  (#_assert returning Unit)(((Array<Field, 3: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 3: u32>, Array<Field, 3: u32>) -> bool)(b, (#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field))));
-  (#_assert returning Unit)((#_uEq returning bool)(i, (3: u32)));
+  (#_assert returning Unit)(((Array<Field, 3: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 3: u32>, Array<Field, 3: u32>) -> bool)((#_readRef returning Array<Field, 3: u32>)(b), (#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field))));
+  (#_assert returning Unit)((#_uEq returning bool)((#_readRef returning u32)(i), (3: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::for_eachi_example<>() -> Unit := {
   let a = (#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32));
-  let mut b = (#_mkArray returning Array<u32, 3: u32>)((0: u32), (0: u32), (0: u32));
-  let b_ref = (#_ref returning & Array<u32, 3: u32>)(b);
+  let b = (#_ref returning & Array<u32, 3: u32>)((#_mkArray returning Array<u32, 3: u32>)((0: u32), (0: u32), (0: u32)));
+  let b_ref = b;
   («std-1.0.0-beta.14»::array::for_eachi<u32, 3: u32, Tuple<& Array<u32, 3: u32> > > as λ(Array<u32, 3: u32>, λ(u32, u32) -> Unit) -> Unit)(a, (fn(i: u32, a: u32): Unit := {
     ((*b_ref: Array<u32, 3: u32>)[i]: u32) = (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)));
     #_skip
   }));
-  (#_assert returning Unit)(((Array<u32, 3: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 3: u32>, Array<u32, 3: u32>) -> bool)(b, (#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32))));
+  (#_assert returning Unit)(((Array<u32, 3: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 3: u32>, Array<u32, 3: u32>) -> bool)((#_readRef returning Array<u32, 3: u32>)(b), (#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32))));
   #_skip
 }
 

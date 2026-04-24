@@ -85,26 +85,26 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_90]<> «std-1.0.0-beta.14»::cmp::Eq<
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_91]<N: u32, T: Type> «std-1.0.0-beta.14»::cmp::Eq<> for Array<T, N: u32> where [T: «std-1.0.0-beta.14»::cmp::Eq<>] := {
   noir_def eq<>(self: Array<T, N: u32>, other: Array<T, N: u32>) -> bool := {
-    let mut result = #_true;
+    let result = (#_ref returning & bool)(#_true);
     for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
-      result = (#_bAnd returning bool)(result, ((T as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i))));
+      result = (#_bAnd returning bool)((#_readRef returning bool)(result), ((T as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i))));
       #_skip
     };
-    result
+    (#_readRef returning bool)(result)
   };
 }
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_92]<T: Type> «std-1.0.0-beta.14»::cmp::Eq<> for Vector<T> where [T: «std-1.0.0-beta.14»::cmp::Eq<>] := {
   noir_def eq<>(self: Vector<T>, other: Vector<T>) -> bool := {
-    let mut result = (#_uEq returning bool)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other));
-    if result then {
+    let result = (#_ref returning & bool)((#_uEq returning bool)((#_arrayLen returning u32)(self), (#_arrayLen returning u32)(other)));
+    if (#_readRef returning bool)(result) then {
       for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
-        result = (#_bAnd returning bool)(result, ((T as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_vectorIndex returning T)(self, (#_cast returning u32)(i)), (#_vectorIndex returning T)(other, (#_cast returning u32)(i))));
+        result = (#_bAnd returning bool)((#_readRef returning bool)(result), ((T as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(T, T) -> bool)((#_vectorIndex returning T)(self, (#_cast returning u32)(i)), (#_vectorIndex returning T)(other, (#_cast returning u32)(i))));
         #_skip
       };
       #_skip
     };
-    result
+    (#_readRef returning bool)(result)
   };
 }
 
@@ -290,14 +290,14 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_109]<> «std-1.0.0-beta.14»::cmp::Or
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_110]<N: u32, T: Type> «std-1.0.0-beta.14»::cmp::Ord<> for Array<T, N: u32> where [T: «std-1.0.0-beta.14»::cmp::Ord<>] := {
   noir_def cmp<>(self: Array<T, N: u32>, other: Array<T, N: u32>) -> «std-1.0.0-beta.14»::cmp::Ordering<> := {
-    let mut result = («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)();
+    let result = (#_ref returning & «std-1.0.0-beta.14»::cmp::Ordering<>)((«std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)());
     for i in (0: u32) .. (#_arrayLen returning u32)(self) do {
-      if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+      if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
         result = ((T as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_arrayIndex returning T)(self, (#_cast returning u32)(i)), (#_arrayIndex returning T)(other, (#_cast returning u32)(i)));
         #_skip
       }
     };
-    result
+    (#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result)
   };
 }
 
@@ -310,15 +310,15 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_111]<T: Type> «std-1.0.0-beta.14»::
     } else {
       other_len
     };
-    let mut result = («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)();
+    let result = (#_ref returning & «std-1.0.0-beta.14»::cmp::Ordering<>)((«std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)());
     for i in (0: u32) .. min_len do {
-      if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+      if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
         result = ((T as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(T, T) -> «std-1.0.0-beta.14»::cmp::Ordering<>)((#_vectorIndex returning T)(self, (#_cast returning u32)(i)), (#_vectorIndex returning T)(other, (#_cast returning u32)(i)));
         #_skip
       }
     };
-    if (#_bNot returning bool)(((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)())) then {
-      result
+    if (#_bNot returning bool)(((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)())) then {
+      (#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result)
     } else {
       ((u32 as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(u32, u32) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self_len, other_len)
     }
@@ -338,58 +338,58 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_112]<A: Type, B: Type> «std-1.0.0-be
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_113]<A: Type, B: Type, C: Type> «std-1.0.0-beta.14»::cmp::Ord<> for Tuple<A, B, C> where [A: «std-1.0.0-beta.14»::cmp::Ord<>, B: «std-1.0.0-beta.14»::cmp::Ord<>, C: «std-1.0.0-beta.14»::cmp::Ord<>] := {
   noir_def cmp<>(self: Tuple<A, B, C>, other: Tuple<A, B, C>) -> «std-1.0.0-beta.14»::cmp::Ordering<> := {
-    let mut result = ((A as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(A, A) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.0, other.0);
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    let result = (#_ref returning & «std-1.0.0-beta.14»::cmp::Ordering<>)(((A as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(A, A) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.0, other.0));
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((B as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(B, B) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.1, other.1);
       #_skip
     };
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((C as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(C, C) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.2, other.2);
       #_skip
     };
-    result
+    (#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result)
   };
 }
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_114]<A: Type, B: Type, C: Type, D: Type> «std-1.0.0-beta.14»::cmp::Ord<> for Tuple<A, B, C, D> where [A: «std-1.0.0-beta.14»::cmp::Ord<>, B: «std-1.0.0-beta.14»::cmp::Ord<>, C: «std-1.0.0-beta.14»::cmp::Ord<>, D: «std-1.0.0-beta.14»::cmp::Ord<>] := {
   noir_def cmp<>(self: Tuple<A, B, C, D>, other: Tuple<A, B, C, D>) -> «std-1.0.0-beta.14»::cmp::Ordering<> := {
-    let mut result = ((A as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(A, A) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.0, other.0);
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    let result = (#_ref returning & «std-1.0.0-beta.14»::cmp::Ordering<>)(((A as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(A, A) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.0, other.0));
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((B as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(B, B) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.1, other.1);
       #_skip
     };
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((C as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(C, C) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.2, other.2);
       #_skip
     };
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((D as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(D, D) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.3, other.3);
       #_skip
     };
-    result
+    (#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result)
   };
 }
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_115]<A: Type, B: Type, C: Type, D: Type, E: Type> «std-1.0.0-beta.14»::cmp::Ord<> for Tuple<A, B, C, D, E> where [A: «std-1.0.0-beta.14»::cmp::Ord<>, B: «std-1.0.0-beta.14»::cmp::Ord<>, C: «std-1.0.0-beta.14»::cmp::Ord<>, D: «std-1.0.0-beta.14»::cmp::Ord<>, E: «std-1.0.0-beta.14»::cmp::Ord<>] := {
   noir_def cmp<>(self: Tuple<A, B, C, D, E>, other: Tuple<A, B, C, D, E>) -> «std-1.0.0-beta.14»::cmp::Ordering<> := {
-    let mut result = ((A as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(A, A) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.0, other.0);
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    let result = (#_ref returning & «std-1.0.0-beta.14»::cmp::Ordering<>)(((A as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(A, A) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.0, other.0));
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((B as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(B, B) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.1, other.1);
       #_skip
     };
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((C as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(C, C) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.2, other.2);
       #_skip
     };
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((D as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(D, D) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.3, other.3);
       #_skip
     };
-    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)(result, («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
+    if ((«std-1.0.0-beta.14»::cmp::Ordering<> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(«std-1.0.0-beta.14»::cmp::Ordering<>, «std-1.0.0-beta.14»::cmp::Ordering<>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result), («std-1.0.0-beta.14»::cmp::Ordering::equal<> as λ() -> «std-1.0.0-beta.14»::cmp::Ordering<>)()) then {
       result = ((E as «std-1.0.0-beta.14»::cmp::Ord<>)::cmp<> as λ(E, E) -> «std-1.0.0-beta.14»::cmp::Ordering<>)(self.4, other.4);
       #_skip
     };
-    result
+    (#_readRef returning «std-1.0.0-beta.14»::cmp::Ordering<>)(result)
   };
 }
 

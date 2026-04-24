@@ -12,9 +12,9 @@ noir_def «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::hash<N: u32>(input: 
 }
 
 noir_def «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::new<>(iv: Field) -> «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<> := {
-  let mut result = (#_makeData returning «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)((#_mkRepeatedArray returning Array<Field, 3: u32>)((0: Field)), (#_mkRepeatedArray returning Array<Field, 4: u32>)((0: Field)), (0: u32), #_false);
+  let result = (#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)((#_makeData returning «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)((#_mkRepeatedArray returning Array<Field, 3: u32>)((0: Field)), (#_mkRepeatedArray returning Array<Field, 4: u32>)((0: Field)), (0: u32), #_false));
   ((result.1: Array<Field, 4: u32>)[(«std-1.0.0-beta.14»::hash::poseidon2::RATE<> as λ() -> u32)()]: Field) = iv;
-  result
+  (#_readRef returning «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(result)
 }
 
 noir_def «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::perform_duplex<>(self: & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>) -> Unit := {
@@ -56,29 +56,29 @@ noir_def «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::squeeze<>(self: & «
 noir_def «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::hash_internal<N: u32>(input: Array<Field, N: u32>, in_len: u32, is_variable_length: bool) -> Field := {
   let two_pow_64 = (18446744073709551616: Field);
   let iv = (#_fMul returning Field)((#_cast returning Field)(in_len), two_pow_64);
-  let mut sponge = («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::new<> as λ(Field) -> «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(iv);
+  let sponge = (#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)((«std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::new<> as λ(Field) -> «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(iv));
   for i in (0: u32) .. (#_arrayLen returning u32)(input) do {
     if (#_uLt returning bool)(i, in_len) then {
-      («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::absorb<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(sponge), (#_arrayIndex returning Field)(input, (#_cast returning u32)(i)));
+      («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::absorb<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>, Field) -> Unit)(sponge, (#_arrayIndex returning Field)(input, (#_cast returning u32)(i)));
       #_skip
     }
   };
   if is_variable_length then {
-    («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::absorb<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(sponge), (1: Field));
+    («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::absorb<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>, Field) -> Unit)(sponge, (1: Field));
     #_skip
   };
-  («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::squeeze<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>) -> Field)((#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(sponge))
+  («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::squeeze<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>) -> Field)(sponge)
 }
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_0]<> «std-1.0.0-beta.14»::hash::Hasher<> for «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> where [] := {
   noir_def finish<>(self: «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>) -> Field := {
     let iv = (#_fMul returning Field)((#_cast returning Field)((#_arrayLen returning u32)(self.0)), (18446744073709551616: Field));
-    let mut sponge = («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::new<> as λ(Field) -> «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(iv);
+    let sponge = (#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)((«std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::new<> as λ(Field) -> «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(iv));
     for i in (0: u32) .. (#_arrayLen returning u32)(self.0) do {
-      («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::absorb<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(sponge), (#_vectorIndex returning Field)(self.0, (#_cast returning u32)(i)));
+      («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::absorb<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>, Field) -> Unit)(sponge, (#_vectorIndex returning Field)(self.0, (#_cast returning u32)(i)));
       #_skip
     };
-    («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::squeeze<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>) -> Field)((#_ref returning & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>)(sponge))
+    («std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::squeeze<> as λ(& «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2<>) -> Field)(sponge)
   };
   
   noir_def write<>(self: & «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<>, input: Field) -> Unit := {

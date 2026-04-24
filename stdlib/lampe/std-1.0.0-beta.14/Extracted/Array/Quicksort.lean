@@ -75,18 +75,18 @@ noir_def «std-1.0.0-beta.14»::array::quicksort::test::test_already_sorted_asce
 }
 
 noir_def «std-1.0.0-beta.14»::array::quicksort::test::test_already_sorted_ascending_with_one_out_of_order<>() -> Unit := {
-  let mut arr = (#_mkRepeatedArray returning Array<u32, 1000: u32>)((0: u32));
+  let arr = (#_ref returning & Array<u32, 1000: u32>)((#_mkRepeatedArray returning Array<u32, 1000: u32>)((0: u32)));
   for i in (0: u32) .. (1000: u32) do {
     (arr[i]: u32) = (#_cast returning u32)(i);
     #_skip
   };
   (arr[(0: u32)]: u32) = (2: u32);
   let result = {
-    («std-1.0.0-beta.14»::array::quicksort::quicksort<u32, 1000: u32, Unit> as λ(Array<u32, 1000: u32>, λ(u32, u32) -> bool) -> Array<u32, 1000: u32>)(arr, («std-1.0.0-beta.14»::array::quicksort::test::ascending<u32> as λ(u32, u32) -> bool))
+    («std-1.0.0-beta.14»::array::quicksort::quicksort<u32, 1000: u32, Unit> as λ(Array<u32, 1000: u32>, λ(u32, u32) -> bool) -> Array<u32, 1000: u32>)((#_readRef returning Array<u32, 1000: u32>)(arr), («std-1.0.0-beta.14»::array::quicksort::test::ascending<u32> as λ(u32, u32) -> bool))
   };
   (arr[(0: u32)]: u32) = (1: u32);
   (arr[(1: u32)]: u32) = (2: u32);
-  (#_assert returning Unit)(((Array<u32, 1000: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 1000: u32>, Array<u32, 1000: u32>) -> bool)(result, arr));
+  (#_assert returning Unit)(((Array<u32, 1000: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 1000: u32>, Array<u32, 1000: u32>) -> bool)(result, (#_readRef returning Array<u32, 1000: u32>)(arr)));
   #_skip
 }
 

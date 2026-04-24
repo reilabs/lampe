@@ -57,14 +57,14 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::is_empty<K: Type, V: 
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::entries<K: Type, V: Type, N: u32, B: Type>(self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32> := {
-  let mut entries = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<Tuple<K, V>, N: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)();
+  let entries = (#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<Tuple<K, V>, N: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)());
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
         if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot) then {
-          («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::push<Tuple<K, V>, N: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>, Tuple<K, V>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)(entries), (#_makeData returning Tuple<K, V>)(slot.0, slot.1));
+          («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::push<Tuple<K, V>, N: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>, Tuple<K, V>) -> Unit)(entries, (#_makeData returning Tuple<K, V>)(slot.0, slot.1));
           #_skip
         }
       }
@@ -72,21 +72,21 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::entries<K: Type, V: T
     #_skip
   };
   let self_len = self.1;
-  let entries_len = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<Tuple<K, V>, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>) -> u32)(entries);
+  let entries_len = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<Tuple<K, V>, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)(entries));
   let msg = (#_mkFormatString returning FmtString<82: u32, Tuple<u32, u32> >)("Amount of valid elements should have been {}{self_len}{} times, but got {}{entries_len}{}.", self_len, entries_len);
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<Tuple<K, V>, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>) -> u32)(entries), self.1));
-  entries
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<Tuple<K, V>, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)(entries)), self.1));
+  (#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)(entries)
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::keys<K: Type, V: Type, N: u32, B: Type>(self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32> := {
-  let mut keys = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<K, N: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>)();
+  let keys = (#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<K, N: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>)());
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
         if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot) then {
-          («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::push<K, N: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>, K) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>)(keys), slot.0);
+          («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::push<K, N: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>, K) -> Unit)(keys, slot.0);
           #_skip
         }
       }
@@ -94,21 +94,21 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::keys<K: Type, V: Type
     #_skip
   };
   let self_len = self.1;
-  let keys_len = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<K, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>) -> u32)(keys);
+  let keys_len = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<K, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>)(keys));
   let msg = (#_mkFormatString returning FmtString<79: u32, Tuple<u32, u32> >)("Amount of valid elements should have been {}{self_len}{} times, but got {}{keys_len}{}.", self_len, keys_len);
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<K, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>) -> u32)(keys), self.1));
-  keys
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<K, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>)(keys)), self.1));
+  (#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<K, N: u32>)(keys)
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::values<K: Type, V: Type, N: u32, B: Type>(self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32> := {
-  let mut values = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<V, N: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>)();
+  let values = (#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<V, N: u32> as λ() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>)());
   {
     let ζi0 = self.0;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
       {
         if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot) then {
-          («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::push<V, N: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>, V) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>)(values), slot.1);
+          («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::push<V, N: u32> as λ(& «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>, V) -> Unit)(values, slot.1);
           #_skip
         }
       }
@@ -116,50 +116,50 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::values<K: Type, V: Ty
     #_skip
   };
   let self_len = self.1;
-  let values_len = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<V, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>) -> u32)(values);
+  let values_len = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<V, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>)(values));
   let msg = (#_mkFormatString returning FmtString<81: u32, Tuple<u32, u32> >)("Amount of valid elements should have been {}{self_len}{} times, but got {}{values_len}{}.", self_len, values_len);
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<V, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>) -> u32)(values), self.1));
-  values
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::len<V, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>)(values)), self.1));
+  (#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<V, N: u32>)(values)
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::iter_mut<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type>(self: & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, f: λ(K, V) -> Tuple<K, V>) -> Unit := {
-  let mut entries = («std-1.0.0-beta.14»::collections::map::HashMap::entries<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self));
-  let mut new_map = («std-1.0.0-beta.14»::collections::map::HashMap::with_hasher<K, V, N: u32, B> as λ(B) -> «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).2);
+  let entries = (#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)((«std-1.0.0-beta.14»::collections::map::HashMap::entries<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self)));
+  let new_map = (#_ref returning & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)((«std-1.0.0-beta.14»::collections::map::HashMap::with_hasher<K, V, N: u32, B> as λ(B) -> «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).2));
   for i in (0: u32) .. uConst!(N: u32) do {
     if (#_uLt returning bool)(i, (#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).1) then {
-      let entry = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::get_unchecked<Tuple<K, V>, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>, u32) -> Tuple<K, V>)(entries, i);
+      let entry = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::get_unchecked<Tuple<K, V>, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>, u32) -> Tuple<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)(entries), i);
       let (key, value) = (f as λ(K, V) -> Tuple<K, V>)(entry.0, entry.1);
-      («std-1.0.0-beta.14»::collections::map::HashMap::insert<K, V, N: u32, B> as λ(& «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, K, V) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(new_map), key, value);
+      («std-1.0.0-beta.14»::collections::map::HashMap::insert<K, V, N: u32, B> as λ(& «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, K, V) -> Unit)(new_map, key, value);
       #_skip
     }
   };
-  ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>) = new_map.0;
-  ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).1: u32) = new_map.1;
+  ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>) = (#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(new_map).0;
+  ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).1: u32) = (#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(new_map).1;
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::iter_keys_mut<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type>(self: & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, f: λ(K) -> K) -> Unit := {
-  let mut entries = («std-1.0.0-beta.14»::collections::map::HashMap::entries<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self));
-  let mut new_map = («std-1.0.0-beta.14»::collections::map::HashMap::with_hasher<K, V, N: u32, B> as λ(B) -> «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).2);
+  let entries = (#_ref returning & «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)((«std-1.0.0-beta.14»::collections::map::HashMap::entries<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self)));
+  let new_map = (#_ref returning & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)((«std-1.0.0-beta.14»::collections::map::HashMap::with_hasher<K, V, N: u32, B> as λ(B) -> «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).2));
   for i in (0: u32) .. uConst!(N: u32) do {
     if (#_uLt returning bool)(i, (#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).1) then {
-      let entry = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::get_unchecked<Tuple<K, V>, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>, u32) -> Tuple<K, V>)(entries, i);
+      let entry = («std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::get_unchecked<Tuple<K, V>, N: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>, u32) -> Tuple<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<Tuple<K, V>, N: u32>)(entries), i);
       let (key, value) = (#_makeData returning Tuple<K, V>)((f as λ(K) -> K)(entry.0), entry.1);
-      («std-1.0.0-beta.14»::collections::map::HashMap::insert<K, V, N: u32, B> as λ(& «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, K, V) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(new_map), key, value);
+      («std-1.0.0-beta.14»::collections::map::HashMap::insert<K, V, N: u32, B> as λ(& «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, K, V) -> Unit)(new_map, key, value);
       #_skip
     }
   };
-  ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>) = new_map.0;
-  ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).1: u32) = new_map.1;
+  ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>) = (#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(new_map).0;
+  ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).1: u32) = (#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(new_map).1;
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::iter_values_mut<K: Type, V: Type, N: u32, B: Type>(self: & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, f: λ(V) -> V) -> Unit := {
   for i in (0: u32) .. uConst!(N: u32) do {
-    let mut slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(i));
-    if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot) then {
-      (slot.1: V) = (f as λ(V) -> V)(slot.1);
-      (((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>)[i]: «std-1.0.0-beta.14»::collections::map::Slot<K, V>) = slot;
+    let slot = (#_ref returning & «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(i)));
+    if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot)) then {
+      (slot.1: V) = (f as λ(V) -> V)((#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot).1);
+      (((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>)[i]: «std-1.0.0-beta.14»::collections::map::Slot<K, V>) = (#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot);
       #_skip
     }
   };
@@ -168,12 +168,12 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::iter_values_mut<K: Ty
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::retain<K: Type, V: Type, N: u32, B: Type>(self: & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, f: λ(K, V) -> bool) -> Unit := {
   for index in (0: u32) .. uConst!(N: u32) do {
-    let mut slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(index));
-    if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot) then {
-      if (#_bNot returning bool)((f as λ(K, V) -> bool)(slot.0, slot.1)) then {
-        («std-1.0.0-beta.14»::collections::map::Slot::mark_deleted<K, V> as λ(& «std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot));
+    let slot = (#_ref returning & «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(index)));
+    if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot)) then {
+      if (#_bNot returning bool)((f as λ(K, V) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot).0, (#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot).1)) then {
+        («std-1.0.0-beta.14»::collections::map::Slot::mark_deleted<K, V> as λ(& «std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> Unit)(slot);
         ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).1: u32) = (#_uSub returning u32)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).1, (1: u32));
-        (((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>)[index]: «std-1.0.0-beta.14»::collections::map::Slot<K, V>) = slot;
+        (((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>)[index]: «std-1.0.0-beta.14»::collections::map::Slot<K, V>) = (#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot);
         #_skip
       }
     }
@@ -190,11 +190,11 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::capacity<K: Type, V: 
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::get<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type>(self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, key: K) -> «std-1.0.0-beta.14»::option::Option<V> := {
-  let mut result = («std-1.0.0-beta.14»::option::Option::none<V> as λ() -> «std-1.0.0-beta.14»::option::Option<V>)();
+  let result = (#_ref returning & «std-1.0.0-beta.14»::option::Option<V>)((«std-1.0.0-beta.14»::option::Option::none<V> as λ() -> «std-1.0.0-beta.14»::option::Option<V>)());
   let hash = («std-1.0.0-beta.14»::collections::map::HashMap::hash<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, K) -> u32)(self, key);
-  let mut should_break = #_false;
+  let should_break = (#_ref returning & bool)(#_false);
   for attempt in (0: u32) .. uConst!(N: u32) do {
-    if (#_bNot returning bool)(should_break) then {
+    if (#_bNot returning bool)((#_readRef returning bool)(should_break)) then {
       let index = («std-1.0.0-beta.14»::collections::map::HashMap::quadratic_probe<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, u32, u32) -> u32)(self, hash, (#_cast returning u32)(attempt));
       let slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(self.0, (#_cast returning u32)(index));
       if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot) then {
@@ -206,31 +206,31 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::get<K: Type, V: Type,
       }
     }
   };
-  result
+  (#_readRef returning «std-1.0.0-beta.14»::option::Option<V>)(result)
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::insert<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type>(self: & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, key: K, value: V) -> Unit := {
   («std-1.0.0-beta.14»::collections::map::HashMap::assert_load_factor<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> Unit)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self));
   let hash = («std-1.0.0-beta.14»::collections::map::HashMap::hash<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, K) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self), key);
-  let mut should_break = #_false;
+  let should_break = (#_ref returning & bool)(#_false);
   for attempt in (0: u32) .. uConst!(N: u32) do {
-    if (#_bNot returning bool)(should_break) then {
+    if (#_bNot returning bool)((#_readRef returning bool)(should_break)) then {
       let index = («std-1.0.0-beta.14»::collections::map::HashMap::quadratic_probe<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, u32, u32) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self), hash, (#_cast returning u32)(attempt));
-      let mut slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(index));
-      let mut insert = #_false;
-      if («std-1.0.0-beta.14»::collections::map::Slot::is_available<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot) then {
+      let slot = (#_ref returning & «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(index)));
+      let insert = (#_ref returning & bool)(#_false);
+      if («std-1.0.0-beta.14»::collections::map::Slot::is_available<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot)) then {
         insert = #_true;
         ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).1: u32) = (#_uAdd returning u32)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).1, (1: u32));
         #_skip
       } else {
-        if ((K as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(K, K) -> bool)(slot.0, key) then {
+        if ((K as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(K, K) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot).0, key) then {
           insert = #_true;
           #_skip
         }
       };
-      if insert then {
-        («std-1.0.0-beta.14»::collections::map::Slot::set<K, V> as λ(& «std-1.0.0-beta.14»::collections::map::Slot<K, V>, K, V) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot), key, value);
-        (((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>)[index]: «std-1.0.0-beta.14»::collections::map::Slot<K, V>) = slot;
+      if (#_readRef returning bool)(insert) then {
+        («std-1.0.0-beta.14»::collections::map::Slot::set<K, V> as λ(& «std-1.0.0-beta.14»::collections::map::Slot<K, V>, K, V) -> Unit)(slot, key, value);
+        (((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>)[index]: «std-1.0.0-beta.14»::collections::map::Slot<K, V>) = (#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot);
         should_break = #_true;
         #_skip
       }
@@ -241,15 +241,15 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::insert<K: Type, V: Ty
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::remove<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type>(self: & «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, key: K) -> Unit := {
   let hash = («std-1.0.0-beta.14»::collections::map::HashMap::hash<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, K) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self), key);
-  let mut should_break = #_false;
+  let should_break = (#_ref returning & bool)(#_false);
   for attempt in (0: u32) .. uConst!(N: u32) do {
-    if (#_bNot returning bool)(should_break) then {
+    if (#_bNot returning bool)((#_readRef returning bool)(should_break)) then {
       let index = («std-1.0.0-beta.14»::collections::map::HashMap::quadratic_probe<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, u32, u32) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self), hash, (#_cast returning u32)(attempt));
-      let mut slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(index));
-      if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot) then {
-        if ((K as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(K, K) -> bool)(slot.0, key) then {
-          («std-1.0.0-beta.14»::collections::map::Slot::mark_deleted<K, V> as λ(& «std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot));
-          (((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>)[index]: «std-1.0.0-beta.14»::collections::map::Slot<K, V>) = slot;
+      let slot = (#_ref returning & «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).0, (#_cast returning u32)(index)));
+      if («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot)) then {
+        if ((K as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(K, K) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot).0, key) then {
+          («std-1.0.0-beta.14»::collections::map::Slot::mark_deleted<K, V> as λ(& «std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> Unit)(slot);
+          (((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).0: Array<«std-1.0.0-beta.14»::collections::map::Slot<K, V>, N: u32>)[index]: «std-1.0.0-beta.14»::collections::map::Slot<K, V>) = (#_readRef returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(slot);
           ((*self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>).1: u32) = (#_uSub returning u32)((#_readRef returning «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>)(self).1, (1: u32));
           should_break = #_true;
           #_skip
@@ -261,9 +261,9 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::remove<K: Type, V: Ty
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::hash<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type>(self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, key: K) -> u32 := {
-  let mut hasher = ((B as «std-1.0.0-beta.14»::hash::BuildHasher<>)::build_hasher<> as λ(B) -> B_as_BuildHasher_H)(self.2);
-  ((K as «std-1.0.0-beta.14»::hash::Hash<>)::hash<B_as_BuildHasher_H> as λ(K, & B_as_BuildHasher_H) -> Unit)(key, (#_ref returning & B_as_BuildHasher_H)(hasher));
-  (#_cast returning u32)(((B_as_BuildHasher_H as «std-1.0.0-beta.14»::hash::Hasher<>)::finish<> as λ(B_as_BuildHasher_H) -> Field)(hasher))
+  let hasher = (#_ref returning & B_as_BuildHasher_H)(((B as «std-1.0.0-beta.14»::hash::BuildHasher<>)::build_hasher<> as λ(B) -> B_as_BuildHasher_H)(self.2));
+  ((K as «std-1.0.0-beta.14»::hash::Hash<>)::hash<B_as_BuildHasher_H> as λ(K, & B_as_BuildHasher_H) -> Unit)(key, hasher);
+  (#_cast returning u32)(((B_as_BuildHasher_H as «std-1.0.0-beta.14»::hash::Hasher<>)::finish<> as λ(B_as_BuildHasher_H) -> Field)((#_readRef returning B_as_BuildHasher_H)(hasher)))
 }
 
 noir_def «std-1.0.0-beta.14»::collections::map::HashMap::quadratic_probe<K: Type, V: Type, N: u32, B: Type>(_self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, hash: u32, attempt: u32) -> u32 := {
@@ -282,7 +282,7 @@ noir_def «std-1.0.0-beta.14»::collections::map::HashMap::assert_load_factor<K:
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_35]<K: Type, V: Type, N: u32, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.14»::cmp::Eq<> for «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B> where [K: «std-1.0.0-beta.14»::cmp::Eq<>, K: «std-1.0.0-beta.14»::hash::Hash<>, V: «std-1.0.0-beta.14»::cmp::Eq<>, B: «std-1.0.0-beta.14»::hash::BuildHasher<B_as_BuildHasher_H>] := {
   noir_def eq<>(self: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, other: «std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> bool := {
-    let mut equal = #_false;
+    let equal = (#_ref returning & bool)(#_false);
     if (#_uEq returning bool)((«std-1.0.0-beta.14»::collections::map::HashMap::len<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> u32)(self), («std-1.0.0-beta.14»::collections::map::HashMap::len<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>) -> u32)(other)) then {
       equal = #_true;
       {
@@ -290,7 +290,7 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_35]<K: Type, V: Type, N: u32, B: Type
         for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
           let slot = (#_arrayIndex returning «std-1.0.0-beta.14»::collections::map::Slot<K, V>)(ζi0, (#_cast returning u32)(ζi1));
           {
-            if (#_bAnd returning bool)(equal, («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot)) then {
+            if (#_bAnd returning bool)((#_readRef returning bool)(equal), («std-1.0.0-beta.14»::collections::map::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::map::Slot<K, V>) -> bool)(slot)) then {
               let other_value = («std-1.0.0-beta.14»::collections::map::HashMap::get<K, V, N: u32, B> as λ(«std-1.0.0-beta.14»::collections::map::HashMap<K, V, N: u32, B>, K) -> «std-1.0.0-beta.14»::option::Option<V>)(other, slot.0);
               if («std-1.0.0-beta.14»::option::Option::is_none<V> as λ(«std-1.0.0-beta.14»::option::Option<V>) -> bool)(other_value) then {
                 equal = #_false;
@@ -308,7 +308,7 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_35]<K: Type, V: Type, N: u32, B: Type
         #_skip
       }
     };
-    equal
+    (#_readRef returning bool)(equal)
   };
 }
 
