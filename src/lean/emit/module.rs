@@ -84,9 +84,6 @@ impl ModuleEmitter {
         writer.write_sep_by(
             &function.parameters,
             |w, p| {
-                if p.is_mut {
-                    w.append_to_line("mut ");
-                }
                 w.append_to_line(&p.name);
                 w.append_to_line(": ");
                 w.write_type_value(&p.typ, false);
@@ -97,7 +94,26 @@ impl ModuleEmitter {
         writer.append_to_line(" -> ");
         writer.write_type_value(&function.return_type, false);
         writer.append_to_line(" := ");
-        writer.write_expression(&function.body);
+
+        // Wrap body with `let param = ref(param);` for each mutable parameter.
+        let mut_params: Vec<_> = function.parameters.iter().filter(|p| p.is_mut).collect();
+        if mut_params.is_empty() {
+            writer.write_expression(&function.body);
+        } else {
+            writer.append_to_line("{");
+            for p in &mut_params {
+                writer.end_line();
+                writer.append_to_line(&format!("  let {} = (#_ref returning & ", p.name));
+                writer.write_type_value(&p.typ, false);
+                writer.append_to_line(&format!(")({})", p.name));
+                writer.append_to_line(";");
+            }
+            writer.end_line();
+            writer.append_to_line("  ");
+            writer.write_expression(&function.body);
+            writer.end_line();
+            writer.append_to_line("}");
+        }
         if with_semi {
             writer.append_to_line(";");
         }

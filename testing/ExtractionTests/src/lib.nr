@@ -1,4 +1,5 @@
 mod alias_member_access;
+mod black_box_mut;
 mod nested_member_access;
 mod associated_type;
 mod const_generics;
@@ -9,4 +10,5 @@ mod patterns;
 mod struct_namespaces;
 mod type_order;
 mod unconstrained_return;
+mod shadow_mut;
 mod unit_return;

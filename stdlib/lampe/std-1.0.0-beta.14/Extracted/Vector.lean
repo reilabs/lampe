@@ -5,63 +5,66 @@ import Lampe
 
 open Lampe
 
-noir_def «std-1.0.0-beta.14»::vector::append<T: Type>(mut self: Vector<T>, other: Vector<T>) -> Vector<T> := {
+noir_def «std-1.0.0-beta.14»::vector::append<T: Type>(self: Vector<T>, other: Vector<T>) -> Vector<T> := {
+  let self = (#_ref returning & Vector<T>)(self);
+  {
   {
     let ζi0 = other;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        self = (#_vectorPushBack returning Vector<T>)(self, elem);
+        self = (#_vectorPushBack returning Vector<T>)((#_readRef returning Vector<T>)(self), elem);
         #_skip
       }
     };
     #_skip
   };
-  self
+  (#_readRef returning Vector<T>)(self)
+}
 }
 
 noir_def «std-1.0.0-beta.14»::vector::as_array<T: Type, N: u32>(self: Vector<T>) -> Array<T, N: u32> := {
   (#_assert returning Unit)((#_uEq returning bool)((#_arrayLen returning u32)(self), uConst!(N: u32)));
-  let mut array = (#_mkRepeatedArray returning Array<T, N: u32>)((#_zeroed returning T)());
+  let array = (#_ref returning & Array<T, N: u32>)((#_mkRepeatedArray returning Array<T, N: u32>)((#_zeroed returning T)()));
   for i in (0: u32) .. uConst!(N: u32) do {
     (array[i]: T) = (#_vectorIndex returning T)(self, (#_cast returning u32)(i));
     #_skip
   };
-  array
+  (#_readRef returning Array<T, N: u32>)(array)
 }
 
 noir_def «std-1.0.0-beta.14»::vector::map<T: Type, U: Type, Env: Type>(self: Vector<T>, f: λ(T) -> U) -> Vector<U> := {
-  let mut ret = (#_asVector returning Vector<U>)((#_mkArray returning Array<U, 0: u32>)());
+  let ret = (#_ref returning & Vector<U>)((#_asVector returning Vector<U>)((#_mkArray returning Array<U, 0: u32>)()));
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        ret = (#_vectorPushBack returning Vector<U>)(ret, (f as λ(T) -> U)(elem));
+        ret = (#_vectorPushBack returning Vector<U>)((#_readRef returning Vector<U>)(ret), (f as λ(T) -> U)(elem));
         #_skip
       }
     };
     #_skip
   };
-  ret
+  (#_readRef returning Vector<U>)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::vector::mapi<T: Type, U: Type, Env: Type>(self: Vector<T>, f: λ(u32, T) -> U) -> Vector<U> := {
-  let mut ret = (#_asVector returning Vector<U>)((#_mkArray returning Array<U, 0: u32>)());
-  let mut index = (0: u32);
+  let ret = (#_ref returning & Vector<U>)((#_asVector returning Vector<U>)((#_mkArray returning Array<U, 0: u32>)()));
+  let index = (#_ref returning & u32)((0: u32));
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        ret = (#_vectorPushBack returning Vector<U>)(ret, (f as λ(u32, T) -> U)(index, elem));
-        index = (#_uAdd returning u32)(index, (1: u32));
+        ret = (#_vectorPushBack returning Vector<U>)((#_readRef returning Vector<U>)(ret), (f as λ(u32, T) -> U)((#_readRef returning u32)(index), elem));
+        index = (#_uAdd returning u32)((#_readRef returning u32)(index), (1: u32));
         #_skip
       }
     };
     #_skip
   };
-  ret
+  (#_readRef returning Vector<U>)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::vector::for_each<T: Type, Env: Type>(self: Vector<T>, f: λ(T) -> Unit) -> Unit := {
@@ -77,14 +80,14 @@ noir_def «std-1.0.0-beta.14»::vector::for_each<T: Type, Env: Type>(self: Vecto
 }
 
 noir_def «std-1.0.0-beta.14»::vector::for_eachi<T: Type, Env: Type>(self: Vector<T>, f: λ(u32, T) -> Unit) -> Unit := {
-  let mut index = (0: u32);
+  let index = (#_ref returning & u32)((0: u32));
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        (f as λ(u32, T) -> Unit)(index, elem);
-        index = (#_uAdd returning u32)(index, (1: u32));
+        (f as λ(u32, T) -> Unit)((#_readRef returning u32)(index), elem);
+        index = (#_uAdd returning u32)((#_readRef returning u32)(index), (1: u32));
         #_skip
       }
     };
@@ -92,91 +95,94 @@ noir_def «std-1.0.0-beta.14»::vector::for_eachi<T: Type, Env: Type>(self: Vect
   }
 }
 
-noir_def «std-1.0.0-beta.14»::vector::fold<T: Type, U: Type, Env: Type>(self: Vector<T>, mut accumulator: U, f: λ(U, T) -> U) -> U := {
+noir_def «std-1.0.0-beta.14»::vector::fold<T: Type, U: Type, Env: Type>(self: Vector<T>, accumulator: U, f: λ(U, T) -> U) -> U := {
+  let accumulator = (#_ref returning & U)(accumulator);
+  {
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        accumulator = (f as λ(U, T) -> U)(accumulator, elem);
+        accumulator = (f as λ(U, T) -> U)((#_readRef returning U)(accumulator), elem);
         #_skip
       }
     };
     #_skip
   };
-  accumulator
+  (#_readRef returning U)(accumulator)
+}
 }
 
 noir_def «std-1.0.0-beta.14»::vector::reduce<T: Type, Env: Type>(self: Vector<T>, f: λ(T, T) -> T) -> T := {
-  let mut accumulator = (#_vectorIndex returning T)(self, (0: u32));
+  let accumulator = (#_ref returning & T)((#_vectorIndex returning T)(self, (0: u32)));
   for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
-    accumulator = (f as λ(T, T) -> T)(accumulator, (#_vectorIndex returning T)(self, (#_cast returning u32)(i)));
+    accumulator = (f as λ(T, T) -> T)((#_readRef returning T)(accumulator), (#_vectorIndex returning T)(self, (#_cast returning u32)(i)));
     #_skip
   };
-  accumulator
+  (#_readRef returning T)(accumulator)
 }
 
 noir_def «std-1.0.0-beta.14»::vector::filter<T: Type, Env: Type>(self: Vector<T>, predicate: λ(T) -> bool) -> Vector<T> := {
-  let mut ret = (#_asVector returning Vector<T>)((#_mkArray returning Array<T, 0: u32>)());
+  let ret = (#_ref returning & Vector<T>)((#_asVector returning Vector<T>)((#_mkArray returning Array<T, 0: u32>)()));
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
         if (predicate as λ(T) -> bool)(elem) then {
-          ret = (#_vectorPushBack returning Vector<T>)(ret, elem);
+          ret = (#_vectorPushBack returning Vector<T>)((#_readRef returning Vector<T>)(ret), elem);
           #_skip
         }
       }
     };
     #_skip
   };
-  ret
+  (#_readRef returning Vector<T>)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::vector::join<T: Type>(self: Vector<T>, separator: T) -> T := {
-  let mut ret = ((T as «std-1.0.0-beta.14»::append::Append<>)::empty<> as λ() -> T)();
+  let ret = (#_ref returning & T)(((T as «std-1.0.0-beta.14»::append::Append<>)::empty<> as λ() -> T)());
   if (#_uNeq returning bool)((#_arrayLen returning u32)(self), (0: u32)) then {
     ret = (#_vectorIndex returning T)(self, (0: u32));
     for i in (1: u32) .. (#_arrayLen returning u32)(self) do {
-      ret = ((T as «std-1.0.0-beta.14»::append::Append<>)::append<> as λ(T, T) -> T)(((T as «std-1.0.0-beta.14»::append::Append<>)::append<> as λ(T, T) -> T)(ret, separator), (#_vectorIndex returning T)(self, (#_cast returning u32)(i)));
+      ret = ((T as «std-1.0.0-beta.14»::append::Append<>)::append<> as λ(T, T) -> T)(((T as «std-1.0.0-beta.14»::append::Append<>)::append<> as λ(T, T) -> T)((#_readRef returning T)(ret), separator), (#_vectorIndex returning T)(self, (#_cast returning u32)(i)));
       #_skip
     };
     #_skip
   };
-  ret
+  (#_readRef returning T)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::vector::«all»<T: Type, Env: Type>(self: Vector<T>, predicate: λ(T) -> bool) -> bool := {
-  let mut ret = #_true;
+  let ret = (#_ref returning & bool)(#_true);
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        ret = (#_bAnd returning bool)(ret, (predicate as λ(T) -> bool)(elem));
+        ret = (#_bAnd returning bool)((#_readRef returning bool)(ret), (predicate as λ(T) -> bool)(elem));
         #_skip
       }
     };
     #_skip
   };
-  ret
+  (#_readRef returning bool)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::vector::any<T: Type, Env: Type>(self: Vector<T>, predicate: λ(T) -> bool) -> bool := {
-  let mut ret = #_false;
+  let ret = (#_ref returning & bool)(#_false);
   {
     let ζi0 = self;
     for ζi1 in (0: u32) .. (#_arrayLen returning u32)(ζi0) do {
       let elem = (#_vectorIndex returning T)(ζi0, (#_cast returning u32)(ζi1));
       {
-        ret = (#_bOr returning bool)(ret, (predicate as λ(T) -> bool)(elem));
+        ret = (#_bOr returning bool)((#_readRef returning bool)(ret), (predicate as λ(T) -> bool)(elem));
         #_skip
       }
     };
     #_skip
   };
-  ret
+  (#_readRef returning bool)(ret)
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::map_empty<>() -> Unit := {
@@ -221,25 +227,25 @@ noir_def «std-1.0.0-beta.14»::vector::test::mapi_example<>() -> Unit := {
 
 noir_def «std-1.0.0-beta.14»::vector::test::for_each_example<>() -> Unit := {
   let a = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let mut b = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let b_ref = (#_ref returning & Vector<Field>)(b);
+  let b = (#_ref returning & Vector<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)()));
+  let b_ref = b;
   («std-1.0.0-beta.14»::vector::for_each<Field, Tuple<& Vector<Field> > > as λ(Vector<Field>, λ(Field) -> Unit) -> Unit)(a, (fn(a: Field): Unit := {
     (*b_ref: Vector<Field>) = (#_vectorPushBack returning Vector<Field>)((#_readRef returning Vector<Field>)(b_ref), (#_fMul returning Field)(a, (2: Field)));
     #_skip
   }));
-  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(b, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field)))));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((#_readRef returning Vector<Field>)(b), (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::for_eachi_example<>() -> Unit := {
   let a = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)));
-  let mut b = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)());
-  let b_ref = (#_ref returning & Vector<u32>)(b);
+  let b = (#_ref returning & Vector<u32>)((#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)()));
+  let b_ref = b;
   («std-1.0.0-beta.14»::vector::for_eachi<u32, Tuple<& Vector<u32> > > as λ(Vector<u32>, λ(u32, u32) -> Unit) -> Unit)(a, (fn(i: u32, a: u32): Unit := {
     (*b_ref: Vector<u32>) = (#_vectorPushBack returning Vector<u32>)((#_readRef returning Vector<u32>)(b_ref), (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32))));
     #_skip
   }));
-  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(b, (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32)))));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)((#_readRef returning Vector<u32>)(b), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32)))));
   #_skip
 }
 

@@ -6,11 +6,11 @@ import Lampe
 open Lampe
 
 noir_def «Multiple-0.0.0»::main<>(x: Field) -> Field := {
-  let mut x = x;
-  x = («Multiple-0.0.0»::foo::foo<> as λ(Field) -> Field)(x);
-  x = («Multiple-0.0.0»::bar::bar<> as λ(Field) -> Field)(x);
-  x = («Multiple-0.0.0»::baz::bang::bang<> as λ(Field) -> Field)(x);
-  x
+  let x = (#_ref returning & Field)(x);
+  x = («Multiple-0.0.0»::foo::foo<> as λ(Field) -> Field)((#_readRef returning Field)(x));
+  x = («Multiple-0.0.0»::bar::bar<> as λ(Field) -> Field)((#_readRef returning Field)(x));
+  x = («Multiple-0.0.0»::baz::bang::bang<> as λ(Field) -> Field)((#_readRef returning Field)(x));
+  (#_readRef returning Field)(x)
 }
 
 def «Multiple-0.0.0».Main.env : Env := Env.mk

@@ -6,19 +6,19 @@ import Lampe
 open Lampe
 
 noir_def «Merkle-1.0.0»::mtree_recover<H: Type, N: u32>(idx: Array<bool, N: u32>, p: Array<Field, N: u32>, item: Field) -> Field := {
-  let mut curr_h = item;
+  let curr_h = (#_ref returning & Field)(item);
   for i in (0: u32) .. uConst!(N: u32) do {
     let dir = (#_arrayIndex returning bool)(idx, (#_cast returning u32)(i));
     let sibling_root = (#_arrayIndex returning Field)(p, (#_cast returning u32)(i));
     if dir then {
-      curr_h = ((H as «Merkle-1.0.0»::hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(sibling_root, curr_h);
+      curr_h = ((H as «Merkle-1.0.0»::hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(sibling_root, (#_readRef returning Field)(curr_h));
       #_skip
     } else {
-      curr_h = ((H as «Merkle-1.0.0»::hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)(curr_h, sibling_root);
+      curr_h = ((H as «Merkle-1.0.0»::hasher::BinaryHasher<Field>)::hash<> as λ(Field, Field) -> Field)((#_readRef returning Field)(curr_h), sibling_root);
       #_skip
     }
   };
-  curr_h
+  (#_readRef returning Field)(curr_h)
 }
 
 noir_def «Merkle-1.0.0»::main<>(root: Field, proof: Array<Field, 32: u32>, item: Field, idx: Array<bool, 32: u32>) -> Unit := {

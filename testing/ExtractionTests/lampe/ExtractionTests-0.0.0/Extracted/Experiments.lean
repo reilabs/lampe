@@ -51,9 +51,9 @@ noir_def «ExtractionTests-0.0.0»::experiments::literal_test<>() -> Unit := {
 }
 
 noir_def «ExtractionTests-0.0.0»::experiments::assigns<>(x: u8) -> Unit := {
-  let mut y = (3: u8);
-  y = (#_uAdd returning u8)(y, x);
-  let mut arr = (#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field));
+  let y = (#_ref returning & u8)((3: u8));
+  y = (#_uAdd returning u8)((#_readRef returning u8)(y), x);
+  let arr = (#_ref returning & Array<Field, 2: u32>)((#_mkArray returning Array<Field, 2: u32>)((1: Field), (2: Field)));
   (arr[(0: u32)]: Field) = (10: Field);
   #_skip
 }
@@ -117,21 +117,21 @@ noir_def «ExtractionTests-0.0.0»::experiments::is_alias_some<T: Type>(x: @«Ex
 }
 
 noir_def «ExtractionTests-0.0.0»::experiments::main<>() -> Unit := {
-  let mut op1 = («ExtractionTests-0.0.0»::experiments::Option2::some<Field> as λ(Field) -> «ExtractionTests-0.0.0»::experiments::Option2<Field>)((5: Field));
+  let op1 = (#_ref returning & «ExtractionTests-0.0.0»::experiments::Option2<Field>)((«ExtractionTests-0.0.0»::experiments::Option2::some<Field> as λ(Field) -> «ExtractionTests-0.0.0»::experiments::Option2<Field>)((5: Field)));
   let op2 = ((«ExtractionTests-0.0.0»::experiments::Option2<Field> as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «ExtractionTests-0.0.0»::experiments::Option2<Field>)();
   let _op3 = ((«ExtractionTests-0.0.0»::experiments::Option2<Field> as «ExtractionTests-0.0.0»::experiments::MyTrait<>)::foo<> as λ(«ExtractionTests-0.0.0»::experiments::Option2<Field>) -> «ExtractionTests-0.0.0»::experiments::Option2<Field>)(if #_true then {
-    op1
+    (#_readRef returning «ExtractionTests-0.0.0»::experiments::Option2<Field>)(op1)
   } else {
     op2
   });
-  let __0 = («ExtractionTests-0.0.0»::experiments::Option2::is_some<Field> as λ(«ExtractionTests-0.0.0»::experiments::Option2<Field>) -> bool)(op1);
-  let mut l = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
-  let __1 = (#_arrayIndex returning Field)(l, (0: u32));
+  let __0 = («ExtractionTests-0.0.0»::experiments::Option2::is_some<Field> as λ(«ExtractionTests-0.0.0»::experiments::Option2<Field>) -> bool)((#_readRef returning «ExtractionTests-0.0.0»::experiments::Option2<Field>)(op1));
+  let l = (#_ref returning & Array<Field, 3: u32>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
+  let __1 = (#_arrayIndex returning Field)((#_readRef returning Array<Field, 3: u32>)(l), (0: u32));
   let t = (#_makeData returning Tuple<Field, bool, Field>)((1: Field), #_true, (3: Field));
   let __3 = t.2;
   (l[(1: u32)]: Field) = (4: Field);
   (op1.0: bool) = #_false;
-  let mut tpl = (#_makeData returning Tuple<Field, bool>)((1: Field), #_true);
+  let tpl = (#_ref returning & Tuple<Field, bool>)((#_makeData returning Tuple<Field, bool>)((1: Field), #_true));
   (tpl.0: Field) = (2: Field);
   #_skip
 }

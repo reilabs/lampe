@@ -110,7 +110,6 @@ syntax noir_const_num "%" noir_const_num : noir_const_num -- Type-level modulo
 -- These are not lambda parameters, which accept a much broader pattern language.
 
 syntax ident ppSpace ":" ppSpace noir_type : noir_func_param -- Bare function parameters
-syntax "mut" ident ":" noir_type : noir_func_param -- Mutable function parameters.
 syntax "_" ":" noir_type : noir_func_param -- An ignored function parameter.
 
 -- LITERALS ---------------------------------------------------------------------------------------
@@ -168,7 +167,6 @@ syntax "fn" "(" noir_lam_param,* ")" ppSpace ":" ppSpace noir_type ppSpace ":=" 
 -- These are used in let bindings and lambda parameters to destructure things.
 
 syntax noir_ident : noir_pat -- A bare identifier.
-syntax "mut" ppSpace noir_ident : noir_pat -- A mutable identifier.
 syntax "(" noir_pat,* ")" : noir_pat -- A tuple pattern stands in for both tuples and structs.
 
 -- L-VALUES ---------------------------------------------------------------------------------------

@@ -88,139 +88,139 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::get::panics_on_out_
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::set::updates_values_properly<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (0: Field), (0: Field), (0: Field), (0: Field))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32), (42: Field));
-  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (0: Field), (0: Field), (0: Field), (0: Field)))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32), (43: Field));
-  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (43: Field), (0: Field), (0: Field), (0: Field)))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32), (44: Field));
-  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (43: Field), (44: Field), (0: Field), (0: Field)))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32), (10: Field));
-  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (10: Field), (44: Field), (0: Field), (0: Field)))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32), (0: Field));
-  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(vec.0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (10: Field), (44: Field), (0: Field), (0: Field)))));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (0: Field), (0: Field), (0: Field), (0: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (0: u32), (42: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec).0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (0: Field), (0: Field), (0: Field), (0: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (1: u32), (43: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec).0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (43: Field), (0: Field), (0: Field), (0: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (2: u32), (44: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec).0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (43: Field), (44: Field), (0: Field), (0: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (1: u32), (10: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec).0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((42: Field), (10: Field), (44: Field), (0: Field), (0: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (0: u32), (0: Field));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec).0, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (10: Field), (44: Field), (0: Field), (0: Field)))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::set::panics_when_writing_elements_past_end_of_vec<>() -> Unit := {
-  let mut vec = («std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)();
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32), (42: Field));
-  let __0 = («std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((«std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)());
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (0: u32), (42: Field));
+  let __0 = («std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::push::adds_element_to_end<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
-  let original_len = («std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec);
-  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (4: Field));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (#_uAdd returning u32)(original_len, (1: u32))));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (4: Field)));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)))));
+  let original_len = («std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec));
+  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)(vec, (4: Field));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (#_uAdd returning u32)(original_len, (1: u32))));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (4: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::push::on_empty_vector<>() -> Unit := {
-  let mut vec = («std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)();
-  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (42: Field));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (1: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (42: Field)));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((«std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)());
+  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)(vec, (42: Field));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (1: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (42: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::pop::removes_last_element<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
-  let original_len = («std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec);
-  let popped = («std-1.0.0-beta.14»::collections::vec::Vec::pop<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)))));
+  let original_len = («std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec));
+  let popped = («std-1.0.0-beta.14»::collections::vec::Vec::pop<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> Field)(vec);
   (#_assert returning Unit)((#_fEq returning bool)(popped, (5: Field)));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (#_uSub returning u32)(original_len, (1: u32))));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (4: Field)));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (#_uSub returning u32)(original_len, (1: u32))));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (4: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::pop::on_empty_vector_panics<>() -> Unit := {
-  let mut vec = («std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)();
-  let __0 = («std-1.0.0-beta.14»::collections::vec::Vec::pop<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((«std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)());
+  let __0 = («std-1.0.0-beta.14»::collections::vec::Vec::pop<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> Field)(vec);
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_beginning<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32), (0: Field));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (0: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (1: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (2: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (3: Field)));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (0: u32), (0: Field));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (4: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (0: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (1: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (2: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (3: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_middle<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (4: Field), (5: Field))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32), (3: Field));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (5: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (2: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (3: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (4: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (4: u32)), (5: Field)));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (4: Field), (5: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (2: u32), (3: Field));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (5: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (1: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (2: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (3: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (4: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (4: u32)), (5: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::at_end<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32), (4: Field));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (2: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (3: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (4: Field)));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (3: u32), (4: Field));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (4: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (1: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (2: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (3: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (4: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::insert::beyond_length_panics<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
-  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (4: u32), (5: Field));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)))));
+  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (4: u32), (5: Field));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_beginning<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field))));
-  let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((0: Field), (1: Field), (2: Field), (3: Field), (4: Field)))));
+  let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32));
   (#_assert returning Unit)((#_fEq returning bool)(removed, (0: Field)));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (2: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (3: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (4: Field)));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (4: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (1: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (2: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (3: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (4: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_middle<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
-  let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)))));
+  let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32));
   (#_assert returning Unit)((#_fEq returning bool)(removed, (3: Field)));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (2: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (4: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (5: Field)));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (4: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (1: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (2: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (4: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (5: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::from_end<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field))));
-  let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (4: u32));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)))));
+  let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (4: u32));
   (#_assert returning Unit)((#_fEq returning bool)(removed, (5: Field)));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (2: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (3: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (4: Field)));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (4: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (1: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (2: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (3: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (4: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::remove::beyond_length_panics<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field))));
-  let __0 = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)))));
+  let __0 = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32));
   #_skip
 }
 
@@ -235,47 +235,47 @@ noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::len::returns_correc
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::vec_integration::multiple_operations_chain_correctly<>() -> Unit := {
-  let mut vec = («std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)();
-  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: Field));
-  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: Field));
-  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: Field));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (3: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (2: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (3: Field)));
-  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32), (10: Field));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (4: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (1: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (10: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (2: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (3: u32)), (3: Field)));
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32), (100: Field));
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32), (200: Field));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (100: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (200: Field)));
-  let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)((«std-1.0.0-beta.14»::collections::vec::Vec::new<Field> as λ() -> «std-1.0.0-beta.14»::collections::vec::Vec<Field>)());
+  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)(vec, (1: Field));
+  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)(vec, (2: Field));
+  («std-1.0.0-beta.14»::collections::vec::Vec::push<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, Field) -> Unit)(vec, (3: Field));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (3: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (1: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (2: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (3: Field)));
+  («std-1.0.0-beta.14»::collections::vec::Vec::insert<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (1: u32), (10: Field));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (4: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (1: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (10: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (2: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (3: u32)), (3: Field)));
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (0: u32), (100: Field));
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32, Field) -> Unit)(vec, (2: u32), (200: Field));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (100: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (200: Field)));
+  let removed = («std-1.0.0-beta.14»::collections::vec::Vec::remove<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32));
   (#_assert returning Unit)((#_fEq returning bool)(removed, (10: Field)));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (3: u32)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (0: u32)), (100: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (1: u32)), (200: Field)));
-  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)(vec, (2: u32)), (3: Field)));
-  let popped = («std-1.0.0-beta.14»::collections::vec::Vec::pop<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> Field)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (3: u32)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (0: u32)), (100: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (1: u32)), (200: Field)));
+  (#_assert returning Unit)((#_fEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>, u32) -> Field)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec), (2: u32)), (3: Field)));
+  let popped = («std-1.0.0-beta.14»::collections::vec::Vec::pop<Field> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> Field)(vec);
   (#_assert returning Unit)((#_fEq returning bool)(popped, (3: Field)));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)(vec), (2: u32)));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<Field> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<Field>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<Field>)(vec)), (2: u32)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::collections::vec::vec_tests::vec_integration::vector_with_custom_types<>() -> Unit := {
-  let mut vec = (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)((#_asVector returning Vector<bool>)((#_mkArray returning Array<bool, 3: u32>)(#_true, #_false, #_true)));
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>) -> u32)(vec), (3: u32)));
-  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)(vec, (0: u32)), #_true));
-  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)(vec, (1: u32)), #_false));
-  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)(vec, (2: u32)), #_true));
-  («std-1.0.0-beta.14»::collections::vec::Vec::set<bool> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32, bool) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec), (1: u32), #_true);
-  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)(vec, (1: u32)), #_true));
-  («std-1.0.0-beta.14»::collections::vec::Vec::push<bool> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<bool>, bool) -> Unit)((#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec), #_false);
-  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>) -> u32)(vec), (4: u32)));
-  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)(vec, (3: u32)), #_false));
+  let vec = (#_ref returning & «std-1.0.0-beta.14»::collections::vec::Vec<bool>)((#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)((#_asVector returning Vector<bool>)((#_mkArray returning Array<bool, 3: u32>)(#_true, #_false, #_true))));
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec)), (3: u32)));
+  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec), (0: u32)), #_true));
+  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec), (1: u32)), #_false));
+  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec), (2: u32)), #_true));
+  («std-1.0.0-beta.14»::collections::vec::Vec::set<bool> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32, bool) -> Unit)(vec, (1: u32), #_true);
+  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec), (1: u32)), #_true));
+  («std-1.0.0-beta.14»::collections::vec::Vec::push<bool> as λ(& «std-1.0.0-beta.14»::collections::vec::Vec<bool>, bool) -> Unit)(vec, #_false);
+  (#_assert returning Unit)((#_uEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::len<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>) -> u32)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec)), (4: u32)));
+  (#_assert returning Unit)((#_bEq returning bool)((«std-1.0.0-beta.14»::collections::vec::Vec::get<bool> as λ(«std-1.0.0-beta.14»::collections::vec::Vec<bool>, u32) -> bool)((#_readRef returning «std-1.0.0-beta.14»::collections::vec::Vec<bool>)(vec), (3: u32)), #_false));
   #_skip
 }
 

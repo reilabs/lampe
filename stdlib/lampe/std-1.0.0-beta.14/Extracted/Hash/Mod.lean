@@ -23,13 +23,13 @@ noir_def «std-1.0.0-beta.14»::hash::pedersen_commitment<N: u32>(input: Array<F
 }
 
 noir_def «std-1.0.0-beta.14»::hash::pedersen_commitment_with_separator<N: u32>(input: Array<Field, N: u32>, separator: u32) -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<> := {
-  let mut points = (#_mkRepeatedArray returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>)((#_makeData returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>)((0: Field), (0: Field)));
+  let points = (#_ref returning & Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>)((#_mkRepeatedArray returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>)((#_makeData returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>)((0: Field), (0: Field))));
   for i in (0: u32) .. uConst!(N: u32) do {
     (points[i]: «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>) = («std-1.0.0-beta.14»::hash::from_field_unsafe<> as λ(Field) -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>)((#_arrayIndex returning Field)(input, (#_cast returning u32)(i)));
     #_skip
   };
   let generators = («std-1.0.0-beta.14»::hash::derive_generators<N: u32, 24: u32> as λ(Array<u8, 24: u32>, u32) -> Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>)((#_strAsBytes returning Array<u8, 24: u32>)("DEFAULT_DOMAIN_SEPARATOR"), separator);
-  («std-1.0.0-beta.14»::embedded_curve_ops::multi_scalar_mul<N: u32> as λ(Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>, Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>) -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>)(generators, points)
+  («std-1.0.0-beta.14»::embedded_curve_ops::multi_scalar_mul<N: u32> as λ(Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>, Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>) -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>)(generators, (#_readRef returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, N: u32>)(points))
 }
 
 noir_def «std-1.0.0-beta.14»::hash::pedersen_hash<N: u32>(input: Array<Field, N: u32>) -> Field := {
@@ -37,8 +37,8 @@ noir_def «std-1.0.0-beta.14»::hash::pedersen_hash<N: u32>(input: Array<Field, 
 }
 
 noir_def «std-1.0.0-beta.14»::hash::pedersen_hash_with_separator<N: u32>(input: Array<Field, N: u32>, separator: u32) -> Field := {
-  let mut scalars = (#_mkRepeatedArray returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, (N + 1): u32>)((#_makeData returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>)((0: Field), (0: Field)));
-  let mut generators = (#_mkRepeatedArray returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, (N + 1): u32>)((«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity<> as λ() -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>)());
+  let scalars = (#_ref returning & Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, (N + 1): u32>)((#_mkRepeatedArray returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, (N + 1): u32>)((#_makeData returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>)((0: Field), (0: Field))));
+  let generators = (#_ref returning & Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, (N + 1): u32>)((#_mkRepeatedArray returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, (N + 1): u32>)((«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity<> as λ() -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>)()));
   (#_assertConstant returning Unit)(separator);
   let domain_generators = («std-1.0.0-beta.14»::hash::derive_generators<N: u32, 24: u32> as λ(Array<u8, 24: u32>, u32) -> Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32>)((#_strAsBytes returning Array<u8, 24: u32>)("DEFAULT_DOMAIN_SEPARATOR"), separator);
   for i in (0: u32) .. uConst!(N: u32) do {
@@ -49,7 +49,7 @@ noir_def «std-1.0.0-beta.14»::hash::pedersen_hash_with_separator<N: u32>(input
   (scalars[uConst!(N: u32)]: «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>) = (#_makeData returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>)((#_cast returning Field)(uConst!(N: u32)), (#_cast returning Field)((0: Field)));
   let length_generator = («std-1.0.0-beta.14»::hash::derive_generators<1: u32, 20: u32> as λ(Array<u8, 20: u32>, u32) -> Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)((#_strAsBytes returning Array<u8, 20: u32>)("pedersen_hash_length"), (0: u32));
   (generators[uConst!(N: u32)]: «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>) = (#_arrayIndex returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>)(length_generator, (0: u32));
-  (#_arrayIndex returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>)((#_multiScalarMul returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)(generators, scalars, #_true), (0: u32)).0
+  (#_arrayIndex returning «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>)((#_multiScalarMul returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, 1: u32>)((#_readRef returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, (N + 1): u32>)(generators), (#_readRef returning Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurveScalar<>, (N + 1): u32>)(scalars), #_true), (0: u32)).0
 }
 
 noir_def «std-1.0.0-beta.14»::hash::derive_generators<N: u32, M: u32>(domain_separator_bytes: Array<u8, M: u32>, starting_index: u32) -> Array<«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, N: u32> := {

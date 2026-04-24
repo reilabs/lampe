@@ -11,12 +11,12 @@ noir_def «skyscraper-0.0.0»::components::rl<>(u: u8) -> u8 := {
 }
 
 noir_def «skyscraper-0.0.0»::components::rotate_left<>(u: u8, N: u8) -> u8 := {
-  let mut result = u;
+  let result = (#_ref returning & u8)(u);
   for _ in (0: u8) .. N do {
-    result = («skyscraper-0.0.0»::components::rl<> as λ(u8) -> u8)(result);
+    result = («skyscraper-0.0.0»::components::rl<> as λ(u8) -> u8)((#_readRef returning u8)(result));
     #_skip
   };
-  result
+  (#_readRef returning u8)(result)
 }
 
 noir_def «skyscraper-0.0.0»::components::sbox<>(v: u8) -> u8 := {

@@ -11,12 +11,12 @@ noir_def «Merkle-1.0.0»::utils::rl<>(u: u8) -> u8 := {
 }
 
 noir_def «Merkle-1.0.0»::utils::rotate_left<>(u: u8, N: u8) -> u8 := {
-  let mut result = u;
+  let result = (#_ref returning & u8)(u);
   for _ in (0: u8) .. N do {
-    result = («Merkle-1.0.0»::utils::rl<> as λ(u8) -> u8)(result);
+    result = («Merkle-1.0.0»::utils::rl<> as λ(u8) -> u8)((#_readRef returning u8)(result));
     #_skip
   };
-  result
+  (#_readRef returning u8)(result)
 }
 
 noir_def «Merkle-1.0.0»::utils::sbox<>(v: u8) -> u8 := {
@@ -34,12 +34,12 @@ noir_def «Merkle-1.0.0»::utils::sgn0<>(self: Field) -> u1 := {
 }
 
 noir_def «Merkle-1.0.0»::utils::as_array<>(self: Vector<u8>) -> Array<u8, 32: u32> := {
-  let mut array = (#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8));
+  let array = (#_ref returning & Array<u8, 32: u32>)((#_mkRepeatedArray returning Array<u8, 32: u32>)((0: u8)));
   for i in (0: u32) .. (32: u32) do {
     (array[i]: u8) = (#_vectorIndex returning u8)(self, (#_cast returning u32)(i));
     #_skip
   };
-  array
+  (#_readRef returning Array<u8, 32: u32>)(array)
 }
 
 noir_def «Merkle-1.0.0»::utils::square<>(a: Field) -> Field := {

@@ -2,6 +2,7 @@
 
 import «ExtractionTests-0.0.0».Extracted.AliasMemberAccess
 import «ExtractionTests-0.0.0».Extracted.AssociatedType
+import «ExtractionTests-0.0.0».Extracted.BlackBoxMut
 import «ExtractionTests-0.0.0».Extracted.ConstGenerics
 import «ExtractionTests-0.0.0».Extracted.Experiments
 import «ExtractionTests-0.0.0».Extracted.FieldGenerics
@@ -10,6 +11,7 @@ import «ExtractionTests-0.0.0».Extracted.Lib
 import «ExtractionTests-0.0.0».Extracted.MultipleGenerics
 import «ExtractionTests-0.0.0».Extracted.NestedMemberAccess
 import «ExtractionTests-0.0.0».Extracted.Patterns
+import «ExtractionTests-0.0.0».Extracted.ShadowMut
 import «ExtractionTests-0.0.0».Extracted.StructNamespaces
 import «ExtractionTests-0.0.0».Extracted.TypeOrder
 import «ExtractionTests-0.0.0».Extracted.UnconstrainedReturn
@@ -20,6 +22,7 @@ namespace «ExtractionTests-0.0.0»
 
 def env := AliasMemberAccess.env
   ++ AssociatedType.env
+  ++ BlackBoxMut.env
   ++ ConstGenerics.env
   ++ Experiments.env
   ++ FieldGenerics.env
@@ -27,6 +30,7 @@ def env := AliasMemberAccess.env
   ++ MultipleGenerics.env
   ++ NestedMemberAccess.env
   ++ Patterns.env
+  ++ ShadowMut.env
   ++ StructNamespaces.env
   ++ TypeOrder.env
   ++ UnconstrainedReturn.env
