@@ -7,15 +7,46 @@ use crate::{
     constants::LAMPE_STRUCT_METHOD_SEPARATOR,
     lean::{
         ast::{
-            AssignStatement, Block, BuiltinCallRef, BuiltinTag, BuiltinTypeExpr, Call, Cast,
-            CastTypeExpr, DataTypeExpr, DeclCallRef, Expression, ForStatement, FunctionTypeExpr,
-            GlobalCallRef, IdentCallRef, Identifier, IfThenElse, Index, Kind, LValue, Lambda,
-            LetStatement, Literal, MemberAccess, Pattern, Statement, TraitCallRef, Type,
-            TypeArithExpr, TypeArithOp, TypeExpr, TypePattern,
+            AssignStatement,
+            Block,
+            BuiltinCallRef,
+            BuiltinTag,
+            BuiltinTypeExpr,
+            Call,
+            Cast,
+            CastTypeExpr,
+            DataTypeExpr,
+            DeclCallRef,
+            Expression,
+            ForStatement,
+            FunctionTypeExpr,
+            GlobalCallRef,
+            IdentCallRef,
+            Identifier,
+            IfThenElse,
+            Index,
+            Kind,
+            LValue,
+            Lambda,
+            LetStatement,
+            Literal,
+            MemberAccess,
+            Pattern,
+            Statement,
+            TraitCallRef,
+            Type,
+            TypeArithExpr,
+            TypeArithOp,
+            TypeExpr,
+            TypePattern,
         },
         builtin::{
-            ALIAS_PREFIX, ARRAY_GET_BUILTIN_NAME, BUILTIN_PREFIX, CAST_BUILTIN_NAME,
-            SKIP_BUILTIN_NAME, UNIT_TYPE_NAME,
+            ALIAS_PREFIX,
+            ARRAY_GET_BUILTIN_NAME,
+            BUILTIN_PREFIX,
+            CAST_BUILTIN_NAME,
+            SKIP_BUILTIN_NAME,
+            UNIT_TYPE_NAME,
         },
         emit::context::EmitContext,
     },
@@ -246,9 +277,9 @@ impl Writer<'_> {
         self.append_to_line(" as ");
 
         self.write_type_expression(&TypeExpr::Function(FunctionTypeExpr {
-            arguments: call_ref.param_types.clone(),
+            arguments:   call_ref.param_types.clone(),
             return_type: Box::new(call_ref.return_type.clone()),
-            captures: Box::new(Type::unit()),
+            captures:    Box::new(Type::unit()),
         }));
         self.append_to_line(")");
     }
@@ -290,9 +321,9 @@ impl Writer<'_> {
 
         self.append_to_line(" as ");
         self.write_type_expression(&TypeExpr::Function(FunctionTypeExpr {
-            arguments: call_ref.param_types.clone(),
+            arguments:   call_ref.param_types.clone(),
             return_type: Box::new(call_ref.return_type.clone()),
-            captures: Box::new(Type::unit()),
+            captures:    Box::new(Type::unit()),
         }));
         self.append_to_line(")");
     }

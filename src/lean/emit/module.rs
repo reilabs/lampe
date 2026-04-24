@@ -2,7 +2,11 @@ use crate::{
     file_generator::NoirPackageIdentifier,
     lean::{
         ast::{
-            FunctionDefinition, GlobalDefinition, Module, ModuleDefinition, TraitImplementation,
+            FunctionDefinition,
+            GlobalDefinition,
+            Module,
+            ModuleDefinition,
+            TraitImplementation,
             WhereClause,
         },
         emit::{context::EmitContext, writer::Writer},

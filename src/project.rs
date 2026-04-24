@@ -19,7 +19,9 @@ use crate::{
     file_generator::{
         self,
         lake::dependency::{LeanDependency, LeanDependencyPath},
-        DependencyInfo, LeanFile, NoirPackageIdentifier,
+        DependencyInfo,
+        LeanFile,
+        NoirPackageIdentifier,
     },
     lean::emit::{ModuleEmitter, TypesEmitter},
     noir::{self, WithWarnings},
@@ -197,7 +199,7 @@ impl Project {
         file_generator::lampe_project(
             &self.target_path,
             &NoirPackageIdentifier {
-                name: package_name.clone(),
+                name:    package_name.clone(),
                 version: package_version.clone(),
             },
             &dependency_info,
@@ -309,7 +311,7 @@ impl Project {
             };
 
             let dep_id = NoirPackageIdentifier {
-                name: dep_package.name.to_string(),
+                name:    dep_package.name.to_string(),
                 version: dep_package
                     .version
                     .clone()
@@ -367,7 +369,7 @@ impl Project {
             }
 
             let package_identifier = NoirPackageIdentifier {
-                name: dep_package.name.to_string(),
+                name:    dep_package.name.to_string(),
                 version: dep_package
                     .version
                     .clone()
@@ -399,7 +401,7 @@ impl Project {
             }
 
             let package_identifier = NoirPackageIdentifier {
-                name: dep_package.name.to_string(),
+                name:    dep_package.name.to_string(),
                 version: dep_package
                     .version
                     .clone()
@@ -439,7 +441,7 @@ impl Project {
             }
 
             let package_identifier = NoirPackageIdentifier {
-                name: dep_package.name.to_string(),
+                name:    dep_package.name.to_string(),
                 version: dep_package
                     .version
                     .clone()
@@ -487,7 +489,7 @@ impl Project {
             let dependency_name = &crate_name.to_string();
             let dependency_config = package_config.dependencies.get(dependency_name).ok_or(
                 Error::MissingDependencyError {
-                    package_name: package.name.to_string().clone(),
+                    package_name:    package.name.to_string().clone(),
                     package_version: package.version.clone(),
                     dependency_name: dependency_name.clone(),
                 },
@@ -505,7 +507,7 @@ impl Project {
                 file_generator::read_lampe_package_name(package)?
             } else if self.package_is_lampe_target(package) {
                 let package_identifier = NoirPackageIdentifier {
-                    name: package.name.to_string(),
+                    name:    package.name.to_string(),
                     version: package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string()),
                 };
                 package_identifier.formatted(false)
@@ -545,7 +547,7 @@ impl Project {
                 let package_version =
                     &package.version.clone().unwrap_or(NONE_DEPENDENCY_VERSION.to_string());
                 let package_id = NoirPackageIdentifier {
-                    name: package_name.clone(),
+                    name:    package_name.clone(),
                     version: package_version.clone(),
                 };
 

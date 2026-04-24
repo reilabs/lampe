@@ -1,7 +1,8 @@
 use noirc_frontend::{
     ast::{BinaryOpKind, IntegerBitSize, UnaryOp},
     shared::Signedness,
-    Type as NoirType, TypeBinding,
+    Type as NoirType,
+    TypeBinding,
 };
 
 use crate::lean::ast::{BuiltinCallRef, Call, DeclCallRef, Expression, Type};
@@ -43,8 +44,8 @@ pub fn make_ordering_const(crate_name: &str, ordering_name: &str) -> Expression 
 
     Expression::Call(Call {
         function: Box::new(Expression::DeclCallRef(DeclCallRef {
-            function: format!("{crate_name}::{ordering_name}"),
-            generics: vec![],
+            function:    format!("{crate_name}::{ordering_name}"),
+            generics:    vec![],
             param_types: vec![],
             return_type: return_type.clone(),
         })),
@@ -58,11 +59,11 @@ pub fn make_ordering_const(crate_name: &str, ordering_name: &str) -> Expression 
 #[must_use]
 pub fn make_beq(left: Expression, right: Expression) -> Expression {
     Expression::Call(Call {
-        function: Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
-            name: BEQ_NAME.to_string(),
+        function:    Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
+            name:        BEQ_NAME.to_string(),
             return_type: Type::bool(),
         })),
-        params: vec![left, right],
+        params:      vec![left, right],
         return_type: Type::bool(),
     })
 }
@@ -72,11 +73,11 @@ pub fn make_beq(left: Expression, right: Expression) -> Expression {
 #[must_use]
 pub fn make_bor(left: Expression, right: Expression) -> Expression {
     Expression::Call(Call {
-        function: Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
-            name: BOR_NAME.to_string(),
+        function:    Box::new(Expression::BuiltinCallRef(BuiltinCallRef {
+            name:        BOR_NAME.to_string(),
             return_type: Type::bool(),
         })),
-        params: vec![left, right],
+        params:      vec![left, right],
         return_type: Type::bool(),
     })
 }
