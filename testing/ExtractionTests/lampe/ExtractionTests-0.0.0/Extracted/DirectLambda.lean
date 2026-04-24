@@ -16,6 +16,13 @@ noir_def «ExtractionTests-0.0.0»::direct_lambda::call_from_array<>() -> u32 :=
   (__0 as λ(u32) -> u32)((1: u32))
 }
 
+noir_def «ExtractionTests-0.0.0»::direct_lambda::two_indirect_calls<>() -> u32 := {
+  let lambdas = (#_mkArray returning Array<λ(u32) -> u32, 2: u32>)((fn(x: u32): u32 := (#_uAdd returning u32)(x, (1: u32))), (fn(x: u32): u32 := (#_uAdd returning u32)(x, (2: u32))));
+  let __0 = (#_arrayIndex returning λ(u32) -> u32)(lambdas, (0: u32));
+  let __1 = (#_arrayIndex returning λ(u32) -> u32)(lambdas, (1: u32));
+  (#_uAdd returning u32)((__0 as λ(u32) -> u32)((1: u32)), (__1 as λ(u32) -> u32)((2: u32)))
+}
+
 def «ExtractionTests-0.0.0».DirectLambda.env : Env := Env.mk
-  [«ExtractionTests-0.0.0::direct_lambda::direct_lambda_call», «ExtractionTests-0.0.0::direct_lambda::call_from_array»]
+  [«ExtractionTests-0.0.0::direct_lambda::direct_lambda_call», «ExtractionTests-0.0.0::direct_lambda::call_from_array», «ExtractionTests-0.0.0::direct_lambda::two_indirect_calls»]
   []
