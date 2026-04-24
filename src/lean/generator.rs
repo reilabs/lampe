@@ -105,6 +105,7 @@ use crate::{
             Expression,
             ForStatement,
             FunctionDefinition,
+            FunctionTypeExpr,
             GlobalCallRef,
             GlobalDefinition,
             IdentCallRef,
@@ -1741,6 +1742,44 @@ impl LeanGenerator<'_, '_, '_> {
         );
         let params = call.arguments.iter().map(|a| self.generate_expr(*a)).collect_vec();
         let function_expr = self.generate_expr(call.func);
+
+        // Direct lambda calls `(fn(...) := body)(args)` are not supported by
+        // the Lean DSL parser. Desugar into `{ let __N = <lambda>; __N(args) }`.
+        if let Expression::Lambda(ref lambda) = function_expr {
+            let tmp_name = self.name_supply.get_name();
+            let func_type = Type {
+                expr: TypeExpr::Function(FunctionTypeExpr {
+                    arguments:   lambda.params.iter().map(|(_, t)| t.clone()).collect(),
+                    return_type: Box::new(lambda.return_type.clone()),
+                    captures:    Box::new(Type::unit()),
+                }),
+                kind: Kind::Type,
+            };
+
+            let let_stmt = Statement::Let(LetStatement {
+                pattern:    Pattern::Identifier(Identifier {
+                    name: tmp_name.clone(),
+                    typ:  func_type.clone(),
+                }),
+                typ:        func_type.clone(),
+                expression: Box::new(function_expr),
+            });
+
+            let call_ref = IdentCallRef {
+                name:      tmp_name,
+                func_type: func_type.expr,
+            };
+            let call_expr = Call {
+                function: Box::new(Expression::IdentCallRef(call_ref)),
+                params,
+                return_type: output_type.clone(),
+            };
+
+            return Expression::Block(Block {
+                statements: vec![let_stmt],
+                expression: Some(Box::new(Expression::Call(call_expr))),
+            });
+        }
 
         let call = Call {
             function: Box::new(function_expr),
