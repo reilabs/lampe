@@ -1406,10 +1406,7 @@ impl LeanGenerator<'_, '_, '_> {
         let typ = self.generate_lean_type_value(&binding.r#type, None);
         let mut prologue = vec![];
         let expr = self.generate_expr(binding.expression, &mut prologue);
-        assert!(
-            prologue.is_empty(),
-            "Unexpected prologue in global definition"
-        );
+        let expr = wrap_in_block_if_needed(prologue, expr);
 
         Some(GlobalDefinition { name, typ, expr })
     }
