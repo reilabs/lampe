@@ -343,7 +343,14 @@ impl Writer<'_> {
 
     /// Directly writes the contents of the member access into the builder.
     pub fn write_member_access(&mut self, member_access: &MemberAccess) {
+        let needs_parens = matches!(*member_access.value, Expression::MemberAccess(_));
+        if needs_parens {
+            self.append_to_line("(");
+        }
         self.write_expression(&member_access.value);
+        if needs_parens {
+            self.append_to_line(")");
+        }
         self.append_to_line(".");
         self.append_to_line(&member_access.index.to_string());
     }
