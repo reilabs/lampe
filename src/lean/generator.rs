@@ -1065,8 +1065,7 @@ impl LeanGenerator<'_, '_, '_> {
                 self.context.def_interner.function(id).as_expr(),
                 &mut prologue,
             );
-            debug_assert!(prologue.is_empty(), "Unexpected prologue in function body");
-            expr
+            wrap_in_block_if_needed(prologue, expr)
         };
 
         Some(FunctionDefinition {
@@ -1560,10 +1559,7 @@ impl LeanGenerator<'_, '_, '_> {
             self.context.def_interner.function(&id).as_expr(),
             &mut prologue,
         );
-        debug_assert!(
-            prologue.is_empty(),
-            "Unexpected prologue in trait function body"
-        );
+        let body = wrap_in_block_if_needed(prologue, body);
 
         FunctionDefinition {
             name,
@@ -1650,8 +1646,8 @@ impl LeanGenerator<'_, '_, '_> {
             .collect_vec();
 
         let mut prologue = vec![];
-        let body = Box::new(self.generate_expr(lambda.body, &mut prologue));
-        debug_assert!(prologue.is_empty(), "Unexpected prologue in lambda body");
+        let body = self.generate_expr(lambda.body, &mut prologue);
+        let body = Box::new(wrap_in_block_if_needed(prologue, body));
 
         let lambda = Lambda {
             params,
@@ -1731,18 +1727,11 @@ impl LeanGenerator<'_, '_, '_> {
         let if_cond = self.generate_expr(cond.condition, prologue);
         let mut then_prologue = vec![];
         let then_expr = self.generate_expr(cond.consequence, &mut then_prologue);
-        debug_assert!(
-            then_prologue.is_empty(),
-            "Unexpected prologue in if-then branch"
-        );
+        let then_expr = wrap_in_block_if_needed(then_prologue, then_expr);
         let else_expr = cond.alternative.map(|e| {
             let mut else_prologue = vec![];
             let expr = self.generate_expr(e, &mut else_prologue);
-            debug_assert!(
-                else_prologue.is_empty(),
-                "Unexpected prologue in if-else branch"
-            );
-            Box::new(expr)
+            Box::new(wrap_in_block_if_needed(else_prologue, expr))
         });
 
         let ite = IfThenElse {
@@ -2989,8 +2978,8 @@ impl LeanGenerator<'_, '_, '_> {
         let statement_data = self.context.def_interner.statement(&stmt_id);
         match statement_data {
             HirStatement::Let(lets) => self.generate_let_statement(&lets, out),
-            HirStatement::Assign(assign) => out.push(self.generate_assign_statement(&assign)),
-            HirStatement::For(fors) => out.push(self.generate_for(&fors)),
+            HirStatement::Assign(assign) => self.generate_assign_statement(&assign, out),
+            HirStatement::For(fors) => self.generate_for(&fors, out),
             HirStatement::Break => panic!("Encountered break statement in constrained code"),
             HirStatement::Continue => panic!("Encountered continue statement in constrained code"),
             HirStatement::Expression(expr) | HirStatement::Semi(expr) => {
@@ -3006,23 +2995,15 @@ impl LeanGenerator<'_, '_, '_> {
         }
     }
 
-    pub fn generate_for(&self, fors: &HirForStatement) -> Statement {
+    pub fn generate_for(&self, fors: &HirForStatement, out: &mut Vec<Statement>) {
         let loop_variable =
             sanitize_variable_name(self.context.def_interner.definition_name(fors.identifier.id));
 
-        let mut prologue = vec![];
-        let start_range = Box::new(self.generate_expr(fors.start_range, &mut prologue));
-        let end_range = Box::new(self.generate_expr(fors.end_range, &mut prologue));
-        debug_assert!(
-            prologue.is_empty(),
-            "Unexpected prologue in for loop range expressions"
-        );
+        let start_range = Box::new(self.generate_expr(fors.start_range, out));
+        let end_range = Box::new(self.generate_expr(fors.end_range, out));
         let mut body_prologue = vec![];
-        let body = Box::new(self.generate_expr(fors.block, &mut body_prologue));
-        debug_assert!(
-            body_prologue.is_empty(),
-            "Unexpected prologue in for loop body"
-        );
+        let body = self.generate_expr(fors.block, &mut body_prologue);
+        let body = Box::new(wrap_in_block_if_needed(body_prologue, body));
 
         let fors = ForStatement {
             loop_variable,
@@ -3031,18 +3012,13 @@ impl LeanGenerator<'_, '_, '_> {
             body,
         };
 
-        Statement::For(fors)
+        out.push(Statement::For(fors));
     }
 
-    pub fn generate_assign_statement(&self, assign: &HirAssignStatement) -> Statement {
-        let mut prologue = vec![];
-        let rhs_expr = self.generate_expr(assign.expression, &mut prologue);
-        debug_assert!(
-            prologue.is_empty(),
-            "Unexpected prologue in assign statement"
-        );
+    pub fn generate_assign_statement(&self, assign: &HirAssignStatement, out: &mut Vec<Statement>) {
+        let rhs_expr = self.generate_expr(assign.expression, out);
         let typ = self.generate_lean_type_value(&self.resolve_bound_type(assign.expression), None);
-        let name = self.generate_lvalue(&assign.lvalue);
+        let name = self.generate_lvalue(&assign.lvalue, out);
 
         let assign = AssignStatement {
             name,
@@ -3050,7 +3026,7 @@ impl LeanGenerator<'_, '_, '_> {
             expression: rhs_expr,
         };
 
-        Statement::Assign(assign)
+        out.push(Statement::Assign(assign));
     }
 
     /// Generates an `LValue` from the corresponding Noir IR.
@@ -3060,7 +3036,7 @@ impl LeanGenerator<'_, '_, '_> {
     /// - If it encounters by-name member access for a non-struct target value.
     /// - If no member with the provided name exists in the struct of the
     ///   provided type.
-    pub fn generate_lvalue(&self, lvalue: &HirLValue) -> LValue {
+    pub fn generate_lvalue(&self, lvalue: &HirLValue, prologue: &mut Vec<Statement>) -> LValue {
         match lvalue {
             HirLValue::Ident(ident, typ) => LValue::Ident(Identifier {
                 name: self.context.def_interner.definition_name(ident.id).to_string(),
@@ -3073,7 +3049,7 @@ impl LeanGenerator<'_, '_, '_> {
                 typ,
                 ..
             } => {
-                let object = Box::new(self.generate_lvalue(object.as_ref()));
+                let object = Box::new(self.generate_lvalue(object.as_ref(), prologue));
                 let index = field_index.unwrap_or_else(|| {
                     let field_indices = match typ {
                         NoirType::DataType(dt, _) => self.get_field_index_map(dt),
@@ -3100,10 +3076,8 @@ impl LeanGenerator<'_, '_, '_> {
                     } => typ,
                     HirLValue::Error { .. } => panic!("Encountered Error lvalue in index"),
                 };
-                let array = Box::new(self.generate_lvalue(array));
-                let mut prologue = vec![];
-                let index = self.generate_expr(*index, &mut prologue);
-                debug_assert!(prologue.is_empty(), "Unexpected prologue in lvalue index");
+                let array = Box::new(self.generate_lvalue(array, prologue));
+                let index = self.generate_expr(*index, prologue);
                 let typ = self.generate_lean_type_value(typ, None);
 
                 match lhs_type {
@@ -3121,7 +3095,7 @@ impl LeanGenerator<'_, '_, '_> {
                 element_type,
                 ..
             } => {
-                let object = Box::new(self.generate_lvalue(lvalue));
+                let object = Box::new(self.generate_lvalue(lvalue, prologue));
                 let element_type = self.generate_lean_type_value(element_type, None);
                 LValue::Dereference {
                     object,
@@ -3636,6 +3610,17 @@ pub fn sanitize_variable_name(name: &str) -> String {
 
 /// Quotes the Lean keywords in the fully qualified name to avoid conflicts with
 /// the Lean parser
+fn wrap_in_block_if_needed(prologue: Vec<Statement>, expr: Expression) -> Expression {
+    if prologue.is_empty() {
+        expr
+    } else {
+        Expression::Block(Block {
+            statements: prologue,
+            expression: Some(Box::new(expr)),
+        })
+    }
+}
+
 fn quote_lean_keywords(text: &str) -> String {
     text.split(NOIR_PATH_SEPARATOR)
         .map(|part| {
