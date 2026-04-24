@@ -1060,7 +1060,12 @@ impl LeanGenerator<'_, '_, '_> {
                 expression: None,
             })
         } else {
-            self.generate_expr(self.context.def_interner.function(id).as_expr())
+            let mut prologue = vec![];
+            let expr = self.generate_expr(
+                self.context.def_interner.function(id).as_expr(),
+                &mut prologue,
+            );
+            wrap_in_block_if_needed(prologue, expr)
         };
 
         Some(FunctionDefinition {
@@ -1399,7 +1404,9 @@ impl LeanGenerator<'_, '_, '_> {
 
         let name = self.fully_qualified_global_name(id);
         let typ = self.generate_lean_type_value(&binding.r#type, None);
-        let expr = self.generate_expr(binding.expression);
+        let mut prologue = vec![];
+        let expr = self.generate_expr(binding.expression, &mut prologue);
+        let expr = wrap_in_block_if_needed(prologue, expr);
 
         Some(GlobalDefinition { name, typ, expr })
     }
@@ -1544,7 +1551,12 @@ impl LeanGenerator<'_, '_, '_> {
             .filter(|g| !trait_generics.contains(g))
             .unique()
             .collect_vec();
-        let body = self.generate_expr(self.context.def_interner.function(&id).as_expr());
+        let mut prologue = vec![];
+        let body = self.generate_expr(
+            self.context.def_interner.function(&id).as_expr(),
+            &mut prologue,
+        );
+        let body = wrap_in_block_if_needed(prologue, body);
 
         FunctionDefinition {
             name,
@@ -1567,7 +1579,11 @@ impl LeanGenerator<'_, '_, '_> {
     /// - If it encounters metaprogramming expressions, as these should have
     ///   been eliminated by this point.
     /// - If it encounters an error expression.
-    pub fn generate_expr(&self, id: ExprId) -> Expression {
+    ///
+    /// Also pushes any prologue statements (e.g. for linearizing non-funcref
+    /// callees) into `prologue` so they appear before the expression in the
+    /// enclosing block.
+    pub fn generate_expr(&self, id: ExprId, prologue: &mut Vec<Statement>) -> Expression {
         let expression_data = self.context.def_interner.expression(&id);
         let output_type = self.generate_lean_type_value(&self.resolve_bound_type(id), None);
 
@@ -1578,19 +1594,23 @@ impl LeanGenerator<'_, '_, '_> {
             HirExpression::Ident(ident, _) => {
                 self.generate_ident_expression(id, &ident, &output_type)
             }
-            HirExpression::Literal(literal) => self.generate_literal(&literal, &output_type),
-            HirExpression::Prefix(prefix) => self.generate_prefix(&prefix, &output_type),
-            HirExpression::Infix(infix) => self.generate_infix(&infix, &output_type),
-            HirExpression::Index(index) => self.generate_index(&index, &output_type),
-            HirExpression::Constructor(constructor) => self.generate_constructor(&constructor),
-            HirExpression::MemberAccess(member) => self.generate_member_access(&member),
-            HirExpression::Call(call) => self.generate_call(&call, &output_type),
-            HirExpression::Constrain(constrain) => {
-                self.generate_constrain(&constrain, &output_type)
+            HirExpression::Literal(literal) => {
+                self.generate_literal(&literal, &output_type, prologue)
             }
-            HirExpression::Cast(cast) => self.generate_cast(&cast),
-            HirExpression::If(cond) => self.generate_if(&cond),
-            HirExpression::Tuple(tuple) => self.generate_tuple(tuple.as_slice()),
+            HirExpression::Prefix(prefix) => self.generate_prefix(&prefix, &output_type, prologue),
+            HirExpression::Infix(infix) => self.generate_infix(&infix, &output_type, prologue),
+            HirExpression::Index(index) => self.generate_index(&index, &output_type, prologue),
+            HirExpression::Constructor(constructor) => {
+                self.generate_constructor(&constructor, prologue)
+            }
+            HirExpression::MemberAccess(member) => self.generate_member_access(&member, prologue),
+            HirExpression::Call(call) => self.generate_call(&call, &output_type, prologue),
+            HirExpression::Constrain(constrain) => {
+                self.generate_constrain(&constrain, &output_type, prologue)
+            }
+            HirExpression::Cast(cast) => self.generate_cast(&cast, prologue),
+            HirExpression::If(cond) => self.generate_if(&cond, prologue),
+            HirExpression::Tuple(tuple) => self.generate_tuple(tuple.as_slice(), prologue),
             HirExpression::Lambda(lambda) => self.generate_lambda(id, &lambda),
             HirExpression::EnumConstructor(_) => unimplemented!("Enum construction support"),
             HirExpression::Match(_) => unimplemented!("Match expression support"),
@@ -1622,7 +1642,9 @@ impl LeanGenerator<'_, '_, '_> {
             })
             .collect_vec();
 
-        let body = Box::new(self.generate_expr(lambda.body));
+        let mut prologue = vec![];
+        let body = self.generate_expr(lambda.body, &mut prologue);
+        let body = Box::new(wrap_in_block_if_needed(prologue, body));
 
         let lambda = Lambda {
             params,
@@ -1675,7 +1697,7 @@ impl LeanGenerator<'_, '_, '_> {
         }
     }
 
-    pub fn generate_tuple(&self, elems: &[ExprId]) -> Expression {
+    pub fn generate_tuple(&self, elems: &[ExprId], prologue: &mut Vec<Statement>) -> Expression {
         let elem_types = elems
             .iter()
             .map(|e| self.generate_lean_type_value(&self.resolve_bound_type(*e), None))
@@ -1687,7 +1709,7 @@ impl LeanGenerator<'_, '_, '_> {
             return_type: return_type.clone(),
         });
 
-        let fields = elems.iter().map(|e| self.generate_expr(*e)).collect_vec();
+        let fields = elems.iter().map(|e| self.generate_expr(*e, prologue)).collect_vec();
 
         let call_expr = Call {
             function: Box::new(call_ref),
@@ -1698,10 +1720,16 @@ impl LeanGenerator<'_, '_, '_> {
         Expression::Call(call_expr)
     }
 
-    pub fn generate_if(&self, cond: &HirIfExpression) -> Expression {
-        let if_cond = self.generate_expr(cond.condition);
-        let then_expr = self.generate_expr(cond.consequence);
-        let else_expr = cond.alternative.map(|e| Box::new(self.generate_expr(e)));
+    pub fn generate_if(&self, cond: &HirIfExpression, prologue: &mut Vec<Statement>) -> Expression {
+        let if_cond = self.generate_expr(cond.condition, prologue);
+        let mut then_prologue = vec![];
+        let then_expr = self.generate_expr(cond.consequence, &mut then_prologue);
+        let then_expr = wrap_in_block_if_needed(then_prologue, then_expr);
+        let else_expr = cond.alternative.map(|e| {
+            let mut else_prologue = vec![];
+            let expr = self.generate_expr(e, &mut else_prologue);
+            Box::new(wrap_in_block_if_needed(else_prologue, expr))
+        });
 
         let ite = IfThenElse {
             condition:   Box::new(if_cond),
@@ -1716,8 +1744,9 @@ impl LeanGenerator<'_, '_, '_> {
         &self,
         constrain: &HirConstrainExpression,
         output_type: &Type,
+        prologue: &mut Vec<Statement>,
     ) -> Expression {
-        let constraint_expr = self.generate_expr(constrain.0);
+        let constraint_expr = self.generate_expr(constrain.0, prologue);
         let builtin_ref = Expression::builtin_call_ref(ASSERT_BUILTIN_NAME, output_type);
         let call = Call {
             function:    Box::new(builtin_ref),
@@ -1734,13 +1763,62 @@ impl LeanGenerator<'_, '_, '_> {
     ///
     /// - If the call is a macro, which should have been resolved before this
     ///   tool executes.
-    pub fn generate_call(&self, call: &HirCallExpression, output_type: &Type) -> Expression {
+    pub fn generate_call(
+        &self,
+        call: &HirCallExpression,
+        output_type: &Type,
+        prologue: &mut Vec<Statement>,
+    ) -> Expression {
         assert!(
             !call.is_macro_call,
             "Macros should be resolved before running this tool"
         );
-        let params = call.arguments.iter().map(|a| self.generate_expr(*a)).collect_vec();
-        let function_expr = self.generate_expr(call.func);
+        let params = call
+            .arguments
+            .iter()
+            .map(|a| self.generate_expr(*a, prologue))
+            .collect_vec();
+        let function_expr = self.generate_expr(call.func, prologue);
+
+        // The Lean DSL only allows `noir_funcref(args)` — not `expr(args)`.
+        // Valid funcrefs are: IdentCallRef, DeclCallRef, TraitCallRef,
+        // BuiltinCallRef. Any other callee (lambda, array index result, member
+        // access, another call's result, etc.) must be linearized:
+        //   `let __N = <expr>; (__N as func_type)(args)`
+        let is_valid_funcref = matches!(
+            function_expr,
+            Expression::IdentCallRef(_)
+                | Expression::DeclCallRef(_)
+                | Expression::TraitCallRef(_)
+                | Expression::BuiltinCallRef(_)
+        );
+
+        if !is_valid_funcref {
+            let tmp_name = self.name_supply.get_name();
+            let func_type =
+                self.generate_lean_type_value(&self.resolve_bound_type(call.func), None);
+
+            prologue.push(Statement::Let(LetStatement {
+                pattern:    Pattern::Identifier(Identifier {
+                    name: tmp_name.clone(),
+                    typ:  func_type.clone(),
+                }),
+                typ:        func_type.clone(),
+                expression: Box::new(function_expr),
+            }));
+
+            let call_ref = IdentCallRef {
+                name:      tmp_name,
+                func_type: func_type.expr,
+            };
+            let call_expr = Call {
+                function: Box::new(Expression::IdentCallRef(call_ref)),
+                params,
+                return_type: output_type.clone(),
+            };
+
+            return Expression::Call(call_expr);
+        }
 
         let call = Call {
             function: Box::new(function_expr),
@@ -1751,8 +1829,12 @@ impl LeanGenerator<'_, '_, '_> {
         Expression::Call(call)
     }
 
-    pub fn generate_cast(&self, cast: &HirCastExpression) -> Expression {
-        let source_expr = self.generate_expr(cast.lhs);
+    pub fn generate_cast(
+        &self,
+        cast: &HirCastExpression,
+        prologue: &mut Vec<Statement>,
+    ) -> Expression {
+        let source_expr = self.generate_expr(cast.lhs, prologue);
         let target = self.generate_lean_type_value(&cast.r#type, None);
 
         let cast = Cast {
@@ -1769,7 +1851,11 @@ impl LeanGenerator<'_, '_, '_> {
     ///
     /// - If the member access is attempted on a non-struct type.
     /// - If the provided field name is not a field of the target struct.
-    pub fn generate_member_access(&self, member: &HirMemberAccess) -> Expression {
+    pub fn generate_member_access(
+        &self,
+        member: &HirMemberAccess,
+        prologue: &mut Vec<Statement>,
+    ) -> Expression {
         let value_type = self.unfold_alias(self.resolve_bound_type(member.lhs));
         let index = match value_type {
             NoirType::DataType(struct_def, _) => {
@@ -1788,13 +1874,17 @@ impl LeanGenerator<'_, '_, '_> {
             }
         };
 
-        let value = Box::new(self.generate_expr(member.lhs));
+        let value = Box::new(self.generate_expr(member.lhs, prologue));
         let member_access = MemberAccess { value, index };
 
         Expression::MemberAccess(member_access)
     }
 
-    pub fn generate_constructor(&self, constructor: &HirConstructorExpression) -> Expression {
+    pub fn generate_constructor(
+        &self,
+        constructor: &HirConstructorExpression,
+        prologue: &mut Vec<Statement>,
+    ) -> Expression {
         let struct_def = &constructor.r#type;
         let struct_def = struct_def.borrow();
         let crate_id = struct_def.id.krate();
@@ -1809,7 +1899,7 @@ impl LeanGenerator<'_, '_, '_> {
         let fields = fields
             .iter()
             .sorted_by_key(|(i, _)| field_orders.get(i).copied().unwrap_or_default())
-            .map(|(_, expr)| self.generate_expr(*expr))
+            .map(|(_, expr)| self.generate_expr(*expr, prologue))
             .collect_vec();
 
         let generic_args = constructor
@@ -1839,7 +1929,12 @@ impl LeanGenerator<'_, '_, '_> {
     /// # Panics
     ///
     /// - If the index expression is not on a collection type.
-    pub fn generate_index(&self, index: &HirIndexExpression, output_type: &Type) -> Expression {
+    pub fn generate_index(
+        &self,
+        index: &HirIndexExpression,
+        output_type: &Type,
+        prologue: &mut Vec<Statement>,
+    ) -> Expression {
         let collection_type = self.resolve_bound_type(index.collection);
         let collection_builtin_type: BuiltinType = self
             .unfold_alias(collection_type.clone())
@@ -1850,8 +1945,8 @@ impl LeanGenerator<'_, '_, '_> {
             .unwrap_or_else(|| panic!("Cannot index {collection_builtin_type:?}"));
 
         let call_target = Expression::builtin_call_ref(index_builtin_name.as_str(), output_type);
-        let collection_expr = self.generate_expr(index.collection);
-        let index_expr = self.generate_expr(index.index);
+        let collection_expr = self.generate_expr(index.collection, prologue);
+        let index_expr = self.generate_expr(index.index, prologue);
         // We don't want to cast if we already have a numeric literal of the right type,
         // but if we have a literal of the wrong type or a non-literal we need to cast
         // for correctness.
@@ -1897,9 +1992,14 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[expect(clippy::too_many_lines)] // It doesn't make sense to split this up.
-    pub fn generate_infix(&self, infix: &HirInfixExpression, output_type: &Type) -> Expression {
-        let lhs = self.generate_expr(infix.lhs);
-        let rhs = self.generate_expr(infix.rhs);
+    pub fn generate_infix(
+        &self,
+        infix: &HirInfixExpression,
+        output_type: &Type,
+        prologue: &mut Vec<Statement>,
+    ) -> Expression {
+        let lhs = self.generate_expr(infix.lhs, prologue);
+        let rhs = self.generate_expr(infix.rhs, prologue);
         let lhs_ty_noir = self.resolve_bound_type(infix.lhs);
         let rhs_ty_noir = self.resolve_bound_type(infix.rhs);
 
@@ -2393,7 +2493,12 @@ impl LeanGenerator<'_, '_, '_> {
     /// # Panics
     ///
     /// - If no trait is found corresponding to the prefix operator.
-    pub fn generate_prefix(&self, prefix: &HirPrefixExpression, output_type: &Type) -> Expression {
+    pub fn generate_prefix(
+        &self,
+        prefix: &HirPrefixExpression,
+        output_type: &Type,
+        prologue: &mut Vec<Statement>,
+    ) -> Expression {
         // For `&mut x` where `x` is a mutable local, `x` is already a ref — just return
         // it.
         if matches!(prefix.operator, UnaryOp::Reference { .. }) {
@@ -2414,7 +2519,7 @@ impl LeanGenerator<'_, '_, '_> {
             }
         }
 
-        let rhs = self.generate_expr(prefix.rhs);
+        let rhs = self.generate_expr(prefix.rhs, prologue);
         let rhs_ty = self.resolve_bound_type(prefix.rhs);
         let rhs_unfolded = self.unfold_alias(rhs_ty.clone()).try_into().ok();
         if let Some(builtin_name) =
@@ -2471,11 +2576,17 @@ impl LeanGenerator<'_, '_, '_> {
     /// - When encountering a malformed literal that should have been validated
     ///   by the Noir compiler.
     #[expect(clippy::too_many_lines)] // It does not make sense to split it up.
-    pub fn generate_literal(&self, literal: &HirLiteral, output_type: &Type) -> Expression {
+    pub fn generate_literal(
+        &self,
+        literal: &HirLiteral,
+        output_type: &Type,
+        prologue: &mut Vec<Statement>,
+    ) -> Expression {
         match literal {
             HirLiteral::Array(arr) => match arr {
                 HirArrayLiteral::Standard(elems) => {
-                    let elems = elems.iter().map(|e| self.generate_expr(*e)).collect_vec();
+                    let elems =
+                        elems.iter().map(|e| self.generate_expr(*e, prologue)).collect_vec();
                     let call = Call {
                         function:    Box::new(Expression::builtin_call_ref(
                             MAKE_ARRAY_BUILTIN_NAME,
@@ -2489,7 +2600,7 @@ impl LeanGenerator<'_, '_, '_> {
                 HirArrayLiteral::Repeated {
                     repeated_element, ..
                 } => {
-                    let elem_expr = self.generate_expr(*repeated_element);
+                    let elem_expr = self.generate_expr(*repeated_element, prologue);
                     let call = Call {
                         function:    Box::new(Expression::builtin_call_ref(
                             MAKE_REPEATED_ARRAY_BUILTIN_NAME,
@@ -2503,7 +2614,8 @@ impl LeanGenerator<'_, '_, '_> {
             },
             HirLiteral::Vector(arr) => match arr {
                 HirArrayLiteral::Standard(elems) => {
-                    let elems = elems.iter().map(|e| self.generate_expr(*e)).collect_vec();
+                    let elems =
+                        elems.iter().map(|e| self.generate_expr(*e, prologue)).collect_vec();
                     let call = Call {
                         function:    Box::new(Expression::builtin_call_ref(
                             MAKE_SLICE_BUILTIN_NAME,
@@ -2518,7 +2630,7 @@ impl LeanGenerator<'_, '_, '_> {
                     repeated_element,
                     length,
                 } => {
-                    let repeated_elem = self.generate_expr(*repeated_element);
+                    let repeated_elem = self.generate_expr(*repeated_element, prologue);
 
                     // The length is a type, but we fundamentally want to treat it as a value in all
                     // cases, so we perform the conversion up-front.
@@ -2574,7 +2686,7 @@ impl LeanGenerator<'_, '_, '_> {
                 let template = Expression::Literal(Literal::String(
                     parts.iter().map(ToString::to_string).join("{}"),
                 ));
-                let vars = vars.iter().map(|e| self.generate_expr(*e));
+                let vars = vars.iter().map(|e| self.generate_expr(*e, prologue));
                 let all_vars = vec![template].into_iter().chain(vars).collect_vec();
 
                 let call = Call {
@@ -2827,16 +2939,15 @@ impl LeanGenerator<'_, '_, '_> {
             Some(HirStatement::Expression(_))
         ));
 
-        let statements = block
-            .statements
-            .iter()
-            .dropping_back(num_to_drop)
-            .flat_map(|stmt| self.generate_statement(*stmt))
-            .collect_vec();
+        let mut statements: Vec<Statement> = Vec::new();
+        for stmt in block.statements.iter().dropping_back(num_to_drop) {
+            self.generate_statement(*stmt, &mut statements);
+        }
 
         let return_expr = if let Some(stmt) = block.statements.last() {
             if let HirStatement::Expression(expr) = self.context.def_interner.statement(stmt) {
-                Some(Box::new(self.generate_expr(expr)))
+                let expr = self.generate_expr(expr, &mut statements);
+                Some(Box::new(expr))
             } else {
                 Some(Box::new(Expression::Skip))
             }
@@ -2860,16 +2971,17 @@ impl LeanGenerator<'_, '_, '_> {
     /// - If it encounters a compile-time evaluated statement which should have
     ///   been eliminated at this point.
     /// - If it encounters an error-marked statement.
-    pub fn generate_statement(&self, stmt_id: StmtId) -> Vec<Statement> {
+    pub fn generate_statement(&self, stmt_id: StmtId, out: &mut Vec<Statement>) {
         let statement_data = self.context.def_interner.statement(&stmt_id);
-        let stmt = match statement_data {
-            HirStatement::Let(lets) => return self.generate_let_statement(&lets),
-            HirStatement::Assign(assign) => self.generate_assign_statement(&assign),
-            HirStatement::For(fors) => self.generate_for(&fors),
+        match statement_data {
+            HirStatement::Let(lets) => self.generate_let_statement(&lets, out),
+            HirStatement::Assign(assign) => self.generate_assign_statement(&assign, out),
+            HirStatement::For(fors) => self.generate_for(&fors, out),
             HirStatement::Break => panic!("Encountered break statement in constrained code"),
             HirStatement::Continue => panic!("Encountered continue statement in constrained code"),
             HirStatement::Expression(expr) | HirStatement::Semi(expr) => {
-                Statement::Expression(self.generate_expr(expr))
+                let expr = self.generate_expr(expr, out);
+                out.push(Statement::Expression(expr));
             }
             HirStatement::Loop(_) => unimplemented!("Unbounded loops are not currently supported"),
             HirStatement::While(..) => unimplemented!("While loops are currently not supported"),
@@ -2877,18 +2989,18 @@ impl LeanGenerator<'_, '_, '_> {
                 panic!("Encountered comptime statement during compilation when none should exist")
             }
             HirStatement::Error => panic!("Encountered error statement during compilation"),
-        };
-
-        vec![stmt]
+        }
     }
 
-    pub fn generate_for(&self, fors: &HirForStatement) -> Statement {
+    pub fn generate_for(&self, fors: &HirForStatement, out: &mut Vec<Statement>) {
         let loop_variable =
             sanitize_variable_name(self.context.def_interner.definition_name(fors.identifier.id));
 
-        let start_range = Box::new(self.generate_expr(fors.start_range));
-        let end_range = Box::new(self.generate_expr(fors.end_range));
-        let body = Box::new(self.generate_expr(fors.block));
+        let start_range = Box::new(self.generate_expr(fors.start_range, out));
+        let end_range = Box::new(self.generate_expr(fors.end_range, out));
+        let mut body_prologue = vec![];
+        let body = self.generate_expr(fors.block, &mut body_prologue);
+        let body = Box::new(wrap_in_block_if_needed(body_prologue, body));
 
         let fors = ForStatement {
             loop_variable,
@@ -2897,13 +3009,13 @@ impl LeanGenerator<'_, '_, '_> {
             body,
         };
 
-        Statement::For(fors)
+        out.push(Statement::For(fors));
     }
 
-    pub fn generate_assign_statement(&self, assign: &HirAssignStatement) -> Statement {
-        let rhs_expr = self.generate_expr(assign.expression);
+    pub fn generate_assign_statement(&self, assign: &HirAssignStatement, out: &mut Vec<Statement>) {
+        let rhs_expr = self.generate_expr(assign.expression, out);
         let typ = self.generate_lean_type_value(&self.resolve_bound_type(assign.expression), None);
-        let name = self.generate_lvalue(&assign.lvalue);
+        let name = self.generate_lvalue(&assign.lvalue, out);
 
         let assign = AssignStatement {
             name,
@@ -2911,7 +3023,7 @@ impl LeanGenerator<'_, '_, '_> {
             expression: rhs_expr,
         };
 
-        Statement::Assign(assign)
+        out.push(Statement::Assign(assign));
     }
 
     /// Generates an `LValue` from the corresponding Noir IR.
@@ -2921,7 +3033,7 @@ impl LeanGenerator<'_, '_, '_> {
     /// - If it encounters by-name member access for a non-struct target value.
     /// - If no member with the provided name exists in the struct of the
     ///   provided type.
-    pub fn generate_lvalue(&self, lvalue: &HirLValue) -> LValue {
+    pub fn generate_lvalue(&self, lvalue: &HirLValue, prologue: &mut Vec<Statement>) -> LValue {
         match lvalue {
             HirLValue::Ident(ident, typ) => LValue::Ident(Identifier {
                 name: self.context.def_interner.definition_name(ident.id).to_string(),
@@ -2934,7 +3046,7 @@ impl LeanGenerator<'_, '_, '_> {
                 typ,
                 ..
             } => {
-                let object = Box::new(self.generate_lvalue(object.as_ref()));
+                let object = Box::new(self.generate_lvalue(object.as_ref(), prologue));
                 let index = field_index.unwrap_or_else(|| {
                     let field_indices = match typ {
                         NoirType::DataType(dt, _) => self.get_field_index_map(dt),
@@ -2961,8 +3073,8 @@ impl LeanGenerator<'_, '_, '_> {
                     } => typ,
                     HirLValue::Error { .. } => panic!("Encountered Error lvalue in index"),
                 };
-                let array = Box::new(self.generate_lvalue(array));
-                let index = self.generate_expr(*index);
+                let array = Box::new(self.generate_lvalue(array, prologue));
+                let index = self.generate_expr(*index, prologue);
                 let typ = self.generate_lean_type_value(typ, None);
 
                 match lhs_type {
@@ -2980,7 +3092,7 @@ impl LeanGenerator<'_, '_, '_> {
                 element_type,
                 ..
             } => {
-                let object = Box::new(self.generate_lvalue(lvalue));
+                let object = Box::new(self.generate_lvalue(lvalue, prologue));
                 let element_type = self.generate_lean_type_value(element_type, None);
                 LValue::Dereference {
                     object,
@@ -3005,8 +3117,8 @@ impl LeanGenerator<'_, '_, '_> {
             .collect::<HashMap<_, usize>>()
     }
 
-    pub fn generate_let_statement(&self, lets: &HirLetStatement) -> Vec<Statement> {
-        let bound_expr = self.generate_expr(lets.expression);
+    pub fn generate_let_statement(&self, lets: &HirLetStatement, out: &mut Vec<Statement>) {
+        let bound_expr = self.generate_expr(lets.expression, out);
         let typ = self.generate_lean_type_value(&lets.r#type, None);
         let pattern = self.generate_pattern(&lets.pattern, Some(typ.clone()));
 
@@ -3034,13 +3146,11 @@ impl LeanGenerator<'_, '_, '_> {
         let mut mutable_bindings = Vec::new();
         Self::collect_and_strip_mutable_bindings(&pattern, &mut mutable_bindings);
 
-        let stmt = LetStatement {
+        out.push(Statement::Let(LetStatement {
             pattern,
             typ,
             expression,
-        };
-
-        let mut result = vec![Statement::Let(stmt)];
+        }));
 
         for (name, inner_typ) in mutable_bindings {
             let ref_type = Type::mutable_reference(inner_typ.clone());
@@ -3053,7 +3163,7 @@ impl LeanGenerator<'_, '_, '_> {
                 })],
                 return_type: ref_type.clone(),
             };
-            result.push(Statement::Let(LetStatement {
+            out.push(Statement::Let(LetStatement {
                 pattern:    Pattern::Identifier(Identifier {
                     name,
                     typ: ref_type.clone(),
@@ -3062,8 +3172,6 @@ impl LeanGenerator<'_, '_, '_> {
                 expression: Box::new(Expression::Call(ref_call)),
             }));
         }
-
-        result
     }
 
     /// Recursively collects `(name, type)` pairs for any `Pattern::Mutable`
@@ -3489,11 +3597,27 @@ pub fn sanitize_generic_name(name: &str) -> String {
 /// valid variable name.
 #[must_use]
 pub fn sanitize_variable_name(name: &str) -> String {
-    name.replace('$', "ζ")
+    let name = name.replace('$', "ζ");
+    if conflicts_with_lean_keyword(&name) {
+        format!("{LEAN_QUOTE_START}{name}{LEAN_QUOTE_END}")
+    } else {
+        name
+    }
 }
 
 /// Quotes the Lean keywords in the fully qualified name to avoid conflicts with
 /// the Lean parser
+fn wrap_in_block_if_needed(prologue: Vec<Statement>, expr: Expression) -> Expression {
+    if prologue.is_empty() {
+        expr
+    } else {
+        Expression::Block(Block {
+            statements: prologue,
+            expression: Some(Box::new(expr)),
+        })
+    }
+}
+
 fn quote_lean_keywords(text: &str) -> String {
     text.split(NOIR_PATH_SEPARATOR)
         .map(|part| {
