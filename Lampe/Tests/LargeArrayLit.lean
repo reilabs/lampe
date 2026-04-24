@@ -11,7 +11,8 @@ import Lampe
 
 open Lampe
 
--- 1024-element array literal — requires --tstack=65536 and maxRecDepth=4096 in lakefile.
+-- 1024-element array literal — requires --tstack=65536 in lakefile to avoid stack overflow.
+set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 noir_def large_array_lit<>() -> Array<Field, 1024: u32> := {
   (#_mkArray returning Array<Field, 1024: u32>)(
