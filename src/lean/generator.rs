@@ -553,19 +553,35 @@ impl LeanGenerator<'_, '_, '_> {
 
                 Type::numeric_const(&felt_value, kind)
             }
-            NoirType::InfixExpr(left, op, right, _) => {
-                let left = self.generate_lean_type_value(left, bindings);
-                let right = self.generate_lean_type_value(right, bindings);
-                let kind = self.generate_kind(&typ.kind());
-
-                let op = match op {
-                    BinaryTypeOperator::Addition => TypeArithOp::Add,
-                    BinaryTypeOperator::Subtraction => TypeArithOp::Sub,
-                    BinaryTypeOperator::Multiplication => TypeArithOp::Mul,
-                    BinaryTypeOperator::Division => TypeArithOp::Div,
-                    BinaryTypeOperator::Modulo => TypeArithOp::Mod,
+            NoirType::InfixExpr(..) => {
+                // Substitute any bound type variables and canonicalize the
+                // result so that e.g. `(1 + 1) * X` and `X * 2` produce the
+                // same Lean type expression.
+                let canonical = if let Some(bindings) = bindings {
+                    typ.substitute(bindings).canonicalize()
+                } else {
+                    typ.canonicalize()
                 };
-                Type::infix(left.expr, op, right.expr, kind)
+                // After canonicalization the top-level node may no longer be
+                // InfixExpr (e.g. it could have been constant-folded), so
+                // recurse without bindings (already substituted).
+                match &canonical {
+                    NoirType::InfixExpr(left, op, right, _) => {
+                        let left = self.generate_lean_type_value(left, None);
+                        let right = self.generate_lean_type_value(right, None);
+                        let kind = self.generate_kind(&canonical.kind());
+
+                        let op = match op {
+                            BinaryTypeOperator::Addition => TypeArithOp::Add,
+                            BinaryTypeOperator::Subtraction => TypeArithOp::Sub,
+                            BinaryTypeOperator::Multiplication => TypeArithOp::Mul,
+                            BinaryTypeOperator::Division => TypeArithOp::Div,
+                            BinaryTypeOperator::Modulo => TypeArithOp::Mod,
+                        };
+                        Type::infix(left.expr, op, right.expr, kind)
+                    }
+                    other => self.generate_lean_type_value(other, None),
+                }
             }
             NoirType::Quoted(quoted) => self.generate_quoted_type_value(quoted),
             NoirType::Forall(..) => panic!("Encountered forall type"),

@@ -1,0 +1,7 @@
+[package]
+name = "Base64Test"
+type = "lib"
+authors = [""]
+
+[dependencies]
+noir_base64 = { tag = "v0.4.2", git = "https://github.com/noir-lang/noir_base64" }
