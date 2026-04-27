@@ -390,6 +390,7 @@ fn process_dependency<H: std::hash::BuildHasher>(
         extracted_dependency,
         &dep_direct_dep_ids,
         dependency_info,
+        overwrite,
     )?;
 
     Ok(())
@@ -402,6 +403,7 @@ fn generate_dependency_additional_files<H: std::hash::BuildHasher>(
     extracted_dependency: &NoirPackageIdentifier,
     dep_direct_dep_ids: &[NoirPackageIdentifier],
     dependency_info: &DependencyInfo<H>,
+    overwrite: bool,
 ) -> Result<(), Error> {
     let mut dep_additional_dependencies: Vec<Box<dyn LeanDependency>> = vec![];
 
@@ -421,10 +423,10 @@ fn generate_dependency_additional_files<H: std::hash::BuildHasher>(
         stdlib_info,
         extracted_dependency,
         &dep_additional_dependencies,
-        true,
+        overwrite,
     )?;
 
-    file_generator::lean_toolchain::generate_lean_toolchain(extracted_dep_lampe_dir, true)?;
+    file_generator::lean_toolchain::generate_lean_toolchain(extracted_dep_lampe_dir, overwrite)?;
 
     Ok(())
 }
