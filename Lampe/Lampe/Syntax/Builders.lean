@@ -345,24 +345,23 @@ partial def makeBareIdent [MonadDSL m]
   | some _ => wrapInLet (←``(Expr.var $ident)) binder k
 
 /--
-Processes the provided `items` of the block into a lean term.
-
-Built right-to-left: the last statement is processed first, then each preceding statement wraps
-around the accumulated result. This avoids O(n) stack depth from nested CPS continuations.
+Processes the provided `items` of the block into a lean term, calling the continuation `k` to
+continue the process.
 -/
 partial def makeBlock [MonadDSL m]
     (items : Array (TSyntax `noir_expr))
     (binder : Option Lean.Ident)
     (k : Option $ TSyntax `term → m (TSyntax `term))
-  : m (TSyntax `term) := do
-  if items.isEmpty then throwError "Empty blocks are invalid"
-  let mut result ← makeExpr items[items.size - 1]! binder k
-  for j in [:items.size - 1] do
-    let i := items.size - 2 - j
-    result ← match items[i]! with
-    | `(noir_expr|let $b = $e) => makeBinder (←makePat b) e (pure result)
-    | e => makeExpr e none $ some fun _ => pure result
-  return result
+    (i : Nat := 0)
+  : m (TSyntax `term) :=
+  if i + 1 < items.size then
+    match items[i]! with
+    | `(noir_expr|let $b = $e) => do makeBinder (←makePat b) e (makeBlock items binder k (i + 1))
+    | e => do makeExpr e none $ some fun _ => makeBlock items binder k (i + 1)
+  else if h : i < items.size then
+    makeExpr items[i] binder k
+  else
+    throwError "Empty blocks are invalid"
 
 /--
 Builds the Lean expression corresponding to an array of arguments from the syntax tree by unfolding
