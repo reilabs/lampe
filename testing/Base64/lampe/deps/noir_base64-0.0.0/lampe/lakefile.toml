@@ -6,7 +6,7 @@ moreLeanArgs = ["--tstack=262144"]
 
 [[lean_lib]]
 name = "«noir_base64-0.0.0»"
-leanOptions = [{name = "maxRecDepth", value = 8192}]
+leanOptions = [{name = "maxRecDepth", value = 131072}]
 
 [[require]]
 name = "Lampe"
