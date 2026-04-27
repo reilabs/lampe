@@ -263,32 +263,32 @@ noir_def «std-1.0.0-beta.14»::array::test::for_eachi_example<>() -> Unit := {
 noir_def «std-1.0.0-beta.14»::array::test::concat<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field));
   let arr2 = (#_mkArray returning Array<Field, 6: u32>)((6: Field), (7: Field), (8: Field), (9: Field), (10: Field), (11: Field));
-  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 4: u32, 6: u32> as λ(Array<Field, 4: u32>, Array<Field, 6: u32>) -> Array<Field, (4 + 6): u32>)(arr1, arr2);
-  (#_assert returning Unit)(((Array<Field, (4 + 6): u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, (4 + 6): u32>, Array<Field, 10: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 10: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (6: Field), (7: Field), (8: Field), (9: Field), (10: Field), (11: Field))));
+  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 4: u32, 6: u32> as λ(Array<Field, 4: u32>, Array<Field, 6: u32>) -> Array<Field, 10: u32>)(arr1, arr2);
+  (#_assert returning Unit)(((Array<Field, 10: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 10: u32>, Array<Field, 10: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 10: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (6: Field), (7: Field), (8: Field), (9: Field), (10: Field), (11: Field))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::concat_zero_length_with_something<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 0: u32>)();
   let arr2 = (#_mkArray returning Array<Field, 1: u32>)((1: Field));
-  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 0: u32, 1: u32> as λ(Array<Field, 0: u32>, Array<Field, 1: u32>) -> Array<Field, (0 + 1): u32>)(arr1, arr2);
-  (#_assert returning Unit)(((Array<Field, (0 + 1): u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, (0 + 1): u32>, Array<Field, 1: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 1: u32>)((1: Field))));
+  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 0: u32, 1: u32> as λ(Array<Field, 0: u32>, Array<Field, 1: u32>) -> Array<Field, 1: u32>)(arr1, arr2);
+  (#_assert returning Unit)(((Array<Field, 1: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 1: u32>, Array<Field, 1: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 1: u32>)((1: Field))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::concat_something_with_zero_length<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 1: u32>)((1: Field));
   let arr2 = (#_mkArray returning Array<Field, 0: u32>)();
-  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 1: u32, 0: u32> as λ(Array<Field, 1: u32>, Array<Field, 0: u32>) -> Array<Field, (1 + 0): u32>)(arr1, arr2);
-  (#_assert returning Unit)(((Array<Field, (1 + 0): u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, (1 + 0): u32>, Array<Field, 1: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 1: u32>)((1: Field))));
+  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 1: u32, 0: u32> as λ(Array<Field, 1: u32>, Array<Field, 0: u32>) -> Array<Field, 1: u32>)(arr1, arr2);
+  (#_assert returning Unit)(((Array<Field, 1: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 1: u32>, Array<Field, 1: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 1: u32>)((1: Field))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::concat_zero_lengths<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 0: u32>)();
   let arr2 = (#_mkArray returning Array<Field, 0: u32>)();
-  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 0: u32> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> Array<Field, (0 + 0): u32>)(arr1, arr2);
-  (#_assert returning Unit)(((Array<Field, (0 + 0): u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, (0 + 0): u32>, Array<Field, 0: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 0: u32>)()));
+  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 0: u32> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> Array<Field, 0: u32>)(arr1, arr2);
+  (#_assert returning Unit)(((Array<Field, 0: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 0: u32>)()));
   #_skip
 }
 
