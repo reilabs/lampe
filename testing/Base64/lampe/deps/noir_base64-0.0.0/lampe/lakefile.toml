@@ -2,7 +2,7 @@
 name = "noir_base64-0.0.0"
 version = "0.0.0"
 defaultTargets = ["noir_base64-0.0.0"]
-moreLeanArgs = ["--tstack=65536"]
+moreLeanArgs = ["--tstack=262144"]
 
 [[lean_lib]]
 name = "«noir_base64-0.0.0»"
