@@ -482,7 +482,7 @@ fn call_replicate<T, let L: u32>(arr: [T; L]) -> [T; 3 * L] {
         // After substituting UsePadding = 1, the return type of `encode`
         // becomes `(1 + 1) * ((InputBytes % 3) / 2)` which must be
         // canonicalized to match `((InputBytes % 3) / 2) * 2`.
-        let source = r#"
+        let source = r"
 use std::mem::zeroed;
 
 fn encode<let InputBytes: u32, let UsePadding: u32>(
@@ -496,7 +496,7 @@ pub fn encode_with_padding<let InputBytes: u32>(
 ) -> [u8; (((InputBytes % 3) / 2) * 2)] {
     encode::<InputBytes, 1>(input)
 }
-"#;
+";
         let result = display_extraction_results(source);
         assert!(result.is_ok(), "extraction failed: {result:?}");
 
