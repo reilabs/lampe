@@ -80,7 +80,6 @@ pub fn generate_lakefile_toml(
         "defaultTargets = [\"{}-{}\"]",
         noir_package_identifier.name, noir_package_identifier.version
     )?;
-    writeln!(result, "moreLeanArgs = [\"--tstack=262144\"]")?;
     result.push('\n');
     result.push_str("[[lean_lib]]\n");
     writeln!(
