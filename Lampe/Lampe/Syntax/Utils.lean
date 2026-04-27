@@ -49,7 +49,6 @@ deriving Nonempty
 structure FuncParam where
   name : Lean.Ident
   type : TSyntax `term
-  isMut : Bool
 deriving Nonempty
 
 /--
@@ -322,8 +321,8 @@ def makeBuiltin [MonadUtil m] (name : String) : m (TSyntax `term) :=
 def makeFuncParam [MonadUtil m]
     (param : TSyntax `noir_func_param)
   : m FuncParam := match param with
-| `(noir_func_param|$name:ident : $type) => do pure ⟨name, ←makeNoirType type, False⟩
-| `(noir_func_param|_ : $type) => do pure ⟨mkIdent $ Name.mkSimple "_", ←makeNoirType type, False⟩
+| `(noir_func_param|$name:ident : $type) => do pure ⟨name, ←makeNoirType type⟩
+| `(noir_func_param|_ : $type) => do pure ⟨mkIdent $ Name.mkSimple "_", ←makeNoirType type⟩
 | p => throwError "Encountered invalid function parameter {p}"
 
 /-- Generates the chain of member accesses for projecting a member from a struct or tuple. -/
