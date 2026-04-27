@@ -260,6 +260,11 @@ theorem bEq_intro : STHoarePureBuiltin p Γ Builtin.bEq (by tauto) h![a, b] (a :
    apply pureBuiltin_intro_consequence <;> try tauto
    tauto
 
+theorem bNeq_intro : STHoarePureBuiltin p Γ Builtin.bNeq (by tauto) h![a, b] (a := ()) := by
+   simp only [STHoarePureBuiltin, SLP.exists_pure]
+   apply pureBuiltin_intro_consequence <;> try tauto
+   tauto
+
 theorem fEq_intro : STHoarePureBuiltin p Γ Builtin.fEq (by tauto) h![a, b] (a := ()) := by
    simp only [STHoarePureBuiltin, SLP.exists_pure]
    apply pureBuiltin_intro_consequence <;> try tauto

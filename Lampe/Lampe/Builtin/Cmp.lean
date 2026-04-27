@@ -20,6 +20,15 @@ def bEq := newTotalPureBuiltin
   (fun h![a, b] => a = b)
 
 /--
+Defines the inequality comparison between two booleans.
+
+In Noir, this builtin corresponds to `a != b` for values `a`, `b` of type `bool`.
+-/
+def bNeq := newTotalPureBuiltin
+  ⟨[.bool, .bool], .bool⟩
+  (fun h![a, b] => a ≠ b)
+
+/--
 Defines the equality comparison between two field elements.
 
 In Noir, this builtin corresponds to `a == b` for values `a`, `b` of type `Field`.

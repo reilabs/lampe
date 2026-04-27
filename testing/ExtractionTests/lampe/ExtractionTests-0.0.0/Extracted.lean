@@ -3,6 +3,7 @@
 import «ExtractionTests-0.0.0».Extracted.AliasMemberAccess
 import «ExtractionTests-0.0.0».Extracted.AssociatedType
 import «ExtractionTests-0.0.0».Extracted.BlackBoxMut
+import «ExtractionTests-0.0.0».Extracted.BoolNeq
 import «ExtractionTests-0.0.0».Extracted.ConstGenerics
 import «ExtractionTests-0.0.0».Extracted.DirectLambda
 import «ExtractionTests-0.0.0».Extracted.Experiments
@@ -12,6 +13,7 @@ import «ExtractionTests-0.0.0».Extracted.Lib
 import «ExtractionTests-0.0.0».Extracted.MultipleGenerics
 import «ExtractionTests-0.0.0».Extracted.NestedMemberAccess
 import «ExtractionTests-0.0.0».Extracted.Patterns
+import «ExtractionTests-0.0.0».Extracted.RefMemberAccess
 import «ExtractionTests-0.0.0».Extracted.ReservedKeywords
 import «ExtractionTests-0.0.0».Extracted.ShadowMut
 import «ExtractionTests-0.0.0».Extracted.StructNamespaces
@@ -25,6 +27,7 @@ namespace «ExtractionTests-0.0.0»
 def env := AliasMemberAccess.env
   ++ AssociatedType.env
   ++ BlackBoxMut.env
+  ++ BoolNeq.env
   ++ ConstGenerics.env
   ++ DirectLambda.env
   ++ Experiments.env
@@ -33,6 +36,7 @@ def env := AliasMemberAccess.env
   ++ MultipleGenerics.env
   ++ NestedMemberAccess.env
   ++ Patterns.env
+  ++ RefMemberAccess.env
   ++ ReservedKeywords.env
   ++ ShadowMut.env
   ++ StructNamespaces.env

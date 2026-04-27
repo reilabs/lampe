@@ -1873,6 +1873,10 @@ impl LeanGenerator<'_, '_, '_> {
         prologue: &mut Vec<Statement>,
     ) -> Expression {
         let value_type = self.unfold_alias(self.resolve_bound_type(member.lhs));
+        let value_type = match value_type {
+            NoirType::Reference(inner, _) => self.unfold_alias(*inner),
+            other => other,
+        };
         let index = match value_type {
             NoirType::DataType(struct_def, _) => {
                 let field_order = self.get_field_index_map(&struct_def);
