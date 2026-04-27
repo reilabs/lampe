@@ -334,6 +334,7 @@ jobs:
       CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
       LAMPE_KEEP_LAKE_CACHE: "1"
+      LEAN_THREAD_STACK_SIZE: 8192000
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
