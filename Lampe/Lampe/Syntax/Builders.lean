@@ -66,10 +66,10 @@ function type, or errors if the provided `ty` is not a function type.
 -/
 partial def extractFuncSignature [MonadDSL m]
   : (ty : TSyntax `noir_type)
-  → m (List (TSyntax `term) × TSyntax `term)
+  → m (Array (TSyntax `term) × TSyntax `term)
 | `(noir_type|λ( $paramTypes,* ) → $returnType)
 | `(noir_type|λ( $paramTypes,* ) -> $returnType) => do
-  let paramTypesExtracted ← paramTypes.getElems.toList.mapM fun p => makeNoirType p
+  let paramTypesExtracted ← paramTypes.getElems.mapM fun p => makeNoirType p
   let returnTypeExtracted ← makeNoirType returnType
   pure (paramTypesExtracted, returnTypeExtracted)
 | s => throwError "{s} was not a valid function type expression"
@@ -206,8 +206,7 @@ partial def makeExpr [MonadDSL m]
 
 -- Builtin Calls
 | `(noir_expr|(#_ $name:ident returning $tp)( $args,* )) =>
-  let argsList := args.getElems.toList
-  let emitBuiltin : m (TSyntax `term) := makeArgs argsList fun args => do
+  let emitBuiltin : m (TSyntax `term) := makeArgs args.getElems fun args => do
     let argVals ← makeHListLit args
     wrapInLet
       (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
@@ -227,7 +226,7 @@ partial def makeExpr [MonadDSL m]
 
   -- Calls to declarations
   | `(noir_funcref|($name< $gens,* > as $ty)) => do
-    let (genKinds, genVals) ← makeGenericValTerms gens.getElems.toList
+    let (genKinds, genVals) ← makeGenericValTerms gens.getElems
     let fnName := Syntax.mkStrLit (←makeNoirIdent name).getId.toString
     let (paramTypes, outType) ← extractFuncSignature ty
     wrapInLet
@@ -241,8 +240,8 @@ partial def makeExpr [MonadDSL m]
 
   -- Calls to trait methods
   | `(noir_funcref|(($selfTp as $tName< $traitGens,* >)::$fName< $funcGens,* > as $tp)) => do
-    let (traitGenKinds, traitGenVals) ← makeGenericValTerms traitGens.getElems.toList
-    let (funcGenKinds, funcGenVals) ← makeGenericValTerms funcGens.getElems.toList
+    let (traitGenKinds, traitGenVals) ← makeGenericValTerms traitGens.getElems
+    let (funcGenKinds, funcGenVals) ← makeGenericValTerms funcGens.getElems
     let traitName := Syntax.mkStrLit (←makeNoirIdent tName).getId.toString
     let methodName := Syntax.mkStrLit (←makeNoirIdent fName).getId.toString
     let (paramTypes, outType) ← extractFuncSignature tp
@@ -274,7 +273,7 @@ partial def makeExpr [MonadDSL m]
 -- Function calls
 | `(noir_expr|$ref:noir_funcref( $args,* )) => do
   let ref ← `(noir_expr|$ref:noir_funcref)
-  makeExpr ref none fun funcRef => makeArgs args.getElems.toList fun args => do
+  makeExpr ref none fun funcRef => makeArgs args.getElems fun args => do
     let argVals ← makeHListLit args
     wrapInLet (←``(Expr.call _ _ $funcRef $argVals)) binder k
 
@@ -316,9 +315,8 @@ partial def makeLambda [MonadDSL m]
   → m (TSyntax `term)
 | `(noir_lambda|fn( $params,* ): $retType := $body), binder, k => do
   let retType : TSyntax `term ← makeNoirType retType
-  let params ← params.getElems.toList.mapM makeLambdaParam
-  let paramTypes := params.map fun p => p.type
-  let paramTypes ← makeListLit paramTypes
+  let params ← params.getElems.mapM makeLambdaParam
+  let paramTypes ← makeListLit (params.map fun p => p.type)
   let paramNames ← params.mapM fun b => match b.binder with
   | .variable n => ``($n)
   | .tuple _ => throwError "Tuple binders not currently supported in lambda parameters"
@@ -363,17 +361,21 @@ partial def makeBlock [MonadDSL m]
 | _ => throwError "Empty blocks are invalid"
 
 /--
-Builds the Lean expression corresponding to a list of arguments from the syntax tree by unfolding
+Builds the Lean expression corresponding to an array of arguments from the syntax tree by unfolding
 argument expressions to ensure they are in ANF.
 
 Will result in an error if `makeExpr` or the continuation `k` fails on any of the provided `args`.
 -/
 partial def makeArgs [MonadDSL m]
-    (args : List (TSyntax `noir_expr))
-    (k : List (TSyntax `term) → m (TSyntax `term))
-  : m (TSyntax `term) := match args with
-| [] => k []
-| h :: t => makeExpr h none (some fun h => makeArgs t fun t => k (h :: t))
+    (args : Array (TSyntax `noir_expr))
+    (k : Array (TSyntax `term) → m (TSyntax `term))
+    (i : Nat := 0)
+    (acc : Array (TSyntax `term) := #[])
+  : m (TSyntax `term) :=
+  if h : i < args.size then
+    makeExpr args[i] none (some fun v => makeArgs args k (i + 1) (acc.push v))
+  else
+    k acc
 
 end
 
@@ -386,8 +388,8 @@ def makeFnDecl [MonadUtil m] (syn : Syntax) : m (Lean.Ident × TSyntax `term) :=
 | `(noir_fn_def|$name:noir_ident < $generics,* >( $params,* ) → $returnType := $body)
 | `(noir_fn_def|$name:noir_ident < $generics,* >( $params,* ) -> $returnType := $body) => do
   let name ← makeNoirIdent name
-  let (genericKinds, genericDefs) ← makeGenericDefTerms generics.getElems.toList
-  let params ← params.getElems.toList.mapM makeFuncParam
+  let (genericKinds, genericDefs) ← makeGenericDefTerms generics.getElems
+  let params ← params.getElems.mapM makeFuncParam
   let body ← MonadDSL.run do
     makeExpr body none none
   let lambda ← ``(fun rep generics => match generics with
@@ -395,7 +397,7 @@ def makeFnDecl [MonadUtil m] (syn : Syntax) : m (Lean.Ident × TSyntax `term) :=
       $(←makeListLit $ params.map fun ⟨_, t, _⟩ => t),
       $(←makeNoirType returnType),
       fun args => match args with
-      | $(←makeHListLit $ params.map fun ⟨i, _, _⟩ => i) => $body
+      | $(←makeHListLit $ params.map fun ⟨i, _, _⟩ => (i : TSyntax `term)) => $body
     ⟩
   )
   let syn ← ``(FunctionDecl.mk
@@ -409,11 +411,11 @@ invalid.
 -/
 def makeTraitImpl [MonadUtil m] : Syntax → m (Lean.Ident × TSyntax `term)
 | `(noir_trait_impl|< $gDefs,* > $tName < $gVals,* > for $self where [ $wheres,* ] := { $defs;* }) => do
-  let (genDefKinds, genDefVars) ← makeGenericDefTerms gDefs.getElems.toList
-  let (genValKinds, genValVals) ← makeGenericValTerms gVals.getElems.toList
+  let (genDefKinds, genDefVars) ← makeGenericDefTerms gDefs.getElems
+  let (genValKinds, genValVals) ← makeGenericValTerms gVals.getElems
   let traitName ← makeNoirIdent tName
   let targetType ← makeNoirType self
-  let fnDecls ← defs.getElems.toList.mapM fun d => match d with
+  let fnDecls ← defs.getElems.mapM fun d => match d with
   | `(noir_trait_impl_method|noir_def $func) => do
     let (s, d) ← makeFnDecl func
     ``(Prod.mk $(Syntax.mkStrLit s.getId.toString) (FunctionDecl.fn $d))
@@ -422,14 +424,14 @@ def makeTraitImpl [MonadUtil m] : Syntax → m (Lean.Ident × TSyntax `term)
   let constraints ← wheres.getElems.mapM fun c => match c with
   | `(noir_where_clause|$genName:noir_type : $bound < $constraintGens,* >) => do
     let traitName ← makeNoirIdent bound
-    let (tgKinds, tgVals) ← makeGenericValTerms constraintGens.getElems.toList
+    let (tgKinds, tgVals) ← makeGenericValTerms constraintGens.getElems
     ``(⟨⟨$(Syntax.mkStrLit traitName.getId.toString), $tgKinds, $tgVals⟩, $(←makeNoirType genName)⟩)
   | _ => throwUnsupportedSyntax
   let syn ← ``(TraitImpl.mk
     (traitGenericKinds := $genValKinds)
     (implGenericKinds := $genDefKinds)
     (traitGenerics := fun gs => match gs with | $genDefVars => $genValVals)
-    (constraints := fun gs => match gs with | $genDefVars => $(←makeListLit constraints.toList))
+    (constraints := fun gs => match gs with | $genDefVars => $(←makeListLit constraints))
     (self := fun gs => match gs with | $genDefVars => $targetType)
     (impl := fun gs => match gs with | $genDefVars => $fnDecls)
   )
@@ -442,8 +444,8 @@ Builds a struct definition from the provided syntax, or returns an error if the 
 -/
 def makeStructDef [MonadUtil m] (name : TSyntax `noir_ident) : Syntax → m (TSyntax `term)
 | `(noir_type_def|< $genDefs,* > { $members,* }) => do
-  let (genKinds, genDefs) ← makeGenericDefTerms genDefs.getElems.toList
-  let fieldTypes ← members.getElems.toList.mapM fun paramSyn => match paramSyn with
+  let (genKinds, genDefs) ← makeGenericDefTerms genDefs.getElems
+  let fieldTypes ← members.getElems.mapM fun paramSyn => match paramSyn with
   | `(noir_type|$type) => makeNoirType type
   let fieldTypes ← `(fun gs => match gs with | $genDefs => $(←makeListLit fieldTypes))
   let structNameStrLit := Syntax.mkStrLit (←makeNoirIdent name).getId.toString
@@ -455,7 +457,7 @@ def makeStructDef [MonadUtil m] (name : TSyntax `noir_ident) : Syntax → m (TSy
 /-- Builds a type alias from the provided syntax, or returns an error if invalid. -/
 def makeTypeAlias [MonadUtil m] : Syntax → m (TSyntax `ident × TSyntax `term)
 | `(noir_alias|$name < $genDefs,* > := $type ;) => do
-  let (genKinds, genDefs) ← makeGenericDefTerms genDefs.getElems.toList
+  let (genKinds, genDefs) ← makeGenericDefTerms genDefs.getElems
   let tp ← makeNoirType type
   let syn ← ``(fun (gens : HList Kind.denote $genKinds) => match gens with | $genDefs => $tp)
   let defName := makeTypeAliasIdent (←makeNoirIdent name)
@@ -468,11 +470,11 @@ def makeTraitDef [MonadUtil m] : Syntax → m (List $ TSyntax `command)
   let mut outputs := []
 
   let traitName ← makeNoirIdent traitName
-  let (traitGenKinds, traitGenDefs) ← makeGenericDefTerms traitGenDefs.getElems.toList
+  let (traitGenKinds, traitGenDefs) ← makeGenericDefTerms traitGenDefs.getElems
   let traitGenKindsDecl ←
     `(abbrev $(makeTraitDefGenericKindsIdent traitName) : List Kind := $traitGenKinds)
   outputs := outputs.concat traitGenKindsDecl
-  let (assocTypeGenKinds, assocTypeGenDefs) ← makeGenericDefTerms assocTps.getElems.toList
+  let (assocTypeGenKinds, assocTypeGenDefs) ← makeGenericDefTerms assocTps.getElems
   let associatedTypesKindDecl ←
     `(abbrev $(makeTraitDefAssociatedTypesKindsIdent traitName) : List Kind := $assocTypeGenKinds)
   outputs := outputs.concat associatedTypesKindDecl
@@ -489,16 +491,16 @@ def makeTraitDef [MonadUtil m] : Syntax → m (List $ TSyntax `command)
         selfType⟩)
   outputs := outputs.concat traitHasImplDecl
 
-  for method in methods.getElems.toList do match method with
+  for method in methods.getElems do match method with
   | `(noir_trait_method|method $methName < $methGens,*> ( $params,* ) → $retType)
   | `(noir_trait_method|method $methName < $methGens,*> ( $params,* ) -> $retType) => do
     let fnName ← makeNoirIdent methName
-    let (fnGenKinds, fnGenDefs) ← makeGenericDefTerms methGens.getElems.toList
+    let (fnGenKinds, fnGenDefs) ← makeGenericDefTerms methGens.getElems
     let fnGensDecl ←
       `(abbrev $(makeTraitFunDefGenericKindsIdent traitName fnName) : List Kind := $fnGenKinds)
     outputs := outputs.concat fnGensDecl
 
-    let params ← params.getElems.toList.mapM makeNoirType
+    let params ← params.getElems.mapM makeNoirType
     let inTypesDecl ← `(
       @[reducible] def $(makeTraitFunDefInputsIdent traitName fnName)
       : HList Kind.denote $(makeTraitDefGenericKindsIdent traitName)

@@ -58,19 +58,19 @@ Lampe.
 -/
 abbrev typeOf {tp : Tp} {rep : Tp → Type} : rep tp → Tp := fun _ => tp
 
-/-- Makes a list literal from the provided list of terms. -/
-def makeListLit [MonadUtil m] : List (TSyntax `term) → m (TSyntax `term)
-| [] => `([])
-| x :: xs => do
-  let tail ← makeListLit xs
-  ``(List.cons $x $tail)
+/-- Makes a list literal from the provided array of terms. Iterates right-to-left to avoid deep recursion. -/
+def makeListLit [MonadUtil m] (xs : Array (TSyntax `term)) : m (TSyntax `term) := do
+  let mut acc ← `([])
+  for i in [:xs.size] do
+    acc ← ``(List.cons $(xs[xs.size - 1 - i]!) $acc)
+  return acc
 
-/-- Makes an HList literal from the provided list of terms. -/
-def makeHListLit [MonadUtil m] : List (TSyntax `term) → m (TSyntax `term)
-| [] => `(HList.nil)
-| x :: xs => do
-  let tail ← makeHListLit xs
-  ``(HList.cons $x $tail)
+/-- Makes an HList literal from the provided array of terms. Iterates right-to-left to avoid deep recursion. -/
+def makeHListLit [MonadUtil m] (xs : Array (TSyntax `term)) : m (TSyntax `term) := do
+  let mut acc ← `(HList.nil)
+  for i in [:xs.size] do
+    acc ← ``(HList.cons $(xs[xs.size - 1 - i]!) $acc)
+  return acc
 
 /--
 Builds a numeric constant from the provided syntax term.
@@ -110,7 +110,7 @@ private partial def makeNoirIdentAux [MonadUtil m] : Syntax → m String
   let identStr := identStr.replace "«" ""
   let identStr := identStr.replace "»" ""
   pure identStr
-| `(noir_ident|$i:ident :: $j:noir_ident) => do 
+| `(noir_ident|$i:ident :: $j:noir_ident) => do
   pure s!"{←makeNoirIdentAux i}::{←makeNoirIdentAux j}"
 | `(noir_ident|_) => pure "_"
 | i => throwError "Invalid identifier `{i}`"
@@ -187,25 +187,23 @@ partial def makeGenericVal [MonadUtil m] : TSyntax `noir_gen_val → m GenericVa
   pure ⟨←makeConstNum n, ←makeKindValue k⟩
 | g => throwError "Unsupported generic value {g}"
 
-/--
-Builds a list of terms where each corresponds to a generic value, throwing an error if invalid.
--/
+/-- Builds an array of generic values, throwing an error if invalid. -/
 partial def makeGenericVals [MonadUtil m]
-    (generics : List $ TSyntax `noir_gen_val)
-  : m $ List GenericValue := generics.mapM makeGenericVal
+    (generics : Array $ TSyntax `noir_gen_val)
+  : m $ Array GenericValue := generics.mapM makeGenericVal
 
 /--
-Returns a pair of the generic kinds and the generic values as lists for the provided `generics`.
+Returns a pair of the generic kinds and the generic values for the provided `generics`.
 
 The first element of the pair is the kinds, containing a list literal as a term, while the second
 element is the values, containing a HList literal as a term.
 -/
 partial def makeGenericValTerms [MonadUtil m]
-    (generics : List $ TSyntax `noir_gen_val)
+    (generics : Array $ TSyntax `noir_gen_val)
   : m ((TSyntax `term) × (TSyntax `term)) := do
   let generics ← makeGenericVals generics
-  let genericKinds ← makeListLit $ ←generics.mapM fun g => quoteKind g.kind
-  let genericVals ← makeHListLit $ generics.map fun g => g.value
+  let genericKinds ← makeListLit (←generics.mapM fun g => quoteKind g.kind)
+  let genericVals ← makeHListLit (generics.map fun g => g.value)
   pure (genericKinds, genericVals)
 
 /-- Builds the term corresponding to a generic definition, throwing an error if invalid. -/
@@ -213,25 +211,23 @@ partial def makeGenericDef [MonadUtil m] : TSyntax `noir_gen_def → m GenericDe
 | `(noir_gen_def|$i:ident : $kind) => do pure ⟨i, ←makeKindValue kind⟩
 | _ => throwUnsupportedSyntax
 
-/--
-Builds a list of terms where each corresponds to a generic definition, throwing an error if invalid.
--/
+/-- Builds an array of generic definitions, throwing an error if invalid. -/
 partial def makeGenericDefs [MonadUtil m]
-    (generics: List $ TSyntax `noir_gen_def)
-  : m $ List GenericDef := generics.mapM makeGenericDef
+    (generics: Array $ TSyntax `noir_gen_def)
+  : m $ Array GenericDef := generics.mapM makeGenericDef
 
 /--
-Returns a pair of the generic kinds and the generic names as lists for the provided `generics`.
+Returns a pair of the generic kinds and the generic names for the provided `generics`.
 
 The first element of the pair is the kinds, containing a list literal as a term, while the second
 element is the values, containing a HList literal as a term.
 -/
 partial def makeGenericDefTerms [MonadUtil m]
-    (generics : List $ TSyntax `noir_gen_def)
+    (generics : Array $ TSyntax `noir_gen_def)
   : m ((TSyntax `term) × (TSyntax `term)) := do
   let generics ← makeGenericDefs generics
-  let genericKinds ← makeListLit $ ←generics.mapM fun g => quoteKind g.kind
-  let genericNames ← makeHListLit $ generics.map fun g => g.name
+  let genericKinds ← makeListLit (←generics.mapM fun g => quoteKind g.kind)
+  let genericNames ← makeHListLit (generics.map fun g => g.name)
   pure (genericKinds, genericNames)
 
 /-- Builds the term corresponding to the provided type syntax, throwing an error if invalid. -/
@@ -270,8 +266,8 @@ partial def makeNoirType [MonadUtil m] : TSyntax `noir_type → m (TSyntax `term
 | `(noir_type|&$tp) => do ``(Lampe.Tp.ref $(←makeNoirType tp))
 | `(noir_type|$structName:noir_ident < $generics,* >) => do
   let nameIdent ← makeNoirIdent structName
-  let genericsList := generics.getElems.toList
-  let gensLen := genericsList.length
+  let genericsElems := generics.getElems
+  let gensLen := genericsElems.size
 
   -- Certain builtin types fall into this case and have to be handled specially.
   match nameIdent.getId.toString with
@@ -279,36 +275,36 @@ partial def makeNoirType [MonadUtil m] : TSyntax `noir_type → m (TSyntax `term
       if gensLen != 2 then
         throwError "Array had wrong number of generic args {gensLen}"
 
-      let elemGeneric ← makeGenericVal genericsList[0]!
-      let sizeGeneric ← makeGenericVal genericsList[1]!
+      let elemGeneric ← makeGenericVal genericsElems[0]!
+      let sizeGeneric ← makeGenericVal genericsElems[1]!
 
       if sizeGeneric.kind == .type then
-        throwError "Array size {genericsList[1]!} not a const generic"
+        throwError "Array size {genericsElems[1]!} not a const generic"
 
       ``(Lampe.Tp.array $(elemGeneric.value) $(sizeGeneric.value))
   | "Vector" => do
     if gensLen != 1 then
       throwError "Vector had wrong number of generic args {gensLen}"
 
-    let elemGeneric ← makeGenericVal genericsList[0]!
+    let elemGeneric ← makeGenericVal genericsElems[0]!
 
     ``(Lampe.Tp.vector $(elemGeneric.value))
   | "Tuple" => do
-    let generics := (←makeGenericVals genericsList).map fun g => g.value
+    let generics := (←makeGenericVals genericsElems).map fun g => g.value
     ``(Lampe.Tp.tuple none $(←makeListLit generics))
   | _ => do
     let structIdent := makeStructDefIdent (←makeNoirIdent structName)
-    let generics := (←makeGenericVals genericsList).map fun g => g.value
+    let generics := (←makeGenericVals genericsElems).map fun g => g.value
     ``(Lampe.Struct.tp $structIdent $(←makeHListLit generics))
 | `(noir_type|splice!( $i )) => pure i
 | `(noir_type|λ( $param_types,* ) -> $ret:noir_type)
 | `(noir_type|λ( $param_types,* ) → $ret:noir_type) => do
-  let paramTypes ← makeListLit (←param_types.getElems.toList.mapM makeNoirType)
+  let paramTypes ← makeListLit (←param_types.getElems.mapM makeNoirType)
   let returnType ← makeNoirType ret
   ``(Lampe.Tp.fn $paramTypes $returnType)
 | `(noir_type|@ $aliasName < $generics,* >) => do
-  let generics ← makeGenericVals generics.getElems.toList
-  let genericVals ← makeHListLit $ generics.map fun g => g.value
+  let generics ← makeGenericVals generics.getElems
+  let genericVals ← makeHListLit (generics.map fun g => g.value)
   let aliasFunc := makeTypeAliasIdent (←makeNoirIdent aliasName)
   ``($aliasFunc $genericVals)
 | `(noir_type|_) => ``(_)
