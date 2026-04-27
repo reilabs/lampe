@@ -3,8 +3,7 @@ open Lake DSL
 
 package Lampe where
   leanOptions := #[
-    ⟨`pp.unicode.fun, true⟩,
-    ⟨`maxRecDepth, 4096⟩
+    ⟨`pp.unicode.fun, true⟩
   ]
   moreLeanArgs := #["--tstack=65536"]
   testDriver := "Tests"
