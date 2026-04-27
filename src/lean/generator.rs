@@ -1872,14 +1872,17 @@ impl LeanGenerator<'_, '_, '_> {
         member: &HirMemberAccess,
         prologue: &mut Vec<Statement>,
     ) -> Expression {
-        let value_type = self.unfold_alias(self.resolve_bound_type(member.lhs));
-        let value_type = match value_type {
-            NoirType::Reference(inner, _) => self.unfold_alias(*inner),
-            other => other,
+        let lhs_type = self.unfold_alias(self.resolve_bound_type(member.lhs));
+        let (deref_type, value_type) = match lhs_type {
+            NoirType::Reference(inner, _) => {
+                let inner = self.unfold_alias(*inner);
+                (Some(self.generate_lean_type_value(&inner, None)), inner)
+            }
+            other => (None, other),
         };
-        let index = match value_type {
+        let index = match &value_type {
             NoirType::DataType(struct_def, _) => {
-                let field_order = self.get_field_index_map(&struct_def);
+                let field_order = self.get_field_index_map(struct_def);
                 field_order
                     .get(&member.rhs)
                     .copied()
@@ -1894,7 +1897,18 @@ impl LeanGenerator<'_, '_, '_> {
             }
         };
 
-        let value = Box::new(self.generate_expr(member.lhs, prologue));
+        let lhs_expr = self.generate_expr(member.lhs, prologue);
+        let value = if let Some(inner_type) = deref_type {
+            let read_ref_target = Expression::builtin_call_ref("readRef", &inner_type);
+            let call = Call {
+                function:    Box::new(read_ref_target),
+                params:      vec![lhs_expr],
+                return_type: inner_type,
+            };
+            Box::new(Expression::Call(call))
+        } else {
+            Box::new(lhs_expr)
+        };
         let member_access = MemberAccess { value, index };
 
         Expression::MemberAccess(member_access)
