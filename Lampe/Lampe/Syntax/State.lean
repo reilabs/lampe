@@ -78,14 +78,14 @@ def wrapInLet [MonadDSL m]
 
 /-- A container for arguments and the corresponding identifiers. -/
 structure Args where
-  args : List (TSyntax `noir_expr)
-  idents : List Lean.Ident
+  args : Array (TSyntax `noir_expr)
+  idents : Array Lean.Ident
   lastId : Nat
 
 namespace Args
 
 /-- Creates an empty set of arguments. -/
-def empty : Args := ⟨[], [], 0⟩
+def empty : Args := ⟨#[], #[], 0⟩
 
 /--
 Returns a new `Args` container with the given expression `expr` associated with a unique identifier.
@@ -94,14 +94,14 @@ Returns the corresponding identifier along with the new `Args` container.
 -/
 def next (a : Args) (expr : TSyntax `noir_expr) : (Lean.Ident × Args) :=
   let ident := mkIdent $ Name.mkSimple $ "#arg_" ++ (toString a.lastId)
-  (ident , ⟨expr :: a.args, ident :: a.idents, a.lastId + 1⟩)
+  (ident , ⟨a.args.push expr, a.idents.push ident, a.lastId + 1⟩)
 
-def wrap [MonadDSL m] (a : Args) (argVals : List $ TSyntax `term) (expr : TSyntax `term)
+def wrap [MonadDSL m] (a : Args) (argVals : Array (TSyntax `term)) (expr : TSyntax `term)
   : m (TSyntax `term) := do
   if argVals.isEmpty then
     `($expr)
   else
-    `((fun args => match args with | $(←makeHListLit a.idents) => $expr) $(←makeHListLit argVals))
+    `((fun args => match args with | $(←makeHListLit (a.idents.map fun i => (i : TSyntax `term))) => $expr) $(←makeHListLit argVals))
 
 end Args
 
@@ -136,4 +136,3 @@ partial def getLValueRef [MonadUtil m] (lVal : TSyntax `noir_lval) : m LValueRef
 | `(noir_lval|($vectorExpr [[ $_ ]] : $_)) => getLValueRef vectorExpr
 | `(noir_lval|$id:ident) => pure $ .ident id
 | l => throwError "Encountered invalid lvalue reference {l}"
-
