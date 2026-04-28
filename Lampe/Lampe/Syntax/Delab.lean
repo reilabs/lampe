@@ -122,7 +122,7 @@ def delabVar : Delab := whenDelabExprOption getExpr >>= fun expr =>
       return ←``(⸨$var⸩)
 
 
-inductive LensStep
+inductive DelabLensStep
   | tuple (idx : Nat)
   | array (idx : TSyntax `noir_expr)
   | vector (idx : TSyntax `noir_expr)
@@ -138,7 +138,7 @@ partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat :=
   else
     return none
 
-partial def deconstructLens (lens : Lean.Expr) (acc : List LensStep := []) : DelabM $ List LensStep := do
+partial def deconstructLens (lens : Lean.Expr) (acc : List DelabLensStep := []) : DelabM $ List DelabLensStep := do
   match_expr lens with
   | Lens.nil _ _ => pure acc
   | Lens.cons _ _ _ _ lens access =>
@@ -156,18 +156,18 @@ partial def deconstructLens (lens : Lean.Expr) (acc : List LensStep := []) : Del
   | _ => throwError "Invalid lens access, got {← ppExpr lens}"
 
 /-- Helper function to build a `noir_lval` to build a lens access syntax term -/
-def buildLVal (lval : TSyntax `noir_lval) (lensSteps : List LensStep) (type : TSyntax `noir_type)
+def buildLVal (lval : TSyntax `noir_lval) (lensSteps : List DelabLensStep) (type : TSyntax `noir_type)
     : DelabM $ TSyntax `noir_lval := do
   match lensSteps with
   | [] => pure lval
-  | LensStep.tuple idx :: rest => do
+  | DelabLensStep.tuple idx :: rest => do
     let lval ← buildLVal lval rest type
     let idxStx := Syntax.mkNatLit idx
     `(noir_lval|($lval . $idxStx : $type))
-  | LensStep.array idx :: rest => do
+  | DelabLensStep.array idx :: rest => do
     let lval ← buildLVal lval rest type
     `(noir_lval|($lval[$idx] : $type))
-  | LensStep.vector idx :: rest => do
+  | DelabLensStep.vector idx :: rest => do
     let lval ← buildLVal lval rest type
     `(noir_lval|($lval[[$idx]]: $type))
 

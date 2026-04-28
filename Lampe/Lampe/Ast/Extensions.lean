@@ -72,3 +72,9 @@ def Expr.getLens (v : rep tp₁) (lens : Lampe.Lens rep tp₁ tp₂)
 def Expr.getMember (v : rep (Tp.tuple name tps)) (member : Lampe.Builtin.Member tp tps)
   : Lampe.Expr rep tp :=
   Expr.callBuiltin _ tp (Lampe.Builtin.getMember member) h![v]
+
+/-- Project a reference to a sub-field, extending its lens path with a field access. -/
+@[reducible]
+def Expr.projectRef (v : rep (Tp.ref tp₁)) (idx : Nat)
+  : Lampe.Expr rep (Tp.ref tp₂) :=
+  Expr.callBuiltin [Tp.ref tp₁] (Tp.ref tp₂) (Lampe.Builtin.projectRef idx) h![v]

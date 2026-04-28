@@ -88,6 +88,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         | ``Lampe.Builtin.bXor => return some (←``(genericTotalPureBuiltin_intro Builtin.bXor rfl))
         | ``Lampe.Builtin.bOr  => return some (←``(genericTotalPureBuiltin_intro Builtin.bOr  rfl))
         | ``Lampe.Builtin.bEq  => return some (←``(genericTotalPureBuiltin_intro Builtin.bEq  rfl))
+        | ``Lampe.Builtin.bNeq => return some (←``(genericTotalPureBuiltin_intro Builtin.bNeq rfl))
 
         | ``Lampe.Builtin.uNot => return some (←``(genericTotalPureBuiltin_intro Builtin.uNot rfl))
         | ``Lampe.Builtin.uAnd => return some (←``(genericTotalPureBuiltin_intro Builtin.uAnd rfl))
@@ -199,6 +200,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
         -- Tuple/struct builtins
         | ``Lampe.Builtin.makeData => return some (← ``(genericTotalPureBuiltin_intro (a := (_, _)) Builtin.makeData rfl))
         | ``Lampe.Builtin.getMember => return some (← ``(genericTotalPureBuiltin_intro (Builtin.getMember _) rfl))
+        | ``Lampe.Builtin.projectRef => return none -- TODO: add projectRef_intro
 
         | ``Lampe.Builtin.zeroed => return some (←``(genericTotalPureBuiltin_intro Builtin.zeroed rfl))
 

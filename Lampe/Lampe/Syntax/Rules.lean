@@ -154,6 +154,7 @@ syntax "for" ppSpace noir_ident ppSpace "in" ppSpace noir_expr ppSpace ".." ppSp
 syntax "(" noir_ident ppSpace "as" ppSpace noir_type ")" : noir_funcref -- An identifier call ref.
 syntax "(" noir_lambda ")" : noir_funcref -- A lambda is callable.
 syntax "(" "#_" ident ppSpace "returning" ppSpace noir_type ")" : noir_funcref -- A builtin name is callable.
+syntax "(" "#_" "projectRef" ppSpace num ppSpace "returning" ppSpace noir_type ")" : noir_funcref -- projectRef with field index.
 syntax "(" noir_ident "<" noir_gen_val,* ">" ppSpace "as" ppSpace noir_type ")" : noir_funcref -- A function reference is callable.
 syntax "(" "(" noir_type ppSpace "as" ppSpace noir_ident "<" noir_gen_val,* ">" ")"
   "::" noir_ident "<" noir_gen_val,* ">" ppSpace "as" ppSpace noir_type ")" : noir_funcref -- A trait method reference is also callable.

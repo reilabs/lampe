@@ -44,7 +44,7 @@ theorem letIn_intro {P Q}
 
 theorem ref_intro {v P} :
     THoare p Γ
-      (fun st => ∀r, r ∉ st → P r ⟨(st.vals.insert r ⟨tp, v⟩), st.lambdas⟩)
+      (fun st => ∀r, r ∉ st → P (LensRef.mk r []) ⟨(st.vals.insert r ⟨tp, v⟩), st.lambdas⟩)
       (.callBuiltin [tp] (.ref tp) .ref h![v])
       P := by
   unfold THoare
@@ -53,25 +53,29 @@ theorem ref_intro {v P} :
   constructor
   tauto
 
-theorem readRef_intro {ref} :
+theorem readRef_intro {lensRef : LensRef} {base_tp : Tp} {base_val : Tp.denote p base_tp} :
     THoare p Γ
-      (fun st => st.vals.lookup ref = some ⟨tp, v⟩ ∧ P v st)
-      (.callBuiltin [.ref tp] tp .readRef h![ref])
+      (fun st => st.vals.lookup lensRef.ref = some ⟨base_tp, base_val⟩ ∧
+                 Tp.followPath (p := p) base_tp base_val lensRef.path tp = some v ∧ P v st)
+      (.callBuiltin [.ref tp] tp .readRef h![lensRef])
       P := by
   unfold THoare
-  intros
+  intro st ⟨h1, h2, h3⟩
   constructor
-  constructor <;> tauto
+  exact Builtin.readRefOmni.mk h1 h2 h3
 
-theorem writeRef_intro {ref v} :
+theorem writeRef_intro {lensRef : LensRef} {base_tp : Tp}
+    {base_val : Tp.denote p base_tp} {base_val' : Tp.denote p base_tp} {v : Tp.denote p tp} :
     THoare p Γ
-      (fun st => ref ∈ st ∧ P () ⟨(st.vals.insert ref ⟨tp, v⟩), st.lambdas⟩)
-      (.callBuiltin [.ref tp, tp] .unit .writeRef h![ref, v])
+      (fun st => st.vals.lookup lensRef.ref = some ⟨base_tp, base_val⟩ ∧
+                 Tp.modifyAtPath (p := p) base_tp base_val lensRef.path tp v = some base_val' ∧
+                 P () ⟨(st.vals.insert lensRef.ref ⟨base_tp, base_val'⟩), st.lambdas⟩)
+      (.callBuiltin [.ref tp, tp] .unit .writeRef h![lensRef, v])
       P := by
   unfold THoare
-  intros
+  intro st ⟨h1, h2, h3⟩
   constructor
-  constructor <;> tauto
+  exact Builtin.writeRefOmni.mk h1 h2 h3
 
 theorem fresh_intro {P} :
     THoare p Γ

@@ -5,6 +5,19 @@ import Lampe
 
 open Lampe
 
+noir_struct_def «ExtractionTests-0.0.0»::struct_namespaces::test::Foo<> {
+  Field,
+}
+
+noir_type_alias «ExtractionTests-0.0.0»::alias_member_access::Foo<A: Type, B: Type> := Tuple<A, B>;
+
+noir_struct_def «ExtractionTests-0.0.0»::associated_type::Pair<> {
+  Field,
+  Field,
+}
+
+noir_type_alias «ExtractionTests-0.0.0»::associated_type::Bar<> := «ExtractionTests-0.0.0»::associated_type::Pair<>;
+
 noir_struct_def «ExtractionTests-0.0.0»::experiments::Option2<T: Type> {
   bool,
   T,
@@ -34,18 +47,13 @@ noir_struct_def «ExtractionTests-0.0.0»::type_order::FooStruct<> {
   @«ExtractionTests-0.0.0»::type_order::FooType<>,
 }
 
-noir_struct_def «ExtractionTests-0.0.0»::struct_namespaces::test::Foo<> {
+noir_struct_def «ExtractionTests-0.0.0»::ref_member_access::Bar<> {
   Field,
 }
 
-noir_type_alias «ExtractionTests-0.0.0»::alias_member_access::Foo<A: Type, B: Type> := Tuple<A, B>;
-
-noir_struct_def «ExtractionTests-0.0.0»::associated_type::Pair<> {
-  Field,
-  Field,
+noir_struct_def «ExtractionTests-0.0.0»::ref_member_access::Foo<> {
+  «ExtractionTests-0.0.0»::ref_member_access::Bar<>,
 }
-
-noir_type_alias «ExtractionTests-0.0.0»::associated_type::Bar<> := «ExtractionTests-0.0.0»::associated_type::Pair<>;
 
 noir_struct_def «ExtractionTests-0.0.0»::multiple_generics::Pair<I: Type> {
   I,
