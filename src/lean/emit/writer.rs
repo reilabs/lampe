@@ -32,6 +32,7 @@ use crate::{
             Literal,
             MemberAccess,
             Pattern,
+            ProjectRef,
             Statement,
             TraitCallRef,
             Type,
@@ -105,6 +106,7 @@ impl Writer<'_> {
             Expression::Lambda(lambda) => self.write_lambda(lambda),
             Expression::Literal(literal) => self.write_literal(literal),
             Expression::MemberAccess(member_access) => self.write_member_access(member_access),
+            Expression::ProjectRef(project_ref) => self.write_project_ref(project_ref),
             Expression::Skip => {
                 self.append_to_line(BUILTIN_PREFIX);
                 self.append_to_line(SKIP_BUILTIN_NAME);
@@ -292,6 +294,18 @@ impl Writer<'_> {
         self.append_to_line(&call_ref.name.to_case(Case::Camel));
         self.append_to_line(" returning ");
         self.write_type_expression(&call_ref.return_type.expr);
+        self.append_to_line(")");
+    }
+
+    /// Writes a `projectRef` builtin call reference with a field index
+    /// parameter.
+    pub fn write_project_ref(&mut self, project_ref: &ProjectRef) {
+        self.append_to_line("(");
+        self.append_to_line(BUILTIN_PREFIX);
+        self.append_to_line("projectRef ");
+        self.append_to_line(&project_ref.index.to_string());
+        self.append_to_line(" returning ");
+        self.write_type_expression(&project_ref.return_type.expr);
         self.append_to_line(")");
     }
 

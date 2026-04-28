@@ -2,11 +2,9 @@
 name = "noir_base64-0.0.0"
 version = "0.0.0"
 defaultTargets = ["noir_base64-0.0.0"]
-moreLeanArgs = ["--tstack=262144"]
 
 [[lean_lib]]
 name = "«noir_base64-0.0.0»"
-leanOptions = [{name = "maxRecDepth", value = 131072}]
 
 [[require]]
 name = "Lampe"
@@ -19,3 +17,4 @@ name = "std-1.0.0-beta.14"
 git = "https://github.com/reilabs/lampe"
 rev = "main"
 subDir = "stdlib/lampe"
+

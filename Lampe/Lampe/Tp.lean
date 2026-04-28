@@ -17,6 +17,19 @@ structure Ref where
   val : Nat
 deriving DecidableEq
 
+/-- A step in a lens path for navigating into a composite value. -/
+inductive LensStep where
+| field (idx : Nat)
+| index (idx : Nat)
+deriving DecidableEq, Repr
+
+/-- A reference that carries a lens path for sub-field access.
+    `ref` is the base heap location, `path` describes how to navigate to the sub-value. -/
+structure LensRef where
+  ref : Ref
+  path : List LensStep
+deriving DecidableEq
+
 variable (p : Prime)
 
 inductive Tp where
@@ -168,7 +181,7 @@ def Tp.denote : Tp → Type
 | .field => Fp p
 | .vector tp => List (denote tp)
 | .array tp n => List.Vector (denote tp) n.toNat
-| .ref _ => Ref
+| .ref _ => LensRef
 | .tuple _ fields => Tp.denoteArgs fields
 | .fn argTps outTp => FuncRef argTps outTp
 
@@ -210,7 +223,7 @@ def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplie
   | Tp.array tp n =>
     let len ← mkAppM `BitVec.toNat #[n]
     mkAppM `List.Vector #[← mkAppM `Lampe.Tp.denote #[p, tp], len]
-  | Tp.ref _ => mkAppM `Lampe.Ref #[]
+  | Tp.ref _ => mkAppM `Lampe.LensRef #[]
   | Tp.tuple _ fields =>
     let (_, tps) ← liftOption fields.listLit?
     delabDenoteArgsAux p tps
@@ -242,9 +255,76 @@ match tp with
 | .fmtStr _ _ => ""
 | .vector _ => []
 | .array tp n => List.Vector.replicate n.toNat tp.zero
-| .ref _ => ⟨0⟩
+| .ref _ => ⟨⟨0⟩, []⟩
 | .tuple name fields => HList.toTuple p (Tp.zeroArgs fields) name
 | .fn _ _ => .lambda ⟨0⟩
+
+end
+
+-- Follow a lens path through a value, returning the sub-value at the path endpoint.
+mutual
+
+def Tp.followPathArgs (args : List Tp) (v : Tp.denoteArgs p args) (idx : Nat) (rest : List LensStep) (outTp : Tp)
+    : Option (Tp.denote p outTp) :=
+  match args, v with
+  | [], _ => none
+  | _ :: _, (hd, tl) =>
+    if idx == 0 then Tp.followPath _ hd rest outTp
+    else Tp.followPathArgs _ tl (idx - 1) rest outTp
+
+def Tp.followPath (tp : Tp) (v : Tp.denote p tp) (path : List LensStep) (outTp : Tp)
+    : Option (Tp.denote p outTp) :=
+  match path with
+  | [] => if h : tp = outTp then some (h ▸ v) else none
+  | step :: rest => match tp, v, step with
+    | .tuple _ fields, v, .field idx => Tp.followPathArgs fields v idx rest outTp
+    | .array _ n, v, .index idx =>
+      if h : idx < n.toNat then Tp.followPath _ (v.get ⟨idx, h⟩) rest outTp else none
+    | .vector _, v, .index idx =>
+      if h : idx < v.length then Tp.followPath _ (v.get ⟨idx, h⟩) rest outTp else none
+    | _, _, _ => none
+
+end
+
+-- Modify a value at a lens path, returning the updated root value.
+mutual
+
+def Tp.modifyAtPathArgs (args : List Tp) (v : Tp.denoteArgs p args) (idx : Nat) (rest : List LensStep)
+    (valTp : Tp) (newVal : Tp.denote p valTp) : Option (Tp.denoteArgs p args) :=
+  match args, v with
+  | [], _ => none
+  | _ :: _, (hd, tl) =>
+    if idx == 0 then
+      match Tp.modifyAtPath _ hd rest valTp newVal with
+      | some hd' => some (hd', tl)
+      | none => none
+    else
+      match Tp.modifyAtPathArgs _ tl (idx - 1) rest valTp newVal with
+      | some tl' => some (hd, tl')
+      | none => none
+
+def Tp.modifyAtPath (tp : Tp) (v : Tp.denote p tp) (path : List LensStep)
+    (valTp : Tp) (newVal : Tp.denote p valTp) : Option (Tp.denote p tp) :=
+  match path with
+  | [] => if h : valTp = tp then some (h ▸ newVal) else none
+  | step :: rest => match tp, v, step with
+    | .tuple name fields, v, .field idx =>
+      match Tp.modifyAtPathArgs fields v idx rest valTp newVal with
+      | some v' => some (show Tp.denote p (.tuple name fields) from v')
+      | none => none
+    | .array elTp n, v, .index idx =>
+      if h : idx < n.toNat then
+        match Tp.modifyAtPath elTp (v.get ⟨idx, h⟩) rest valTp newVal with
+        | some v' => some (v.set ⟨idx, h⟩ v')
+        | none => none
+      else none
+    | .vector elTp, v, .index idx =>
+      if h : idx < v.length then
+        match Tp.modifyAtPath elTp (v.get ⟨idx, h⟩) rest valTp newVal with
+        | some v' => some (v.set idx v')
+        | none => none
+      else none
+    | _, _, _ => none
 
 end
 

@@ -12,8 +12,8 @@ noir_def «ExtractionTests-0.0.0»::ref_member_access::Bar::mutate<>(self: & «E
 
 noir_def «ExtractionTests-0.0.0»::ref_member_access::ref_member_access<>() -> Unit := {
   let foo = (#_ref returning & «ExtractionTests-0.0.0»::ref_member_access::Foo<>)((#_makeData returning «ExtractionTests-0.0.0»::ref_member_access::Foo<>)((#_makeData returning «ExtractionTests-0.0.0»::ref_member_access::Bar<>)((0: Field))));
-  («ExtractionTests-0.0.0»::ref_member_access::Bar::mutate<> as λ(& «ExtractionTests-0.0.0»::ref_member_access::Bar<>) -> Unit)((#_readRef returning «ExtractionTests-0.0.0»::ref_member_access::Foo<>)(foo).0);
-  (#_assert returning Unit)((#_fEq returning bool)((#_readRef returning «ExtractionTests-0.0.0»::ref_member_access::Bar<>)((#_readRef returning «ExtractionTests-0.0.0»::ref_member_access::Foo<>)(foo).0).0, (42: Field)));
+  («ExtractionTests-0.0.0»::ref_member_access::Bar::mutate<> as λ(& «ExtractionTests-0.0.0»::ref_member_access::Bar<>) -> Unit)((#_projectRef 0 returning & «ExtractionTests-0.0.0»::ref_member_access::Bar<>)(foo));
+  (#_assert returning Unit)((#_fEq returning bool)((#_readRef returning «ExtractionTests-0.0.0»::ref_member_access::Bar<>)((#_projectRef 0 returning & «ExtractionTests-0.0.0»::ref_member_access::Bar<>)(foo)).0, (42: Field)));
   #_skip
 }
 

@@ -121,6 +121,7 @@ use crate::{
             NumericLiteral,
             ParamDef,
             Pattern,
+            ProjectRef,
             Statement,
             StructDefinition,
             StructPattern,
@@ -1873,12 +1874,10 @@ impl LeanGenerator<'_, '_, '_> {
         prologue: &mut Vec<Statement>,
     ) -> Expression {
         let lhs_type = self.unfold_alias(self.resolve_bound_type(member.lhs));
-        let (deref_type, value_type) = match lhs_type {
-            NoirType::Reference(inner, _) => {
-                let inner = self.unfold_alias(*inner);
-                (Some(self.generate_lean_type_value(&inner, None)), inner)
-            }
-            other => (None, other),
+        let is_ref = matches!(&lhs_type, NoirType::Reference(_, _));
+        let value_type = match &lhs_type {
+            NoirType::Reference(inner, _) => self.unfold_alias(*inner.clone()),
+            other => other.clone(),
         };
         let index = match &value_type {
             NoirType::DataType(struct_def, _) => {
@@ -1897,21 +1896,43 @@ impl LeanGenerator<'_, '_, '_> {
             }
         };
 
-        let lhs_expr = self.generate_expr(member.lhs, prologue);
-        let value = if let Some(inner_type) = deref_type {
-            let read_ref_target = Expression::builtin_call_ref("readRef", &inner_type);
-            let call = Call {
-                function:    Box::new(read_ref_target),
-                params:      vec![lhs_expr],
-                return_type: inner_type,
-            };
-            Box::new(Expression::Call(call))
-        } else {
-            Box::new(lhs_expr)
-        };
-        let member_access = MemberAccess { value, index };
+        let value = Box::new(self.generate_expr(member.lhs, prologue));
 
-        Expression::MemberAccess(member_access)
+        if is_ref {
+            // For references, emit projectRef to create a sub-reference
+            let field_type = Self::resolve_member_type(&value_type, index);
+            let return_type =
+                Type::mutable_reference(self.generate_lean_type_value(&field_type, None));
+            let project_ref = Expression::ProjectRef(ProjectRef {
+                index,
+                return_type: return_type.clone(),
+            });
+            Expression::Call(Call {
+                function: Box::new(project_ref),
+                params: vec![*value],
+                return_type,
+            })
+        } else {
+            let member_access = MemberAccess { value, index };
+            Expression::MemberAccess(member_access)
+        }
+    }
+
+    /// Resolves the type of a struct/tuple field at the given index.
+    fn resolve_member_type(parent_type: &NoirType, index: usize) -> NoirType {
+        match parent_type {
+            NoirType::DataType(struct_def, generics) => {
+                let struct_def = struct_def.borrow();
+                let fields = struct_def.get_fields(generics).expect("Could not get struct fields");
+                let (_, ty, _) = &fields[index];
+                ty.clone()
+            }
+            NoirType::Tuple(fields) => fields
+                .get(index)
+                .cloned()
+                .unwrap_or_else(|| panic!("Tuple index {index} out of bounds")),
+            _ => panic!("Cannot resolve member type on {parent_type:?}"),
+        }
     }
 
     pub fn generate_constructor(
