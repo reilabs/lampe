@@ -321,6 +321,27 @@ def RuntimeLens.modify (lens : RuntimeLens tp₁ tp₂) (v : Tp.denote p tp₁) 
 @[simp] theorem RuntimeLens.get_nil : RuntimeLens.get p .nil v = v := rfl
 @[simp] theorem RuntimeLens.modify_nil : RuntimeLens.modify p .nil v v' = v' := rfl
 
+@[simp]
+theorem Tp.denoteArgs.getByMember_setByMember {tps : List Tp} {tpl : Tp.denoteArgs p tps}
+    {mem : Member tp tps} {v' : Tp.denote p tp} :
+    Tp.denoteArgs.getByMember p (Tp.denoteArgs.setByMember p tpl mem v') mem = v' := by
+  induction mem with
+  | head => rfl
+  | tail _ ih => exact ih
+
+@[simp]
+theorem RuntimeAccess.get_set (acc : RuntimeAccess tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) :
+    RuntimeAccess.get p acc (RuntimeAccess.set p acc v v') = v' := by
+  cases acc with
+  | field mem => simp [RuntimeAccess.get, RuntimeAccess.set]
+
+@[simp]
+theorem RuntimeLens.get_modify (lens : RuntimeLens tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) :
+    RuntimeLens.get p lens (RuntimeLens.modify p lens v v') = v' := by
+  induction lens with
+  | nil => rfl
+  | cons rest acc ih => simp [RuntimeLens.get, RuntimeLens.modify, ih]
+
 /- In this section we provide unification hints to assist with the ergonomics of stating theorems -/
 section unificationHints
 

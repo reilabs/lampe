@@ -39,7 +39,39 @@ namespace Lampe.Builtin
     · exact modifyLensOmni.ok (by assumption) (by assumption) (by assumption) (by assumption) (by tauto)
     · exact modifyLensOmni.err (by assumption) (by assumption) (by assumption) (by tauto)
    frame := by
-    sorry
+    unfold omni_frame
+    intros
+    cases_type modifyLensOmni
+    · apply modifyLensOmni.ok
+      · rw [Finmap.lookup_union_left]
+        assumption
+        apply Finmap.mem_of_lookup_eq_some
+        assumption
+      · assumption
+      · assumption
+      · assumption
+      · repeat apply Exists.intro
+        apply And.intro ?_
+        simp_all [Finmap.insert_union]
+        apply And.intro rfl
+        simp_all
+        intro x
+        simp
+        rintro (_ | _)
+        · subst_vars
+          apply_assumption
+          apply Finmap.mem_of_lookup_eq_some
+          assumption
+        · apply_assumption
+          assumption
+    · apply modifyLensOmni.err
+      · rw [Finmap.lookup_union_left]
+        assumption
+        apply Finmap.mem_of_lookup_eq_some
+        assumption
+      · assumption
+      · assumption
+      · assumption
  }
 
 inductive getLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
