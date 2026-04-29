@@ -23,13 +23,13 @@ abbrev Repr (p : Prime) (T : Tp) (MaxLen : U 32) : Type :=
   Tp.denote p (bvTp T MaxLen)
 
 def storage {p T MaxLen} (v : Repr p T MaxLen) : List.Vector (T.denote p) MaxLen.toNat :=
-  Builtin.indexTpl v Builtin.Member.head
+  Builtin.indexTpl v Member.head
 
 def len {p T MaxLen} (v : Repr p T MaxLen) : U 32 :=
-  Builtin.indexTpl v Builtin.Member.head.tail
+  Builtin.indexTpl v (Member.head.tail)
 
 abbrev lenLens {p T MaxLen} : Lens (Tp.denote p) (bvTp T MaxLen) (Tp.u 32) :=
-  Lens.nil.cons (Access.tuple Builtin.Member.head.tail)
+  Lens.nil.cons (Access.tuple (Member.head.tail))
 
 def active {p T MaxLen} (v : Repr p T MaxLen) : List (T.denote p) :=
   (storage v).toList.take (len v).toNat
@@ -167,12 +167,12 @@ lemma embed_getElem_toList {p T MaxLen} {self : Repr p T MaxLen} (i : Nat)
     exact Nat.lt_of_lt_of_le hmin (Nat.min_le_left _ _)
   simp [embed, active, List.getElem_take, hxs', hstorage]
 
-abbrev BV {p : Prime} {T : Tp} {MaxLen : U 32} (selfRef : Ref) (xs : List (Tp.denote p T)) : SLP (State p) :=
+abbrev BV {p : Prime} {T : Tp} {MaxLen : U 32} (selfRef : LensRef (bvTp T MaxLen)) (xs : List (Tp.denote p T)) : SLP (State p) :=
   ∃∃ v : Repr p T MaxLen, [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⋆ ⟦wellFormed v ∧ embed v = xs⟧
 
 /-- Fold a singleton heap into `BV` when wellFormedness and embed equality are known. -/
 lemma BV_of_wellFormed_embed {p : Prime} {T : Tp} {MaxLen : U 32}
-    {selfRef : Ref} {v : Repr p T MaxLen} {xs : List (Tp.denote p T)}
+    {selfRef : LensRef (bvTp T MaxLen)} {v : Repr p T MaxLen} {xs : List (Tp.denote p T)}
     (hwf : wellFormed v) (hembed : embed v = xs) :
     [selfRef ↦ ⟨bvTp T MaxLen, v⟩] ⊢ BV (MaxLen := MaxLen) selfRef xs := by
   intro st hst

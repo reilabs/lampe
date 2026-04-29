@@ -37,7 +37,7 @@ lemma fromOption_toOption_id : toOption (fromOption v) = v := by
 @[simp]
 lemma option_fst_eq_toOption_isSome {p T}
     {v : Tp.denote p $ «std-1.0.0-beta.14::option::Option».tp h![T]}
-  : Builtin.indexTpl v Builtin.Member.head = (toOption v).isSome := by
+  : Builtin.indexTpl v Member.head = (toOption v).isSome := by
   rcases v with ⟨_|_, _⟩
   all_goals rfl
 
@@ -45,7 +45,7 @@ lemma option_fst_eq_toOption_isSome {p T}
 lemma option_snd_eq_toOption_get_of_isSome {p T}
     {v : Tp.denote p $ «std-1.0.0-beta.14::option::Option».tp h![T]}
     (v_is_some : (toOption v).isSome = true)
-  : Builtin.indexTpl v Builtin.Member.head.tail = (toOption v).get v_is_some := by
+  : Builtin.indexTpl v Member.head.tail = (toOption v).get v_is_some := by
   rcases v with ⟨_|_, _, _⟩
   · contradiction
   · rfl

@@ -54,7 +54,7 @@ local macro "extend_loop_step" hlenV:ident htakeV:ident
     · simp (config := {contextual := false})
         [storage, len, List.Vector.toList_set,
           (by simpa [len] using _hidx :
-            (Builtin.indexTpl _ Builtin.Member.head.tail +
+            (Builtin.indexTpl _ Member.head.tail +
               BitVec.ofNat 32 _).toNat = _),
           List.Vector.get_eq_get_toList,
           List.get_eq_getElem, nat_mod_4294967296 $hi32]
@@ -65,7 +65,7 @@ local macro "extend_loop_step" hlenV:ident htakeV:ident
         $hi_src))
 
 private theorem SLP.singleton_entails_exists_star_lift
-    {ref : Ref} {tp : Tp}
+    {ref : LensRef (bvTp T MaxLen)} {tp : Tp}
     {v : Tp.denote p tp}
     {P : Tp.denote p tp → Prop}
     (h : P v) :
@@ -159,7 +159,7 @@ private theorem set_unchecked_concrete_spec {p T MaxLen selfRef self index value
           [selfRef ↦ ⟨bvTp T MaxLen, v'⟩] ⋆
             ⟦len v' = len self ∧ storage v' = (storage self).set ⟨index.toNat, hindex⟩ value⟧) := by
   let vUpd : Repr p T MaxLen :=
-    Builtin.replaceTuple' self Builtin.Member.head ((storage self).set ⟨index.toNat, hindex⟩ value)
+    Builtin.replaceTuple' self Member.head ((storage self).set ⟨index.toNat, hindex⟩ value)
   have hstate :
       STHoare p env
         [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
@@ -256,8 +256,8 @@ theorem set_spec {p T MaxLen selfRef self index value}
 
 private theorem modify_head_array_some {p T MaxLen} {v : Tp.denote p (bvTp T MaxLen)} {idx : U 32}
     {value : Tp.denote p T} (hidx : idx.toNat < MaxLen.toNat) :
-    (((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons (Access.array idx)).modify v value) =
-      some (Builtin.replaceTuple' v Builtin.Member.head ((storage v).set ⟨idx.toNat, hidx⟩ value)) := by
+    (((Lens.nil.cons (Access.tuple Member.head)).cons (Access.array idx)).modify v value) =
+      some (Builtin.replaceTuple' v Member.head ((storage v).set ⟨idx.toNat, hidx⟩ value)) := by
   simp [storage, hidx]
 
 private theorem push_concrete_spec {p T MaxLen selfRef self elem}
@@ -272,9 +272,9 @@ private theorem push_concrete_spec {p T MaxLen selfRef self elem}
             ⟦len v' = len self + 1 ∧
               storage v' = (storage self).set ⟨(len self).toNat, hpush⟩ elem⟧) := by
   let vStor : Repr p T MaxLen :=
-    Builtin.replaceTuple' self Builtin.Member.head ((storage self).set ⟨(len self).toNat, hpush⟩ elem)
+    Builtin.replaceTuple' self Member.head ((storage self).set ⟨(len self).toNat, hpush⟩ elem)
   let vUpd : Repr p T MaxLen :=
-    Builtin.replaceTuple' vStor Builtin.Member.head.tail (len self + 1)
+    Builtin.replaceTuple' vStor Member.head.tail (len self + 1)
   have hstate :
       STHoare p env
         [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
@@ -423,13 +423,13 @@ private lemma pop_preconditions {p T MaxLen} {self : Repr p T MaxLen}
 @[simp] private lemma indexTpl_head
     {p} {tp : Tp} {tps : List Tp}
     (tpl : Tp.denoteArgs p (tp :: tps)) :
-    Builtin.indexTpl tpl Builtin.Member.head = tpl.1 := by
+    Builtin.indexTpl tpl Member.head = tpl.1 := by
   rfl
 
 @[simp] private lemma indexTpl_head_tail
     {p} {tp tp' : Tp} {tps : List Tp}
     (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) :
-    Builtin.indexTpl tpl Builtin.Member.head.tail = tpl.2.1 := by
+    Builtin.indexTpl tpl Member.head.tail = tpl.2.1 := by
   rfl
 
 @[simp] private lemma coe_one_u32' :
@@ -439,25 +439,25 @@ private lemma pop_preconditions {p T MaxLen} {self : Repr p T MaxLen}
 @[simp] private lemma replaceTuple'_head_fst
     {p} {tp tp' : Tp} {tps : List Tp}
     (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp) :
-    (Builtin.replaceTuple' tpl Builtin.Member.head v).1 = v := by
+    (Builtin.replaceTuple' tpl Member.head v).1 = v := by
   rfl
 
 @[simp] private lemma replaceTuple'_head_tail_snd
     {p} {tp tp' : Tp} {tps : List Tp}
     (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp) :
-    (Builtin.replaceTuple' tpl Builtin.Member.head v).2 = tpl.2 := by
+    (Builtin.replaceTuple' tpl Member.head v).2 = tpl.2 := by
   rfl
 
 @[simp] private lemma replaceTuple'_headTail_fst
     {p} {tp tp' : Tp} {tps : List Tp}
     (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp') :
-    (Builtin.replaceTuple' tpl Builtin.Member.head.tail v).1 = tpl.1 := by
+    (Builtin.replaceTuple' tpl Member.head.tail v).1 = tpl.1 := by
   rfl
 
 @[simp] private lemma replaceTuple'_headTail_snd_head
     {p} {tp tp' : Tp} {tps : List Tp}
     (tpl : Tp.denoteArgs p (tp :: tp' :: tps)) (v : Tp.denote p tp') :
-    (Builtin.replaceTuple' tpl Builtin.Member.head.tail v).2.1 = v := by
+    (Builtin.replaceTuple' tpl Member.head.tail v).2.1 = v := by
   rfl
 
 private theorem pop_concrete_spec {p T MaxLen selfRef self}
