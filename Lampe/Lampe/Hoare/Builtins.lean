@@ -424,21 +424,21 @@ theorem ref_intro :
     STHoare p Γ
       ⟦⟧
       (.callBuiltin [tp] (.ref tp) .ref h![v])
-      (fun lr => [lr.ref ↦ ⟨tp, v⟩]) := by
+      (fun lr => [lr ↦ ⟨tp, v⟩]) := by
   sorry
 
-theorem readRef_intro {lensRef : LensRef} :
+theorem readRef_intro {lensRef : LensRef tp} :
     STHoare p Γ
-    [lensRef.ref ↦ ⟨tp, v⟩]
+    [lensRef ↦ ⟨tp, v⟩]
     (.callBuiltin [.ref tp] tp .readRef h![lensRef])
-    (fun v' => ⟦v' = v⟧ ⋆ [lensRef.ref ↦ ⟨tp, v⟩]) := by
+    (fun v' => ⟦v' = v⟧ ⋆ [lensRef ↦ ⟨tp, v⟩]) := by
   sorry
 
-theorem writeRef_intro {lensRef : LensRef} :
+theorem writeRef_intro {lensRef : LensRef tp} :
     STHoare p Γ
-    [lensRef.ref ↦ ⟨tp, v⟩]
+    [lensRef ↦ ⟨tp, v⟩]
     (.callBuiltin [.ref tp, tp] .unit .writeRef h![lensRef, v'])
-    (fun _ => [lensRef.ref ↦ ⟨tp, v'⟩]) := by
+    (fun _ => [lensRef ↦ ⟨tp, v'⟩]) := by
   sorry
 
 -- Struct/tuple
@@ -465,12 +465,13 @@ theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by ta
 
 -- Lens
 
- theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} {s : Tp.denote p tp₁} {v : Tp.denote p tp₂}
-    {lensRef : LensRef} :
+ theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂}
+    {lensRef : LensRef tp₁} {v_old : Tp.denote p tp₁}
+    {v : Tp.denote p tp₂} :
     STHoare p Γ
-    [lensRef.ref ↦ ⟨tp₁, s⟩]
-    (.callBuiltin [tp₁.ref, tp₂] .unit (.modifyLens lens) h![lensRef, v])
-    (fun _ => ∃∃h, [lensRef.ref ↦ ⟨tp₁, lens.modify s v |>.get h⟩]) := by
+    [lensRef ↦ ⟨tp₁, v_old⟩]
+    (.callBuiltin [Tp.ref tp₁, tp₂] .unit (.modifyLens lens) h![lensRef, v])
+    (fun _ => ∃∃h, [lensRef ↦ ⟨tp₁, (lens.modify v_old v |>.get h)⟩]) := by
   sorry
 
 theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :

@@ -4,7 +4,7 @@ namespace Lampe.Builtin
 
 inductive refOmni : Omni where
 | mk {P st tp Q v}:
-  (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, LensRef.mk ref []))) →
+  (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, LensRef.mk tp ref .nil))) →
   refOmni P st [tp] (tp.ref) h![v] Q
 
 def ref : Builtin := {
@@ -33,12 +33,10 @@ def ref : Builtin := {
 }
 
 inductive readRefOmni : Omni where
-| mk {P st tp Q} {lensRef : LensRef} {base_tp : Tp} {base_val : Tp.denote P base_tp}
-    {v : Tp.denote P tp} :
-  st.lookup lensRef.ref = some ⟨base_tp, base_val⟩ →
-  Tp.followPath (p := P) base_tp base_val lensRef.path tp = some v →
-  Q (some (st, v)) →
-  readRefOmni P st [tp.ref] tp h![lensRef] Q
+| mk {P st tp Q} {lensRef : LensRef tp} {base_val : Tp.denote P lensRef.base_tp} :
+  st.lookup lensRef.ref = some ⟨lensRef.base_tp, base_val⟩ →
+  Q (some (st, RuntimeLens.get P lensRef.lens base_val)) →
+  readRefOmni P st [Tp.ref tp] tp h![lensRef] Q
 
 def readRef : Builtin := {
   omni := readRefOmni
@@ -56,18 +54,16 @@ def readRef : Builtin := {
       assumption
       apply Finmap.mem_of_lookup_eq_some
       assumption
-    · assumption
     · repeat apply Exists.intro
       tauto
 }
 
 inductive writeRefOmni : Omni where
-| mk {P st tp Q} {lensRef : LensRef} {base_tp : Tp} {base_val base_val' : Tp.denote P base_tp}
+| mk {P st tp Q} {lensRef : LensRef tp} {base_val : Tp.denote P lensRef.base_tp}
     {v : Tp.denote P tp} :
-  st.lookup lensRef.ref = some ⟨base_tp, base_val⟩ →
-  Tp.modifyAtPath (p := P) base_tp base_val lensRef.path tp v = some base_val' →
-  Q (some (st.insert lensRef.ref ⟨base_tp, base_val'⟩, ())) →
-  writeRefOmni P st [tp.ref, tp] .unit h![lensRef, v] Q
+  st.lookup lensRef.ref = some ⟨lensRef.base_tp, base_val⟩ →
+  Q (some (st.insert lensRef.ref ⟨lensRef.base_tp, RuntimeLens.modify P lensRef.lens base_val v⟩, ())) →
+  writeRefOmni P st [Tp.ref tp, tp] .unit h![lensRef, v] Q
 
 def writeRef : Builtin := {
   omni := writeRefOmni
@@ -85,7 +81,6 @@ def writeRef : Builtin := {
       assumption
       apply Finmap.mem_of_lookup_eq_some
       assumption
-    · assumption
     · repeat apply Exists.intro
       apply And.intro ?_
       simp_all [Finmap.insert_union]
@@ -102,27 +97,11 @@ def writeRef : Builtin := {
         assumption
 }
 
-/-- Project a reference to a sub-field, extending its lens path with a field access. -/
-inductive projectRefOmni (idx : Nat) : Omni where
-| mk {P st tp₁ tp₂ Q} {lensRef : LensRef} :
-  Q (some (st, LensRef.mk lensRef.ref (lensRef.path ++ [.field idx]))) →
-  (projectRefOmni idx) P st [Tp.ref tp₁] (Tp.ref tp₂) h![lensRef] Q
-
-def projectRef (idx : Nat) : Builtin := {
-  omni := projectRefOmni idx
-  conseq := by
-    unfold omni_conseq
-    intros
-    cases_type projectRefOmni
-    constructor; tauto
-  frame := by
-    unfold omni_frame
-    intros
-    cases_type projectRefOmni
-    constructor
-    repeat apply Exists.intro
-    tauto
-}
+/-- Project a reference by appending a path segment (like GEP). Pure — no heap interaction. -/
+def projectRef (acc : RuntimeAccess tp₁ tp₂) : Builtin :=
+  newTotalPureBuiltin
+    ⟨[Tp.ref tp₁], Tp.ref tp₂⟩
+    (fun h![lensRef] => LensRef.mk lensRef.base_tp lensRef.ref (lensRef.lens.append acc))
 
 def zeroed := newGenericTotalPureBuiltin
   (fun (a : Tp) => ⟨[], a⟩)

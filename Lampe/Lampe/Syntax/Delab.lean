@@ -129,7 +129,7 @@ inductive DelabLensStep
 
 /-- Descends through a `Member.head/tail` access pattern to determine the projection indexes -/
 partial def getProjNum (stx : Syntax) (acc : Nat := 0) : DelabM <| Option Nat := do
-  let headIdent := mkIdent `Builtin.Member.head
+  let headIdent := mkIdent `Member.head
   let tailIdent := mkIdent `tail
   if stx[2] == tailIdent then
     return ← getProjNum stx[0] (acc + 1)

@@ -11,16 +11,24 @@ lemma Finmap.insert_mem_disjoint [DecidableEq α] {m₁ m₂ : Finmap fun _ : α
 namespace Lampe.Builtin
 
  inductive modifyLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
- | ok {p st Q} {lensRef : LensRef} {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
-   st.lookup lensRef.ref = some ⟨tp₁, s⟩ →
+ | ok {p st Q} {lensRef : LensRef tp₁}
+   {base_val : Tp.denote p lensRef.base_tp}
+   {base_val' : Tp.denote p lensRef.base_tp}
+   {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
+   st.lookup lensRef.ref = some ⟨lensRef.base_tp, base_val⟩ →
+   RuntimeLens.get p lensRef.lens base_val = s →
    some s' = Lens.modify (hr ▸ lens) s v' →
-   Q (some (st.insert lensRef.ref ⟨tp₁, s'⟩, ())) →
-   (modifyLensOmni lens) p st [tp₁.ref, tp₂] .unit h![lensRef, v'] Q
- | err {p st Q} {lensRef : LensRef} {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
-   st.lookup lensRef.ref = some ⟨tp₁, s⟩ →
+   base_val' = RuntimeLens.modify p lensRef.lens base_val s' →
+   Q (some (st.insert lensRef.ref ⟨lensRef.base_tp, base_val'⟩, ())) →
+   (modifyLensOmni lens) p st [Tp.ref tp₁, tp₂] .unit h![lensRef, v'] Q
+ | err {p st Q} {lensRef : LensRef tp₁}
+   {base_val : Tp.denote p lensRef.base_tp}
+   {s : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
+   st.lookup lensRef.ref = some ⟨lensRef.base_tp, base_val⟩ →
+   RuntimeLens.get p lensRef.lens base_val = s →
    none = Lens.modify (hr ▸ lens) s v' →
    Q none →
-   (modifyLensOmni lens) p st [tp₁.ref, tp₂] .unit h![lensRef, v'] Q
+   (modifyLensOmni lens) p st [Tp.ref tp₁, tp₂] .unit h![lensRef, v'] Q
 
  def modifyLens (lens : Lens rep tp₁ tp₂) : Builtin := {
    omni := modifyLensOmni lens
@@ -28,8 +36,8 @@ namespace Lampe.Builtin
     unfold omni_conseq
     intros
     cases_type modifyLensOmni
-    constructor <;> tauto
-    apply modifyLensOmni.err <;> tauto
+    · exact modifyLensOmni.ok (by assumption) (by assumption) (by assumption) (by assumption) (by tauto)
+    · exact modifyLensOmni.err (by assumption) (by assumption) (by assumption) (by tauto)
    frame := by
     sorry
  }

@@ -17,19 +17,6 @@ structure Ref where
   val : Nat
 deriving DecidableEq
 
-/-- A step in a lens path for navigating into a composite value. -/
-inductive LensStep where
-| field (idx : Nat)
-| index (idx : Nat)
-deriving DecidableEq, Repr
-
-/-- A reference that carries a lens path for sub-field access.
-    `ref` is the base heap location, `path` describes how to navigate to the sub-value. -/
-structure LensRef where
-  ref : Ref
-  path : List LensStep
-deriving DecidableEq
-
 variable (p : Prime)
 
 inductive Tp where
@@ -163,6 +150,37 @@ def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Ref :=
 /-- TODO: Actually implement this at some point -/
 def FormatString (_len : U 32) (_argTps : Tp) := String
 
+/-- Type-safe membership witness for indexing into a list of types. -/
+inductive Member : Tp → List Tp → Type where
+| head : Member tp (tp :: tps)
+| tail : Member tp tps → Member tp (tp' :: tps)
+
+/-- A single structural access step: indexing into a tuple field by position.
+    The type indices guarantee that the access is well-typed. -/
+inductive RuntimeAccess : Tp → Tp → Type
+| field {name : Option String} {tps : List Tp} {tp : Tp} (mem : Member tp tps)
+    : RuntimeAccess (.tuple name tps) tp
+
+/-- A typed runtime lens: a sequence of structural access steps navigating from `tp₁` to `tp₂`. -/
+inductive RuntimeLens : Tp → Tp → Type
+| nil : RuntimeLens tp tp
+| cons : RuntimeLens tp₁ tp₂ → RuntimeAccess tp₂ tp₃ → RuntimeLens tp₁ tp₃
+
+/-- Extend a runtime lens by appending a single access step. -/
+abbrev RuntimeLens.append (l : RuntimeLens tp₁ tp₂) (acc : RuntimeAccess tp₂ tp₃) : RuntimeLens tp₁ tp₃ :=
+  l.cons acc
+
+/-- A reference with a typed lens path for sub-field access.
+    `base_tp` is the type stored in the heap, `ref` is the heap address,
+    and `lens` navigates from `base_tp` to `tp`. -/
+structure LensRef (tp : Tp) where
+  base_tp : Tp
+  ref : Ref
+  lens : RuntimeLens base_tp tp
+
+instance : CoeOut (LensRef tp) Ref where
+  coe lr := lr.ref
+
 mutual
 
 @[reducible]
@@ -181,7 +199,7 @@ def Tp.denote : Tp → Type
 | .field => Fp p
 | .vector tp => List (denote tp)
 | .array tp n => List.Vector (denote tp) n.toNat
-| .ref _ => LensRef
+| .ref tp => LensRef tp
 | .tuple _ fields => Tp.denoteArgs fields
 | .fn argTps outTp => FuncRef argTps outTp
 
@@ -223,7 +241,7 @@ def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplie
   | Tp.array tp n =>
     let len ← mkAppM `BitVec.toNat #[n]
     mkAppM `List.Vector #[← mkAppM `Lampe.Tp.denote #[p, tp], len]
-  | Tp.ref _ => mkAppM `Lampe.LensRef #[]
+  | Tp.ref tp => mkAppM `Lampe.LensRef #[tp]
   | Tp.tuple _ fields =>
     let (_, tps) ← liftOption fields.listLit?
     delabDenoteArgsAux p tps
@@ -255,78 +273,50 @@ match tp with
 | .fmtStr _ _ => ""
 | .vector _ => []
 | .array tp n => List.Vector.replicate n.toNat tp.zero
-| .ref _ => ⟨⟨0⟩, []⟩
+| .ref rtp => ⟨rtp, ⟨0⟩, .nil⟩
 | .tuple name fields => HList.toTuple p (Tp.zeroArgs fields) name
 | .fn _ _ => .lambda ⟨0⟩
 
 end
 
--- Follow a lens path through a value, returning the sub-value at the path endpoint.
-mutual
+/-- Index into a `Tp.denoteArgs` tuple by `Member` witness. -/
+@[reducible]
+def Tp.denoteArgs.getByMember : {tps : List Tp} → Tp.denoteArgs p tps → Member tp tps → Tp.denote p tp
+  | _ :: _, (hd, _), .head => hd
+  | _ :: _, (_, tl), .tail m => Tp.denoteArgs.getByMember tl m
 
-def Tp.followPathArgs (args : List Tp) (v : Tp.denoteArgs p args) (idx : Nat) (rest : List LensStep) (outTp : Tp)
-    : Option (Tp.denote p outTp) :=
-  match args, v with
-  | [], _ => none
-  | _ :: _, (hd, tl) =>
-    if idx == 0 then Tp.followPath _ hd rest outTp
-    else Tp.followPathArgs _ tl (idx - 1) rest outTp
+/-- Replace a field in a `Tp.denoteArgs` tuple by `Member` witness. -/
+@[reducible]
+def Tp.denoteArgs.setByMember : {tps : List Tp} → Tp.denoteArgs p tps → Member tp tps → Tp.denote p tp → Tp.denoteArgs p tps
+  | _ :: _, (_, rest), .head, v => (v, rest)
+  | _ :: _, (hd, tl), .tail m, v => (hd, Tp.denoteArgs.setByMember tl m v)
 
-def Tp.followPath (tp : Tp) (v : Tp.denote p tp) (path : List LensStep) (outTp : Tp)
-    : Option (Tp.denote p outTp) :=
-  match path with
-  | [] => if h : tp = outTp then some (h ▸ v) else none
-  | step :: rest => match tp, v, step with
-    | .tuple _ fields, v, .field idx => Tp.followPathArgs fields v idx rest outTp
-    | .array _ n, v, .index idx =>
-      if h : idx < n.toNat then Tp.followPath _ (v.get ⟨idx, h⟩) rest outTp else none
-    | .vector _, v, .index idx =>
-      if h : idx < v.length then Tp.followPath _ (v.get ⟨idx, h⟩) rest outTp else none
-    | _, _, _ => none
+/-- Get the sub-value from a single runtime access step. -/
+def RuntimeAccess.get (acc : RuntimeAccess tp₁ tp₂) (v : Tp.denote p tp₁) : Tp.denote p tp₂ :=
+  match acc with
+  | .field mem => Tp.denoteArgs.getByMember p v mem
 
-end
+/-- Set (replace) the sub-value at a single runtime access step. -/
+def RuntimeAccess.set (acc : RuntimeAccess tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ :=
+  match acc with
+  | .field mem => Tp.denoteArgs.setByMember p v mem v'
 
--- Modify a value at a lens path, returning the updated root value.
-mutual
+/-- Get the sub-value at the end of a runtime lens path. -/
+@[simp]
+def RuntimeLens.get (lens : RuntimeLens tp₁ tp₂) (v : Tp.denote p tp₁) : Tp.denote p tp₂ :=
+  match lens with
+  | .nil => v
+  | .cons rest acc => RuntimeAccess.get p acc (RuntimeLens.get rest v)
 
-def Tp.modifyAtPathArgs (args : List Tp) (v : Tp.denoteArgs p args) (idx : Nat) (rest : List LensStep)
-    (valTp : Tp) (newVal : Tp.denote p valTp) : Option (Tp.denoteArgs p args) :=
-  match args, v with
-  | [], _ => none
-  | _ :: _, (hd, tl) =>
-    if idx == 0 then
-      match Tp.modifyAtPath _ hd rest valTp newVal with
-      | some hd' => some (hd', tl)
-      | none => none
-    else
-      match Tp.modifyAtPathArgs _ tl (idx - 1) rest valTp newVal with
-      | some tl' => some (hd, tl')
-      | none => none
-
-def Tp.modifyAtPath (tp : Tp) (v : Tp.denote p tp) (path : List LensStep)
-    (valTp : Tp) (newVal : Tp.denote p valTp) : Option (Tp.denote p tp) :=
-  match path with
-  | [] => if h : valTp = tp then some (h ▸ newVal) else none
-  | step :: rest => match tp, v, step with
-    | .tuple name fields, v, .field idx =>
-      match Tp.modifyAtPathArgs fields v idx rest valTp newVal with
-      | some v' => some (show Tp.denote p (.tuple name fields) from v')
-      | none => none
-    | .array elTp n, v, .index idx =>
-      if h : idx < n.toNat then
-        match Tp.modifyAtPath elTp (v.get ⟨idx, h⟩) rest valTp newVal with
-        | some v' => some (v.set ⟨idx, h⟩ v')
-        | none => none
-      else none
-    | .vector elTp, v, .index idx =>
-      if h : idx < v.length then
-        match Tp.modifyAtPath elTp (v.get ⟨idx, h⟩) rest valTp newVal with
-        | some v' => some (v.set idx v')
-        | none => none
-      else none
-    | _, _, _ => none
-
-end
+/-- Modify the sub-value at the end of a runtime lens path, returning the updated root value. -/
+@[simp]
+def RuntimeLens.modify (lens : RuntimeLens tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ :=
+  match lens with
+  | .nil => v'
+  | .cons rest acc =>
+    let inner := RuntimeLens.get p rest v
+    let inner' := RuntimeAccess.set p acc inner v'
+    RuntimeLens.modify rest v inner'
 
 /- In this section we provide unification hints to assist with the ergonomics of stating theorems -/
 section unificationHints

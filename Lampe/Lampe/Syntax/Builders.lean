@@ -207,10 +207,11 @@ partial def makeExpr [MonadDSL m]
 -- projectRef Builtin Calls
 | `(noir_expr|(#_ projectRef $idx:num returning $tp)( $args,* )) =>
   makeArgs args.getElems fun args => do
-    let argVals ← makeHListLit args
-    let idxLit := idx
+    let #[arg] := args | throwError "projectRef expects exactly one argument"
+    let member ← makeMember idx.getNat
+    let acc ← ``(RuntimeAccess.field $member)
     wrapInLet
-      (←``(Expr.callBuiltin _ $(←makeNoirType tp) (Builtin.projectRef $idxLit) $argVals))
+      (←``(Expr.projectRef $arg $acc))
       binder
       k
 
