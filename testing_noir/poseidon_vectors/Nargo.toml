@@ -1,0 +1,6 @@
+[package]
+name = "poseidon_vectors"
+type = "lib"
+authors = [""]
+
+[dependencies]
