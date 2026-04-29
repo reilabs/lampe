@@ -79,8 +79,11 @@ instance : LawfulHeap (State p) where
     all_goals tauto
 
 @[reducible]
-def State.valSingleton (r : Ref) (v : AnyValue p) : SLP (State p) :=
-  fun st => st.vals = Finmap.singleton r v
+def State.valSingleton {p : Prime} {tp : Tp}
+    (lr : LensRef tp) (v : AnyValue p) : SLP (State p) :=
+  fun st => ∃ bv : Tp.denote p lr.base_tp,
+    st.vals = Finmap.singleton lr.ref ⟨lr.base_tp, bv⟩ ∧
+    v = ⟨tp, RuntimeLens.get p lr.lens bv⟩
 
 notation:max "[ " l " ↦ " r " ]" => State.valSingleton l r
 

@@ -27,8 +27,8 @@ theorem solve_unit_star_mv {P : SLP (State p)} : (P ⊢ ⟦⟧ ⋆ P) := by
   simp
   apply SLP.entails_self
 
-theorem singleton_congr_star_mv {p} {r} {v₁ v₂ : AnyValue p} (heq: v₁ = v₂)
-  : ([r ↦ v₁] ⊢ [r ↦ v₂] ⋆ ⟦⟧) := by
+theorem singleton_congr_star_mv {p} {tp} {lr : LensRef tp} {v₁ v₂ : AnyValue p} (heq: v₁ = v₂)
+  : ([lr ↦ v₁] ⊢ [lr ↦ v₂] ⋆ ⟦⟧) := by
   cases heq
   simp
   apply SLP.entails_self
@@ -45,8 +45,8 @@ theorem entails_self_true {p} {R : SLP (State p)} : R ⊢ R ⋆ ⟦⟧ := by
   simp
   apply SLP.entails_self
 
-theorem singleton_congr_star {p} {r} {v₁ v₂ : AnyValue p} {R} (h: v₁ = v₂)
-  : [r ↦ v₁] ⋆ R ⊢ [r ↦ v₂] ⋆ R := by
+theorem singleton_congr_star {p} {tp} {lr : LensRef tp} {v₁ v₂ : AnyValue p} {R} (h: v₁ = v₂)
+  : [lr ↦ v₁] ⋆ R ⊢ [lr ↦ v₂] ⋆ R := by
   cases h
   apply SLP.entails_self
 

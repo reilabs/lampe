@@ -77,8 +77,8 @@ partial def parseSLExpr (e: Lean.Expr): TacticM SLTerm := do
     return SLTerm.star e fst snd
   if e.isAppOf' ``State.valSingleton then
     let args := e.getAppArgs'
-    let fst ← liftOption args[1]?
-    let snd ← liftOption args[2]?
+    let fst ← liftOption args[2]?
+    let snd ← liftOption args[3]?
     return SLTerm.singleton e fst snd
   else if e.isAppOf' ``State.lmbSingleton then
     let args := e.getAppArgs'

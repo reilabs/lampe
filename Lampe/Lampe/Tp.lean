@@ -318,6 +318,9 @@ def RuntimeLens.modify (lens : RuntimeLens tp₁ tp₂) (v : Tp.denote p tp₁) 
     let inner' := RuntimeAccess.set p acc inner v'
     RuntimeLens.modify rest v inner'
 
+@[simp] theorem RuntimeLens.get_nil : RuntimeLens.get p .nil v = v := rfl
+@[simp] theorem RuntimeLens.modify_nil : RuntimeLens.modify p .nil v v' = v' := rfl
+
 /- In this section we provide unification hints to assist with the ergonomics of stating theorems -/
 section unificationHints
 
