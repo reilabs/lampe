@@ -20,7 +20,12 @@ use std::{
 };
 
 use clap::{arg, Parser};
-use lampe::{noir_error, noir_error::file, Error, Project};
+use lampe::{
+    noir_error::{self, compilation, file},
+    Error,
+    Project,
+};
+use noirc_errors::CustomDiagnostic;
 use toml::Value;
 
 /// The default Noir project path for the CLI to extract from.
@@ -61,7 +66,7 @@ fn main() -> ExitCode {
         })
     } else {
         run(&args).unwrap_or_else(|err| {
-            eprintln!("Error Encountered: {err:?}");
+            eprintln!("Error Encountered: {err}");
             ExitCode::FAILURE
         })
     }
@@ -208,15 +213,29 @@ fn extract_project(
     } else {
         project
     };
-    let result = project.extract(overwrite)?;
 
-    if result.has_warnings() {
-        for warning in &result.warnings {
-            eprintln!("{warning:?}");
+    let report_errors = |diagnostics: &[CustomDiagnostic]| {
+        noirc_errors::reporter::report_all(
+            project.nargo_file_manager.as_file_map(),
+            diagnostics,
+            false,
+            false,
+        )
+    };
+
+    match project.extract(overwrite) {
+        Ok(result) => {
+            report_errors(&result.warnings);
+            Ok(())
         }
+        Err(Error::CompilationError(compilation::Error::CheckFailure { diagnostics })) => {
+            let reported = report_errors(&diagnostics);
+            Err(Error::CompilationError(compilation::Error::Reported(
+                reported,
+            )))
+        }
+        Err(other) => Err(other),
     }
-
-    Ok(())
 }
 
 fn is_workspace_root(root: &Path) -> Result<bool, Error> {
