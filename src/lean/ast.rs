@@ -456,6 +456,14 @@ impl Type {
     }
 
     #[must_use]
+    pub fn any() -> Self {
+        Type {
+            expr: TypeExpr::builtin(BuiltinTag::Any, &[]),
+            kind: Kind::Type,
+        }
+    }
+
+    #[must_use]
     pub fn tuple(elems: &[Type]) -> Self {
         Type {
             expr: TypeExpr::builtin(BuiltinTag::Tuple, elems),
@@ -559,6 +567,7 @@ pub enum Mutability {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum BuiltinTag {
+    Any,
     Array,
     Bool,
     Field,

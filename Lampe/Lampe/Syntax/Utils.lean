@@ -261,6 +261,7 @@ partial def makeNoirType [MonadUtil m] : TSyntax `noir_type → m (TSyntax `term
   let tp := (←makeGenericVal tp).value
   ``(Lampe.Tp.fmtStr $(n_gen.value) $tp)
 | `(noir_type|Unit) => `(Lampe.Tp.unit)
+| `(noir_type|Any) => `(Lampe.Tp.any)
 | `(noir_type|$i:ident) => ``($i)
 | `(noir_type|&$tp) => do ``(Lampe.Tp.ref $(←makeNoirType tp))
 | `(noir_type|$structName:noir_ident < $generics,* >) => do

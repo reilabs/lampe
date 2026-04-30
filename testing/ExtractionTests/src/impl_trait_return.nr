@@ -1,6 +1,6 @@
 trait Foo {
     fn foo(self) -> Field;
-    // fn as_impl(self) -> impl Foo; // TODO: requires Tp.any support in trait declarations
+    fn as_impl(self) -> impl Foo;
 }
 
 struct Bar {}
@@ -8,6 +8,9 @@ struct Bar {}
 impl Foo for Bar {
     fn foo(self) -> Field {
         42
+    }
+    fn as_impl(self) -> impl Foo {
+        self
     }
 }
 

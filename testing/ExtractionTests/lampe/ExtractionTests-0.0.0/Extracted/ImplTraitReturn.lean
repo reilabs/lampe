@@ -9,6 +9,10 @@ noir_trait_impl[«ExtractionTests-0.0.0».impl_437]<> «ExtractionTests-0.0.0»:
   noir_def foo<>(self: «ExtractionTests-0.0.0»::impl_trait_return::Bar<>) -> Field := {
     (42: Field)
   };
+  
+  noir_def as_impl<>(self: «ExtractionTests-0.0.0»::impl_trait_return::Bar<>) -> «ExtractionTests-0.0.0»::impl_trait_return::Bar<> := {
+    self
+  };
 }
 
 noir_def «ExtractionTests-0.0.0»::impl_trait_return::some_foo<>() -> «ExtractionTests-0.0.0»::impl_trait_return::Bar<> := {

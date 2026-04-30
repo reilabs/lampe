@@ -586,9 +586,7 @@ impl LeanGenerator<'_, '_, '_> {
             }
             NoirType::Quoted(quoted) => self.generate_quoted_type_value(quoted),
             NoirType::Forall(..) => panic!("Encountered forall type"),
-            NoirType::TraitAsType(..) => {
-                panic!("Encountered TraitAsType, but this should be resolved to a type variable")
-            }
+            NoirType::TraitAsType(..) => Type::any(),
             // FIXME We should probably extract an "Error" type and then blackhole it.
             NoirType::Error => Type::unit(),
         }
@@ -3428,6 +3426,7 @@ impl LeanGenerator<'_, '_, '_> {
     /// Resolves the fully-qualified name for a builtin type.
     pub fn fully_qualified_builtin_type(&self, tag: BuiltinTag) -> String {
         let tag_str = match tag {
+            BuiltinTag::Any => "any".to_string(),
             BuiltinTag::Array => "array".to_string(),
             BuiltinTag::Bool => "bool".to_string(),
             BuiltinTag::Field => "field".to_string(),
