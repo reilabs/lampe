@@ -1053,7 +1053,7 @@ impl LeanGenerator<'_, '_, '_> {
 
         let generics = self.gather_function_generic_patterns(function_meta);
         let parameters = self.generate_function_parameters(function_meta);
-        let return_type = self.resolve_function_return_type(id, function_meta, None);
+        let return_type = self.resolve_function_return_type(*id, function_meta, None);
         let is_unconstrained = self.is_function_unconstrained(&function_meta.typ);
 
         let body = if is_unconstrained {
@@ -1095,13 +1095,13 @@ impl LeanGenerator<'_, '_, '_> {
     /// types by looking up the body's inferred type from the interner.
     fn resolve_function_return_type(
         &self,
-        id: &FuncId,
+        id: FuncId,
         meta: &FuncMeta,
         bindings: Option<&TypeBindings>,
     ) -> Type {
         match meta.return_type() {
             NoirType::TraitAsType(..) => {
-                let body_expr_id = self.context.def_interner.function(id).as_expr();
+                let body_expr_id = self.context.def_interner.function(&id).as_expr();
                 let body_return_type = self.context.def_interner.id_type(body_expr_id);
                 self.generate_lean_type_value(&body_return_type, bindings)
             }
@@ -1572,7 +1572,7 @@ impl LeanGenerator<'_, '_, '_> {
         let name = quote_lean_keywords(self.context.function_name(&id));
 
         let parameters = self.generate_function_parameters(function_meta);
-        let return_type = self.resolve_function_return_type(&id, function_meta, None);
+        let return_type = self.resolve_function_return_type(id, function_meta, None);
 
         // If type patterns have the same name and kind, they are the same variable at
         // the definition site, so we can correctly unique them.
@@ -2853,7 +2853,7 @@ impl LeanGenerator<'_, '_, '_> {
                         .map(|t| self.replace_self_type_with(&t, self_type.clone()))
                         .collect_vec();
                     let return_type = self.replace_self_type_with(
-                        &self.resolve_function_return_type(id, func_meta, Some(bindings)),
+                        &self.resolve_function_return_type(*id, func_meta, Some(bindings)),
                         self_type.clone(),
                     );
 
@@ -2869,7 +2869,7 @@ impl LeanGenerator<'_, '_, '_> {
                     Expression::TraitCallRef(call_ref)
                 } else {
                     let return_type =
-                        self.resolve_function_return_type(id, func_meta, Some(bindings));
+                        self.resolve_function_return_type(*id, func_meta, Some(bindings));
 
                     match func_meta.kind {
                         FunctionKind::LowLevel | FunctionKind::Builtin => {
