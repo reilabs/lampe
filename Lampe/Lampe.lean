@@ -6,6 +6,7 @@ import Lampe.Builtin.Basic
 import Lampe.Builtin.Bit
 import Lampe.Builtin.Cast
 import Lampe.Builtin.Cmp
+import Lampe.Builtin.Crypto.Hash
 import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
