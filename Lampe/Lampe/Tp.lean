@@ -318,8 +318,8 @@ def RefPath.modify (path : RefPath tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp
     let inner' := RefPathSegment.set p step inner v'
     RefPath.modify rest v inner'
 
-@[simp] theorem RefPath.get_nil {p} {v} : RefPath.get p .nil v = v := rfl
-@[simp] theorem RefPath.modify_nil {p} {v} {v'} : RefPath.modify p .nil v v' = v' := rfl
+@[simp] theorem RefPath.get_nil {p} {tp : Tp} {v : Tp.denote p tp} : RefPath.get p .nil v = v := rfl
+@[simp] theorem RefPath.modify_nil {p} {tp : Tp} {v v' : Tp.denote p tp} : RefPath.modify p .nil v v' = v' := rfl
 
 @[simp]
 theorem Tp.denoteArgs.getByMember_setByMember {tps : List Tp} {tpl : Tp.denoteArgs p tps}
