@@ -44,7 +44,7 @@ theorem letIn_intro {P Q}
 
 theorem ref_intro {v P} :
     THoare p Γ
-      (fun st => ∀r, r ∉ st → P r ⟨(st.vals.insert r ⟨tp, v⟩), st.lambdas⟩)
+      (fun st => ∀r, r ∉ st → P (Ref.mk tp r .nil) ⟨(st.vals.insert r ⟨tp, v⟩), st.lambdas⟩)
       (.callBuiltin [tp] (.ref tp) .ref h![v])
       P := by
   unfold THoare
@@ -53,25 +53,28 @@ theorem ref_intro {v P} :
   constructor
   tauto
 
-theorem readRef_intro {ref} :
+theorem readRef_intro {ref : Ref tp} {base_val : Tp.denote p ref.base_tp} :
     THoare p Γ
-      (fun st => st.vals.lookup ref = some ⟨tp, v⟩ ∧ P v st)
+      (fun st => st.vals.lookup ref.addr = some ⟨ref.base_tp, base_val⟩ ∧
+                 P (RefPath.get p ref.path base_val) st)
       (.callBuiltin [.ref tp] tp .readRef h![ref])
       P := by
   unfold THoare
-  intros
+  intro st ⟨h1, h2⟩
   constructor
-  constructor <;> tauto
+  exact Builtin.readRefOmni.mk h1 h2
 
-theorem writeRef_intro {ref v} :
+theorem writeRef_intro {ref : Ref tp}
+    {base_val : Tp.denote p ref.base_tp} {v : Tp.denote p tp} :
     THoare p Γ
-      (fun st => ref ∈ st ∧ P () ⟨(st.vals.insert ref ⟨tp, v⟩), st.lambdas⟩)
+      (fun st => st.vals.lookup ref.addr = some ⟨ref.base_tp, base_val⟩ ∧
+                 P () ⟨(st.vals.insert ref.addr ⟨ref.base_tp, RefPath.modify p ref.path base_val v⟩), st.lambdas⟩)
       (.callBuiltin [.ref tp, tp] .unit .writeRef h![ref, v])
       P := by
   unfold THoare
-  intros
+  intro st ⟨h1, h2⟩
   constructor
-  constructor <;> tauto
+  exact Builtin.writeRefOmni.mk h1 h2
 
 theorem fresh_intro {P} :
     THoare p Γ

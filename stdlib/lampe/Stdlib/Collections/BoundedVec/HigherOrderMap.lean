@@ -31,9 +31,9 @@ private theorem get_unchecked_concrete_spec' {p T MaxLen self index}
 @[simp]
 private theorem len_modify_head_tail {p T MaxLen}
     {v : Tp.denote p (bvTp T MaxLen)} {l : U 32}
-    (h : ((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify v l).isSome = true) :
+    (h : ((Lens.nil.cons (Access.tuple Member.head.tail)).modify v l).isSome = true) :
     len (p := p) (T := T) (MaxLen := MaxLen)
-        (((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify v l).get h) = l := by
+        (((Lens.nil.cons (Access.tuple Member.head.tail)).modify v l).get h) = l := by
   unfold len
   simp [Lens.modify]
 
@@ -122,11 +122,11 @@ private theorem mapLike_constrained_loop_effectful_spec
     {f : FuncRef Args Out}
     {fb : HList (Tp.denote p) Args → Expr (Tp.denote p) Out}
     {mkArgs : U 32 → Tp.denote p T → HList (Tp.denote p) Args}
-    {ret : Ref}
+    {ret : Ref (bvTp Out MaxLen)}
     {vnew : Tp.denote p (bvTp Out MaxLen)}
     (hb : bounded self)
     (hmod :
-      ((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify vnew (len self)).isSome = true)
+      ((Lens.nil.cons (Access.tuple Member.head.tail)).modify vnew (len self)).isSome = true)
     (inv : List (T.denote p) → List (Out.denote p) → SLP (State p))
     (inv_step :
       ∀ (ip : List (T.denote p)) (op : List (Out.denote p)) (i : U 32) (e : T.denote p),
@@ -135,7 +135,7 @@ private theorem mapLike_constrained_loop_effectful_spec
           STHoare p env (inv ip op) (fb (mkArgs i e)) (fun r => inv (ip ++ [e]) (op ++ [r])))
   : STHoare p env
       ([ret ↦ ⟨bvTp Out MaxLen,
-        ((Lens.nil.cons (Access.tuple Builtin.Member.head.tail)).modify vnew (len self)).get hmod⟩] ⋆
+        ((Lens.nil.cons (Access.tuple Member.head.tail)).modify vnew (len self)).get hmod⟩] ⋆
         [λf ↦ fb] ⋆ inv [] [])
       (Expr.letIn
         (Expr.loop (↑0) MaxLen fun i =>
@@ -153,7 +153,7 @@ private theorem mapLike_constrained_loop_effectful_spec
                 let elem = (getUncheckedFn as λ(splice!(bvTp T MaxLen), u32) -> T)(self, i);
                 let tmp = splice!(Expr.call Args Out f (mkArgs i elem));
                 splice!(Expr.modifyLens (tp₁ := bvTp Out MaxLen) (tp₂ := Out) ret tmp
-                  ((Lens.nil.cons (Access.tuple Builtin.Member.head)).cons (Access.array i)));
+                  ((Lens.nil.cons (Access.tuple Member.head)).cons (Access.array i)));
                 #_skip
               }
             }

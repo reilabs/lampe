@@ -11,16 +11,24 @@ lemma Finmap.insert_mem_disjoint [DecidableEq α] {m₁ m₂ : Finmap fun _ : α
 namespace Lampe.Builtin
 
  inductive modifyLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
- | ok {p st Q ref} {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
-   st.lookup ref = some ⟨tp₁, s⟩ →
+ | ok {p st Q} {ref : Ref tp₁}
+   {base_val : Tp.denote p ref.base_tp}
+   {base_val' : Tp.denote p ref.base_tp}
+   {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
+   st.lookup ref.addr = some ⟨ref.base_tp, base_val⟩ →
+   RefPath.get p ref.path base_val = s →
    some s' = Lens.modify (hr ▸ lens) s v' →
-   Q (some (st.insert ref ⟨tp₁, s'⟩, ())) →
-   (modifyLensOmni lens) p st [tp₁.ref, tp₂] .unit h![ref, v'] Q
- | err {p st Q ref} {s s' : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
-   st.lookup ref = some ⟨tp₁, s⟩ →
+   base_val' = RefPath.modify p ref.path base_val s' →
+   Q (some (st.insert ref.addr ⟨ref.base_tp, base_val'⟩, ())) →
+   (modifyLensOmni lens) p st [Tp.ref tp₁, tp₂] .unit h![ref, v'] Q
+ | err {p st Q} {ref : Ref tp₁}
+   {base_val : Tp.denote p ref.base_tp}
+   {s : Tp.denote p tp₁} {v' : Tp.denote p tp₂} {hr : rep = Tp.denote p} :
+   st.lookup ref.addr = some ⟨ref.base_tp, base_val⟩ →
+   RefPath.get p ref.path base_val = s →
    none = Lens.modify (hr ▸ lens) s v' →
    Q none →
-   (modifyLensOmni lens) p st [tp₁.ref, tp₂] .unit h![ref, v'] Q
+   (modifyLensOmni lens) p st [Tp.ref tp₁, tp₂] .unit h![ref, v'] Q
 
  def modifyLens (lens : Lens rep tp₁ tp₂) : Builtin := {
    omni := modifyLensOmni lens
@@ -28,36 +36,42 @@ namespace Lampe.Builtin
     unfold omni_conseq
     intros
     cases_type modifyLensOmni
-    constructor <;> tauto
-    apply modifyLensOmni.err <;> tauto
+    · exact modifyLensOmni.ok (by assumption) (by assumption) (by assumption) (by assumption) (by tauto)
+    · exact modifyLensOmni.err (by assumption) (by assumption) (by assumption) (by tauto)
    frame := by
     unfold omni_frame
     intros
-    rename_i p st₁ st₂ hd outTp args Q _ hd
     cases_type modifyLensOmni
-    . constructor
-      rw [Finmap.lookup_union_left] <;> try tauto
-      apply Finmap.mem_of_lookup_eq_some <;> tauto
-      tauto
-      simp only
-      generalize hst : (Finmap.insert _ _ (st₁ ∪ st₂)) = st' at *
-      unfold SLP.star
-      simp only [LawfulHeap.disjoint]
-      rename Ref => ref
-      rename_i s' _ _ _ _ hQ
-      exists (Finmap.singleton ref ⟨tp₁, s'⟩ ∪ st₁), st₂
-      rw [←hst]
-      apply And.intro
-      . rw [←Finmap.insert_eq_singleton_union]
-        apply Finmap.insert_mem_disjoint <;> try tauto
-        apply Finmap.mem_of_lookup_eq_some <;> tauto
-      . apply And.intro
-        . simp [Finmap.union_assoc, Finmap.insert_eq_singleton_union]
-        . apply And.intro ?_ (by rfl)
-          simp_all [Finmap.insert_union, Finmap.insert_eq_singleton_union]
-    . apply modifyLensOmni.err <;> try tauto
-      rw [Finmap.lookup_union_left] <;> try tauto
-      apply Finmap.mem_of_lookup_eq_some <;> tauto
+    · apply modifyLensOmni.ok
+      · rw [Finmap.lookup_union_left]
+        assumption
+        apply Finmap.mem_of_lookup_eq_some
+        assumption
+      · assumption
+      · assumption
+      · assumption
+      · repeat apply Exists.intro
+        apply And.intro ?_
+        simp_all [Finmap.insert_union]
+        apply And.intro rfl
+        simp_all
+        intro x
+        simp
+        rintro (_ | _)
+        · subst_vars
+          apply_assumption
+          apply Finmap.mem_of_lookup_eq_some
+          assumption
+        · apply_assumption
+          assumption
+    · apply modifyLensOmni.err
+      · rw [Finmap.lookup_union_left]
+        assumption
+        apply Finmap.mem_of_lookup_eq_some
+        assumption
+      · assumption
+      · assumption
+      · assumption
  }
 
 inductive getLensOmni (lens : Lens rep tp₁ tp₂) : Omni where
