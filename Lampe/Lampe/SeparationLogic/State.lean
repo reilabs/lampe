@@ -4,13 +4,13 @@ import Lampe.Ast
 
 namespace Lampe
 
-abbrev Lambdas (p : Prime) := Finmap fun _ : Ref => Lambda (Tp.denote p)
+abbrev Lambdas (p : Prime) := Finmap fun _ : Address => Lambda (Tp.denote p)
 
 structure State (p : Prime) where
   vals : ValHeap p
   lambdas : Lambdas p
 
-instance : Membership Ref (State p) where
+instance : Membership Address (State p) where
   mem := fun a e => e ∈ a.vals
 
 @[simp]
@@ -32,7 +32,7 @@ def mapToStateCondition
   (Q : Option (ValHeap p × T) → Prop) : Option (State p × T) → Prop :=
   fun stv => Q (stv.map (fun (st, t) => ⟨st.vals, t⟩))
 
-def State.insertVal (self : State p) (r : Ref) (v : AnyValue p) : State p :=
+def State.insertVal (self : State p) (r : Address) (v : AnyValue p) : State p :=
   ⟨self.vals.insert r v, self.lambdas⟩
 
 lemma State.eq_constructor {st₁ : State p} :
@@ -80,10 +80,10 @@ instance : LawfulHeap (State p) where
 
 @[reducible]
 def State.valSingleton {p : Prime} {tp : Tp}
-    (lr : LensRef tp) (v : AnyValue p) : SLP (State p) :=
-  fun st => ∃ bv : Tp.denote p lr.base_tp,
-    st.vals = Finmap.singleton lr.ref ⟨lr.base_tp, bv⟩ ∧
-    v = ⟨tp, RuntimeLens.get p lr.lens bv⟩
+    (ref : Ref tp) (v : AnyValue p) : SLP (State p) :=
+  fun st => ∃ bv : Tp.denote p ref.base_tp,
+    st.vals = Finmap.singleton ref.addr ⟨ref.base_tp, bv⟩ ∧
+    v = ⟨tp, RefPath.get p ref.path bv⟩
 
 notation:max "[ " l " ↦ " r " ]" => State.valSingleton l r
 

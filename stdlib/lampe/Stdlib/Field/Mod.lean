@@ -897,7 +897,7 @@ theorem pow_32_intro {p self exponent} :
           v = self ^ RadixVec.ofDigitsBE' (List.take 32 digits.toList) := hv
           _ = self ^ exponent.val := hpow_val
       · exact SLP.entails_top
-    · simpa using (STHoare.readRef_intro (p := p) (Γ := env) (lensRef := r)
+    · simpa using (STHoare.readRef_intro (p := p) (Γ := env) (ref := r)
         (tp := Tp.field)
         (v := self ^ RadixVec.ofDigitsBE' (List.take 32 digits.toList)))
 

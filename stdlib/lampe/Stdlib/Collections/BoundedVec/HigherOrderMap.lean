@@ -122,7 +122,7 @@ private theorem mapLike_constrained_loop_effectful_spec
     {f : FuncRef Args Out}
     {fb : HList (Tp.denote p) Args → Expr (Tp.denote p) Out}
     {mkArgs : U 32 → Tp.denote p T → HList (Tp.denote p) Args}
-    {ret : LensRef (bvTp Out MaxLen)}
+    {ret : Ref (bvTp Out MaxLen)}
     {vnew : Tp.denote p (bvTp Out MaxLen)}
     (hb : bounded self)
     (hmod :

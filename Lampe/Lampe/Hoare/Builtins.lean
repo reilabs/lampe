@@ -424,7 +424,7 @@ theorem ref_intro :
     STHoare p Γ
       ⟦⟧
       (.callBuiltin [tp] (.ref tp) .ref h![v])
-      (fun lr => [lr ↦ ⟨tp, v⟩]) := by
+      (fun ref => [ref ↦ ⟨tp, v⟩]) := by
   unfold STHoare
   intro H
   apply THoare.consequence ?_ THoare.ref_intro (fun _ => SLP.entails_self)
@@ -442,16 +442,16 @@ theorem ref_intro :
     · exact ⟨v, rfl, by simp⟩
     · exact hH
 
-theorem readRef_intro {lensRef : LensRef tp} :
+theorem readRef_intro {ref : Ref tp} :
     STHoare p Γ
-    [lensRef ↦ ⟨tp, v⟩]
-    (.callBuiltin [.ref tp] tp .readRef h![lensRef])
-    (fun v' => ⟦v' = v⟧ ⋆ [lensRef ↦ ⟨tp, v⟩]) := by
+    [ref ↦ ⟨tp, v⟩]
+    (.callBuiltin [.ref tp] tp .readRef h![ref])
+    (fun v' => ⟦v' = v⟧ ⋆ [ref ↦ ⟨tp, v⟩]) := by
   unfold STHoare THoare
   intro H st
   rintro ⟨st₁, st₂, hdisj, hunion, ⟨bv, hvals, hv⟩, hH⟩
   subst hunion
-  have hveq : v = RuntimeLens.get p lensRef.lens bv := by cases hv; rfl
+  have hveq : v = RefPath.get p ref.path bv := by cases hv; rfl
   constructor
   apply Builtin.readRefOmni.mk (base_val := bv)
   · simp only [State.union_vals]
@@ -464,23 +464,23 @@ theorem readRef_intro {lensRef : LensRef tp} :
     exact ⟨∅, st₁ ∪ st₂, LawfulHeap.empty_disjoint, LawfulHeap.empty_union.symm,
       ⟨hveq.symm, rfl⟩, st₁, st₂, hdisj, rfl, ⟨bv, hvals, hv⟩, hH⟩
 
-theorem writeRef_intro {lensRef : LensRef tp} :
+theorem writeRef_intro {ref : Ref tp} :
     STHoare p Γ
-    [lensRef ↦ ⟨tp, v⟩]
-    (.callBuiltin [.ref tp, tp] .unit .writeRef h![lensRef, v'])
-    (fun _ => [lensRef ↦ ⟨tp, v'⟩]) := by
+    [ref ↦ ⟨tp, v⟩]
+    (.callBuiltin [.ref tp, tp] .unit .writeRef h![ref, v'])
+    (fun _ => [ref ↦ ⟨tp, v'⟩]) := by
   unfold STHoare THoare
   intro H st
   rintro ⟨st₁, st₂, hdisj, hunion, ⟨bv, hvals, hv⟩, hH⟩
   subst hunion
   constructor
-  have hlookup : (st₁ ∪ st₂).vals.lookup lensRef.ref = some ⟨lensRef.base_tp, bv⟩ := by
+  have hlookup : (st₁ ∪ st₂).vals.lookup ref.addr = some ⟨ref.base_tp, bv⟩ := by
     simp only [State.union_vals]
     rw [Finmap.lookup_union_left]
     · rw [hvals]; apply Finmap.lookup_singleton_eq
     · apply Finmap.lookup_isSome.mp
       rw [hvals]; rw [Finmap.lookup_singleton_eq]; exact Option.isSome_some
-  have hnotmem : lensRef.ref ∉ st₂.vals := by
+  have hnotmem : ref.addr ∉ st₂.vals := by
     have := hdisj.1; rw [hvals] at this
     exact Finmap.singleton_disjoint_iff_not_mem.mp this
   apply Builtin.writeRefOmni.mk (base_val := bv)
@@ -488,8 +488,8 @@ theorem writeRef_intro {lensRef : LensRef tp} :
   · apply SLP.ent_star_top
     simp only [mapToValHeapCondition, Option.map_some, SLP.true_star, SLP.star_assoc,
       Finmap.insert_eq_singleton_union, State.union_vals, ← Finmap.union_assoc]
-    set bv' := RuntimeLens.modify p lensRef.lens bv v' with hbv'_def
-    refine ⟨⟨Finmap.singleton lensRef.ref ⟨lensRef.base_tp, bv'⟩, st₁.lambdas⟩, st₂, ?_, ?_, ?_, ?_⟩
+    set bv' := RefPath.modify p ref.path bv v' with hbv'_def
+    refine ⟨⟨Finmap.singleton ref.addr ⟨ref.base_tp, bv'⟩, st₁.lambdas⟩, st₂, ?_, ?_, ?_, ?_⟩
     · exact ⟨Finmap.singleton_disjoint_of_not_mem hnotmem, hdisj.2⟩
     · simp only [State.union_parts_left, State.union_closures]
       congr 1
@@ -522,25 +522,25 @@ theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by ta
 -- Lens
 
  theorem modifyLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂}
-    {lensRef : LensRef tp₁} {v_old : Tp.denote p tp₁}
+    {ref : Ref tp₁} {v_old : Tp.denote p tp₁}
     {v : Tp.denote p tp₂} :
     STHoare p Γ
-    [lensRef ↦ ⟨tp₁, v_old⟩]
-    (.callBuiltin [Tp.ref tp₁, tp₂] .unit (.modifyLens lens) h![lensRef, v])
-    (fun _ => ∃∃h, [lensRef ↦ ⟨tp₁, (lens.modify v_old v |>.get h)⟩]) := by
+    [ref ↦ ⟨tp₁, v_old⟩]
+    (.callBuiltin [Tp.ref tp₁, tp₂] .unit (.modifyLens lens) h![ref, v])
+    (fun _ => ∃∃h, [ref ↦ ⟨tp₁, (lens.modify v_old v |>.get h)⟩]) := by
   unfold STHoare THoare
   intro H st
   rintro ⟨st₁, st₂, hdisj, hunion, ⟨bv, hvals, hv⟩, hH⟩
-  have hveq : v_old = RuntimeLens.get p lensRef.lens bv := by cases hv; rfl
+  have hveq : v_old = RefPath.get p ref.path bv := by cases hv; rfl
   subst hunion
   constructor
-  have hlookup : (st₁ ∪ st₂).vals.lookup lensRef.ref = some ⟨lensRef.base_tp, bv⟩ := by
+  have hlookup : (st₁ ∪ st₂).vals.lookup ref.addr = some ⟨ref.base_tp, bv⟩ := by
     simp only [State.union_vals]
     rw [Finmap.lookup_union_left]
     · rw [hvals]; apply Finmap.lookup_singleton_eq
     · apply Finmap.lookup_isSome.mp
       rw [hvals]; rw [Finmap.lookup_singleton_eq]; exact Option.isSome_some
-  have hnotmem : lensRef.ref ∉ st₂.vals := by
+  have hnotmem : ref.addr ∉ st₂.vals := by
     have := hdisj.1; rw [hvals] at this
     exact Finmap.singleton_disjoint_iff_not_mem.mp this
   cases hl : (lens.modify v_old v)
@@ -551,15 +551,15 @@ theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by ta
     · simp [mapToValHeapCondition]
   · rename_i s'
     apply Builtin.modifyLensOmni.ok (base_val := bv)
-      (base_val' := RuntimeLens.modify p lensRef.lens bv s') (hr := rfl) (s := v_old) (s' := s')
+      (base_val' := RefPath.modify p ref.path bv s') (hr := rfl) (s := v_old) (s' := s')
     · exact hlookup
     · rw [hveq]
     · exact hl.symm
     · rfl
     · simp only [mapToValHeapCondition, Option.map_some, SLP.true_star, SLP.star_assoc,
         Finmap.insert_eq_singleton_union, State.union_vals, ← Finmap.union_assoc]
-      set bv' := RuntimeLens.modify p lensRef.lens bv s' with hbv'_def
-      refine ⟨⟨Finmap.singleton lensRef.ref ⟨lensRef.base_tp, bv'⟩, st₁.lambdas⟩, st₂, ?_, ?_, ?_, ?_⟩
+      set bv' := RefPath.modify p ref.path bv s' with hbv'_def
+      refine ⟨⟨Finmap.singleton ref.addr ⟨ref.base_tp, bv'⟩, st₁.lambdas⟩, st₂, ?_, ?_, ?_, ?_⟩
       · exact ⟨Finmap.singleton_disjoint_of_not_mem hnotmem, hdisj.2⟩
       · simp only [State.union_parts_left, State.union_closures]
         congr 1

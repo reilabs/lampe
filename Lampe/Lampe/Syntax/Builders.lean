@@ -209,7 +209,7 @@ partial def makeExpr [MonadDSL m]
   makeArgs args.getElems fun args => do
     let #[arg] := args | throwError "projectRef expects exactly one argument"
     let member ← makeMember idx.getNat
-    let acc ← ``(RuntimeAccess.field $member)
+    let acc ← ``(RefPathSegment.field $member)
     wrapInLet
       (←``(Expr.projectRef $arg $acc))
       binder

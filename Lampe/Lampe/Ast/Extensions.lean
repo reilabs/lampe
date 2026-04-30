@@ -75,6 +75,6 @@ def Expr.getMember (v : rep (Tp.tuple name tps)) (member : Lampe.Member tp tps)
 
 /-- Project a reference by appending a path segment. -/
 @[reducible]
-def Expr.projectRef (v : rep (Tp.ref tp₁)) (acc : RuntimeAccess tp₁ tp₂)
+def Expr.projectRef (v : rep (Tp.ref tp₁)) (segment : RefPathSegment tp₁ tp₂)
   : Lampe.Expr rep (Tp.ref tp₂) :=
-  Expr.callBuiltin [Tp.ref tp₁] (Tp.ref tp₂) (Lampe.Builtin.projectRef acc) h![v]
+  Expr.callBuiltin [Tp.ref tp₁] (Tp.ref tp₂) (Lampe.Builtin.projectRef segment) h![v]

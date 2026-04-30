@@ -65,7 +65,7 @@ local macro "extend_loop_step" hlenV:ident htakeV:ident
         $hi_src))
 
 private theorem SLP.singleton_entails_exists_star_lift
-    {ref : LensRef (bvTp T MaxLen)} {tp : Tp}
+    {ref : Ref (bvTp T MaxLen)} {tp : Tp}
     {v : Tp.denote p tp}
     {P : Tp.denote p tp → Prop}
     (h : P v) :

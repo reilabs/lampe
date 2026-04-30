@@ -29,7 +29,7 @@ namespace Lampe
 
 def AnyValue (p : Prime) := (tp : Tp) × tp.denote p
 
-abbrev ValHeap (p : Prime) := Finmap (fun (_ : Ref) => AnyValue p)
+abbrev ValHeap (p : Prime) := Finmap (fun (_ : Address) => AnyValue p)
 
 instance : LawfulHeap (ValHeap p) where
   union := fun a b => a ∪ b

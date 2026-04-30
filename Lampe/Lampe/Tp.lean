@@ -13,7 +13,7 @@ register_option Lampe.pp.Tp : Bool := {
 
 namespace Lampe
 
-structure Ref where
+structure Address where
   val : Nat
 deriving DecidableEq
 
@@ -131,7 +131,7 @@ instance : DecidableEq Kind := kindDecEq
 instance : DecidableEq $ List Kind := kindsDecEq
 
 inductive FuncRef (argTps : List Tp) (outTp : Tp) where
-| lambda (r : Ref)
+| lambda (r : Address)
 | decl (fnName : String) (kinds : List Kind) (generics : HList Kind.denote kinds)
 | trait (selfTp : Tp)
   (traitName : String) (traitKinds : List Kind) (traitGenerics : HList Kind.denote traitKinds)
@@ -141,7 +141,7 @@ def FuncRef.isLambda : FuncRef a o → Bool
 | FuncRef.lambda _ => true
 | _ => false
 
-def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Ref :=
+def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Address :=
   match h' : f with
   | FuncRef.lambda r => r
   | FuncRef.decl _ _ _ => by cases h
@@ -157,29 +157,29 @@ inductive Member : Tp → List Tp → Type where
 
 /-- A single structural access step: indexing into a tuple field by position.
     The type indices guarantee that the access is well-typed. -/
-inductive RuntimeAccess : Tp → Tp → Type
+inductive RefPathSegment : Tp → Tp → Type
 | field {name : Option String} {tps : List Tp} {tp : Tp} (mem : Member tp tps)
-    : RuntimeAccess (.tuple name tps) tp
+    : RefPathSegment (.tuple name tps) tp
 
-/-- A typed runtime lens: a sequence of structural access steps navigating from `tp₁` to `tp₂`. -/
-inductive RuntimeLens : Tp → Tp → Type
-| nil : RuntimeLens tp tp
-| cons : RuntimeLens tp₁ tp₂ → RuntimeAccess tp₂ tp₃ → RuntimeLens tp₁ tp₃
+/-- A typed reference path: a sequence of structural access steps navigating from `tp₁` to `tp₂`. -/
+inductive RefPath : Tp → Tp → Type
+| nil : RefPath tp tp
+| cons : RefPath tp₁ tp₂ → RefPathSegment tp₂ tp₃ → RefPath tp₁ tp₃
 
-/-- Extend a runtime lens by appending a single access step. -/
-abbrev RuntimeLens.append (l : RuntimeLens tp₁ tp₂) (acc : RuntimeAccess tp₂ tp₃) : RuntimeLens tp₁ tp₃ :=
-  l.cons acc
+/-- Extend a reference path by appending a single access step. -/
+abbrev RefPath.append (r : RefPath tp₁ tp₂) (step : RefPathSegment tp₂ tp₃) : RefPath tp₁ tp₃ :=
+  r.cons step
 
-/-- A reference with a typed lens path for sub-field access.
-    `base_tp` is the type stored in the heap, `ref` is the heap address,
-    and `lens` navigates from `base_tp` to `tp`. -/
-structure LensRef (tp : Tp) where
+/-- A reference: a heap address with a typed path for sub-field access.
+    `base_tp` is the type stored in the heap, `addr` is the heap address,
+    and `path` navigates from `base_tp` to `tp`. -/
+structure Ref (tp : Tp) where
   base_tp : Tp
-  ref : Ref
-  lens : RuntimeLens base_tp tp
+  addr : Address
+  path : RefPath base_tp tp
 
-instance : CoeOut (LensRef tp) Ref where
-  coe lr := lr.ref
+instance : CoeOut (Ref tp) Address where
+  coe ref := ref.addr
 
 mutual
 
@@ -199,7 +199,7 @@ def Tp.denote : Tp → Type
 | .field => Fp p
 | .vector tp => List (denote tp)
 | .array tp n => List.Vector (denote tp) n.toNat
-| .ref tp => LensRef tp
+| .ref tp => Ref tp
 | .tuple _ fields => Tp.denoteArgs fields
 | .fn argTps outTp => FuncRef argTps outTp
 
@@ -241,7 +241,7 @@ def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplie
   | Tp.array tp n =>
     let len ← mkAppM `BitVec.toNat #[n]
     mkAppM `List.Vector #[← mkAppM `Lampe.Tp.denote #[p, tp], len]
-  | Tp.ref tp => mkAppM `Lampe.LensRef #[tp]
+  | Tp.ref tp => mkAppM `Lampe.Ref #[tp]
   | Tp.tuple _ fields =>
     let (_, tps) ← liftOption fields.listLit?
     delabDenoteArgsAux p tps
@@ -291,35 +291,35 @@ def Tp.denoteArgs.setByMember : {tps : List Tp} → Tp.denoteArgs p tps → Memb
   | _ :: _, (_, rest), .head, v => (v, rest)
   | _ :: _, (hd, tl), .tail m, v => (hd, Tp.denoteArgs.setByMember tl m v)
 
-/-- Get the sub-value from a single runtime access step. -/
-def RuntimeAccess.get (acc : RuntimeAccess tp₁ tp₂) (v : Tp.denote p tp₁) : Tp.denote p tp₂ :=
-  match acc with
+/-- Get the sub-value from a single reference path step. -/
+def RefPathSegment.get (step : RefPathSegment tp₁ tp₂) (v : Tp.denote p tp₁) : Tp.denote p tp₂ :=
+  match step with
   | .field mem => Tp.denoteArgs.getByMember p v mem
 
-/-- Set (replace) the sub-value at a single runtime access step. -/
-def RuntimeAccess.set (acc : RuntimeAccess tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ :=
-  match acc with
+/-- Set (replace) the sub-value at a single reference path step. -/
+def RefPathSegment.set (step : RefPathSegment tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ :=
+  match step with
   | .field mem => Tp.denoteArgs.setByMember p v mem v'
 
-/-- Get the sub-value at the end of a runtime lens path. -/
+/-- Get the sub-value at the end of a reference path. -/
 @[simp]
-def RuntimeLens.get (lens : RuntimeLens tp₁ tp₂) (v : Tp.denote p tp₁) : Tp.denote p tp₂ :=
-  match lens with
+def RefPath.get (path : RefPath tp₁ tp₂) (v : Tp.denote p tp₁) : Tp.denote p tp₂ :=
+  match path with
   | .nil => v
-  | .cons rest acc => RuntimeAccess.get p acc (RuntimeLens.get rest v)
+  | .cons rest step => RefPathSegment.get p step (RefPath.get rest v)
 
-/-- Modify the sub-value at the end of a runtime lens path, returning the updated root value. -/
+/-- Modify the sub-value at the end of a reference path, returning the updated root value. -/
 @[simp]
-def RuntimeLens.modify (lens : RuntimeLens tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ :=
-  match lens with
+def RefPath.modify (path : RefPath tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ :=
+  match path with
   | .nil => v'
-  | .cons rest acc =>
-    let inner := RuntimeLens.get p rest v
-    let inner' := RuntimeAccess.set p acc inner v'
-    RuntimeLens.modify rest v inner'
+  | .cons rest step =>
+    let inner := RefPath.get p rest v
+    let inner' := RefPathSegment.set p step inner v'
+    RefPath.modify rest v inner'
 
-@[simp] theorem RuntimeLens.get_nil : RuntimeLens.get p .nil v = v := rfl
-@[simp] theorem RuntimeLens.modify_nil : RuntimeLens.modify p .nil v v' = v' := rfl
+@[simp] theorem RefPath.get_nil {p} {v} : RefPath.get p .nil v = v := rfl
+@[simp] theorem RefPath.modify_nil {p} {v} {v'} : RefPath.modify p .nil v v' = v' := rfl
 
 @[simp]
 theorem Tp.denoteArgs.getByMember_setByMember {tps : List Tp} {tpl : Tp.denoteArgs p tps}
@@ -330,17 +330,17 @@ theorem Tp.denoteArgs.getByMember_setByMember {tps : List Tp} {tpl : Tp.denoteAr
   | tail _ ih => exact ih
 
 @[simp]
-theorem RuntimeAccess.get_set (acc : RuntimeAccess tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) :
-    RuntimeAccess.get p acc (RuntimeAccess.set p acc v v') = v' := by
-  cases acc with
-  | field mem => simp [RuntimeAccess.get, RuntimeAccess.set]
+theorem RefPathSegment.get_set (step : RefPathSegment tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) :
+    RefPathSegment.get p step (RefPathSegment.set p step v v') = v' := by
+  cases step with
+  | field mem => simp [RefPathSegment.get, RefPathSegment.set]
 
 @[simp]
-theorem RuntimeLens.get_modify (lens : RuntimeLens tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) :
-    RuntimeLens.get p lens (RuntimeLens.modify p lens v v') = v' := by
-  induction lens with
+theorem RefPath.get_modify (path : RefPath tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) :
+    RefPath.get p path (RefPath.modify p path v v') = v' := by
+  induction path with
   | nil => rfl
-  | cons rest acc ih => simp [RuntimeLens.get, RuntimeLens.modify, ih]
+  | cons rest step ih => simp [RefPath.get, RefPath.modify, ih]
 
 /- In this section we provide unification hints to assist with the ergonomics of stating theorems -/
 section unificationHints

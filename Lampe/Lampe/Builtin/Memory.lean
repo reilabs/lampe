@@ -4,7 +4,7 @@ namespace Lampe.Builtin
 
 inductive refOmni : Omni where
 | mk {P st tp Q v}:
-  (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, LensRef.mk tp ref .nil))) →
+  (∀ref, ref ∉ st → Q (some (st.insert ref ⟨tp, v⟩, Ref.mk tp ref .nil))) →
   refOmni P st [tp] (tp.ref) h![v] Q
 
 def ref : Builtin := {
@@ -33,10 +33,10 @@ def ref : Builtin := {
 }
 
 inductive readRefOmni : Omni where
-| mk {P st tp Q} {lensRef : LensRef tp} {base_val : Tp.denote P lensRef.base_tp} :
-  st.lookup lensRef.ref = some ⟨lensRef.base_tp, base_val⟩ →
-  Q (some (st, RuntimeLens.get P lensRef.lens base_val)) →
-  readRefOmni P st [Tp.ref tp] tp h![lensRef] Q
+| mk {P st tp Q} {ref : Ref tp} {base_val : Tp.denote P ref.base_tp} :
+  st.lookup ref.addr = some ⟨ref.base_tp, base_val⟩ →
+  Q (some (st, RefPath.get P ref.path base_val)) →
+  readRefOmni P st [Tp.ref tp] tp h![ref] Q
 
 def readRef : Builtin := {
   omni := readRefOmni
@@ -59,11 +59,11 @@ def readRef : Builtin := {
 }
 
 inductive writeRefOmni : Omni where
-| mk {P st tp Q} {lensRef : LensRef tp} {base_val : Tp.denote P lensRef.base_tp}
+| mk {P st tp Q} {ref : Ref tp} {base_val : Tp.denote P ref.base_tp}
     {v : Tp.denote P tp} :
-  st.lookup lensRef.ref = some ⟨lensRef.base_tp, base_val⟩ →
-  Q (some (st.insert lensRef.ref ⟨lensRef.base_tp, RuntimeLens.modify P lensRef.lens base_val v⟩, ())) →
-  writeRefOmni P st [Tp.ref tp, tp] .unit h![lensRef, v] Q
+  st.lookup ref.addr = some ⟨ref.base_tp, base_val⟩ →
+  Q (some (st.insert ref.addr ⟨ref.base_tp, RefPath.modify P ref.path base_val v⟩, ())) →
+  writeRefOmni P st [Tp.ref tp, tp] .unit h![ref, v] Q
 
 def writeRef : Builtin := {
   omni := writeRefOmni
@@ -98,10 +98,10 @@ def writeRef : Builtin := {
 }
 
 /-- Project a reference by appending a path segment (like GEP). Pure — no heap interaction. -/
-def projectRef (acc : RuntimeAccess tp₁ tp₂) : Builtin :=
+def projectRef (segment : RefPathSegment tp₁ tp₂) : Builtin :=
   newTotalPureBuiltin
     ⟨[Tp.ref tp₁], Tp.ref tp₂⟩
-    (fun h![lensRef] => LensRef.mk lensRef.base_tp lensRef.ref (lensRef.lens.append acc))
+    (fun h![ref] => Ref.mk ref.base_tp ref.addr (ref.path.append segment))
 
 def zeroed := newGenericTotalPureBuiltin
   (fun (a : Tp) => ⟨[], a⟩)
