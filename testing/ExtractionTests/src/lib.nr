@@ -17,3 +17,4 @@ mod unit_return;
 mod bool_neq;
 mod ref_member_access;
 mod array_as_vector;
+mod impl_trait_return;

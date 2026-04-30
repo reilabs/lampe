@@ -10,6 +10,7 @@ import «ExtractionTests-0.0.0».Extracted.DirectLambda
 import «ExtractionTests-0.0.0».Extracted.Experiments
 import «ExtractionTests-0.0.0».Extracted.FieldGenerics
 import «ExtractionTests-0.0.0».Extracted.GeneratedTypes
+import «ExtractionTests-0.0.0».Extracted.ImplTraitReturn
 import «ExtractionTests-0.0.0».Extracted.Lib
 import «ExtractionTests-0.0.0».Extracted.MultipleGenerics
 import «ExtractionTests-0.0.0».Extracted.NestedMemberAccess
@@ -34,6 +35,7 @@ def env := AliasMemberAccess.env
   ++ DirectLambda.env
   ++ Experiments.env
   ++ FieldGenerics.env
+  ++ ImplTraitReturn.env
   ++ Lib.env
   ++ MultipleGenerics.env
   ++ NestedMemberAccess.env

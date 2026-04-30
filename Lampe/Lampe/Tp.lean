@@ -19,6 +19,25 @@ deriving DecidableEq
 
 variable (p : Prime)
 
+/-- Base type universe (level 0). Contains all concrete Noir types but not `any`.
+    Used internally to give a well-founded denotation for `Tp.any`. -/
+inductive Tp₀ where
+| u (size : Nat)
+| i (size : Nat)
+| bool
+| unit
+| str (size: U 32)
+| fmtStr (size : U 32) (argTps : Tp₀)
+| field
+| vector (element : Tp₀)
+| array (element: Tp₀) (size: U 32)
+| tuple (name : Option String) (fields : List Tp₀)
+| ref (tp : Tp₀)
+| fn (argTps : List Tp₀) (outTp : Tp₀)
+deriving BEq
+
+/-- The main type universe. Extends `Tp₀` with `any`, an existential type
+    used for `impl Trait` return types. -/
 inductive Tp where
 | u (size : Nat)
 | i (size : Nat)
@@ -32,6 +51,7 @@ inductive Tp where
 | tuple (name : Option String) (fields : List Tp)
 | ref (tp : Tp)
 | fn (argTps : List Tp) (outTp : Tp)
+| any
 deriving BEq
 
 inductive Kind where
@@ -39,6 +59,21 @@ inductive Kind where
 | field
 | type
 deriving BEq, Nonempty
+
+/-- Embed a base type into the main type universe. -/
+def Tp₀.toTp : Tp₀ → Tp
+| .u n => .u n
+| .i n => .i n
+| .bool => .bool
+| .unit => .unit
+| .str n => .str n
+| .fmtStr n tp => .fmtStr n tp.toTp
+| .field => .field
+| .vector tp => .vector tp.toTp
+| .array tp n => .array tp.toTp n
+| .tuple name fields => .tuple name (fields.map Tp₀.toTp)
+| .ref tp => .ref tp.toTp
+| .fn args out => .fn (args.map Tp₀.toTp) out.toTp
 
 mutual
 
@@ -103,6 +138,64 @@ end
 instance : DecidableEq Tp := tpDecEq
 
 instance : DecidableEq $ List Tp := tpsDecEq
+
+mutual
+
+def tps₀DecEq (a b : List Tp₀) : Decidable (a = b) := match a, b with
+| [], [] => isTrue rfl
+| [], _ :: _ => isFalse (by simp)
+| _ :: _, [] => isFalse (by simp)
+| tp₁ :: tps₁, tp₂ :: tps₂ => match tp₀DecEq tp₁ tp₂, tps₀DecEq tps₁ tps₂ with
+  | isTrue _, isTrue _ => isTrue (by subst_vars; rfl)
+  | isFalse _, _ => isFalse (by simp_all)
+  | _, isFalse _ => isFalse (by simp_all)
+
+def tp₀DecEq (a b : Tp₀) : Decidable (a = b) := by
+  cases a <;> cases b
+  all_goals try { right; rfl }
+  all_goals try { left; simp_all }
+  all_goals try {
+    rename_i n₁ n₂
+    have h : Decidable (n₁ = n₂) := inferInstance
+    cases h
+    . left; simp_all
+    . right; tauto
+  }
+  all_goals try {
+    rename_i tp₁ tp₂
+    cases (tp₀DecEq tp₁ tp₂)
+    . left; simp_all
+    . right; tauto
+  }
+  case array.array =>
+    rename_i tp₁ n₁ tp₂ n₂
+    have h : Decidable (n₁ = n₂) := inferInstance
+    cases (tp₀DecEq tp₁ tp₂) <;> cases h
+    all_goals try {left; simp_all}
+    right; subst_vars; rfl
+  case tuple.tuple =>
+    rename_i n₁ tps₁ n₂ tps₂
+    have h : Decidable (n₁ = n₂) := inferInstance
+    cases (tps₀DecEq tps₁ tps₂) <;> cases h
+    all_goals try { left; simp_all; }
+    right; subst_vars; rfl
+  case fmtStr.fmtStr =>
+    rename_i n₁ tps₁ n₂ tps₂
+    have h : Decidable (n₁ = n₂) := inferInstance
+    cases (tp₀DecEq tps₁ tps₂) <;> cases h
+    all_goals try { left; simp_all; }
+    right; subst_vars; rfl
+  case fn.fn =>
+    rename_i args₁ out₁ args₂ out₂
+    cases (tp₀DecEq out₁ out₂) <;> cases (tps₀DecEq args₁ args₂)
+    all_goals try { left; simp_all; }
+    right; subst_vars; rfl
+
+end
+
+instance : DecidableEq Tp₀ := tp₀DecEq
+
+instance : DecidableEq $ List Tp₀ := tps₀DecEq
 
 @[reducible]
 def Kind.denote : Kind → Type
@@ -181,6 +274,37 @@ structure Ref (tp : Tp) where
 instance : CoeOut (Ref tp) Address where
   coe ref := ref.addr
 
+/-! ## Type denotation
+
+We define denotation in two phases to ensure well-founded recursion:
+1. `Tp₀.denote` / `Tp₀.denoteArgs` handle `Tp₀` (no `any` constructor).
+2. `Tp.denote` / `Tp.denoteArgs` handle `Tp`, delegating to `Tp₀.denote` for the `any` case.
+-/
+
+mutual
+
+@[reducible]
+def Tp₀.denoteArgs : List Tp₀ → Type
+| [] => Unit
+| tp :: tps => denote tp × denoteArgs tps
+
+@[reducible]
+def Tp₀.denote : Tp₀ → Type
+| .u n => U n
+| .i n => I n
+| .bool => Bool
+| .unit => Unit
+| .str n => NoirStr n.toNat
+| .fmtStr n tps => FormatString n tps.toTp
+| .field => Fp p
+| .vector tp => List (denote tp)
+| .array tp n => List.Vector (denote tp) n.toNat
+| .ref tp => Ref tp.toTp
+| .tuple _ fields => Tp₀.denoteArgs fields
+| .fn argTps outTp => FuncRef (argTps.map Tp₀.toTp) outTp.toTp
+
+end
+
 mutual
 
 @[reducible]
@@ -202,6 +326,7 @@ def Tp.denote : Tp → Type
 | .ref tp => Ref tp
 | .tuple _ fields => Tp.denoteArgs fields
 | .fn argTps outTp => FuncRef argTps outTp
+| .any => (tp : Tp₀) × Tp₀.denote p tp
 
 end
 
@@ -247,6 +372,8 @@ def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplie
     delabDenoteArgsAux p tps
   | Tp.fn argTps outTp =>
     mkAppM `Lampe.FuncRef #[argTps, outTp]
+  | Tp.any =>
+    mkAppM `Sigma #[← mkAppM `Lampe.Tp₀.denote #[p]]
   | _ => failure
   return ← delab tpExpr
 
@@ -276,6 +403,7 @@ match tp with
 | .ref rtp => ⟨rtp, ⟨0⟩, .nil⟩
 | .tuple name fields => HList.toTuple p (Tp.zeroArgs fields) name
 | .fn _ _ => .lambda ⟨0⟩
+| .any => ⟨.unit, ()⟩
 
 end
 
