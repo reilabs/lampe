@@ -214,9 +214,17 @@ pub enum Expression {
     Lambda(Lambda),
     Literal(Literal),
     MemberAccess(MemberAccess),
+    ProjectRef(ProjectRef),
     Skip,
     TraitCallRef(TraitCallRef),
     GlobalCallRef(GlobalCallRef),
+}
+
+/// A reference to the `projectRef` builtin, parameterized by a field index.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct ProjectRef {
+    pub index:       usize,
+    pub return_type: Type,
 }
 
 impl Expression {

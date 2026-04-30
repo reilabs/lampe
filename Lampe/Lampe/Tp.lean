@@ -13,7 +13,7 @@ register_option Lampe.pp.Tp : Bool := {
 
 namespace Lampe
 
-structure Ref where
+structure Address where
   val : Nat
 deriving DecidableEq
 
@@ -131,7 +131,7 @@ instance : DecidableEq Kind := kindDecEq
 instance : DecidableEq $ List Kind := kindsDecEq
 
 inductive FuncRef (argTps : List Tp) (outTp : Tp) where
-| lambda (r : Ref)
+| lambda (r : Address)
 | decl (fnName : String) (kinds : List Kind) (generics : HList Kind.denote kinds)
 | trait (selfTp : Tp)
   (traitName : String) (traitKinds : List Kind) (traitGenerics : HList Kind.denote traitKinds)
@@ -141,7 +141,7 @@ def FuncRef.isLambda : FuncRef a o → Bool
 | FuncRef.lambda _ => true
 | _ => false
 
-def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Ref :=
+def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Address :=
   match h' : f with
   | FuncRef.lambda r => r
   | FuncRef.decl _ _ _ => by cases h
@@ -149,6 +149,37 @@ def FuncRef.asLambda {a o} (f : FuncRef a o) (h : FuncRef.isLambda f) : Ref :=
 
 /-- TODO: Actually implement this at some point -/
 def FormatString (_len : U 32) (_argTps : Tp) := String
+
+/-- Type-safe membership witness for indexing into a list of types. -/
+inductive Member : Tp → List Tp → Type where
+| head : Member tp (tp :: tps)
+| tail : Member tp tps → Member tp (tp' :: tps)
+
+/-- A single structural access step: indexing into a tuple field by position.
+    The type indices guarantee that the access is well-typed. -/
+inductive RefPathSegment : Tp → Tp → Type
+| field {name : Option String} {tps : List Tp} {tp : Tp} (mem : Member tp tps)
+    : RefPathSegment (.tuple name tps) tp
+
+/-- A typed reference path: a sequence of structural access steps navigating from `tp₁` to `tp₂`. -/
+inductive RefPath : Tp → Tp → Type
+| nil : RefPath tp tp
+| cons : RefPath tp₁ tp₂ → RefPathSegment tp₂ tp₃ → RefPath tp₁ tp₃
+
+/-- Extend a reference path by appending a single access step. -/
+abbrev RefPath.append (r : RefPath tp₁ tp₂) (step : RefPathSegment tp₂ tp₃) : RefPath tp₁ tp₃ :=
+  r.cons step
+
+/-- A reference: a heap address with a typed path for sub-field access.
+    `base_tp` is the type stored in the heap, `addr` is the heap address,
+    and `path` navigates from `base_tp` to `tp`. -/
+structure Ref (tp : Tp) where
+  base_tp : Tp
+  addr : Address
+  path : RefPath base_tp tp
+
+instance : CoeOut (Ref tp) Address where
+  coe ref := ref.addr
 
 mutual
 
@@ -168,7 +199,7 @@ def Tp.denote : Tp → Type
 | .field => Fp p
 | .vector tp => List (denote tp)
 | .array tp n => List.Vector (denote tp) n.toNat
-| .ref _ => Ref
+| .ref tp => Ref tp
 | .tuple _ fields => Tp.denoteArgs fields
 | .fn argTps outTp => FuncRef argTps outTp
 
@@ -210,7 +241,7 @@ def delabTpDenote : Delab := whenDelabTp getExpr >>= fun expr => whenFullyApplie
   | Tp.array tp n =>
     let len ← mkAppM `BitVec.toNat #[n]
     mkAppM `List.Vector #[← mkAppM `Lampe.Tp.denote #[p, tp], len]
-  | Tp.ref _ => mkAppM `Lampe.Ref #[]
+  | Tp.ref tp => mkAppM `Lampe.Ref #[tp]
   | Tp.tuple _ fields =>
     let (_, tps) ← liftOption fields.listLit?
     delabDenoteArgsAux p tps
@@ -242,11 +273,74 @@ match tp with
 | .fmtStr _ _ => ""
 | .vector _ => []
 | .array tp n => List.Vector.replicate n.toNat tp.zero
-| .ref _ => ⟨0⟩
+| .ref rtp => ⟨rtp, ⟨0⟩, .nil⟩
 | .tuple name fields => HList.toTuple p (Tp.zeroArgs fields) name
 | .fn _ _ => .lambda ⟨0⟩
 
 end
+
+/-- Index into a `Tp.denoteArgs` tuple by `Member` witness. -/
+@[reducible]
+def Tp.denoteArgs.getByMember : {tps : List Tp} → Tp.denoteArgs p tps → Member tp tps → Tp.denote p tp
+  | _ :: _, (hd, _), .head => hd
+  | _ :: _, (_, tl), .tail m => Tp.denoteArgs.getByMember tl m
+
+/-- Replace a field in a `Tp.denoteArgs` tuple by `Member` witness. -/
+@[reducible]
+def Tp.denoteArgs.setByMember : {tps : List Tp} → Tp.denoteArgs p tps → Member tp tps → Tp.denote p tp → Tp.denoteArgs p tps
+  | _ :: _, (_, rest), .head, v => (v, rest)
+  | _ :: _, (hd, tl), .tail m, v => (hd, Tp.denoteArgs.setByMember tl m v)
+
+/-- Get the sub-value from a single reference path step. -/
+def RefPathSegment.get (step : RefPathSegment tp₁ tp₂) (v : Tp.denote p tp₁) : Tp.denote p tp₂ :=
+  match step with
+  | .field mem => Tp.denoteArgs.getByMember p v mem
+
+/-- Set (replace) the sub-value at a single reference path step. -/
+def RefPathSegment.set (step : RefPathSegment tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ :=
+  match step with
+  | .field mem => Tp.denoteArgs.setByMember p v mem v'
+
+/-- Get the sub-value at the end of a reference path. -/
+@[simp]
+def RefPath.get (path : RefPath tp₁ tp₂) (v : Tp.denote p tp₁) : Tp.denote p tp₂ :=
+  match path with
+  | .nil => v
+  | .cons rest step => RefPathSegment.get p step (RefPath.get rest v)
+
+/-- Modify the sub-value at the end of a reference path, returning the updated root value. -/
+@[simp]
+def RefPath.modify (path : RefPath tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) : Tp.denote p tp₁ :=
+  match path with
+  | .nil => v'
+  | .cons rest step =>
+    let inner := RefPath.get p rest v
+    let inner' := RefPathSegment.set p step inner v'
+    RefPath.modify rest v inner'
+
+@[simp] theorem RefPath.get_nil {p} {tp : Tp} {v : Tp.denote p tp} : RefPath.get p .nil v = v := rfl
+@[simp] theorem RefPath.modify_nil {p} {tp : Tp} {v v' : Tp.denote p tp} : RefPath.modify p .nil v v' = v' := rfl
+
+@[simp]
+theorem Tp.denoteArgs.getByMember_setByMember {tps : List Tp} {tpl : Tp.denoteArgs p tps}
+    {mem : Member tp tps} {v' : Tp.denote p tp} :
+    Tp.denoteArgs.getByMember p (Tp.denoteArgs.setByMember p tpl mem v') mem = v' := by
+  induction mem with
+  | head => rfl
+  | tail _ ih => exact ih
+
+@[simp]
+theorem RefPathSegment.get_set (step : RefPathSegment tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) :
+    RefPathSegment.get p step (RefPathSegment.set p step v v') = v' := by
+  cases step with
+  | field mem => simp [RefPathSegment.get, RefPathSegment.set]
+
+@[simp]
+theorem RefPath.get_modify (path : RefPath tp₁ tp₂) (v : Tp.denote p tp₁) (v' : Tp.denote p tp₂) :
+    RefPath.get p path (RefPath.modify p path v v') = v' := by
+  induction path with
+  | nil => rfl
+  | cons rest step ih => simp [RefPath.get, RefPath.modify, ih]
 
 /- In this section we provide unification hints to assist with the ergonomics of stating theorems -/
 section unificationHints

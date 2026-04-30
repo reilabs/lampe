@@ -204,6 +204,17 @@ partial def makeExpr [MonadDSL m]
 | `(noir_expr|($expr:noir_expr)) => makeExpr expr binder k
 | `(noir_expr|($expr:noir_lambda)) => makeLambda expr binder k
 
+-- projectRef Builtin Calls
+| `(noir_expr|(#_ projectRef $idx:num returning $tp)( $args,* )) =>
+  makeArgs args.getElems fun args => do
+    let #[arg] := args | throwError "projectRef expects exactly one argument"
+    let member ← makeMember idx.getNat
+    let acc ← ``(RefPathSegment.field $member)
+    wrapInLet
+      (←``(Expr.projectRef $arg $acc))
+      binder
+      k
+
 -- Builtin Calls
 | `(noir_expr|(#_ $name:ident returning $tp)( $args,* )) =>
   let emitBuiltin : m (TSyntax `term) := makeArgs args.getElems fun args => do
@@ -216,7 +227,8 @@ partial def makeExpr [MonadDSL m]
 
 -- Bare function refs
 | `(noir_expr|$ref:noir_funcref) => match ref with
-  | `(noir_funcref|(#_ $_:ident returning $_)) =>
+  | `(noir_funcref|(#_ $_:ident returning $_))
+  | `(noir_funcref|(#_ projectRef $_ returning $_)) =>
     throwError "Encountered builtin {ref} as bare function reference"
 
   -- Ident funcrefs (calling via a local name)

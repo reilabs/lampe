@@ -69,6 +69,12 @@ def Expr.getLens (v : rep tp₁) (lens : Lampe.Lens rep tp₁ tp₂)
 
 /-- A utility function for creating a member access. -/
 @[reducible]
-def Expr.getMember (v : rep (Tp.tuple name tps)) (member : Lampe.Builtin.Member tp tps)
+def Expr.getMember (v : rep (Tp.tuple name tps)) (member : Lampe.Member tp tps)
   : Lampe.Expr rep tp :=
   Expr.callBuiltin _ tp (Lampe.Builtin.getMember member) h![v]
+
+/-- Project a reference by appending a path segment. -/
+@[reducible]
+def Expr.projectRef (v : rep (Tp.ref tp₁)) (segment : RefPathSegment tp₁ tp₂)
+  : Lampe.Expr rep (Tp.ref tp₂) :=
+  Expr.callBuiltin [Tp.ref tp₁] (Tp.ref tp₂) (Lampe.Builtin.projectRef segment) h![v]

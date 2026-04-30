@@ -5,9 +5,7 @@ import Lampe.Builtin.Basic
 
 namespace Lampe.Builtin
 
-inductive Member : Tp → List Tp → Type where
-| head : Member tp (tp :: tps)
-| tail : Member tp tps → Member tp (tp' :: tps)
+export Lampe (Member)
 
 @[reducible]
 def indexTpl (tpl : Tp.denoteArgs p tps) (mem : Member tp tps) : Tp.denote p tp := match tps with

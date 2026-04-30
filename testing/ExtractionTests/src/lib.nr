@@ -14,3 +14,5 @@ mod direct_lambda;
 mod reserved_keywords;
 mod shadow_mut;
 mod unit_return;
+mod bool_neq;
+mod ref_member_access;

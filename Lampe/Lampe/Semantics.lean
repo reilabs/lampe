@@ -235,7 +235,7 @@ theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} 
     simp only
     rename Lambdas _ => lmbs
     rename ValHeap _ => vh
-    rename Ref => r
+    rename Address => r
     generalize hL : (⟨_, _, _⟩ : Lambda _) = lambda
     have hi : r ∉ lmbs ∧ r ∉ st₂.lambdas := by aesop
     have hd₁ : Finmap.Disjoint lmbs (Finmap.singleton r lambda) := by

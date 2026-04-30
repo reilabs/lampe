@@ -9,7 +9,7 @@ namespace Lampe
 Instructs how to access a inner value from another value, e.g., a particular value of a vector.
 -/
 inductive Access (rep : Tp → Type _) : Tp → Tp → Type _
-| tuple : (mem : Builtin.Member tp tps) → Access rep (.tuple name tps) tp
+| tuple : (mem : Member tp tps) → Access rep (.tuple name tps) tp
 | array : (idx : rep $ .u 32) → Access rep (.array tp n) tp
 | vector : (idx : rep $ .u 32) → Access rep (.vector tp) tp
 

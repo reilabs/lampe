@@ -789,7 +789,7 @@ def mutRefLoopEnv : Env :=
     chain_from_explicit_readref_smoke
   ], []⟩
 
-theorem increment_ref_spec {r : Ref} {v : Fp p} :
+theorem increment_ref_spec {r : Tp.denote p Tp.field.ref} {v : Fp p} :
     STHoare p mutRefLoopEnv
     [r ↦ ⟨.field, v⟩]
     (increment_ref.call h![] h![r])
