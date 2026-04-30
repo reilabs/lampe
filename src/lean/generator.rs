@@ -710,9 +710,7 @@ impl LeanGenerator<'_, '_, '_> {
             }
             TypeBinding::Unbound(id, kind) => {
                 let kind = self.generate_kind(kind);
-                let name = name.unwrap_or_else(|| {
-                    panic!("Type variable {id:?} had no name but is required to")
-                });
+                let name = name.unwrap_or_else(|| format!("_tv{id:?}"));
                 Type::variable(name, kind)
             }
         }
