@@ -347,6 +347,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/lake-packages"
           echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
       - name: Restore Lake Packages Cache
+        if: ${{ false }}
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.LAKE_PKG_DIR }}
