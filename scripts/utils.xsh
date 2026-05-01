@@ -103,6 +103,18 @@ def change_required_dep_to_rev_by_regex(toml, name_regex, rev):
 
     return toml
 
+def change_required_dep_to_git_and_rev_by_regex(toml, name_regex, git_url, rev):
+    compiled_name_regex = re.compile(name_regex)
+
+    for i, v in enumerate(toml['require']):
+        if not compiled_name_regex.match(v['name']):
+                continue
+
+        v['git'] = git_url
+        v['rev'] = rev
+
+    return toml
+
 def change_toml_required_dep_to_path_by_regex(toml_path, name_regex, path):
     lakefile_toml = load_toml(toml_path)
 
@@ -114,6 +126,13 @@ def change_toml_required_dep_to_rev_by_regex(toml_path, name_regex, rev):
     lakefile_toml = load_toml(toml_path)
 
     change_required_dep_to_rev_by_regex(lakefile_toml, name_regex, rev)
+
+    write_toml(toml_path, lakefile_toml)
+
+def change_toml_required_dep_to_git_and_rev_by_regex(toml_path, name_regex, git_url, rev):
+    lakefile_toml = load_toml(toml_path)
+
+    change_required_dep_to_git_and_rev_by_regex(lakefile_toml, name_regex, git_url, rev)
 
     write_toml(toml_path, lakefile_toml)
 
@@ -151,6 +170,34 @@ def change_manifest_required_dep_to_path_by_regex(manifest_path, name_regex, pat
         package['dir'] = path
 
     write_json(manifest_path, manifest)
+
+def change_dependency_git_url_and_tag_by_regex(toml, name_regex, git_url_regex, target_git_url, tag):
+    compiled_name_regex = re.compile(name_regex)
+    compiled_git_url_regex = re.compile(git_url_regex)
+
+    for name, dep in toml.get('dependencies', {}).items():
+        if not compiled_name_regex.match(name):
+            continue
+        if 'git' not in dep:
+            continue
+        if not compiled_git_url_regex.match(dep['git']):
+            continue
+
+        dep['git'] = target_git_url
+        dep['tag'] = tag
+        if 'rev' in dep:
+            del dep['rev']
+        if 'branch' in dep:
+            del dep['branch']
+
+    return toml
+
+def change_toml_dependency_git_url_and_tag_by_regex(toml_path, name_regex, git_url_regex, target_git_url, tag):
+    toml = load_toml(toml_path)
+
+    change_dependency_git_url_and_tag_by_regex(toml, name_regex, git_url_regex, target_git_url, tag)
+
+    write_toml(toml_path, toml)
 
 def read_noir_version():
     rust_cargo_toml = load_toml(rust_cargo_toml_path)
