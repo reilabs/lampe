@@ -19,6 +19,7 @@ import «ExtractionTests-0.0.0».Extracted.Patterns
 import «ExtractionTests-0.0.0».Extracted.RefMemberAccess
 import «ExtractionTests-0.0.0».Extracted.ReservedKeywords
 import «ExtractionTests-0.0.0».Extracted.ShadowMut
+import «ExtractionTests-0.0.0».Extracted.SignedGeneric
 import «ExtractionTests-0.0.0».Extracted.StructNamespaces
 import «ExtractionTests-0.0.0».Extracted.TypeOrder
 import «ExtractionTests-0.0.0».Extracted.UnconstrainedReturn
@@ -45,6 +46,7 @@ def env := AliasMemberAccess.env
   ++ RefMemberAccess.env
   ++ ReservedKeywords.env
   ++ ShadowMut.env
+  ++ SignedGeneric.env
   ++ StructNamespaces.env
   ++ TypeOrder.env
   ++ UnconstrainedReturn.env

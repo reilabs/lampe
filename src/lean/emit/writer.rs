@@ -135,7 +135,8 @@ impl Writer<'_> {
         self.write_type_expression(&typ.expr);
 
         // We ALWAYS want to kind-annotate expressions with a type not `Type`.
-        let include_kind = include_kind || matches!(typ.kind, Kind::Field | Kind::U(_));
+        let include_kind =
+            include_kind || matches!(typ.kind, Kind::Field | Kind::U(_) | Kind::I(_));
 
         if include_kind {
             self.append_to_line(": ");
@@ -387,6 +388,7 @@ impl Writer<'_> {
                 match &typ.kind {
                     Kind::Field => self.append_to_line("fConst!("),
                     Kind::U(_) => self.append_to_line("uConst!("),
+                    Kind::I(_) => self.append_to_line("iConst!("),
                     Kind::Type => panic!("Encountered Type-kinded generic used as value"),
                 }
                 self.append_to_line(&typ.name);
@@ -692,6 +694,7 @@ impl Writer<'_> {
             Kind::Field => "Field".to_string(),
             Kind::Type => "Type".to_string(),
             Kind::U(n) => format!("u{n}"),
+            Kind::I(n) => format!("i{n}"),
         });
     }
 }

@@ -495,6 +495,14 @@ theorem constFp_intro: STHoare p Γ ⟦⟧ (.constFp c) fun v => v = c := by
   apply SLP.ent_star_top
   assumption
 
+theorem constI_intro: STHoare p Γ ⟦⟧ (.constI c) fun v => v = c := by
+  unfold STHoare THoare
+  intro H st hp
+  constructor
+  simp only
+  apply SLP.ent_star_top
+  assumption
+
 theorem skip_intro : STHoare p Γ ⟦⟧ (.skip) (fun v => v = ()) := by
   unfold STHoare
   intros

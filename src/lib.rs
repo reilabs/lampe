@@ -716,6 +716,27 @@ impl<T, U> MyInto<T> for U where T: From<U> {
         print!("{}", result.unwrap().1);
     }
 
+    /// Issue #269: Noir allows signed numeric kinds for generics (e.g.
+    /// `let N: i32`). Lampe must produce a `Kind::I(_)` instead of panicking
+    /// at `expect_constant_numeric_kind`.
+    #[test]
+    fn test_signed_numeric_generic() {
+        let source = r"
+pub fn use_signed() -> i32 {
+    foo::<7_i32>()
+}
+
+fn foo<let N: i32>() -> i32 {
+    N
+}
+";
+
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
+
     /// Issue #266: Noir auto-wraps direct oracle calls from constrained code in
     /// unconstrained proxies during a post-monomorphization step that lampe
     /// doesn't run, so lampe must accept the call through `FunctionKind::Oracle`

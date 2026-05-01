@@ -38,6 +38,7 @@ inductive Omni : (Γ : Env) → (st : State p) → (expr : Expr (Tp.denote p) tp
 | litUnit {Q} : Q (some (st, ())) → Omni Γ st (.litNum .unit n) Q
 | constFp {Q} {c : Int} : Q (some (st, c)) → Omni Γ st (.constFp c) Q
 | constU {Q} {c : U w} : Q (some (st, c)) → Omni Γ st (.constU c) Q
+| constI {Q} {c : I w} : Q (some (st, c)) → Omni Γ st (.constI c) Q
 | fn {Q} : Q (some (st, r)) → Omni Γ st (.fn _ _ r) Q
 | var {Q} : Q (some (st, v)) → Omni Γ st (.var v) Q
 | skip {Q} : Q (some (st, ())) → Omni Γ st (.skip) Q
@@ -137,6 +138,7 @@ theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} 
   | litUnit
   | constU
   | constFp
+  | constI
   | fmtStr hq
   | skip hq
   | fn

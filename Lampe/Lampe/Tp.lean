@@ -36,6 +36,7 @@ deriving BEq
 
 inductive Kind where
 | u (size : Nat)
+| i (size : Nat)
 | field
 | type
 deriving BEq, Nonempty
@@ -107,6 +108,7 @@ instance : DecidableEq $ List Tp := tpsDecEq
 @[reducible]
 def Kind.denote : Kind → Type
 | .u w  => U w
+| .i w  => I w
 | .field => Int
 | .type => Tp
 
@@ -114,8 +116,8 @@ def kindDecEq (a b : Kind) : Decidable (a = b) := by
   cases a <;> cases b
   all_goals try {right; rfl}
   all_goals try {left; simp_all}
-  simp only [Kind.u.injEq]
-  exact inferInstance
+  case u.u => simp only [Kind.u.injEq]; exact inferInstance
+  case i.i => simp only [Kind.i.injEq]; exact inferInstance
 
 def kindsDecEq (a b : List Kind) : Decidable (a = b) := match a, b with
 | [], [] => isTrue rfl

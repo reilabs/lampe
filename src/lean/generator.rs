@@ -673,6 +673,7 @@ impl LeanGenerator<'_, '_, '_> {
             NoirKind::Numeric(kind) => match self.generate_lean_type_value(kind, None).expr {
                 TypeExpr::Builtin(BuiltinTypeExpr { tag, .. }) => match tag {
                     BuiltinTag::U(i) => Kind::U(i),
+                    BuiltinTag::I(i) => Kind::I(i),
                     BuiltinTag::Field => Kind::Field,
                     _ => panic!("Invalid kind {tag:?} encountered for numeric kind"),
                 },
@@ -3008,6 +3009,7 @@ impl LeanGenerator<'_, '_, '_> {
                     TypeExpr::Builtin(b) => match b.tag {
                         BuiltinTag::Field => Kind::Field,
                         BuiltinTag::U(w) => Kind::U(w),
+                        BuiltinTag::I(w) => Kind::I(w),
                         _ => panic!("Invalid kind for const generic"),
                     },
                     _ => panic!("Invalid kind for const generic"),
