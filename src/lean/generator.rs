@@ -347,7 +347,7 @@ impl LeanGenerator<'_, '_, '_> {
                 })
                 .collect::<HashSet<_>>();
 
-            all_defs.extend(module_definitions.into_iter());
+            all_defs.extend(module_definitions);
         }
 
         all_defs
@@ -2847,8 +2847,7 @@ impl LeanGenerator<'_, '_, '_> {
                         || panic!("Trait function {name} missing Self type"),
                         |t| self.generate_lean_type_value(t, Some(bindings)),
                     );
-                    let trait_generics = if func_meta.trait_impl.is_some() {
-                        let trait_impl_id = func_meta.trait_impl.unwrap();
+                    let trait_generics = if let Some(trait_impl_id) = func_meta.trait_impl {
                         self.context
                             .def_interner
                             .get_ordered_generics_for_impl(trait_impl_id)
@@ -2945,7 +2944,7 @@ impl LeanGenerator<'_, '_, '_> {
                                 return_type,
                             })
                         }
-                        _ => panic!(
+                        FunctionKind::TraitFunctionWithoutBody => panic!(
                             "Encountered a call to a function with kind {:?} where none should \
                              occur",
                             func_meta.kind
@@ -3025,17 +3024,12 @@ impl LeanGenerator<'_, '_, '_> {
                 // impl block fixes a value for each. At a `Self::CONST` use
                 // site we resolve to the value the chosen impl bound to that
                 // name.
-                let associated = self
-                    .context
-                    .def_interner
-                    .get_associated_types_for_impl(*impl_id);
+                let associated = self.context.def_interner.get_associated_types_for_impl(*impl_id);
                 let named = associated
                     .iter()
                     .find(|t| t.name.as_str() == const_name)
                     .unwrap_or_else(|| {
-                        panic!(
-                            "Trait impl {impl_id:?} missing associated constant {const_name}"
-                        )
+                        panic!("Trait impl {impl_id:?} missing associated constant {const_name}")
                     });
                 let resolved_typ = named.typ.follow_bindings();
                 let value_type = self.generate_lean_type_value(&resolved_typ, None);
@@ -3053,8 +3047,7 @@ impl LeanGenerator<'_, '_, '_> {
                         }))
                     }
                     other => panic!(
-                        "Associated constant {const_name} resolved to unsupported value \
-                         {other:?}"
+                        "Associated constant {const_name} resolved to unsupported value {other:?}"
                     ),
                 }
             }
@@ -3336,7 +3329,7 @@ impl LeanGenerator<'_, '_, '_> {
 /// Functionality for basic resolution of names and other utility functions.
 impl LeanGenerator<'_, '_, '_> {
     /// Substitutes all bindings recursively in the provided `typ`.
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity.
+    #[expect(clippy::self_only_used_in_recursion)] // The self parameter is for uniformity.
     pub fn substitute_bindings(&self, typ: &NoirType, bindings: &TypeBindings) -> NoirType {
         match typ {
             NoirType::TypeVariable(tv)
@@ -3428,7 +3421,7 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[must_use]
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
+    #[expect(clippy::self_only_used_in_recursion)] // The self parameter is for uniformity
     pub fn is_function_unconstrained(&self, tp: &NoirType) -> bool {
         match tp {
             NoirType::Function(_, _, _, is_unconstrained) => *is_unconstrained,
@@ -3438,7 +3431,7 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[must_use]
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
+    #[expect(clippy::self_only_used_in_recursion)] // The self parameter is for uniformity
     pub fn unfold_alias(&self, typ: NoirType) -> NoirType {
         match typ {
             NoirType::Alias(alias, generics) => {

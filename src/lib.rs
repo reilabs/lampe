@@ -776,8 +776,8 @@ fn foo<let N: i32>() -> i32 {
 
     /// Issue #266: Noir auto-wraps direct oracle calls from constrained code in
     /// unconstrained proxies during a post-monomorphization step that lampe
-    /// doesn't run, so lampe must accept the call through `FunctionKind::Oracle`
-    /// rather than panicking.
+    /// doesn't run, so lampe must accept the call through
+    /// `FunctionKind::Oracle` rather than panicking.
     #[test]
     fn test_oracle_direct_call() {
         let source = r"
