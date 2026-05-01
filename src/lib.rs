@@ -716,6 +716,43 @@ impl<T, U> MyInto<T> for U where T: From<U> {
         print!("{}", result.unwrap().1);
     }
 
+    /// Trait associated constants are declared on the trait as additional
+    /// kind-annotated params alongside associated types. At a `Self::CONST`
+    /// use site lampe resolves to the impl's chosen value rather than
+    /// panicking with "Support for associated constants".
+    #[test]
+    fn test_trait_associated_constant() {
+        let source = r"
+pub trait HasConst {
+    let N: u32;
+    let M: i32;
+
+    fn double_n() -> u32;
+    fn shift_m() -> i32;
+}
+
+pub struct Foo {}
+
+impl HasConst for Foo {
+    let N: u32 = 5;
+    let M: i32 = -7;
+
+    fn double_n() -> u32 {
+        Self::N * 2
+    }
+
+    fn shift_m() -> i32 {
+        Self::M + 1
+    }
+}
+";
+
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
+
     /// Issue #269: Noir allows signed numeric kinds for generics (e.g.
     /// `let N: i32`). Lampe must produce a `Kind::I(_)` instead of panicking
     /// at `expect_constant_numeric_kind`.

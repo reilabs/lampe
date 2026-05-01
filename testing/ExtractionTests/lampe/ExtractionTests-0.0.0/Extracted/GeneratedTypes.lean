@@ -9,7 +9,7 @@ noir_struct_def «ExtractionTests-0.0.0»::struct_namespaces::test::Foo<> {
   Field,
 }
 
-noir_type_alias «ExtractionTests-0.0.0»::alias_member_access::Foo<A: Type, B: Type> := Tuple<A, B>;
+noir_struct_def «ExtractionTests-0.0.0»::trait_associated_const::Bar<> {}
 
 noir_struct_def «ExtractionTests-0.0.0»::associated_type::Pair<> {
   Field,
@@ -55,6 +55,10 @@ noir_struct_def «ExtractionTests-0.0.0»::ref_member_access::Foo<> {
   «ExtractionTests-0.0.0»::ref_member_access::Bar<>,
 }
 
+noir_struct_def «ExtractionTests-0.0.0»::trait_associated_const::Foo<> {}
+
+noir_type_alias «ExtractionTests-0.0.0»::alias_member_access::Foo<A: Type, B: Type> := Tuple<A, B>;
+
 noir_struct_def «ExtractionTests-0.0.0»::impl_trait_return::Bar<> {}
 
 noir_struct_def «ExtractionTests-0.0.0»::impl_trait_return::Baz<> {
@@ -91,5 +95,9 @@ noir_trait_def «ExtractionTests-0.0.0»::impl_trait_return::Foo<> [as_impl_ret:
 
 noir_trait_def «ExtractionTests-0.0.0»::multiple_generics::Foo<I: Type> [] := {
   method foo3<>(Self) -> I;
+}
+
+noir_trait_def «ExtractionTests-0.0.0»::trait_associated_const::HasConst<> [N: u32] := {
+  method double_n<>() -> u32;
 }
 

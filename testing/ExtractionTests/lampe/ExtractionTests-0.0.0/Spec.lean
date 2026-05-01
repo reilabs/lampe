@@ -52,3 +52,31 @@ theorem use_baz_spec {lp} :
   resolve_trait
   steps
   norm_cast
+
+-- Trait associated constants: each impl fixes a value for the trait's
+-- declared `let CONST` slot, and `Self::CONST` use sites resolve to that
+-- value. These specs exercise the `Foo` and `Bar` impls of `HasConst`,
+-- which fix `N := 5` and `N := 10` respectively. The `double_n` method
+-- returns `Self::N * 2`, so the result must be the doubled constant.
+abbrev TraitAssocConstEnv :=
+  «ExtractionTests-0.0.0».TraitAssociatedConst.env
+
+theorem double_foo_spec {lp} :
+    STHoare lp TraitAssocConstEnv ⟦⟧
+      («ExtractionTests-0.0.0::trait_associated_const::double_foo».call h![] h![])
+      fun v => v = (10 : U 32) := by
+  enter_decl
+  steps
+  resolve_trait
+  steps
+  rfl
+
+theorem double_bar_spec {lp} :
+    STHoare lp TraitAssocConstEnv ⟦⟧
+      («ExtractionTests-0.0.0::trait_associated_const::double_bar».call h![] h![])
+      fun v => v = (20 : U 32) := by
+  enter_decl
+  steps
+  resolve_trait
+  steps
+  rfl

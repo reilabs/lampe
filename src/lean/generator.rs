@@ -3019,8 +3019,44 @@ impl LeanGenerator<'_, '_, '_> {
 
                 Expression::Literal(literal)
             }
-            DefinitionKind::AssociatedConstant(..) => {
-                unimplemented!("Support for associated constants")
+            DefinitionKind::AssociatedConstant(impl_id, const_name) => {
+                // Associated constants are declared on the trait as additional
+                // kind-annotated params (alongside associated types) and the
+                // impl block fixes a value for each. At a `Self::CONST` use
+                // site we resolve to the value the chosen impl bound to that
+                // name.
+                let associated = self
+                    .context
+                    .def_interner
+                    .get_associated_types_for_impl(*impl_id);
+                let named = associated
+                    .iter()
+                    .find(|t| t.name.as_str() == const_name)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "Trait impl {impl_id:?} missing associated constant {const_name}"
+                        )
+                    });
+                let resolved_typ = named.typ.follow_bindings();
+                let value_type = self.generate_lean_type_value(&resolved_typ, None);
+                match value_type.expr {
+                    TypeExpr::NumericConst(value) => {
+                        Expression::Literal(Literal::Numeric(NumericLiteral {
+                            value,
+                            typ: value_type.kind.into_type(),
+                        }))
+                    }
+                    TypeExpr::TypeVariable(name) => {
+                        Expression::Literal(Literal::ConstGeneric(ConstGenericLiteral {
+                            name,
+                            kind: value_type.kind,
+                        }))
+                    }
+                    other => panic!(
+                        "Associated constant {const_name} resolved to unsupported value \
+                         {other:?}"
+                    ),
+                }
             }
         }
     }

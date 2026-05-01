@@ -21,6 +21,7 @@ import «ExtractionTests-0.0.0».Extracted.ReservedKeywords
 import «ExtractionTests-0.0.0».Extracted.ShadowMut
 import «ExtractionTests-0.0.0».Extracted.SignedGeneric
 import «ExtractionTests-0.0.0».Extracted.StructNamespaces
+import «ExtractionTests-0.0.0».Extracted.TraitAssociatedConst
 import «ExtractionTests-0.0.0».Extracted.TypeOrder
 import «ExtractionTests-0.0.0».Extracted.UnconstrainedReturn
 import «ExtractionTests-0.0.0».Extracted.UnitReturn
@@ -48,6 +49,7 @@ def env := AliasMemberAccess.env
   ++ ShadowMut.env
   ++ SignedGeneric.env
   ++ StructNamespaces.env
+  ++ TraitAssociatedConst.env
   ++ TypeOrder.env
   ++ UnconstrainedReturn.env
   ++ UnitReturn.env

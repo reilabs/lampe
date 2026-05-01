@@ -20,3 +20,4 @@ mod array_as_vector;
 mod impl_trait_return;
 mod oracle;
 mod signed_generic;
+mod trait_associated_const;
