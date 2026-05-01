@@ -587,7 +587,7 @@ impl LeanGenerator<'_, '_, '_> {
             NoirType::Quoted(quoted) => self.generate_quoted_type_value(quoted),
             NoirType::Forall(..) => panic!("Encountered forall type"),
             NoirType::TraitAsType(..) => {
-                panic!("Encountered TraitAsType, but this should be resolved to a type variable")
+                panic!("Encountered unresolved TraitAsType outside trait definition")
             }
             // FIXME We should probably extract an "Error" type and then blackhole it.
             NoirType::Error => Type::unit(),
@@ -710,9 +710,7 @@ impl LeanGenerator<'_, '_, '_> {
             }
             TypeBinding::Unbound(id, kind) => {
                 let kind = self.generate_kind(kind);
-                let name = name.unwrap_or_else(|| {
-                    panic!("Type variable {id:?} had no name but is required to")
-                });
+                let name = name.unwrap_or_else(|| format!("_tv{id:?}"));
                 Type::variable(name, kind)
             }
         }
@@ -737,7 +735,7 @@ impl LeanGenerator<'_, '_, '_> {
         let name = self.fully_qualified_trait_name(trait_def.crate_id, id);
         let trait_generics =
             self.gather_lean_type_patterns_from_resolved_generics(&trait_def.generics);
-        let associated_types =
+        let mut associated_types =
             self.gather_lean_type_patterns_from_resolved_generics(&trait_def.associated_types);
 
         let methods = trait_def
@@ -755,7 +753,21 @@ impl LeanGenerator<'_, '_, '_> {
                     .iter()
                     .map(|t| self.generate_lean_type_value(t, None))
                     .collect_vec();
-                let out_type = self.generate_lean_type_value(method.return_type(), None);
+
+                let out_type = match method.return_type() {
+                    NoirType::TraitAsType(..) => {
+                        let param_name = format!("{method_name}_ret");
+                        associated_types.push(TypePattern {
+                            pattern: param_name.clone(),
+                            kind:    Kind::Type,
+                        });
+                        Type {
+                            expr: TypeExpr::TypeVariable(param_name),
+                            kind: Kind::Type,
+                        }
+                    }
+                    other => self.generate_lean_type_value(other, None),
+                };
 
                 TraitMethodDeclaration {
                     name: method_name,
@@ -1057,7 +1069,7 @@ impl LeanGenerator<'_, '_, '_> {
 
         let generics = self.gather_function_generic_patterns(function_meta);
         let parameters = self.generate_function_parameters(function_meta);
-        let return_type = self.generate_lean_type_value(function_meta.return_type(), None);
+        let return_type = self.resolve_function_return_type(*id, function_meta, None);
         let is_unconstrained = self.is_function_unconstrained(&function_meta.typ);
 
         let body = if is_unconstrained {
@@ -1093,6 +1105,24 @@ impl LeanGenerator<'_, '_, '_> {
             body,
             deprecation,
         })
+    }
+
+    /// Resolves the return type of a function, handling `impl Trait` return
+    /// types by looking up the body's inferred type from the interner.
+    fn resolve_function_return_type(
+        &self,
+        id: FuncId,
+        meta: &FuncMeta,
+        bindings: Option<&TypeBindings>,
+    ) -> Type {
+        match meta.return_type() {
+            NoirType::TraitAsType(..) => {
+                let body_expr_id = self.context.def_interner.function(&id).as_expr();
+                let body_return_type = self.context.def_interner.id_type(body_expr_id);
+                self.generate_lean_type_value(&body_return_type, bindings)
+            }
+            other => self.generate_lean_type_value(other, bindings),
+        }
     }
 
     /// Generates a call to the builtin function given by `name` with the
@@ -1558,7 +1588,7 @@ impl LeanGenerator<'_, '_, '_> {
         let name = quote_lean_keywords(self.context.function_name(&id));
 
         let parameters = self.generate_function_parameters(function_meta);
-        let return_type = self.generate_lean_type_value(function_meta.return_type(), None);
+        let return_type = self.resolve_function_return_type(id, function_meta, None);
 
         // If type patterns have the same name and kind, they are the same variable at
         // the definition site, so we can correctly unique them.
@@ -1795,7 +1825,15 @@ impl LeanGenerator<'_, '_, '_> {
             .iter()
             .map(|a| self.generate_expr(*a, prologue))
             .collect_vec();
-        let function_expr = self.generate_expr(call.func, prologue);
+        let mut function_expr = self.generate_expr(call.func, prologue);
+
+        // For builtin calls, the function meta's return type may contain
+        // unresolved type variables (e.g. `Vector<T>` from compiler-generated
+        // coercion functions). Override with the call expression's concrete
+        // output type, which is fully resolved by the type checker.
+        if let Expression::BuiltinCallRef(ref mut builtin) = function_expr {
+            builtin.return_type = output_type.clone();
+        }
 
         // The Lean DSL only allows `noir_funcref(args)` — not `expr(args)`.
         // Valid funcrefs are: IdentCallRef, DeclCallRef, TraitCallRef,
@@ -2831,7 +2869,7 @@ impl LeanGenerator<'_, '_, '_> {
                         .map(|t| self.replace_self_type_with(&t, self_type.clone()))
                         .collect_vec();
                     let return_type = self.replace_self_type_with(
-                        &self.generate_lean_type_value(func_meta.return_type(), Some(bindings)),
+                        &self.resolve_function_return_type(*id, func_meta, Some(bindings)),
                         self_type.clone(),
                     );
 
@@ -2847,7 +2885,7 @@ impl LeanGenerator<'_, '_, '_> {
                     Expression::TraitCallRef(call_ref)
                 } else {
                     let return_type =
-                        self.generate_lean_type_value(func_meta.return_type(), Some(bindings));
+                        self.resolve_function_return_type(*id, func_meta, Some(bindings));
 
                     match func_meta.kind {
                         FunctionKind::LowLevel | FunctionKind::Builtin => {
@@ -3339,26 +3377,16 @@ impl LeanGenerator<'_, '_, '_> {
         let identified_ty = self.context.def_interner.id_type(id);
         let expr_bindings = self.context.def_interner.try_get_instantiation_bindings(id);
 
-        // Get the instantiated type of the expression.
-        let expr_ty = match (identified_ty, expr_bindings) {
-            (NoirType::TypeVariable(tv), Some(expr_bindings))
-                if expr_bindings.contains_key(&tv.id()) =>
-            {
-                expr_bindings[&tv.id()].2.clone()
-            }
-            (ty, _) => ty,
+        // Apply instantiation bindings to resolve type variables throughout
+        // the type, not just at the top level (e.g. Vector(NamedGeneric("T"))
+        // where the bindings map T -> bool).
+        let expr_ty = match expr_bindings {
+            Some(bindings) => self.substitute_bindings(&identified_ty, bindings),
+            None => identified_ty,
         };
 
-        match &expr_ty {
-            NoirType::TypeVariable(tv) => {
-                if let TypeBinding::Bound(bound_ty) = &*tv.borrow() {
-                    bound_ty.clone()
-                } else {
-                    expr_ty.clone()
-                }
-            }
-            _ => expr_ty,
-        }
+        // Recursively resolve any remaining bound type variables in the cells.
+        expr_ty.follow_bindings()
     }
 
     #[must_use]
