@@ -3329,7 +3329,7 @@ impl LeanGenerator<'_, '_, '_> {
 /// Functionality for basic resolution of names and other utility functions.
 impl LeanGenerator<'_, '_, '_> {
     /// Substitutes all bindings recursively in the provided `typ`.
-    #[expect(clippy::self_only_used_in_recursion)] // The self parameter is for uniformity.
+    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity.
     pub fn substitute_bindings(&self, typ: &NoirType, bindings: &TypeBindings) -> NoirType {
         match typ {
             NoirType::TypeVariable(tv)
@@ -3421,7 +3421,7 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[must_use]
-    #[expect(clippy::self_only_used_in_recursion)] // The self parameter is for uniformity
+    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
     pub fn is_function_unconstrained(&self, tp: &NoirType) -> bool {
         match tp {
             NoirType::Function(_, _, _, is_unconstrained) => *is_unconstrained,
@@ -3431,7 +3431,7 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[must_use]
-    #[expect(clippy::self_only_used_in_recursion)] // The self parameter is for uniformity
+    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
     pub fn unfold_alias(&self, typ: NoirType) -> NoirType {
         match typ {
             NoirType::Alias(alias, generics) => {
