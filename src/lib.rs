@@ -715,4 +715,26 @@ impl<T, U> MyInto<T> for U where T: From<U> {
 
         print!("{}", result.unwrap().1);
     }
+
+    /// Issue #266: Noir auto-wraps direct oracle calls from constrained code in
+    /// unconstrained proxies during a post-monomorphization step that lampe
+    /// doesn't run, so lampe must accept the call through `FunctionKind::Oracle`
+    /// rather than panicking.
+    #[test]
+    fn test_oracle_direct_call() {
+        let source = r"
+pub fn call_oracle(x: Field) -> Field {
+    // Safety: testing direct oracle call from constrained code
+    unsafe { foo(x) }
+}
+
+#[oracle(foo_oracle)]
+unconstrained fn foo(_x: Field) -> Field {}
+";
+
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
 }

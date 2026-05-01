@@ -2909,7 +2909,7 @@ impl LeanGenerator<'_, '_, '_> {
 
                             Expression::BuiltinCallRef(BuiltinCallRef { name, return_type })
                         }
-                        FunctionKind::Normal => {
+                        FunctionKind::Normal | FunctionKind::Oracle => {
                             let func_name = match &func_meta.self_type {
                                 Some(self_type) => {
                                     let maybe_self_type =
