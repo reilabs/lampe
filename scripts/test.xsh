@@ -142,6 +142,8 @@ def run_tests(dir):
     test_cases_dir = script_dir
 
     selected_test = args.test or ""
+    if 'LAMPE_TEST_CURRENT_REPO_URL' not in ${...}:
+        $LAMPE_TEST_CURRENT_REPO_URL=$(git remote get-url origin)
     update_mode = args.update
     if 'LAMPE_TEST_CURRENT_COMMIT_SHA' not in ${...}:
         $LAMPE_TEST_CURRENT_COMMIT_SHA=$(git rev-parse HEAD)
@@ -262,6 +264,16 @@ def run_test_in_dir(working_dir, original_dir, update_mode):
     elif (working_dir / "clean.sh").exists():
         /usr/bin/env bash @(working_dir / "clean.sh")
 
+    nargo_toml_path = working_dir / "Nargo.toml"
+    if nargo_toml_path.exists():
+        change_toml_dependency_git_url_and_tag_by_regex(
+            nargo_toml_path,
+            '^git_dependency.*$',
+            '^https://github\\.com/reilabs/lampe/?(?:\\.git)?$',
+            $LAMPE_TEST_CURRENT_REPO_URL,
+            $LAMPE_TEST_CURRENT_COMMIT_SHA,
+        )
+
     cmd = [str(cli), "--root", str(working_dir)]
     subprocess.run(cmd, check=True)
 
@@ -310,8 +322,12 @@ def run_test_in_dir(working_dir, original_dir, update_mode):
                 change_manifest_required_dep_to_path_by_regex(manifest_path, '^Lampe$', lampe_path)
                 change_manifest_required_dep_to_path_by_regex(manifest_path, '^«std-.*»$', stdlib_path)
 
-            rev = $LAMPE_TEST_CURRENT_COMMIT_SHA
-            change_toml_required_dep_to_rev_by_regex(lakefile_path, '^GitDepWithLampe-.*$', rev)
+            change_toml_required_dep_to_git_and_rev_by_regex(
+                lakefile_path,
+                '^GitDepWithLampe-.*$',
+                $LAMPE_TEST_CURRENT_REPO_URL,
+                $LAMPE_TEST_CURRENT_COMMIT_SHA,
+            )
 
         build_lake(lampe_dir)
         cleanup_ci_lake_build(lampe_dir)
