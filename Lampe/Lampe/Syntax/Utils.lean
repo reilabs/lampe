@@ -134,6 +134,12 @@ def matchGenericDefinitions [MonadUtil m] : TSyntax `ident → m (TSyntax `term)
 | `(ident|u32) => ``(Lampe.Kind.u 32)
 | `(ident|u64) => ``(Lampe.Kind.u 64)
 | `(ident|u128) => ``(Lampe.Kind.u 128)
+| `(ident|i1) => ``(Lampe.Kind.i 1)
+| `(ident|i8) => ``(Lampe.Kind.i 8)
+| `(ident|i16) => ``(Lampe.Kind.i 16)
+| `(ident|i32) => ``(Lampe.Kind.i 32)
+| `(ident|i64) => ``(Lampe.Kind.i 64)
+| `(ident|i128) => ``(Lampe.Kind.i 128)
 | k => throwError "Invalid generic kind {k}"
 
 /-- Turns the provided `kind` back into its syntactic term representation. -/
@@ -145,6 +151,12 @@ def quoteKind [MonadUtil m] (kind : Lampe.Kind) : m (TSyntax `term) :=
   | .u 32 => ``(Lampe.Kind.u 32)
   | .u 64 => ``(Lampe.Kind.u 64)
   | .u 128 => ``(Lampe.Kind.u 128)
+  | .i 1 => ``(Lampe.Kind.i 1)
+  | .i 8 => ``(Lampe.Kind.i 8)
+  | .i 16 => ``(Lampe.Kind.i 16)
+  | .i 32 => ``(Lampe.Kind.i 32)
+  | .i 64 => ``(Lampe.Kind.i 64)
+  | .i 128 => ``(Lampe.Kind.i 128)
   | .field => ``(Lampe.Kind.field)
   | .type => ``(Lampe.Kind.type)
   | _ => throwUnsupportedSyntax
@@ -158,6 +170,12 @@ partial def makeKindValue [MonadUtil m] : (kind: TSyntax `noir_kind) → m Lampe
 | `(noir_kind|u32) => pure $ Lampe.Kind.u 32
 | `(noir_kind|u64) => pure $ Lampe.Kind.u 64
 | `(noir_kind|u128) => pure $ Lampe.Kind.u 128
+| `(noir_kind|i1) => pure $ Lampe.Kind.i 1
+| `(noir_kind|i8) => pure $ Lampe.Kind.i 8
+| `(noir_kind|i16) => pure $ Lampe.Kind.i 16
+| `(noir_kind|i32) => pure $ Lampe.Kind.i 32
+| `(noir_kind|i64) => pure $ Lampe.Kind.i 64
+| `(noir_kind|i128) => pure $ Lampe.Kind.i 128
 | `(noir_kind|Type) => pure $ Lampe.Kind.type
 | k => throwError "Unsupported kind {k}"
 
@@ -173,6 +191,12 @@ partial def makeKind [MonadUtil m] : (kind : TSyntax `noir_kind) → m (TSyntax 
 | `(noir_kind|u32) => ``(Lampe.Kind.u 32)
 | `(noir_kind|u64) => ``(Lampe.Kind.u 64)
 | `(noir_kind|u128) => ``(Lampe.Kind.u 128)
+| `(noir_kind|i1) => ``(Lampe.Kind.i 1)
+| `(noir_kind|i8) => ``(Lampe.Kind.i 8)
+| `(noir_kind|i16) => ``(Lampe.Kind.i 16)
+| `(noir_kind|i32) => ``(Lampe.Kind.i 32)
+| `(noir_kind|i64) => ``(Lampe.Kind.i 64)
+| `(noir_kind|i128) => ``(Lampe.Kind.i 128)
 | `(noir_kind|Type) => ``(Lampe.Kind.type)
 | k => throwError "Unsupported kind {k}"
 

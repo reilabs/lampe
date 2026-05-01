@@ -19,7 +19,7 @@ use std::{
     process::ExitCode,
 };
 
-use clap::{arg, Parser};
+use clap::Parser;
 use lampe::{
     noir_error::{self, compilation, file},
     Error,

@@ -437,6 +437,21 @@ def delabLampeConstU : Delab := whenDelabExprOption getExpr >>= fun expr =>
       let const ← `(noir_expr|uConst!($(⟨delabedConstName⟩) : $(width):ident))
       return ←``(⸨$const⸩)
 
+@[app_delab Lampe.Expr.constI]
+def delabLampeConstI : Delab := whenDelabExprOption getExpr >>= fun expr =>
+  whenFullyApplied expr do
+    let const ← delab <| expr.getArg! 2
+    let width := Syntax.isNatLit? (← delab <| expr.getArg! 1) |>.get!
+    let width := mkIdent <| .mkSimple s!"i{width}"
+    if let some num := Syntax.isNatLit? const then
+      let const ← `(noir_expr|$(⟨.mkNatLit num⟩):num : $(width):ident)
+      return ←``(⸨$const⸩)
+    else
+      let constName := expr.getArg! 2
+      let delabedConstName ← delab constName
+      let const ← `(noir_expr|iConst!($(⟨delabedConstName⟩) : $(width):ident))
+      return ←``(⸨$const⸩)
+
 @[app_delab Lampe.Expr.litStr]
 def delabLampeLitStr : Delab := whenDelabExprOption getExpr >>= fun expr => whenFullyApplied expr do
   let args := expr.getAppArgs

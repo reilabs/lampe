@@ -14,11 +14,14 @@ import «ExtractionTests-0.0.0».Extracted.ImplTraitReturn
 import «ExtractionTests-0.0.0».Extracted.Lib
 import «ExtractionTests-0.0.0».Extracted.MultipleGenerics
 import «ExtractionTests-0.0.0».Extracted.NestedMemberAccess
+import «ExtractionTests-0.0.0».Extracted.Oracle
 import «ExtractionTests-0.0.0».Extracted.Patterns
 import «ExtractionTests-0.0.0».Extracted.RefMemberAccess
 import «ExtractionTests-0.0.0».Extracted.ReservedKeywords
 import «ExtractionTests-0.0.0».Extracted.ShadowMut
+import «ExtractionTests-0.0.0».Extracted.SignedGeneric
 import «ExtractionTests-0.0.0».Extracted.StructNamespaces
+import «ExtractionTests-0.0.0».Extracted.TraitAssociatedConst
 import «ExtractionTests-0.0.0».Extracted.TypeOrder
 import «ExtractionTests-0.0.0».Extracted.UnconstrainedReturn
 import «ExtractionTests-0.0.0».Extracted.UnitReturn
@@ -39,11 +42,14 @@ def env := AliasMemberAccess.env
   ++ Lib.env
   ++ MultipleGenerics.env
   ++ NestedMemberAccess.env
+  ++ Oracle.env
   ++ Patterns.env
   ++ RefMemberAccess.env
   ++ ReservedKeywords.env
   ++ ShadowMut.env
+  ++ SignedGeneric.env
   ++ StructNamespaces.env
+  ++ TraitAssociatedConst.env
   ++ TypeOrder.env
   ++ UnconstrainedReturn.env
   ++ UnitReturn.env

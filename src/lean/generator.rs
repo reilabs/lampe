@@ -347,7 +347,7 @@ impl LeanGenerator<'_, '_, '_> {
                 })
                 .collect::<HashSet<_>>();
 
-            all_defs.extend(module_definitions.into_iter());
+            all_defs.extend(module_definitions);
         }
 
         all_defs
@@ -673,6 +673,7 @@ impl LeanGenerator<'_, '_, '_> {
             NoirKind::Numeric(kind) => match self.generate_lean_type_value(kind, None).expr {
                 TypeExpr::Builtin(BuiltinTypeExpr { tag, .. }) => match tag {
                     BuiltinTag::U(i) => Kind::U(i),
+                    BuiltinTag::I(i) => Kind::I(i),
                     BuiltinTag::Field => Kind::Field,
                     _ => panic!("Invalid kind {tag:?} encountered for numeric kind"),
                 },
@@ -738,6 +739,17 @@ impl LeanGenerator<'_, '_, '_> {
         let mut associated_types =
             self.gather_lean_type_patterns_from_resolved_generics(&trait_def.associated_types);
 
+        // The trait's numeric associated constants flow into each method's
+        // own generic list, so that a `Self::CONST` use site inside a trait
+        // method body resolves through ordinary const-generic scoping (the
+        // same way a regular numeric generic parameter does).
+        let trait_assoc_const_patterns = trait_def
+            .associated_types
+            .iter()
+            .filter(|rg| matches!(rg.kind(), NoirKind::Numeric(_)))
+            .map(|rg| self.generate_lean_type_pattern_from_resolved_generic(rg))
+            .collect_vec();
+
         let methods = trait_def
             .methods
             .iter()
@@ -746,7 +758,9 @@ impl LeanGenerator<'_, '_, '_> {
                 let method_generics = self
                     .gather_lean_type_patterns_from_resolved_generics(&method.direct_generics)
                     .into_iter()
+                    .chain(trait_assoc_const_patterns.iter().cloned())
                     .filter(|g| !trait_generics.contains(g))
+                    .unique()
                     .collect_vec();
                 let parameters = method
                     .arguments()
@@ -1183,7 +1197,7 @@ impl LeanGenerator<'_, '_, '_> {
         // If it is a trait function we only want to gather direct generics, but if it
         // is a free function def we need to gather the generics from the impl scope as
         // well.
-        if data.trait_impl.is_some() || data.trait_id.is_some() {
+        let primary = if data.trait_impl.is_some() || data.trait_id.is_some() {
             &data.direct_generics
         } else {
             &data.all_generics
@@ -1195,8 +1209,92 @@ impl LeanGenerator<'_, '_, '_> {
                 Some(bindings),
             )
         })
-        .unique()
-        .collect()
+        .collect_vec();
+
+        // For non-trait functions, also surface the implicit generics that
+        // come from where-clause trait constraints (e.g. associated
+        // constants surfaced via `<T as Trait>::N`). The function-def side
+        // already includes these in its `<...>` slot via
+        // `gather_function_generic_patterns`; the call site must mirror
+        // them, applying the call's instantiation bindings so that concrete
+        // calls like `poly_array::<Foo>()` carry the impl's bound numeric
+        // value rather than the abstract type-variable name.
+        let mut constraint_vals = Vec::new();
+        if !(data.trait_impl.is_some() || data.trait_id.is_some()) {
+            let mut seen = HashSet::<TypeVariableId>::new();
+            let mut visit = |slf: &Self, typ: &NoirType| {
+                slf.gather_unbound_vars_with_bindings(typ, &mut seen, bindings)
+            };
+            for constraint in &data.trait_constraints {
+                constraint_vals.extend(visit(self, &constraint.typ));
+                for gen in &constraint.trait_bound.trait_generics.ordered {
+                    constraint_vals.extend(visit(self, gen));
+                }
+                for gen in &constraint.trait_bound.trait_generics.named {
+                    constraint_vals.extend(visit(self, &gen.typ));
+                }
+            }
+        }
+
+        primary.into_iter().chain(constraint_vals).unique().collect()
+    }
+
+    /// Like [`Self::gather_unbound_vars_values`] but applies the provided
+    /// instantiation bindings to each found type variable, so concrete call
+    /// sites yield the bound value rather than the abstract variable.
+    pub fn gather_unbound_vars_with_bindings(
+        &self,
+        typ: &NoirType,
+        seen: &mut HashSet<TypeVariableId>,
+        bindings: &TypeBindings,
+    ) -> Vec<Type> {
+        match typ {
+            NoirType::String(a) | NoirType::Vector(a) | NoirType::Reference(a, _) => {
+                self.gather_unbound_vars_with_bindings(a, seen, bindings)
+            }
+            NoirType::Array(a, b) | NoirType::FmtString(a, b) => self
+                .gather_unbound_vars_with_bindings(a, seen, bindings)
+                .into_iter()
+                .chain(self.gather_unbound_vars_with_bindings(b, seen, bindings))
+                .collect_vec(),
+            NoirType::DataType(_, generics) => generics
+                .iter()
+                .flat_map(|g| self.gather_unbound_vars_with_bindings(g, seen, bindings))
+                .collect_vec(),
+            NoirType::TypeVariable(tv) => match &*tv.borrow() {
+                TypeBinding::Bound(tp) => {
+                    self.gather_unbound_vars_with_bindings(tp, seen, bindings)
+                }
+                TypeBinding::Unbound(id, _) => {
+                    if seen.contains(id) {
+                        Vec::default()
+                    } else {
+                        seen.insert(*id);
+                        vec![self.generate_lean_type_value(
+                            &NoirType::TypeVariable(tv.clone()),
+                            Some(bindings),
+                        )]
+                    }
+                }
+            },
+            NoirType::NamedGeneric(ng) => match &*ng.type_var.borrow() {
+                TypeBinding::Bound(tp) => {
+                    self.gather_unbound_vars_with_bindings(tp, seen, bindings)
+                }
+                TypeBinding::Unbound(id, _) => {
+                    if seen.contains(id) {
+                        Vec::default()
+                    } else {
+                        seen.insert(*id);
+                        vec![self.generate_lean_type_value(
+                            &NoirType::TypeVariable(ng.type_var.clone()),
+                            Some(bindings),
+                        )]
+                    }
+                }
+            },
+            _ => Vec::default(),
+        }
     }
 
     pub fn gather_lean_type_patterns_from_resolved_generics(
@@ -1554,6 +1652,33 @@ impl LeanGenerator<'_, '_, '_> {
         }
     }
 
+    /// Returns the kind-annotated patterns for the numeric associated
+    /// constants declared on the trait that the given function (a trait def
+    /// method or trait impl method) belongs to. Returns an empty list if the
+    /// function isn't part of a trait or if the trait has no associated
+    /// constants.
+    pub fn gather_trait_associated_const_patterns(&self, id: FuncId) -> Vec<TypePattern> {
+        let func_meta = self.context.def_interner.function_meta(&id);
+        let trait_id = if let Some(trait_impl_id) = func_meta.trait_impl {
+            self.context
+                .def_interner
+                .get_trait_implementation(trait_impl_id)
+                .borrow()
+                .trait_id
+        } else if let Some(trait_id) = func_meta.trait_id {
+            trait_id
+        } else {
+            return Vec::default();
+        };
+        let trait_data = self.context.def_interner.get_trait(trait_id);
+        trait_data
+            .associated_types
+            .iter()
+            .filter(|rg| matches!(rg.kind(), NoirKind::Numeric(_)))
+            .map(|rg| self.generate_lean_type_pattern_from_resolved_generic(rg))
+            .collect_vec()
+    }
+
     pub fn gather_trait_impl_generics(
         &self,
         impl_id: TraitImplId,
@@ -1590,11 +1715,18 @@ impl LeanGenerator<'_, '_, '_> {
         let parameters = self.generate_function_parameters(function_meta);
         let return_type = self.resolve_function_return_type(id, function_meta, None);
 
+        // Trait associated constants are exposed as additional kind-annotated
+        // method-level generics on each impl method, so that `Self::CONST`
+        // use sites resolve through the same const-generic mechanism as a
+        // regular numeric generic parameter on a function.
+        let trait_assoc_const_generics = self.gather_trait_associated_const_patterns(id);
+
         // If type patterns have the same name and kind, they are the same variable at
         // the definition site, so we can correctly unique them.
         let generics = self
             .gather_function_generic_patterns(function_meta)
             .into_iter()
+            .chain(trait_assoc_const_generics)
             .filter(|g| !trait_generics.contains(g))
             .unique()
             .collect_vec();
@@ -2846,8 +2978,7 @@ impl LeanGenerator<'_, '_, '_> {
                         || panic!("Trait function {name} missing Self type"),
                         |t| self.generate_lean_type_value(t, Some(bindings)),
                     );
-                    let trait_generics = if func_meta.trait_impl.is_some() {
-                        let trait_impl_id = func_meta.trait_impl.unwrap();
+                    let trait_generics = if let Some(trait_impl_id) = func_meta.trait_impl {
                         self.context
                             .def_interner
                             .get_ordered_generics_for_impl(trait_impl_id)
@@ -2862,6 +2993,20 @@ impl LeanGenerator<'_, '_, '_> {
                             .map(|t| self.generate_lean_type_value(&t, Some(bindings)))
                             .collect_vec()
                     };
+                    // The trait's numeric associated constants are part of
+                    // each method's generic ABI - extend `fun_generics` with
+                    // the impl's bound value for each, mirroring how a
+                    // regular numeric generic parameter is supplied at a
+                    // call site.
+                    let mut fun_generics = fun_generics;
+                    for assoc in &trait_data.associated_types {
+                        if !matches!(assoc.kind(), NoirKind::Numeric(_)) {
+                            continue;
+                        }
+                        let assoc_type = NoirType::TypeVariable(assoc.type_var.clone());
+                        fun_generics
+                            .push(self.generate_lean_type_value(&assoc_type, Some(bindings)));
+                    }
                     let param_types = func_meta
                         .parameters
                         .iter()
@@ -2909,7 +3054,7 @@ impl LeanGenerator<'_, '_, '_> {
 
                             Expression::BuiltinCallRef(BuiltinCallRef { name, return_type })
                         }
-                        FunctionKind::Normal => {
+                        FunctionKind::Normal | FunctionKind::Oracle => {
                             let func_name = match &func_meta.self_type {
                                 Some(self_type) => {
                                     let maybe_self_type =
@@ -2944,7 +3089,7 @@ impl LeanGenerator<'_, '_, '_> {
                                 return_type,
                             })
                         }
-                        _ => panic!(
+                        FunctionKind::TraitFunctionWithoutBody => panic!(
                             "Encountered a call to a function with kind {:?} where none should \
                              occur",
                             func_meta.kind
@@ -3008,6 +3153,7 @@ impl LeanGenerator<'_, '_, '_> {
                     TypeExpr::Builtin(b) => match b.tag {
                         BuiltinTag::Field => Kind::Field,
                         BuiltinTag::U(w) => Kind::U(w),
+                        BuiltinTag::I(w) => Kind::I(w),
                         _ => panic!("Invalid kind for const generic"),
                     },
                     _ => panic!("Invalid kind for const generic"),
@@ -3017,8 +3163,24 @@ impl LeanGenerator<'_, '_, '_> {
 
                 Expression::Literal(literal)
             }
-            DefinitionKind::AssociatedConstant(..) => {
-                unimplemented!("Support for associated constants")
+            DefinitionKind::AssociatedConstant(impl_id, const_name) => {
+                // Associated constants are declared on the trait as
+                // additional kind-annotated params alongside associated
+                // types. We treat them exactly as a regular numeric generic
+                // parameter on a function: the use site emits a `const!`
+                // reference and the surrounding method-generic scope
+                // (extended in `generate_trait_function_def` and
+                // `generate_trait_definition`) provides the binding.
+                let (_, typ) = self
+                    .context
+                    .def_interner
+                    .get_trait_impl_associated_constant(*impl_id, const_name)
+                    .unwrap_or_else(|| {
+                        panic!("Trait impl {impl_id:?} missing associated constant {const_name}")
+                    });
+                let kind =
+                    self.expect_constant_numeric_kind(&NoirKind::Numeric(Box::new(typ.clone())));
+                Expression::Literal(Literal::ConstGeneric(ConstGenericLiteral { name, kind }))
             }
         }
     }
@@ -3298,7 +3460,12 @@ impl LeanGenerator<'_, '_, '_> {
 /// Functionality for basic resolution of names and other utility functions.
 impl LeanGenerator<'_, '_, '_> {
     /// Substitutes all bindings recursively in the provided `typ`.
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity.
+    #[allow(
+        unknown_lints,
+        clippy::only_used_in_recursion,
+        clippy::self_only_used_in_recursion
+    )]
+    // The self parameter is for uniformity.
     pub fn substitute_bindings(&self, typ: &NoirType, bindings: &TypeBindings) -> NoirType {
         match typ {
             NoirType::TypeVariable(tv)
@@ -3390,7 +3557,12 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[must_use]
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
+    #[allow(
+        unknown_lints,
+        clippy::only_used_in_recursion,
+        clippy::self_only_used_in_recursion
+    )]
+    // The self parameter is for uniformity
     pub fn is_function_unconstrained(&self, tp: &NoirType) -> bool {
         match tp {
             NoirType::Function(_, _, _, is_unconstrained) => *is_unconstrained,
@@ -3400,7 +3572,12 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[must_use]
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
+    #[allow(
+        unknown_lints,
+        clippy::only_used_in_recursion,
+        clippy::self_only_used_in_recursion
+    )]
+    // The self parameter is for uniformity
     pub fn unfold_alias(&self, typ: NoirType) -> NoirType {
         match typ {
             NoirType::Alias(alias, generics) => {

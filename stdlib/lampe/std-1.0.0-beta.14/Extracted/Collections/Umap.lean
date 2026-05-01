@@ -56,7 +56,7 @@ noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::clear<K: Type, V: T
 
 noir_def «std-1.0.0-beta.14»::collections::umap::UHashMap::contains_key<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type>(self: «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>, key: K) -> bool := {
   («std-1.0.0-beta.14»::option::Option::is_some<V> as λ(«std-1.0.0-beta.14»::option::Option<V>) -> bool)({
-    («std-1.0.0-beta.14»::collections::umap::UHashMap::get<K, V, B> as λ(«std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>, K) -> «std-1.0.0-beta.14»::option::Option<V>)(self, key)
+    («std-1.0.0-beta.14»::collections::umap::UHashMap::get<K, V, B, B_as_BuildHasher_H> as λ(«std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>, K) -> «std-1.0.0-beta.14»::option::Option<V>)(self, key)
   })
 }
 
@@ -211,7 +211,7 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_38]<K: Type, V: Type, B: Type, B_as_B
           {
             if (#_bAnd returning bool)((#_readRef returning bool)(equal), («std-1.0.0-beta.14»::collections::umap::Slot::is_valid<K, V> as λ(«std-1.0.0-beta.14»::collections::umap::Slot<K, V>) -> bool)(slot)) then {
               let other_value = {
-                («std-1.0.0-beta.14»::collections::umap::UHashMap::get<K, V, B> as λ(«std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>, K) -> «std-1.0.0-beta.14»::option::Option<V>)(other, slot.0)
+                («std-1.0.0-beta.14»::collections::umap::UHashMap::get<K, V, B, B_as_BuildHasher_H> as λ(«std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>, K) -> «std-1.0.0-beta.14»::option::Option<V>)(other, slot.0)
               };
               if («std-1.0.0-beta.14»::option::Option::is_none<V> as λ(«std-1.0.0-beta.14»::option::Option<V>) -> bool)(other_value) then {
                 equal = #_false;
@@ -235,7 +235,7 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_38]<K: Type, V: Type, B: Type, B_as_B
 
 noir_trait_impl[«std-1.0.0-beta.14».impl_39]<K: Type, V: Type, B: Type, B_as_BuildHasher_H: Type> «std-1.0.0-beta.14»::default::Default<> for «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B> where [B: «std-1.0.0-beta.14»::hash::BuildHasher<B_as_BuildHasher_H>, B: «std-1.0.0-beta.14»::default::Default<>] := {
   noir_def default<>() -> «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B> := {
-    («std-1.0.0-beta.14»::collections::umap::UHashMap::with_hasher<K, V, B> as λ(B) -> «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(((B as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> B)())
+    («std-1.0.0-beta.14»::collections::umap::UHashMap::with_hasher<K, V, B, B_as_BuildHasher_H> as λ(B) -> «std-1.0.0-beta.14»::collections::umap::UHashMap<K, V, B>)(((B as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> B)())
   };
 }
 

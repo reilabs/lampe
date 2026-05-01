@@ -172,6 +172,7 @@ partial def makeExpr [MonadDSL m]
 -- Const generics value conversions
 | `(noir_expr|fConst!( $name : $_ )) => do wrapInLet (←``(Expr.constFp $name)) binder k
 | `(noir_expr|uConst!( $name : $_ )) => do wrapInLet (←``(Expr.constU $name)) binder k
+| `(noir_expr|iConst!( $name : $_ )) => do wrapInLet (←``(Expr.constI $name)) binder k
 
 -- Blocks
 | `(noir_expr|{ $exprs;* }) => do

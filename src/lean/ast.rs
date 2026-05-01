@@ -639,6 +639,7 @@ pub enum Kind {
     Field,
     Type,
     U(u64),
+    I(u64),
 }
 
 impl Kind {
@@ -653,6 +654,7 @@ impl Kind {
             Kind::Field => Type::field(),
             Kind::Type => panic!("Type is not supported for conversion to type"),
             Kind::U(n) => Type::integer(n, false),
+            Kind::I(n) => Type::integer(n, true),
         }
     }
 }

@@ -715,4 +715,93 @@ impl<T, U> MyInto<T> for U where T: From<U> {
 
         print!("{}", result.unwrap().1);
     }
+
+    /// Trait associated constants are declared on the trait as additional
+    /// kind-annotated params alongside associated types. `Self::CONST` use
+    /// sites emit a name-bound `ConstGeneric` reference into that scope,
+    /// matching how associated types are referenced in trait method
+    /// signatures. Polymorphic uses (e.g. `<T as Trait>::N` at type level)
+    /// surface as extra const-generic params on the function.
+    #[test]
+    fn test_trait_associated_constant() {
+        let source = r"
+pub trait HasConst {
+    let N: u32;
+    let M: i32;
+
+    fn double_n() -> u32;
+    fn shift_m() -> i32;
+}
+
+pub struct Foo {}
+
+impl HasConst for Foo {
+    let N: u32 = 5;
+    let M: i32 = -7;
+
+    fn double_n() -> u32 {
+        Self::N * 2
+    }
+
+    fn shift_m() -> i32 {
+        Self::M + 1
+    }
+}
+
+pub fn poly_array<T>() -> [u32; <T as HasConst>::N]
+where
+    T: HasConst,
+{
+    [0; <T as HasConst>::N]
+}
+";
+
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
+
+    /// Issue #269: Noir allows signed numeric kinds for generics (e.g.
+    /// `let N: i32`). Lampe must produce a `Kind::I(_)` instead of panicking
+    /// at `expect_constant_numeric_kind`.
+    #[test]
+    fn test_signed_numeric_generic() {
+        let source = r"
+pub fn use_signed() -> i32 {
+    foo::<7_i32>()
+}
+
+fn foo<let N: i32>() -> i32 {
+    N
+}
+";
+
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
+
+    /// Issue #266: Noir auto-wraps direct oracle calls from constrained code in
+    /// unconstrained proxies during a post-monomorphization step that lampe
+    /// doesn't run, so lampe must accept the call through
+    /// `FunctionKind::Oracle` rather than panicking.
+    #[test]
+    fn test_oracle_direct_call() {
+        let source = r"
+pub fn call_oracle(x: Field) -> Field {
+    // Safety: testing direct oracle call from constrained code
+    unsafe { foo(x) }
+}
+
+#[oracle(foo_oracle)]
+unconstrained fn foo(_x: Field) -> Field {}
+";
+
+        let result = display_extraction_results(source);
+        assert!(result.is_ok());
+
+        print!("{}", result.unwrap().1);
+    }
 }

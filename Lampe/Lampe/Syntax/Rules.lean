@@ -139,6 +139,7 @@ syntax noir_lambda : noir_expr -- Lambdas are expressions.
 syntax noir_funcref : noir_expr -- Bare function references without calls are also expressions.
 syntax noir_expr "." num : noir_expr -- Field access
 syntax "uConst!(" ident ppSpace ":" ppSpace noir_kind ")" : noir_expr -- UInt const generics to values.
+syntax "iConst!(" ident ppSpace ":" ppSpace noir_kind ")" : noir_expr -- Int const generics to values.
 syntax "fConst!(" ident ppSpace ":" ppSpace noir_kind ")" : noir_expr -- Field const generics to values.
 syntax "(" noir_expr ")" : noir_expr -- Parenthesized expressions.
 syntax "sorry" : noir_expr -- Sorry, useful for debugging

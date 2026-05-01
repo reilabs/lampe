@@ -52,3 +52,60 @@ theorem use_baz_spec {lp} :
   resolve_trait
   steps
   norm_cast
+
+-- Trait associated constants are extracted as additional kind-annotated
+-- params on the trait alongside associated types. Use sites emit a
+-- name-bound reference (`uConst!(N: u32)`) into that scope, so reasoning
+-- about a use site requires resolving the trait impl to bind `N`. These
+-- specs exercise the `Foo` and `Bar` impls of `HasConst` (which fix
+-- `N := 5` and `N := 10`) and the polymorphic `poly_array<T>()` use of
+-- `<T as HasConst>::N` at type level - a scenario where static resolution
+-- would have been impossible because `T` is itself a generic.
+abbrev TraitAssocConstEnv :=
+  «ExtractionTests-0.0.0».TraitAssociatedConst.env
+
+theorem double_foo_spec {lp} :
+    STHoare lp TraitAssocConstEnv ⟦⟧
+      («ExtractionTests-0.0.0::trait_associated_const::double_foo».call h![] h![])
+      fun v => v = (10 : U 32) := by
+  enter_decl
+  steps
+  resolve_trait
+  steps
+  simp [Tp.denote] at *
+  subst_vars
+  rfl
+
+theorem double_bar_spec {lp} :
+    STHoare lp TraitAssocConstEnv ⟦⟧
+      («ExtractionTests-0.0.0::trait_associated_const::double_bar».call h![] h![])
+      fun v => v = (20 : U 32) := by
+  enter_decl
+  steps
+  resolve_trait
+  steps
+  simp [Tp.denote] at *
+  subst_vars
+  rfl
+
+theorem use_foo_array_spec {lp} :
+    STHoare lp TraitAssocConstEnv ⟦⟧
+      («ExtractionTests-0.0.0::trait_associated_const::use_foo_array».call h![] h![])
+      fun v => v = List.Vector.replicate 5 (0#32 : U 32) := by
+  enter_decl
+  steps
+  enter_decl
+  steps
+  subst_vars
+  rfl
+
+theorem use_bar_array_spec {lp} :
+    STHoare lp TraitAssocConstEnv ⟦⟧
+      («ExtractionTests-0.0.0::trait_associated_const::use_bar_array».call h![] h![])
+      fun v => v = List.Vector.replicate 10 (0#32 : U 32) := by
+  enter_decl
+  steps
+  enter_decl
+  steps
+  subst_vars
+  rfl

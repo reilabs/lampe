@@ -51,6 +51,7 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
     | ``Expr.var => return some (←``(var_intro))
     | ``Lampe.Expr.constU => return some (←``(constU_intro))
     | ``Lampe.Expr.constFp => return some (←``(constFp_intro))
+    | ``Lampe.Expr.constI => return some (←``(constI_intro))
     | ``Lampe.Expr.lam => return some (←``(lam_intro))
     | ``Expr.mkTuple => return some (←``(genericTotalPureBuiltin_intro (a := (_,_)) Builtin.mkTuple rfl))
     | ``Expr.mkArray =>
