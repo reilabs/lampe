@@ -69,6 +69,8 @@ theorem double_foo_spec {lp} :
   steps
   resolve_trait
   steps
+  simp [Tp.denote] at *
+  subst_vars
   rfl
 
 theorem double_bar_spec {lp} :
@@ -79,4 +81,6 @@ theorem double_bar_spec {lp} :
   steps
   resolve_trait
   steps
+  simp [Tp.denote] at *
+  subst_vars
   rfl
