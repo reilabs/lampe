@@ -578,7 +578,6 @@ impl Writer<'_> {
     pub fn write_builtin_type_expression(&mut self, builtin: &BuiltinTypeExpr) {
         #[allow(clippy::match_same_arms)] // The similarity is incidental.
         match &builtin.tag {
-            BuiltinTag::Any => self.append_to_line("#Any"),
             BuiltinTag::Array => {
                 self.append_to_line("Array");
                 self.append_to_line("<");

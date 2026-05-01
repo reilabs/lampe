@@ -586,7 +586,9 @@ impl LeanGenerator<'_, '_, '_> {
             }
             NoirType::Quoted(quoted) => self.generate_quoted_type_value(quoted),
             NoirType::Forall(..) => panic!("Encountered forall type"),
-            NoirType::TraitAsType(..) => Type::any(),
+            NoirType::TraitAsType(..) => {
+                panic!("Encountered unresolved TraitAsType outside trait definition")
+            }
             // FIXME We should probably extract an "Error" type and then blackhole it.
             NoirType::Error => Type::unit(),
         }
@@ -736,7 +738,6 @@ impl LeanGenerator<'_, '_, '_> {
         let mut associated_types =
             self.gather_lean_type_patterns_from_resolved_generics(&trait_def.associated_types);
 
-        let mut impl_trait_counter = 0usize;
         let methods = trait_def
             .methods
             .iter()
@@ -755,11 +756,10 @@ impl LeanGenerator<'_, '_, '_> {
 
                 let out_type = match method.return_type() {
                     NoirType::TraitAsType(..) => {
-                        let param_name = format!("ImplTrait{impl_trait_counter}");
-                        impl_trait_counter += 1;
+                        let param_name = format!("{method_name}_ret");
                         associated_types.push(TypePattern {
                             pattern: param_name.clone(),
-                            kind: Kind::Type,
+                            kind:    Kind::Type,
                         });
                         Type {
                             expr: TypeExpr::TypeVariable(param_name),
@@ -3442,7 +3442,6 @@ impl LeanGenerator<'_, '_, '_> {
     /// Resolves the fully-qualified name for a builtin type.
     pub fn fully_qualified_builtin_type(&self, tag: BuiltinTag) -> String {
         let tag_str = match tag {
-            BuiltinTag::Any => "any".to_string(),
             BuiltinTag::Array => "array".to_string(),
             BuiltinTag::Bool => "bool".to_string(),
             BuiltinTag::Field => "field".to_string(),

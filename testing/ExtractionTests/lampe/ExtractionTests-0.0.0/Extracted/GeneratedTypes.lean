@@ -84,9 +84,9 @@ noir_trait_def «ExtractionTests-0.0.0»::experiments::MyTrait<> [] := {
   method foo<>(Self) -> Self;
 }
 
-noir_trait_def «ExtractionTests-0.0.0»::impl_trait_return::Foo<> [ImplTrait0: Type] := {
+noir_trait_def «ExtractionTests-0.0.0»::impl_trait_return::Foo<> [as_impl_ret: Type] := {
   method foo<>(Self) -> Field;
-  method as_impl<>(Self) -> ImplTrait0;
+  method as_impl<>(Self) -> as_impl_ret;
 }
 
 noir_trait_def «ExtractionTests-0.0.0»::multiple_generics::Foo<I: Type> [] := {
