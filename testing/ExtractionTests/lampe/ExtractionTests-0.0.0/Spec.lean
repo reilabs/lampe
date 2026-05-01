@@ -91,19 +91,21 @@ theorem double_bar_spec {lp} :
 theorem use_foo_array_spec {lp} :
     STHoare lp TraitAssocConstEnv ⟦⟧
       («ExtractionTests-0.0.0::trait_associated_const::use_foo_array».call h![] h![])
-      fun v => v = List.Vector.replicate 5 (0 : U 32) := by
+      fun v => v = List.Vector.replicate 5 (0#32 : U 32) := by
   enter_decl
   steps
   enter_decl
   steps
+  subst_vars
   rfl
 
 theorem use_bar_array_spec {lp} :
     STHoare lp TraitAssocConstEnv ⟦⟧
       («ExtractionTests-0.0.0::trait_associated_const::use_bar_array».call h![] h![])
-      fun v => v = List.Vector.replicate 10 (0 : U 32) := by
+      fun v => v = List.Vector.replicate 10 (0#32 : U 32) := by
   enter_decl
   steps
   enter_decl
   steps
+  subst_vars
   rfl

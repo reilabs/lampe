@@ -6,23 +6,23 @@ import Lampe
 open Lampe
 
 noir_trait_impl[«ExtractionTests-0.0.0».impl_439]<> «ExtractionTests-0.0.0»::trait_associated_const::HasConst<> for «ExtractionTests-0.0.0»::trait_associated_const::Foo<> where [] := {
-  noir_def double_n<>() -> u32 := {
+  noir_def double_n<N: u32>() -> u32 := {
     (#_uMul returning u32)(uConst!(N: u32), (2: u32))
   };
 }
 
 noir_trait_impl[«ExtractionTests-0.0.0».impl_440]<> «ExtractionTests-0.0.0»::trait_associated_const::HasConst<> for «ExtractionTests-0.0.0»::trait_associated_const::Bar<> where [] := {
-  noir_def double_n<>() -> u32 := {
+  noir_def double_n<N: u32>() -> u32 := {
     (#_uMul returning u32)(uConst!(N: u32), (2: u32))
   };
 }
 
 noir_def «ExtractionTests-0.0.0»::trait_associated_const::double_foo<>() -> u32 := {
-  ((«ExtractionTests-0.0.0»::trait_associated_const::Foo<> as «ExtractionTests-0.0.0»::trait_associated_const::HasConst<>)::double_n<> as λ() -> u32)()
+  ((«ExtractionTests-0.0.0»::trait_associated_const::Foo<> as «ExtractionTests-0.0.0»::trait_associated_const::HasConst<>)::double_n<5: u32> as λ() -> u32)()
 }
 
 noir_def «ExtractionTests-0.0.0»::trait_associated_const::double_bar<>() -> u32 := {
-  ((«ExtractionTests-0.0.0»::trait_associated_const::Bar<> as «ExtractionTests-0.0.0»::trait_associated_const::HasConst<>)::double_n<> as λ() -> u32)()
+  ((«ExtractionTests-0.0.0»::trait_associated_const::Bar<> as «ExtractionTests-0.0.0»::trait_associated_const::HasConst<>)::double_n<10: u32> as λ() -> u32)()
 }
 
 noir_def «ExtractionTests-0.0.0»::trait_associated_const::poly_array<T: Type, T_as_HasConst_N: u32>() -> Array<u32, T_as_HasConst_N: u32> := {
@@ -30,11 +30,11 @@ noir_def «ExtractionTests-0.0.0»::trait_associated_const::poly_array<T: Type, 
 }
 
 noir_def «ExtractionTests-0.0.0»::trait_associated_const::use_foo_array<>() -> Array<u32, 5: u32> := {
-  («ExtractionTests-0.0.0»::trait_associated_const::poly_array<«ExtractionTests-0.0.0»::trait_associated_const::Foo<> > as λ() -> Array<u32, 5: u32>)()
+  («ExtractionTests-0.0.0»::trait_associated_const::poly_array<«ExtractionTests-0.0.0»::trait_associated_const::Foo<>, 5: u32> as λ() -> Array<u32, 5: u32>)()
 }
 
 noir_def «ExtractionTests-0.0.0»::trait_associated_const::use_bar_array<>() -> Array<u32, 10: u32> := {
-  («ExtractionTests-0.0.0»::trait_associated_const::poly_array<«ExtractionTests-0.0.0»::trait_associated_const::Bar<> > as λ() -> Array<u32, 10: u32>)()
+  («ExtractionTests-0.0.0»::trait_associated_const::poly_array<«ExtractionTests-0.0.0»::trait_associated_const::Bar<>, 10: u32> as λ() -> Array<u32, 10: u32>)()
 }
 
 def «ExtractionTests-0.0.0».TraitAssociatedConst.env : Env := Env.mk
