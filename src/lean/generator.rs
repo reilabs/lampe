@@ -3019,37 +3019,20 @@ impl LeanGenerator<'_, '_, '_> {
                 Expression::Literal(literal)
             }
             DefinitionKind::AssociatedConstant(impl_id, const_name) => {
-                // Associated constants are declared on the trait as additional
-                // kind-annotated params (alongside associated types) and the
-                // impl block fixes a value for each. At a `Self::CONST` use
-                // site we resolve to the value the chosen impl bound to that
-                // name.
-                let associated = self.context.def_interner.get_associated_types_for_impl(*impl_id);
-                let named = associated
-                    .iter()
-                    .find(|t| t.name.as_str() == const_name)
+                // Associated constants are declared on the trait def as
+                // additional kind-annotated params alongside associated types.
+                // The use site emits a name-bound reference into that scope,
+                // mirroring how associated types are referenced.
+                let (_, typ) = self
+                    .context
+                    .def_interner
+                    .get_trait_impl_associated_constant(*impl_id, const_name)
                     .unwrap_or_else(|| {
                         panic!("Trait impl {impl_id:?} missing associated constant {const_name}")
                     });
-                let resolved_typ = named.typ.follow_bindings();
-                let value_type = self.generate_lean_type_value(&resolved_typ, None);
-                match value_type.expr {
-                    TypeExpr::NumericConst(value) => {
-                        Expression::Literal(Literal::Numeric(NumericLiteral {
-                            value,
-                            typ: value_type.kind.into_type(),
-                        }))
-                    }
-                    TypeExpr::TypeVariable(name) => {
-                        Expression::Literal(Literal::ConstGeneric(ConstGenericLiteral {
-                            name,
-                            kind: value_type.kind,
-                        }))
-                    }
-                    other => panic!(
-                        "Associated constant {const_name} resolved to unsupported value {other:?}"
-                    ),
-                }
+                let kind =
+                    self.expect_constant_numeric_kind(&NoirKind::Numeric(Box::new(typ.clone())));
+                Expression::Literal(Literal::ConstGeneric(ConstGenericLiteral { name, kind }))
             }
         }
     }
@@ -3329,7 +3312,12 @@ impl LeanGenerator<'_, '_, '_> {
 /// Functionality for basic resolution of names and other utility functions.
 impl LeanGenerator<'_, '_, '_> {
     /// Substitutes all bindings recursively in the provided `typ`.
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity.
+    #[allow(
+        unknown_lints,
+        clippy::only_used_in_recursion,
+        clippy::self_only_used_in_recursion
+    )]
+    // The self parameter is for uniformity.
     pub fn substitute_bindings(&self, typ: &NoirType, bindings: &TypeBindings) -> NoirType {
         match typ {
             NoirType::TypeVariable(tv)
@@ -3421,7 +3409,12 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[must_use]
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
+    #[allow(
+        unknown_lints,
+        clippy::only_used_in_recursion,
+        clippy::self_only_used_in_recursion
+    )]
+    // The self parameter is for uniformity
     pub fn is_function_unconstrained(&self, tp: &NoirType) -> bool {
         match tp {
             NoirType::Function(_, _, _, is_unconstrained) => *is_unconstrained,
@@ -3431,7 +3424,12 @@ impl LeanGenerator<'_, '_, '_> {
     }
 
     #[must_use]
-    #[expect(clippy::only_used_in_recursion)] // The self parameter is for uniformity
+    #[allow(
+        unknown_lints,
+        clippy::only_used_in_recursion,
+        clippy::self_only_used_in_recursion
+    )]
+    // The self parameter is for uniformity
     pub fn unfold_alias(&self, typ: NoirType) -> NoirType {
         match typ {
             NoirType::Alias(alias, generics) => {

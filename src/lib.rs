@@ -717,9 +717,11 @@ impl<T, U> MyInto<T> for U where T: From<U> {
     }
 
     /// Trait associated constants are declared on the trait as additional
-    /// kind-annotated params alongside associated types. At a `Self::CONST`
-    /// use site lampe resolves to the impl's chosen value rather than
-    /// panicking with "Support for associated constants".
+    /// kind-annotated params alongside associated types. `Self::CONST` use
+    /// sites emit a name-bound `ConstGeneric` reference into that scope,
+    /// matching how associated types are referenced in trait method
+    /// signatures. Polymorphic uses (e.g. `<T as Trait>::N` at type level)
+    /// surface as extra const-generic params on the function.
     #[test]
     fn test_trait_associated_constant() {
         let source = r"
@@ -744,6 +746,13 @@ impl HasConst for Foo {
     fn shift_m() -> i32 {
         Self::M + 1
     }
+}
+
+pub fn poly_array<T>() -> [u32; <T as HasConst>::N]
+where
+    T: HasConst,
+{
+    [0; <T as HasConst>::N]
 }
 ";
 
