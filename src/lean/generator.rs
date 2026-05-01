@@ -733,9 +733,10 @@ impl LeanGenerator<'_, '_, '_> {
         let name = self.fully_qualified_trait_name(trait_def.crate_id, id);
         let trait_generics =
             self.gather_lean_type_patterns_from_resolved_generics(&trait_def.generics);
-        let associated_types =
+        let mut associated_types =
             self.gather_lean_type_patterns_from_resolved_generics(&trait_def.associated_types);
 
+        let mut impl_trait_counter = 0usize;
         let methods = trait_def
             .methods
             .iter()
@@ -751,7 +752,22 @@ impl LeanGenerator<'_, '_, '_> {
                     .iter()
                     .map(|t| self.generate_lean_type_value(t, None))
                     .collect_vec();
-                let out_type = self.generate_lean_type_value(method.return_type(), None);
+
+                let out_type = match method.return_type() {
+                    NoirType::TraitAsType(..) => {
+                        let param_name = format!("ImplTrait{impl_trait_counter}");
+                        impl_trait_counter += 1;
+                        associated_types.push(TypePattern {
+                            pattern: param_name.clone(),
+                            kind: Kind::Type,
+                        });
+                        Type {
+                            expr: TypeExpr::TypeVariable(param_name),
+                            kind: Kind::Type,
+                        }
+                    }
+                    other => self.generate_lean_type_value(other, None),
+                };
 
                 TraitMethodDeclaration {
                     name: method_name,

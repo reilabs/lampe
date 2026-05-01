@@ -11,31 +11,44 @@ set_option maxHeartbeats 800000
 
 abbrev ImplTraitEnv := «ExtractionTests-0.0.0».ImplTraitReturn.env
 
--- some_foo() returns Bar{}, which is ()
-theorem some_foo_spec {lp} :
+-- get_impl_bar() returns Bar{}, which is ()
+theorem get_impl_bar_spec {lp} :
     STHoare lp ImplTraitEnv ⟦⟧
-      («ExtractionTests-0.0.0::impl_trait_return::some_foo».call h![] h![])
+      («ExtractionTests-0.0.0::impl_trait_return::get_impl_bar».call h![] h![])
       fun v => v = () := by
   enter_decl; steps; simp_all
 
--- wrap_foo() calls some_foo() and returns its result
-theorem wrap_foo_spec {lp} :
+-- get_impl_baz() returns Baz{x: 99}, a one-field struct: (99, ())
+theorem get_impl_baz_spec {lp} :
     STHoare lp ImplTraitEnv ⟦⟧
-      («ExtractionTests-0.0.0::impl_trait_return::wrap_foo».call h![] h![])
-      fun v => v = () := by
-  enter_decl; steps [some_foo_spec]; simp_all
+      («ExtractionTests-0.0.0::impl_trait_return::get_impl_baz».call h![] h![])
+      fun v => v = ((99 : Fp lp), ()) := by
+  enter_decl; steps; simp_all
 
--- use_foo() calls wrap_foo().foo(), which returns 42.
--- This exercises:
---   1. impl Trait resolved to concrete Bar at function return sites
---   2. Trait call resolution (Bar as Foo)::foo
---   3. The trait definition has `as_impl` with return type `Any` (Tp.any)
-theorem use_foo_spec {lp} :
+-- use_bar() calls call_foo(get_impl_bar()).
+-- Exercises: generic call_foo<Bar>, trait resolution (Bar as Foo)::foo, returns 42
+theorem use_bar_spec {lp} :
     STHoare lp ImplTraitEnv ⟦⟧
-      («ExtractionTests-0.0.0::impl_trait_return::use_foo».call h![] h![])
+      («ExtractionTests-0.0.0::impl_trait_return::use_bar».call h![] h![])
       fun v => v = (42 : Fp lp) := by
   enter_decl
-  steps [wrap_foo_spec]
+  steps [get_impl_bar_spec]
+  enter_decl
+  steps
+  resolve_trait
+  steps
+  norm_cast
+
+-- use_baz() calls call_foo(get_impl_baz()).
+-- Exercises: generic call_foo<Baz>, trait resolution (Baz as Foo)::foo, returns 99
+theorem use_baz_spec {lp} :
+    STHoare lp ImplTraitEnv ⟦⟧
+      («ExtractionTests-0.0.0::impl_trait_return::use_baz».call h![] h![])
+      fun v => v = (99 : Fp lp) := by
+  enter_decl
+  steps [get_impl_baz_spec]
+  enter_decl
+  steps
   resolve_trait
   steps
   norm_cast

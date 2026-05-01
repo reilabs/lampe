@@ -117,6 +117,7 @@ def change_toml_required_dep_to_rev_by_regex(toml_path, name_regex, rev):
 
     write_toml(toml_path, lakefile_toml)
 
+
 def change_required_lampe_to_path(toml, path):
     for i, v in enumerate(toml['require']):
         if v['name'] != 'Lampe':

@@ -57,6 +57,10 @@ noir_struct_def «ExtractionTests-0.0.0»::ref_member_access::Foo<> {
 
 noir_struct_def «ExtractionTests-0.0.0»::impl_trait_return::Bar<> {}
 
+noir_struct_def «ExtractionTests-0.0.0»::impl_trait_return::Baz<> {
+  Field,
+}
+
 noir_struct_def «ExtractionTests-0.0.0»::multiple_generics::Pair<I: Type> {
   I,
   I,
@@ -80,9 +84,9 @@ noir_trait_def «ExtractionTests-0.0.0»::experiments::MyTrait<> [] := {
   method foo<>(Self) -> Self;
 }
 
-noir_trait_def «ExtractionTests-0.0.0»::impl_trait_return::Foo<> [] := {
+noir_trait_def «ExtractionTests-0.0.0»::impl_trait_return::Foo<> [ImplTrait0: Type] := {
   method foo<>(Self) -> Field;
-  method as_impl<>(Self) -> Any;
+  method as_impl<>(Self) -> ImplTrait0;
 }
 
 noir_trait_def «ExtractionTests-0.0.0»::multiple_generics::Foo<I: Type> [] := {
