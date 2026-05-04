@@ -18,7 +18,7 @@ use noirc_frontend::{
     ast::{BinaryOpKind, FunctionKind, Ident, IntegerBitSize, UnaryOp},
     graph::CrateId,
     hir::{
-        def_map::{LocalModuleId, ModuleData, ModuleDefId},
+        def_map::{LocalModuleId, ModuleData, ModuleDefId, ModuleId},
         type_check::generics::TraitGenerics,
         Context,
     },
@@ -1537,7 +1537,26 @@ impl LeanGenerator<'_, '_, '_> {
         let def_info = self.context.def_interner.definition(global_data.definition_id);
 
         let HirStatement::Let(binding) = statement else {
-            eprintln!("Skipping global with invalid statement: {statement:?}");
+            // Trait associated constant declarations (e.g. `let N: u32;` inside a
+            // `trait Foo { ... }` body) are stored as globals whose let-statement
+            // resolves to `HirStatement::Error`, because the declaration has no
+            // value. They are not actual errors, just unsupported (#272). Each
+            // trait gets its own module, so the global lives in a module whose
+            // `ModuleId` corresponds to a `TraitId`. Suppress the warning in
+            // that case so this expected path no longer logs spuriously.
+            // See https://github.com/reilabs/lampe/issues/271.
+            let module_id = ModuleId {
+                krate:    global_data.crate_id,
+                local_id: global_data.local_id,
+            };
+            if self
+                .context
+                .def_interner
+                .try_get_trait(TraitId(module_id))
+                .is_none()
+            {
+                eprintln!("Skipping global with invalid statement: {statement:?}");
+            }
             return None;
         };
 
