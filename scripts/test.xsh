@@ -143,9 +143,6 @@ def run_tests(dir):
 
     selected_test = args.test or ""
     update_mode = args.update
-    if 'LAMPE_TEST_CURRENT_COMMIT_SHA' not in ${...}:
-        $LAMPE_TEST_CURRENT_COMMIT_SHA=$(git rev-parse HEAD)
-
     ensure_cli()
 
     if selected_test == "":
@@ -309,9 +306,6 @@ def run_test_in_dir(working_dir, original_dir, update_mode):
                 set_manifest_packages_dir(manifest_path, packages_dir)
                 change_manifest_required_dep_to_path_by_regex(manifest_path, '^Lampe$', lampe_path)
                 change_manifest_required_dep_to_path_by_regex(manifest_path, '^«std-.*»$', stdlib_path)
-
-            rev = $LAMPE_TEST_CURRENT_COMMIT_SHA
-            change_toml_required_dep_to_rev_by_regex(lakefile_path, '^GitDepWithLampe-.*$', rev)
 
         build_lake(lampe_dir)
         cleanup_ci_lake_build(lampe_dir)
