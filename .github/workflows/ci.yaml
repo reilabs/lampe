@@ -234,7 +234,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
-      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
       LAMPE_KEEP_LAKE_CACHE: "1"
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
@@ -307,9 +306,18 @@ jobs:
         run: chmod +x target/release/lampe
       - name: Test Stdlib Extraction
         if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
-        env:
-          LAMPE_EXPORT_BUILD_CACHE: "1"
         run: ./stdlib/test.xsh
+      - name: Point Stdlib Lake Packages At Shared Cache
+        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p stdlib/lampe/.lake
+          rm -rf stdlib/lampe/.lake/packages
+          ln -s "$LAKE_PKG_DIR" stdlib/lampe/.lake/packages
+      - name: Build Stdlib In Place
+        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
+        run: |
+          cd stdlib/lampe
+          lake build
       - name: Check Lake Packages Cache Contents
         id: lake-packages-content
         if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' && steps.lake-packages-cache.outputs.cache-hit != 'true' }}
@@ -332,7 +340,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
-      LAMPE_TEST_CURRENT_COMMIT_SHA: ${{ github.head_ref || github.ref_name }}
       LAMPE_KEEP_LAKE_CACHE: "1"
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
