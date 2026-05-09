@@ -39,9 +39,6 @@ def main():
 
     test_case = project_root / 'stdlib'
 
-    if 'LAMPE_TEST_CURRENT_COMMIT_SHA' not in ${...}:
-        $LAMPE_TEST_CURRENT_COMMIT_SHA=$(git rev-parse HEAD)
-
     run_test(test_case, update_mode)
     cleanup_ci_artifacts()
 
