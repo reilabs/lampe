@@ -44,7 +44,6 @@ def fmtstrAsCtstring := stub
 def keccakf1600 := stub
 def mkFormatString := stub
 def multiScalarMul := stub
-def poseidon2Permutation := stub
 def recursiveAggregation := stub
 def sha256Compression := stub
 def sliceRefcount := stub
