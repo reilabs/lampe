@@ -11,11 +11,22 @@ abbrev PLO := «std-1.0.0-beta.14::field::bn254::PLO»
 abbrev PHI := «std-1.0.0-beta.14::field::bn254::PHI»
 abbrev TWO_POW_128 := «std-1.0.0-beta.14::field::bn254::TWO_POW_128»
 
-def ploNat : Nat := 53438638232309528389504892708671455233
+def plo : Nat := 53438638232309528389504892708671455233
 
-def phiNat : Nat := 64323764613183177041862057485226039389
+def phi : Nat := 64323764613183177041862057485226039389
 
 def pow128 : Nat := 2 ^ 128
+
+/-- `p` is the BN254 scalar-field prime: its value decomposes as
+`plo + 2^128 * phi`. Providing this instance discharges every
+`hmod`-style precondition in this file (and downstream `Field.lt_intro`,
+`EmbeddedCurveOps.scalar_from_field_spec`, …) without explicit plumbing.
+The companion `Prime.BitsGT p 129` instance is derived below. -/
+class Prime (p : Prime) : Prop where
+  modulus_eq : p.natVal = plo + pow128 * phi
+
+instance [inst : Bn254.Prime p] : Prime.BitsGT p 129 where
+  prime_gt := by rw [inst.modulus_eq]; decide
 
 lemma pow128_lt_prime {p} [Prime.BitsGT p 129] : pow128 < p.natVal := by
   simpa [pow128] using (Prime.BitsGT.lt_prime (prime := p) (bits := 128))
@@ -126,20 +137,20 @@ lemma sub_val_lt_pow128_of_le {p} [Prime.BitsGT p 129] {a b : Fp p}
 theorem plo_spec {p} :
     STHoare p env ⟦⟧
       (PLO.call h![] h![])
-      (fun r => r = (ploNat : Fp p)) := by
+      (fun r => r = (plo : Fp p)) := by
   enter_decl
   steps
   rename_i hplo
-  simpa [ploNat] using hplo
+  simpa [plo] using hplo
 
 theorem phi_spec {p} :
     STHoare p env ⟦⟧
       (PHI.call h![] h![])
-      (fun r => r = (phiNat : Fp p)) := by
+      (fun r => r = (phi : Fp p)) := by
   enter_decl
   steps
   rename_i hphi
-  simpa [phiNat] using hphi
+  simpa [phi] using hphi
 
 theorem two_pow_128_spec {p} :
     STHoare p env ⟦⟧
@@ -240,8 +251,7 @@ theorem assert_gt_limbs_intro {p a b} [Prime.BitsGT p 129] :
       linarith
     exact limbs_gt_of_hi_gt hb_lo hhi
 
-theorem decompose_intro {p x} [Prime.BitsGT p 129]
-    (hmod : p.natVal = ploNat + pow128 * phiNat) :
+theorem decompose_intro {p x} [Bn254.Prime p] :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::field::bn254::decompose».call h![] h![x])
       (fun r =>
@@ -267,38 +277,38 @@ theorem decompose_intro {p x} [Prime.BitsGT p 129]
     simpa [pow128] using hxhi
   have hxeq' : x = xlo + (pow128 : Fp p) * xhi := by
     simpa using hxeq
-  have hplo_val : (ploNat : Fp p).val = ploNat := by
-    have hplo_lt : ploNat < p.natVal := by
-      have hplo_lt' : ploNat < pow128 := by decide
+  have hplo_val : (plo : Fp p).val = plo := by
+    have hplo_lt : plo < p.natVal := by
+      have hplo_lt' : plo < pow128 := by decide
       linarith [hplo_lt', pow128_lt_prime (p := p)]
     simpa using (ZMod.val_natCast_of_lt hplo_lt)
-  have hphi_val : (phiNat : Fp p).val = phiNat := by
-    have hphi_lt : phiNat < p.natVal := by
-      have hphi_lt' : phiNat < pow128 := by decide
+  have hphi_val : (phi : Fp p).val = phi := by
+    have hphi_lt : phi < p.natVal := by
+      have hphi_lt' : phi < pow128 := by decide
       linarith [hphi_lt', pow128_lt_prime (p := p)]
     simpa using (ZMod.val_natCast_of_lt hphi_lt)
-  have hplo : (ploNat : Fp p).val < pow128 := by
-    have hplo_nat : ploNat < pow128 := by decide
+  have hplo : (plo : Fp p).val < pow128 := by
+    have hplo_nat : plo < pow128 := by decide
     simpa [hplo_val] using hplo_nat
-  have hphi : (phiNat : Fp p).val < pow128 := by
-    have hphi_nat : phiNat < pow128 := by decide
+  have hphi : (phi : Fp p).val < pow128 := by
+    have hphi_nat : phi < pow128 := by decide
     simpa [hphi_val] using hphi_nat
-  have hlimbs' : (ploNat : Fp p).val < pow128 ∧ (phiNat : Fp p).val < pow128 ∧
+  have hlimbs' : (plo : Fp p).val < pow128 ∧ (phi : Fp p).val < pow128 ∧
       xlo.val < pow128 ∧ xhi.val < pow128 := by
     exact ⟨hplo, hphi, hxlo', hxhi'⟩
   have hlimbs_imp :
-      (ploNat : Fp p).val < pow128 ∧ (phiNat : Fp p).val < pow128 ∧
+      (plo : Fp p).val < pow128 ∧ (phi : Fp p).val < pow128 ∧
         xlo.val < pow128 ∧ xhi.val < pow128 →
-        (ploNat : Fp p).val + pow128 * (phiNat : Fp p).val >
+        (plo : Fp p).val + pow128 * (phi : Fp p).val >
           xlo.val + pow128 * xhi.val := by
     assumption
-  have hgt : (ploNat : Fp p).val + pow128 * (phiNat : Fp p).val >
+  have hgt : (plo : Fp p).val + pow128 * (phi : Fp p).val >
       xlo.val + pow128 * xhi.val := by
     exact hlimbs_imp hlimbs'
-  have hgt' : ploNat + pow128 * phiNat > xlo.val + pow128 * xhi.val := by
+  have hgt' : plo + pow128 * phi > xlo.val + pow128 * xhi.val := by
     simpa [hplo_val, hphi_val] using hgt
   have hsum_lt : xlo.val + pow128 * xhi.val < p.natVal := by
-    simpa [hmod] using hgt'
+    simpa [Bn254.Prime.modulus_eq] using hgt'
   have hmul_lt : pow128 * xhi.val < p.natVal := by
     exact lt_of_le_of_lt (Nat.le_add_left _ _) hsum_lt
   have hmul_lt' : (pow128 : Fp p).val * xhi.val < p.natVal := by
@@ -317,8 +327,7 @@ theorem decompose_intro {p x} [Prime.BitsGT p 129]
   refine ⟨xhi, ?_⟩
   exact ⟨hret', hxlo', hxhi', hval_eq⟩
 
-theorem assert_gt_intro {p a b} [Prime.BitsGT p 129]
-    (hmod : p.natVal = ploNat + pow128 * phiNat) :
+theorem assert_gt_intro {p a b} [Bn254.Prime p] :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::field::bn254::assert_gt».call h![] h![a, b])
       (fun _ => a.val > b.val) := by
@@ -326,7 +335,7 @@ theorem assert_gt_intro {p a b} [Prime.BitsGT p 129]
   steps
   · exact ()
   apply STHoare.iteFalse_intro
-  steps [decompose_intro (p := p) (hmod := hmod), assert_gt_limbs_intro (p := p)]
+  steps [decompose_intro (p := p), assert_gt_limbs_intro (p := p)]
   simp [SLP.exists_pure] at *
   rename_i _ a_lo a_hi ha_raw b_lo b_hi hb_raw _ hlimbs
   rcases ha_raw with ⟨ha_eq, ha_lo_lt, ha_hi_lt, ha_val⟩
@@ -342,13 +351,12 @@ theorem assert_gt_intro {p a b} [Prime.BitsGT p 129]
     exact hlimbs' ha_lo_lt ha_hi_lt hb_lo_lt hb_hi_lt
   linarith [ha_val, hb_val, hgt]
 
-theorem assert_lt_intro {p a b} [Prime.BitsGT p 129]
-    (hmod : p.natVal = ploNat + pow128 * phiNat) :
+theorem assert_lt_intro {p a b} [Bn254.Prime p] :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::field::bn254::assert_lt».call h![] h![a, b])
       (fun _ => a.val < b.val) := by
   enter_decl
-  steps [assert_gt_intro (p := p) (hmod := hmod)]
+  steps [assert_gt_intro (p := p)]
   omega
 
 theorem field_less_than_intro {p x y} :
@@ -358,8 +366,7 @@ theorem field_less_than_intro {p x y} :
   enter_decl
   steps
 
-theorem gt_intro {p a b} [Prime.BitsGT p 129]
-    (hmod : p.natVal = ploNat + pow128 * phiNat) :
+theorem gt_intro {p a b} [Bn254.Prime p] :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::field::bn254::gt».call h![] h![a, b])
       (fun r => r = decide (a.val > b.val)) := by
@@ -378,7 +385,7 @@ theorem gt_intro {p a b} [Prime.BitsGT p 129]
     steps [field_less_than_intro]
     apply STHoare.ite_intro
     · intro hlt
-      steps [assert_gt_intro (p := p) (hmod := hmod)]
+      steps [assert_gt_intro (p := p)]
       rename_i r hret
       have hgt_ba : b.val > a.val := by
         assumption
@@ -386,18 +393,17 @@ theorem gt_intro {p a b} [Prime.BitsGT p 129]
         exact Nat.not_lt.mpr (le_of_lt hgt_ba)
       simpa [hnot, decide_eq_false_iff_not] using hret
     · intro hlt
-      steps [assert_gt_intro (p := p) (hmod := hmod)]
+      steps [assert_gt_intro (p := p)]
       rename_i r hret
       have hgt_ab : a.val > b.val := by
         assumption
       simpa [hgt_ab, decide_eq_true_eq] using hret
 
-theorem lt_intro {p a b} [Prime.BitsGT p 129]
-    (hmod : p.natVal = ploNat + pow128 * phiNat) :
+theorem lt_intro {p a b} [Bn254.Prime p] :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::field::bn254::lt».call h![] h![a, b])
       (fun r => r = decide (a.val < b.val)) := by
   enter_decl
-  steps [gt_intro (p := p) (hmod := hmod)]
+  steps [gt_intro (p := p)]
   rename_i r hret
   simpa using (hret : r = decide (b.val > a.val))

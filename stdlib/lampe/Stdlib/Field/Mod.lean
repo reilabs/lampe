@@ -901,16 +901,14 @@ theorem pow_32_intro {p self exponent} :
         (tp := Tp.field)
         (v := self ^ RadixVec.ofDigitsBE' (List.take 32 digits.toList)))
 
-theorem lt_intro {p self another} [Prime.BitsGT p 129]
-    (hmod : p.natVal = Lampe.Stdlib.Field.Bn254.ploNat +
-      Lampe.Stdlib.Field.Bn254.pow128 * Lampe.Stdlib.Field.Bn254.phiNat) :
+theorem lt_intro {p self another} [Lampe.Stdlib.Field.Bn254.Prime p] :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::field::lt».call h![] h![self, another])
       (fun r => r = decide (self.val < another.val)) := by
   enter_decl
   steps [Lampe.Stdlib.Compat.is_bn254_spec]
   apply STHoare.iteTrue_intro
-  steps [Lampe.Stdlib.Field.Bn254.lt_intro (p := p) (hmod := hmod)]
+  steps [Lampe.Stdlib.Field.Bn254.lt_intro (p := p)]
   rename_i hlt
   simp [hlt]
 
