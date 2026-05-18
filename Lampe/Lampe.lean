@@ -26,6 +26,8 @@ import Lampe.Crypto.Keccak
 import Lampe.Crypto.Poseidon2
 import Lampe.Crypto.Poseidon2.BN254T4
 import Lampe.Crypto.Secp256k1
+import Lampe.Crypto.Secp256r1
+import Lampe.Crypto.Weierstrass
 import Lampe.Data.Digits
 import Lampe.Data.Field
 import Lampe.Data.HList
