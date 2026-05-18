@@ -6,6 +6,7 @@ import Lampe.Builtin.Basic
 import Lampe.Builtin.Bit
 import Lampe.Builtin.Cast
 import Lampe.Builtin.Cmp
+import Lampe.Builtin.Crypto.Ecdsa
 import Lampe.Builtin.Crypto.EmbeddedCurve
 import Lampe.Builtin.Crypto.Hash
 import Lampe.Builtin.Field
@@ -16,6 +17,7 @@ import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 import Lampe.Builtin.Stubs
 import Lampe.Builtin.Vector
+import Lampe.Crypto.Ecdsa
 import Lampe.Crypto.EmbeddedCurve
 import Lampe.Crypto.Poseidon2
 import Lampe.Crypto.Poseidon2.BN254T4
