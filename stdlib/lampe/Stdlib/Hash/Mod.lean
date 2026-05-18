@@ -29,6 +29,48 @@ theorem poseidon2_permutation4_spec {p}
   steps [Lampe.Stdlib.Hash.Poseidon2.poseidon2_permutation_builtin_spec]
   assumption
 
+private theorem keccakf1600_builtin_spec {p}
+    {input : Tp.denote p ((Tp.u 64).array (25 : U 32))} :
+    STHoare p env ⟦⟧
+      (.callBuiltin [(Tp.u 64).array (25 : U 32)] ((Tp.u 64).array (25 : U 32))
+        Builtin.keccakf1600 h![input])
+      (fun r => r = Lampe.Crypto.Keccak.keccakF1600 input) := by
+  exact STHoare.genericTotalPureBuiltin_intro Builtin.keccakf1600 rfl () p env h![input]
+
+/-! The non-deprecated `hash::keccakf1600` is `#[foreign(keccakf1600)]`
+with an empty Noir body, so it *is* the builtin call itself and has no
+separate Noir wrapper to spec. The deprecated `hash::keccak::keccakf1600`
+forwarder is not registered in the master extracted env. Use
+`keccakf1600_builtin_spec` to reason about the foreign call directly. -/
+
+private theorem blake3_builtin_spec {p} {N : U 32}
+    {input : Tp.denote p ((Tp.u 8).array N)} :
+    STHoare p env ⟦⟧
+      (.callBuiltin [(Tp.u 8).array N] ((Tp.u 8).array (32 : U 32))
+        Builtin.blake3 h![input])
+      (fun r => r = Lampe.Crypto.Blake3.blake3Hash input) := by
+  exact STHoare.genericTotalPureBuiltin_intro Builtin.blake3 rfl N p env h![input]
+
+/-- Spec for `hash::blake3<N>`: returns the opaque
+`Crypto.Blake3.blake3Hash` 32-byte digest of the length-`N` input.
+The Noir wrapper has an `is_unconstrained`-guarded `static_assert`
+on `N ≤ 1024`; under Lampe's `isUnconstrained = false`, that branch
+is unreachable and the wrapper reduces to the builtin call. -/
+theorem blake3_spec {p} {N : U 32}
+    {input : Tp.denote p ((Tp.u 8).array N)} :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::hash::blake3».call h![N] h![input])
+      (fun r => r = Lampe.Crypto.Blake3.blake3Hash input) := by
+  enter_decl
+  steps
+  all_goals try exact ()
+  apply STHoare.letIn_intro (Q := fun _ => ⟦True⟧)
+  · apply STHoare.iteFalse_intro
+    steps
+  · intro _
+    steps [blake3_builtin_spec]
+    assumption
+
 theorem buildHasherDefault_default_spec {p H}
     {h_hasher : Hasher.hasImpl env H}
     {h_default : Default.hasDefaultImpl env H}
