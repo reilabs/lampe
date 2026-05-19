@@ -64,12 +64,12 @@ theorem index_replaced_arr {n : U 32} {idx : Fin n.toNat} {arr} :
   (replaceArray' arr idx v').get idx = v' := by
   unfold replaceArray'
   cases em (n.toNat > 0)
-  . simp_all only [gt_iff_lt, eq_mp_eq_cast]
+  . simp_all only [gt_iff_lt]
     generalize h₁ : (List.Vector.insertIdx _ _ _) = arr₁
     cases idx
     rw [List.Vector.get_after_erase, ←h₁]
     apply List.Vector.get_after_insert
-  . simp_all only [gt_iff_lt, not_lt, nonpos_iff_eq_zero, lt_self_iff_false, dite_false]
+  . simp_all only [gt_iff_lt, not_lt, nonpos_iff_eq_zero]
     rename_i h
     rw [h] at idx
     apply Fin.n_is_non_zero at idx
