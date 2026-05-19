@@ -192,7 +192,7 @@ theorem ofLimbsBE'_append (r : Nat) (xs ys : List Nat) :
 
 theorem ofLimbsLE'_append (r : Nat) (xs ys : List Nat) :
     ofLimbsLE' r (xs ++ ys) = ofLimbsLE' r xs + r ^ xs.length * ofLimbsLE' r ys := by
-  simp [ofLimbsLE', List.reverse_append, ofLimbsBE'_append, add_comm, add_left_comm, mul_comm]
+  simp [ofLimbsLE', List.reverse_append, ofLimbsBE'_append, add_comm, mul_comm]
 
 def ofDigitsBE {d} {r : Radix} (v : List.Vector (Digit r) d) : RadixVec r d :=
   ⟨ofLimbsBE r.val (v.map (fun d => d.val)), by
@@ -260,7 +260,7 @@ theorem ofDigitsBE'_toList {r : Radix} {l : List.Vector (Digit r) d} :
 
 theorem ofDigitsLE'_append :
     ofDigitsLE' (r := r) (xs ++ ys) = ofDigitsLE' xs + r ^ xs.length * ofDigitsLE' ys := by
-  simp [ofDigitsLE', List.reverse_append, ofDigitsBE'_append, add_comm, add_left_comm, mul_comm]
+  simp [ofDigitsLE', List.reverse_append, ofDigitsBE'_append, add_comm, mul_comm]
 
 def toDigitsBE' (r : Radix) (n : Nat) : List (Digit r) :=
   toDigitsBE ⟨n, Nat.lt_pow_succ_log_self r.prop _⟩ |>.toList
@@ -340,7 +340,7 @@ theorem ofDigitsBE_toDigitsBE {r : Radix} {n : RadixVec r d} :
     cases' r with r hr
     cases' n with n hn
     have : n = 0 := by simp_all
-    simp [toDigitsBE, ofDigitsBE, ofLimbsBE, this]
+    simp [ofDigitsBE, ofLimbsBE, this]
   | succ d ih =>
     conv_rhs => rw [msd_lsds_decomposition (v := n)]
     have := Fin.val_eq_of_eq $ ih (n := n.lsds)
@@ -431,7 +431,7 @@ theorem ofDigitsBE_mono {r : Radix} {l₁ l₂ : List.Vector (Digit r) d} :
     cases' hp
     · rename_i t₁ t₂ hh
       rw [Fin.lt_def] at hh
-      simp only [ofDigitsBE_cons', List.Vector.head, Fin.mk_lt_mk]
+      simp only [ofDigitsBE_cons', Fin.mk_lt_mk]
       calc
         _ < h₁.val * r.val ^ d + r.val ^ d := by simp
         _ = (h₁.val + 1) * r.val ^ d := by linarith
@@ -439,7 +439,7 @@ theorem ofDigitsBE_mono {r : Radix} {l₁ l₂ : List.Vector (Digit r) d} :
           apply Nat.mul_le_mul_right
           linarith
         _ ≤ _ := by linarith
-    · simp only [ofDigitsBE_cons', List.Vector.head, Fin.mk_lt_mk, List.Vector.tail]
+    · simp only [ofDigitsBE_cons', Fin.mk_lt_mk]
       rename_i _ _ hp
       have := ih hp
       rw [Fin.lt_def] at this
@@ -487,7 +487,7 @@ theorem toBaseLE_succ_snoc :
 theorem toBaseLE_take : (toBaseLE B n v).take m = toBaseLE B (min m n) v := by
   induction m generalizing v n with
   | zero =>
-    simp [Nat.zero_min, toBaseLE]
+    simp [toBaseLE]
   | succ m ih =>
     cases n
     · simp [toBaseLE]
@@ -535,7 +535,7 @@ theorem toBaseLE_pow {B D K N} :
   | zero =>
     simp [toBaseLE, List.chunksExact]
   | succ K ih =>
-    simp only [toBaseLE, ih, List.Vector.map_cons, Nat.succ_mul]
+    simp only [toBaseLE, ih, Nat.succ_mul]
     congr 1
     · simp [toBaseLE_take, ofBaseLE_toBaseLE]
     · congr
@@ -563,7 +563,7 @@ lemma ofBaseLE_append :
   | cons h t ih =>
     simp only [ofBaseLE] at ih
     simp only [
-      ofBaseLE, List.map, List.cons_append, List.foldr_cons, ih, List.length_cons, pow_succ
+      ofBaseLE, List.cons_append, List.foldr_cons, ih, List.length_cons, pow_succ
     ]
     ring
 

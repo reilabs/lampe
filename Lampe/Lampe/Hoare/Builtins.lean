@@ -30,7 +30,7 @@ theorem pureBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   constructor
   cases em (desc a args).fst
   . apply Builtin.genericPureOmni.ok
-    . simp_all only [mapToValHeapCondition, SLP.true_star, exists_const, SLP.exists_pure]
+    . simp_all only [mapToValHeapCondition, SLP.true_star, SLP.exists_pure]
       apply SLP.ent_star_top
       simp_all only [SLP.true_star, exists_const]
     . tauto
@@ -79,7 +79,7 @@ theorem genericBuiltin_intro {A : Type} {a : A} {sgn desc args} :
   intro H st p
   constructor
   unfold mapToValHeapCondition
-  simp [Builtin.newGenericBuiltin, mapToValHeapCondition]
+  simp [Builtin.newGenericBuiltin]
 
   by_cases h: ∃v, desc a args v
   · cases' h with v h
@@ -432,7 +432,7 @@ theorem ref_intro :
   intro st hH r hr
   exists (⟨Finmap.singleton r ⟨tp, v⟩, st.lambdas⟩ ∪ st), ∅
   refine ⟨by rw [LawfulHeap.disjoint_symm_iff]; apply LawfulHeap.empty_disjoint, ?_, ?_⟩
-  · simp only [State.insertVal, Finmap.insert_eq_singleton_union, LawfulHeap.union_empty]
+  · simp only [Finmap.insert_eq_singleton_union, LawfulHeap.union_empty]
     simp only [State.union_parts_left, Finmap.union_self]
   · refine ⟨?_, by simp⟩
     exists (⟨Finmap.singleton r ⟨tp, v⟩, ∅⟩), st
@@ -460,7 +460,7 @@ theorem readRef_intro {ref : Ref tp} :
     · apply Finmap.lookup_isSome.mp
       rw [hvals]; rw [Finmap.lookup_singleton_eq]; exact Option.isSome_some
   · apply SLP.ent_star_top
-    simp only [SLP.true_star, SLP.star_assoc]
+    simp only [SLP.star_assoc]
     exact ⟨∅, st₁ ∪ st₂, LawfulHeap.empty_disjoint, LawfulHeap.empty_union.symm,
       ⟨hveq.symm, rfl⟩, st₁, st₂, hdisj, rfl, ⟨bv, hvals, hv⟩, hH⟩
 
@@ -486,7 +486,7 @@ theorem writeRef_intro {ref : Ref tp} :
   apply Builtin.writeRefOmni.mk (base_val := bv)
   · exact hlookup
   · apply SLP.ent_star_top
-    simp only [mapToValHeapCondition, Option.map_some, SLP.true_star, SLP.star_assoc,
+    simp only [
       Finmap.insert_eq_singleton_union, State.union_vals, ← Finmap.union_assoc]
     set bv' := RefPath.modify p ref.path bv v' with hbv'_def
     refine ⟨⟨Finmap.singleton ref.addr ⟨ref.base_tp, bv'⟩, st₁.lambdas⟩, st₂, ?_, ?_, ?_, ?_⟩
@@ -556,7 +556,7 @@ theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by ta
     · rw [hveq]
     · exact hl.symm
     · rfl
-    · simp only [mapToValHeapCondition, Option.map_some, SLP.true_star, SLP.star_assoc,
+    · simp only [mapToValHeapCondition, Option.map_some, SLP.star_assoc,
         Finmap.insert_eq_singleton_union, State.union_vals, ← Finmap.union_assoc]
       set bv' := RefPath.modify p ref.path bv s' with hbv'_def
       refine ⟨⟨Finmap.singleton ref.addr ⟨ref.base_tp, bv'⟩, st₁.lambdas⟩, st₂, ?_, ?_, ?_, ?_⟩
@@ -564,7 +564,7 @@ theorem getMember_intro : STHoarePureBuiltin p Γ (Builtin.getMember mem) (by ta
       · simp only [State.union_parts_left, State.union_closures]
         congr 1
         rw [hvals]; simp [Finmap.union_singleton]
-      · exact ⟨by simp [hl], bv', rfl, by simp [hl, hbv'_def]⟩
+      · exact ⟨by simp [], bv', rfl, by simp [hbv'_def]⟩
       · exact SLP.ent_star_top _ hH
 
 theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
@@ -579,7 +579,7 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
   . apply Builtin.getLensOmni.err <;> tauto
   . apply Builtin.getLensOmni.ok <;> try tauto
     . unfold mapToValHeapCondition
-      simp_all only [Option.map_some, SLP.true_star, SLP.star_assoc]
+      simp_all only [Option.map_some, SLP.true_star]
       apply SLP.ent_star_top at h
       simp_all
 
