@@ -1,20 +1,22 @@
 import Lampe.Tp
-import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
-import Mathlib.Tactic.Ring
+import Lampe.Crypto.ShortWeierstrass
 
 namespace Lampe.Crypto.EmbeddedCurve
 
 /--
 Concrete semantic model for Noir's embedded-curve builtins.
 
-This models the Grumpkin-style short-Weierstrass arithmetic that the Noir stdlib targets:
+The Grumpkin-style short-Weierstrass arithmetic targeted by the Noir
+stdlib:
 
 - points are tuples `(x, y, isInfinite)`
 - scalars are split into low/high 128-bit limbs
-- the curve equation is `y^2 = x^3 - 17`
+- the curve equation is `y² = x³ - 17`
 
-This branch uses Mathlib's Weierstrass curve definitions and affine formulae as the internal
-arithmetic core, while keeping Lampe's tuple-level external representation and total semantics.
+Curve math and the Mathlib correspondence are inherited from
+`Lampe.Crypto.ShortWeierstrass`. This file carries the Noir-struct
+tuple plumbing, the Grumpkin-specific coefficients, and 128-bit
+scalar handling.
 -/
 
 @[reducible]
@@ -49,48 +51,39 @@ def pointAtInfinity {p : Prime} : Point p := mkPoint 0 0 true
 def canonicalizeInfinity {p : Prime} (pt : Point p) : Point p :=
   if pointIsInfinite pt then pointAtInfinity else pt
 
+def curveA {p : Prime} : Fp p := 0
 def curveB {p : Prime} : Fp p := -17
 
-/-- The concrete Weierstrass curve used by Noir's embedded-curve stdlib: `y^2 = x^3 - 17`. -/
+/-- The concrete Weierstrass curve used by Noir's embedded-curve stdlib: `y² = x³ - 17`. -/
 @[reducible]
 def curve (p : Prime) : WeierstrassCurve (Fp p) :=
-  { a₁ := 0, a₂ := 0, a₃ := 0, a₄ := 0, a₆ := curveB }
+  ShortWeierstrass.asWeierstrass (curveA : Fp p) curveB
 
-abbrev affineCurve (p : Prime) : WeierstrassCurve.Affine (Fp p) := (curve p).toAffine
+abbrev affineCurve (p : Prime) : WeierstrassCurve.Affine (Fp p) :=
+  ShortWeierstrass.asAffine (curveA : Fp p) curveB
 
 @[simp]
 lemma affineCurve_negY {p : Prime} (x y : Fp p) :
-    (affineCurve p).negY x y = -y := by
-  simp [affineCurve, curve, curveB, WeierstrassCurve.Affine.negY]
+    (affineCurve p).negY x y = -y :=
+  ShortWeierstrass.asAffine_negY curveA curveB x y
 
 @[simp]
 lemma affineCurve_addX {p : Prime} (x₁ x₂ slope : Fp p) :
-    (affineCurve p).addX x₁ x₂ slope = slope ^ 2 - x₁ - x₂ := by
-  simp [affineCurve, curve, curveB, WeierstrassCurve.Affine.addX]
+    (affineCurve p).addX x₁ x₂ slope = slope ^ 2 - x₁ - x₂ :=
+  ShortWeierstrass.asAffine_addX curveA curveB x₁ x₂ slope
 
 @[simp]
 lemma affineCurve_addY {p : Prime} (x₁ x₂ y₁ slope : Fp p) :
     (affineCurve p).addY x₁ x₂ y₁ slope =
-      slope * (x₁ - (affineCurve p).addX x₁ x₂ slope) - y₁ := by
-  simp [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY]
-  ring
+      slope * (x₁ - (affineCurve p).addX x₁ x₂ slope) - y₁ :=
+  ShortWeierstrass.asAffine_addY curveA curveB x₁ x₂ y₁ slope
 
 private def slope {p : Prime} (x₁ x₂ y₁ y₂ : Fp p) : Fp p :=
-  if x₁ = x₂ then
-    if y₁ = (affineCurve p).negY x₂ y₂ then
-      0
-    else
-      ((3 : Fp p) * x₁ ^ 2) / (y₁ - (affineCurve p).negY x₁ y₁)
-  else
-    (y₁ - y₂) / (x₁ - x₂)
+  ShortWeierstrass.Point.slope (curveA : Fp p) x₁ x₂ y₁ y₂
 
 private theorem slope_eq_mathlib {p : Prime} (x₁ x₂ y₁ y₂ : Fp p) :
-    slope x₁ x₂ y₁ y₂ = (affineCurve p).slope x₁ x₂ y₁ y₂ := by
-  by_cases hx : x₁ = x₂
-  · by_cases hy : y₁ = (affineCurve p).negY x₂ y₂
-    · simp [slope, WeierstrassCurve.Affine.slope, hx, hy]
-    · simp [slope, WeierstrassCurve.Affine.slope, hx, hy, affineCurve, curve, curveB]
-  · simp [slope, WeierstrassCurve.Affine.slope, hx]
+    slope x₁ x₂ y₁ y₂ = (affineCurve p).slope x₁ x₂ y₁ y₂ :=
+  ShortWeierstrass.slope_eq_mathlib (curveA : Fp p) curveB x₁ x₂ y₁ y₂
 
 /-- Total tuple-level extension of Mathlib's `WeierstrassCurve.Affine.Point.add`.
 Off-curve tuples are out of contract; on encoded curve points this agrees
@@ -120,20 +113,15 @@ def pow128 : Nat := 2 ^ 128
 def scalarValueNat {p : Prime} (s : Scalar p) : Nat :=
   (scalarLo s).val + pow128 * (scalarHi s).val
 
-/-- `Equation` on the concrete Grumpkin curve is decidable: the underlying Mathlib
-definition `polynomial.evalEval x y = 0` is noncomputable, but `equation_iff'`
-rewrites it to a polynomial identity in the field `Fp p`, which is decidable
-via `DecidableEq`. -/
+/-- Decidability of `Equation` / `Nonsingular` on the Grumpkin curve is
+inherited from the shared module's generic instances. -/
 instance affineCurve_Equation_decidable {p : Prime} (x y : Fp p) :
     Decidable ((affineCurve p).Equation x y) :=
-  decidable_of_iff _ (WeierstrassCurve.Affine.equation_iff' (W := affineCurve p) x y).symm
+  ShortWeierstrass.asAffine_Equation_decidable curveA curveB x y
 
-/-- `Nonsingular` on the concrete Grumpkin curve is decidable: by `nonsingular_iff'`
-it reduces to a conjunction of an `Equation` predicate and a disjunction of
-field inequalities, both decidable on `Fp p`. -/
 instance affineCurve_Nonsingular_decidable {p : Prime} (x y : Fp p) :
     Decidable ((affineCurve p).Nonsingular x y) :=
-  decidable_of_iff _ (WeierstrassCurve.Affine.nonsingular_iff' (W := affineCurve p) x y).symm
+  ShortWeierstrass.asAffine_Nonsingular_decidable curveA curveB x y
 
 def curvePoint? {p : Prime} (pt : Point p) : Option ((affineCurve p).Point) :=
   if pointIsInfinite pt then

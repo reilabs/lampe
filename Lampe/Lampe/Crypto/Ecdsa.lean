@@ -7,9 +7,9 @@ import Lampe.Crypto.Secp256r1
 
 Concrete Lean references for Noir's `#[foreign(ecdsa_secp256k1)]` and
 `#[foreign(ecdsa_secp256r1)]` builtins. Both forward to the shared
-`Lampe.Crypto.Weierstrass.verifyBytes` algorithm parameterized by the
-respective curve's `CurveParams` (see `Lampe/Crypto/Secp256k1.lean`
-and `Lampe/Crypto/Secp256r1.lean`).
+`Lampe.Crypto.ShortWeierstrass` curve arithmetic specialised to their
+respective field and curve coefficient (see `Crypto/Secp256k1.lean`
+and `Crypto/Secp256r1.lean`).
 
 The Noir builtins also take a `predicate : bool` argument used to gate
 verification under a circuit predicate; the model below ignores it

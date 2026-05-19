@@ -1,39 +1,83 @@
-import Lampe.Crypto.Weierstrass
+import Lampe.Crypto.ShortWeierstrass
+import Lampe.Crypto.Secp256r1.Prime
 
 /-!
 # secp256r1 / NIST P-256 — ECDSA curve
 
-Thin wrapper over `Lampe.Crypto.Weierstrass`. Supplies the curve
-parameters from FIPS 186-4 Appendix D.1.2.3 (y² = x³ - 3x + b over Fp,
-with the published Gx, Gy) and validates ECDSA test vectors generated
-by `scripts/secp256r1_ref.py`.
+Instantiates `Lampe.Crypto.ShortWeierstrass` over `Fp Secp256r1.prime`
+with curve coefficient `a = -3` (i.e. `y² = x³ - 3·x + b`). The curve
+math lives in the shared module.
 -/
 
 namespace Lampe.Crypto.Secp256r1
 
-open Lampe.Crypto.Weierstrass
+open Lampe Lampe.Crypto.ShortWeierstrass
 
-/-- secp256r1 curve parameters. `a = p - 3` (i.e. `a ≡ -3 mod p`). -/
-def params : CurveParams where
-  prime := 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
-  order := 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
-  a     := 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC
-  Gx    := 0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296
-  Gy    := 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5
+/-- Curve order n. -/
+def orderN : Nat :=
+  0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
 
-/-- ECDSA signature verification over secp256r1. -/
-@[inline] def verifyBytes
+/-- Generator x-coordinate. -/
+def Gx : Fp Secp256r1.prime :=
+  ((0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296 : Nat) : Fp _)
+
+/-- Generator y-coordinate. -/
+def Gy : Fp Secp256r1.prime :=
+  ((0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5 : Nat) : Fp _)
+
+/-- Curve `a` coefficient (`a ≡ -3 mod p`). -/
+def curveA : Fp Secp256r1.prime := -3
+
+/-- Curve `b` coefficient. -/
+def curveB : Fp Secp256r1.prime :=
+  ((0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B : Nat) : Fp _)
+
+/-! ### ECDSA verification -/
+
+def bytesToNatBE (bs : Array (BitVec 8)) : Nat :=
+  bs.foldl (fun acc b => acc * 256 + b.toNat) 0
+
+private def orderPow (base exp : Nat) : Nat := Id.run do
+  let mut result : Nat := 1
+  let mut b : Nat := base % orderN
+  let mut e : Nat := exp
+  for _ in [:256] do
+    if e % 2 = 1 then
+      result := (result * b) % orderN
+    e := e / 2
+    b := (b * b) % orderN
+  return result
+
+@[inline] private def orderInv (a : Nat) : Nat := orderPow a (orderN - 2)
+
+/-- Concrete secp256r1 ECDSA verification. -/
+def verifyBytes
     (pkX pkY : Array (BitVec 8))
     (sig : Array (BitVec 8))
-    (msgHash : Array (BitVec 8)) : Bool :=
-  Weierstrass.verifyBytes params pkX pkY sig msgHash
+    (msgHash : Array (BitVec 8)) : Bool := Id.run do
+  let r := bytesToNatBE (sig.extract 0 32)
+  let s := bytesToNatBE (sig.extract 32 64)
+  if r = 0 then return false
+  if r ≥ orderN then return false
+  if s = 0 then return false
+  if s ≥ orderN then return false
+  let z := bytesToNatBE msgHash
+  let qx : Fp Secp256r1.prime := ((bytesToNatBE pkX : Nat) : Fp _)
+  let qy : Fp Secp256r1.prime := ((bytesToNatBE pkY : Nat) : Fp _)
+  let zRed := z % orderN
+  let sInv := orderInv s
+  let u1 := (zRed * sInv) % orderN
+  let u2 := (r * sInv) % orderN
+  let G : Point (Fp Secp256r1.prime) := .affine Gx Gy
+  let Q : Point (Fp Secp256r1.prime) := .affine qx qy
+  let R := Point.add curveA (Point.scalarMul curveA G u1) (Point.scalarMul curveA Q u2)
+  match R with
+  | .infinity => return false
+  | .affine xr _ => return (xr.val % orderN) = r
 
 /-! ### Test vectors
 
-Reproducible via `scripts/secp256r1_ref.py` (RFC 6979 deterministic
-ECDSA via the pure-Python `ecdsa` library). Matching them
-transitively certifies agreement with Barretenberg's
-`__ecdsa_secp256r1` foreign call. -/
+Reproducible via `scripts/secp256r1_ref.py`. -/
 
 -- validSimple: sk = 0x01..01, msg = "Lampe ECDSA test vector"
 private def validSimplePkX : Array (BitVec 8) := #[0x6f#8, 0xf0#8, 0x3b#8, 0x94#8, 0x92#8, 0x41#8, 0xce#8, 0x1d#8, 0xad#8, 0xd4#8, 0x35#8, 0x19#8, 0xe6#8, 0x96#8, 0x0e#8, 0x0a#8, 0x85#8, 0xb4#8, 0x1a#8, 0x69#8, 0xa0#8, 0x5c#8, 0x32#8, 0x81#8, 0x03#8, 0xaa#8, 0x2b#8, 0xce#8, 0x15#8, 0x94#8, 0xca#8, 0x16#8]
