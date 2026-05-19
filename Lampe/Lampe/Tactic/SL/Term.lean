@@ -168,11 +168,11 @@ lemma mk_right {p} (r : SLP (State p)) : r = (⟦⟧ ⋆ r) := by
   simp
 
 lemma pull_exi_left {α p} {P : α → SLP (State p)} {Q : SLP (State p)} : ((∃∃x, P x) ⋆ Q) = ∃∃x, (P x ⋆ Q) := by
-  simp [SLP.exists_star, SLP.star_exists]
+  simp [SLP.star_exists]
 
 lemma pull_exi_right {α p} {P : SLP (State p)} {Q : α → SLP (State p)} : (P ⋆ (∃∃x, Q x)) = ∃∃x, (P ⋆ Q x) := by
   rw [SLP.star_comm]
-  simp [SLP.exists_star, SLP.star_exists]
+  simp [SLP.exists_star]
 
 end Internal
 
