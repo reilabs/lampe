@@ -61,12 +61,12 @@ abbrev affineCurve (p : Prime) : WeierstrassCurve.Affine (Fp p) := (curve p).toA
 @[simp]
 lemma affineCurve_negY {p : Prime} (x y : Fp p) :
     (affineCurve p).negY x y = -y := by
-  simp [affineCurve, curve, curveB, WeierstrassCurve.Affine.negY]
+  simp [WeierstrassCurve.Affine.negY]
 
 @[simp]
 lemma affineCurve_addX {p : Prime} (x₁ x₂ slope : Fp p) :
     (affineCurve p).addX x₁ x₂ slope = slope ^ 2 - x₁ - x₂ := by
-  simp [affineCurve, curve, curveB, WeierstrassCurve.Affine.addX]
+  simp [WeierstrassCurve.Affine.addX]
 
 @[simp]
 lemma affineCurve_addY {p : Prime} (x₁ x₂ y₁ slope : Fp p) :
@@ -89,7 +89,7 @@ private theorem slope_eq_mathlib {p : Prime} (x₁ x₂ y₁ y₂ : Fp p) :
   by_cases hx : x₁ = x₂
   · by_cases hy : y₁ = (affineCurve p).negY x₂ y₂
     · simp [slope, WeierstrassCurve.Affine.slope, hx, hy]
-    · simp [slope, WeierstrassCurve.Affine.slope, hx, hy, affineCurve, curve, curveB]
+    · simp [slope, WeierstrassCurve.Affine.slope, hx]
   · simp [slope, WeierstrassCurve.Affine.slope, hx]
 
 /-- Total tuple-level extension of Mathlib's `WeierstrassCurve.Affine.Point.add`.
@@ -150,7 +150,7 @@ def encodeCurvePoint {p : Prime} : (affineCurve p).Point → Point p
 @[simp]
 theorem curvePoint?_infinity {p : Prime} :
     curvePoint? (pointAtInfinity : Point p) = some 0 := by
-  simp [curvePoint?, pointAtInfinity, mkPoint, pointIsInfinite]
+  simp [curvePoint?, pointIsInfinite]
 
 @[simp]
 theorem curvePoint?_of_infinite {p : Prime} {pt : Point p}
@@ -180,7 +180,7 @@ theorem curvePoint?_eq_some_some_iff {p : Prime} {pt : Point p} {x y : Fp p}
   · simp [curvePoint?, hInf]
   · simp only [Bool.not_eq_true] at hInf
     by_cases hNs' : (affineCurve p).Nonsingular (pointX pt) (pointY pt)
-    · simp [curvePoint?, hInf, hNs', and_iff_right hInf]
+    · simp [curvePoint?, hInf, hNs']
     · simp [curvePoint?, hInf, hNs']
       rintro hx hy
       exact absurd (hx ▸ hy ▸ hNs) hNs'
@@ -198,7 +198,7 @@ theorem encodeCurvePoint_curvePoint? {p : Prime} {pt : Point p} {P : (affineCurv
   rcases P with (_ | @⟨x, y, hNs⟩)
   · have hInf : pointIsInfinite pt = true := curvePoint?_eq_some_zero_iff.mp hP
     simp [encodeCurvePoint, canonicalizeInfinity, hInf,
-      ← WeierstrassCurve.Affine.Point.zero_def]
+      ]
   · obtain ⟨hFin, hx, hy⟩ := curvePoint?_eq_some_some_iff.mp hP
     obtain ⟨x', y', inf, ⟨⟩⟩ := pt
     simp only [pointX, pointY, pointIsInfinite] at hFin hx hy
@@ -229,9 +229,9 @@ theorem add_encodeCurvePoint {p : Prime} (P Q : (affineCurve p).Point) :
   rcases P with (_ | @⟨x₁, y₁, h₁⟩) <;> rcases Q with (_ | @⟨x₂, y₂, h₂⟩)
   · rfl
   · simp [add, encodeCurvePoint, canonicalizeInfinity, pointAtInfinity, mkPoint,
-      pointX, pointY, pointIsInfinite, ← WeierstrassCurve.Affine.Point.zero_def]
+      pointIsInfinite, ← WeierstrassCurve.Affine.Point.zero_def]
   · simp [add, encodeCurvePoint, canonicalizeInfinity, pointAtInfinity, mkPoint,
-      pointX, pointY, pointIsInfinite, ← WeierstrassCurve.Affine.Point.zero_def]
+      pointIsInfinite, ← WeierstrassCurve.Affine.Point.zero_def]
   · by_cases hxy : x₁ = x₂ ∧ y₁ = (affineCurve p).negY x₂ y₂
     · rcases hxy with ⟨hx, hy⟩
       rw [WeierstrassCurve.Affine.Point.add_of_Y_eq (W := affineCurve p) hx hy]
@@ -244,11 +244,11 @@ theorem add_encodeCurvePoint {p : Prime} (P Q : (affineCurve p).Point) :
         have hyne' : ¬ y₁ = -y₂ := by
           simpa using hyne
         rw [WeierstrassCurve.Affine.Point.add_of_Y_ne (W := affineCurve p) hyne]
-        simp [add, encodeCurvePoint, mkPoint, pointX, pointY, pointIsInfinite, hxy, hx, hyne,
+        simp [add, encodeCurvePoint, mkPoint, pointX, pointY, pointIsInfinite, hx, 
           hyne',
           slope_eq_mathlib]
       · rw [WeierstrassCurve.Affine.Point.add_of_X_ne (W := affineCurve p) hx]
-        simp [add, encodeCurvePoint, mkPoint, pointX, pointY, pointIsInfinite, hxy, hx,
+        simp [add, encodeCurvePoint, mkPoint, pointX, pointY, pointIsInfinite, hx,
           slope_eq_mathlib]
 
 /-- `add` only inspects the canonicalized form of its inputs:
@@ -265,7 +265,7 @@ theorem scalarMulNat_encodeCurvePoint {p : Prime} (P : (affineCurve p).Point) :
   | 0 => by simp [scalarMulNat]
   | n + 1 => by
       simp [scalarMulNat, scalarMulNat_encodeCurvePoint, add_encodeCurvePoint, succ_nsmul,
-        add_comm, add_left_comm, add_assoc]
+        add_comm]
 
 theorem scalarMul_eq_smul_encodeCurvePoint {p : Prime} {pt : Point p} {s : Scalar p}
     {P : (affineCurve p).Point} (hP : curvePoint? pt = some P) :
@@ -273,7 +273,7 @@ theorem scalarMul_eq_smul_encodeCurvePoint {p : Prime} {pt : Point p} {s : Scala
   rcases P with (_ | @⟨x, y, hNs⟩)
   · have hInf : pointIsInfinite pt = true := (curvePoint?_eq_some_zero_iff).mp hP
     simp [scalarMul, scalarMulNat_of_infinite hInf,
-      ← WeierstrassCurve.Affine.Point.zero_def, smul_zero]
+      ← WeierstrassCurve.Affine.Point.zero_def]
   · obtain ⟨x', y', inf, ⟨⟩⟩ := pt
     cases inf
     · obtain ⟨_, hx, hy⟩ := curvePoint?_eq_some_some_iff.mp hP

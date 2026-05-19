@@ -257,7 +257,7 @@ theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} 
       refine ⟨by tauto, ?_⟩
       simp only [Finmap.insert_eq_singleton_union]
       simp only [Finmap.union_comm_of_disjoint hd₁, Finmap.union_assoc]
-    . simp [Finmap.union_comm_of_disjoint, Finmap.insert_eq_singleton_union]
+    . simp []
       rename (∀ref ∉ lmbs, _) => hQ
       rw [hL] at hQ
       simp only [Finmap.insert_eq_singleton_union] at hQ
