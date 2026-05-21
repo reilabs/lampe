@@ -79,7 +79,7 @@ example {selfV that : Tp.denote p (.vector tp)}
     steps
     simp
   . steps
-    simp_all [Nat.mod_eq_of_lt]
+    simp_all
 
 noir_def simple_if<>(x: Field, y: Field) -> Field := {
   let z = (#_ref returning & Field)(x);
