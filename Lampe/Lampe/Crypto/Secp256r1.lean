@@ -40,19 +40,6 @@ def G_nonsingular : W.Nonsingular Gx Gy := by native_decide
 
 def G : W.Point := WeierstrassCurve.Affine.Point.some (x := Gx) (y := Gy) G_nonsingular
 
-/-- Right-to-left double-and-add scalar multiplication.
-See `Secp256k1.scalarMul` for rationale. -/
-def scalarMul (P : W.Point) (k : Nat) : W.Point := Id.run do
-  let mut acc : W.Point := 0
-  let mut base : W.Point := P
-  let mut e : Nat := k
-  for _ in [:256] do
-    if e % 2 = 1 then
-      acc := acc + base
-    base := base + base
-    e := e / 2
-  return acc
-
 def bytesToNatBE (bs : Array (BitVec 8)) : Nat :=
   bs.foldl (fun acc b => acc * 256 + b.toNat) 0
 
