@@ -103,9 +103,8 @@ theorem add_one_to_three_and_n_correct_in_manual_env
   intro
   steps
   subst_vars
-  . conv =>
-      rhs
-      rw [add_comm, ←add_assoc, add_comm, ←add_assoc]
+  · show (3 : Fp p) + 1 + arg = arg + 3 + 1
+    ring
 
   all_goals apply And.intro <;> {intro a ha; fin_cases ha <;> simp [ComposedEnvManual]}
 
@@ -237,4 +236,5 @@ theorem combining_everything_correct
   enter_decl
   steps [add_one_to_three_and_n_correct_in_concat_env, call_trait_impls_and_add_correct]
   subst_vars
-  ring_nf
+  show n + 3 + 1 + (n + 42) = n + 4 + (n + 42)
+  ring

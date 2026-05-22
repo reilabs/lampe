@@ -20,13 +20,13 @@ theorem enter_decl_error : STHoare p env ⟦⟧ (hello.call h![] h![])
 /- testing enter_block_as error reporting -/
 
 /--
-error: failed to synthesize
+error: failed to synthesize instance of type class
   OfNat String 5
 numerals are polymorphic in Lean, but the numeral `5` cannot be used in a context where the expected type is
   String
 due to the absence of the instance above
 
-Additional diagnostic information may be available using the `set_option diagnostics true` command.-/
+Hint: Type class instance resolution failures can be inspected with the `set_option trace.Meta.synthInstance true` command.-/
 #guard_msgs in
 theorem enter_block_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
     fun output => output.toString = "hello" := by
@@ -36,7 +36,7 @@ theorem enter_block_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
 
 /- testing steps error messaging -/
 
-/-- error: unknown identifier 'bad_lemma'-/
+/-- error: Unknown identifier `bad_lemma`-/
 #guard_msgs in
 theorem steps_error : STHoare p helloEnv ⟦⟧ (hello.call h![] h![])
     fun output => output.toString = "hello" := by
@@ -58,9 +58,9 @@ def loopEnv : Env := .mk [loop_fn] []
 /- testing loop_inv error reporting -/
 
 /--
-error: unknown identifier 'u'
+error: Unknown identifier `u`
 ---
-error: unknown identifier 'u'
+error: Unknown identifier `u`
 -/
 #guard_msgs in
 theorem loop_inv_error : STHoare p loopEnv ⟦⟧ (loop_fn.call h![] h![])

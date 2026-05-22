@@ -35,7 +35,14 @@ example  : STHoare p thmEnv ⟦⟧ («std::slice::append».call h![T] h![s₁, s
     · simp
     · intros i hlo hhi
       steps
-      simp_all
+      subst_eqs
+      have hi : i < s₂.length := by
+        have := hhi
+        simp at this
+        bv_omega
+      reduce_fn_body at *
+      simp only [List.take_add_one, List.getElem?_eq_getElem hi, List.append_assoc]
+      rfl
     steps
     simp_all
   steps

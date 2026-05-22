@@ -83,19 +83,11 @@ def lsds (v : RadixVec r (d + 1)) : RadixVec r d :=
   Fin.mk
     (v.val - msd v * r ^ d)
     (by
-      simp only [msd]
-      rw [Nat.div_mul_self_eq_mod_sub_self]
-      have := Nat.mod_le v (r ^ d)
-      have : v.val ≥ (v.val - v.val % r ^ d) := by apply Nat.sub_le
-      zify [*]
-      ring_nf
-      convert Int.emod_lt _ _ using 1
-      · simp
-      · have : r.val ≠ 0 := by
-          intro hp
-          have := r.prop
-          linarith
-        simp [*])
+      have hr : 1 < r.val := r.prop
+      have hpos : 0 < r.val ^ d := Nat.pow_pos (by omega)
+      simp only [msd, Fin.val_mk]
+      rw [Nat.mul_comm (v.val / r.val ^ d), ← Nat.mod_eq_sub_mul_div]
+      exact Nat.mod_lt _ hpos)
 
 theorem msd_lsds_decomposition {v : RadixVec r (d + 1)} :
     v =
@@ -202,8 +194,7 @@ def ofDigitsBE {d} {r : Radix} (v : List.Vector (Digit r) d) : RadixVec r d :=
       simp only [ofLimbsBE, List.Vector.head_map, List.Vector.tail_map]
       calc
         _ < v.head.val * r.val ^ d + r.val ^ d := by
-          have := ih v.tail
-          linarith
+          exact Nat.add_lt_add_left (ih v.tail) _
         _ = (v.head.val + 1) * r.val ^ d := by linarith
         _ ≤ r * r.val ^ d := by
           have := Nat.succ_le_of_lt v.head.prop
@@ -448,10 +439,17 @@ theorem ofDigitsBE_mono {r : Radix} {l₁ l₂ : List.Vector (Digit r) d} :
 theorem ofDigitsBE'_mono {r : Radix} {l₁ l₂ : List (Digit r)} :
     l₁.length = l₂.length → l₁ < l₂ → ofDigitsBE' l₁ < ofDigitsBE' l₂ := by
   intro hl hlt
-  have := ofDigitsBE_mono (l₁ := ⟨l₁, hl⟩) (l₂ := ⟨l₂, rfl⟩) hlt
-  rw [Fin.lt_def] at this
-  simp only [ofDigitsBE']
-  convert this
+  have hmono := ofDigitsBE_mono (l₁ := ⟨l₁, hl⟩) (l₂ := ⟨l₂, rfl⟩) hlt
+  rw [Fin.lt_def] at hmono
+  show ofDigitsBE' l₁ < ofDigitsBE' l₂
+  have h₁ : ofDigitsBE' l₁ =
+      (ofDigitsBE (⟨l₁, hl⟩ : List.Vector (Digit r) l₂.length)).val :=
+    ofDigitsBE'_toList (l := ⟨l₁, hl⟩)
+  have h₂ : ofDigitsBE' l₂ =
+      (ofDigitsBE (⟨l₂, rfl⟩ : List.Vector (Digit r) l₂.length)).val :=
+    ofDigitsBE'_toList (l := ⟨l₂, rfl⟩)
+  rw [h₁, h₂]
+  exact hmono
 
 theorem ofDigitsBE'_subtype_eq {r : Radix} {l : List.Vector (Digit r) d}
     (hlt : ofDigitsBE' l.toList < r.val ^ d) :

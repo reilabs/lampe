@@ -49,7 +49,7 @@ example : replaceTuple' (p := p) exampleTuple Member.head.tail.tail 2 = (true, 4
 -- simp should reduce indexTpl on Tp.denote-typed tuples (as they appear after `steps`)
 example (tpl : Tp.denote p (.tuple (some "Complex") [.field, .field])) (h : tpl = (ar, ai, ())) :
     indexTpl (p := p) tpl Member.head.tail = ai := by
-  subst h; simp only []
+  subst h; rfl
 
 -- simp works when the tuple has an explicit Tp.denoteArgs annotation (as in exampleTuple above).
 -- With an untyped literal, the elaborator can't infer the implicit `tps` list, because
@@ -63,7 +63,8 @@ example (tpl : Tp.denote p (.tuple (some "Complex") [.field, .field])) (h : tpl 
 example (p : Prime) (s : Bool) (n d : U 32) :
     let tpl : Tp.denoteArgs p [.bool, .u 32, .u 32] := (s, n, d, ())
     indexTpl (p := p) tpl Member.head.tail = n := by
-  simp []
+  intro tpl
+  rfl
 
 @[simp]
 theorem index_replaced_tpl :
