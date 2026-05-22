@@ -26,15 +26,19 @@ lemma HList.toList_cons :
   rfl
 
 lemma HList.toList_length_is_n (h_same : tps = List.replicate n tp) :
-  (HList.toList l h_same).length = n := by
-  subst h_same
-  induction n
-  cases l
-  tauto
-  cases l
-  rw [HList.toList_cons]
-  simp_all
-  rfl
+    (HList.toList l h_same).length = n := by
+  induction n generalizing tps l with
+  | zero =>
+    subst h_same
+    match l with
+    | .nil => rfl
+  | succ n ih =>
+    subst h_same
+    match l with
+    | .cons _ rem =>
+      show ((_ :: HList.toList rem _) : List _).length = n + 1
+      simp only [List.length_cons]
+      exact congrArg Nat.succ (ih rfl)
 
 @[reducible]
 def HList.toVec (l : HList rep tps) (h_same : tps = List.replicate n tp) : List.Vector (rep tp) n :=

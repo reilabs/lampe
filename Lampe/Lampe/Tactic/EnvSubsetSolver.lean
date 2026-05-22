@@ -41,7 +41,7 @@ partial def parseEnvDef (env : Lean.Expr): TacticM EnvDef := do
       pure $ .Other
   | _ => pure $ .Other
 
-partial def parseGoal (goal : MVarId) : TacticM (EnvDef × EnvDef × Lean.Expr × Lean.Expr) := withTraceNode `Lampe.Env.SubsetSolver (tag := "parseGoal") (fun e => return f!"parseGoal {Lean.exceptEmoji e}") do
+partial def parseGoal (goal : MVarId) : TacticM (EnvDef × EnvDef × Lean.Expr × Lean.Expr) := withTraceNode `Lampe.Env.SubsetSolver (tag := "parseGoal") (fun e => return f!"parseGoal {e.toTraceResult.toEmoji}") do
   let goalExpr ← goal.instantiateMVarsInType
   let func := goalExpr.getAppFn
   match func with
@@ -74,7 +74,7 @@ def canSolve (goal : Lean.Name) (r : EnvDef): Option (List Bool) := match r with
     | .some path => .some (true :: path)
     | .none => .none
 
-partial def applySolution (path : List Bool) (tgt: MVarId): TacticM Unit := withTraceNode `Lampe.Env.SubsetSolver (tag := "applySolution") (fun e => return f!"applySolution {Lean.exceptEmoji e}") do
+partial def applySolution (path : List Bool) (tgt: MVarId): TacticM Unit := withTraceNode `Lampe.Env.SubsetSolver (tag := "applySolution") (fun e => return f!"applySolution {e.toTraceResult.toEmoji}") do
   match path with
   | [] => do
     _ ← tgt.apply (mkConst ``subset_refl)
@@ -106,7 +106,7 @@ partial def unfoldNames (r: EnvDef): TacticM (Option EnvDef) := do
     | (.none, .some r') => pure $ some (.Concat l r')
     | (.none, .none) => pure none
 
-partial def solve (l r : EnvDef) (tgt: MVarId): TacticM Unit := withTraceNode `Lampe.Env.SubsetSolver (tag := "solve") (fun e => return f!"solve {Lean.exceptEmoji e}") do
+partial def solve (l r : EnvDef) (tgt: MVarId): TacticM Unit := withTraceNode `Lampe.Env.SubsetSolver (tag := "solve") (fun e => return f!"solve {e.toTraceResult.toEmoji}") do
   match l with
   | .Const n => do
     let solution := canSolve n r
@@ -121,7 +121,7 @@ partial def solve (l r : EnvDef) (tgt: MVarId): TacticM Unit := withTraceNode `L
       | .none => throwError "Cannot solve LHS, unfolding didn't do anything."
   | _ => throwError "Cannot solve LHS: {l}"
 
-partial def solveSubset (goal : MVarId): TacticM Unit := withTraceNode `Lampe.Env.SubsetSolver (tag := "solveSubset") (fun e => return f!"solveSubset {Lean.exceptEmoji e}") do
+partial def solveSubset (goal : MVarId): TacticM Unit := withTraceNode `Lampe.Env.SubsetSolver (tag := "solveSubset") (fun e => return f!"solveSubset {e.toTraceResult.toEmoji}") do
   try do
     _ ← goal.apply (mkConst ``subset_refl)
     return ()

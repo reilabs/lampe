@@ -31,10 +31,8 @@ instance : Fintype (BitVec 1) where
     fin_cases v <;> simp
 
 lemma BitVec.ofNat_1_eq_mod :  BitVec.ofNat 1 (x % 2) = BitVec.ofNat 1 x := by
-  unfold BitVec.ofNat
-  apply congrArg
-  unfold Fin.ofNat
-  simp
+  apply BitVec.eq_of_toNat_eq
+  simp [BitVec.toNat_ofNat]
 
 lemma BitVec.ofNat_1_eq_0_iff : 0#1 = BitVec.ofNat 1 x ↔ x % 2 = 0 := by
   apply Iff.intro

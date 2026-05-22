@@ -87,13 +87,15 @@ instance {n : ℕ} {p : Prime} [BitsGT p (n + 1)] : BitsGT p n where
 
 end Prime
 
-def Fp (P : Prime) := ZMod P.natVal
+@[reducible] def Fp (P : Prime) := ZMod P.natVal
 
 instance : DecidableEq (Fp P) := inferInstanceAs (DecidableEq (ZMod P.natVal))
 
-instance : Field (Fp P) :=
+instance fpField : Field (Fp P) :=
   let _ := Fact.mk P.prop.left
   inferInstanceAs (Field (ZMod (P.val + 1)))
+
+instance fpCommRing : CommRing (Fp P) := Field.toCommRing
 
 instance : NeZero (Prime.natVal P) := ⟨Nat.Prime.ne_zero P.prop.left⟩
 

@@ -308,7 +308,8 @@ lemma U.le_add_one_of_exists_lt {i : U s}  (h: i < j) : i ≤ i + 1 := by
   rcases i with ⟨⟨_, _⟩⟩
   rcases j with ⟨⟨_, _⟩⟩
   simp only [BitVec.lt_def, BitVec.toNat] at h
-  simp only [BitVec.le_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat, Fin.ofNat]
+  simp only [BitVec.le_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat,
+             Fin.Internal.ofNat_eq_ofNat, Fin.val_ofNat]
   rw [Nat.mod_eq_of_lt] <;>
     (rw [Nat.mod_eq_of_lt] <;> linarith)
 
@@ -316,7 +317,7 @@ lemma U.le_plus_one_of_lt {i j : U s} (h: i < j): i + 1 ≤ j := by
   rcases i with ⟨⟨_, _⟩⟩
   rcases j with ⟨⟨_, _⟩⟩
   simp only [BitVec.le_def, BitVec.lt_def, BitVec.add_def, BitVec.toNat, OfNat.ofNat, BitVec.ofNat,
-             Fin.ofNat] at *
+             Fin.Internal.ofNat_eq_ofNat, Fin.val_ofNat] at *
   rw [Nat.mod_eq_of_lt] <;> (
     have : 1 % 2^s ≤ 1 := by apply Nat.mod_le;
     linarith

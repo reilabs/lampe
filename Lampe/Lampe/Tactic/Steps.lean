@@ -42,7 +42,7 @@ This function matches the simple things that can be automated while keeping the 
 particular, it should never turn a solvable goal into an unsolvable goal, and should always avoid
 polluting the proof state or blowing up the number of goals.
 -/
-def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"getClosingTerm {Lean.exceptEmoji e}")  do
+def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"getClosingTerm {e.toTraceResult.toEmoji}")  do
   let head := val.getAppFn'
   match head with
   | Lean.Expr.const n _ =>
@@ -283,7 +283,7 @@ instance : Coe SLGoals TripleGoals := ⟨fun g => ⟨none, g.entailments, g.prop
 def TripleGoals.flatten (g : TripleGoals) : List MVarId :=  g.entailments ++ g.props ++ g.implicits ++ g.triple.toList
 
 lemma SLP.pure_star_iff_and [LawfulHeap α] {H : SLP α} : (⟦P⟧ ⋆ H) st ↔ P ∧ H st := by
-  simp [SLP.star, SLP.lift]
+  simp only [SLP.star, SLP.lift]
   apply Iff.intro
   · rintro ⟨st₁, st₂, hdis, hst, ⟨hp, rfl⟩, hH⟩
     simp only [LawfulHeap.empty_union] at hst
@@ -308,7 +308,7 @@ partial def rewritePre (goal : MVarId) (eq : Lean.Expr) : TacticM (MVarId × Lis
   let goal :: goals ← goal.apply thm | throwError "unexpected goals in pre_congr"
   pure (goal, goals)
 
-partial def introPure (goal : MVarId) : TacticM (MVarId) := goal.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"introPure {Lean.exceptEmoji e}") do
+partial def introPure (goal : MVarId) : TacticM (MVarId) := goal.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"introPure {e.toTraceResult.toEmoji}") do
   let (hpFv, goal) ← goal.intro1
   goal.withContext do
     let fvTp ← hpFv.getType
@@ -395,7 +395,7 @@ partial def simpOnlyGoal (goal : MVarId) : TacticM MVarId := do
   | some (_, goal) => return goal
   | none => return goal
 
-def normalizeGoals (goals : TripleGoals) : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"normalizeGoals {Lean.exceptEmoji e}") $ do
+def normalizeGoals (goals : TripleGoals) : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"normalizeGoals {e.toTraceResult.toEmoji}") $ do
   match goals with
   | .mk (some trp) ents ps is =>
     let trp ← simpOnlyGoal trp
@@ -423,7 +423,7 @@ partial def step
     (mvar : MVarId)
     (addLemmas : List AddLemma)
     (unsafeUnifySL : Bool)
-  : TacticM TripleGoals := mvar.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {Lean.exceptEmoji e}") $ do
+  : TacticM TripleGoals := mvar.withContext $ withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"step {e.toTraceResult.toEmoji}") $ do
   let target ← mvar.instantiateMVarsInType
   let some (_, body, _) ← parseTriple target | throwError "not a triple"
   if isLetIn body then
@@ -465,7 +465,7 @@ partial def stepsLoop
     (limit : Nat)
     (strict : Bool := false)
     (unsafeUnifySL : Bool := false)
-  : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepsLoop {Lean.exceptEmoji e}") $ do
+  : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"stepsLoop {e.toTraceResult.toEmoji}") $ do
   let goals ← normalizeGoals goals
   if limit == 0 then return goals
 
@@ -683,7 +683,86 @@ def elabEnterDecl : Tactic := fun _ => do
   try argTypeGoal.refl catch _ => throwError "Found declaration has the wrong arguments"
   try outTypeGoal.refl catch _ => throwError "Found declaration has the wrong output type"
 
-  evalTactic (←`(tactic|simp only))
+  -- v4.29: `simp only []` no longer reduces certain matches. Explicitly: clear rfl casts,
+  -- unfold structure projections, beta+iota reduce the function body.
+  evalTactic (←`(tactic|
+    simp only [eq_mp_eq_cast, cast_eq, FunctionDecl.fn, Function.body, Lambda.body]))
+  let goal ← getMainGoal
+  goal.withContext do
+    let goalType ← goal.getType
+    let reduceOne (e : Lean.Expr) : Lean.MetaM Lean.Expr := do
+      let e := e.headBeta
+      let e := match ← Lean.Meta.reduceMatcher? e with
+        | .reduced e' => e'
+        | _ => e
+      return e
+    let reducedType ← Lean.Meta.transform goalType
+      (pre := fun e => do let e' ← reduceOne e
+                          if e' == e then return .continue else return .visit e')
+      (post := fun e => do let e' ← reduceOne e; return .done e')
+    let newGoal ← Lean.Meta.mkFreshExprMVar reducedType
+    goal.assign newGoal
+    replaceMainGoal [newGoal.mvarId!]
+
+/--
+Forces beta + iota + structure-projection reduction on the goal. Useful after
+`simp only [<noir_def_name>]` when v4.29's simp leaves the `FunctionDecl.fn → Function.body →
+Lambda.body` chain unreduced, blocking downstream tactics like `steps`.
+
+Existence reason: the v4.29.0 transparency refactor (leanprover/lean4#12179 + #12572) stopped
+`isDefEq` from bumping to `.default` when comparing implicit arguments, which broke the
+`whnfMatcher` path for `match h![T] with | h![T] => …` patterns whose pattern variable
+shadows the scrutinee variable. PR leanprover/lean4#13363 (in v4.30.0, currently at rc2) adds
+an explicit allowlist that restores the old behavior; this tactic can be removed once we bump
+to v4.30+.
+-/
+private def reduceBetaIotaMatch (e : Lean.Expr) : Lean.MetaM Lean.Expr := do
+  let reduceOne (e : Lean.Expr) : Lean.MetaM Lean.Expr := Lean.Meta.withTransparency .all do
+    let e := e.headBeta
+    let e := match ← Lean.Meta.reduceMatcher? e with
+      | .reduced e' => e'
+      | _ => e
+    let e := match ← Lean.Meta.reduceProj? e with
+      | some e' => e'
+      | none => e
+    return e
+  Lean.Meta.transform e
+    (pre := fun e => do let e' ← reduceOne e
+                        if e' == e then return .continue else return .visit e')
+    (post := fun e => do let e' ← reduceOne e; return .done e')
+
+elab "reduce_fn_body" loc?:(location)? : tactic => do
+  evalTactic (←`(tactic|
+    try simp only [eq_mp_eq_cast, cast_eq, FunctionDecl.fn, Function.body, Lambda.body]
+        $[$loc?]?))
+  let goal ← getMainGoal
+  goal.withContext do
+    -- Determine which hypotheses to reduce (and whether to reduce the goal).
+    let (fvarIds, reduceGoal) ← match loc? with
+      | none => pure (#[], true)
+      | some loc =>
+        match loc.raw with
+        | `(Lean.Parser.Tactic.location| at *) =>
+          let lctx ← Lean.getLCtx
+          let fvars := lctx.foldl (init := #[]) fun acc decl =>
+            if decl.isAuxDecl then acc else acc.push decl.fvarId
+          pure (fvars, true)
+        | _ => pure (#[], true)
+    let mut newGoal := goal
+    for fvar in fvarIds do
+      let ty ← fvar.getType
+      let ty' ← reduceBetaIotaMatch ty
+      if !(ty' == ty) then
+        newGoal ← newGoal.changeLocalDecl fvar ty'
+    if reduceGoal then
+      newGoal.withContext do
+        let goalType ← newGoal.getType
+        let reducedType ← reduceBetaIotaMatch goalType
+        let fresh ← Lean.Meta.mkFreshExprMVar reducedType
+        newGoal.assign fresh
+        replaceMainGoal [fresh.mvarId!]
+    else
+      replaceMainGoal [newGoal]
 
 /--
 Enters the body of a locally-defined lambda, allowing the proof to reason about its behavior using

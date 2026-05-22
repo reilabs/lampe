@@ -67,7 +67,7 @@ example : STHoare p compoundEnv ⟦⟧ (Trait3.other_function h![] .field h![] h
   steps
   assumption
 
-example {p} {fieldArg : Fp p}:
+example {p} {fieldArg : Fp p} {u8Arg : U 8} :
     STHoare p compoundEnv ⟦⟧ (all_trait_call.fn.body _ h![] |>.body h![fieldArg, u8Arg])
     fun v => v = 2 * fieldArg := by
   simp only [all_trait_call]
@@ -76,6 +76,7 @@ example {p} {fieldArg : Fp p}:
   · resolve_trait
     steps
     subst_vars
+    reduce_fn_body
     bv_decide
 
   steps

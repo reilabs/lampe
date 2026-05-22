@@ -204,7 +204,7 @@ lemma dite_lift_lift [Decidable R] [LawfulHeap α] {P : R → Prop} {Q : ¬R →
 Solves goals of the form `P ⊢ [r ↦ v] ⋆ ?_`, trying to copy as much evidence as possible to the MVar on the right
 -/
 partial def solveSingletonStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGoals :=
-  goal.withContext $ withTraceNode `Lampe.SL (fun e => return f!"solveSingletonStarMV {Lean.exceptEmoji e}") $ do
+  goal.withContext $ withTraceNode `Lampe.SL (fun e => return f!"solveSingletonStarMV {e.toTraceResult.toEmoji}") $ do
   match lhs with
   | SLTerm.singleton _ v _ =>
     if (←withNewMCtxDepth $ isDefEq v rhs) then
@@ -256,7 +256,7 @@ look like `P x ⋆ P y ⊢ P ?v ⋆ P x` and we'd use `P x` to solve `P ?v` and 
 unsolvable `P y ⊢ P x`. So `?v` cannot be unified by this tactic.
 -/
 def solveExactStarMV (goal : MVarId) (lhs : SLTerm) (rhs : Lean.Expr) : SLM SLGoals :=
-  withTraceNode `Lampe.SL (fun e => return f!"solveExactStarMV {Lean.exceptEmoji e}") do
+  withTraceNode `Lampe.SL (fun e => return f!"solveExactStarMV {e.toTraceResult.toEmoji}") do
   let isUnsafe := (←read).isUnsafe
   match lhs with
   | SLTerm.unrecognized expr =>
@@ -305,7 +305,7 @@ partial def normalizeSides (goal : MVarId) (pre post : SLTerm)
   pure (pre', post', goal)
 
 partial def solveGoal (goal : MVarId) (pre post : SLTerm) : SLM SLGoals :=
-  withTraceNode `Lampe.SL (tag := "solveGoal") (fun e => return f!"solveGoal {Lean.exceptEmoji e}") do
+  withTraceNode `Lampe.SL (tag := "solveGoal") (fun e => return f!"solveGoal {e.toTraceResult.toEmoji}") do
   match post with
   | .singleton _ v _ => solveSingletonStarMV goal pre v
   | .lmbSingleton _ v _ => solveSingletonStarMV goal pre v
@@ -322,7 +322,7 @@ partial def solveGoal (goal : MVarId) (pre post : SLTerm) : SLM SLGoals :=
 -- If this returns (pre, sinks, goal), we have `goal : pre ⊢ sinks`, with both sides normalized
 partial def solveGoals (goal : MVarId) (pre goals sinks : SLTerm)
   : SLM (SLGoals × SLTerm × SLTerm × MVarId) :=
-  withTraceNode `Lampe.SL (tag := "solveGoals") (fun e => return f!"solveGoals {Lean.exceptEmoji e}") do
+  withTraceNode `Lampe.SL (tag := "solveGoals") (fun e => return f!"solveGoals {e.toTraceResult.toEmoji}") do
   match goals with
   | .unit _ =>
     trace[Lampe.SL] "Finished working through goals"
@@ -375,7 +375,7 @@ partial def doPullWith (pre : SLTerm) (goal : MVarId) (puller finalPuller : Lean
   | _ => pure (goal, [])
 
 partial def pullPures (goal : MVarId) (pre post : SLTerm) : SLM (MVarId × List MVarId) :=
-  goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {Lean.exceptEmoji e}") do
+  goal.withContext $ withTraceNode `Lampe.SL (tag := "pullPures") (fun e => return f!"pullPures {e.toTraceResult.toEmoji}") do
   let (goal, puller, finalPuller) ← if post.hasMVars then
     let (p, pmv, postEqMVars) ← Lampe.SL.split_by (fun t => match t with
       | SLTerm.mvar _ => pure .right
@@ -415,7 +415,7 @@ partial def applyExis (goal : MVarId) (pre post : SLTerm): SLM (MVarId × List M
   doApplyExis goal p
 
 partial def solveSinks (goal : MVarId) (pre post : SLTerm): SLM SLGoals :=
-  goal.withContext $ withTraceNode `Lampe.SL (tag := "solveSinks") (fun e => return f!"solveSinks {Lean.exceptEmoji e}") do
+  goal.withContext $ withTraceNode `Lampe.SL (tag := "solveSinks") (fun e => return f!"solveSinks {e.toTraceResult.toEmoji}") do
   trace[Lampe.SL] "Current goal: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"
   match post with
   | .mvar _ =>
@@ -471,7 +471,7 @@ It pushes all clonable information into the `?M` part to strengthen it for furth
 it handles pulling pures and existentials to understand.
 -/
 partial def solveEntailment' (goal : MVarId): SLM SLGoals :=
-  goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {Lean.exceptEmoji e}") do
+  goal.withContext $ withTraceNode `Lampe.SL (tag := "solveEntailment") (fun e => return f!"solveEntailment {e.toTraceResult.toEmoji}") do
   let (pre, post, goal) ← parseAndNormalizeEntailment goal
   let safety := if (←read).isUnsafe then " (unsafe)" else ""
   trace[Lampe.SL] "Initial goal{safety}: {←ppExpr pre.expr} ⊢ ({←ppExpr post.expr})"

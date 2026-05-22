@@ -3,8 +3,18 @@ import Lampe.SeparationLogic.LawfulHeap
 import Lampe.SeparationLogic.SLP
 import Lampe.Tp
 
-lemma Finmap.insert_eq_singleton_union [DecidableEq α] {ref : α}:
-    m.insert ref v = Finmap.singleton ref v ∪ m := by rfl
+lemma Finmap.insert_eq_singleton_union [DecidableEq α] {β : α → Type _}
+    {ref : α} {v : β ref} {m : Finmap β}:
+    m.insert ref v = Finmap.singleton ref v ∪ m := by
+  apply Finmap.ext_lookup
+  intro k
+  by_cases hk : k = ref
+  · subst hk
+    have hmem : k ∈ Finmap.singleton k v := by simp
+    rw [Finmap.lookup_insert, Finmap.lookup_union_left hmem, Finmap.lookup_singleton_eq]
+  · have hkne : k ≠ ref := hk
+    have hnotmem : k ∉ Finmap.singleton ref v := by simp [hkne]
+    rw [Finmap.lookup_insert_of_ne _ hkne, Finmap.lookup_union_right hnotmem]
 
 @[simp]
 lemma Finmap.singleton_disjoint_of_not_mem (hp : ref ∉ s):

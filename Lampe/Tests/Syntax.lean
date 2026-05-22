@@ -30,6 +30,7 @@ theorem basic_fn_lemma : Lampe.STHoare p basicFnEnv ⟦⟧ (basic_fn.call h![] h
 example : Lampe.STHoare p basicFnEnv ⟦⟧ (basic_fn_call.fn.body _ h![] |>.body h![])
     fun v => v = (7 : Tp.denote p (Tp.u 64)) := by
   simp only [basic_fn_call]
+  reduce_fn_body
   steps [basic_fn_lemma]
   simp_all; subst_vars; norm_cast
 
@@ -43,6 +44,7 @@ noir_def basic_muts<>(x: Field) -> Field := {
 
 example : Lampe.STHoare p Γ ⟦⟧ (basic_muts.fn.body _ h![] |>.body h![x]) fun v => v = x := by
   simp only [basic_muts]
+  reduce_fn_body
   steps
   simp_all
 
@@ -55,7 +57,8 @@ noir_def weird_eq<I: Type>(x: I, y: I) -> Unit := {
 
 example {x y : Tp.denote p .field} :
   STHoare p Γ ⟦⟧ (weird_eq.fn.body _ h![.field] |>.body h![x, y]) fun _ => x = y := by
-  simp only [weird_eq]
+  unfold weird_eq
+  reduce_fn_body
   steps
   simp_all
 
@@ -70,16 +73,24 @@ noir_def slice_append<I: Type>(x: Vector<I>, y: Vector<I>) → Vector<I> := {
 example {selfV that : Tp.denote p (.vector tp)}
   : STHoare p Γ ⟦⟧ (slice_append.fn.body _ h![tp] |>.body h![selfV, that])
     fun v => v = selfV ++ that := by
-  simp only [slice_append]
+  unfold slice_append
+  reduce_fn_body
   steps
   loop_inv nat (fun i _ _ => [self ↦ ⟨.vector tp, selfV ++ that.take i⟩])
   . simp_all
   · simp
-  . intros i _ _
+  . intros i hlo hhi
     steps
-    simp
+    rename_i bv_lt
+    have hi : i < that.length := by
+      have := hhi
+      simp at this
+      bv_omega
+    simp only [List.take_add_one, List.getElem?_eq_getElem hi, Option.toList_some,
+               List.append_assoc]
+    rfl
   . steps
-    simp_all [Nat.mod_eq_of_lt]
+    simp_all
 
 noir_def simple_if<>(x: Field, y: Field) -> Field := {
   let z = (#_ref returning & Field)(x);
@@ -91,6 +102,7 @@ noir_def simple_if<>(x: Field, y: Field) -> Field := {
 
 example : STHoare p Γ ⟦⟧ (simple_if.fn.body _ h![] |>.body h![x, y]) fun v => v = y := by
   simp only [simple_if]
+  reduce_fn_body
   steps
 
   step_as ([z ↦ ⟨_, x⟩]) (fun _ => [z ↦ ⟨_, y⟩])
@@ -108,6 +120,7 @@ noir_def simple_if_else<>(x: Field, y: Field) -> Field := {
 
 example : STHoare p Γ ⟦⟧ (simple_if_else.fn.body _ h![] |>.body h![x, y]) fun v => v = x := by
   simp only [simple_if_else]
+  reduce_fn_body
   steps
 
   step_as (⟦⟧) (fun z => z = x)
@@ -127,6 +140,7 @@ example {p Γ} {x y : Tp.denote p Tp.field} :
     STHoare p Γ ⟦⟧ (simple_lambda.fn.body _ h![] |>.body h![x, y])
     fun v => v = x + y := by
   simp only [simple_lambda]
+  reduce_fn_body
   steps
   enter_lambda_as (⟦⟧) (fun v => v = x + y)
   . assumption
@@ -162,6 +176,7 @@ example {p} {arg: Tp.denote p Tp.field} :
     STHoare p simpleTraitEnv ⟦⟧ (simple_trait_call.fn.body _ h![.field] |>.body h![arg])
     fun v => v = 2 * arg := by
   simp only [simple_trait_call]
+  reduce_fn_body
   steps
   step_as (⟦⟧) (fun v => v = 2 * arg)
   . assumption
@@ -189,6 +204,7 @@ example {p} {x : Tp.denote p Tp.field} :
     STHoare p genericTraitEnv ⟦⟧ (generic_trait_call.fn.body _ h![] |>.body h![x])
     fun v => v = x := by
   simp only [generic_trait_call]
+  reduce_fn_body
   steps
   step_as (⟦⟧) (fun v => v = x)
   . assumption
@@ -213,6 +229,7 @@ noir_def make_tuple<>(x: u32) -> Tuple<u32, u32> := {
 example : STHoare p Γ ⟦⟧ (make_tuple.fn.body _ h![] |>.body h![x])
     fun v => v = (x, x, ()) := by
   simp only [make_tuple]
+  reduce_fn_body
   steps
   subst_vars; rfl
 
@@ -256,6 +273,7 @@ example {p} {x : Tp.denote p $ .u 8} :
     STHoare p Γ ⟦⟧ (basic_cast.fn.body _ h![] |>.body h![x])
     fun (v : Tp.denote p .field) => v = x.toNat := by
   simp only [basic_cast]
+  reduce_fn_body
   steps
   aesop
 
@@ -271,6 +289,7 @@ example : STHoare p ⟨[add_two_fields], []⟩ ⟦⟧
     (call_decl.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [call_decl]
+  reduce_fn_body
   steps
   step_as (⟦⟧) (fun (v : Fp p) => v = 3)
   . assumption
@@ -288,6 +307,7 @@ noir_def simple_tuple<>() -> Field := {
 example : STHoare p Γ ⟦⟧ (simple_tuple.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [simple_tuple]
+  reduce_fn_body
   steps
   aesop
 
@@ -299,7 +319,9 @@ noir_def simple_slice<>() -> bool := {
 example : STHoare p Γ ⟦⟧ (simple_slice.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .bool) => v = false :=   by
   simp only [simple_slice]
+  reduce_fn_body
   steps
+  reduce_fn_body at *
   simp_all
 
 noir_def simple_array<>() -> Field := {
@@ -310,6 +332,7 @@ noir_def simple_array<>() -> Field := {
 example : STHoare p Γ ⟦⟧ (simple_array.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 2 := by
   simp only [simple_array]
+  reduce_fn_body
   steps
   casesm* _ = _
   simp_all; aesop
@@ -334,7 +357,9 @@ noir_def repeated_slice<>() -> Field := {
 example : STHoare p Γ ⟦⟧ (repeated_slice.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p Tp.field) => v = 1 := by
   simp only [repeated_slice]
+  reduce_fn_body
   steps
+  reduce_fn_body at *
   simp_all
 
 noir_def simple_tuple_access<>() → Field := {
@@ -346,6 +371,7 @@ noir_def simple_tuple_access<>() → Field := {
 example : STHoare p Γ ⟦⟧ (simple_tuple_access.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 3 := by
   simp only [simple_tuple_access]
+  reduce_fn_body
   steps
   aesop
 
@@ -357,6 +383,7 @@ noir_def simple_slice_of_values<>() → bool := {
 example : STHoare p Γ ⟦⟧ (simple_slice_of_values.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .bool) => v = false := by
   simp only [simple_slice_of_values]
+  reduce_fn_body
   steps
   aesop
 
@@ -485,12 +512,14 @@ noir_def simple_hof<>() → Field := {
 example : STHoare p ⟨[return_ten, call_function], []⟩ ⟦⟧ (simple_hof.fn.body _ h![] |>.body h![])
     fun (v : Tp.denote p .field) => v = 10 := by
   simp only [simple_hof]
+  reduce_fn_body
   steps
   subst_vars
   step_as (⟦⟧) (fun v : Fp p => v = 10)
   . assumption
   . enter_decl
     simp only [call_function]
+    reduce_fn_body
 
     step_as (⟦⟧) (fun (v : Fp p) => v = 10)
     . assumption
@@ -696,7 +725,7 @@ theorem returns_string_correct {p}
   subst_vars
   rfl
 
--- Tests for explicit ref/readRef patterns (previously used auto-deref).
+-- Tests for explicit ref/readRef patterns.
 noir_def increment_ref<>(r: & Field) -> Unit := {
   (*r: Field) = (#_fAdd returning Field)((#_readRef returning Field)(r), (1: Field));
   #_skip
@@ -711,7 +740,6 @@ noir_def mut_ref_loop<>() -> Field := {
   (#_readRef returning Field)(acc)
 }
 
--- Same as mut_ref_loop (variants collapsed now that auto-deref is removed).
 noir_def mut_ref_loop_parens<>() -> Field := {
   let acc = (#_ref returning & Field)((0: Field));
   for _ in (0: u32) .. (3: u32) do {
@@ -720,7 +748,6 @@ noir_def mut_ref_loop_parens<>() -> Field := {
   (#_readRef returning Field)(acc)
 }
 
--- Same as mut_ref_loop.
 noir_def mut_ref_loop_block<>() -> Field := {
   let acc = (#_ref returning & Field)((0: Field));
   for _ in (0: u32) .. (3: u32) do {
@@ -729,7 +756,6 @@ noir_def mut_ref_loop_block<>() -> Field := {
   (#_readRef returning Field)(acc)
 }
 
--- Same as mut_ref_loop.
 noir_def mut_ref_loop_nested<>() -> Field := {
   let acc = (#_ref returning & Field)((0: Field));
   for _ in (0: u32) .. (3: u32) do {
@@ -738,7 +764,7 @@ noir_def mut_ref_loop_nested<>() -> Field := {
   (#_readRef returning Field)(acc)
 }
 
--- Direct pass of ref to increment_ref (chain collapse is no longer relevant).
+-- Direct pass of ref to increment_ref.
 noir_def mut_ref_chain<>() -> Field := {
   let acc = (#_ref returning & Field)((0: Field));
   (increment_ref<> as λ(& Field) -> Unit)(acc);
@@ -921,5 +947,6 @@ theorem integer_shifts_correct {p a b}
     (fun r => r = a - b) := by
   enter_decl
   steps
+  reduce_fn_body at *
   simp_all
 
