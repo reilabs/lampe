@@ -237,7 +237,13 @@ def build_lake(lampe_dir):
     env = os.environ.copy()
     if "CI" in env:
         env.pop("CI", None)
-        subprocess.run(["lake", "exe", "cache", "get"], check=True, cwd=lampe_dir, env=env)
+        # Best-effort: mathlib's Cache tool is incompatible with Lean v4.29
+        # at the pinned commit (uses removed Lean.Util.Paths module). If the
+        # cache binary fails to build, fall through to a from-source build.
+        try:
+            subprocess.run(["lake", "exe", "cache", "get"], check=True, cwd=lampe_dir, env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"warning: lake exe cache get failed ({e}); building from source")
 
     subprocess.run(["lake", "build"], check=True, cwd=lampe_dir, env=env)
 
