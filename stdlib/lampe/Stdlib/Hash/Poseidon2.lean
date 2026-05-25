@@ -109,6 +109,7 @@ private lemma addCachePrefixToState_succ_inactive {p}
   · simp [hjRate]
     by_cases hjCache : j.val < cacheSize.toNat
     · simp [Nat.lt_of_lt_of_le hjCache hinactive, show j.val < i + 1 by omega, hjCache]
+      intro; omega
     · simp [hjCache]
   · simp [hjRate]
 
@@ -145,7 +146,9 @@ private lemma addCachePrefixToState_succ_active {p}
       by_cases hjlt : j.val < i
       · simp [hjlt, show j.val < i + 1 by omega,
           show j.val < cacheSize.toNat by omega]
+        intro; omega
       · simp [hjlt, show ¬ j.val < i + 1 by omega]
+        intros; omega
     · simp [hjRate]
 
 private lemma mkPoseidon2Repr_state_set_active {p}
@@ -193,6 +196,7 @@ private lemma mkPoseidon2Repr_cache_set_get {p}
         (mkPoseidon2Repr cache state cacheSize false) input).get hmod =
       mkPoseidon2Repr (cache.set ⟨cacheSize.toNat, hspace⟩ input) state cacheSize false := by
   simp [mkPoseidon2Repr, Lens.modify, Access.modify, hspace]
+  rfl
 
 private lemma addCachePrefixToState_eq_addCacheToState {p}
     (cache : List.Vector (Fp p) 3)
@@ -504,9 +508,14 @@ theorem perform_duplex_spec {p selfRef}
       steps
       have hactive : i < cacheSize.toNat := by
         simpa [mkPoseidon2Repr, BitVec.lt_def] using hcond
-      rw [← mkPoseidon2Repr_state_set_active cache state cacheSize squeezeMode i hhi
-        (Nat.lt_trans hhi (by decide)) hactive]
-      simp [Lens.modify, Access.modify, mkPoseidon2Repr, Builtin.indexTpl, Builtin.replaceTuple']
+      have hi4 : i < 4 := Nat.lt_trans hhi (by decide)
+      rw [← mkPoseidon2Repr_state_set_active cache state cacheSize squeezeMode i hhi hi4 hactive]
+      have hbv4 : BitVec.toNat (4 : U 32) = 4 := by decide
+      simp only [Lens.modify, Access.modify, Access.get, Lens.get, mkPoseidon2Repr,
+        Builtin.replaceTuple', Option.get_some,
+        bind, Option.bind, Option.bind_eq_bind, Option.bind_some,
+        Option.bind_fun_some, BitVec.toNat_ofNatLT, hbv4, dif_pos hi4]
+      rfl
     · intro hcond
       steps
       have hinactive : cacheSize.toNat ≤ i := by
