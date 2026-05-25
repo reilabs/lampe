@@ -258,9 +258,12 @@ theorem decompose_intro {p x} [Prime.BitsGT p 129]
     decompose_hint_intro (p := p), plo_spec (p := p), phi_spec (p := p), two_pow_128_spec (p := p)]
   simp [SLP.exists_pure, beq_true, decide_eq_true_eq] at *
   sl
-  rename_i r hret hxlo hxhi hxeq hlimbs
-  have hret' : r = (xlo, xhi, ()) := by
-    simpa using hret
+  -- v4.29: `sl` decomposes the tuple equality from the postcondition into
+  -- per-component equalities. The original combined equality is still in
+  -- context as an anonymous hypothesis with shape `_ = HList.toTuple ...`,
+  -- which is definitionally `_ = (xlo, xhi, ())`.
+  rename_i hxlo_eq hxhi_eq hxlo hxhi hxeq hlimbs
+  rename _ = HList.toTuple _ _ _ => hret'
   have hxlo' : xlo.val < pow128 := by
     simpa [pow128] using hxlo
   have hxhi' : xhi.val < pow128 := by
