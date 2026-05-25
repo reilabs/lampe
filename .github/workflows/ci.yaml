@@ -186,8 +186,6 @@ jobs:
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
-          restore-keys: |
-            lake-packages-${{ runner.os }}-
       - name: Restore Lampe Build Cache
         id: lampe-build-cache
         uses: actions/cache@v4
@@ -253,8 +251,6 @@ jobs:
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
-          restore-keys: |
-            lake-packages-${{ runner.os }}-
       - name: Restore Lampe Build Cache
         uses: actions/cache@v4
         with:
@@ -358,8 +354,6 @@ jobs:
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
-          restore-keys: |
-            lake-packages-${{ runner.os }}-
       - name: Restore Lampe Build Cache
         uses: actions/cache@v4
         with:
