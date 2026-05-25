@@ -21,6 +21,20 @@ theorem indexTpl_head (a : Tp.denote p tp) (rest : Tp.denoteArgs p tps) :
 theorem indexTpl_tail (a : Tp.denote p tp') (rest : Tp.denoteArgs p tps) (m : Member tp tps) :
     indexTpl (p := p) (Prod.mk a rest) (Member.tail m) = indexTpl rest m := rfl
 
+/-- Projection-form `indexTpl_head` that fires when the tuple is opaque (not syntactically a
+`Prod.mk`). Low priority so downstream domain-specific simp lemmas
+(`option_fst_eq_toOption_isSome`, etc.) fire first. -/
+@[simp 900]
+theorem indexTpl_head_proj (tpl : Tp.denoteArgs p (tp :: tps)) :
+    indexTpl tpl Member.head = tpl.1 := by
+  obtain ⟨_, _⟩ := tpl; rfl
+
+/-- Projection-form `indexTpl_tail`. See `indexTpl_head_proj`. -/
+@[simp 900]
+theorem indexTpl_tail_proj (tpl : Tp.denoteArgs p (tp' :: tps)) (m : Member tp tps) :
+    indexTpl tpl (Member.tail m) = indexTpl tpl.2 m := by
+  obtain ⟨_, _⟩ := tpl; rfl
+
 def exampleTuple {p} : Tp.denoteArgs p [.bool, .field, .field] := (true, 4, 5)
 
 example : indexTpl (p := p) exampleTuple Member.head = true := rfl
@@ -41,6 +55,20 @@ theorem replaceTuple'_head (a : Tp.denote p tp) (rest : Tp.denoteArgs p tps) (v 
 @[simp]
 theorem replaceTuple'_tail (a : Tp.denote p tp') (rest : Tp.denoteArgs p tps) (m : Member tp tps) (v : Tp.denote p tp) :
     replaceTuple' (p := p) (Prod.mk a rest) (Member.tail m) v = (a, replaceTuple' rest m v) := rfl
+
+/-- Projection-form `replaceTuple'_head` — fires when the tuple is opaque.
+Low priority so domain-specific simp lemmas can take precedence. -/
+@[simp 900]
+theorem replaceTuple'_head_proj (tpl : Tp.denoteArgs p (tp :: tps)) (v : Tp.denote p tp) :
+    replaceTuple' tpl Member.head v = (v, tpl.2) := by
+  obtain ⟨_, _⟩ := tpl; rfl
+
+/-- Projection-form `replaceTuple'_tail`. See `replaceTuple'_head_proj`. -/
+@[simp 900]
+theorem replaceTuple'_tail_proj (tpl : Tp.denoteArgs p (tp' :: tps)) (m : Member tp tps)
+    (v : Tp.denote p tp) :
+    replaceTuple' tpl (Member.tail m) v = (tpl.1, replaceTuple' tpl.2 m v) := by
+  obtain ⟨_, _⟩ := tpl; rfl
 
 example : replaceTuple' (p := p) exampleTuple Member.head false = (false, 4, 5) := rfl
 example : replaceTuple' (p := p) exampleTuple Member.head.tail 3 = (true, 3, 5) := rfl

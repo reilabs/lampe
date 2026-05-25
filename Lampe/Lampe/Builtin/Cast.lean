@@ -5,6 +5,8 @@ namespace Lampe.Builtin
 class CastTp (tp tp' : Tp) where
   cast : Tp.denote p tp → Tp.denote p tp'
 
+attribute [simp] CastTp.cast
+
 @[simp]
 instance : CastTp tp tp where
   cast := fun a => a
