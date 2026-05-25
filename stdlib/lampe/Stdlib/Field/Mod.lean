@@ -174,16 +174,19 @@ theorem to_be_bits_intro :
           steps
           by_cases hi : bits[i] = pbits[i]
           · convert STHoare.iteFalse_intro _
-            · simp [List.Vector.get, hi]
+            · simp only [List.Vector.get, List.get_eq_getElem, decide_eq_false_iff_not,
+                ne_eq, Decidable.not_not]
+              exact hi
             · rw [List.take_succ_eq_append_getElem (by assumption)]
               rw [List.take_succ_eq_append_getElem (by assumption)]
               rw [this, hi]
               steps
               · apply List.le_refl
               · congr
-                simp [List.le_refl]
+                simp
           · convert STHoare.iteTrue_intro _
-            · simp [List.Vector.get, hi]
+            · simp only [List.Vector.get, List.get_eq_getElem, decide_eq_true_eq, ne_eq]
+              exact hi
             · steps 7
               have hpbit : pbits[i] = 1 := by simp_all [Int.cast, IntCast.intCast]
               have hbit : bits[i] = 0 := by have := U.cases_one bits[i]; simp_all
@@ -229,7 +232,6 @@ theorem to_be_bits_intro :
   · rename_i v _
     subst_vars
     simp
-    rw [ZMod.val_natCast]
     apply lt_of_le_of_lt (Nat.mod_le _ _)
     apply RadixVec.ofDigitsBE_lt
   · rename_i h v _
@@ -379,8 +381,9 @@ theorem to_le_bits_intro :
   · rename_i v _
     subst_vars
     simp
-    rw [ZMod.val_natCast]
     apply lt_of_le_of_lt (Nat.mod_le _ _)
+    show (RadixVec.ofDigitsLE _).val < _
+    rw [RadixVec.ofDigitsLE]
     apply RadixVec.ofDigitsBE_lt
   ·
     subst_vars
@@ -420,7 +423,10 @@ theorem to_le_bits_intro :
       have hSubtype :
           (⟨(↑↑vOfDigits : Fp p).val, hlt2N⟩ : RadixVec 2 N) = vOfDigits := by
         simpa [hvZMod] using hSubtype
-      simpa [hSubtype] using (hb_core.trans hb_digits.symm)
+      have hSubtype' :
+          (⟨ZMod.val (↑↑vOfDigits : Fp p), hlt2N⟩ : RadixVec 2 N) = vOfDigits := hSubtype
+      rw [show (⟨(↑↑vOfDigits : Fp p).val, hlt2N⟩ : RadixVec 2 N) = vOfDigits from hSubtype']
+      exact hb_core.trans hb_digits.symm
     simpa [RadixVec.ofDigitsLE, vDigits, hvOfDigits, List.Vector.reverse_map] using hb_bits
 
 theorem to_be_bytes_intro :
@@ -472,16 +478,19 @@ theorem to_be_bytes_intro :
           steps
           by_cases hi : bytes[i] = pbytes[i]
           · convert STHoare.iteFalse_intro _
-            · simp [List.Vector.get, hi]
+            · simp only [List.Vector.get, List.get_eq_getElem, decide_eq_false_iff_not,
+                ne_eq, Decidable.not_not]
+              exact hi
             · rw [List.take_succ_eq_append_getElem (by assumption)]
               rw [List.take_succ_eq_append_getElem (by assumption)]
               rw [heq, hi]
               steps
               · apply List.le_refl
               · congr
-                simp [List.le_refl]
+                simp
           · convert STHoare.iteTrue_intro _
-            · simp [List.Vector.get, hi]
+            · simp only [List.Vector.get, List.get_eq_getElem, decide_eq_true_eq, ne_eq]
+              exact hi
             · steps 7
               rename_i hlt_byte
               have hbyte_lt : bytes[i] < pbytes[i] := by
@@ -534,12 +543,12 @@ theorem to_be_bytes_intro :
   · rename_i v _
     subst_vars
     simp
-    rw [ZMod.val_natCast]
     apply lt_of_le_of_lt (Nat.mod_le _ _)
     apply RadixVec.ofDigitsBE_lt
   ·
     subst_vars
     rename_i _ h
+    rename List.Vector (Digit R256) _ => v
     simp [
       List.Vector.toList_map,
       ←RadixVec.ofDigitsBE'_toList,
@@ -554,10 +563,21 @@ theorem to_be_bytes_intro :
         BitVec.toFin_ofFin_comp 8, BitVec.toFin_ofFin, Function.comp
       ]
       rw [Nat.mod_eq_of_lt h]
+    have hlt256 : RadixVec.ofDigitsBE' v.toList < (R256 : Radix).val ^ N := by
+      rw [RadixVec.ofDigitsBE'_toList]
+      exact (RadixVec.ofDigitsBE v).isLt
+    have hsub : (⟨RadixVec.ofDigitsBE' v.toList, hlt256⟩ : RadixVec R256 N) =
+        RadixVec.ofDigitsBE v :=
+      RadixVec.ofDigitsBE'_subtype_eq hlt256
+    have hToD : RadixVec.toDigitsBE
+        (⟨RadixVec.ofDigitsBE' v.toList, hlt256⟩ : RadixVec R256 N) = v := by
+      rw [hsub]; exact RadixVec.toDigitsBE_ofDigitsBE
     apply List.Vector.eq
-    conv_rhs =>
-      enter [1, 2]
-      rw [RadixVec.ofDigitsBE'_subtype_eq, RadixVec.toDigitsBE_ofDigitsBE]
+    show (List.Vector.map (BitVec.ofFin (w := 8)) v).toList =
+        (List.Vector.map (BitVec.ofFin (w := 8)) (RadixVec.toDigitsBE
+          (⟨RadixVec.ofDigitsBE' v.toList, hlt256⟩ : RadixVec R256 N))).toList
+    rw [hToD]
+    rfl
 
 set_option maxHeartbeats 500000
 theorem to_le_bytes_intro :
@@ -693,7 +713,6 @@ theorem to_le_bytes_intro :
   · rename_i v _
     subst_vars
     simp
-    rw [ZMod.val_natCast]
     apply lt_of_le_of_lt (Nat.mod_le _ _)
     apply RadixVec.ofDigitsBE_lt
   · rename_i hbound vDigits hvDigits
@@ -715,7 +734,18 @@ theorem to_le_bytes_intro :
           RadixVec R256 N) = RadixVec.ofDigitsBE v := by
       ext
       simp only [hval_eq]
-    simp only [hSubtype, RadixVec.toDigitsBE_ofDigitsBE, List.Vector.reverse_map]
+    have hToD : RadixVec.toDigitsBE
+        (⟨ZMod.val (↑↑(RadixVec.ofDigitsBE v) : ZMod p.natVal), hlt256N⟩
+          : RadixVec R256 N) = v := by
+      rw [hSubtype]; exact RadixVec.toDigitsBE_ofDigitsBE
+    apply List.Vector.eq
+    show (List.Vector.map (BitVec.ofFin (w := 8)) v.reverse).toList =
+        ((List.Vector.map (BitVec.ofFin (w := 8)) (RadixVec.toDigitsBE
+          (⟨ZMod.val (↑↑(RadixVec.ofDigitsBE v) : ZMod p.natVal), hlt256N⟩
+            : RadixVec R256 N))).reverse).toList
+    rw [hToD]
+    rw [← List.Vector.reverse_map]
+    rfl
 
 set_option maxHeartbeats 2000000
 theorem pow_32_intro {p self exponent} :
@@ -734,7 +764,8 @@ theorem pow_32_intro {p self exponent} :
       b.reverse.map (fun i => (i.toFin : Digit 2)) = digits := by
     have hb_rev : b.reverse = digits.map (BitVec.ofFin (w := 1)) := by
       simpa [List.Vector.reverse_reverse] using congrArg List.Vector.reverse hb_bits
-    simpa [hb_rev] using map_toFin_ofFin_eq (digits := digits)
+    rw [hb_rev]
+    exact map_toFin_ofFin_eq (digits := digits)
   have hb_digits_list :
       b.toList.reverse.map (fun i => (i.toFin : Digit 2)) = digits.toList := by
     simpa [List.Vector.toList_reverse] using
@@ -753,18 +784,13 @@ theorem pow_32_intro {p self exponent} :
         simp [digits, List.Vector.toList_length, hi_lt32]
       have hi_lt_rev : i - 1 < b.toList.reverse.length := by
         simp [List.length_reverse, List.Vector.toList_length, hi_lt32]
-      have hmap :
-          (b.toList.reverse[i - 1]'hi_lt_rev).toFin =
-            (b.toList.reverse.map (fun i => (i.toFin : Digit 2)))[i - 1]'(by
-              simpa [List.length_map] using hi_lt_rev) := by
-        simp [
-          (List.getElem_map_rev (f := fun i => (i.toFin : Digit 2))
-            (l := b.toList.reverse) (n := i - 1) (h := hi_lt_rev))
-        ]
       have hidx :
           (b.toList.reverse[i - 1]'hi_lt_rev).toFin =
             digits.toList[i - 1]'hi_lt := by
-        simpa [hb_digits_list] using hmap
+        have hi_lt_mapped : i - 1 < (b.toList.reverse.map (fun i => (i.toFin : Digit 2))).length := by
+          rw [List.length_map]; exact hi_lt_rev
+        rw [← List.getElem_map (h := hi_lt_mapped)]
+        exact List.getElem_of_eq hb_digits_list _
       set a := RadixVec.ofDigitsBE' (digits.toList.take (i - 1)) with ha
       have hindex_lt32 : 32 - i < 32 := by omega
       have hindex_lt : 32 - i < b.toList.length := by
@@ -986,17 +1012,17 @@ private lemma ofBytesLE_split_eq_foldl {p} {bytes : List.Vector (BitVec 8) 32} :
     (Fp.ofBytesLE (P := p) (bytes.toList.reverse.take 16) : Fp p) +
       (Fp.ofBytesLE (P := p) (bytes.toList.reverse.drop 16 |>.take 16) : Fp p) *
         (256 : Fp p) ^ 16 =
-      bytes.toList.enum.foldl
-        (fun (acc : Fp p) (ib : ℕ × BitVec 8) =>
-          acc + (ib.2.toNat : Fp p) * (256 : Fp p) ^ (31 - ib.1))
+      bytes.toList.zipIdx.foldl
+        (fun (acc : Fp p) (ib : BitVec 8 × ℕ) =>
+          acc + (ib.1.toNat : Fp p) * (256 : Fp p) ^ (31 - ib.2))
         (0 : Fp p) := by
   -- Both sides equal Fp.ofBytesLE(bytes.reverse)
   -- Step 1: LHS = ofBytesLE(bytes.reverse)
   suffices h : ∀ (l : List (BitVec 8)), l.length = 32 →
     (Fp.ofBytesLE (P := p) (l.reverse.take 16) : Fp p) +
       (Fp.ofBytesLE (P := p) (l.reverse.drop 16) : Fp p) * (256 : Fp p) ^ 16 =
-      l.enum.foldl (fun (acc : Fp p) (ib : ℕ × BitVec 8) =>
-        acc + (ib.2.toNat : Fp p) * (256 : Fp p) ^ (31 - ib.1)) 0 by
+      l.zipIdx.foldl (fun (acc : Fp p) (ib : BitVec 8 × ℕ) =>
+        acc + (ib.1.toNat : Fp p) * (256 : Fp p) ^ (31 - ib.2)) 0 by
     have hlen : bytes.toList.length = 32 := by simp
     have : (bytes.toList.reverse.drop 16).take 16 = bytes.toList.reverse.drop 16 := by
       apply List.take_of_length_le; simp
@@ -1027,46 +1053,45 @@ private lemma ofBytesLE_split_eq_foldl {p} {bytes : List.Vector (BitVec 8) 32} :
   -- First prove the Nat-level identity, then cast
   suffices hnat : ∀ (xs : List ℕ) (n : ℕ), xs.length = n →
       (RadixVec.ofLimbsBE' 256 xs : ℕ) =
-      xs.enum.foldl (fun acc (ix : ℕ × ℕ) => acc + ix.2 * 256 ^ (n - 1 - ix.1)) 0 by
+      xs.zipIdx.foldl (fun acc (ix : ℕ × ℕ) => acc + ix.1 * 256 ^ (n - 1 - ix.2)) 0 by
     have hnat' := hnat (l.map BitVec.toNat) 32 (by simp [hlen])
-    -- cast(ofLimbsBE'(map toNat l)) = cast(foldl ... (map toNat l).enum)
+    -- cast(ofLimbsBE'(map toNat l)) = cast(foldl ... (map toNat l).zipIdx)
     rw [show (↑(RadixVec.ofLimbsBE' 256 (l.map BitVec.toNat)) : Fp p) =
-      ↑(((l.map BitVec.toNat).enum.foldl (fun acc (ix : ℕ × ℕ) => acc + ix.2 * 256 ^ (31 - ix.1)) 0)) from by
+      ↑(((l.map BitVec.toNat).zipIdx.foldl (fun acc (ix : ℕ × ℕ) => acc + ix.1 * 256 ^ (31 - ix.2)) 0)) from by
         exact_mod_cast congrArg _ hnat']
-    -- Goal: cast(foldl over (map toNat l).enum) = foldl over l.enum
+    -- Goal: cast(foldl over (map toNat l).zipIdx) = foldl over l.zipIdx
     -- Relate the two foldls directly via induction
     suffices hsuf2 : ∀ (xs : List (BitVec 8)) (init_n : ℕ) (init_fp : Fp p) (k : ℕ),
         init_fp = ↑init_n →
-        (List.foldl (fun (acc : Fp p) (ib : ℕ × BitVec 8) =>
-          acc + ↑ib.2.toNat * (256 : Fp p) ^ (31 - ib.1)) init_fp (xs.enumFrom k) : Fp p) =
+        (List.foldl (fun (acc : Fp p) (ib : BitVec 8 × ℕ) =>
+          acc + ↑ib.1.toNat * (256 : Fp p) ^ (31 - ib.2)) init_fp (xs.zipIdx k) : Fp p) =
         ↑(List.foldl (fun (acc : ℕ) (ix : ℕ × ℕ) =>
-          acc + ix.2 * 256 ^ (31 - ix.1)) init_n ((xs.map BitVec.toNat).enumFrom k)) by
-      simp only [List.enum] at *
+          acc + ix.1 * 256 ^ (31 - ix.2)) init_n ((xs.map BitVec.toNat).zipIdx k)) by
       exact (hsuf2 l 0 0 0 (by simp)).symm
     intro xs init_n init_fp k hinit
     induction xs generalizing init_n init_fp k with
     | nil => simp [hinit]
     | cons x xs ih =>
-      simp only [List.map, List.enumFrom_cons, List.foldl_cons]
+      simp only [List.map, List.zipIdx_cons, List.foldl_cons]
       apply ih
       subst hinit
       push_cast
       ring
   intro xs n hxs
   induction xs generalizing n with
-  | nil => simp [RadixVec.ofLimbsBE'_nil, List.enum]
+  | nil => simp [RadixVec.ofLimbsBE'_nil]
   | cons x xs ih =>
     cases n with
     | zero => simp at hxs
     | succ n =>
       simp only [List.length_cons, Nat.succ.injEq] at hxs
       simp only [RadixVec.ofLimbsBE'_cons]
-      -- Goal uses enumFrom (index, value format): ix.1 = index, ix.2 = value
+      -- Goal uses zipIdx (value, index format): ix.1 = value, ix.2 = index
       suffices hgen : ∀ (init k : ℕ) (ys : List ℕ), ys.length + k = n + 1 →
-          List.foldl (fun acc (ix : ℕ × ℕ) => acc + ix.2 * 256 ^ (n - ix.1))
-            init (List.enumFrom k ys) =
+          List.foldl (fun acc (ix : ℕ × ℕ) => acc + ix.1 * 256 ^ (n - ix.2))
+            init (List.zipIdx ys k) =
           init + RadixVec.ofLimbsBE' 256 ys by
-        simp only [List.enum, List.enumFrom_cons, List.foldl_cons, Nat.sub_zero, zero_add]
+        simp only [List.zipIdx_cons, List.foldl_cons, Nat.sub_zero, zero_add]
         rw [show n + 1 - 1 = n from by omega]
         have hlen : xs.length + 1 = n + 1 := by omega
         rw [hgen (x * 256 ^ n) 1 xs hlen, hxs]
@@ -1074,7 +1099,7 @@ private lemma ofBytesLE_split_eq_foldl {p} {bytes : List.Vector (BitVec 8) 32} :
       induction ys generalizing init k with
       | nil => simp [RadixVec.ofLimbsBE'_nil]
       | cons y ys' ihy =>
-        simp only [List.enumFrom_cons, List.foldl_cons, RadixVec.ofLimbsBE'_cons]
+        simp only [List.zipIdx_cons, List.foldl_cons, RadixVec.ofLimbsBE'_cons]
         have hyk' : ys'.length + (k + 1) = n + 1 := by
           simp only [List.length_cons] at hyk; omega
         rw [ihy _ (k + 1) hyk']
@@ -1085,9 +1110,9 @@ set_option maxRecDepth 4096 in
 theorem bytes32_to_field_spec {p bytes} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::field::bytes32_to_field».call h![] h![bytes])
-      (fun r => r = (bytes.toList.enum.foldl
-        (fun (acc : Fp p) (ib : ℕ × BitVec 8) =>
-          acc + (ib.2.toNat : Fp p) * (256 : Fp p) ^ (31 - ib.1))
+      (fun r => r = (bytes.toList.zipIdx.foldl
+        (fun (acc : Fp p) (ib : BitVec 8 × ℕ) =>
+          acc + (ib.1.toNat : Fp p) * (256 : Fp p) ^ (31 - ib.2))
         (0 : Fp p))) := by
   enter_decl
   steps
@@ -1137,17 +1162,22 @@ theorem bytes32_to_field_spec {p bytes} :
       have hmin2 : min i 32 = i := by have := hhi; omega
       simp only [hmod, hmin2]
       congr 1
-      have hlen : i < (List.Vector.toList bytes).reverse.length := by
-        simp; exact Nat.lt_trans hhi (by norm_num)
-      simp only [List.getElem?_eq_getElem hlen, Option.toList, List.map_cons, List.map_nil,
+      set bl := List.Vector.toList bytes with hbl
+      have hlen : i < bl.reverse.length := by
+        simp [bl]; exact Nat.lt_trans hhi (by norm_num)
+      have hge : bl.reverse[i]? = some (bl.reverse[i]'hlen) :=
+            List.getElem?_eq_getElem hlen
+      show
+        ((bytes[31 - i]).toNat : Fp p) =
+          ((RadixVec.ofLimbsBE' 256 (List.map BitVec.toNat bl.reverse[i]?.toList).reverse : ℕ) : Fp p)
+      simp only [hge, Option.toList_some, List.map_cons, List.map_nil,
                   List.reverse_cons, List.reverse_nil, List.nil_append,
                   RadixVec.ofLimbsBE'_cons, RadixVec.ofLimbsBE'_nil, List.length_nil, pow_zero,
                   mul_one, Nat.add_zero]
       congr 1
       rw [List.getElem_reverse]
-      congr 1
-      simp
-      simp [List.Vector.toList_getElem]
+      simp [bl, List.Vector.toList_getElem]
+      rfl
   -- post-loop
   steps
   · subst_vars

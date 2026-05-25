@@ -36,6 +36,7 @@ private theorem len_modify_head_tail {p T MaxLen}
         (((Lens.nil.cons (Access.tuple Member.head.tail)).modify v l).get h) = l := by
   unfold len
   simp [Lens.modify]
+  rfl
 
 private lemma toNat_ofNat32 (i : Nat) (pf32 : i < 2 ^ 32) :
     (BitVec.ofNat 32 i).toNat = i := by
@@ -186,7 +187,7 @@ private theorem mapLike_constrained_loop_effectful_spec
       simp [Nat.min_zero, Nat.zero_min]
       sl
       constructor
-      · simp [len]
+      · rfl
       · simpa [bounded, len] using hb
     ·
       rw [SLP.star_comm]
@@ -274,7 +275,22 @@ private theorem mapLike_constrained_loop_effectful_spec
         refine SLP.pure_right ⟨hlenV, hbV⟩ ?_
         intro st hinv
         have hmod : i % 4294967296 = i := Nat.mod_eq_of_lt (by simpa using pf)
-        simpa [htake_xs, storage, hmod, hset] using hinv
+        have hidxNat : (BitVec.ofNat 32 i).toNat = i := by
+          simp [BitVec.toNat_ofNat, hmod]
+        have hidxLt' : i < MaxLen.toNat := hhi
+        -- Unfold the lens modify chain into a list-set operation.
+        simp only [storage, Lens.modify, Lens.get, Access.modify, Access.get,
+          Option.bind_some, Option.bind_fun_some, bind, Option.bind, hidxNat,
+          Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj,
+          Builtin.replaceTuple'_head_proj, Builtin.replaceTuple'_tail_proj,
+          dif_pos hidxLt', Option.get_some, List.Vector.toList_set]
+        -- After reducing the lens chain, the head projection of `(set v.1 .., v.2)` is
+        -- definitionally `set v.1 ..`.
+        change inv (List.take (i + 1) xs)
+            (List.take (i + 1)
+              (List.Vector.toList (List.Vector.set v.1 ⟨i, hidxLt'⟩ tmp))) st
+        rw [List.Vector.toList_set, hset, htake_xs]
+        exact hinv
       ·
         intro hcond
         steps
@@ -553,11 +569,7 @@ theorem any_spec {p T MaxLen Env self f fb}
           inv (xs.take (Nat.min i n)) b ⋆
           [λf ↦ fb])
     ·
-      -- i = 0
       sl
-      simp
-      -- `loop_inv` may introduce a trailing frame; absorb it into `⊤`.
-      apply SLP.ent_star_top
     ·
       -- Postcondition weakening: rewrite `take (min MaxLen n)` to `xs`, absorb `exceeded_len` into `⊤`.
       simp [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)]
@@ -612,9 +624,12 @@ theorem any_spec {p T MaxLen Env self f fb}
         have hi_embed : i < (embed self).length := by
           simpa [xs] using hi_xs
         have htoNat : i % 4294967296 = i := Nat.mod_eq_of_lt (by simpa using pf32)
-        have harg : List.Vector.get self.1 ⟨i % 4294967296, hiIdx⟩ = e := by
-          simpa using storage_get_eq_embed_get_of_toNat (self := self)
+        -- The goal's index is `⟨i % 4294967296, hiIdx⟩`.
+        have harg : List.Vector.get (Builtin.indexTpl self Member.head)
+            ⟨i % 4294967296, hiIdx⟩ = e := by
+          have h := storage_get_eq_embed_get_of_toNat (self := self)
             (idxNat := i % 4294967296) (i := i) htoNat hiIdx hi_embed
+          simpa using h
         have hprefix : xs.take i ++ [e] <+: xs := by
           simp [e]; exact List.take_prefix ..
         have hlam : STHoare p env
@@ -624,8 +639,9 @@ theorem any_spec {p T MaxLen Env self f fb}
           have :=
             inv_step (ip := xs.take i) (op := b) (e := e) (by simpa [xs] using hprefix)
           simpa [hmin_i] using this
-        -- Rewrite the argument read from storage into our semantic element `e` so `callLambda_intro` matches.
-        simp [harg]
+        -- Rewrite the goal's storage read into `e` via `harg`, then apply the lambda spec.
+        rw [show List.Vector.get (Builtin.indexTpl self Member.head)
+                ⟨i % 4294967296, hiIdx⟩ = e from harg]
         steps [STHoare.callLambda_intro (hlam := hlam)]
         simp_all only [Bool.decide_or, Bool.decide_eq_true, Bool.false_or, Bool.true_or,
           List.take_append_getElem, Lens.modify, Option.get_some]
@@ -641,9 +657,10 @@ theorem any_spec {p T MaxLen Env self f fb}
           -- (`!exceeded_len = true` implies the update computed `false`.)
           have horFalse : (decide (n < i) || decide (BitVec.ofNat 32 i = len self)) = false := by
             simpa [len] using hcond
-          have horFalse' : (decide (n < i) || decide (BitVec.ofNat 32 i = self.2.1)) = false := by
-            simpa [len] using horFalse
-          simp [horFalse']
+          have hnlei : decide (n ≤ i) = false := by simp [Nat.not_le_of_lt hi_lt]
+          congr 1
+          rw [show (decide (n < i) || decide (BitVec.ofNat 32 i = Builtin.indexTpl self Member.head.tail))
+              = false from horFalse, hnlei]
         ·
           exact ()
       ·
@@ -660,9 +677,12 @@ theorem any_spec {p T MaxLen Env self f fb}
         simp [Nat.min_eq_right hge, Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))] at *
         sl
         · have h :
-              (decide (n < i) || decide (BitVec.ofNat 32 i = self.2.1)) = decide (n < i + 1) := by
+              (decide (n < i) || decide (BitVec.ofNat 32 i = Builtin.indexTpl self Member.head.tail))
+                = decide (n < i + 1) := by
             simpa [len] using hexceeded_next
-          simp [h]
+          have hnlei : decide (n ≤ i) = decide (n < i + 1) := by
+            simp [Nat.lt_succ_iff]
+          simp [Lens.modify, h, hnlei.symm]
     ·
       -- Loop finished.
       simp [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)] at *
@@ -753,16 +773,11 @@ private theorem forEachLike_constrained_loop_spec
   ·
     loop_inv nat (fun i _ _ => Inv (xs.take (Nat.min i n)) ⋆ [λf ↦ fb])
     ·
-      -- i = 0
-      simp [Nat.min_zero, Nat.zero_min]
-      sl
-    ·
       -- postcondition weakening
-      rw [SLP.star_comm]; apply SLP.pure_left; intro _
-      apply SLP.exists_intro_l; intro _
-      simpa [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)] using
-        SLP.ent_star_top (H := Inv (embed self) ⋆ [λf ↦ fb])
+      simp only [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)]
+      exact SLP.ent_star_top
     ·
+      -- 0 ≤ MaxLen.toNat
       simp [Nat.zero_le MaxLen.toNat]
     ·
       intro i hlo hhi

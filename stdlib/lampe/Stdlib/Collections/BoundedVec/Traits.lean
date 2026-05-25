@@ -29,17 +29,28 @@ theorem eq_trait_spec {p T MaxLen self other}
   by_cases hlen : self.2.1 = other.2.1
   ·
     -- length matches: reduce to array equality on storage.
-    simp [hlen]
-    apply STHoare.iteTrue_intro
+    apply STHoare.ite_intro_of_true (by
+      show decide (Builtin.indexTpl self Member.head.tail = Builtin.indexTpl other Member.head.tail) = true
+      change decide (self.2.1 = other.2.1) = true
+      simp [hlen])
     steps [Lampe.Stdlib.Cmp.Eq.array_eq_pure_spec (T := T) (N := MaxLen) (a := storage self) (b := storage other)
       (t_eq := t_eq) (t_eq_f := t_eq_f)]
-    simp_all [len, storage]
+    rename_i v hv
+    refine ⟨fun h => ⟨?_, ?_⟩, fun ⟨_, h⟩ => ?_⟩
+    · exact hlen
+    · exact (hv.mp h)
+    · exact hv.mpr h
   ·
     -- length mismatch: return `false`.
-    simp [hlen]
-    apply STHoare.iteFalse_intro
+    apply STHoare.ite_intro_of_false (by
+      show decide (Builtin.indexTpl self Member.head.tail = Builtin.indexTpl other Member.head.tail) = false
+      change decide (self.2.1 = other.2.1) = false
+      simp [hlen])
     steps
-    simp_all [len, storage]
+    rename_i v hv
+    refine ⟨fun h => ?_, fun ⟨h, _⟩ => ?_⟩
+    · exact absurd h (by simp [hv])
+    · exact absurd h hlen
 
 theorem from_trait_spec {p T MaxLen Len array}
     (hbounded : Len.toNat ≤ MaxLen.toNat) :

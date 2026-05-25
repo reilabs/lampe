@@ -35,6 +35,10 @@ lemma List.perm_of_index_bijection
       let f' : (Fin N → Fin N) := fun i => if h: f 0 < f i.succ then (f i.succ).pred (Fin.ne_zero_of_lt h) else (f i.succ).castPred (Fin.ne_last_of_lt (f_succ_lt_of_not_lt_zero _ h))
       apply ih
       case f => exact f'
+      case len₁ => exact len₁
+      case len₂ =>
+        rw [List.length_eraseIdx_of_lt]; · simp_all
+        · rw [len₂]; apply Fin.prop
       case bij =>
         have : Function.Surjective f' := by
           intro v
@@ -106,11 +110,11 @@ lemma List.perm_of_index_bijection
             · intro h
               have := bij.injective h
               cases this
-        · rw [List.length_eraseIdx_of_lt]
-          · simp_all
-          · rw [len₂]
-            apply Fin.prop
-        · assumption
+        all_goals first
+          | (rw [List.length_eraseIdx_of_lt]
+             · simp_all
+             · rw [len₂]; apply Fin.prop)
+          | assumption
     have t₁ : l₂ = (l₂.eraseIdx (f 0).toNat).insertIdx (f 0).toNat (l₂[(f 0).toNat]'(by rw [len₂]; apply Fin.prop)) := by
       rw [List.insertIdx_eraseIdx_getElem]
     have t₂ : h₁ :: l₁ = l₁.insertIdx 0 h₁ := by simp

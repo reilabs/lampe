@@ -97,13 +97,13 @@ theorem pair {f : α → α → Prop} : f x y ↔ List.OrderedBy f [x, y] := by
     simp_all
 
 theorem trans_eq_Sorted {xs : List α} {f : α → α → Prop}
-  : OrderedBy f xs → Transitive f → List.Sorted f xs := by
+  : OrderedBy f xs → Transitive f → List.Pairwise f xs := by
   intros ord trans
 
   induction xs with
   | nil => simp
   | cons z zs ih =>
-    simp [List.Sorted.cons]
+    rw [List.pairwise_cons]
 
     apply And.intro
     · cases zs with
@@ -114,8 +114,9 @@ theorem trans_eq_Sorted {xs : List α} {f : α → α → Prop}
         have tord := this.right
         have rest_sorted := ih tord
         have : IsTrans α f := ⟨trans⟩
-        have : List.Sorted f (z :: y :: ys) := List.sorted_cons_cons.mpr ⟨fzy, rest_sorted⟩
-        exact List.rel_of_sorted_cons this
+        have hSorted : List.Pairwise f (z :: y :: ys) :=
+          List.pairwise_cons_cons_iff_of_trans.mpr ⟨fzy, rest_sorted⟩
+        exact fun a' ha' => List.rel_of_pairwise_cons hSorted ha'
     · cases zs with
       | nil => simp
       | cons y ys => exact ih (List.OrderedBy.tail_cons ord)

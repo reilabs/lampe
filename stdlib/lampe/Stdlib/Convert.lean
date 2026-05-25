@@ -149,7 +149,7 @@ theorem from_u64_for_u128_spec {p a} : convertUintToUintSemantics 64 128 p a := 
 def convertUintToFieldSemantics (s₁ : ℕ) (p : Prime) (a : Tp.denote p (.u s₁)) :=
   STHoare p env ⟦⟧
     («from» h![.u s₁] .field h![] h![] h![a])
-    (fun r => r = a.toNat)
+    (fun (r : Tp.denote p .field) => r = a.toNat)
 
 theorem from_u8_for_field_spec {p a} : convertUintToFieldSemantics 8 p a := by
   resolve_trait
@@ -211,7 +211,7 @@ theorem from_i32_for_i64_spec {p a} : convertIntToIntSemantics 32 64 p a := by
 def convertBoolToUintSemantics (s₁ : ℕ) (p : Prime) (a : Tp.denote p .bool) :=
   STHoare p env ⟦⟧
     («from» h![.bool] (.u s₁) h![] h![] h![a])
-    (fun r => r = if a then 1 else 0)
+    (fun (r : Tp.denote p (.u s₁)) => r = if a then 1 else 0)
 
 theorem from_bool_for_u8_spec {p a} : convertBoolToUintSemantics 8 p a := by
   resolve_trait
@@ -242,7 +242,7 @@ theorem from_bool_for_u128_spec {p a} : convertBoolToUintSemantics 128 p a := by
 def convertBoolToIntSemantics (s₁ : ℕ) (p : Prime) (a : Tp.denote p .bool) :=
   STHoare p env ⟦⟧
     («from» h![.bool] (.i s₁) h![] h![] h![a])
-    (fun r => r = if a then 1 else 0)
+    (fun (r : Tp.denote p (.i s₁)) => r = if a then 1 else 0)
 
 theorem from_bool_for_i8_spec {p a} : convertBoolToIntSemantics 8 p a := by
   resolve_trait
@@ -267,7 +267,7 @@ theorem from_bool_for_i64_spec {p a} : convertBoolToIntSemantics 64 p a := by
 theorem from_bool_for_field_spec {p a}
   : STHoare p env ⟦⟧
     («from» h![.bool] .field h![] h![] h![a])
-    (fun r => r = if a then 1 else 0) := by
+    (fun (r : Tp.denote p .field) => r = if a then 1 else 0) := by
   resolve_trait
   steps
   simp_all
@@ -280,7 +280,7 @@ we delegate straight to our builtin semantics for those here.
 def asPrimitiveSemantics (src tgt : Tp) [Builtin.CastTp src tgt] (p : Prime) (a : Tp.denote p src) :=
   STHoare p env ⟦⟧
     (as_ h![tgt] src h![] h![] h![a])
-    (fun r => r = Builtin.CastTp.cast a)
+    (fun (r : Tp.denote p tgt) => r = Builtin.CastTp.cast a)
 
 theorem as_u8_for_bool_spec {p a} : asPrimitiveSemantics .bool (.u 8) p a := by
   resolve_trait

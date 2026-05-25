@@ -27,6 +27,7 @@ theorem bool_not_spec {p a}
     (fun r => r = !a) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u128_not_spec {p a}
@@ -35,6 +36,7 @@ theorem u128_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_not_spec {p a}
@@ -43,6 +45,7 @@ theorem u64_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_not_spec {p a}
@@ -51,6 +54,7 @@ theorem u32_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_not_spec {p a}
@@ -59,6 +63,7 @@ theorem u16_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_not_spec {p a}
@@ -67,6 +72,7 @@ theorem u8_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_not_spec {p a}
@@ -75,6 +81,7 @@ theorem u1_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_not_spec {p a}
@@ -83,6 +90,7 @@ theorem i8_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_not_spec {p a}
@@ -91,6 +99,7 @@ theorem i16_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_not_spec {p a}
@@ -99,6 +108,7 @@ theorem i32_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_not_spec {p a}
@@ -107,6 +117,7 @@ theorem i64_not_spec {p a}
     (fun r => r = a.not) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::bit::BitOr::bitor` method. -/
@@ -128,6 +139,7 @@ theorem bool_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
   exact ()
 
@@ -137,6 +149,7 @@ theorem u128_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_bit_or_spec {p a b}
@@ -145,6 +158,7 @@ theorem u64_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_bit_or_spec {p a b}
@@ -153,6 +167,7 @@ theorem u32_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_bit_or_spec {p a b}
@@ -161,6 +176,7 @@ theorem u16_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_bit_or_spec {p a b}
@@ -169,6 +185,7 @@ theorem u8_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_bit_or_spec {p a b}
@@ -177,6 +194,7 @@ theorem u1_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_bit_or_spec {p a b}
@@ -185,6 +203,7 @@ theorem i8_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_bit_or_spec {p a b}
@@ -193,6 +212,7 @@ theorem i16_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_bit_or_spec {p a b}
@@ -201,6 +221,7 @@ theorem i32_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_bit_or_spec {p a b}
@@ -209,6 +230,7 @@ theorem i64_bit_or_spec {p a b}
     (fun r => r = a.or b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::bit::BitOr::bitand` method. -/
@@ -230,6 +252,7 @@ theorem bool_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
   exact ()
 
@@ -239,6 +262,7 @@ theorem u128_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_bit_and_spec {p a b}
@@ -247,6 +271,7 @@ theorem u64_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_bit_and_spec {p a b}
@@ -255,6 +280,7 @@ theorem u32_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_bit_and_spec {p a b}
@@ -263,6 +289,7 @@ theorem u16_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_bit_and_spec {p a b}
@@ -271,6 +298,7 @@ theorem u8_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_bit_and_spec {p a b}
@@ -279,6 +307,7 @@ theorem u1_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_bit_and_spec {p a b}
@@ -287,6 +316,7 @@ theorem i8_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_bit_and_spec {p a b}
@@ -295,6 +325,7 @@ theorem i16_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_bit_and_spec {p a b}
@@ -303,6 +334,7 @@ theorem i32_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_bit_and_spec {p a b}
@@ -311,6 +343,7 @@ theorem i64_bit_and_spec {p a b}
     (fun r => r = a.and b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::bit::BitXor::bitxor` method. -/
@@ -332,6 +365,7 @@ theorem bool_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
   exact ()
 
@@ -341,6 +375,7 @@ theorem u128_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_bit_xor_spec {p a b}
@@ -349,6 +384,7 @@ theorem u64_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_bit_xor_spec {p a b}
@@ -357,6 +393,7 @@ theorem u32_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_bit_xor_spec {p a b}
@@ -365,6 +402,7 @@ theorem u16_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_bit_xor_spec {p a b}
@@ -373,6 +411,7 @@ theorem u8_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_bit_xor_spec {p a b}
@@ -381,6 +420,7 @@ theorem u1_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_bit_xor_spec {p a b}
@@ -389,6 +429,7 @@ theorem i8_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_bit_xor_spec {p a b}
@@ -397,6 +438,7 @@ theorem i16_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_bit_xor_spec {p a b}
@@ -405,6 +447,7 @@ theorem i32_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_bit_xor_spec {p a b}
@@ -413,6 +456,7 @@ theorem i64_bit_xor_spec {p a b}
     (fun r => r = a.xor b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::bit::Shl::shl` method. -/
@@ -434,6 +478,7 @@ theorem u128_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_shl_spec {p a b}
@@ -442,6 +487,7 @@ theorem u64_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_shl_spec {p a b}
@@ -450,6 +496,7 @@ theorem u32_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_shl_spec {p a b}
@@ -458,6 +505,7 @@ theorem u16_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_shl_spec {p a b}
@@ -466,6 +514,7 @@ theorem u8_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_shl_spec {p a b}
@@ -474,6 +523,7 @@ theorem u1_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_shl_spec {p a b}
@@ -482,6 +532,7 @@ theorem i8_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_shl_spec {p a b}
@@ -490,6 +541,7 @@ theorem i16_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_shl_spec {p a b}
@@ -498,6 +550,7 @@ theorem i32_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_shl_spec {p a b}
@@ -506,6 +559,7 @@ theorem i64_shl_spec {p a b}
     (fun r => r = a <<< b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::bit::Shr::shr` method. -/
@@ -527,6 +581,7 @@ theorem u128_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_shr_spec {p a b}
@@ -535,6 +590,7 @@ theorem u64_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_shr_spec {p a b}
@@ -543,6 +599,7 @@ theorem u32_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_shr_spec {p a b}
@@ -551,6 +608,7 @@ theorem u16_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_shr_spec {p a b}
@@ -559,6 +617,7 @@ theorem u8_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_shr_spec {p a b}
@@ -567,6 +626,7 @@ theorem u1_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_shr_spec {p a b}
@@ -575,6 +635,7 @@ theorem i8_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_shr_spec {p a b}
@@ -583,6 +644,7 @@ theorem i16_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_shr_spec {p a b}
@@ -591,6 +653,7 @@ theorem i32_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_shr_spec {p a b}
@@ -599,4 +662,5 @@ theorem i64_shr_spec {p a b}
     (fun r => r = a >>> b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all

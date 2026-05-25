@@ -44,7 +44,8 @@ theorem as_array_spec {p T N input}
     steps
     simp_all only [beq_true, decide_eq_true_eq, BitVec.toNat_intCast, Int.reducePow,
       EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, Lens.modify, Lens.get, Access.modify,
-      BitVec.toNat_ofNatLT, ↓reduceDIte, Builtin.instCastTpU, BitVec.natCast_eq_ofNat,
+      BitVec.toNat_ofNatLT, ↓reduceDIte, Builtin.instCastTpU, Builtin.CastTp.cast,
+      BitVec.natCast_eq_ofNat,
       BitVec.ofNat_toNat, BitVec.setWidth_eq, List.get_eq_getElem, Option.bind_eq_bind,
       Option.bind_some, Option.bind_fun_some, Option.get_some, List.Vector.toList_set]
     rename_i take_of_vec_eq_input
@@ -52,7 +53,8 @@ theorem as_array_spec {p T N input}
     rw [List.take_set]
     rw [take_of_vec_eq_input]
     simp_all only [Lens.modify, Lens.get, Access.modify, BitVec.toNat_ofNatLT, ↓reduceDIte,
-      Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
+      Builtin.instCastTpU, Builtin.CastTp.cast,
+      BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
       List.get_eq_getElem, Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some,
       Option.isSome_some, List.length_set, List.Vector.toList_length, getElem?_pos,
       List.getElem_set_self, Option.toList_some]
@@ -142,6 +144,7 @@ theorem mapi_spec {T U Env p f fb l}
       steps
       simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
         EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, Builtin.instCastTpU,
+        Builtin.CastTp.cast,
         BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, BitVec.toNat_ofNatLT, List.get_eq_getElem]
       generalize_proofs
       rename Tp.denote p U.vector => v
@@ -232,6 +235,7 @@ theorem for_eachi_spec {T Env p f fb l}
     steps
     simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
       EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, Builtin.instCastTpU,
+      Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, BitVec.toNat_ofNatLT, List.get_eq_getElem]
     generalize_proofs
     have := inv_spec (l.take i) l[i] (by simp [List.take_prefix])

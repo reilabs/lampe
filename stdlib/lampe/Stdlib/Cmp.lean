@@ -394,9 +394,10 @@ theorem fromOrdering_inj {p} : Function.Injective (fromOrdering (p := p)) := by
 
   have : (0 : Tp.field.denote p) ≠ 2 := by
     apply Ne.symm (Ring.two_ne_zero _)
-    simp only [Tp.denote, Fp, ZMod.ringChar_zmod_n, Prime.natVal]
-    intro
-    linarith [p.prop.2]
+    rw [ZMod.ringChar_zmod_n]
+    have := p.prop.2
+    unfold Prime.natVal
+    omega
 
   have : (2 : Tp.field.denote p) ≠ 1 := by
     intro h
@@ -992,13 +993,18 @@ theorem array_ord_pure_spec {p T N a b}
       congr 1
       simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
         zero_le, Function.Injective.eq_iff fromOrdering_inj, true_iff, Lens.modify,
-        Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
+        Builtin.instCastTpU, Builtin.CastTp.cast,
+        BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
         BitVec.toNat_ofNatLT, List.get_eq_getElem, Option.get_some, List.take_take,
         le_add_iff_nonneg_right, inf_of_le_left, List.drop_take, add_tsub_cancel_left,
         List.take_one, List.head?_drop, Ordering.eq_then]
       generalize_proofs
       repeat rw [List.Vector.get_eq_get_toList] at *
-      simp_all
+      have hi : i < (List.Vector.toList a).length := by simp_all [List.Vector.toList_length]
+      have hi' : i < (List.Vector.toList b).length := by simp_all [List.Vector.toList_length]
+      simp [List.getElem?_eq_getElem hi, List.getElem?_eq_getElem hi', List.compareWith,
+        Option.toList, Ordering.then]
+      cases t_ord_emb (List.Vector.toList a)[i] (List.Vector.toList b)[i] <;> rfl
 
     · rintro rfl
       steps
@@ -1054,12 +1060,17 @@ theorem slice_ord_pure_spec {p T a b}
       congr 1
       simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
         zero_le, Function.Injective.eq_iff fromOrdering_inj, true_iff, Lens.modify,
-        Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
+        Builtin.instCastTpU, Builtin.CastTp.cast,
+        BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
         BitVec.toNat_ofNatLT, List.get_eq_getElem, Option.get_some, List.take_take,
         le_add_iff_nonneg_right, inf_of_le_left, List.drop_take, add_tsub_cancel_left,
         List.take_one, List.head?_drop, Ordering.eq_then]
       generalize_proofs
-      simp_all
+      have hi : i < a.length := by simp_all
+      have hi' : i < b.length := by simp_all
+      simp [List.getElem?_eq_getElem hi, List.getElem?_eq_getElem hi', List.compareWith,
+        Option.toList, Ordering.then]
+      cases t_ord_emb a[i] b[i] <;> rfl
     · rintro rfl
       steps
       congr 1
@@ -1114,12 +1125,13 @@ theorem tuple2_ord_pure_spec {p A B self other}
     simp_all
   · intro
     steps [B_ord_f]
-    simp_all only [Bool.not_eq_eq_eq_not, Bool.not_false, iff_true]
+    simp_all only [Bool.not_eq_eq_eq_not, Bool.not_false, iff_true,
+      Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
     rename_i a _
     apply fromOrdering_inj at a
     congr 1
     unfold Tuple.compare
-    simp_all only
+    rw [a]
     apply Eq.symm
     apply Tuple.compare_singleton
 
@@ -1163,7 +1175,7 @@ theorem tuple3_ord_pure_spec {p A B C self other}
   · apply STHoare.ite_intro
     · intro
       steps [B_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
@@ -1193,7 +1205,7 @@ theorem tuple3_ord_pure_spec {p A B C self other}
   · apply STHoare.ite_intro
     · intro
       steps [C_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
@@ -1255,7 +1267,7 @@ theorem tuple4_ord_pure_spec {p A B C D self other}
   · apply STHoare.ite_intro
     · intro
       steps [B_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
@@ -1285,7 +1297,7 @@ theorem tuple4_ord_pure_spec {p A B C D self other}
   · apply STHoare.ite_intro
     · intro
       steps [C_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
@@ -1314,7 +1326,7 @@ theorem tuple4_ord_pure_spec {p A B C D self other}
   · apply STHoare.ite_intro
     · intro
       steps [D_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
@@ -1379,7 +1391,7 @@ theorem tuple5_ord_pure_spec {p A B C D E self other}
   · apply STHoare.ite_intro
     · intro
       steps [B_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
@@ -1409,7 +1421,7 @@ theorem tuple5_ord_pure_spec {p A B C D E self other}
   · apply STHoare.ite_intro
     · intro
       steps [C_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
@@ -1438,7 +1450,7 @@ theorem tuple5_ord_pure_spec {p A B C D E self other}
   · apply STHoare.ite_intro
     · intro
       steps [D_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
@@ -1467,7 +1479,7 @@ theorem tuple5_ord_pure_spec {p A B C D E self other}
   · apply STHoare.ite_intro
     · intro
       steps [E_ord_f]
-      simp_all only [true_iff, Lens.modify, Option.get_some]
+      simp_all only [true_iff, Lens.modify, Option.get_some, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj]
       congr
       rw [Tuple.compare_snoc_of_init_eq_eq]
       rw [fromOrdering_eq_eq_iff] at *
