@@ -71,6 +71,7 @@ theorem double_foo_spec {lp} :
   enter_decl
   steps
   resolve_trait
+  reduce_fn_body
   steps
   simp [Tp.denote] at *
   subst_vars
@@ -83,6 +84,7 @@ theorem double_bar_spec {lp} :
   enter_decl
   steps
   resolve_trait
+  reduce_fn_body
   steps
   simp [Tp.denote] at *
   subst_vars
