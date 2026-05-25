@@ -146,7 +146,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
       - name: Build (Cargo)
         if: ${{ steps.cli-cache.outputs.cache-hit != 'true' }}
         run: cargo build --release
@@ -271,7 +271,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
       - name: Check CLI Binary
         id: cli-check
         run: |
@@ -371,7 +371,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
       - name: Check CLI Binary
         id: cli-check
         run: |
