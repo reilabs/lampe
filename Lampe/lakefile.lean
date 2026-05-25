@@ -8,8 +8,8 @@ package Lampe where
   moreLeanArgs := #["--tstack=65536"]
   testDriver := "Tests"
 
-require "leanprover-community" / "batteries" @ git "v4.29.1"
-require "leanprover-community" / "mathlib" @ git "v4.29.1"
+require "leanprover-community" / "batteries" @ git "v4.30.0-rc2"
+require "leanprover-community" / "mathlib" @ git "v4.30.0-rc2"
 
 @[default_target]
 lean_lib Lampe where
