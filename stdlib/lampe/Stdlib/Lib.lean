@@ -5,7 +5,8 @@ namespace Lampe.Stdlib.Lib
 
 open «std-1.0.0-beta.14»
 
-/-- 
+set_option maxHeartbeats 800000 in
+/--
 Note that as printing is inherently an unconstrained-only operation, this theorem is not capable of
 asserting actual properties about the printing operation. Instead it simply exists to make it easy
 to step through print calls when verifying your programs.
@@ -23,7 +24,8 @@ theorem println_spec {p T a}
   · steps
     simp_all
 
-/-- 
+set_option maxHeartbeats 800000 in
+/--
 Note that as printing is inherently an unconstrained-only operation, this theorem is not capable of
 asserting actual properties about the printing operation. Instead it simply exists to make it easy
 to step through print calls when verifying your programs.
