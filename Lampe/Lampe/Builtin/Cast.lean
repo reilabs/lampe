@@ -5,6 +5,11 @@ namespace Lampe.Builtin
 class CastTp (tp tp' : Tp) where
   cast : Tp.denote p tp → Tp.denote p tp'
 
+-- v4.29: tag the class projection `@[simp]` so `simp_all` unfolds class-method dispatch.
+-- Pre-v4.29 (#12195/#12244) `simp_all` did this automatically via the `@[simp] instance`
+-- annotations on the CastTp instances below.
+attribute [simp] CastTp.cast
+
 @[simp]
 instance : CastTp tp tp where
   cast := fun a => a
