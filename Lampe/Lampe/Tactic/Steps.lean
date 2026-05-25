@@ -388,12 +388,57 @@ partial def pluckExis (goal : MVarId) : TacticM (MVarId × List MVarId) := goal.
   let (goal, impls₂) ← doPluckExis goal
   pure (goal, impls₁ ++ impls₂)
 
+/--
+Recognize the auxiliary definitions emitted per category by `noir_trait_def`
+(`#output`, `#inputs`, `#genericKinds`, `#associatedTypesKinds`). `simp` does not
+unfold them on its own, so `reduceBetaIotaMatch` drives the iota step explicitly.
+-/
+private def isTraitHelper (e : Lean.Expr) : Bool :=
+  if let .const n _ := e.getAppFn then
+    let s := n.componentsRev.head?.map (·.toString) |>.getD ""
+    s == "#output" || s == "#inputs"
+      || s == "#genericKinds" || s == "#associatedTypesKinds"
+  else false
+
+/--
+Force beta, iota (matcher), structure-projection reduction, and trait-helper unfolding
+on an expression under `.all` transparency. Drives the reduction `simp only []` /
+`isDefEq` no longer do automatically on noir_def function bodies
+(`FunctionDecl.fn → Function.body → Lambda.body`) and on the
+`match h![T] with | h![T] => …` pattern whose pattern variable shadows the scrutinee.
+Used by `simpOnlyGoal` and the `reduce_fn_body` tactic.
+-/
+private partial def reduceBetaIotaMatch (e : Lean.Expr) : Lean.MetaM Lean.Expr := do
+  let step (e : Lean.Expr) : Lean.MetaM Lean.Expr := Lean.Meta.withTransparency .all do
+    let e := e.headBeta
+    let e := match ← Lean.Meta.reduceMatcher? e with
+      | .reduced e' => e'
+      | _ => e
+    let e ← match ← Lean.Meta.reduceProj? e with
+      | some e' => pure e'
+      | none => pure e
+    if isTraitHelper e then
+      match ← Lean.Meta.unfoldDefinition? e with
+      | some e' => return e'
+      | none => return e
+    else return e
+  Lean.Meta.transform e
+    (pre := fun e => do let e' ← step e; return if e' == e then .continue else .visit e')
+    (post := fun e => do let e' ← step e; return .done e')
+
 partial def simpOnlyGoal (goal : MVarId) : TacticM MVarId := do
   let ctx ← Simp.Context.ofNames (config := { failIfUnchanged := false}) (simpOnly := true)
   let r ← simpGoal goal ctx
-  match r.1 with
-  | some (_, goal) => return goal
-  | none => return goal
+  let goal := match r.1 with
+    | some (_, g) => g
+    | none => goal
+  goal.withContext do
+    let ty ← goal.getType
+    let ty' ← reduceBetaIotaMatch ty
+    if ty' == ty then return goal
+    let newGoal ← Lean.Meta.mkFreshExprMVar ty'
+    goal.assign newGoal
+    return newGoal.mvarId!
 
 def normalizeGoals (goals : TripleGoals) : TacticM TripleGoals := withTraceNode `Lampe.STHoare.Helpers (fun e => return f!"normalizeGoals {e.toTraceResult.toEmoji}") $ do
   match goals with
@@ -683,8 +728,7 @@ def elabEnterDecl : Tactic := fun _ => do
   try argTypeGoal.refl catch _ => throwError "Found declaration has the wrong arguments"
   try outTypeGoal.refl catch _ => throwError "Found declaration has the wrong output type"
 
-  -- v4.29: `simp only []` no longer reduces certain matches. Explicitly: clear rfl casts,
-  -- unfold structure projections, beta+iota reduce the function body.
+  -- Clear rfl casts, unfold function-body projections, beta+iota reduce the body.
   evalTactic (←`(tactic|
     simp only [eq_mp_eq_cast, cast_eq, FunctionDecl.fn, Function.body, Lambda.body]))
   let goal ← getMainGoal
@@ -703,33 +747,6 @@ def elabEnterDecl : Tactic := fun _ => do
     let newGoal ← Lean.Meta.mkFreshExprMVar reducedType
     goal.assign newGoal
     replaceMainGoal [newGoal.mvarId!]
-
-/--
-Forces beta + iota + structure-projection reduction on the goal. Useful after
-`simp only [<noir_def_name>]` when v4.29's simp leaves the `FunctionDecl.fn → Function.body →
-Lambda.body` chain unreduced, blocking downstream tactics like `steps`.
-
-Existence reason: the v4.29.0 transparency refactor (leanprover/lean4#12179 + #12572) stopped
-`isDefEq` from bumping to `.default` when comparing implicit arguments, which broke the
-`whnfMatcher` path for `match h![T] with | h![T] => …` patterns whose pattern variable
-shadows the scrutinee variable. PR leanprover/lean4#13363 (in v4.30.0, currently at rc2) adds
-an explicit allowlist that restores the old behavior; this tactic can be removed once we bump
-to v4.30+.
--/
-private def reduceBetaIotaMatch (e : Lean.Expr) : Lean.MetaM Lean.Expr := do
-  let reduceOne (e : Lean.Expr) : Lean.MetaM Lean.Expr := Lean.Meta.withTransparency .all do
-    let e := e.headBeta
-    let e := match ← Lean.Meta.reduceMatcher? e with
-      | .reduced e' => e'
-      | _ => e
-    let e := match ← Lean.Meta.reduceProj? e with
-      | some e' => e'
-      | none => e
-    return e
-  Lean.Meta.transform e
-    (pre := fun e => do let e' ← reduceOne e
-                        if e' == e then return .continue else return .visit e')
-    (post := fun e => do let e' ← reduceOne e; return .done e')
 
 elab "reduce_fn_body" loc?:(location)? : tactic => do
   evalTactic (←`(tactic|
