@@ -67,6 +67,7 @@ theorem field_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] .field h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem u1_hash_spec {p H stateRef}
@@ -83,6 +84,7 @@ theorem u1_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 1) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem u8_hash_spec {p H stateRef}
@@ -99,6 +101,7 @@ theorem u8_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 8) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem u16_hash_spec {p H stateRef}
@@ -115,6 +118,7 @@ theorem u16_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 16) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem u32_hash_spec {p H stateRef}
@@ -131,6 +135,7 @@ theorem u32_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 32) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem u64_hash_spec {p H stateRef}
@@ -147,6 +152,7 @@ theorem u64_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 64) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem u128_hash_spec {p H stateRef}
@@ -163,6 +169,7 @@ theorem u128_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 128) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem i8_hash_spec {p H stateRef}
@@ -180,6 +187,7 @@ theorem i8_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.i 8) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem i16_hash_spec {p H stateRef}
@@ -197,6 +205,7 @@ theorem i16_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.i 16) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem i32_hash_spec {p H stateRef}
@@ -214,6 +223,7 @@ theorem i32_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.i 32) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem i64_hash_spec {p H stateRef}
@@ -231,6 +241,7 @@ theorem i64_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] (.i 64) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem bool_hash_spec {p H stateRef}
@@ -247,6 +258,7 @@ theorem bool_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] .bool h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps [h_write_spec]
 
 theorem unit_hash_spec {p H stateRef}
@@ -256,4 +268,5 @@ theorem unit_hash_spec {p H stateRef}
         («std-1.0.0-beta.14::hash::Hash».hash h![] .unit h![] h![H] h![(), stateRef])
         (fun _ => [stateRef ↦ ⟨H, state⟩]) := by
   resolve_trait
+  reduce_fn_body
   steps
