@@ -37,7 +37,7 @@ def bar (a : bnField) : bnField :=
   let right := bytes.drop 16
   let new_left := left.map sbox
   let new_right := right.map sbox
-  let new_bytes := new_right.append new_left
+  let new_bytes := new_right ++ new_left
   Fp.ofBytesLE new_bytes.toList
 
 def square (a : bnField) : bnField :=
