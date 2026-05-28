@@ -88,6 +88,16 @@ theorem blake3_spec {p} {N : U 32}
     steps [blake3_builtin_spec]
     assumption
 
+/-- Spec for the `keccakf1600` foreign builtin: returns the concrete
+`Crypto.Keccak.keccakF1600` permutation of the 25 `u64` input lanes. -/
+theorem keccakf1600_builtin_spec {p}
+    {input : Tp.denote p ((Tp.u 64).array (25 : U 32))} :
+    STHoare p env ⟦⟧
+      (.callBuiltin [(Tp.u 64).array (25 : U 32)] ((Tp.u 64).array (25 : U 32))
+        Builtin.keccakf1600 h![input])
+      (fun r => r = Lampe.Crypto.Keccak.keccakF1600 input) := by
+  exact STHoare.genericTotalPureBuiltin_intro Builtin.keccakf1600 rfl () p env h![input]
+
 theorem buildHasherDefault_default_spec {p H}
     {h_hasher : Hasher.hasImpl env H}
     {h_default : Default.hasDefaultImpl env H}
