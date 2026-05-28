@@ -33,7 +33,6 @@ def arrayRefcount := stub
 def asWitness := stub
 def assertConstant := stub
 def blackBox := stub
-def blake3 := stub
 def checkedTransmute := stub
 def derivePedersenGenerators := stub
 def fmtstrAsCtstring := stub
