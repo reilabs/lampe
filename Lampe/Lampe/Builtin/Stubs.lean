@@ -41,7 +41,6 @@ def fmtstrAsCtstring := stub
 def keccakf1600 := stub
 def mkFormatString := stub
 def recursiveAggregation := stub
-def sha256Compression := stub
 def sliceRefcount := stub
 def strAsCtstring := stub
 

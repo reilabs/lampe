@@ -9,6 +9,7 @@ import Lampe.Builtin.Cmp
 import Lampe.Builtin.Crypto.Ecdsa
 import Lampe.Builtin.Crypto.EmbeddedCurve
 import Lampe.Builtin.Crypto.Hash
+import Lampe.Builtin.Crypto.Sha256
 import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
@@ -26,6 +27,7 @@ import Lampe.Crypto.Secp256k1
 import Lampe.Crypto.Secp256k1.Prime
 import Lampe.Crypto.Secp256r1
 import Lampe.Crypto.Secp256r1.Prime
+import Lampe.Crypto.Sha256
 import Lampe.Data.Digits
 import Lampe.Data.Field
 import Lampe.Data.HList
