@@ -6,6 +6,7 @@ import Lampe.Builtin.Basic
 import Lampe.Builtin.Bit
 import Lampe.Builtin.Cast
 import Lampe.Builtin.Cmp
+import Lampe.Builtin.Crypto.Aes128
 import Lampe.Builtin.Crypto.Blake2s
 import Lampe.Builtin.Crypto.Blake3
 import Lampe.Builtin.Crypto.Ecdsa
@@ -21,6 +22,7 @@ import Lampe.Builtin.Str
 import Lampe.Builtin.Struct
 import Lampe.Builtin.Stubs
 import Lampe.Builtin.Vector
+import Lampe.Crypto.Aes128
 import Lampe.Crypto.Blake2s
 import Lampe.Crypto.Blake3
 import Lampe.Crypto.Ecdsa
