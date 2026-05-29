@@ -337,8 +337,8 @@ theorem assert_gt_intro {p a b} [Bn254.Prime p] :
   steps
   · exact ()
   apply STHoare.iteFalse_intro
-  steps [decompose_intro (p := p) (hmod := hmod), assert_gt_limbs_intro (p := p)]
-  simp at *
+  steps [decompose_intro (p := p), assert_gt_limbs_intro (p := p)]
+  simp [SLP.exists_pure] at *
   rename_i _ a_lo a_hi ha_raw b_lo b_hi hb_raw _ hlimbs
   rcases ha_raw with ⟨ha_eq, ha_lo_lt, ha_hi_lt, ha_val⟩
   rcases hb_raw with ⟨hb_eq, hb_lo_lt, hb_hi_lt, hb_val⟩
