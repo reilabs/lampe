@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 import subprocess
-import tempfile
 
 # --- Start of copied part.
 # This method is used to resolve the project's root directory,
@@ -62,9 +61,6 @@ def cleanup_ci_dir(path):
     if path.exists():
         shutil.rmtree(path)
 
-def cleanup_ci_lake_build(lampe_dir):
-    cleanup_ci_dir(lampe_dir / ".lake" / "build")
-
 def cleanup_ci_artifacts():
     cleanup_ci_dir(project_root / "target")
     if os.environ.get("LAMPE_KEEP_LAKE_CACHE") != "1":
@@ -95,46 +91,6 @@ def ensure_cli():
     cd @(project_root)
     cargo build --release
     return cli
-
-def copy_tree(src_dir, dest_dir, skip_names):
-    for item in src_dir.iterdir():
-        if item.name in skip_names:
-            continue
-        target = dest_dir / item.name
-        if item.is_dir():
-            shutil.copytree(item, target)
-        else:
-            shutil.copy2(item, target)
-
-def copy_test_case(src_dir, dest_dir):
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    copy_tree(src_dir, dest_dir, {"lampe", "target"})
-
-    lampe_src = src_dir / "lampe"
-    if not lampe_src.exists():
-        return
-
-    lampe_dest = dest_dir / "lampe"
-    lampe_dest.mkdir()
-    copy_tree(lampe_src, lampe_dest, {".lake", "lake-manifest.json"})
-
-def export_lake_build_cache(working_dir, original_dir):
-    if os.environ.get("LAMPE_EXPORT_BUILD_CACHE") != "1":
-        return
-
-    for working_lampe_dir in find_lampe_dirs(working_dir):
-        source_build = working_lampe_dir / ".lake" / "build"
-        if not source_build.exists():
-            continue
-
-        relative_lampe_dir = working_lampe_dir.relative_to(working_dir)
-        target_lampe_dir = original_dir / relative_lampe_dir
-        target_build = target_lampe_dir / ".lake" / "build"
-
-        if target_build.exists():
-            shutil.rmtree(target_build)
-        target_build.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(source_build, target_build, symlinks=True)
 
 def run_tests(dir):
     args = parse_args()
@@ -220,18 +176,62 @@ def assert_extracted_files_marked_as_generated(lampe_dir):
             if LAMPE_GENERATED_COMMENT not in contents:
                 raise Exception(f"Missing generated header in {expected_path}")
 
-def assert_extraction_matches(working_dir, original_dir):
-    diff_cmd = [
-        "diff",
-        "-r",
-        "--exclude=target",
-        "--exclude=.lake",
-        "--exclude=lake-manifest.json",
-        "--exclude=lakefile.toml",
-        str(working_dir),
-        str(original_dir),
+def _git(args, capture=False):
+    # Force `safe.directory` so the call works inside CI containers that
+    # mount the checkout as a directory owned by a different user; without
+    # it git refuses with "Not a git repository" and falls through into
+    # `--no-index` mode.
+    cmd = [
+        "git",
+        "-c", "safe.directory=*",
+        "-c", f"safe.directory={project_root}",
+    ] + args
+    return subprocess.run(
+        cmd,
+        cwd=project_root,
+        check=False,
+        capture_output=capture,
+        text=capture,
+    )
+
+def assert_extraction_matches(test_dir):
+    # We now run extraction in-place under the checked-in test directory,
+    # so reproducibility is checked by asking git whether the working tree
+    # under that directory matches HEAD.
+    #
+    # Files we deliberately do NOT compare:
+    #   - ./.lake/**      -> the lake build output (ignored via .gitignore)
+    #   - lakefile.toml   -> the CLI is allowed to regenerate it but the
+    #                        path = "..." entries for Lampe/stdlib may be
+    #                        formatted slightly differently than what is
+    #                        checked in; the old diff also excluded this.
+    #   - lake-manifest.json -> lake resolves it at build time from inputRev.
+    rel = test_dir.relative_to(project_root)
+    pathspecs = [
+        str(rel),
+        f":(exclude){rel}/**/lakefile.toml",
+        f":(exclude){rel}/**/lake-manifest.json",
     ]
-    subprocess.run(diff_cmd, check=True)
+    # Diff against HEAD, including any unstaged modifications.
+    diff = _git(["diff", "--exit-code", "HEAD", "--"] + pathspecs)
+    if diff.returncode != 0:
+        raise Exception(
+            f"Extraction under {test_dir} differs from the checked-in tree. "
+            f"Re-run with --update to refresh the snapshot."
+        )
+    # Untracked files would not appear in `git diff` output, so also
+    # check for files that exist in the working tree but not in git
+    # (excluding the same lakefile/manifest paths plus standard ignores).
+    untracked = _git(
+        ["ls-files", "--others", "--exclude-standard", "--"] + pathspecs,
+        capture=True,
+    )
+    if untracked.returncode == 0 and untracked.stdout.strip():
+        raise Exception(
+            f"Extraction under {test_dir} produced untracked files:\n"
+            f"{untracked.stdout}"
+            f"Re-run with --update to refresh the snapshot."
+        )
 
 def build_lake(lampe_dir):
     env = os.environ.copy()
@@ -241,9 +241,58 @@ def build_lake(lampe_dir):
 
     subprocess.run(["lake", "build"], check=True, cwd=lampe_dir, env=env)
 
-def run_test_in_dir(working_dir, original_dir, update_mode):
-    cd @(working_dir)
-    dir_name = original_dir.name
+def rewrite_lampe_stdlib_deps_to_path(lampe_dir):
+    # The lampe CLI still generates `git = "https://github.com/reilabs/lampe", rev = "main"`
+    # entries for Lampe and the stdlib (see `default_lean_dependencies` in
+    # src/file_generator/lake/mod.rs). For tests inside this repo we want
+    # those resolved against the local checkout instead, otherwise lake
+    # `lake update`s mathlib + batteries against whatever main currently
+    # tracks, defeating the build cache and breaking the build whenever
+    # the checked-in toolchain diverges from main.
+    #
+    # We rewrite both the lakefile and (if present) the manifest in place.
+    # The git-diff reproducibility check in `assert_extraction_matches`
+    # already excludes lakefile.toml + lake-manifest.json so the rewrite
+    # is invisible to that check.
+    lakefile_path = lampe_dir / "lakefile.toml"
+    if not lakefile_path.exists():
+        return
+    lampe_path = os.path.relpath(project_root / "Lampe", lampe_dir)
+    stdlib_path = os.path.relpath(project_root / "stdlib" / "lampe", lampe_dir)
+    change_toml_required_dep_to_path_by_regex(lakefile_path, '^Lampe$', lampe_path)
+    change_toml_required_dep_to_path_by_regex(lakefile_path, '^std-.*$', stdlib_path)
+    manifest_path = lampe_dir / "lake-manifest.json"
+    if manifest_path.exists():
+        change_manifest_required_dep_to_path_by_regex(manifest_path, '^Lampe$', lampe_path)
+        change_manifest_required_dep_to_path_by_regex(manifest_path, '^«std-.*»$', stdlib_path)
+
+def link_packages_dir(lampe_dir):
+    # Point each test's `.lake/packages` at the shared `$LAKE_PKG_DIR`
+    # cache so consecutive tests reuse the same mathlib / proven-zk /
+    # batteries clones. The lakefile and manifest both spell the dir as
+    # `.lake/packages`, so the symlink is enough; no further rewriting
+    # is required for the package cache to work.
+    packages_root_env = os.environ.get("LAKE_PKG_DIR")
+    if not packages_root_env:
+        return
+    packages_root = Path(packages_root_env)
+    packages_root.mkdir(parents=True, exist_ok=True)
+    lake_dir = lampe_dir / ".lake"
+    lake_dir.mkdir(parents=True, exist_ok=True)
+    packages_link = lake_dir / "packages"
+    if packages_link.is_symlink() or packages_link.exists():
+        if packages_link.is_symlink() or not packages_link.is_dir():
+            packages_link.unlink()
+        else:
+            shutil.rmtree(packages_link)
+    packages_link.symlink_to(
+        os.path.relpath(packages_root, lake_dir),
+        target_is_directory=True,
+    )
+
+def run_test(dir_path, update_mode):
+    cd @(dir_path)
+    dir_name = dir_path.name
 
     cli = ensure_cli()
 
@@ -254,69 +303,28 @@ def run_test_in_dir(working_dir, original_dir, update_mode):
     if dir_name.startswith('_'):
         return
 
-    if (working_dir / "clean.xsh").exists():
-        /usr/bin/env xonsh @(working_dir / "clean.xsh") @(project_root)
-    elif (working_dir / "clean.sh").exists():
-        /usr/bin/env bash @(working_dir / "clean.sh")
+    if (dir_path / "clean.xsh").exists():
+        /usr/bin/env xonsh @(dir_path / "clean.xsh") @(project_root)
+    elif (dir_path / "clean.sh").exists():
+        /usr/bin/env bash @(dir_path / "clean.sh")
 
-    cmd = [str(cli), "--root", str(working_dir)]
+    cmd = [str(cli), "--root", str(dir_path)]
     subprocess.run(cmd, check=True)
 
-    if (working_dir / "user_actions.xsh").exists():
-        /usr/bin/env xonsh @(working_dir / "user_actions.xsh") @(project_root)
-    elif (working_dir / "user_actions.sh").exists():
-        /usr/bin/env bash @(working_dir / "user_actions.sh")
+    if (dir_path / "user_actions.xsh").exists():
+        /usr/bin/env xonsh @(dir_path / "user_actions.xsh") @(project_root)
+    elif (dir_path / "user_actions.sh").exists():
+        /usr/bin/env bash @(dir_path / "user_actions.sh")
 
     if not update_mode:
-        assert_extraction_matches(working_dir, original_dir)
+        assert_extraction_matches(dir_path)
 
-    lampe_dirs = find_lampe_dirs(working_dir)
+    lampe_dirs = find_lampe_dirs(dir_path)
     if not lampe_dirs:
-        raise Exception(f"No lampe/ directories found under {working_dir}")
+        raise Exception(f"No lampe/ directories found under {dir_path}")
 
     for lampe_dir in lampe_dirs:
         assert_extracted_files_marked_as_generated(lampe_dir)
-
-        lakefile_path = lampe_dir / "lakefile.toml"
-        if lakefile_path.exists():
-            lampe_path = os.path.relpath(project_root / "Lampe", lampe_dir)
-            stdlib_path = os.path.relpath(project_root / "stdlib" / "lampe", lampe_dir)
-            change_toml_required_dep_to_path_by_regex(lakefile_path, '^Lampe$', lampe_path)
-            change_toml_required_dep_to_path_by_regex(lakefile_path, '^std-.*$', stdlib_path)
-            packages_root_env = os.environ.get("LAKE_PKG_DIR")
-            if packages_root_env:
-                packages_root = Path(packages_root_env)
-            else:
-                packages_root = project_root / ".lake" / "packages"
-            packages_root.mkdir(parents=True, exist_ok=True)
-            packages_dir = os.path.relpath(packages_root, lampe_dir)
-            set_toml_packages_dir(lakefile_path, packages_dir)
-            lake_dir = lampe_dir / ".lake"
-            lake_dir.mkdir(parents=True, exist_ok=True)
-            packages_link = lake_dir / "packages"
-            if packages_link.is_symlink():
-                packages_link.unlink()
-            if not packages_link.exists():
-                packages_link.symlink_to(
-                    os.path.relpath(packages_root, lake_dir),
-                    target_is_directory=True,
-                )
-            manifest_path = lampe_dir / "lake-manifest.json"
-            if manifest_path.exists():
-                set_manifest_packages_dir(manifest_path, packages_dir)
-                change_manifest_required_dep_to_path_by_regex(manifest_path, '^Lampe$', lampe_path)
-                change_manifest_required_dep_to_path_by_regex(manifest_path, '^«std-.*»$', stdlib_path)
-
+        rewrite_lampe_stdlib_deps_to_path(lampe_dir)
+        link_packages_dir(lampe_dir)
         build_lake(lampe_dir)
-        cleanup_ci_lake_build(lampe_dir)
-
-def run_test(dir_path, update_mode):
-    if update_mode:
-        run_test_in_dir(dir_path, dir_path, update_mode)
-        return
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        working_dir = Path(tmp_dir)
-        copy_test_case(dir_path, working_dir)
-        run_test_in_dir(working_dir, dir_path, update_mode)
-        export_lake_build_cache(working_dir, dir_path)
