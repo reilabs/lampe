@@ -7,18 +7,6 @@ A computable Lean 4 implementation of the Keccak-f[1600] permutation,
 matching the FIPS 202 specification. State is 25 lanes of 64 bits,
 indexed as a 5×5 matrix `state[x, y] = state[x + 5 * y]`.
 
-The implementation is "direct" — `keccakF1600` is defined inline as
-24 iterations of the round function. We avoid Verity's
-Tracer-monad / pre-unrolled `Instr`-list trick because Lampe's use
-case is symbolic (specs of the form `r = keccakF1600 input`) and
-test-vector validation via `native_decide`, neither of which requires
-the kernel to unfold 24 rounds at elaboration time.
-
-If a future caller needs `by decide` on a concrete Keccak input and
-hits an elaborator memory limit, the fallback is the Verity approach:
-pre-unrolling 24 rounds into a generated data file (see
-`lfglabs-dev/verity/Compiler/Keccak/Circuit.lean`).
-
 This is Keccak-f[1600], the underlying permutation. It is **identical
 between FIPS 202 SHA-3 and Ethereum's keccak256** — the two differ
 only in the sponge-layer padding byte (`0x06` vs `0x01`), which
