@@ -12,29 +12,13 @@ open Lampe.Crypto.Pedersen
 open Lampe.Stdlib.EmbeddedCurveOps
 
 /-- Local alias for the BN254 high limb (`PHI` field constant) as a `Nat`. -/
-private abbrev phi : Nat := Lampe.Stdlib.Field.Bn254.phi
+private abbrev phi : Nat := Lampe.Crypto.Bn254.phi
 
 /-- Local alias for the BN254 low limb (`PLO` field constant) as a `Nat`. -/
-private abbrev plo : Nat := Lampe.Stdlib.Field.Bn254.plo
+private abbrev plo : Nat := Lampe.Crypto.Bn254.plo
 
 /-- Local alias for `2^128` as a `Nat`. -/
-private abbrev pow128 : Nat := Lampe.Stdlib.Field.Bn254.pow128
-
-/-- The `Bn254.Prime` limb decomposition coincides numerically with the
-`Sqrt.r_scalar` literal. -/
-private theorem plo_add_pow128_mul_phi_eq_r_scalar :
-    plo + pow128 * phi = Lampe.Crypto.Sqrt.r_scalar := by
-  unfold plo pow128 phi Lampe.Crypto.Sqrt.r_scalar
-  decide
-
-/-- Bridge instance: the stdlib's `[Bn254.Prime p]` (which says `p.natVal =
-plo + pow128 * phi`) gives the cryptography library's `[Bn254Scalar p]`
-(which says `p.natVal = r_scalar`). Used to make `pedersenGenerator`
-typecheck inside wrapper specs whose only `p`-class is `Bn254.Prime p`. -/
-private instance Bn254Scalar_of_Bn254Prime {p}
-    [hP : Lampe.Stdlib.Field.Bn254.Prime p] :
-    Lampe.Crypto.Sqrt.Bn254Scalar p where
-  natVal_eq := hP.modulus_eq.trans plo_add_pow128_mul_phi_eq_r_scalar
+private abbrev pow128 : Nat := Lampe.Crypto.Bn254.pow128
 
 /-!
 # Stdlib specs for `std::hash` Pedersen wrappers
@@ -51,12 +35,10 @@ that sit on top of the `derive_pedersen_generators` foreign builtin:
 The two substantive specs (and their wrappers) express their result
 directly in terms of `pedersenGenerator`,
 the concrete BN254-scalar generator definition (BLAKE3 hash-to-curve +
-Tonelli-Shanks). The local instance `Bn254Scalar_of_Bn254Prime` (above)
-bridges the stdlib's `[Bn254.Prime p]` to the cryptography library's
-`[Bn254Scalar p]` so the call typechecks. They expose the per-slot
-`from_field_unsafe` decomposition as an existential `Ss` witness,
-carrying the limb relation and canonical-range disjunction that
-`from_field_unsafe_spec` produces.
+Tonelli-Shanks). They expose the per-slot `from_field_unsafe`
+decomposition as an existential `Ss` witness, carrying the limb
+relation and canonical-range disjunction that `from_field_unsafe_spec`
+produces.
 -/
 
 /-! ### Domain-separator strings -/
@@ -168,7 +150,6 @@ private lemma derivePedersenGenerators_h_enc {p : Prime} {N : U 32}
 
 /-! ### `from_field_unsafe` wrapper spec -/
 
-set_option maxHeartbeats 800000 in
 /-- Spec for `std::hash::from_field_unsafe`. The body decomposes
 `scalar` into two field limbs `xlo, xhi` via the `decompose_hint`
 oracle and then enforces
@@ -190,7 +171,7 @@ below. Callers that need the per-limb bound (e.g. for
 `Scalar.Canonical`) should use the constrained
 `EmbeddedCurveScalar::from_field` wrapper and its
 `scalar_from_field_spec`. -/
-theorem from_field_unsafe_spec {p} [Lampe.Stdlib.Field.Bn254.Prime p]
+theorem from_field_unsafe_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Fp p} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::hash::from_field_unsafe».call h![] h![scalar])
@@ -224,16 +205,16 @@ theorem from_field_unsafe_spec {p} [Lampe.Stdlib.Field.Bn254.Prime p]
       steps [Lampe.Stdlib.Field.Bn254.phi_spec (p := p)]
       subst_vars
       simp_all
-  -- Bridge lemma: `(plo : Fp p).val = plo` under `[Bn254.Prime p]`. Used in both branches.
+  -- Bridge lemma: `(plo : Fp p).val = plo` under `[Bn254.Prime p]`. Used by the xhi=phi branch via aesop.
   have hplo_val : ((plo : Nat) : Fp p).val = plo := by
     have hplo_lt : (plo : Nat) < p.natVal := by
-      have : (plo : Nat) < Lampe.Stdlib.Field.Bn254.pow128 := by decide
-      linarith [this, Lampe.Stdlib.Field.Bn254.pow128_lt_prime (p := p)]
+      have : (plo : Nat) < Lampe.Crypto.Bn254.pow128 := by decide
+      linarith [this, Lampe.Crypto.Bn254.pow128_lt_prime (p := p)]
     simpa using (ZMod.val_natCast_of_lt hplo_lt)
   have hphi_val : ((phi : Nat) : Fp p).val = phi := by
     have hphi_lt : (phi : Nat) < p.natVal := by
-      have : (phi : Nat) < Lampe.Stdlib.Field.Bn254.pow128 := by decide
-      linarith [this, Lampe.Stdlib.Field.Bn254.pow128_lt_prime (p := p)]
+      have : (phi : Nat) < Lampe.Crypto.Bn254.pow128 := by decide
+      linarith [this, Lampe.Crypto.Bn254.pow128_lt_prime (p := p)]
     simpa using (ZMod.val_natCast_of_lt hphi_lt)
   intro v
   -- Discharge the ⟦ v = ... ⟧ pure precondition and split on the bool.
@@ -257,14 +238,14 @@ theorem from_field_unsafe_spec {p} [Lampe.Stdlib.Field.Bn254.Prime p]
       have := hab
       rw [ha_xhi, hb_phi] at this
       simpa [hphi_val] using this
-    have hassert_eq : scalar = xlo + ((Lampe.Stdlib.Field.Bn254.pow128 : Nat) : Fp p) * xhi := by
+    have hassert_eq : scalar = xlo + ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * xhi := by
       simpa [decide_eq_true_eq] using hassert
     have hret_mk : vret = Scalar.mk xlo xhi := by
       simpa [Scalar.mk, HList.toTuple] using hret
     simp only [SLP.exists_pure]
     sl
     refine ⟨xhi, hret_mk, ?_, Or.inr h_xhi_val_lt⟩
-    show scalar = xlo + ((Lampe.Stdlib.Field.Bn254.pow128 : Nat) : Fp p) * xhi
+    show scalar = xlo + ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * xhi
     exact hassert_eq
 
 /-! ### `pedersen_commitment_with_separator` substantive spec -/
@@ -274,7 +255,7 @@ theorem from_field_unsafe_spec {p} [Lampe.Stdlib.Field.Bn254.Prime p]
 the `from_field_unsafe` output for `input.get j`: it carries the
 limb relation `input[j] = lo + 2^128 * hi` and the canonical-range
 disjunction enforced by the `assert_lt`. -/
-private def fromFieldUnsafeRel {p} [Lampe.Stdlib.Field.Bn254.Prime p]
+private def fromFieldUnsafeRel {p} [Lampe.Crypto.Bn254.Prime p]
     (input : Tp.denote p (Tp.field.array N))
     (v : Tp.denote p (Scalar.type.array N))
     (j : Nat) (hj : j < N.toNat) : Prop :=
@@ -284,9 +265,8 @@ private def fromFieldUnsafeRel {p} [Lampe.Stdlib.Field.Bn254.Prime p]
           ∧ (v.get ⟨j, hj⟩).1.val < plo)
         ∨ (v.get ⟨j, hj⟩).2.1.val < phi)
 
-set_option maxHeartbeats 1600000 in
 theorem pedersen_commitment_with_separator_spec {p N}
-    [Lampe.Stdlib.Field.Bn254.Prime p]
+    [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)}
     {separator : U 32} :
     STHoare p env ⟦⟧
@@ -328,7 +308,7 @@ theorem pedersen_commitment_with_separator_spec {p N}
       zero_le, Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, BitVec.toNat_ofNatLT,
       Lens.modify, Access.modify, Lens.get, Option.bind_eq_bind, Option.bind_some,
-      dite_true, Option.bind_some, Option.get_some]
+      dite_true, Option.get_some]
     rename_i v_prev hPrefix hCastLt xlo xhi _hModSome _ hRes
     obtain ⟨_h_mk, h_scalar, h_range⟩ := hRes
     intro j hj hjN
@@ -392,13 +372,17 @@ theorem pedersen_commitment_with_separator_spec {p N}
 
 /-! ### `pedersen_hash_with_separator` substantive spec -/
 
-set_option maxHeartbeats 3200000 in
+-- 1.5x default: the length-slot bookkeeping at the end of the proof
+-- (rewriting through `Fin.sum_univ_castSucc` while transporting indices
+-- across the `hN1_eq : (N+1).toNat = N.toNat + 1` bridge) needs the
+-- extra headroom; the body itself is otherwise tight.
+set_option maxHeartbeats 300000 in
 /-- Spec for `std::hash::pedersen_hash_with_separator`. The body adds
 a length-slot scalar `(N, 0)` at position `N`, derives the corresponding
 generator from `"pedersen_hash_length"` (with `starting_index = 0`),
 and returns the x-coordinate of the singleton MSM result. -/
 theorem pedersen_hash_with_separator_spec {p N}
-    [Lampe.Stdlib.Field.Bn254.Prime p]
+    [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)}
     {separator : U 32} :
     STHoare p env ⟦⟧
@@ -478,8 +462,8 @@ theorem pedersen_hash_with_separator_spec {p N}
     rename_i s_prev g_prev hPrefix hCast1 xlo xhi hRes hModS hCast2 hModG _
     obtain ⟨h_mk, h_scalar, h_range⟩ := hRes
     intro j hj hjN hjN1
-    simp_all only [Lens.modify, Access.modify, Lens.get, Lens.nil, Lens.cons,
-      Option.bind_eq_bind, Option.bind_some, Option.get_some,
+    simp_all only [Lens.modify, Access.modify, Lens.get,
+      Option.bind_eq_bind, Option.bind_some,
       Builtin.CastTp.cast, BitVec.toNat_intCast, BitVec.truncate_eq_setWidth,
       BitVec.setWidth_eq, BitVec.toNat_ofNatLT]
     have hiN1 : i < (BitVec.toNat N + 1) % 4294967296 := by
@@ -503,8 +487,8 @@ theorem pedersen_hash_with_separator_spec {p N}
   steps [derive_generators_spec (p := p) (N := (1 : U 32)) (M := (20 : U 32))
     (startIdx := (0 : U 32))]
   rename_i _hLo sFinal gFinal hInv hModSN _strLen hLenGen hLgBdd hModGN
-  simp only [Lens.modify, Access.modify, Lens.get, Lens.cons,
-    Option.bind_eq_bind, Option.bind_some, Option.get_some] at hModSN hModGN ⊢
+  simp only [Lens.modify, Access.modify, Lens.get,
+    Option.bind_eq_bind, Option.bind_some] at hModSN hModGN ⊢
   -- Extract `N.toNat < (BitVec.add N 1).toNat` from hModSN.
   have hNlt_dite : N.toNat < (BitVec.toNat N + 1) % 4294967296 := by
     by_contra hcontra
@@ -515,25 +499,20 @@ theorem pedersen_hash_with_separator_spec {p N}
   -- The constraint `N.toNat < (N+1).toNat` together with the wrap-around behaviour
   -- of `BitVec.add` forces `N.toNat + 1 < 2^32`.
   have hN1_eq : (N + 1).toNat = N.toNat + 1 := by
-    -- (N + 1).toNat = (N.toNat + 1) % 2^32. hNlt says N.toNat < that mod.
-    -- So N.toNat + 1 ≤ 2^32; if N.toNat + 1 = 2^32 then mod = 0 < N.toNat, false.
+    -- (N + 1).toNat = (N.toNat + 1) % 2^32. The loop-bound hypothesis
+    -- `hNlt_dite : N.toNat < (N.toNat + 1) % 2^32` rules out wraparound.
     have hadd : (N + 1).toNat = (N.toNat + 1) % 4294967296 := by
       show BitVec.toNat (N + 1) = _
       simp [BitVec.toNat_add, BitVec.toNat_ofNat]
-    rw [hadd]
+    have hNbnd : N.toNat < 4294967296 := N.isLt
     have hbnd : N.toNat + 1 < 4294967296 := by
-      by_contra h
-      push_neg at h
-      have hNbnd : N.toNat < 2^32 := N.isLt
-      have : N.toNat = 4294967295 := by
-        have h32 : (2^32 : Nat) = 4294967296 := by decide
-        rw [h32] at hNbnd
+      rcases Nat.lt_or_ge (N.toNat + 1) 4294967296 with h | h
+      · exact h
+      · exfalso
+        have : N.toNat + 1 = 4294967296 := by omega
+        rw [this, Nat.mod_self] at hNlt_dite
         omega
-      rw [this] at hNlt_dite
-      have : (4294967295 + 1) % 4294967296 = 0 := by decide
-      rw [this] at hNlt_dite
-      omega
-    exact Nat.mod_eq_of_lt hbnd
+    rw [hadd, Nat.mod_eq_of_lt hbnd]
   set lenScalar : Tp.denote p Scalar.type :=
     HList.toTuple p h![(Builtin.CastTp.cast N : Fp p), (Builtin.CastTp.cast ↑(0 : Fp p) : Fp p)]
       (some «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar».name) with hLenScalar_def
@@ -611,14 +590,11 @@ theorem pedersen_hash_with_separator_spec {p N}
         _ = (derivePedersenGenerators p defaultDomainBytes
               (BitVec.toNat separator) N.toNat).get ⟨k, hkN⟩ := by
             rw [derivePedersenGenerators_get]
-  -- Pointwise: `gFull.get i = encodeCurvePoint (Ps_full.get i)`.
   have hGetEnc : ∀ i : Fin (N + 1).toNat, gFull.get i =
       encodeCurvePoint (Ps_full.get i) := by
     intro i
-    have hi_gFull : i.val < gFull.toList.length := by
-      simp [List.Vector.toList_length, i.isLt]
-    have hi_Ps : i.val < Ps_full.toList.length := by
-      simp [List.Vector.toList_length, i.isLt]
+    have hi_gFull : i.val < gFull.toList.length := by simp [List.Vector.toList_length]
+    have hi_Ps : i.val < Ps_full.toList.length := by simp [List.Vector.toList_length]
     have hgFull_get_eq : gFull.get i = gFull.toList[i.val]'hi_gFull := by
       rw [List.Vector.get_eq_get_toList]; rfl
     have hPs_get_eq : Ps_full.get i = Ps_full.toList[i.val]'hi_Ps := by
@@ -627,7 +603,7 @@ theorem pedersen_hash_with_separator_spec {p N}
     have h' := congrArg (fun l : List _ => l[i.val]?) h_enc
     simp only at h'
     rw [List.getElem?_eq_getElem hi_gFull,
-      List.getElem?_eq_getElem (by simpa using hi_Ps)] at h'
+      List.getElem?_eq_getElem (by simp)] at h'
     simp only [Option.some.injEq] at h'
     rw [h']
     simp [List.getElem_map]
@@ -709,7 +685,7 @@ theorem pedersen_hash_with_separator_spec {p N}
             sFinal.get ⟨i.val, hi_N1⟩ := by
         rw [List.Vector.get_eq_get_toList]
         show (List.ofFn _).get _ = _
-        simp [List.get_ofFn]
+        simp
       rw [hSs_eq]
     ·
       have hN_lt_N1 : N.toNat < (N + 1).toNat := hNlt
@@ -745,8 +721,8 @@ theorem pedersen_hash_with_separator_spec {p N}
         rw [ZMod.val_natCast]
         apply Nat.mod_eq_of_lt
         have hNlt2 : N.toNat < 2^32 := N.isLt
-        have hpow128 : (2^32 : Nat) < Lampe.Stdlib.Field.Bn254.pow128 := by decide
-        have hpprime := Lampe.Stdlib.Field.Bn254.pow128_lt_prime (p := p)
+        have hpow128 : (2^32 : Nat) < Lampe.Crypto.Bn254.pow128 := by decide
+        have hpprime := Lampe.Crypto.Bn254.pow128_lt_prime (p := p)
         omega
       rw [hsv]
   ·
@@ -758,7 +734,7 @@ theorem pedersen_hash_with_separator_spec {p N}
           sFinal.get ⟨i.val, by omega⟩ := by
       rw [List.Vector.get_eq_get_toList]
       show (List.ofFn _).get _ = _
-      simp [List.get_ofFn]
+      simp
     rw [hSs_eq]
     exact (hInv i.val i.isLt i.isLt (by omega)).1.1
   ·
@@ -770,19 +746,18 @@ theorem pedersen_hash_with_separator_spec {p N}
           sFinal.get ⟨i.val, by omega⟩ := by
       rw [List.Vector.get_eq_get_toList]
       show (List.ofFn _).get _ = _
-      simp [List.get_ofFn]
+      simp
     rw [hSs_eq]
     exact (hInv i.val i.isLt i.isLt (by omega)).1.2
 
 /-! ### `pedersen_commitment` wrapper spec -/
 
-set_option maxHeartbeats 1600000 in
 /-- Spec for `std::hash::pedersen_commitment`. The body is the single
 call `pedersen_commitment_with_separator(input, 0)`, so this spec is
 the `separator = 0` specialisation of
 `pedersen_commitment_with_separator_spec`. -/
 theorem pedersen_commitment_spec {p N}
-    [Lampe.Stdlib.Field.Bn254.Prime p]
+    [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::hash::pedersen_commitment».call h![N] h![input])
@@ -807,13 +782,12 @@ theorem pedersen_commitment_spec {p N}
 
 /-! ### `pedersen_hash` wrapper spec -/
 
-set_option maxHeartbeats 3200000 in
 /-- Spec for `std::hash::pedersen_hash`. The body is the single call
 `pedersen_hash_with_separator(input, 0)`, so this spec is the
 `separator = 0` specialisation of
 `pedersen_hash_with_separator_spec`. -/
 theorem pedersen_hash_spec {p N}
-    [Lampe.Stdlib.Field.Bn254.Prime p]
+    [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::hash::pedersen_hash».call h![N] h![input])
