@@ -10,6 +10,7 @@ import Lampe.Builtin.Crypto.Blake3
 import Lampe.Builtin.Crypto.Ecdsa
 import Lampe.Builtin.Crypto.EmbeddedCurve
 import Lampe.Builtin.Crypto.Hash
+import Lampe.Builtin.Crypto.Pedersen
 import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
 import Lampe.Builtin.Memory
@@ -24,12 +25,14 @@ import Lampe.Crypto.Bn254.Prime
 import Lampe.Crypto.Ecdsa
 import Lampe.Crypto.EmbeddedCurve
 import Lampe.Crypto.MathlibBridge
+import Lampe.Crypto.Pedersen
 import Lampe.Crypto.Poseidon2
 import Lampe.Crypto.Poseidon2.BN254T4
 import Lampe.Crypto.Secp256k1
 import Lampe.Crypto.Secp256k1.Prime
 import Lampe.Crypto.Secp256r1
 import Lampe.Crypto.Secp256r1.Prime
+import Lampe.Crypto.Sqrt
 import Lampe.Data.Digits
 import Lampe.Data.Field
 import Lampe.Data.HList
