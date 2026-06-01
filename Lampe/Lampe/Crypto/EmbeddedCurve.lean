@@ -81,9 +81,6 @@ def pow128 : Nat := 2 ^ 128
 def scalarValueNat {p : Prime} (s : Scalar p) : Nat :=
   (scalarLo s).val + pow128 * (scalarHi s).val
 
--- Decidability of `Equation` / `Nonsingular` comes from the generic instances
--- in `Lampe.Crypto.MathlibBridge`.
-
 def curvePoint? {p : Prime} (pt : Point p) : Option ((affineCurve p).Point) :=
   if pointIsInfinite pt then
     some 0

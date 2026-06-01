@@ -204,6 +204,9 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
 
         | ``Lampe.Builtin.zeroed => return some (←``(genericTotalPureBuiltin_intro Builtin.zeroed rfl))
 
+        | ``Lampe.Builtin.assertConstant =>
+          return some (←``(genericTotalPureBuiltin_intro Builtin.assertConstant (a := _) rfl))
+
 
         | _ => return none
       | _ => return none
