@@ -15,6 +15,7 @@ import Stdlib.Field
 import Stdlib.Field.Bn254
 import Stdlib.Field.Mod
 import Stdlib.Hash.Mod
+import Stdlib.Hash.Pedersen
 import Stdlib.Hash.Poseidon2
 import Stdlib.Integer
 import Stdlib.Lib
