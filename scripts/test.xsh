@@ -53,24 +53,6 @@ LAMPE_GENERATED_COMMENT = read_lampe_generated_comment()
 def in_ci():
     return "CI" in os.environ
 
-def cleanup_ci_dir(path):
-    if not in_ci():
-        return
-    if os.environ.get("LAMPE_CLEAN_CI_ARTIFACTS") != "1":
-        return
-    if path.exists():
-        shutil.rmtree(path)
-
-def cleanup_ci_artifacts():
-    cleanup_ci_dir(project_root / "target")
-    if os.environ.get("LAMPE_KEEP_LAKE_CACHE") != "1":
-        cleanup_ci_dir(project_root / "Lampe" / ".lake" / "build")
-        cleanup_ci_dir(project_root / "stdlib" / "lampe" / ".lake" / "build")
-        packages_root_env = os.environ.get("LAKE_PKG_DIR")
-        if packages_root_env:
-            cleanup_ci_dir(Path(packages_root_env))
-        cleanup_ci_dir(project_root / ".lake" / "packages")
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Run Lampe tests')
     parser.add_argument('-t', '--test', dest='test', help='Name of directory with test to run')
@@ -111,7 +93,6 @@ def run_tests(dir):
 
     for test_case in test_cases:
         run_test(test_case, update_mode)
-    cleanup_ci_artifacts()
 
 def find_lampe_dirs(dir_path):
     lampe_dirs = []
