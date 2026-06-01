@@ -2,6 +2,7 @@ import Lampe.Syntax.Utils
 import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
+import Lampe.Tactic.Steps
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
@@ -307,13 +308,16 @@ private def resolveTraitSTHoare (mainGoal : MVarId) : TacticM Unit := do
 syntax (name := resolveTrait) "resolve_trait" (" bySearch")? : tactic
 
 /--
-Closes trait resolution goals. Without arguments, handles STHoare `callTrait` goals;
-with `bySearch`, handles standalone `TraitResolvable` goals.
+Closes trait resolution goals. Without arguments, handles STHoare `callTrait` goals
+and unfolds the resulting `FunctionDecl.fn` / `Function.body` / `Lambda.body` chain so
+the caller can step through the body directly; with `bySearch`, handles standalone
+`TraitResolvable` goals (no body reduction needed — these goals don't carry one).
 -/
 @[tactic resolveTrait] elab_rules : tactic
   | `(tactic| resolve_trait) => do
     let mainGoal ← getMainGoal
     resolveTraitSTHoare mainGoal
+    evalTactic (←`(tactic| reduce_fn_body))
   | `(tactic| resolve_trait bySearch) => do
     let mainGoal ← getMainGoal
     resolveTraitStandalone mainGoal
