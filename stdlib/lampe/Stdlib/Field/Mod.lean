@@ -956,7 +956,7 @@ theorem from_le_bytes_intro :
     · congr 1
       conv at hhi => rhs; whnf
       simp [
-        List.take_succ, List.Vector.toList_getElem,
+        List.take_add_one, List.Vector.toList_getElem,
         hhi, Fp.ofBytesLE, RadixVec.ofLimbsLE'_append,
       ]
       rw [mul_comm]
@@ -986,7 +986,7 @@ theorem from_be_bytes_intro :
       conv at hhi => rhs; whnf
       simp [
         hhi, Fp.ofBytesLE, RadixVec.ofLimbsLE'_append,
-        List.take_succ, List.Vector.toList_getElem,
+        List.take_add_one, List.Vector.toList_getElem,
       ]
       rw [mul_comm]
       ring_nf
@@ -1132,7 +1132,7 @@ theorem bytes32_to_field_spec {p bytes} :
       conv at hhi => rhs; whnf
       simp [
         hhi, Fp.ofBytesLE, RadixVec.ofLimbsLE'_append,
-        List.take_succ, List.Vector.toList_getElem,
+        List.take_add_one, List.Vector.toList_getElem,
       ]
       rw [mul_comm]
       ring_nf
@@ -1149,7 +1149,7 @@ theorem bytes32_to_field_spec {p bytes} :
       conv at hhi => rhs; whnf
       simp [
         hhi, Fp.ofBytesLE, RadixVec.ofLimbsLE'_append,
-        List.take_succ, List.Vector.toList_getElem,
+        List.take_add_one, List.Vector.toList_getElem,
       ]
       rw [mul_comm]
       ring_nf

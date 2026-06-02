@@ -168,7 +168,7 @@ theorem array_eq_pure_spec {p T N a b}
     conv => rhs; rw [←List.reverse_inj]
 
     generalize_proofs
-    simp only [List.take_succ, List.reverse_append]
+    simp only [List.take_add_one, List.reverse_append]
     rw [List.getElem?_eq_getElem, List.getElem?_eq_getElem]
     simp only [Option.toList_some, List.reverse_cons, List.reverse_nil, List.nil_append,
       List.cons_append, List.cons.injEq, List.reverse_inj]
@@ -220,7 +220,7 @@ theorem slice_eq_pure_spec {p T a b}
           Lens.modify, Option.get_some, Bool.and_eq_true]
         conv => rhs; rw [←List.reverse_inj]
         generalize_proofs
-        simp only [List.take_succ, List.reverse_append]
+        simp only [List.take_add_one, List.reverse_append]
         rw [List.getElem?_eq_getElem, List.getElem?_eq_getElem]
         · simp only [Option.toList_some, List.reverse_cons, List.reverse_nil, List.nil_append,
             List.cons_append, List.cons.injEq, List.reverse_inj]

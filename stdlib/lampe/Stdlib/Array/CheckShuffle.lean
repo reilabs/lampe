@@ -77,7 +77,7 @@ lemma List.perm_of_index_bijection
             simp [f', not_lt_of_gt h']
             simp [eq]
         have : Function.Injective f' := by
-          apply this.injective_of_fintype
+          apply this.injective_of_finite
           apply Equiv.refl
         apply And.intro <;> assumption
       case same_elems =>
@@ -226,7 +226,7 @@ theorem check_shuffle_spec
     intro i
     have := same_elems i
     rcases this with ⟨_, eq⟩
-    simp only [List.get_eq_getElem, Fin.coe_cast, List.Vector.getElem_def, List.Vector.get_eq_get_toList] at eq
+    simp only [List.get_eq_getElem, Fin.val_cast, List.Vector.getElem_def, List.Vector.get_eq_get_toList] at eq
     simp only [get_cast]
     rw [←eq]
     rfl

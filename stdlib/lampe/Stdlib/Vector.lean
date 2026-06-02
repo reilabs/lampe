@@ -49,7 +49,7 @@ theorem as_array_spec {p T N input}
       BitVec.ofNat_toNat, BitVec.setWidth_eq, List.get_eq_getElem, Option.bind_eq_bind,
       Option.bind_some, Option.bind_fun_some, Option.get_some, List.Vector.toList_set]
     rename_i take_of_vec_eq_input
-    rw [List.take_succ]
+    rw [List.take_add_one]
     rw [List.take_set]
     rw [take_of_vec_eq_input]
     simp_all only [Lens.modify, Lens.get, Access.modify, BitVec.toNat_ofNatLT, ↓reduceDIte,

@@ -567,7 +567,7 @@ theorem concat_spec: STHoare p env ⟦⟧
   · simp
   · intro i hil hiu
     steps
-    rw [←add_assoc, List.take_succ, List.take_succ, ←List.append_assoc]
+    rw [←add_assoc, List.take_add_one, List.take_add_one, ←List.append_assoc]
     have hi_eq : i_4238.toNat = M.toNat + i := by
       subst i_4238
       simp only [BitVec.toNat_add]

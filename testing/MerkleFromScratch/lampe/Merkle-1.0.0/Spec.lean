@@ -58,7 +58,7 @@ theorem List.Vector.takeF_congr (he: i₁ = i₂) : List.Vector.takeF v i₁ h =
 theorem List.Vector.takeF_succ_eq_snoc_get {v : List.Vector α n} : List.Vector.takeF v (i + 1) hi = (List.Vector.takeF v i (by linarith)).snoc (v.get ⟨i, by linarith⟩) := by
   rcases v with ⟨v, rfl⟩
   apply List.Vector.eq
-  simp [List.Vector.takeF, List.Vector.congr, List.Vector.take, List.Vector.snoc, List.Vector.get, List.take_succ]
+  simp [List.Vector.takeF, List.Vector.congr, List.Vector.take, List.Vector.snoc, List.Vector.get, List.take_add_one]
 
 @[simp]
 theorem List.Vector.congrArg₂ {f : {n : Nat} → List.Vector α n → List.Vector β n → γ} (h₁ h₂ : n = n₁):
@@ -380,7 +380,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
       have : i + 1 < 4294967296 := by
         simp_all
         linarith
-      simp [Nat.mod_eq_of_lt, this, List.take_succ]
+      simp [Nat.mod_eq_of_lt, this, List.take_add_one]
       have hlt' : i < 16 := by simp_all
       simp_all [List.Vector.toList_length, hlt', ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true, List.Vector.get_eq_get_toList]
     · subst_vars
