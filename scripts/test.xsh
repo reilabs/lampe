@@ -234,12 +234,8 @@ def assert_extraction_matches(test_dir):
         )
 
 def build_lake(lampe_dir):
-    env = os.environ.copy()
-    if "CI" in env:
-        env.pop("CI", None)
-        subprocess.run(["lake", "exe", "cache", "get"], check=True, cwd=lampe_dir, env=env)
-
-    subprocess.run(["lake", "build"], check=True, cwd=lampe_dir, env=env)
+    subprocess.run(["lake", "exe", "cache", "get"], check=True, cwd=lampe_dir)
+    subprocess.run(["lake", "build"], check=True, cwd=lampe_dir)
 
 def rewrite_lampe_stdlib_deps_to_path(lampe_dir):
     # The lampe CLI still generates `git = "https://github.com/reilabs/lampe", rev = "main"`
