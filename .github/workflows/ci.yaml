@@ -306,6 +306,9 @@ jobs:
           mkdir -p stdlib/lampe/.lake
           rm -rf stdlib/lampe/.lake/packages
           ln -s "$LAKE_PKG_DIR" stdlib/lampe/.lake/packages
+      - name: Free Runner Disk Space
+        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/free-disk-space
       - name: Build Stdlib In Place
         if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -410,6 +413,9 @@ jobs:
         with:
           path: .ci-cache/e2e
           key: e2e-${{ runner.os }}-${{ hashFiles('testing/**', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml') }}
+      - name: Free Runner Disk Space
+        if: ${{ steps.e2e-cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/free-disk-space
       - name: Run Test Script
         if: ${{ steps.e2e-cache.outputs.cache-hit != 'true' }}
         run: ./testing/test.xsh
