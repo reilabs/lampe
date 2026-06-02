@@ -624,7 +624,7 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
           ⟦len v = len self ∧
             List.take ((len self).toNat + i) (storage v).toList =
               embed self ++ array.toList.take i⟧)
-  · sl; simp [Nat.add_zero, embed, active, storage]
+  · sl; simp [embed, active, storage]
   · simp
   · intro i hlo hhi
     steps_named as [v, hinv, h_add, h_cast, u2, h_dec, h_isSome]
@@ -714,7 +714,7 @@ theorem extend_from_vector_spec {p T MaxLen selfRef self slice}
           ⟦len v = len self ∧
             List.take ((len self).toNat + i) (storage v).toList =
               embed self ++ slice.take i⟧)
-  · sl; simp [Nat.add_zero, embed, active, storage]
+  · sl; simp [embed, active, storage]
   · simp
   · intro i hlo hhi
     steps_named as [v, hinv, h_add, h_cast, u2, h_dec, h_isSome]
@@ -910,8 +910,7 @@ theorem from_parts_spec {p T MaxLen arr l}
           · intro b; sl; assumption
           · steps [STHoare.genericTotalPureBuiltin_intro
               (b := Builtin.uGeq) (h := rfl)]
-            simp_all only [Builtin.instCastTpU,
-              BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+            simp_all only [
               BitVec.toNat_ofNatLT, BitVec.le_def, ge_iff_le]
             simp
         · intro b

@@ -655,7 +655,7 @@ theorem u8_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u8_spec, Convert.as_u8_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -678,7 +678,7 @@ theorem u16_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u16_spec, Convert.as_u16_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -701,7 +701,7 @@ theorem u32_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u32_spec, Convert.as_u32_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -724,7 +724,7 @@ theorem u64_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u64_spec, Convert.as_u64_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -747,7 +747,7 @@ theorem u128_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u128_spec, Convert.as_u128_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -844,12 +844,12 @@ theorem u8_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u8_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -883,12 +883,12 @@ theorem u16_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u16_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -922,12 +922,12 @@ theorem u32_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u32_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -961,12 +961,12 @@ theorem u64_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u64_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -1000,12 +1000,12 @@ theorem u128_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u128_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -1108,7 +1108,7 @@ theorem u8_wrapping_mul {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u8_spec, Convert.as_u8_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
   norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^16 := by apply BitVec.toNat_mul_toNat_lt
@@ -1127,7 +1127,7 @@ theorem u16_wrapping_mul {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u16_spec, Convert.as_u16_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
   norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^32 := by apply BitVec.toNat_mul_toNat_lt
@@ -1146,7 +1146,7 @@ theorem u32_wrapping_mul {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u32_spec, Convert.as_u32_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
   norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^64 := by apply BitVec.toNat_mul_toNat_lt
@@ -1165,7 +1165,7 @@ theorem u64_wrapping_mul {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u64_spec, Convert.as_u64_for_field_spec]
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
   norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^128 := by apply BitVec.toNat_mul_toNat_lt
@@ -1196,8 +1196,8 @@ theorem split_into_64_bit_limbs_spec {p a} [gt : Prime.BitsGT p 128]
     steps
 
   steps [two_pow_64_spec]
-  simp only [Builtin.indexTpl] at *
-  simp_all only [Builtin.CastTp.cast, Builtin.instCastTpUField, beq_true, decide_eq_true_eq]
+  simp only at *
+  simp_all only [Builtin.CastTp.cast, beq_true, decide_eq_true_eq]
   rename_i v _
   change «#v_2» = _
 
@@ -1264,8 +1264,7 @@ theorem u128_wrapping_mul {p a b}
   rcases x_hi with ⟨x_hi, x_hi_lt⟩
 
   apply_fun BitVec.toNat at x_lo_def y_lo_def x_hi_def y_hi_def
-  simp only [Builtin.CastTp.cast, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj,
-    Integer.split64_fst_toNat, Integer.split64_snd_toNat, BitVec.toNat_ofFin] at *
+  simp only [Builtin.CastTp.cast, BitVec.toNat_ofFin] at *
 
   rename low = _ => low_def
   rcases low with ⟨low, low_lt_p⟩

@@ -184,7 +184,7 @@ private theorem mapLike_constrained_loop_effectful_spec
     ·
       -- i = 0
       dsimp [Inv]
-      simp [Nat.min_zero, Nat.zero_min]
+      simp
       sl
       constructor
       · rfl
@@ -279,11 +279,10 @@ private theorem mapLike_constrained_loop_effectful_spec
           simp [BitVec.toNat_ofNat, hmod]
         have hidxLt' : i < MaxLen.toNat := hhi
         -- Unfold the lens modify chain into a list-set operation.
-        simp only [storage, Lens.modify, Lens.get, Access.modify, Access.get,
-          Option.bind_some, Option.bind_fun_some, bind, Option.bind, hidxNat,
-          Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj,
-          Builtin.replaceTuple'_head_proj, Builtin.replaceTuple'_tail_proj,
-          dif_pos hidxLt', Option.get_some, List.Vector.toList_set]
+        simp only [storage, Lens.modify, Lens.get, Access.modify, Access.get, bind, Option.bind, hidxNat,
+          Builtin.indexTpl_head_proj,
+          Builtin.replaceTuple'_head_proj,
+          dif_pos hidxLt', Option.get_some]
         -- After reducing the lens chain, the head projection of `(set v.1 .., v.2)` is
         -- definitionally `set v.1 ..`.
         change inv (List.take (i + 1) xs)
@@ -472,7 +471,7 @@ theorem map_pure_spec {p T MaxLen Out Env self f fb fEmb}
         (by simp only [SLP.true_star]; exact SLP.entails_self) ?_
         (STHoare.frame (h_hoare := hspec))
     intro r
-    simp only [SLP.lift_star_lift, SLP.star_assoc]
+    simp only [SLP.lift_star_lift]
     apply SLP.pure_left
     intro ⟨hr, hop⟩
     exact SLP.pure_right (by simp [hr, hop]) SLP.entails_top
@@ -516,7 +515,7 @@ theorem mapi_pure_spec {p T MaxLen Out Env self f fb fEmb}
         (by simp only [SLP.true_star]; exact SLP.entails_self) ?_
         (STHoare.frame (h_hoare := hspec))
     intro r
-    simp only [SLP.lift_star_lift, SLP.star_assoc]
+    simp only [SLP.lift_star_lift]
     apply SLP.pure_left
     intro ⟨hr, hop⟩
     apply SLP.pure_right _ SLP.entails_top
@@ -580,8 +579,7 @@ theorem any_spec {p T MaxLen Env self f fb}
       intro i hlo hhi
       steps
       all_goals (try exact ())
-      simp_all only [BitVec.toNat_ofNatLT, Nat.reducePow, Bool.decide_or, Bool.decide_eq_true,
-        Bool.decide_eq_false, Bool.false_or, Bool.true_or]
+      simp_all only [Bool.decide_or, Bool.decide_eq_true]
 
       have pf32 : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
       have hEq_dec :
@@ -589,7 +587,7 @@ theorem any_spec {p T MaxLen Env self f fb}
         simpa using decide_ofNat_eq_toNat (i := i) (x := len self) pf32
       have hexceeded_next :
           (decide (n < i) || decide (BitVec.ofNat 32 i = len self)) = decide (n < i + 1) := by
-        simp [hEq_dec, n, Nat.lt_succ_iff, Nat.le_iff_lt_or_eq, eq_comm]
+        simp [hEq_dec, n, Nat.le_iff_lt_or_eq, eq_comm]
 
       -- `steps` sometimes leaves a meta `R : SLP (State p)` for the frame. It is safe to instantiate
       -- it with `⊤` here (the loop invariant already carries all relevant resources).
@@ -614,8 +612,7 @@ theorem any_spec {p T MaxLen Env self f fb}
         simp [hmin_i, hmin_succ]
         -- `steps` should normalize the array read to `xs[i]` after rewriting `embed = take len storage`.
         simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-          zero_le, Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-          BitVec.toNat_ofNatLT, List.get_eq_getElem]
+          zero_le]
         generalize_proofs
         rename Tp.denote p .bool => b
         rename_i hiIdx
@@ -643,8 +640,7 @@ theorem any_spec {p T MaxLen Env self f fb}
         rw [show List.Vector.get (Builtin.indexTpl self Member.head)
                 ⟨i % 4294967296, hiIdx⟩ = e from harg]
         steps [STHoare.callLambda_intro (hlam := hlam)]
-        simp_all only [Bool.decide_or, Bool.decide_eq_true, Bool.false_or, Bool.true_or,
-          List.take_append_getElem, Lens.modify, Option.get_some]
+        simp_all only [Bool.decide_or, Bool.decide_eq_true, Lens.modify, Option.get_some]
         sl
         ·
           -- Normalize `take i ++ [xs[i]]` to `take (i+1)` to discharge the remaining frame goal.
@@ -671,7 +667,7 @@ theorem any_spec {p T MaxLen Env self f fb}
         have hge : n ≤ i := by
           apply Nat.le_of_not_gt; intro hi_lt
           have := congrArg BitVec.toNat (himp (Nat.le_of_lt hi_lt))
-          simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by simpa using pf32), n] at this
+          simp [BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by simpa using pf32)] at this
           exact Nat.ne_of_lt hi_lt this
         steps
         simp [Nat.min_eq_right hge, Nat.min_eq_right (Nat.le_trans hge (Nat.le_succ _))] at *
@@ -681,11 +677,11 @@ theorem any_spec {p T MaxLen Env self f fb}
                 = decide (n < i + 1) := by
             simpa [len] using hexceeded_next
           have hnlei : decide (n ≤ i) = decide (n < i + 1) := by
-            simp [Nat.lt_succ_iff]
-          simp [Lens.modify, h, hnlei.symm]
+            simp
+          simp [Lens.modify, h]
     ·
       -- Loop finished.
-      simp [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)] at *
+      simp at *
       steps
   ·
     -- `readRef ret` returns the final boolean.
@@ -715,7 +711,7 @@ theorem any_pure_spec {p T MaxLen Env self f fb fEmb}
         intro ip op e pfx
         steps [inv_pure (a := e)]
         simp_all only [List.any_append, List.any_cons, List.any_nil, Bool.or_false, Bool.decide_or,
-          Bool.decide_eq_true, Bool.forall_bool, Bool.false_or, Bool.true_or])
+          Bool.decide_eq_true])
 
 /-!
 Shared constrained-branch loop proof for effectful `for_each`/`for_eachi`-like methods.
@@ -796,7 +792,7 @@ private theorem forEachLike_constrained_loop_spec
         have hi_embed : i < (embed self).length := by simpa [xs] using hi_xs
         have hmodNat : i % 4294967296 = i := Nat.mod_eq_of_lt (by simpa using pf)
         have hiMax : (BitVec.ofNatLT i pf).toNat < MaxLen.toNat := by
-          simp [BitVec.toNat_ofNatLT, hmodNat]; exact hhi
+          simp [hmodNat]; exact hhi
         have hget :=
           get_unchecked_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)
             (index := BitVec.ofNatLT i pf) (hindex := hiMax)
@@ -811,7 +807,7 @@ private theorem forEachLike_constrained_loop_spec
           simpa [x, xs] using
             storage_get_eq_embed_get_of_toNat (self := self) (idxNat := i) (i := i) rfl hhi hi_embed
         have helem : elem = x := by simpa [x, hmodNat] using helemEq
-        subst helem; simp [hmodNat]
+        subst helem; simp
 
         have hprefix : xs.take i ++ [x] <+: xs := by
           simpa [hx'] using (by simp [List.take_prefix])

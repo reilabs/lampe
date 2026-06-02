@@ -51,7 +51,7 @@ theorem recover_intro {H N idx proof item}
     [curr_h ↦ ⟨Tp.field,
       MerkleTree.recover H' (List.Vector.takeF idx i (by simpa [←BitVec.lt_def];)).reverse
                  (List.Vector.takeF proof i (by simpa [←BitVec.lt_def])).reverse item⟩]
-  · simp only [Int.cast, IntCast.intCast, BitVec.ofInt_ofNat, BitVec.le_def, BitVec.toNat_ofNat,
+  · simp only [Int.cast, IntCast.intCast, BitVec.ofInt_ofNat, BitVec.toNat_ofNat,
     Nat.reducePow, Nat.zero_mod, zero_le]
   · intro i _ hi
     steps

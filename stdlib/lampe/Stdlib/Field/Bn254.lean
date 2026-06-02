@@ -179,7 +179,7 @@ theorem assert_gt_limbs_intro {p a b} [Prime.BitsGT p 129] :
   rcases hbounds with ⟨ha_lo, ha_hi, hb_lo, hb_hi⟩
   rename_i h_rlo_lt h_rhi_lt h_out h_out_eq
   clear h_out h_out_eq
-  simp [Builtin.indexTpl] at *
+  simp at *
   subst alo
   subst ahi
   subst blo
@@ -329,7 +329,7 @@ theorem assert_gt_intro {p a b} [Prime.BitsGT p 129]
   · exact ()
   apply STHoare.iteFalse_intro
   steps [decompose_intro (p := p) (hmod := hmod), assert_gt_limbs_intro (p := p)]
-  simp [SLP.exists_pure] at *
+  simp at *
   rename_i _ a_lo a_hi ha_raw b_lo b_hi hb_raw _ hlimbs
   rcases ha_raw with ⟨ha_eq, ha_lo_lt, ha_hi_lt, ha_val⟩
   rcases hb_raw with ⟨hb_eq, hb_lo_lt, hb_hi_lt, hb_val⟩
@@ -375,7 +375,7 @@ theorem gt_intro {p a b} [Prime.BitsGT p 129]
     steps
     have h_eq' : a = b := by
       simpa [decide_eq_true_eq] using h_eq
-    simp_all [h_eq']
+    simp_all
   · intro h_eq
     steps [field_less_than_intro]
     apply STHoare.ite_intro

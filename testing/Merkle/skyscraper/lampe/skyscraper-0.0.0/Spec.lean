@@ -28,7 +28,7 @@ theorem List.Vector.toList_pad {v : List.Vector α n} {pad} : (v.pad d pad).toLi
   | zero => simp
   | succ d ih =>
     cases n
-    · simp [List.Vector.pad, ih, List.replicate_succ]
+    · simp [List.Vector.pad, ih]
     · rcases (List.exists_of_length_succ _ prop) with ⟨h, t, ⟨rfl⟩⟩
       simp at prop
       simp [List.Vector.pad, List.Vector.head, List.Vector.tail, ih]
@@ -162,16 +162,12 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
       have i₅ : i < 32 := by linarith
       simp [-List.takeD_zero, -List.takeD_succ,
         List.takeD_eq_take_append,
-        List.take_take,
-        i₁, i₂, i₃, i₄]
+        List.take_take, i₂, i₄]
       simp only [List.take_add_one, List.append_assoc]
       have hpad : (16 - i) = (15 - i) + 1 := by omega
-      simp only [hpad, List.replicate_succ, getElem?, decidableGetElem?, i₅, List.Vector.toList]
+      simp only [getElem?, List.Vector.toList]
       simp_all only [Int.cast_zero, BitVec.ofNat_eq_ofNat, Nat.reducePow, BitVec.le_ofFin,
-      BitVec.toFin_ofNat, Fin.ofNat_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Lens.modify,
-      Lens.get, BitVec.toNat_ofFin, BitVec.reduceToNat, Builtin.instCastTpU,
-      BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, Option.bind_eq_bind,
-      Option.bind_some, Nat.reduceLeDiff, List.set_cons_zero, List.get?Internal_eq_getElem?,
+      BitVec.toFin_ofNat, Fin.ofNat_eq_cast, Nat.reduceLeDiff, List.get?Internal_eq_getElem?,
       List.length_map, List.Vector.length_val, BitVec.toNat_ofNat, Nat.reduceMod,
       List.getElem?_eq_getElem, List.getElem_map, Option.toList_some, List.cons_append,
       List.nil_append]
@@ -223,14 +219,14 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
       simp [-List.takeD_zero, -List.takeD_succ, Builtin.CastTp.cast, Access.modify]
       congr 1
       apply List.Vector.eq
-      simp [-List.takeD_zero, -List.takeD_succ, -List.map_drop, List.Vector.get, Fin.add_def, Int.cast, IntCast.intCast, OfNat.ofNat]
+      simp [-List.takeD_zero, -List.takeD_succ, -List.map_drop, Fin.add_def, OfNat.ofNat]
       have : 16 + i < 4294967296 := by linarith
       have : i + 1 < 4294967296 := by linarith
-      simp only [Nat.mod_eq_of_lt, *, List.getElem_drop']
+      simp only [Nat.mod_eq_of_lt, *]
       simp only [List.takeD_eq_take_append]
       have i₁ : i ≤ 16 := by linarith
       have i₂ : i + 1 ≤ 16 := by linarith
-      simp [i₁, i₂, List.take_take]
+      simp [i₂, List.take_take]
       simp only [List.take_add_one, List.append_assoc]
       congr 1
 
@@ -242,7 +238,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
       have hdrop_bound : i < (List.drop 16 (List.map Ref.sbox (List.Vector.toList bytes))).length := by
         rw [List.length_drop, List.length_map, List.Vector.toList_length, h32]; omega
       -- unfold getElem? notation to make goal match
-      simp only [getElem?_def, decidableGetElem?]
+      simp only [getElem?_def]
       split
       · simp only [Option.toList_some, List.getElem_drop, List.getElem_map]
         change List.Vector.toList (((List.Vector.map Ref.sbox (List.Vector.take i (List.Vector.drop 16 bytes))).pad 16 0#8).set
@@ -303,7 +299,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
         linarith
       simp [Nat.mod_eq_of_lt, this, List.take_succ]
       have hlt' : i < 16 := by simp_all
-      simp_all [List.Vector.toList_length, hlt', ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true, List.Vector.get_eq_get_toList]
+      simp_all [List.Vector.toList_length, Option.toList_some, List.Vector.get_eq_get_toList]
     · subst_vars
       steps
   steps [Lampe.Stdlib.Vector.as_array_spec, Lampe.Stdlib.Field.from_le_bytes_intro]
@@ -330,7 +326,7 @@ theorem permute_intro : STHoare lp env ⟦⟧
   cases i using List.Vector.casesOn with | cons _ i =>
   cases i using List.Vector.casesOn
   steps [bar_intro, square_intro, rc_intro]
-  simp [Builtin.indexTpl, Nat.mod_eq_of_lt, Field.lp] at *
+  simp [Nat.mod_eq_of_lt, Field.lp] at *
   subst_vars
   rfl
 

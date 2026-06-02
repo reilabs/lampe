@@ -63,7 +63,7 @@ lemma List.perm_of_index_bijection
             simp [f', this]
             simp [eq]
           · rename_i h'
-            simp only [ge_iff_le, not_le, f'] at h'
+            simp only [ge_iff_le, not_le] at h'
             have := bij.surjective v.castSucc
             rcases this with ⟨is, eq⟩
             have : is ≠ 0 := by

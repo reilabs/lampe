@@ -32,8 +32,7 @@ theorem map_spec {p T N U Env l f fb}
   · intro i hlo hhi
     steps
     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_le, List.Vector.toList_take, Builtin.instCastTpU, BitVec.truncate_eq_setWidth,
-      BitVec.setWidth_eq, BitVec.toNat_ofNatLT]
+      zero_le, List.Vector.toList_take]
     generalize_proofs
     rename_i i_lt_pow
 
@@ -41,11 +40,10 @@ theorem map_spec {p T N U Env l f fb}
     have := inv_spec (l.take i).toList (v.take i).toList (l.toList[i]'(by simp_all))
       (by simp [List.take_prefix])
     steps [STHoare.callLambda_intro (hlam := this)]
-    simp_all only [Builtin.instCastTpU, Builtin.CastTp.cast,
-      BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+    simp_all only [
       BitVec.toNat_ofNatLT, List.Vector.toList_take, List.take_append_getElem, Lens.modify,
-      Lens.get, Access.modify, ↓reduceDIte, Option.bind_eq_bind, Option.bind_some,
-      Option.bind_fun_some, Option.get_some, List.Vector.toList_set]
+      Lens.get, Access.modify, Option.bind_eq_bind, Option.bind_some,
+      Option.bind_fun_some]
 
     have : i < (v.toList.set i «#v_5»).length := by simp_all
     have hi_lt_N : i < BitVec.toNat N := by simp_all
@@ -107,8 +105,7 @@ theorem mapi_spec {p T N U Env l f fb}
   · intro i hlo hhi
     steps
     simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
-      EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, List.Vector.toList_take,
-      Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, BitVec.toNat_ofNatLT]
+      EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, List.Vector.toList_take]
     generalize_proofs
     have i_lt_pow : i < 2 ^ 32 := by simp_all
     have i_lt_n : i < BitVec.toNat N := by simp_all
@@ -117,9 +114,8 @@ theorem mapi_spec {p T N U Env l f fb}
     have := inv_spec (l.take i).toList (v.take i).toList (l.toList[i]'(by simp_all))
       (by simp [List.take_prefix])
     have i_eq_len_take : BitVec.ofNatLT i i_lt_pow = BitVec.ofNat 32 (l.take i).toList.length := by
-      simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-        BitVec.toNat_ofNatLT, Nat.reducePow, List.Vector.toList_take, List.length_take,
-        List.Vector.toList_length, List.take_append_getElem, BitVec.natCast_eq_ofNat]
+      simp_all only [Nat.reducePow, List.Vector.toList_take, List.length_take,
+        List.Vector.toList_length, List.take_append_getElem]
       congr
       omega
     simp only [i_eq_len_take]
@@ -127,15 +123,14 @@ theorem mapi_spec {p T N U Env l f fb}
     have h_min : min i N.toNat = i := by omega
     have h_pow : i % 4294967296 = i := Nat.mod_eq_of_lt i_lt_pow
     simp only [List.Vector.toList_take, List.length_take, List.Vector.toList_length, h_min,
-      Builtin.CastTp.cast, Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+      Builtin.CastTp.cast, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
       BitVec.toNat_ofNat, h_pow] at this ⊢
 
     steps [STHoare.callLambda_intro (hlam := this)]
-    simp_all only [Builtin.instCastTpU, Builtin.CastTp.cast,
-      BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-      BitVec.toNat_ofNatLT, List.Vector.toList_take, List.take_append_getElem, Lens.modify,
+    simp_all only [Builtin.CastTp.cast,
+      BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, List.Vector.toList_take, List.take_append_getElem, Lens.modify,
       Lens.get, Access.modify, ↓reduceDIte, Option.bind_eq_bind, Option.bind_some,
-      Option.bind_fun_some, Option.get_some, List.Vector.toList_set, BitVec.toNat_ofNat, h_pow]
+      Option.bind_fun_some, Option.get_some, List.Vector.toList_set, BitVec.toNat_ofNat]
 
     have hlen : i < (v.toList.set i «#v_5»).length := by simp_all
     conv => rhs; enter [1, 2]; rw [List.take_succ_eq_append_getElem hlen]
@@ -199,14 +194,12 @@ theorem for_each_spec {p T N Env l f fb}
   · intro i hlo hhi
     steps
     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_le, List.Vector.toList_take, Builtin.instCastTpU, BitVec.truncate_eq_setWidth,
-      BitVec.setWidth_eq, BitVec.toNat_ofNatLT]
+      zero_le, List.Vector.toList_take]
     generalize_proofs
 
     have := inv_spec (l.take i).toList (l.toList[i]'(by simp_all)) (by simp [List.take_prefix])
     steps [STHoare.callLambda_intro (hlam := this)]
-    simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-      BitVec.toNat_ofNatLT, List.Vector.toList_take, List.take_append_getElem]
+    simp_all only [List.Vector.toList_take, List.take_append_getElem]
     sl
 
   steps
@@ -233,30 +226,28 @@ theorem for_eachi_spec {p T N Env l f fb}
   · intro i hlo hhi
     steps
     simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
-      EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, List.Vector.toList_take,
-      Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, BitVec.toNat_ofNatLT]
+      EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, List.Vector.toList_take]
     generalize_proofs
     have i_lt_pow : i < 2 ^ 32 := by simp_all
     have i_lt_n : i < BitVec.toNat N := by simp_all
 
     have := inv_spec (l.take i).toList (l.toList[i]'(by simp_all)) (by simp [List.take_prefix])
     have i_eq_len_take : BitVec.ofNatLT i i_lt_pow = BitVec.ofNat 32 (l.take i).toList.length := by
-      simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-        BitVec.toNat_ofNatLT, Nat.reducePow, List.Vector.toList_take, List.length_take,
-        List.Vector.toList_length, List.take_append_getElem, BitVec.natCast_eq_ofNat]
+      simp_all only [Nat.reducePow, List.Vector.toList_take, List.length_take,
+        List.Vector.toList_length, List.take_append_getElem]
       congr
       omega
     have h_min : min i N.toNat = i := by omega
     have h_pow : i % 4294967296 = i := Nat.mod_eq_of_lt i_lt_pow
     simp only [i_eq_len_take, List.Vector.toList_take, List.length_take,
-      List.Vector.toList_length, h_min, Builtin.CastTp.cast, Builtin.instCastTpU,
+      List.Vector.toList_length, h_min, Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, BitVec.toNat_ofNat, h_pow] at this ⊢
     steps [STHoare.callLambda_intro (hlam := this)]
 
-    simp_all only [Builtin.instCastTpU, Builtin.CastTp.cast,
+    simp_all only [Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
       List.Vector.toList_take, List.length_take, List.Vector.toList_length, BitVec.toNat_ofNat,
-      Nat.reducePow, List.take_append_getElem, h_min]
+      Nat.reducePow, List.take_append_getElem]
     sl
 
   steps
@@ -288,7 +279,7 @@ theorem fold_spec {p T N U Env l a f fb}
   · intro i hlo hhi
     steps
     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_le, Builtin.instCastTpU, Builtin.CastTp.cast,
+      zero_le, Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
       BitVec.toNat_ofNatLT, List.Vector.toList_take]
     generalize_proofs
@@ -355,8 +346,7 @@ theorem reduce_spec {p T N Env l f fb}
         steps
         simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod,
           Int.toNat_zero, gt_iff_lt, Int.reduceMod, Int.toNat_one, le_add_iff_nonneg_left, zero_le,
-          add_tsub_cancel_right, Builtin.instCastTpU, BitVec.truncate_eq_setWidth,
-          BitVec.setWidth_eq, BitVec.toNat_ofNatLT]
+          add_tsub_cancel_right]
         generalize_proofs
         rename T.denote p => v
 
@@ -372,8 +362,7 @@ theorem reduce_spec {p T N Env l f fb}
         rw [get_eq_getElem]
 
         steps [STHoare.callLambda_intro (hlam := this)]
-        simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-          BitVec.toNat_ofNatLT, List.Vector.toList_mk, List.tail_cons, List.take_append_getElem,
+        simp_all only [List.Vector.toList_mk, List.tail_cons, List.take_append_getElem,
           Lens.modify, Option.get_some]
         sl
 
@@ -417,7 +406,7 @@ theorem all_spec {p T N Env l f fb}
   · intro i hlo hhi
     steps
     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_le, Builtin.instCastTpU, Builtin.CastTp.cast,
+      zero_le, Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
       BitVec.toNat_ofNatLT]
     generalize_proofs
@@ -476,7 +465,7 @@ theorem any_spec {p T N Env l f fb}
   · intro i hlo hhi
     steps
     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_le, Builtin.instCastTpU, Builtin.CastTp.cast,
+      zero_le, Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
       BitVec.toNat_ofNatLT]
     generalize_proofs
@@ -488,8 +477,7 @@ theorem any_spec {p T N Env l f fb}
       Bool.true_or, List.take_append_getElem, Lens.modify, Option.get_some]
     sl
     exact ()
-  · simp_all only [Bool.decide_and, Bool.decide_eq_true, Bool.forall_bool, Bool.false_and,
-    Bool.true_and, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, SLP.star_true]
+  · simp_all only [Bool.forall_bool, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, SLP.star_true]
     steps
 
     have : l.toList.length = N.toNat := by simp
@@ -537,10 +525,8 @@ theorem concat_spec: STHoare p env ⟦⟧
     case lt1 => simp_all
     case lt2 => simp_all
     simp only [BitVec.toNat_add, Nat.reducePow, BitVec.add_eq, Lens.modify, Lens.get, Access.modify,
-      BitVec.toNat_ofNatLT, Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat,
-      BitVec.setWidth_eq, Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some,
-      dif_pos hi_bound, Option.get_some, List.Vector.toList_set, le_refl, List.take_set_of_le,
-      List.getElem_set_self]
+      BitVec.toNat_ofNatLT, Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some,
+      dif_pos hi_bound]
     -- `congr 1` splits into the take and getElem halves.
     rename_i _v hloop hcast _ _
     generalize_proofs hb1 hb2
@@ -580,10 +566,8 @@ theorem concat_spec: STHoare p env ⟦⟧
       push_neg at h
       rw [dif_neg (by omega)] at hp
       simp at hp
-    simp only [BitVec.toNat_add, Nat.reducePow, BitVec.add_eq, Lens.modify, Lens.get, Access.modify,
-      Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq,
-      BitVec.toNat_ofNatLT, Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some,
-      dif_pos hi_bound, Option.get_some, List.Vector.toList_set]
+    simp only [BitVec.toNat_add, Nat.reducePow, BitVec.add_eq, Lens.modify, Lens.get, Access.modify, Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some,
+      dif_pos hi_bound]
     rename List.Vector _ _ => _v
     rename (List.Vector.toList _).take _ = _ => hloop
     rename BitVec.toNat _ < BitVec.toNat _ => hcast
@@ -606,7 +590,7 @@ theorem concat_spec: STHoare p env ⟦⟧
       have h1 : (List.Vector.toList a₂)[i]? = some (List.Vector.get a₂
             ⟨BitVec.toNat (Builtin.CastTp.cast
               (BitVec.ofNatLT i hb1 : Tp.denote p (Tp.u 32))), hcast⟩) := by
-        simp [List.Vector.toList, List.Vector.get, List.getElem?_eq_some_iff,
+        simp [List.Vector.toList, List.Vector.get,
           BitVec.toNat_ofNatLT]
       rw [h0, h1]
   steps
@@ -667,7 +651,7 @@ theorem sort_via_spec {p T N Env l f fb}
 
   rename_i one_lt_n
   have zero_lt_n : 0 < N.toNat := by
-    simp_all only [Bool.not_false, BitVec.ofNat_eq_ofNat]
+    simp_all only [Bool.not_false]
     exact one_lt_n
   have n_eq_len : sorted.toList.length = N.toNat := by simp_all
 
@@ -684,7 +668,7 @@ theorem sort_via_spec {p T N Env l f fb}
 
     simp_all only [Bool.not_false, List.Vector.toList_length, BitVec.toNat_intCast, Int.reducePow,
       EuclideanDomain.zero_mod, Int.toNat_zero, zero_le, BitVec.toNat_ofNatLT, Int.reduceMod,
-      Int.toNat_one, Nat.reducePow, Builtin.instCastTpU, Builtin.CastTp.cast,
+      Int.toNat_one, Nat.reducePow, Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth,
       BitVec.setWidth_eq, BitVec.toNat_add]
 
@@ -720,9 +704,7 @@ theorem sort_via_spec {p T N Env l f fb}
       apply List.Vector.toList_getElem
     rw [this, List.Vector.toList_getElem]
     unfold r_def
-    simp_all only [Builtin.instCastTpU, BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-      BitVec.toNat_ofNatLT, BitVec.toNat_add, BitVec.toNat_intCast, Int.reducePow, Int.reduceMod,
-      Int.toNat_one, Nat.reducePow, beq_true]
+    simp_all only [beq_true]
     rename_i v _
     rw [←ith_def, ←isth_def] at v
     assumption

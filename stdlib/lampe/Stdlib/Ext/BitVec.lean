@@ -24,7 +24,7 @@ lemma U.cases_one (i : U 1) : i = 0 ∨ i = 1 := by fin_cases i <;> simp
 theorem BitVec.toFin_ofFin_comp (n : ℕ) :
     (fun (i : BitVec n) => i.toFin) ∘ BitVec.ofFin = id := by
   funext x
-  simp [BitVec.toFin_ofFin]
+  simp
 
 @[simp]
 theorem BitVec.ofFin_toFin_comp (n : ℕ) :
@@ -40,11 +40,10 @@ lemma map_toFin_ofFin_eq {n : Nat} (digits : List.Vector (Digit 2) n) :
       ((fun (i : BitVec 1) => i.toFin) ∘ (BitVec.ofFin (w := 1))) =
         (fun x : Fin (2^1) => x) := by
     funext x
-    simp [Function.comp, BitVec.toFin_ofFin]
+    simp [Function.comp]
   apply List.Vector.eq
   simp [
-    List.Vector.toList_map, List.map_map, Function.comp, hcomp, List.map_id
-  ]
+    List.Vector.toList_map, List.map_map, hcomp]
 
 end Lampe
 
