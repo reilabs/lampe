@@ -51,7 +51,7 @@ jobs:
           submodules: recursive
       - name: Restore Rustfmt Cache
         id: rustfmt-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .ci-cache/rustfmt
           key: rustfmt-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
@@ -80,7 +80,7 @@ jobs:
         uses: actions/checkout@v6
       - name: Restore Rust Lint Cache
         id: rustlint-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .ci-cache/rustlint
           key: rustlint-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
@@ -109,7 +109,7 @@ jobs:
         uses: actions/checkout@v6
       - name: Restore Rust Test Cache
         id: rusttest-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .ci-cache/rusttest
           key: rusttest-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
@@ -141,7 +141,7 @@ jobs:
         uses: actions/checkout@v6
       - name: Restore CLI Cache
         id: cli-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: target/release/lampe
           key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
@@ -180,13 +180,13 @@ jobs:
           echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
       - name: Restore Lake Packages Cache
         id: lake-packages-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
       - name: Restore Lampe Build Cache
         id: lampe-build-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Lampe/.lake/build
           key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml') }}
@@ -219,7 +219,7 @@ jobs:
           fi
       - name: Save Lake Packages Cache
         if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' && steps.lake-packages-cache.outputs.cache-hit != 'true' && steps.lake-packages-content.outputs.has_files == 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
@@ -244,12 +244,12 @@ jobs:
           echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
       - name: Restore Lake Packages Cache
         id: lake-packages-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
       - name: Restore Lampe Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Lampe/.lake/build
           key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml') }}
@@ -257,7 +257,7 @@ jobs:
             lampe-build-${{ runner.os }}-
       - name: Restore Stdlib Build Cache
         id: stdlib-build-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: stdlib/lampe/.lake/build
           key: stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/test.xsh', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
@@ -265,7 +265,7 @@ jobs:
             stdlib-build-${{ runner.os }}-
       - name: Restore CLI Cache
         id: cli-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: target/release/lampe
           key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
@@ -326,7 +326,7 @@ jobs:
           fi
       - name: Save Lake Packages Cache
         if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' && steps.lake-packages-cache.outputs.cache-hit != 'true' && steps.lake-packages-content.outputs.has_files == 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
@@ -350,19 +350,19 @@ jobs:
           mkdir -p "$RUNNER_TEMP/lake-packages"
           echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
       - name: Restore Lake Packages Cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
       - name: Restore Lampe Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Lampe/.lake/build
           key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml') }}
           restore-keys: |
             lampe-build-${{ runner.os }}-
       - name: Restore Stdlib Build Cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: stdlib/lampe/.lake/build
           key: stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/test.xsh', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
@@ -375,7 +375,7 @@ jobs:
           ln -s "$LAKE_PKG_DIR" stdlib/lampe/.lake/packages
       - name: Restore CLI Cache
         id: cli-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: target/release/lampe
           key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
@@ -409,7 +409,7 @@ jobs:
         run: chmod +x target/release/lampe
       - name: Restore E2E Cache
         id: e2e-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .ci-cache/e2e
           key: e2e-${{ runner.os }}-${{ hashFiles('testing/**', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml') }}
