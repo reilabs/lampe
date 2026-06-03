@@ -17,12 +17,6 @@ multiple blocks — this builtin only updates the chaining state by
 absorbing a single pre-parsed message block.
 
 Modeled by the concrete `Crypto.Sha256.compressOne`.
-
-Noir's `std-1.0.0-beta.14` does not currently wrap
-`__sha256_compression` in a separate stdlib helper (in contrast to
-`__blake3` and `__keccakf1600`, which do have wrapper functions to
-spec against). Downstream Lampe proofs reason about this builtin
-directly.
 -/
 def sha256Compression := newTotalPureBuiltin
   ⟨[(Tp.u 32).array (8 : U 32), (Tp.u 32).array (16 : U 32)],
