@@ -60,9 +60,9 @@ theorem sort_via_u32_sorted_spec {p} (N : U 32) (hN : 0 < N.toNat)
         subst hjk_eq
         rename_i hv2 hv1 hv
         simp only [beq_iff_eq, decide_eq_true_eq, List.Vector.get_eq_get_toList,
-                   List.get_eq_getElem, List.Vector.toList_length, Fin.coe_cast] at hdec hv2 hv1 hv
-        simp [BitVec.ofNatLT, BitVec.toNat_add] at hdec hv2 hv1 hv
-        simp only [Fin.val_add, Fin.val_mk, BitVec.val_toFin] at hdec hv
+                   List.get_eq_getElem, Fin.coe_cast] at hdec hv2 hv1 hv
+        simp [BitVec.ofNatLT] at hdec hv2 hv1 hv
+        simp only [Fin.val_add, BitVec.val_toFin] at hdec hv
         -- hv'  has (j+1) via definitional equality (BitVec.toNat ↑1 = 1 by computation)
         have hv' : (j + 1) % 4294967296 < BitVec.toNat N := hv
         have hlt : j + 1 < BitVec.toNat N := by omega
@@ -84,14 +84,13 @@ theorem sort_via_u32_sorted_spec {p} (N : U 32) (hN : 0 < N.toNat)
       · exact out
       · intro i hi
         have h1N : 1 ≤ N.toNat := by
-          simp [BitVec.le_def, BitVec.toNat_ofNat] at h1leN; exact h1leN
+          simp [BitVec.le_def] at h1leN; exact h1leN
         have hNsub : BitVec.toNat (N - (1 : U 32)) = N.toNat - 1 := by
           simp [BitVec.toNat_sub, BitVec.toNat_ofNat]
           have := N.isLt; omega
         have hlt : i < BitVec.toNat (N - (1 : U 32)) := by rw [hNsub]; omega
         have hle := hinv i hlt
-        simp only [List.Vector.get_eq_get_toList, List.get_eq_getElem, Fin.coe_cast,
-                   List.Vector.toList_length]
+        simp only [List.Vector.get_eq_get_toList, List.get_eq_getElem, Fin.coe_cast]
         rw [← getElem!_pos _ i (by simp [List.Vector.toList_length]; omega),
             ← getElem!_pos _ (i + 1) (by simp [List.Vector.toList_length]; omega)]
         exact hle

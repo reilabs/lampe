@@ -17,7 +17,7 @@ theorem mod_sub_add_eq (n i k : Nat) (hi : i ≤ k) (hk : k < n) :
     (n - i + k) % n = (n + (k - i)) % n := by
       simp [hcalc]
     _ = ((n % n) + (k - i) % n) % n := by
-      simp [Nat.add_mod]
+      simp
     _ = (k - i) % n := by simp
     _ = k - i := by
       apply Nat.mod_eq_of_lt

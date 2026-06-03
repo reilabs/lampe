@@ -4,8 +4,6 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -146,7 +144,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
       - name: Build (Cargo)
         if: ${{ steps.cli-cache.outputs.cache-hit != 'true' }}
         run: cargo build --release
@@ -186,8 +184,6 @@ jobs:
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
-          restore-keys: |
-            lake-packages-${{ runner.os }}-
       - name: Restore Lampe Build Cache
         id: lampe-build-cache
         uses: actions/cache@v4
@@ -234,7 +230,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
-      LAMPE_KEEP_LAKE_CACHE: "1"
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -253,8 +248,6 @@ jobs:
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
-          restore-keys: |
-            lake-packages-${{ runner.os }}-
       - name: Restore Lampe Build Cache
         uses: actions/cache@v4
         with:
@@ -275,7 +268,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
       - name: Check CLI Binary
         id: cli-check
         run: |
@@ -313,10 +306,14 @@ jobs:
           mkdir -p stdlib/lampe/.lake
           rm -rf stdlib/lampe/.lake/packages
           ln -s "$LAKE_PKG_DIR" stdlib/lampe/.lake/packages
+      - name: Free Runner Disk Space
+        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/free-disk-space
       - name: Build Stdlib In Place
         if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
         run: |
           cd stdlib/lampe
+          lake exe cache get
           lake build
       - name: Check Lake Packages Cache Contents
         id: lake-packages-content
@@ -340,7 +337,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
-      LAMPE_KEEP_LAKE_CACHE: "1"
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -358,8 +354,6 @@ jobs:
         with:
           path: ${{ env.LAKE_PKG_DIR }}
           key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
-          restore-keys: |
-            lake-packages-${{ runner.os }}-
       - name: Restore Lampe Build Cache
         uses: actions/cache@v4
         with:
@@ -367,6 +361,13 @@ jobs:
           key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml') }}
           restore-keys: |
             lampe-build-${{ runner.os }}-
+      - name: Restore Stdlib Build Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: stdlib/lampe/.lake/build
+          key: stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/test.xsh', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          restore-keys: |
+            stdlib-build-${{ runner.os }}-
       - name: Point Stdlib Lake Packages At Shared Cache
         run: |
           mkdir -p stdlib/lampe/.lake
@@ -377,7 +378,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
       - name: Check CLI Binary
         id: cli-check
         run: |
@@ -412,6 +413,9 @@ jobs:
         with:
           path: .ci-cache/e2e
           key: e2e-${{ runner.os }}-${{ hashFiles('testing/**', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml') }}
+      - name: Free Runner Disk Space
+        if: ${{ steps.e2e-cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/free-disk-space
       - name: Run Test Script
         if: ${{ steps.e2e-cache.outputs.cache-hit != 'true' }}
         run: ./testing/test.xsh

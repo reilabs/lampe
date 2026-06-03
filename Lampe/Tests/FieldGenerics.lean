@@ -23,9 +23,10 @@ lemma A_intro : STHoare p fgEnv ⟦⟧ (A.call h![] h![]) fun r => r = (42949672
   subst_vars
   rfl
 
-lemma foo_intro : STHoare p fgEnv ⟦⟧ (foo.call h![gen] h![]) 
+lemma foo_intro : STHoare p fgEnv ⟦⟧ (foo.call h![gen] h![])
     fun output => output = (gen : Fp p) := by
   enter_decl
+  change STHoare p fgEnv ⟦True⟧ (Expr.constFp gen) _
   steps [A_intro]
   subst_vars
   rfl

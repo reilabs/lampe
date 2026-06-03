@@ -43,7 +43,7 @@ bytes.
 def of (str : String) : NoirStr (str.utf8ByteSize) :=
   let bytes := str.toUTF8.data.toList
   NoirStr.mk ⟨bytes, by
-    rw [←String.size_toUTF8, Array.length_toList]
+    rw [← String.size_toByteArray, ← String.toUTF8_eq_toByteArray, Array.length_toList]
     rfl
   ⟩
 

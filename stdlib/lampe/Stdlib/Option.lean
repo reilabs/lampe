@@ -489,13 +489,13 @@ theorem eq_spec {p T self other P Q}
     intro hp
     steps
     apply STHoare.ite_intro
-    · simp only [option_fst_eq_toOption_isSome, decide_eq_true_eq, dite_eq_ite]
+    · simp only [option_fst_eq_toOption_isSome]
       intro hs
       rw [hs, Eq.comm] at hp
       steps
       simp only [option_snd_eq_toOption_get_of_isSome, *]
       steps [eq_f hs hp]
-    · simp only [option_fst_eq_toOption_isSome, decide_eq_true_eq, dite_eq_ite]
+    · simp only [option_fst_eq_toOption_isSome]
       intro hp
       simp_all
       steps
@@ -536,7 +536,7 @@ theorem eq_pure_spec {p T self other}
     split at hp
     · casesm _∧_
       rename_i hs ho
-      simp only [hp, option_snd_eq_toOption_get_of_isSome, *]
+      simp only [option_snd_eq_toOption_get_of_isSome, *]
       conv =>
         rhs
         congr
@@ -573,23 +573,24 @@ theorem hash_spec {p T H self P Q R}
   resolve_trait
   steps
 
-  step_as (P) (fun _ => Q)
-  · rw [option_fst_eq_toOption_isSome]
-    steps [bool_hash_f]
-  · steps
-    apply STHoare.ite_intro
-    · simp_all only [option_fst_eq_toOption_isSome]
-      intros
-      steps
-      rw [option_snd_eq_toOption_get_of_isSome]
-      rename_i a
-      steps [t_hash_f a]
+  steps
+  rw [option_fst_eq_toOption_isSome]
+  steps [bool_hash_f]
+  rw [option_fst_eq_toOption_isSome]
+  apply STHoare.ite_intro
+  · simp_all only
+    intros
+    steps
+    rw [option_snd_eq_toOption_get_of_isSome]
+    rename_i a
+    steps [t_hash_f a]
+    assumption
 
-    · simp only [option_fst_eq_toOption_isSome, Option.isSome_eq_false_iff,
-        Option.isNone_iff_eq_none]
-      intro
-      simp_all only [Option.isSome_none, Bool.false_eq_true, IsEmpty.forall_iff, ↓reduceIte]
-      steps
+  · simp only [Option.isSome_eq_false_iff,
+      Option.isNone_iff_eq_none]
+    intro
+    simp_all only [Option.isSome_none, Bool.false_eq_true, IsEmpty.forall_iff, ↓reduceIte]
+    steps
 
 set_option maxRecDepth 2000 in
 theorem cmp_spec {p T self other P Q}

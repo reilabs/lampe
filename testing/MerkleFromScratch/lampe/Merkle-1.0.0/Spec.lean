@@ -27,7 +27,7 @@ theorem List.Vector.toList_pad {v : List.Vector α n} {pad} : (v.pad d pad).toLi
   | zero => simp
   | succ d ih =>
     cases n
-    · simp [List.Vector.pad, ih, List.replicate_succ]
+    · simp [List.Vector.pad, ih]
     · rcases (List.exists_of_length_succ _ prop) with ⟨h, t, ⟨rfl⟩⟩
       simp at prop
       simp [List.Vector.pad, List.Vector.head, List.Vector.tail, ih]
@@ -58,7 +58,7 @@ theorem List.Vector.takeF_congr (he: i₁ = i₂) : List.Vector.takeF v i₁ h =
 theorem List.Vector.takeF_succ_eq_snoc_get {v : List.Vector α n} : List.Vector.takeF v (i + 1) hi = (List.Vector.takeF v i (by linarith)).snoc (v.get ⟨i, by linarith⟩) := by
   rcases v with ⟨v, rfl⟩
   apply List.Vector.eq
-  simp [List.Vector.takeF, List.Vector.congr, List.Vector.take, List.Vector.snoc, List.Vector.get, List.take_succ]
+  simp [List.Vector.takeF, List.Vector.congr, List.Vector.take, List.Vector.snoc, List.Vector.get, List.take_add_one]
 
 @[simp]
 theorem List.Vector.congrArg₂ {f : {n : Nat} → List.Vector α n → List.Vector β n → γ} (h₁ h₂ : n = n₁):
@@ -97,7 +97,7 @@ theorem recover_intro {H N idx proof item}
     [curr_h ↦ ⟨Tp.field,
       MerkleTree.recover H' (List.Vector.takeF idx i (by simpa [←BitVec.lt_def];)).reverse
                  (List.Vector.takeF proof i (by simpa [←BitVec.lt_def])).reverse item⟩]
-  · simp only [Int.cast, IntCast.intCast, BitVec.ofInt_ofNat, BitVec.le_def, BitVec.toNat_ofNat,
+  · simp only [Int.cast, IntCast.intCast, BitVec.ofInt_ofNat, BitVec.toNat_ofNat,
     Nat.reducePow, Nat.zero_mod, zero_le]
   · intro i _ hi
     steps
@@ -168,21 +168,24 @@ theorem as_array_intro input (hi : input.length = 32) : STHoare lp env ⟦⟧
   · simp
   · intro i hlo hhi
     steps
-    have : i < 32 := by assumption
-    have : 32 - i = (31 - i) + 1 := by omega
+    have hi32 : i < 32 := by assumption
+    have hi_len : i < input.length := by rw [hi]; exact hi32
+    have hsub : 32 - i = (31 - i) + 1 := by omega
     simp_all only [Int.cast_zero, BitVec.ofNat_eq_ofNat, BitVec.toNat_ofNat, Nat.reducePow,
       Nat.zero_mod, zero_le, BitVec.reduceToNat, List.replicate_succ, Lens.modify, Lens.get,
-      Access.modify, BitVec.toNat_ofNatLT, Nat.reduceMod, ↓reduceDIte, Builtin.instCastTpU,
-      BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, List.get_eq_getElem,
-      Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some, Option.get_some,
-      List.Vector.toList_set, List.length_take, min_eq_left_of_lt, le_refl, List.set_append_right,
-      tsub_self, List.set_cons_zero, Nat.reduceSubDiff]
-    rw [List.take_succ_eq_append_getElem]
+      Access.modify, BitVec.toNat_ofNatLT, Nat.reduceMod, ↓reduceDIte, List.get_eq_getElem,
+      Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some, Nat.reduceSubDiff]
+    rw [List.take_succ_eq_append_getElem (by omega : i < input.length)]
     simp only [List.append_assoc, List.cons_append, List.nil_append]
-    simp_all
+    rename List.Vector.toList _ = _ => hinv
+    show (List.Vector.toList _).set i _ = _
+    -- `simp_all [hi]` substitutes `input.length = 32` and reduces almost everything.
+    -- All that remains is `(0#8 :: rest).set (i - min i 32) input[i] = input[i] :: rest`,
+    -- which closes after observing `min i 32 = i` (since `i < 32`).
+    simp_all [show min i 32 = i from min_eq_left_of_lt hi32, List.set_cons_zero]
   steps
   apply List.Vector.eq
-  simp_all [-List.takeD_succ, List.takeD_eq_take]
+  simp_all [-List.takeD_succ]
 
 set_option maxHeartbeats 30000000
 theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] h![input])
@@ -205,7 +208,19 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
     · decide
     · congr 1
       apply List.Vector.eq
-      simp [-List.takeD_succ, List.takeD_eq_take_append, Int.cast, IntCast.intCast]
+      have h16 : BitVec.toNat (16 : BitVec 32) = 16 := by decide
+      change ((List.Vector.map Ref.sbox (List.Vector.take (BitVec.toNat ↑16)
+              (bytes : List.Vector (U 8) 32))).pad 16 0).toList =
+              (List.Vector.map Ref.sbox (List.Vector.take 16
+                (bytes : List.Vector (U 8) 32))).toList
+      rw [List.Vector.toList_pad, h16]
+      rw [show (List.Vector.map Ref.sbox (List.Vector.take 16
+                (bytes : List.Vector (U 8) 32))).toList =
+            List.Vector.toList (List.Vector.map Ref.sbox (List.Vector.take 16
+              (bytes : List.Vector (U 8) 32))) from rfl,
+          List.Vector.toList_map, List.Vector.toList_take]
+      simp [-List.takeD_succ, List.takeD_eq_take_append, List.map_take, List.take_take,
+        List.length_map, List.length_take, List.Vector.toList_length]
     · intro i _ hlt
       rename bytes = _ => bytes_def
       clear bytes_def
@@ -213,11 +228,12 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
       rcases i with ⟨i, hi⟩
       rw [BitVec.lt_def] at hlt
       conv at hlt => congr <;> whnf
-      have : i + 1 < 4294967296 := by
+      have hi1 : i + 1 < 4294967296 := by
         linarith
       congr 1
       apply List.Vector.eq
-      simp [-List.takeD_zero, -List.takeD_succ, Access.modify, List.Vector.get, Fin.add_def, Nat.mod_eq_of_lt, this]
+      simp [-List.takeD_zero, -List.takeD_succ, Access.modify, List.Vector.get,
+        Fin.add_def, Nat.mod_eq_of_lt, hi1]
       have i₁ : i ≤ 32 := by linarith
       have i₂ : i + 1 ≤ 32 := by linarith
       have i₃ : i ≤ 16 := by linarith
@@ -225,19 +241,38 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
       have i₅ : i < 32 := by linarith
       simp [-List.takeD_zero, -List.takeD_succ,
         List.takeD_eq_take_append,
-        List.take_take,
-        i₁, i₂, i₃, i₄]
-      simp only [List.take_succ, List.append_assoc]
-      have : (16 - i) = (15 - i) + 1 := by omega
-      simp only [this, List.replicate_succ, getElem?, decidableGetElem?, i₅, List.Vector.toList]
+        List.take_take, i₂, i₄]
+      simp only [List.take_add_one, List.append_assoc]
+      have hpad : (16 - i) = (15 - i) + 1 := by omega
+      simp only [getElem?, List.Vector.toList]
       simp_all only [Int.cast_zero, BitVec.ofNat_eq_ofNat, Nat.reducePow, BitVec.le_ofFin,
-      BitVec.toFin_ofNat, Fin.ofNat_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Lens.modify,
-      Lens.get, BitVec.toNat_ofFin, BitVec.reduceToNat, Builtin.instCastTpU,
-      BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, Option.bind_eq_bind,
-      Option.bind_some, Nat.reduceLeDiff, List.set_cons_zero, List.get?Internal_eq_getElem?,
+      BitVec.toFin_ofNat, Fin.ofNat_eq_cast, Nat.reduceLeDiff, List.get?Internal_eq_getElem?,
       List.length_map, List.Vector.length_val, BitVec.toNat_ofNat, Nat.reduceMod,
       List.getElem?_eq_getElem, List.getElem_map, Option.toList_some, List.cons_append,
       List.nil_append]
+      simp only [dite_true]
+      change List.Vector.toList (((List.Vector.map Ref.sbox (List.Vector.take i bytes)).pad 16 0#8).set
+              ⟨i, by omega⟩ (Ref.sbox (↑bytes)[i])) = _
+      rw [List.Vector.toList_set, List.Vector.toList_pad, List.takeD_eq_take_append,
+        show List.Vector.toList (List.Vector.map Ref.sbox (List.Vector.take i bytes)) =
+              List.map Ref.sbox (List.Vector.toList (List.Vector.take i bytes))
+            from by rw [show List.Vector.toList _ = _ from rfl, List.Vector.toList_map],
+        List.Vector.toList_take]
+      have hminlen : min i (BitVec.toNat (32 : BitVec 32)) = i := by
+        rw [show BitVec.toNat (32 : BitVec 32) = 32 from by decide]; omega
+      have hi_eq : (↑(⟨i, hlt⟩ : Fin 16) : ℕ) = i := rfl
+      rw [List.length_map, List.length_take, List.Vector.toList_length, hminlen]
+      rw [show (16 - i) = (15 - i) + 1 from hpad, List.replicate_succ, hi_eq]
+      have hlen_left : (List.take 16 (List.map Ref.sbox (List.take i (List.Vector.toList bytes)))).length = i := by
+        rw [List.length_take, List.length_map, List.length_take, List.Vector.toList_length]
+        omega
+      rw [List.set_append, if_neg (by rw [hlen_left]; omega)]
+      rw [hlen_left, show i - i = 0 from Nat.sub_self i, List.set_cons_zero]
+      have htake_eq : List.take 16 (List.map Ref.sbox (List.take i (List.Vector.toList bytes))) =
+              List.take i (List.map Ref.sbox (List.Vector.toList bytes)) := by
+        rw [← List.map_take, ← List.map_take, List.take_take, min_eq_right i₃]
+      rw [htake_eq]
+      rfl
 
   steps
 
@@ -260,45 +295,58 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
       simp [-List.takeD_zero, -List.takeD_succ, Builtin.CastTp.cast, Access.modify]
       congr 1
       apply List.Vector.eq
-      simp [-List.takeD_zero, -List.takeD_succ, -List.map_drop, List.Vector.get, Fin.add_def, Int.cast, IntCast.intCast, OfNat.ofNat]
+      simp [-List.takeD_zero, -List.takeD_succ, -List.map_drop, Fin.add_def, OfNat.ofNat]
       have : 16 + i < 4294967296 := by linarith
       have : i + 1 < 4294967296 := by linarith
-      simp only [Nat.mod_eq_of_lt, *, List.getElem_drop']
+      simp only [Nat.mod_eq_of_lt, *]
       simp only [List.takeD_eq_take_append]
       have i₁ : i ≤ 16 := by linarith
       have i₂ : i + 1 ≤ 16 := by linarith
-      simp [i₁, i₂, List.take_take]
-      simp only [List.take_succ, List.append_assoc]
+      simp [i₂, List.take_take]
+      simp only [List.take_add_one, List.append_assoc]
       congr 1
-      have : (16 - i) = (15 - i) + 1 := by omega
-      simp only [this, List.replicate_succ, List.set_cons_zero, decidableGetElem?,
-      List.length_drop, List.length_map, List.Vector.toList_length, Nat.reduceSub,
-      List.getElem_drop, List.getElem_map]
 
-      have : (List.drop 16 (List.map Ref.sbox (List.Vector.toList bytes)))[i]? =
-        (if h : i < 16 then
-          have : 16 + i < (List.Vector.toList bytes).length := by simp; linarith
-          some (Ref.sbox (List.Vector.toList bytes)[16 + i] : U 8) else none)
-        := by
-          simp_all only [Int.cast_zero, BitVec.ofNat_eq_ofNat, Nat.reducePow, BitVec.le_ofFin, BitVec.toFin_ofNat,
-            Fin.ofNat_eq_cast, Nat.cast_zero, Fin.isValue, Fin.zero_le, Int.cast_ofNat, BitVec.reduceToInt,
-            Int.reducePow, Lens.modify, Lens.get, BitVec.toNat_ofFin, BitVec.reduceToNat, Nat.reduceSub,
-            Builtin.instCastTpU, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, BitVec.add_ofFin,
-            Nat.cast_ofNat, Option.bind_eq_bind, Option.bind_some, Nat.reduceLeDiff, List.length_drop,
-            List.length_map, List.Vector.toList_length, List.getElem?_eq_getElem, List.getElem_drop,
-            List.getElem_map, ↓reduceDIte]
-
-      rw [this]
-
-      simp only [hlt, dite_true, Option.toList]
-      simp [List.cons_append, List.nil_append, List.Vector.toList]
-      have hidx : 16 + i < 32 := by linarith
-      have hidx' : 16 + i < (List.Vector.toList bytes).length := by
-        simpa [List.Vector.toList_length] using hidx
-      have hget : bytes[16 + i] = bytes.toList[16 + i] := by
-        simpa [List.get_eq_getElem, hidx'] using
-          (List.Vector.getElem_toList (v := bytes) (i := 16 + i) (hi := hidx))
-      simpa using congrArg Ref.sbox hget
+      have h32 : BitVec.toNat (32 : BitVec 32) = 32 := by decide
+      have hbound : 16 + i < (List.Vector.toList bytes).length := by
+        rw [List.Vector.toList_length, h32]
+        have : i < 16 := hlt
+        omega
+      have hdrop_bound : i < (List.drop 16 (List.map Ref.sbox (List.Vector.toList bytes))).length := by
+        rw [List.length_drop, List.length_map, List.Vector.toList_length, h32]; omega
+      -- unfold getElem? notation to make goal match
+      simp only [getElem?_def]
+      split
+      · simp only [Option.toList_some, List.getElem_drop, List.getElem_map]
+        change List.Vector.toList (((List.Vector.map Ref.sbox (List.Vector.take i (List.Vector.drop 16 bytes))).pad 16 0#8).set
+                ⟨i, by omega⟩ (Ref.sbox bytes[16 + i])) = _
+        rw [List.Vector.toList_set, List.Vector.toList_pad, List.takeD_eq_take_append,
+          show List.Vector.toList (List.Vector.map Ref.sbox (List.Vector.take i (List.Vector.drop 16 bytes))) =
+                List.map Ref.sbox (List.Vector.toList (List.Vector.take i (List.Vector.drop 16 bytes)))
+              from by rw [show List.Vector.toList _ = _ from rfl, List.Vector.toList_map],
+          List.Vector.toList_take, List.Vector.toList_drop]
+        have hminlen : min i (BitVec.toNat (32 : BitVec 32) - 16) = i := by
+          rw [h32]; omega
+        rw [List.length_map, List.length_take, List.length_drop, List.Vector.toList_length, hminlen]
+        have hpad : (16 - i) = (15 - i) + 1 := by omega
+        rw [hpad, List.replicate_succ]
+        have hlen_left : (List.take 16 (List.map Ref.sbox (List.take i (List.drop 16 (List.Vector.toList bytes))))).length = i := by
+          rw [List.length_take, List.length_map, List.length_take, List.length_drop,
+              List.Vector.toList_length, h32]
+          omega
+        rw [List.set_append, if_neg (by
+          rw [hlen_left]
+          exact Nat.lt_irrefl i)]
+        rw [hlen_left, show i - i = 0 from Nat.sub_self i, List.set_cons_zero]
+        have htake_eq : List.take 16 (List.map Ref.sbox (List.take i (List.drop 16 (List.Vector.toList bytes)))) =
+              List.take i (List.drop 16 (List.map Ref.sbox (List.Vector.toList bytes))) := by
+          rw [← List.map_take, List.take_take, min_eq_right i₁, ← List.map_drop, List.map_take]
+        rw [htake_eq]
+        have hbound_bv : 16 + i < BitVec.toNat (32 : BitVec 32) := by rw [h32]; omega
+        simp only [List.singleton_append]
+        exact congrArg (fun x => List.take i (List.drop 16 (List.map Ref.sbox (List.Vector.toList bytes))) ++ Ref.sbox x :: List.replicate (15 - i) 0#8)
+          (List.Vector.getElem_toList (v := bytes) (i := 16 + i) hbound_bv)
+      · rename_i hcontra
+        exact absurd hdrop_bound hcontra
 
 
   steps
@@ -325,9 +373,9 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
       have : i + 1 < 4294967296 := by
         simp_all
         linarith
-      simp [Nat.mod_eq_of_lt, this, List.take_succ]
+      simp [Nat.mod_eq_of_lt, this, List.take_add_one]
       have hlt' : i < 16 := by simp_all
-      simp_all [List.Vector.toList_length, hlt', ↓reduceDIte, Option.toList_some, List.cons.injEq, and_true, List.Vector.get_eq_get_toList]
+      simp_all [List.Vector.toList_length, Option.toList_some, List.Vector.get_eq_get_toList]
     · subst_vars
       steps
   have hlen :
@@ -338,7 +386,9 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
   all_goals (try exact hlen)
   subst_vars
   unfold Ref.bar
-  rw [hbytes]
+  congr 1
+  rw [List.Vector.toList_append]
+  simp only [← hbytes]
   rfl
 
 theorem sigma_intro : STHoare lp env (⟦⟧) («Merkle-1.0.0::globals::SIGMA».call h![] h![])
@@ -373,7 +423,7 @@ theorem permute_intro : STHoare lp env ⟦⟧
   cases i using List.Vector.casesOn with | cons _ i =>
   cases i using List.Vector.casesOn
   steps [bar_intro, square_intro, rc_intro]
-  simp [Builtin.indexTpl, Nat.mod_eq_of_lt, lp] at *
+  simp [Nat.mod_eq_of_lt, lp] at *
   subst_vars
   rfl
 
@@ -407,5 +457,6 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)] {tree : Merk
   use index.reverse
   subst_vars
   rename tree.root = _ => hroot
-  rw [Eq.comm, MerkleTree.recover_eq_root_iff_proof_and_item_correct] at hroot
-  exact hroot.2
+  have hroot' := hroot.symm
+  rename_i inst
+  exact (@MerkleTree.recover_eq_root_iff_proof_and_item_correct _ _ _ inst _ _ _ _ |>.mp hroot').2

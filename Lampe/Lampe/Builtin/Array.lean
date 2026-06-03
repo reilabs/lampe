@@ -45,7 +45,7 @@ lemma List.Vector.get_after_insert {idx : Nat} {vec : List.Vector α n} {h} :
   (List.Vector.insertIdx v ⟨idx, h⟩ vec).get ⟨idx, h⟩ = v := by
   unfold List.Vector.insertIdx List.Vector.get
   cases vec
-  simp_all only [List.get_eq_getElem, Fin.coe_cast]
+  simp_all only [List.get_eq_getElem, Fin.val_cast]
   apply List.get_insertIdx_self
   subst_vars
   linarith
@@ -64,12 +64,14 @@ theorem index_replaced_arr {n : U 32} {idx : Fin n.toNat} {arr} :
   (replaceArray' arr idx v').get idx = v' := by
   unfold replaceArray'
   cases em (n.toNat > 0)
-  . simp_all only [gt_iff_lt, eq_mp_eq_cast]
-    generalize h₁ : (List.Vector.insertIdx _ _ _) = arr₁
-    cases idx
-    rw [List.Vector.get_after_erase, ←h₁]
-    apply List.Vector.get_after_insert
-  . simp_all only [gt_iff_lt, not_lt, nonpos_iff_eq_zero, lt_self_iff_false, dite_false]
+  . simp_all only [gt_iff_lt]
+    obtain ⟨val, isLt⟩ := idx
+    show (((arr.insertIdx v' ⟨val + 1, by aesop⟩).eraseIdx ⟨val, by tauto⟩).get ⟨val, isLt⟩ : _) = v'
+    generalize h₁ : (List.Vector.insertIdx v' ⟨val + 1, by aesop⟩ arr) = arr₁
+    rw [List.Vector.get_after_erase, ← h₁]
+    · apply List.Vector.get_after_insert
+    · omega
+  . simp_all only [gt_iff_lt, not_lt, nonpos_iff_eq_zero]
     rename_i h
     rw [h] at idx
     apply Fin.n_is_non_zero at idx

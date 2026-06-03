@@ -108,7 +108,8 @@ private lemma addCachePrefixToState_succ_inactive {p}
   by_cases hjRate : j.val < 3
   · simp [hjRate]
     by_cases hjCache : j.val < cacheSize.toNat
-    · simp [Nat.lt_of_lt_of_le hjCache hinactive, show j.val < i + 1 by omega, hjCache]
+    · simp [Nat.lt_of_lt_of_le hjCache hinactive, hjCache]
+      intro; omega
     · simp [hjCache]
   · simp [hjRate]
 
@@ -143,9 +144,11 @@ private lemma addCachePrefixToState_succ_active {p}
     by_cases hjRate : j.val < 3
     · simp [hjRate]
       by_cases hjlt : j.val < i
-      · simp [hjlt, show j.val < i + 1 by omega,
+      · simp [hjlt,
           show j.val < cacheSize.toNat by omega]
-      · simp [hjlt, show ¬ j.val < i + 1 by omega]
+        intro; omega
+      · simp [hjlt]
+        intros; omega
     · simp [hjRate]
 
 private lemma mkPoseidon2Repr_state_set_active {p}
@@ -193,6 +196,7 @@ private lemma mkPoseidon2Repr_cache_set_get {p}
         (mkPoseidon2Repr cache state cacheSize false) input).get hmod =
       mkPoseidon2Repr (cache.set ⟨cacheSize.toNat, hspace⟩ input) state cacheSize false := by
   simp [mkPoseidon2Repr, Lens.modify, Access.modify, hspace]
+  rfl
 
 private lemma addCachePrefixToState_eq_addCacheToState {p}
     (cache : List.Vector (Fp p) 3)
@@ -243,7 +247,7 @@ private lemma absorbList?_append_one {F : Type} (params : Crypto.Poseidon2.Param
   | nil => simp [absorbList?]
   | cons y ys ih =>
       dsimp [absorbList?]
-      cases hAbs : Crypto.Poseidon2.Sponge.absorb? params s y <;> simp [hAbs, ih]
+      cases hAbs : Crypto.Poseidon2.Sponge.absorb? params s y <;> simp [ih]
 
 private lemma absorbList?_take_succ {F : Type} (params : Crypto.Poseidon2.Params F) [Add F]
     {s s' : Crypto.Poseidon2.Sponge F params} {xs : List F} {i : Nat}
@@ -276,7 +280,7 @@ private lemma absorbList?_eq_absorbPrefix? {F : Type} (params : Crypto.Poseidon2
       | zero => simp [absorbList?, Crypto.Poseidon2.Sponge.absorbPrefix?]
       | succ n =>
           simp [absorbList?, Crypto.Poseidon2.Sponge.absorbPrefix?]
-          cases hAbs : Crypto.Poseidon2.Sponge.absorb? params s x <;> simp [hAbs]
+          cases hAbs : Crypto.Poseidon2.Sponge.absorb? params s x <;> simp
           exact ih
 
 private lemma absorbPrefix?_of_absorbList?_take {F : Type}
@@ -504,14 +508,17 @@ theorem perform_duplex_spec {p selfRef}
       steps
       have hactive : i < cacheSize.toNat := by
         simpa [mkPoseidon2Repr, BitVec.lt_def] using hcond
-      rw [← mkPoseidon2Repr_state_set_active cache state cacheSize squeezeMode i hhi
-        (Nat.lt_trans hhi (by decide)) hactive]
-      simp [Lens.modify, Access.modify, mkPoseidon2Repr, Builtin.indexTpl, Builtin.replaceTuple']
+      have hi4 : i < 4 := Nat.lt_trans hhi (by decide)
+      rw [← mkPoseidon2Repr_state_set_active cache state cacheSize squeezeMode i hhi hi4 hactive]
+      have hbv4 : BitVec.toNat (4 : U 32) = 4 := by decide
+      simp only [Lens.modify, Access.modify, Access.get, Lens.get, mkPoseidon2Repr, Option.get_some,
+        bind, Option.bind, BitVec.toNat_ofNatLT, hbv4, dif_pos hi4]
+      rfl
     · intro hcond
       steps
       have hinactive : cacheSize.toNat ≤ i := by
         simpa [mkPoseidon2Repr, BitVec.not_lt] using hcond
-      simp [mkPoseidon2Repr, Builtin.replaceTuple', Builtin.indexTpl,
+      simp [mkPoseidon2Repr,
         addCachePrefixToState_succ_inactive cache state cacheSize i hhi hinactive]
   · steps [poseidon2_permutation_builtin_spec]
 
@@ -648,7 +655,7 @@ theorem squeeze_spec {p selfRef}
         (fun r => [selfRef ↦ ⟨Poseidon2Tp, outSelf⟩] ⋆ ⟦r = out⟧) := by
   rcases self with ⟨cache, state, cacheSize, squeezeMode, unit0⟩
   simp [squeezeRepr?, reprToSponge, Crypto.Poseidon2.Sponge.squeeze?,
-    Crypto.Poseidon2.Sponge.performDuplex, spongeToRepr, performDuplexRepr,
+    Crypto.Poseidon2.Sponge.performDuplex, spongeToRepr,
     mkPoseidon2Repr] at hout
   rcases hout with ⟨hsqueeze, houtVal, houtSelf⟩
   subst squeezeMode
@@ -656,14 +663,12 @@ theorem squeeze_spec {p selfRef}
   steps [perform_duplex_spec
     (cache := cache) (state := state) (cacheSize := cacheSize) (squeezeMode := false)]
   · rename_i hModify ret hBound hRet
-    simp [Lens.modify, Access.modify, performDuplexRepr, mkPoseidon2Repr,
-      Builtin.indexTpl, Builtin.replaceTuple'] at hRet ⊢
+    simp [Lens.modify, Access.modify, performDuplexRepr, mkPoseidon2Repr] at hRet ⊢
     rw [hRet]
     rw [noirPermutation4_addCachePrefixToState_eq_sponge cache state cacheSize false]
     exact houtVal
   · rename_i hModify ret hBound hRet
-    simp [Lens.modify, Access.modify, performDuplexRepr, mkPoseidon2Repr,
-      Builtin.indexTpl, Builtin.replaceTuple'] at hModify ⊢
+    simp [Lens.modify, Access.modify, performDuplexRepr, mkPoseidon2Repr] at hModify ⊢
     rw [noirPermutation4_addCachePrefixToState_eq_sponge cache state cacheSize false]
     congr
 

@@ -35,6 +35,10 @@ lemma List.perm_of_index_bijection
       let f' : (Fin N → Fin N) := fun i => if h: f 0 < f i.succ then (f i.succ).pred (Fin.ne_zero_of_lt h) else (f i.succ).castPred (Fin.ne_last_of_lt (f_succ_lt_of_not_lt_zero _ h))
       apply ih
       case f => exact f'
+      case len₁ => exact len₁
+      case len₂ =>
+        rw [List.length_eraseIdx_of_lt]; · simp_all
+        · rw [len₂]; apply Fin.prop
       case bij =>
         have : Function.Surjective f' := by
           intro v
@@ -59,7 +63,7 @@ lemma List.perm_of_index_bijection
             simp [f', this]
             simp [eq]
           · rename_i h'
-            simp only [ge_iff_le, not_le, f'] at h'
+            simp only [ge_iff_le, not_le] at h'
             have := bij.surjective v.castSucc
             rcases this with ⟨is, eq⟩
             have : is ≠ 0 := by
@@ -73,7 +77,7 @@ lemma List.perm_of_index_bijection
             simp [f', not_lt_of_gt h']
             simp [eq]
         have : Function.Injective f' := by
-          apply this.injective_of_fintype
+          apply this.injective_of_finite
           apply Equiv.refl
         apply And.intro <;> assumption
       case same_elems =>
@@ -106,11 +110,11 @@ lemma List.perm_of_index_bijection
             · intro h
               have := bij.injective h
               cases this
-        · rw [List.length_eraseIdx_of_lt]
-          · simp_all
-          · rw [len₂]
-            apply Fin.prop
-        · assumption
+        all_goals first
+          | (rw [List.length_eraseIdx_of_lt]
+             · simp_all
+             · rw [len₂]; apply Fin.prop)
+          | assumption
     have t₁ : l₂ = (l₂.eraseIdx (f 0).toNat).insertIdx (f 0).toNat (l₂[(f 0).toNat]'(by rw [len₂]; apply Fin.prop)) := by
       rw [List.insertIdx_eraseIdx_getElem]
     have t₂ : h₁ :: l₁ = l₁.insertIdx 0 h₁ := by simp
@@ -222,7 +226,7 @@ theorem check_shuffle_spec
     intro i
     have := same_elems i
     rcases this with ⟨_, eq⟩
-    simp only [List.get_eq_getElem, Fin.coe_cast, List.Vector.getElem_def, List.Vector.get_eq_get_toList] at eq
+    simp only [List.get_eq_getElem, Fin.val_cast, List.Vector.getElem_def, List.Vector.get_eq_get_toList] at eq
     simp only [get_cast]
     rw [←eq]
     rfl

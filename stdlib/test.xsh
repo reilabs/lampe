@@ -40,7 +40,6 @@ def main():
     test_case = project_root / 'stdlib'
 
     run_test(test_case, update_mode)
-    cleanup_ci_artifacts()
 
 if __name__ == "__main__":
     main()

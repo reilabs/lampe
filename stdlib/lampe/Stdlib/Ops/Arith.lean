@@ -33,6 +33,7 @@ theorem field_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u128_add_spec {p a b}
@@ -41,6 +42,7 @@ theorem u128_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_add_spec {p a b}
@@ -49,6 +51,7 @@ theorem u64_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_add_spec {p a b}
@@ -57,6 +60,7 @@ theorem u32_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_add_spec {p a b}
@@ -65,6 +69,7 @@ theorem u16_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_add_spec {p a b}
@@ -73,6 +78,7 @@ theorem u8_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_add_spec {p a b}
@@ -81,6 +87,7 @@ theorem u1_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_add_spec {p a b}
@@ -89,6 +96,7 @@ theorem i8_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_add_spec {p a b}
@@ -97,6 +105,7 @@ theorem i16_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_add_spec {p a b}
@@ -105,6 +114,7 @@ theorem i32_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_add_spec {p a b}
@@ -113,6 +123,7 @@ theorem i64_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::arith::Sub::sub` method. -/
@@ -134,6 +145,7 @@ theorem field_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u128_sub_spec {p a b}
@@ -142,6 +154,7 @@ theorem u128_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_sub_spec {p a b}
@@ -150,6 +163,7 @@ theorem u64_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_sub_spec {p a b}
@@ -158,6 +172,7 @@ theorem u32_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_sub_spec {p a b}
@@ -166,6 +181,7 @@ theorem u16_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_sub_spec {p a b}
@@ -174,6 +190,7 @@ theorem u8_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_sub_spec {p a b}
@@ -182,6 +199,7 @@ theorem u1_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_sub_spec {p a b}
@@ -190,6 +208,7 @@ theorem i8_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_sub_spec {p a b}
@@ -198,6 +217,7 @@ theorem i16_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_sub_spec {p a b}
@@ -206,6 +226,7 @@ theorem i32_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_sub_spec {p a b}
@@ -214,6 +235,7 @@ theorem i64_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::arith::Mul::mul` method. -/
@@ -235,6 +257,7 @@ theorem field_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u128_mul_spec {p a b}
@@ -243,6 +266,7 @@ theorem u128_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_mul_spec {p a b}
@@ -251,6 +275,7 @@ theorem u64_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_mul_spec {p a b}
@@ -259,6 +284,7 @@ theorem u32_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_mul_spec {p a b}
@@ -267,6 +293,7 @@ theorem u16_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_mul_spec {p a b}
@@ -275,6 +302,7 @@ theorem u8_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_mul_spec {p a b}
@@ -283,6 +311,7 @@ theorem u1_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_mul_spec {p a b}
@@ -291,6 +320,7 @@ theorem i8_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_mul_spec {p a b}
@@ -299,6 +329,7 @@ theorem i16_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_mul_spec {p a b}
@@ -307,6 +338,7 @@ theorem i32_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_mul_spec {p a b}
@@ -315,6 +347,7 @@ theorem i64_mul_spec {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::arith::Div::div` method. -/
@@ -336,6 +369,7 @@ theorem field_div_spec {p a b}
     (fun r => r = a / b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u128_div_spec {p a b}
@@ -344,6 +378,7 @@ theorem u128_div_spec {p a b}
     (fun r => r = a / b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_div_spec {p a b}
@@ -352,6 +387,7 @@ theorem u64_div_spec {p a b}
     (fun r => r = a / b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_div_spec {p a b}
@@ -360,6 +396,7 @@ theorem u32_div_spec {p a b}
     (fun r => r = a / b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_div_spec {p a b}
@@ -368,6 +405,7 @@ theorem u16_div_spec {p a b}
     (fun r => r = a / b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_div_spec {p a b}
@@ -376,6 +414,7 @@ theorem u8_div_spec {p a b}
     (fun r => r = a / b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_div_spec {p a b}
@@ -384,6 +423,7 @@ theorem u1_div_spec {p a b}
     (fun r => r = a / b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_div_spec {p a b}
@@ -392,6 +432,7 @@ theorem i8_div_spec {p a b}
     (fun r => r = a.sdiv b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_div_spec {p a b}
@@ -400,6 +441,7 @@ theorem i16_div_spec {p a b}
     (fun r => r = a.sdiv b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_div_spec {p a b}
@@ -408,6 +450,7 @@ theorem i32_div_spec {p a b}
     (fun r => r = a.sdiv b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_div_spec {p a b}
@@ -416,6 +459,7 @@ theorem i64_div_spec {p a b}
     (fun r => r = a.sdiv b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::arith::Rem::rem` method. -/
@@ -437,6 +481,7 @@ theorem u128_rem_spec {p a b}
     (fun r => r = a % b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u64_rem_spec {p a b}
@@ -445,6 +490,7 @@ theorem u64_rem_spec {p a b}
     (fun r => r = a % b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u32_rem_spec {p a b}
@@ -453,6 +499,7 @@ theorem u32_rem_spec {p a b}
     (fun r => r = a % b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u16_rem_spec {p a b}
@@ -461,6 +508,7 @@ theorem u16_rem_spec {p a b}
     (fun r => r = a % b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u8_rem_spec {p a b}
@@ -469,6 +517,7 @@ theorem u8_rem_spec {p a b}
     (fun r => r = a % b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem u1_rem_spec {p a b}
@@ -477,6 +526,7 @@ theorem u1_rem_spec {p a b}
     (fun r => r = a % b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_rem_spec {p a b}
@@ -485,6 +535,7 @@ theorem i8_rem_spec {p a b}
     (fun r => r = Builtin.intRem a b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_rem_spec {p a b}
@@ -493,6 +544,7 @@ theorem i16_rem_spec {p a b}
     (fun r => r = Builtin.intRem a b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_rem_spec {p a b}
@@ -501,6 +553,7 @@ theorem i32_rem_spec {p a b}
     (fun r => r = Builtin.intRem a b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_rem_spec {p a b}
@@ -509,6 +562,7 @@ theorem i64_rem_spec {p a b}
     (fun r => r = Builtin.intRem a b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::arith::Neg::neg` method. -/
@@ -530,6 +584,7 @@ theorem field_neg_spec {p a}
     (fun r => r = -a) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i8_neg_spec {p a}
@@ -538,6 +593,7 @@ theorem i8_neg_spec {p a}
     (fun r => r = -a) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i16_neg_spec {p a}
@@ -546,6 +602,7 @@ theorem i16_neg_spec {p a}
     (fun r => r = -a) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i32_neg_spec {p a}
@@ -554,6 +611,7 @@ theorem i32_neg_spec {p a}
     (fun r => r = -a) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 theorem i64_neg_spec {p a}
@@ -562,6 +620,7 @@ theorem i64_neg_spec {p a}
     (fun r => r = -a) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::arith::WrappingAdd::wrapping_add` method. -/
@@ -596,7 +655,7 @@ theorem u8_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u8_spec, Convert.as_u8_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -619,7 +678,7 @@ theorem u16_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u16_spec, Convert.as_u16_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -642,7 +701,7 @@ theorem u32_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u32_spec, Convert.as_u32_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -665,7 +724,7 @@ theorem u64_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u64_spec, Convert.as_u64_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -688,7 +747,7 @@ theorem u128_wrapping_add_spec {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u128_spec, Convert.as_u128_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField,
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat,
     BitVec.add_def]
   congr 1
   norm_cast
@@ -709,6 +768,7 @@ theorem i8_wrapping_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps [u8_wrapping_add_spec (p := p)]
+  reduce_fn_body at *
   simp_all
 
 theorem i16_wrapping_add_spec {p a b}
@@ -718,6 +778,7 @@ theorem i16_wrapping_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps [u16_wrapping_add_spec (p := p)]
+  reduce_fn_body at *
   simp_all
 
 theorem i32_wrapping_add_spec {p a b}
@@ -727,6 +788,7 @@ theorem i32_wrapping_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps [u32_wrapping_add_spec (p := p)]
+  reduce_fn_body at *
   simp_all
 
 theorem i64_wrapping_add_spec {p a b}
@@ -736,6 +798,7 @@ theorem i64_wrapping_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps [u64_wrapping_add_spec (p := p)]
+  reduce_fn_body at *
   simp_all
 
 theorem field_wrapping_add_spec {p a b}
@@ -744,6 +807,7 @@ theorem field_wrapping_add_spec {p a b}
     (fun r => r = a + b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::arith::WrappingSub::wrapping_sub` method. -/
@@ -780,12 +844,12 @@ theorem u8_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u8_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -819,12 +883,12 @@ theorem u16_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u16_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -858,12 +922,12 @@ theorem u32_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u32_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -897,12 +961,12 @@ theorem u64_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u64_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -936,12 +1000,12 @@ theorem u128_wrapping_sub_spec {p a b}
   · enter_decl
     steps [Convert.as_field_for_u128_spec]
     rename_i a
-    simp only [Builtin.instCastTpUField, Int.cast_ofNat] at a
+    simp only [Int.cast_ofNat] at a
     norm_num
     simp_all
 
   steps
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat, BitVec.sub_def, Nat.reducePow]
   conv => {lhs; enter [2, 1]; lhs; norm_cast}
 
   have a_lt : BitVec.toNat a < 2^128 := by apply BitVec.toNat_lt_twoPow_of_le (by linarith)
@@ -971,6 +1035,7 @@ theorem i8_wrapping_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps [u8_wrapping_sub_spec (p := p)]
+  reduce_fn_body at *
   simp_all
 
 theorem i16_wrapping_sub_spec {p a b}
@@ -980,6 +1045,7 @@ theorem i16_wrapping_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps [u16_wrapping_sub_spec (p := p)]
+  reduce_fn_body at *
   simp_all
 
 theorem i32_wrapping_sub_spec {p a b}
@@ -989,6 +1055,7 @@ theorem i32_wrapping_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps [u32_wrapping_sub_spec (p := p)]
+  reduce_fn_body at *
   simp_all
 
 theorem i64_wrapping_sub_spec {p a b}
@@ -998,6 +1065,7 @@ theorem i64_wrapping_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps [u64_wrapping_sub_spec (p := p)]
+  reduce_fn_body at *
   simp_all
 
 theorem field_wrapping_sub_spec {p a b}
@@ -1006,6 +1074,7 @@ theorem field_wrapping_sub_spec {p a b}
     (fun r => r = a - b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 
 /-- A shorthand for a call to the `std::ops::arith::WrappingMul::wrapping_mul` method. -/
@@ -1039,13 +1108,13 @@ theorem u8_wrapping_mul {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u8_spec, Convert.as_u8_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
   norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^16 := by apply BitVec.toNat_mul_toNat_lt
   have mul_lt_p : BitVec.toNat a * BitVec.toNat b < p.natVal := by linarith [gt.lt_prime]
 
-  rw [ZMod.val_natCast_of_lt mul_lt_p]
+  rw [← Nat.cast_mul, ZMod.val_natCast_of_lt mul_lt_p]
   simp_all only [Nat.reducePow]
   rfl
 
@@ -1058,13 +1127,13 @@ theorem u16_wrapping_mul {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u16_spec, Convert.as_u16_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
   norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^32 := by apply BitVec.toNat_mul_toNat_lt
   have mul_lt_p : BitVec.toNat a * BitVec.toNat b < p.natVal := by linarith [gt.lt_prime]
 
-  rw [ZMod.val_natCast_of_lt mul_lt_p]
+  rw [← Nat.cast_mul, ZMod.val_natCast_of_lt mul_lt_p]
   simp_all only [Nat.reducePow]
   rfl
 
@@ -1077,13 +1146,13 @@ theorem u32_wrapping_mul {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u32_spec, Convert.as_u32_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
   norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^64 := by apply BitVec.toNat_mul_toNat_lt
   have mul_lt_p : BitVec.toNat a * BitVec.toNat b < p.natVal := by linarith [gt.lt_prime]
 
-  rw [ZMod.val_natCast_of_lt mul_lt_p]
+  rw [← Nat.cast_mul, ZMod.val_natCast_of_lt mul_lt_p]
   simp_all only [Nat.reducePow]
   rfl
 
@@ -1096,13 +1165,13 @@ theorem u64_wrapping_mul {p a b}
   steps
   enter_decl
   steps [Convert.as_field_for_u64_spec, Convert.as_u64_for_field_spec]
-  simp_all only [Builtin.instCastTpFieldU, BitVec.natCast_eq_ofNat, Builtin.instCastTpUField]
+  simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
   norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^128 := by apply BitVec.toNat_mul_toNat_lt
   have mul_lt_p : BitVec.toNat a * BitVec.toNat b < p.natVal := by linarith [gt.lt_prime]
 
-  rw [ZMod.val_natCast_of_lt mul_lt_p]
+  rw [← Nat.cast_mul, ZMod.val_natCast_of_lt mul_lt_p]
   simp_all only [Nat.reducePow]
   rfl
 
@@ -1115,6 +1184,7 @@ theorem two_pow_64_spec {p}
   unfold Integer.two_pow_64
   norm_cast
 
+set_option maxHeartbeats 800000 in
 theorem split_into_64_bit_limbs_spec {p a} [gt : Prime.BitsGT p 128]
   : STHoare p env ⟦⟧
     («std-1.0.0-beta.14::ops::arith::split_into_64_bit_limbs».call h![] h![a])
@@ -1126,8 +1196,8 @@ theorem split_into_64_bit_limbs_spec {p a} [gt : Prime.BitsGT p 128]
     steps
 
   steps [two_pow_64_spec]
-  simp only [Builtin.indexTpl] at *
-  simp_all only [Builtin.instCastTpUField, beq_true, decide_eq_true_eq]
+  simp only at *
+  simp_all only [Builtin.CastTp.cast, beq_true, decide_eq_true_eq]
   rename_i v _
   change «#v_2» = _
 
@@ -1169,6 +1239,7 @@ theorem split_into_64_bit_limbs_spec {p a} [gt : Prime.BitsGT p 128]
   subst this
   rw [Integer.split64_combine64_id]
 
+set_option maxHeartbeats 800000 in
 theorem u128_wrapping_mul {p a b}
     [gt : Prime.BitsGT p 129]
   : STHoare p env ⟦⟧
@@ -1193,14 +1264,14 @@ theorem u128_wrapping_mul {p a b}
   rcases x_hi with ⟨x_hi, x_hi_lt⟩
 
   apply_fun BitVec.toNat at x_lo_def y_lo_def x_hi_def y_hi_def
-  simp only [Builtin.instCastTpFieldU, Builtin.instCastTpUField, Builtin.indexTpl,
-    Integer.split64_fst_toNat, Integer.split64_snd_toNat, BitVec.toNat_ofFin] at *
+  simp only [Builtin.CastTp.cast, BitVec.toNat_ofFin] at *
 
   rename low = _ => low_def
   rcases low with ⟨low, low_lt_p⟩
   apply_fun ZMod.val at low_def
 
   norm_cast at low_def
+  rw [← Nat.cast_mul] at low_def
 
   rw [ZMod.val_natCast_of_lt ?lt] at low_def
   case lt => exact Nat.lt_trans (Nat.mul_lt_mul'' x_lo_lt y_lo_lt) (lt_trans (by decide) gt.lt_prime)
@@ -1209,27 +1280,26 @@ theorem u128_wrapping_mul {p a b}
   rename lo = _ => lo_def
   rcases lo with ⟨lo, lo_lt_p⟩
   apply_fun ZMod.val at lo_def
-  simp only [ZMod.val, Prime.natVal, BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat] at lo_def
-  rw [Fin.val_natCast, Nat.mod_eq_of_lt (lt_of_le_of_lt (Nat.mod_le _ _) low_lt_p)] at lo_def
+  simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat, ZMod.val_natCast] at lo_def
+  simp only [ZMod.val, Prime.natVal] at lo_def
+  rw [Nat.mod_eq_of_lt (lt_of_le_of_lt (Nat.mod_le _ _) low_lt_p)] at lo_def
   cases lo_def
 
   rename carry = _ => carry_def
   rcases carry with ⟨carry, carry_lt_p⟩
   apply_fun ZMod.val at carry_def
 
-  rw [Field.val_div_of_dvd ?dvd, ZMod.val_sub ?ltmod] at carry_def
+  have h2pow64_toNat : (Integer.two_pow_64.toNat : Nat) = 2^64 := by decide
+  have h2pow64_val : ZMod.val (↑Integer.two_pow_64.toNat : Fp p) = 2^64 := by
+    rw [h2pow64_toNat]
+    rw [ZMod.val_natCast_of_lt (lt_trans (by decide) gt.lt_prime)]
+
+  rw [Field.val_div_of_dvd ?dvd, ZMod.val_sub ?ltmod, h2pow64_val] at carry_def
   simp only [ZMod.val, Prime.natVal] at carry_def
-  conv_rhs at carry_def =>
-    arg 2
-    rw [Fin.val_natCast, Nat.mod_eq_of_lt (by apply lt_trans (by decide) (gt.lt_prime))]
-    change 2^64
 
   case ltmod => apply Nat.mod_le
   case dvd =>
-    rw [ZMod.val_sub (Nat.mod_le _ _)]
-    simp only [ZMod.val, Prime.natVal]
-    rw [Fin.val_natCast, Nat.mod_eq_of_lt (by apply lt_trans (by decide) (gt.lt_prime))]
-    conv_lhs => change 2^64
+    rw [ZMod.val_sub (Nat.mod_le _ _), h2pow64_val]
     exact Nat.dvd_sub_mod _
 
   rename high = _ => high_def
@@ -1252,7 +1322,9 @@ theorem u128_wrapping_mul {p a b}
     cases low_def
     exact Nat.mul_lt_mul'' x_lo_lt y_lo_lt
 
-  norm_cast at high_def
+  rw [show ((↑x_lo : Fp p) * ↑y_hi + (↑x_hi : Fp p) * ↑y_lo
+            = ((x_lo * y_hi + x_hi * y_lo : Nat) : Fp p)) from by push_cast; ring]
+    at high_def
   rw [ZMod.val_add_of_lt ?lt1, ZMod.val_natCast_of_lt ?lt2] at high_def
   simp only [ZMod.val, Prime.natVal] at high_def
 
@@ -1267,8 +1339,9 @@ theorem u128_wrapping_mul {p a b}
   rename hi = _ => hi_def
   rcases hi with ⟨hi, hi_lt_p⟩
   apply_fun ZMod.val at hi_def
-  simp only [ZMod.val, Prime.natVal, BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat] at hi_def
-  rw [Fin.val_natCast, Nat.mod_eq_of_lt (lt_of_le_of_lt (Nat.mod_le _ _) high_lt_p)] at hi_def
+  simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat, ZMod.val_natCast] at hi_def
+  simp only [ZMod.val, Prime.natVal] at hi_def
+  rw [Nat.mod_eq_of_lt (lt_of_le_of_lt (Nat.mod_le _ _) high_lt_p)] at hi_def
 
   have lt2 : ZMod.val (↑Integer.two_pow_64.toNat : Fp p) *
     ZMod.val (↑⟨hi, by assumption⟩ : Fp p) < 2^128 := by
@@ -1298,15 +1371,30 @@ theorem u128_wrapping_mul {p a b}
   simp only [ZMod.val, Prime.natVal]
   simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat, BitVec.toNat_mul]
 
+  have x_lo_eq : x_lo = a.toNat % 2^64 := by
+    rw [x_lo_def]
+    show BitVec.toNat (Integer.split64 a).1 = _
+    rw [Integer.split64_fst_toNat]
+  have x_hi_eq : x_hi = a.toNat / 2^64 := by
+    rw [x_hi_def]
+    show BitVec.toNat (Integer.split64 a).2.1 = _
+    rw [Integer.split64_snd_toNat]
+  have y_lo_eq : y_lo = b.toNat % 2^64 := by
+    rw [y_lo_def]
+    show BitVec.toNat (Integer.split64 b).1 = _
+    rw [Integer.split64_fst_toNat]
+  have y_hi_eq : y_hi = b.toNat / 2^64 := by
+    rw [y_hi_def]
+    show BitVec.toNat (Integer.split64 b).2.1 = _
+    rw [Integer.split64_snd_toNat]
+
   have : a.toNat = x_hi * 2^64 + x_lo := by
-    cases x_hi_def
-    cases x_lo_def
+    rw [x_lo_eq, x_hi_eq]
     exact Eq.symm (Nat.div_add_mod' _ _)
   rw [this]
 
   have : b.toNat = y_hi * 2^64 + y_lo := by
-    cases y_hi_def
-    cases y_lo_def
+    rw [y_lo_eq, y_hi_eq]
     exact Eq.symm (Nat.div_add_mod' _ _)
   rw [this]
 
@@ -1361,5 +1449,6 @@ theorem field_wrapping_mul {p a b}
     (fun r => r = a * b) := by
   resolve_trait
   steps
+  reduce_fn_body at *
   simp_all
 

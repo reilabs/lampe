@@ -42,6 +42,37 @@ First targets:
 - `get` (requires in-bounds precondition, spec stated via `embed`)
 -/
 
+/-- The conclusion of one extend_from copy-loop step, stated in the exact form
+that the goal takes after the loop body unfolds (i.e. with `Builtin.indexTpl`/
+`% 4294967296` instead of `len`/`storage`).  Used by `extend_loop_step`. -/
+private theorem extend_loop_body_eq {p T MaxLen : _} {self v : Repr p T MaxLen}
+    {source : List (T.denote p)} {i : Nat}
+    (hlenV : len v = len self)
+    (hi_lt : (len self).toNat + i < 2 ^ 32)
+    (htakeV : List.take ((len self).toNat + i) (storage v).toList =
+              embed self ++ source.take i)
+    (hiMax_v : (len self).toNat + i < (Builtin.indexTpl v Member.head).toList.length)
+    (hi_src : i < source.length) :
+    List.take (BitVec.toNat (Builtin.indexTpl self Member.head.tail) + (i + 1))
+        ((Builtin.indexTpl v Member.head).toList.set
+          ((BitVec.toNat (Builtin.indexTpl v Member.head.tail) + i) % 4294967296)
+          (source[i]'hi_src)) =
+      embed self ++ source.take (i + 1) := by
+  -- The goal in `Builtin.indexTpl` form is defeq to the `len`/`storage` form.
+  -- `BitVec.toNat (Builtin.indexTpl self Member.head.tail) = (len self).toNat` by def.
+  -- `(Builtin.indexTpl v Member.head).toList = (storage v).toList` by def.
+  -- `(BitVec.toNat (Builtin.indexTpl v Member.head.tail) + i) % 4294967296 = (len self).toNat + i`
+  --   via `extend_loop_idx_mod`.
+  have hbridge : (BitVec.toNat (Builtin.indexTpl v Member.head.tail) + i) % 4294967296
+                  = (len self).toNat + i :=
+    extend_loop_idx_mod (v := v) (self := self) hlenV hi_lt
+  show List.take ((len self).toNat + (i + 1))
+        ((storage v).toList.set
+          ((BitVec.toNat (Builtin.indexTpl v Member.head.tail) + i) % 4294967296)
+          (source[i]'hi_src)) = _
+  rw [hbridge]
+  exact List.take_set_extends htakeV hiMax_v hi_src
+
 /-- Shared loop body step for `extend_from_*`. -/
 local macro "extend_loop_step" hlenV:ident htakeV:ident
     hi32:ident hiMax:ident hMax_lt:ident
@@ -59,10 +90,15 @@ local macro "extend_loop_step" hlenV:ident htakeV:ident
           List.Vector.get_eq_get_toList,
           List.get_eq_getElem, nat_mod_4294967296 $hi32]
       try simp [extend_loop_idx_mod $hlenV _hi_lt]
-      simpa [len] using List.take_set_extends
-        (by simpa [storage] using $htakeV)
-        (by simpa [List.Vector.toList_length] using $hiMax)
-        $hi_src))
+      first
+        | (simpa [len, Builtin.indexTpl_head_proj, Builtin.indexTpl_tail_proj,
+                  nat_mod_4294967296 $hi32]
+            using List.take_set_extends
+              (by simpa [storage] using $htakeV)
+              (by simpa [List.Vector.toList_length] using $hiMax)
+              $hi_src)
+        | exact extend_loop_body_eq $hlenV _hi_lt $htakeV
+            (by simpa [storage] using $hiMax) $hi_src))
 
 private theorem SLP.singleton_entails_exists_star_lift
     {ref : Ref (bvTp T MaxLen)} {tp : Tp}
@@ -259,6 +295,7 @@ private theorem modify_head_array_some {p T MaxLen} {v : Tp.denote p (bvTp T Max
     (((Lens.nil.cons (Access.tuple Member.head)).cons (Access.array idx)).modify v value) =
       some (Builtin.replaceTuple' v Member.head ((storage v).set ⟨idx.toNat, hidx⟩ value)) := by
   simp [storage, hidx]
+  congr
 
 private theorem push_concrete_spec {p T MaxLen selfRef self elem}
     (hpush : (len self).toNat < MaxLen.toNat) :
@@ -487,7 +524,9 @@ private theorem pop_concrete_spec {p T MaxLen selfRef self}
     steps_named
     cases self
     simp [len, storage]
-    exact coe_one_u32'
+    -- After `simp [len, storage]`, both conjuncts close by `rfl`
+    -- (simp has already normalized `↑1` to `1#32` via the `coe_one_u32'` simp lemma).
+    exact ⟨rfl, rfl⟩
   ·
     intro r
     steps_named as [v, hproj]
@@ -556,7 +595,7 @@ theorem from_parts_unchecked_spec {p T MaxLen array l}
   constructor
   ·
     exact wellFormed_of_bounded (by simpa [bounded, len] using hb)
-  · simp [embed, active, storage, len]
+  · rfl
 
 theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
     (hspace : (len self).toNat + Len.toNat ≤ MaxLen.toNat) :
@@ -585,7 +624,7 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
           ⟦len v = len self ∧
             List.take ((len self).toNat + i) (storage v).toList =
               embed self ++ array.toList.take i⟧)
-  · sl; simp [Nat.add_zero, embed, active, storage]
+  · sl; simp [embed, active, storage]
   · simp
   · intro i hlo hhi
     steps_named as [v, hinv, h_add, h_cast, u2, h_dec, h_isSome]
@@ -675,7 +714,7 @@ theorem extend_from_vector_spec {p T MaxLen selfRef self slice}
           ⟦len v = len self ∧
             List.take ((len self).toNat + i) (storage v).toList =
               embed self ++ slice.take i⟧)
-  · sl; simp [Nat.add_zero, embed, active, storage]
+  · sl; simp [embed, active, storage]
   · simp
   · intro i hlo hhi
     steps_named as [v, hinv, h_add, h_cast, u2, h_dec, h_isSome]
@@ -871,8 +910,7 @@ theorem from_parts_spec {p T MaxLen arr l}
           · intro b; sl; assumption
           · steps [STHoare.genericTotalPureBuiltin_intro
               (b := Builtin.uGeq) (h := rfl)]
-            simp_all only [Builtin.instCastTpU,
-              BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+            simp_all only [
               BitVec.toNat_ofNatLT, BitVec.le_def, ge_iff_le]
             simp
         · intro b

@@ -2,6 +2,7 @@ import Lampe.Syntax.Utils
 import Lampe.SeparationLogic.State
 import Lampe.Hoare.SepTotal
 import Lampe.Hoare.Builtins
+import Lampe.Tactic.Steps
 
 open Lean Elab.Tactic Parser.Tactic Lean.Meta Qq
 
@@ -157,7 +158,7 @@ partial def proveConstraints (env : Lean.Expr) (constraintsExpr : Lean.Expr): Ta
   | _ => return none
 
 partial def matchTraitSignature (resolutionGoal : ResolutionGoal) (traitDef : Lean.Expr): TacticM (Option (Lean.Expr × Lean.Expr)) :=
-  withTraceNode `Lampe.Traits (fun e => return f!"matchTraitSignature {Lean.exceptEmoji e}") $ do
+  withTraceNode `Lampe.Traits (fun e => return f!"matchTraitSignature {e.toTraceResult.toEmoji}") $ do
     let traitDef ← withTransparency .all $ whnf traitDef
     let_expr TraitImpl.mk defTraitGenericKinds defImplGenericKinds defTraitGenerics defConstraints defSelf _ := traitDef
       | trace[Lampe.Traits] "Could not destructure the definition, skipping"
@@ -181,7 +182,7 @@ partial def matchTraitSignature (resolutionGoal : ResolutionGoal) (traitDef : Le
       return none
 
     let constraints := defConstraints.app implGenerics
-    let some constraintsProof ← withTraceNode `Lampe.Traits (fun e => return f!"solveConstraints {Lean.exceptEmoji e}") $
+    let some constraintsProof ← withTraceNode `Lampe.Traits (fun e => return f!"solveConstraints {e.toTraceResult.toEmoji}") $
         proveConstraints resolutionGoal.env constraints
       | trace[Lampe.Traits] "Trait signature matched, but couldn't resolve constraints"
         return none
@@ -248,7 +249,7 @@ partial def resolutionLoop (resolutionGoal : ResolutionGoal) (env : Lean.Expr) (
   | none => throwError "trait not found"
 
 partial def doResolve (resolutionGoal : ResolutionGoal) (env : Lean.Expr): TacticM (List MVarId) :=
-  withTraceNode `Lampe.Traits (fun e => return f!"doResolve {Lean.exceptEmoji e}") $ do
+  withTraceNode `Lampe.Traits (fun e => return f!"doResolve {e.toTraceResult.toEmoji}") $ do
     resolutionLoop resolutionGoal env 0
 
 end
@@ -307,13 +308,16 @@ private def resolveTraitSTHoare (mainGoal : MVarId) : TacticM Unit := do
 syntax (name := resolveTrait) "resolve_trait" (" bySearch")? : tactic
 
 /--
-Closes trait resolution goals. Without arguments, handles STHoare `callTrait` goals;
-with `bySearch`, handles standalone `TraitResolvable` goals.
+Closes trait resolution goals. Without arguments, handles STHoare `callTrait` goals
+and unfolds the resulting `FunctionDecl.fn` / `Function.body` / `Lambda.body` chain so
+the caller can step through the body directly; with `bySearch`, handles standalone
+`TraitResolvable` goals (no body reduction needed — these goals don't carry one).
 -/
 @[tactic resolveTrait] elab_rules : tactic
   | `(tactic| resolve_trait) => do
     let mainGoal ← getMainGoal
     resolveTraitSTHoare mainGoal
+    evalTactic (←`(tactic| reduce_fn_body))
   | `(tactic| resolve_trait bySearch) => do
     let mainGoal ← getMainGoal
     resolveTraitStandalone mainGoal

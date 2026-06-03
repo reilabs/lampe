@@ -51,7 +51,7 @@ theorem recover_intro {H N idx proof item}
     [curr_h ↦ ⟨Tp.field,
       MerkleTree.recover H' (List.Vector.takeF idx i (by simpa [←BitVec.lt_def];)).reverse
                  (List.Vector.takeF proof i (by simpa [←BitVec.lt_def])).reverse item⟩]
-  · simp only [Int.cast, IntCast.intCast, BitVec.ofInt_ofNat, BitVec.le_def, BitVec.toNat_ofNat,
+  · simp only [Int.cast, IntCast.intCast, BitVec.ofInt_ofNat, BitVec.toNat_ofNat,
     Nat.reducePow, Nat.zero_mod, zero_le]
   · intro i _ hi
     steps
@@ -94,5 +94,6 @@ theorem main_correct [Fact (CollisionResistant Ref.State.compress)]
   use index.reverse
   subst_vars
   rename tree.root = _ => hroot
-  rw [Eq.comm, MerkleTree.recover_eq_root_iff_proof_and_item_correct] at hroot
-  exact hroot.2
+  have hroot' := hroot.symm
+  rename_i inst
+  exact (@MerkleTree.recover_eq_root_iff_proof_and_item_correct _ _ _ inst _ _ _ _ |>.mp hroot').2
