@@ -9,22 +9,21 @@ open Lampe.Crypto.EmbeddedCurve
 open Lampe.Crypto.Pedersen
 
 /--
-Noir's `derive_pedersen_generators` foreign builtin (Aztec/Barretenberg).
+Noir's `derive_pedersen_generators` foreign builtin, generic in the
+pair `(N, M)` of array sizes per the Noir signature
+`<let N: u32, let M: u32>`.
 
-Inputs (per Noir signature):
+Inputs:
 - `domain_separator_bytes : [u8; M]` — domain separator string
 - `starting_index : u32`             — absolute starting index
 
 Output:
 - `[EmbeddedCurvePoint; N]` — `N` distinct Grumpkin generator points
 
-Modeled semantically by `Lampe.Crypto.Pedersen.derivePedersenGenerators`,
-which exposes determinism and length properties but treats the
-underlying hash-to-curve algorithm as opaque. See
-`Lampe/Crypto/Pedersen.lean` for the abstraction boundary.
-
-The descriptor is **generic** in the pair `(N, M)` of array sizes,
-matching the Noir `#[builtin]` signature `<let N: u32, let M: u32>`.
+Modeled by the concrete BLAKE3-driven hash-to-curve construction in
+`Lampe.Crypto.Pedersen.derivePedersenGenerators` (see that file for the
+construction; it transcribes the standard `derive_generators` algorithm
+that any Noir backend must implement).
 -/
 def derivePedersenGenerators := newGenericTotalPureBuiltin
   (fun (nm : U 32 × U 32) =>
