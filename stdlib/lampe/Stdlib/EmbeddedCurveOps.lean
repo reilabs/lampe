@@ -165,7 +165,7 @@ def lo {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.scalarL
 def hi {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.scalarHi self
 
 def valueNat {p} (self : Scalar.denote p) : Nat :=
-  (Scalar.lo self).val + Lampe.Stdlib.Field.Bn254.pow128 * (Scalar.hi self).val
+  (Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val
 
 /-- Bridge: stdlib `Scalar.valueNat` agrees with the crypto-side
 `scalarValueNat`. The two definitions are equal modulo unfolding the
@@ -174,14 +174,14 @@ theorem valueNat_eq_scalarValueNat {p} (self : Scalar.denote p) :
     Scalar.valueNat self = Lampe.Crypto.EmbeddedCurve.scalarValueNat self := by
   simp [Scalar.valueNat, Scalar.lo, Scalar.hi,
     Lampe.Crypto.EmbeddedCurve.scalarValueNat,
-    Lampe.Stdlib.Field.Bn254.pow128, Lampe.Crypto.EmbeddedCurve.pow128]
+    Lampe.Crypto.Bn254.pow128, Lampe.Crypto.EmbeddedCurve.pow128]
 
 /-- The canonical-representative predicate: each limb fits in 128 bits.
 This is the well-formedness condition under which `Scalar.eq` agrees
 with `Scalar.valueNat` equality. -/
 def Canonical {p} (self : Scalar.denote p) : Prop :=
-  (Scalar.lo self).val < Lampe.Stdlib.Field.Bn254.pow128 ∧
-  (Scalar.hi self).val < Lampe.Stdlib.Field.Bn254.pow128
+  (Scalar.lo self).val < Lampe.Crypto.Bn254.pow128 ∧
+  (Scalar.hi self).val < Lampe.Crypto.Bn254.pow128
 
 def validOffset (offset : U 32) : Prop :=
   offset.toNat < 33
@@ -229,7 +229,7 @@ def fromBytes? {p} (bytes : Tp.denote p ((Tp.u 8).array (64 : U 32)))
 
 @[simp] theorem valueNat_mk {p} {lo hi : Fp p} :
     Scalar.valueNat (Scalar.mk lo hi) =
-      lo.val + Lampe.Stdlib.Field.Bn254.pow128 * hi.val := by
+      lo.val + Lampe.Crypto.Bn254.pow128 * hi.val := by
   rfl
 
 theorem fromBytes?_eq_some_of_validOffset {p}
@@ -388,19 +388,19 @@ private lemma scalar_valueNat_inj_canonical {p}
              (Scalar.hi self).val = (Scalar.hi other).val := by
     refine ⟨?_, ?_⟩
     · -- mod pow128 of both sides extracts lo
-      have : ((Scalar.lo self).val + Lampe.Stdlib.Field.Bn254.pow128 * (Scalar.hi self).val)
-              % Lampe.Stdlib.Field.Bn254.pow128 =
-            ((Scalar.lo other).val + Lampe.Stdlib.Field.Bn254.pow128 * (Scalar.hi other).val)
-              % Lampe.Stdlib.Field.Bn254.pow128 := by rw [h]
+      have : ((Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val)
+              % Lampe.Crypto.Bn254.pow128 =
+            ((Scalar.lo other).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi other).val)
+              % Lampe.Crypto.Bn254.pow128 := by rw [h]
       simp [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hslo, Nat.mod_eq_of_lt holo] at this
       exact this
     · -- div pow128 of both sides extracts hi
-      have hpos : 0 < Lampe.Stdlib.Field.Bn254.pow128 := by
-        simp [Lampe.Stdlib.Field.Bn254.pow128]
-      have hdiv : ((Scalar.lo self).val + Lampe.Stdlib.Field.Bn254.pow128 * (Scalar.hi self).val)
-              / Lampe.Stdlib.Field.Bn254.pow128 =
-            ((Scalar.lo other).val + Lampe.Stdlib.Field.Bn254.pow128 * (Scalar.hi other).val)
-              / Lampe.Stdlib.Field.Bn254.pow128 := by rw [h]
+      have hpos : 0 < Lampe.Crypto.Bn254.pow128 := by
+        simp [Lampe.Crypto.Bn254.pow128]
+      have hdiv : ((Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val)
+              / Lampe.Crypto.Bn254.pow128 =
+            ((Scalar.lo other).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi other).val)
+              / Lampe.Crypto.Bn254.pow128 := by rw [h]
       rw [Nat.add_mul_div_left _ _ hpos, Nat.add_mul_div_left _ _ hpos,
           Nat.div_eq_of_lt hslo, Nat.div_eq_of_lt holo] at hdiv
       simpa using hdiv
@@ -701,7 +701,7 @@ theorem point_hash_spec {p H stateRef}
       (h_x_write := h_x_write)
       (h_y_write := h_y_write)
 
-theorem scalar_from_field_spec {p} [Lampe.Stdlib.Field.Bn254.Prime p]
+theorem scalar_from_field_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Fp p} :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar::from_field».call
@@ -709,9 +709,9 @@ theorem scalar_from_field_spec {p} [Lampe.Stdlib.Field.Bn254.Prime p]
       (fun r =>
         ∃∃ lo hi,
           r = Scalar.mk lo hi ∧
-          lo.val < Lampe.Stdlib.Field.Bn254.pow128 ∧
-          hi.val < Lampe.Stdlib.Field.Bn254.pow128 ∧
-          scalar.val = lo.val + Lampe.Stdlib.Field.Bn254.pow128 * hi.val) := by
+          lo.val < Lampe.Crypto.Bn254.pow128 ∧
+          hi.val < Lampe.Crypto.Bn254.pow128 ∧
+          scalar.val = lo.val + Lampe.Crypto.Bn254.pow128 * hi.val) := by
   enter_decl
   steps [Lampe.Stdlib.Field.Bn254.decompose_intro (p := p)]
   simp [SLP.exists_pure, beq_true, decide_eq_true_eq] at *
