@@ -1,10 +1,9 @@
+import Lampe.Crypto.Bn254
 import Lampe.Data.Field
 
 namespace Lampe.Crypto.Poseidon2.BN254T4
 
-/-- BN254 scalar-field modulus used by Noir/TACEO Poseidon2 reference vectors. -/
-def scalarModulus : Nat :=
-  21888242871839275222246405745257275088548364400416034343698204186575808495617
+export Lampe.Crypto.Bn254 (r_scalar)
 
 /-- Cast a literal through `NatCast`, avoiding thousands of per-literal `OfNat` constraints. -/
 def c [NatCast F] (n : Nat) : F := n
