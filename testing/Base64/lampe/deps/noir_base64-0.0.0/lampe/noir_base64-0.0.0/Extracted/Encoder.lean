@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_global_def «noir_base64-0.0.0»::encoder::CONVERT_MODULO3_TO_PADDING_BYTES: Array<u32, 3: u32> = (#_mkArray returning Array<u32, 3: u32>)((0: u32), (2: u32), (1: u32));
 
 noir_global_def «noir_base64-0.0.0»::encoder::PAD_1: Array<Field, 3: u32> = (#_mkArray returning Array<Field, 3: u32>)((0: Field), (1: Field), (1: Field));

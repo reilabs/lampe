@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«ExtractionTests-0.0.0».impl_439]<> «ExtractionTests-0.0.0»::trait_associated_const::HasConst<> for «ExtractionTests-0.0.0»::trait_associated_const::Foo<> where [] := {
   noir_def double_n<N: u32>() -> u32 := {
     (#_uMul returning u32)(uConst!(N: u32), (2: u32))

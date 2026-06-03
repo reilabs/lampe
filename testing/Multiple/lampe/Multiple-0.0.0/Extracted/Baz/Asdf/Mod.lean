@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 def «Multiple-0.0.0».Baz.Asdf.Mod.env : Env := Env.mk
   []
   []

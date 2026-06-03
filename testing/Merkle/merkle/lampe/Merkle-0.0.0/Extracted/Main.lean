@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Merkle-0.0.0»::mtree_recover<H: Type, N: u32>(idx: Array<bool, N: u32>, p: Array<Field, N: u32>, item: Field) -> Field := {
   let curr_h = (#_ref returning & Field)(item);
   for i in (0: u32) .. uConst!(N: u32) do {

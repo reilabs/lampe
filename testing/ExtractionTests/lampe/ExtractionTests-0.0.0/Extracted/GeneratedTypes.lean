@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_struct_def «ExtractionTests-0.0.0»::struct_namespaces::test::Foo<> {
   Field,
 }

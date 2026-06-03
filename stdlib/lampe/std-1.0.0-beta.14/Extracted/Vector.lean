@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::vector::append<T: Type>(self: Vector<T>, other: Vector<T>) -> Vector<T> := {
   let self = (#_ref returning & Vector<T>)(self);
   {

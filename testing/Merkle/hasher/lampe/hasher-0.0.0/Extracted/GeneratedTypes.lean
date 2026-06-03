@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_def «hasher-0.0.0»::BinaryHasher<F: Type> [] := {
   method hash<>(F, F) -> F;
 }

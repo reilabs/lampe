@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::unit_return::foo2<>() -> Unit := {
   let _x = (3: Field);
   #_skip

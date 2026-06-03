@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_40]<T: Type> «std-1.0.0-beta.14»::convert::From<T> for T where [] := {
   noir_def «from»<>(input: T) -> T := {
     input

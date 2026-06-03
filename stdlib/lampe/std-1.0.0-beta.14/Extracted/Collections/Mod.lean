@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 def «std-1.0.0-beta.14».Collections.Mod.env : Env := Env.mk
   []
   []

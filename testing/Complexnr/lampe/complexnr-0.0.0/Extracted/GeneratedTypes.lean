@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_struct_def «complexnr-0.0.0»::Complex<> {
   Field,
   Field,

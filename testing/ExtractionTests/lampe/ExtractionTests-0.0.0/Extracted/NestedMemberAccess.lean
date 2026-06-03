@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::nested_member_access::nested_field_access<>(o: «ExtractionTests-0.0.0»::nested_member_access::Outer<>) -> u32 := {
   (o.0).0
 }

@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::bool_neq::bool_neq<>(y: Array<bool, 2: u32>) -> Unit := {
   (#_assert returning Unit)((#_bNeq returning bool)((#_arrayIndex returning bool)(y, (0: u32)), (#_arrayIndex returning bool)(y, (1: u32))));
   #_skip

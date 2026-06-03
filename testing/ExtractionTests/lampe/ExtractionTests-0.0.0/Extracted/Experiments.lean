@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::experiments::my_func3<>(a: u8) -> u8 := {
   («ExtractionTests-0.0.0»::experiments::my_func<> as λ(u8) -> u8)(a)
 }

@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«ExtractionTests-0.0.0».impl_437]<> «ExtractionTests-0.0.0»::impl_trait_return::Foo<> for «ExtractionTests-0.0.0»::impl_trait_return::Bar<> where [] := {
   noir_def foo<>(self: «ExtractionTests-0.0.0»::impl_trait_return::Bar<>) -> Field := {
     (42: Field)

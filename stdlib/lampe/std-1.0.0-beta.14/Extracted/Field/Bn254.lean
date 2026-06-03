@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_global_def «std-1.0.0-beta.14»::field::bn254::PLO: Field = (53438638232309528389504892708671455233: Field);
 
 noir_global_def «std-1.0.0-beta.14»::field::bn254::PHI: Field = (64323764613183177041862057485226039389: Field);

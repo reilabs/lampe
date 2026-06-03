@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::signed_generic::use_signed<>() -> i32 := {
   («ExtractionTests-0.0.0»::signed_generic::foo<7: i32> as λ() -> i32)()
 }

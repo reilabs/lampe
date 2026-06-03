@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec::new<T: Type, MaxLen: u32>() -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32> := {
   let zeroed = (#_zeroed returning T)();
   (#_makeData returning «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<T, MaxLen: u32>)((#_mkRepeatedArray returning Array<T, MaxLen: u32>)(zeroed), (0: u32))

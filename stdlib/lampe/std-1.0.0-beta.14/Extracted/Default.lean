@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_272]<> «std-1.0.0-beta.14»::default::Default<> for Field where [] := {
   noir_def default<>() -> Field := {
     (0: Field)

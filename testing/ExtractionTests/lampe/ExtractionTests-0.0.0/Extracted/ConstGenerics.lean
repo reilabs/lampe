@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::const_generics::nat_generic_test<N: u32>() -> Array<Field, N: u32> := {
   for i in (0: u32) .. uConst!(N: u32) do {
     let __0 = i;

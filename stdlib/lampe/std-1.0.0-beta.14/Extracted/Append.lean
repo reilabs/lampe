@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_315]<T: Type> «std-1.0.0-beta.14»::append::Append<> for Vector<T> where [] := {
   noir_def empty<>() -> Vector<T> := {
     (#_asVector returning Vector<T>)((#_mkArray returning Array<T, 0: u32>)())

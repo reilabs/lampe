@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «complexnr-0.0.0»::add<>(a: «complexnr-0.0.0»::Complex<>, b: «complexnr-0.0.0»::Complex<>) -> «complexnr-0.0.0»::Complex<> := {
   (#_makeData returning «complexnr-0.0.0»::Complex<>)((#_fAdd returning Field)(a.0, b.0), (#_fAdd returning Field)(a.1, b.1))
 }

@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «noir_base64-0.0.0»::decoder::Base64DecodeBE::decode<InputBytes: u32, OutputBytes: u32>(input: Array<u8, InputBytes: u32>) -> Array<u8, OutputBytes: u32> := {
   («noir_base64-0.0.0»::decoder::decode<InputBytes: u32, OutputBytes: u32, 1: u1, 0: u1> as λ(Array<u8, InputBytes: u32>) -> Array<u8, OutputBytes: u32>)(input)
 }

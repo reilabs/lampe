@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610<>(input: Array<u8, 610: u32>) -> Array<u8, 816: u32> := {
   («noir_base64-0.0.0»::encoder::Base64EncodeBE::encode<610: u32> as λ(Array<u8, 610: u32>) -> Array<u8, 816: u32>)(input)
 }

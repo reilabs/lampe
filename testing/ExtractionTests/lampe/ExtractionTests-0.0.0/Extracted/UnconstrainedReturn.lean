@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::unconstrained_return::f<>() -> Field := {
   (#_fresh returning Field)()
 }

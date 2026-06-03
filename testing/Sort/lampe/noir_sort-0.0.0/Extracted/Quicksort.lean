@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 def «noir_sort-0.0.0».Quicksort.env : Env := Env.mk
   []
   []

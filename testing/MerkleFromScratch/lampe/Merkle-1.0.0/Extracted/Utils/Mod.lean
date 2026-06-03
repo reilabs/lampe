@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Merkle-1.0.0»::utils::rl<>(u: u8) -> u8 := {
   let top_bit = (#_uShr returning u8)(u, (7: u8));
   (#_uOr returning u8)((#_uShl returning u8)(u, (1: u8)), top_bit)

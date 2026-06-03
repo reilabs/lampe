@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::string::as_bytes_vec<N: u32>(self: String<N: u32>) -> Vector<u8> := {
   (#_asVector returning Vector<u8>)((#_strAsBytes returning Array<u8, N: u32>)(self))
 }

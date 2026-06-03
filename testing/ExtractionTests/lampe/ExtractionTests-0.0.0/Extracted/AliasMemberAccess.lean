@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::alias_member_access::alias_member_first<>(foo: @«ExtractionTests-0.0.0»::alias_member_access::Foo<u8, u32>) -> u8 := {
   foo.0
 }

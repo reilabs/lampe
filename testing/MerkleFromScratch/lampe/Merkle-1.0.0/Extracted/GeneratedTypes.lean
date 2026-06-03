@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_struct_def «Merkle-1.0.0»::skyscraper::Skyscraper<> {}
 
 noir_trait_def «Merkle-1.0.0»::hasher::BinaryHasher<F: Type> [] := {

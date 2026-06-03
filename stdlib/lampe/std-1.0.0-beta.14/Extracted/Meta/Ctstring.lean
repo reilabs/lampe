@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_292]<N: u32> «std-1.0.0-beta.14»::«meta»::ctstring::AsCtString<> for String<N: u32> where [] := {
   noir_def as_ctstring<>(self: String<N: u32>) -> Unit := {
     (#_strAsCtstring returning Unit)(self)

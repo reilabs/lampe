@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Merkle-1.0.0»::bar::bar<>(a: Field) -> Field := {
   let bytes = («std-1.0.0-beta.14»::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(a);
   let new_left = (#_ref returning & Array<u8, 16: u32>)((#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8)));

@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_type_alias «Multiple-0.0.0»::baz::asdf::Asdf<> := Field;
 
 noir_struct_def «Multiple-0.0.0»::bar::Asdf2<> {

@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «TestDep-0.0.0»::make_point<>(x: Field, y: Field) -> «LocalDep-0.0.0»::Point<> := {
   (#_makeData returning «LocalDep-0.0.0»::Point<>)(x, y)
 }

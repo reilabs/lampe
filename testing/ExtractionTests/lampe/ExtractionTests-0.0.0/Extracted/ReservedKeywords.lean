@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::reserved_keywords::foo<>(«from»: u32) -> u32 := {
   (#_uAdd returning u32)(«from», (1: u32))
 }

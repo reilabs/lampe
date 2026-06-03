@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 def «Merkle-1.0.0».Hasher.Mod.env : Env := Env.mk
   []
   []

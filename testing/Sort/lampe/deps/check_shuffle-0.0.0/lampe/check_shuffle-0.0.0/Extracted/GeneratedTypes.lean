@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_struct_def «check_shuffle-0.0.0»::test::CompoundStruct<> {
   bool,
   Field,

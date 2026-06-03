@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «check_shuffle-0.0.0»::__get_shuffle_indices<T: Type, N: u32>(lhs: Array<T, N: u32>, rhs: Array<T, N: u32>) -> Array<u32, N: u32> := {
   (#_fresh returning Array<u32, N: u32>)()
 }

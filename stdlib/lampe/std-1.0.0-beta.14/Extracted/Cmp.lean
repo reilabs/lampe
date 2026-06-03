@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_78]<> «std-1.0.0-beta.14»::cmp::Eq<> for Field where [] := {
   noir_def eq<>(self: Field, other: Field) -> bool := {
     (#_fEq returning bool)(self, other)
