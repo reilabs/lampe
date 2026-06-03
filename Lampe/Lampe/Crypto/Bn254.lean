@@ -56,12 +56,6 @@ lemma natVal_eq_limbs {p : Lampe.Prime} [inst : Prime p] :
     p.natVal = plo + pow128 * phi := by
   rw [inst.natVal_eq_r_scalar, r_scalar_eq_limbs]
 
-/-- Legacy spelling, kept so downstream specs that wrote `Bn254.Prime.modulus_eq`
-keep compiling without churn. -/
-@[deprecated natVal_eq_limbs (since := "2026-06-02")]
-lemma modulus_eq {p : Lampe.Prime} [Prime p] :
-    p.natVal = plo + pow128 * phi := natVal_eq_limbs
-
 end Prime
 
 instance [inst : Prime p] : Lampe.Prime.BitsGT p 129 where

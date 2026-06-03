@@ -203,7 +203,7 @@ theorem decompose_intro {p x} [Bn254.Prime p] :
   have hgt' : plo + pow128 * phi > xlo.val + pow128 * xhi.val := by
     simpa [hplo_val, hphi_val] using hgt
   have hsum_lt : xlo.val + pow128 * xhi.val < p.natVal := by
-    simpa [Bn254.Prime.modulus_eq] using hgt'
+    simpa [Bn254.Prime.natVal_eq_limbs] using hgt'
   have hmul_lt : pow128 * xhi.val < p.natVal := by
     exact lt_of_le_of_lt (Nat.le_add_left _ _) hsum_lt
   have hmul_lt' : (pow128 : Fp p).val * xhi.val < p.natVal := by
