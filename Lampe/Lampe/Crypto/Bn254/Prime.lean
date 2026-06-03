@@ -1,4 +1,4 @@
-import Stdlib.Field.Bn254
+import Lampe.Crypto.Bn254
 import Mathlib.NumberTheory.LucasPrimality
 import Mathlib.Tactic.NormNum.Prime
 
@@ -11,16 +11,16 @@ Do not edit by hand; rerun the script if the cert needs to change.
 It provides:
 - A formal Pratt primality certificate for the BN254 scalar-field prime
   (a 254-bit number), using Mathlib's `lucas_primality` theorem.
-- The canonical `Bn254.prime : Lampe.Prime` value built from that cert.
-- The `Bn254.Prime Bn254.prime` typeclass instance.
+- The canonical `bn254Prime : Lampe.Prime` value built from that cert.
+- The `Bn254.Prime bn254Prime` typeclass instance.
 
 Downstream consumers that need a concrete BN254-context `p : Lampe.Prime`
 should import this file. Files that only use BN254 algebraic facts
 (via the `[Bn254.Prime p]` instance argument) can stay with just
-`Stdlib.Field.Bn254` and let downstream callers provide the instance.
+`Lampe.Crypto.Bn254` and let downstream callers provide the instance.
 -/
 
-namespace Lampe.Stdlib.Field.Bn254
+namespace Lampe.Crypto.Bn254
 
 /-! ### Pratt certificate
 
@@ -338,14 +338,17 @@ theorem primeNat_prime : Nat.Prime primeNat :=
 
 private lemma primeNat_gt_two : primeNat > 2 := by unfold primeNat; norm_num
 
+end Lampe.Crypto.Bn254
+
 /-- The canonical BN254 `Lampe.Prime` value. -/
-def prime : Lampe.Prime := Lampe.Prime.ofNat primeNat primeNat_prime primeNat_gt_two
+def bn254Prime : Lampe.Prime :=
+  Lampe.Prime.ofNat Lampe.Crypto.Bn254.primeNat
+    Lampe.Crypto.Bn254.primeNat_prime Lampe.Crypto.Bn254.primeNat_gt_two
 
-/-- The canonical `Bn254.Prime Bn254.prime` instance.
+/-- The canonical `Bn254.Prime bn254Prime` instance.
 
-Resolves automatically for downstream specs that take `[Bn254.Prime p]`. -/
-instance : Bn254.Prime Bn254.prime where
-  modulus_eq := by native_decide
-
-end Lampe.Stdlib.Field.Bn254
+Resolves automatically for downstream specs that take
+`[Lampe.Crypto.Bn254.Prime p]`. -/
+instance : Lampe.Crypto.Bn254.Prime bn254Prime where
+  natVal_eq_r_scalar := by native_decide
 
