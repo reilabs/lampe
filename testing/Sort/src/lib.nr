@@ -1,7 +1,7 @@
 pub mod quicksort;
 use crate::quicksort::quicksort::quicksort as quicksort;
 use crate::quicksort::quicksort_explicit::quicksort as quicksort_explicit;
-use dep::check_shuffle::{check_shuffle, get_shuffle_indices};
+use ::check_shuffle::{check_shuffle, get_shuffle_indices};
 
 /**
  * Given an input array of type T, return a sorted array.
