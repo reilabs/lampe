@@ -176,12 +176,19 @@ theorem valueNat_eq_scalarValueNat {p} (self : Scalar.denote p) :
     Lampe.Crypto.EmbeddedCurve.scalarValueNat,
     Lampe.Crypto.Bn254.pow128, Lampe.Crypto.EmbeddedCurve.pow128]
 
-/-- The canonical-representative predicate: each limb fits in 128 bits.
-This is the well-formedness condition under which `Scalar.eq` agrees
-with `Scalar.valueNat` equality. -/
+/-- The canonical-representative predicate: limb-range canonicality
+matching Barretenberg's MSM gadget's in-circuit range constraints.
+Per `cycle_scalar.hpp`'s `LO_BITS = 128` and `HI_BITS = 126`, the
+gadget enforces `lo.val < 2^128 ∧ hi.val < 2^126` via
+`create_limbed_range_constraint` inside `cycle_group::batch_mul`.
+
+This is also the well-formedness condition under which `Scalar.eq`
+agrees with `Scalar.valueNat` equality. The `hi.val < 2^126` bound is
+the tighter of the two ranges; the `lo.val < 2^128` bound matches the
+low-limb width. -/
 def Canonical {p} (self : Scalar.denote p) : Prop :=
   (Scalar.lo self).val < Lampe.Crypto.Bn254.pow128 ∧
-  (Scalar.hi self).val < Lampe.Crypto.Bn254.pow128
+  (Scalar.hi self).val < 2 ^ 126
 
 /-- The canonical 128-bit-limb decomposition of a field element: split
 `f.val` as `(f.val % 2^128, f.val / 2^128)` and re-embed both halves
@@ -485,19 +492,45 @@ theorem canonicalDecomp_Canonical {p} [Lampe.Crypto.Bn254.Prime p]
     simp only [Lampe.Crypto.EmbeddedCurve.scalarLo, Scalar.mk]
     rw [this]
     exact hmod_lt
-  · -- (((f.val / pow128 : Nat) : Fp p)).val < pow128
+  · -- (((f.val / pow128 : Nat) : Fp p)).val < 2 ^ 126.
+    -- f.val < p = plo + pow128 * phi < pow128 * 2^126, so
+    -- f.val / pow128 < 2^126 — matches the gadget's `HI_BITS = 126`.
     have hpos : 0 < Lampe.Crypto.Bn254.pow128 := by
       unfold Lampe.Crypto.Bn254.pow128; decide
     have hf : f.val < p.natVal := f.val_lt
-    have hp_lt_sq : p.natVal < Lampe.Crypto.Bn254.pow128 *
-        Lampe.Crypto.Bn254.pow128 := p_lt_pow128_sq (p := p)
-    have hf_lt_sq : f.val < Lampe.Crypto.Bn254.pow128 *
-        Lampe.Crypto.Bn254.pow128 := lt_trans hf hp_lt_sq
-    have hdiv_lt : f.val / Lampe.Crypto.Bn254.pow128 <
+    have hmod : p.natVal =
+        Lampe.Crypto.Bn254.plo +
+          Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi :=
+      Lampe.Crypto.Bn254.Prime.natVal_eq_limbs
+    have hplo_lt_pow : Lampe.Crypto.Bn254.plo <
+        Lampe.Crypto.Bn254.pow128 := by
+      unfold Lampe.Crypto.Bn254.plo Lampe.Crypto.Bn254.pow128; decide
+    have hphi_lt_2_126 : Lampe.Crypto.Bn254.phi < 2 ^ 126 := by
+      unfold Lampe.Crypto.Bn254.phi; decide
+    have hphi_succ_le : Lampe.Crypto.Bn254.phi + 1 ≤ 2 ^ 126 :=
+      Nat.succ_le_of_lt hphi_lt_2_126
+    -- f.val < p ≤ pow128 * (phi + 1) ≤ pow128 * 2^126.
+    have hp_lt_mul : p.natVal < Lampe.Crypto.Bn254.pow128 *
+        (Lampe.Crypto.Bn254.phi + 1) := by
+      have hexp : Lampe.Crypto.Bn254.pow128 *
+          (Lampe.Crypto.Bn254.phi + 1) =
+          Lampe.Crypto.Bn254.pow128 +
+            Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi := by ring
+      omega
+    have hp_lt_2_126 : p.natVal < Lampe.Crypto.Bn254.pow128 * 2 ^ 126 :=
+      lt_of_lt_of_le hp_lt_mul (Nat.mul_le_mul_left _ hphi_succ_le)
+    have hf_lt_2_126 : f.val < Lampe.Crypto.Bn254.pow128 * 2 ^ 126 :=
+      lt_trans hf hp_lt_2_126
+    have hdiv_lt : f.val / Lampe.Crypto.Bn254.pow128 < 2 ^ 126 :=
+      Nat.div_lt_of_lt_mul (by simpa [Nat.mul_comm] using hf_lt_2_126)
+    -- The weaker `< pow128` bound (used to map into Fp via val_natCast_of_lt).
+    have h2_126_lt_pow128 : (2 : Nat) ^ 126 < Lampe.Crypto.Bn254.pow128 := by
+      unfold Lampe.Crypto.Bn254.pow128; decide
+    have hdiv_lt_pow : f.val / Lampe.Crypto.Bn254.pow128 <
         Lampe.Crypto.Bn254.pow128 :=
-      Nat.div_lt_of_lt_mul (by simpa [Nat.mul_comm] using hf_lt_sq)
+      lt_trans hdiv_lt h2_126_lt_pow128
     have hdiv_lt_p : f.val / Lampe.Crypto.Bn254.pow128 < p.natVal :=
-      lt_of_lt_of_le hdiv_lt (le_of_lt (Lampe.Crypto.Bn254.pow128_lt_prime (p := p)))
+      lt_of_lt_of_le hdiv_lt_pow (le_of_lt (Lampe.Crypto.Bn254.pow128_lt_prime (p := p)))
     have hval : (((f.val / Lampe.Crypto.Bn254.pow128 : Nat) : Fp p)).val =
         f.val / Lampe.Crypto.Bn254.pow128 :=
       ZMod.val_natCast_of_lt hdiv_lt_p
