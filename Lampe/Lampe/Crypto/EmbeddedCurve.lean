@@ -81,6 +81,16 @@ def pow128 : Nat := 2 ^ 128
 def scalarValueNat {p : Prime} (s : Scalar p) : Nat :=
   (scalarLo s).val + pow128 * (scalarHi s).val
 
+/-- Per-scalar limb-range canonicality matching the in-circuit constraints
+that Barretenberg's MSM gadget (`cycle_group::batch_mul`) emits on every
+input scalar via `create_limbed_range_constraint`, per `cycle_scalar.hpp`'s
+`LO_BITS = 128` and `HI_BITS = 126`. The asymmetric width (`126` on the
+high limb) is fixed by the Grumpkin scalar field being approximately 254
+bits wide: 128 + 126 = 254 covers the field with room to spare for
+canonicality. -/
+def scalarCanonical {p : Prime} (s : Scalar p) : Prop :=
+  (scalarLo s).val < pow128 ∧ (scalarHi s).val < 2 ^ 126
+
 def curvePoint? {p : Prime} (pt : Point p) : Option ((affineCurve p).Point) :=
   if pointIsInfinite pt then
     some 0

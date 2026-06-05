@@ -1256,6 +1256,17 @@ private def msmAccFinRange {p : Prime} {N : U 32}
   ∑ i, Lampe.Crypto.EmbeddedCurve.scalarValueNat (scalars.get i) •
     (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).get (h i)
 
+/-- Builtin-level MSM spec — result equation only.
+
+The postcondition matches the original single-equation spec shape so
+downstream proofs (notably `pedersen_hash_with_separator_spec`) continue
+to consume it via `rw`-style substitution chains. The builtin's
+underlying precondition now includes `scalarCanonical` (modelling the
+gadget's `create_limbed_range_constraint`); we discharge that
+canonicality requirement inside the proof but do not surface it here.
+
+A separate `multi_scalar_mul_builtin_canon_spec` exposes the
+canonicality fact for callers that need it. -/
 theorem multi_scalar_mul_builtin_spec {p N}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
@@ -1303,6 +1314,61 @@ private theorem multi_scalar_mul_concrete_spec {p N}
     subst_vars
     rfl
 
+/-- Builtin-level canonicality fact for the MSM call. Surfaces the
+gadget's `create_limbed_range_constraint` postcondition (`LO_BITS = 128`,
+`HI_BITS = 126`) for callers that want to compose with downstream
+uniqueness machinery (`Scalar.canonical_decomp_unique`).
+
+This is a *separate* spec from `multi_scalar_mul_builtin_spec` because
+combining the result-equation and the canonicality fact into a single
+conjunctive postcondition would break `rw`-style downstream proofs.
+Both specs target the same builtin call; callers compose them via
+`STHoare.consequence_post` or apply them separately at distinct call
+sites. -/
+theorem multi_scalar_mul_builtin_canon_spec {p N}
+    {points : Tp.denote p (Point.type.array N)}
+    {scalars : Tp.denote p (Scalar.type.array N)} :
+    STHoare p env ⟦⟧
+      (.callBuiltin [Point.type.array N, Scalar.type.array N, .bool] (Point.type.array 1)
+        Builtin.multiScalarMul h![points, scalars, true])
+      (fun _ => ∀ i, Lampe.Crypto.EmbeddedCurve.scalarCanonical (scalars.get i)) := by
+  unfold Builtin.multiScalarMul
+  show STHoare p env _
+    (.callBuiltin [Lampe.Crypto.EmbeddedCurve.pointTp.array N,
+        Lampe.Crypto.EmbeddedCurve.scalarTp.array N, .bool]
+      (Lampe.Crypto.EmbeddedCurve.pointTp.array 1) _ h![points, scalars, true]) _
+  apply STHoare.pureBuiltin_intro_consequence (a := N)
+  any_goals rfl
+  rintro ⟨_, hCan⟩
+  exact hCan
+
+/-- Combined builtin spec: result equation **and** canonicality. This is
+the spec callers use when they need both facts without going through
+two separate spec applications. The proof is direct because the
+builtin's precondition gives us both `onCurve` and canonicality. -/
+theorem multi_scalar_mul_builtin_combined_spec {p N}
+    {points : Tp.denote p (Point.type.array N)}
+    {scalars : Tp.denote p (Scalar.type.array N)}
+    (hOnCurve : ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome) :
+    STHoare p env ⟦⟧
+      (.callBuiltin [Point.type.array N, Scalar.type.array N, .bool] (Point.type.array 1)
+        Builtin.multiScalarMul h![points, scalars, true])
+      (fun r =>
+        (∀ i, Lampe.Crypto.EmbeddedCurve.scalarCanonical (scalars.get i)) ∧
+        r =
+          (⟨[Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+                (msmAccFinRange points scalars hOnCurve)],
+              by simp⟩ : Tp.denote p (Point.type.array 1))) := by
+  unfold Builtin.multiScalarMul
+  show STHoare p env _
+    (.callBuiltin [Lampe.Crypto.EmbeddedCurve.pointTp.array N,
+        Lampe.Crypto.EmbeddedCurve.scalarTp.array N, .bool]
+      (Lampe.Crypto.EmbeddedCurve.pointTp.array 1) _ h![points, scalars, true]) _
+  apply STHoare.pureBuiltin_intro_consequence (a := N)
+  any_goals rfl
+  rintro ⟨_, hCan⟩
+  exact ⟨hCan, rfl⟩
+
 /-- Helper: if `points.toList = Ps.toList.map encodeCurvePoint`, then `points.get i =
 encodeCurvePoint (Ps.get i)` for every `i`. -/
 private lemma points_get_eq_encode {p : Prime} {N : U 32}
@@ -1345,9 +1411,9 @@ private lemma msmAccFinRange_eq_sum {p : Prime} {N : U 32}
     rw [points_get_eq_encode h_enc i]; simp
   rw [Option.get_of_eq_some _ hSome, ← Scalar.valueNat_eq_scalarValueNat]
 
-/-- Canonical spec for `multi_scalar_mul`: when each input point is
-the encoding of a Mathlib `WeierstrassCurve.Affine.Point`, the MSM
-result is the encoding of `∑ᵢ Scalar.valueNat (scalars i) • Ps i`. -/
+/-- Result-equation spec for `multi_scalar_mul`. When each input point is
+the encoding of a Mathlib `WeierstrassCurve.Affine.Point`, the result is
+`encodeCurvePoint (∑ Scalar.valueNat (scalars i) • Ps i)`. -/
 theorem multi_scalar_mul_spec {p N}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
@@ -1369,6 +1435,79 @@ theorem multi_scalar_mul_spec {p N}
     (points := points) (scalars := scalars) (hOnCurve := hOnCurve)
   rw [msmAccFinRange_eq_sum h_enc hOnCurve] at h
   exact h
+
+/-- Canonicality fact at the `multi_scalar_mul` wrapper level. Same as
+`multi_scalar_mul_builtin_canon_spec` but for the wrapper call. -/
+theorem multi_scalar_mul_canon_spec {p N}
+    {points : Tp.denote p (Point.type.array N)}
+    {scalars : Tp.denote p (Scalar.type.array N)} :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
+        h![N] h![points, scalars])
+      (fun _ => ∀ i, Scalar.Canonical (scalars.get i)) := by
+  enter_decl
+  steps
+  apply STHoare.letIn_intro
+    (Q := fun _ : Tp.denote p (Point.type.array 1) =>
+      ⟦∀ i, Lampe.Crypto.EmbeddedCurve.scalarCanonical (scalars.get i)⟧)
+  · exact multi_scalar_mul_builtin_canon_spec (p := p) (N := N)
+      (points := points) (scalars := scalars)
+  · intro r
+    steps
+    assumption
+
+/-- Combined wrapper spec: result equation and canonicality together.
+Used by Pedersen `_spec_canonical` proofs to extract both facts in a
+single `steps` invocation. -/
+theorem multi_scalar_mul_combined_spec {p N}
+    {points : Tp.denote p (Point.type.array N)}
+    {scalars : Tp.denote p (Scalar.type.array N)}
+    {Ps : List.Vector (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point N.toNat}
+    (h_enc :
+      points.toList = Ps.toList.map Lampe.Crypto.EmbeddedCurve.encodeCurvePoint) :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
+        h![N] h![points, scalars])
+      (fun r =>
+        (∀ i, Scalar.Canonical (scalars.get i)) ∧
+        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+          (∑ i, Scalar.valueNat (scalars.get i) • Ps.get i)) := by
+  have hOnCurve :
+      ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome := by
+    intro i
+    rw [points_get_eq_encode h_enc i]
+    simp
+  -- Compose result-eq spec and canon spec at the wrapper level by
+  -- proving inline: re-run the body of multi_scalar_mul (which is
+  -- multi_scalar_mul_array_return(...)[0]) using the combined builtin
+  -- spec for the body's builtin call.
+  enter_decl
+  steps
+  apply STHoare.letIn_intro
+    (Q := fun r : Tp.denote p (Point.type.array 1) =>
+      ⟦(∀ i, Lampe.Crypto.EmbeddedCurve.scalarCanonical (scalars.get i)) ∧
+       r =
+        (⟨[Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+              (msmAccFinRange points scalars hOnCurve)],
+            by simp⟩ : Tp.denote p (Point.type.array 1))⟧)
+  · exact multi_scalar_mul_builtin_combined_spec (p := p) (N := N)
+      (points := points) (scalars := scalars) (hOnCurve := hOnCurve)
+  · intro r
+    steps
+    -- After steps, the conjunction `(canon ∧ r = ⟨[...], _⟩)` is in
+    -- scope. Extract and rebuild the goal's conjunction with the
+    -- bridged sum form.
+    have hPair :
+        (∀ i, Lampe.Crypto.EmbeddedCurve.scalarCanonical (scalars.get i)) ∧
+        r = (⟨[Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+                (msmAccFinRange points scalars hOnCurve)],
+            by simp⟩ : Tp.denote p (Point.type.array 1)) := by assumption
+    obtain ⟨hCan, hr⟩ := hPair
+    refine ⟨hCan, ?_⟩
+    subst hr
+    subst_vars
+    rw [msmAccFinRange_eq_sum h_enc hOnCurve]
+    rfl
 
 private theorem fixed_base_scalar_mul_concrete_spec {p}
     {scalar : Scalar.denote p}
@@ -1410,8 +1549,6 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
       (points := pointsVec)
       (scalars := scalarsVec)
       (hOnCurve := hOnCurve)]
-  -- The hypothesis a✝ states v = encodeCurvePoint (msmAccFinRange pointsVec scalarsVec hOnCurve).
-  -- Reduce via the bridge lemma + `Fin.sum_univ_one` for the singleton.
   have hmsm :
       msmAccFinRange pointsVec scalarsVec hOnCurve =
         Lampe.Crypto.EmbeddedCurve.scalarValueNat scalar • Pgen := by
@@ -1430,15 +1567,7 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
   rw [hmsm] at hRet
   exact hRet
 
-/-- Canonical spec for `fixed_base_scalar_mul`: provided the Grumpkin
-generator `Point.generator` is the encoding of some Mathlib
-`(affineCurve p).Point` `Pgen`, the result is the encoding of
-`Scalar.valueNat scalar • Pgen`.
-
-The hypothesis `h_gen` is a side condition because proving
-`(affineCurve p).Nonsingular 1 <generator-y>` for an arbitrary `p`
-requires knowing the concrete characteristic; downstream callers
-that pin `p` to BN254 discharge it directly. -/
+/-- Spec for `fixed_base_scalar_mul`. -/
 theorem fixed_base_scalar_mul_spec {p}
     {scalar : Scalar.denote p}
     {Pgen : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point}
