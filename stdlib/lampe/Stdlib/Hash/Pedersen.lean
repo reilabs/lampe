@@ -61,8 +61,6 @@ def pedersenHashLengthBytes : List Nat :=
 
 /-! ### `derive_pedersen_generators` builtin spec -/
 
-/-- Direct spec for the `derivePedersenGenerators` foreign builtin
-descriptor. -/
 private theorem derivePedersenGenerators_builtin_spec {p}
     {N M : U 32}
     {domainBytes : Tp.denote p ((Tp.u 8).array M)}
@@ -80,13 +78,6 @@ private theorem derivePedersenGenerators_builtin_spec {p}
 
 /-! ### `derive_generators` wrapper spec -/
 
-/-- Spec for `std::hash::derive_generators`. The body is
-`assertConstant(domain_bytes); assertConstant(starting_index);
-derivePedersenGenerators(domain_bytes, starting_index)`.
-
-The two `assertConstant` calls are runtime hints, modeled as
-no-ops; the wrapper is therefore extensionally equal to the
-underlying foreign builtin. -/
 theorem derive_generators_spec {p} {N M : U 32}
     {domainBytes : Tp.denote p ((Tp.u 8).array M)}
     {startIdx : U 32} :
@@ -105,34 +96,16 @@ theorem derive_generators_spec {p} {N M : U 32}
 
 /-! ### Bridging lemmas -/
 
-/-- The bytes of the literal `"DEFAULT_DOMAIN_SEPARATOR"` (as produced
-by `Lampe.NoirStr.of`) coincide, under `bytesToList`, with the
-`defaultDomainBytes` constant declared above. Plumbing lemma used by
-the substantive `pedersen_commitment_with_separator` / `pedersen_hash_with_separator`
-specs to bridge between the syntactic `strAsBytes` output and the
-opaque `pedersenGeneratorPoint` domain key. -/
 private lemma strAsBytes_default_domain_eq {p} :
     bytesToList (p := p) (M := (24 : U 32))
       (Lampe.NoirStr.of "DEFAULT_DOMAIN_SEPARATOR") = defaultDomainBytes := by
   rfl
 
-/-- The bytes of the literal `"pedersen_hash_length"` (as produced by
-`Lampe.NoirStr.of`) coincide, under `bytesToList`, with the
-`pedersenHashLengthBytes` constant declared above. Plumbing lemma
-used by the substantive `pedersen_hash_with_separator` spec for the
-length-slot generator. -/
 private lemma strAsBytes_hash_length_eq {p} :
     bytesToList (p := p) (M := (20 : U 32))
       (Lampe.NoirStr.of "pedersen_hash_length") = pedersenHashLengthBytes := by
   rfl
 
-/-- Pointwise-to-`toList` bridge for `derivePedersenGenerators`. Given
-a Mathlib-point vector `Ps` whose `i`-th element encodes (via
-`encodeCurvePoint`) to the opaque generator
-`pedersenGeneratorPoint p domain (start + i)`, the `toList` of the
-derived generator vector equals `Ps.toList.map encodeCurvePoint`.
-This is exactly the `h_enc` hypothesis shape required by
-`multi_scalar_mul_spec`. -/
 private lemma derivePedersenGenerators_h_enc {p : Prime} {N : U 32}
     {domain : List Nat} {start : Nat}
     {Ps : List.Vector (affineCurve p).Point N.toNat}
@@ -167,10 +140,7 @@ Unlike `decompose`, `from_field_unsafe` does **not** call
 `assert_max_bit_size<128>` on the limbs, so the per-limb bounds
 `xlo.val, xhi.val < 2^128` are *not* part of the postcondition;
 the constraint enforced is the canonical-range disjunction
-below. Callers that need the per-limb bound (e.g. for
-`Scalar.Canonical`) should use the constrained
-`EmbeddedCurveScalar::from_field` wrapper and its
-`scalar_from_field_spec`. -/
+below. -/
 theorem from_field_unsafe_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Fp p} :
     STHoare p env ⟦⟧
@@ -265,6 +235,10 @@ private def fromFieldUnsafeRel {p} [Lampe.Crypto.Bn254.Prime p]
           ∧ (v.get ⟨j, hj⟩).1.val < plo)
         ∨ (v.get ⟨j, hj⟩).2.1.val < phi)
 
+/-- Spec for `std::hash::pedersen_commitment_with_separator`. The
+existential witness `Ss` records the per-slot `(lo, hi)` limbs produced
+by `from_field_unsafe`, together with the limb-decomposition equation,
+the canonical-range disjunction, and `Scalar.Canonical (Ss.get i)`. -/
 theorem pedersen_commitment_with_separator_spec {p N}
     [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)}
@@ -281,7 +255,8 @@ theorem pedersen_commitment_with_separator_spec {p N}
                         (separator.toNat + i.val))
           ∧ (∀ i, (input.get i) = (Ss.get i).1 + ((pow128 : Nat) : Fp p) * (Ss.get i).2.1)
           ∧ (∀ i, ((Ss.get i).2.1 = ((phi : Nat) : Fp p) ∧ (Ss.get i).1.val < plo)
-                  ∨ (Ss.get i).2.1.val < phi)) := by
+                  ∨ (Ss.get i).2.1.val < phi)
+          ∧ (∀ i, Scalar.Canonical (Ss.get i))) := by
   let Ps : List.Vector (affineCurve p).Point N.toNat :=
     List.Vector.ofFn (fun i => pedersenGenerator (p := p)
       defaultDomainBytes (separator.toNat + i.val))
@@ -348,12 +323,12 @@ theorem pedersen_commitment_with_separator_spec {p N}
     rw [hGen]
     exact derivePedersenGenerators_h_enc (p := p) (N := N) (domain := defaultDomainBytes)
       (start := separator.toNat) (Ps := Ps) h_gen
-  -- Use multi_scalar_mul_spec to finish.
-  steps [multi_scalar_mul_spec (p := p) (N := N)
+  steps [multi_scalar_mul_combined_spec (p := p) (N := N)
     (points := generators) (scalars := vFinal) (Ps := Ps) h_enc]
-  rename_i hSum
   case v => exact vFinal
-  refine ⟨?_, ?_, ?_⟩
+  rename_i hMsm
+  obtain ⟨hCanon, hSum⟩ := hMsm
+  refine ⟨?_, ?_, ?_, ?_⟩
   ·
     simp only [Scalar.valueNat_eq_scalarValueNat] at hSum
     have hPs_get : ∀ i : Fin N.toNat,
@@ -369,13 +344,53 @@ theorem pedersen_commitment_with_separator_spec {p N}
   ·
     intro i
     exact (hInv i.val i.isLt i.isLt).2
+  ·
+    exact hCanon
 
-/-! ### `pedersen_hash_with_separator` substantive spec -/
+/-- Deterministic closed-form of `pedersen_commitment_with_separator_spec`:
+the result is `encodeCurvePoint` of the MSM with each input collapsed
+to its canonical limb decomposition. -/
+theorem pedersen_commitment_with_separator_spec_canonical {p N}
+    [Lampe.Crypto.Bn254.Prime p]
+    {input : Tp.denote p (Tp.field.array N)}
+    {separator : U 32} :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::hash::pedersen_commitment_with_separator».call h![N]
+        h![input, separator])
+      (fun r =>
+        r = encodeCurvePoint
+              (∑ i, scalarValueNat
+                      (Scalar.canonicalDecomp (input.get i))
+                  • pedersenGenerator (p := p)
+                      defaultDomainBytes (separator.toNat + i.val))) := by
+  apply STHoare.consequence (h_pre_conseq := SLP.entails_self) ?_
+    (pedersen_commitment_with_separator_spec (p := p) (N := N)
+      (input := input) (separator := separator))
+  intro r
+  rw [← SLP.star_exists]
+  apply SLP.exists_intro_l
+  intro Ss
+  apply SLP.pure_left
+  rintro ⟨h_eq, h_decomp, h_disj, h_canon⟩
+  have h_unique : ∀ i, Ss.get i = Scalar.canonicalDecomp (input.get i) := fun i =>
+    Scalar.canonical_decomp_unique (h_canon i) (h_disj i) (h_decomp i)
+  have hSumEq :
+      (∑ i : Fin N.toNat,
+        scalarValueNat (Ss.get i)
+        • pedersenGenerator (p := p)
+            defaultDomainBytes (separator.toNat + i.val)) =
+      ∑ i : Fin N.toNat,
+        scalarValueNat
+            (Scalar.canonicalDecomp (input.get i))
+        • pedersenGenerator (p := p)
+            defaultDomainBytes (separator.toNat + i.val) :=
+    Finset.sum_congr rfl (fun i _ => by rw [h_unique i])
+  apply SLP.pure_right
+  · rw [h_eq, hSumEq]
+  · exact SLP.entails_top
 
--- 1.5x default: the length-slot bookkeeping at the end of the proof
--- (rewriting through `Fin.sum_univ_castSucc` while transporting indices
--- across the `hN1_eq : (N+1).toNat = N.toNat + 1` bridge) needs the
--- extra headroom; the body itself is otherwise tight.
+/-! ### `pedersen_hash_with_separator` spec -/
+
 set_option maxHeartbeats 300000 in
 /-- Spec for `std::hash::pedersen_hash_with_separator`. The body adds
 a length-slot scalar `(N, 0)` at position `N`, derives the corresponding
@@ -400,7 +415,8 @@ theorem pedersen_hash_with_separator_spec {p N}
                           pedersenHashLengthBytes 0))
           ∧ (∀ i, (input.get i) = (Ss.get i).1 + ((pow128 : Nat) : Fp p) * (Ss.get i).2.1)
           ∧ (∀ i, ((Ss.get i).2.1 = ((phi : Nat) : Fp p) ∧ (Ss.get i).1.val < plo)
-                  ∨ (Ss.get i).2.1.val < phi)) := by
+                  ∨ (Ss.get i).2.1.val < phi)
+          ∧ (∀ i, Scalar.Canonical (Ss.get i))) := by
   let Ps : List.Vector (affineCurve p).Point (N.toNat + 1) :=
     List.Vector.ofFn (fun i : Fin (N.toNat + 1) =>
       if h : i.val < N.toNat then
@@ -513,6 +529,15 @@ theorem pedersen_hash_with_separator_spec {p N}
         rw [this, Nat.mod_self] at hNlt_dite
         omega
     rw [hadd, Nat.mod_eq_of_lt hbnd]
+  let Ss : List.Vector (Scalar.denote p) N.toNat :=
+    ⟨List.ofFn fun j : Fin N.toNat => sFinal.get ⟨j.val, by rw [hN1_eq]; omega⟩,
+      by simp⟩
+  have hSs_get : ∀ (i : Fin N.toNat),
+      Ss.get i = sFinal.get ⟨i.val, by rw [hN1_eq]; omega⟩ := by
+    intro i
+    rw [List.Vector.get_eq_get_toList]
+    show (List.ofFn _).get _ = _
+    simp
   set lenScalar : Tp.denote p Scalar.type :=
     HList.toTuple p h![(Builtin.CastTp.cast N : Fp p), (Builtin.CastTp.cast ↑(0 : Fp p) : Fp p)]
       (some «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar».name) with hLenScalar_def
@@ -522,6 +547,33 @@ theorem pedersen_hash_with_separator_spec {p N}
     sFinal.set ⟨N.toNat, hNlt⟩ lenScalar with hsFull_def
   set gFull : Tp.denote p (Point.type.array (N + 1)) :=
     gFinal.set ⟨N.toNat, hNlt⟩ lenGen with hgFull_def
+  have hsFull_get : ∀ (i : Fin N.toNat) (hi : i.val < (N + 1).toNat),
+      sFull.get ⟨i.val, hi⟩ = sFinal.get ⟨i.val, by rw [hN1_eq]; omega⟩ := by
+    intro i hi
+    show (sFinal.set ⟨N.toNat, hNlt⟩ lenScalar).get _ = _
+    rw [List.Vector.get_set_of_ne]
+    intro hh
+    have h_eq : N.toNat = i.val := (Fin.mk.injEq _ _ _ _).mp hh
+    have := i.isLt; omega
+  have hLenScalar_value : scalarValueNat lenScalar = N.toNat := by
+    show (scalarLo lenScalar).val
+      + pow128 *
+        (scalarHi lenScalar).val = N.toNat
+    show ((Builtin.CastTp.cast N : Fp p)).val
+      + pow128 *
+        ((Builtin.CastTp.cast ↑(0 : Fp p) : Fp p)).val = N.toNat
+    have hcast_zero : ((Builtin.CastTp.cast ↑(0 : Fp p) : Fp p)).val = 0 := by
+      show ((0 : Fp p)).val = 0
+      simp
+    rw [hcast_zero, Nat.mul_zero, Nat.add_zero]
+    show ((Builtin.CastTp.cast N : Fp p)).val = N.toNat
+    show ((N.toNat : Fp p)).val = N.toNat
+    rw [ZMod.val_natCast]
+    apply Nat.mod_eq_of_lt
+    have hNbnd : N.toNat < 2^32 := N.isLt
+    have hp128 : (2^32 : Nat) < Lampe.Crypto.Bn254.pow128 := by decide
+    have hpprime := Lampe.Crypto.Bn254.pow128_lt_prime (p := p)
+    omega
   set Ps_full : List.Vector (affineCurve p).Point (N + 1).toNat :=
     ⟨Ps.toList, by rw [List.Vector.toList_length]; exact hN1_eq.symm⟩ with hPs_full_def
   have hPs_full_get : ∀ (k : Nat) (hk : k < (N + 1).toNat) (hk' : k < N.toNat + 1),
@@ -552,7 +604,6 @@ theorem pedersen_hash_with_separator_spec {p N}
         rw [derivePedersenGenerators_get]
         simp
       rw [hlg]
-      -- The goal: pedersenGeneratorPoint p pedersenHashLengthBytes 0 = (Ps_full.map encodeCurvePoint).get ⟨k, hk⟩
       symm
       calc (Ps_full.map encodeCurvePoint).get ⟨k, hk⟩
           = encodeCurvePoint (Ps_full.get ⟨k, hk⟩) := by
@@ -561,30 +612,21 @@ theorem pedersen_hash_with_separator_spec {p N}
             rw [hPs_full_get k hk hkSucc]
         _ = encodeCurvePoint
               (Ps.get ⟨N.toNat, Nat.lt_succ_self _⟩) := by
-            congr 1
-            apply congrArg
-            apply Fin.ext; exact h_isN
+            congr 1; apply congrArg; apply Fin.ext; exact h_isN
         _ = _ := h_len_gen
     · have hkN : k < N.toNat := by omega
-      have hkN1 : k < (N + 1).toNat := hk
-      have hsetget : gFull.get ⟨k, hk⟩ = gFinal.get ⟨k, hkN1⟩ := by
-        show (gFinal.set ⟨N.toNat, hNlt⟩ lenGen).get ⟨k, hk⟩ = gFinal.get ⟨k, hkN1⟩
+      have hsetget : gFull.get ⟨k, hk⟩ = gFinal.get ⟨k, hk⟩ := by
+        show (gFinal.set ⟨N.toNat, hNlt⟩ lenGen).get ⟨k, hk⟩ = gFinal.get ⟨k, hk⟩
         rw [List.Vector.get_set_of_ne]
         intro hh
-        have : N.toNat = k := (Fin.mk.injEq _ _ _ _).mp hh
-        exact h_isN this.symm
-      rw [hsetget]
-      have hgFinalEq : gFinal.get ⟨k, hkN1⟩ = domain_generators.get ⟨k, hkN⟩ :=
-        (hInv k hkN hkN hkN1).2
-      rw [hgFinalEq, hDom]
+        exact h_isN ((Fin.mk.injEq _ _ _ _).mp hh).symm
+      rw [hsetget, (hInv k hkN hkN hk).2, hDom]
       symm
       calc (Ps_full.map encodeCurvePoint).get ⟨k, hk⟩
           = encodeCurvePoint (Ps_full.get ⟨k, hk⟩) := by
             simp [List.Vector.get_map]
         _ = encodeCurvePoint (Ps.get ⟨k, hkSucc⟩) := by
             rw [hPs_full_get k hk hkSucc]
-        _ = encodeCurvePoint
-              (Ps.get ⟨(⟨k, hkN⟩ : Fin N.toNat).val, Nat.lt_succ_of_lt (⟨k, hkN⟩ : Fin N.toNat).isLt⟩) := rfl
         _ = pedersenGeneratorPoint p defaultDomainBytes
               (BitVec.toNat separator + (⟨k, hkN⟩ : Fin N.toNat).val) := h_gen ⟨k, hkN⟩
         _ = (derivePedersenGenerators p defaultDomainBytes
@@ -622,23 +664,16 @@ theorem pedersen_hash_with_separator_spec {p N}
     have hCp : curvePoint? (gFull.get i) = some (Ps_full.get i) := by
       rw [hGetEnc i]; simp
     rw [Option.get_of_eq_some _ hCp]
-  -- Use steps with the builtin spec.
-  steps [Lampe.Stdlib.EmbeddedCurveOps.multi_scalar_mul_builtin_spec (p := p) (N := N + 1)
-    (points := gFull) (scalars := sFull) hOnCurve]
-  -- Provide the existential witness Ss as the first N entries of sFinal.
-  case v =>
-    refine ⟨List.ofFn (fun i : Fin N.toNat => sFinal.get ⟨i.val, ?_⟩), ?_⟩
-    · omega
-    · simp
-  -- Now discharge the goal: v = pointX (encodeCurvePoint (∑ ... + N • Ps.last)).
-  rename_i hSumRes
-  -- Simplify hSumRes: `indexTpl ... Member.head` reduces to the first projection of the singleton's first element.
-  refine ⟨?_, ?_, ?_⟩
-  · -- Result equality. We have:
-    --   hSumRes : v = indexTpl (Vector.get ⟨[encodeCurvePoint <msmAcc>], _⟩ ⟨0, _⟩) Member.head
-    --   hSumEq : <msmAcc-as-sum> = ∑ i, scalarValueNat (sFull.get i) • Ps_full.get i
-    -- We want: v = pointX (encodeCurvePoint (∑ i : Fin N, ... • Ps_i + N.toNat • Ps_last))
-    rw [hSumRes]
+  steps [Lampe.Stdlib.EmbeddedCurveOps.multi_scalar_mul_builtin_combined_spec
+    (p := p) (N := N + 1) (points := gFull) (scalars := sFull) hOnCurve]
+  case v => exact Ss
+  rcases (‹(∀ _, _) ∧ _› :
+      (∀ i, scalarCanonical (sFull.get i)) ∧ _)
+    with ⟨hCanonFull, hSumRes⟩
+  refine ⟨?_, ?_, ?_, ?_⟩
+  ·
+    subst hSumRes
+    subst_vars
     show pointX
         (encodeCurvePoint _) = _
     congr 1
@@ -663,99 +698,86 @@ theorem pedersen_hash_with_separator_spec {p N}
     ·
       refine Finset.sum_congr rfl (fun i _ => ?_)
       have hi_N1 : i.val < (N + 1).toNat := by rw [hN1_eq]; omega
-      -- The Fin index `⟨i.castSucc.val, _⟩` reduces to `⟨i.val, _⟩`.
-      have hcs_idx : (⟨(i.castSucc).val, by rw [hN1_eq]; exact (i.castSucc).isLt⟩ : Fin (N + 1).toNat) =
-          ⟨i.val, hi_N1⟩ := by
-        apply Fin.ext; rfl
-      rw [hcs_idx]
-      -- Now: sFull.get ⟨i.val, hi_N1⟩ = sFinal.get ⟨i.val, hi_N1⟩.
-      have hsFull_eq : sFull.get ⟨i.val, hi_N1⟩ = sFinal.get ⟨i.val, hi_N1⟩ := by
-        show (sFinal.set ⟨N.toNat, hNlt⟩ lenScalar).get _ = _
-        rw [List.Vector.get_set_of_ne]
-        intro hh
-        have h_eq : N.toNat = i.val := (Fin.mk.injEq _ _ _ _).mp hh
-        have := i.isLt; omega
-      rw [hsFull_eq]
-      rw [hPs_full_get i.val hi_N1 (Nat.lt_succ_of_lt i.isLt)]
-      rw [hPs_get_lt i]
-      have hSs_eq :
-          List.Vector.get
-            (⟨List.ofFn fun j : Fin N.toNat => sFinal.get ⟨j.val, by omega⟩,
-                by simp⟩ : List.Vector (Scalar.denote p) N.toNat) i =
-            sFinal.get ⟨i.val, hi_N1⟩ := by
-        rw [List.Vector.get_eq_get_toList]
-        show (List.ofFn _).get _ = _
-        simp
-      rw [hSs_eq]
+      have hcs_idx : (⟨(i.castSucc).val, by rw [hN1_eq]; exact (i.castSucc).isLt⟩ :
+          Fin (N + 1).toNat) = ⟨i.val, hi_N1⟩ := Fin.ext rfl
+      rw [hcs_idx, hsFull_get i hi_N1,
+          hPs_full_get i.val hi_N1 (Nat.lt_succ_of_lt i.isLt),
+          hPs_get_lt i, hSs_get i]
     ·
       have hN_lt_N1 : N.toNat < (N + 1).toNat := hNlt
       have hsFull_last : sFull.get ⟨N.toNat, hN_lt_N1⟩ = lenScalar := by
         show (sFinal.set ⟨N.toNat, hNlt⟩ lenScalar).get _ = _
         rw [List.Vector.get_set_same]
-      have hPsFull_last :
-          Ps_full.get ⟨N.toNat, hN_lt_N1⟩ =
-            Ps.get ⟨N.toNat, Nat.lt_succ_self _⟩ := by
-        rw [hPs_full_get N.toNat _ (Nat.lt_succ_self _)]
-      -- The form `(Fin.last N.toNat).val` reduces to N.toNat.
-      have hidx :
-          (⟨(Fin.last N.toNat).val, by rw [hN1_eq]; exact (Fin.last N.toNat).isLt⟩ :
-            Fin (N + 1).toNat) = ⟨N.toNat, hN_lt_N1⟩ := by
-        apply Fin.ext; rfl
-      rw [hidx, hsFull_last, hPsFull_last]
-      rw [hPs_get_last]
-      -- scalarValueNat lenScalar = N.toNat.
-      have hsv : scalarValueNat lenScalar = N.toNat := by
-        show (scalarLo lenScalar).val
-          + pow128 *
-            (scalarHi lenScalar).val = N.toNat
-        show ((Builtin.CastTp.cast N : Fp p)).val
-          + pow128 *
-            ((Builtin.CastTp.cast ↑(0 : Fp p) : Fp p)).val = N.toNat
-        have hcast_zero : ((Builtin.CastTp.cast ↑(0 : Fp p) : Fp p)).val = 0 := by
-          show ((0 : Fp p)).val = 0
-          simp
-        rw [hcast_zero]
-        show ((Builtin.CastTp.cast N : Fp p)).val + _ * 0 = N.toNat
-        simp only [Nat.mul_zero, Nat.add_zero]
-        show ((N.toNat : Fp p)).val = N.toNat
-        rw [ZMod.val_natCast]
-        apply Nat.mod_eq_of_lt
-        have hNlt2 : N.toNat < 2^32 := N.isLt
-        have hpow128 : (2^32 : Nat) < Lampe.Crypto.Bn254.pow128 := by decide
-        have hpprime := Lampe.Crypto.Bn254.pow128_lt_prime (p := p)
-        omega
-      rw [hsv]
+      have hPsFull_last : Ps_full.get ⟨N.toNat, hN_lt_N1⟩ =
+          Ps.get ⟨N.toNat, Nat.lt_succ_self _⟩ :=
+        hPs_full_get N.toNat _ (Nat.lt_succ_self _)
+      have hidx : (⟨(Fin.last N.toNat).val,
+            by rw [hN1_eq]; exact (Fin.last N.toNat).isLt⟩ :
+          Fin (N + 1).toNat) = ⟨N.toNat, hN_lt_N1⟩ := Fin.ext rfl
+      rw [hidx, hsFull_last, hPsFull_last, hPs_get_last, hLenScalar_value]
   ·
     intro i
-    have hSs_eq :
-        List.Vector.get
-          (⟨List.ofFn fun j : Fin N.toNat => sFinal.get ⟨j.val, by omega⟩,
-              by simp⟩ : List.Vector (Scalar.denote p) N.toNat) i =
-          sFinal.get ⟨i.val, by omega⟩ := by
-      rw [List.Vector.get_eq_get_toList]
-      show (List.ofFn _).get _ = _
-      simp
-    rw [hSs_eq]
+    rw [hSs_get i]
     exact (hInv i.val i.isLt i.isLt (by omega)).1.1
   ·
     intro i
-    have hSs_eq :
-        List.Vector.get
-          (⟨List.ofFn fun j : Fin N.toNat => sFinal.get ⟨j.val, by omega⟩,
-              by simp⟩ : List.Vector (Scalar.denote p) N.toNat) i =
-          sFinal.get ⟨i.val, by omega⟩ := by
-      rw [List.Vector.get_eq_get_toList]
-      show (List.ofFn _).get _ = _
-      simp
-    rw [hSs_eq]
+    rw [hSs_get i]
     exact (hInv i.val i.isLt i.isLt (by omega)).1.2
+  ·
+    intro i
+    have hi_N1 : i.val < (N + 1).toNat := by rw [hN1_eq]; omega
+    rw [hSs_get i, ← hsFull_get i hi_N1]
+    exact hCanonFull ⟨i.val, hi_N1⟩
+
+/-- Deterministic closed-form of `pedersen_hash_with_separator_spec`:
+the x-coordinate of `encodeCurvePoint` of the MSM with each input
+collapsed to its canonical limb decomposition, plus the length-slot
+term `N • pedersenGenerator pedersenHashLengthBytes 0`. -/
+theorem pedersen_hash_with_separator_spec_canonical {p N}
+    [Lampe.Crypto.Bn254.Prime p]
+    {input : Tp.denote p (Tp.field.array N)}
+    {separator : U 32} :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::hash::pedersen_hash_with_separator».call h![N]
+        h![input, separator])
+      (fun r =>
+        r = pointX
+              (encodeCurvePoint
+                ((∑ i : Fin N.toNat,
+                    scalarValueNat
+                        (Scalar.canonicalDecomp (input.get i))
+                    • pedersenGenerator (p := p)
+                        defaultDomainBytes (separator.toNat + i.val))
+                 + (N.toNat : ℕ) • pedersenGenerator (p := p)
+                        pedersenHashLengthBytes 0))) := by
+  apply STHoare.consequence (h_pre_conseq := SLP.entails_self) ?_
+    (pedersen_hash_with_separator_spec (p := p) (N := N)
+      (input := input) (separator := separator))
+  intro r
+  rw [← SLP.star_exists]
+  apply SLP.exists_intro_l
+  intro Ss
+  apply SLP.pure_left
+  rintro ⟨h_eq, h_decomp, h_disj, h_canon⟩
+  have h_unique : ∀ i, Ss.get i = Scalar.canonicalDecomp (input.get i) := fun i =>
+    Scalar.canonical_decomp_unique (h_canon i) (h_disj i) (h_decomp i)
+  have hSumEq :
+      (∑ i : Fin N.toNat,
+        scalarValueNat (Ss.get i)
+        • pedersenGenerator (p := p)
+            defaultDomainBytes (separator.toNat + i.val)) =
+      ∑ i : Fin N.toNat,
+        scalarValueNat
+            (Scalar.canonicalDecomp (input.get i))
+        • pedersenGenerator (p := p)
+            defaultDomainBytes (separator.toNat + i.val) :=
+    Finset.sum_congr rfl (fun i _ => by rw [h_unique i])
+  apply SLP.pure_right
+  · rw [h_eq, hSumEq]
+  · exact SLP.entails_top
 
 /-! ### `pedersen_commitment` wrapper spec -/
 
-/-- Spec for `std::hash::pedersen_commitment`. The body is the single
-call `pedersen_commitment_with_separator(input, 0)`, so this spec is
-the `separator = 0` specialisation of
-`pedersen_commitment_with_separator_spec`. -/
 theorem pedersen_commitment_spec {p N}
     [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)} :
@@ -769,23 +791,34 @@ theorem pedersen_commitment_spec {p N}
                         defaultDomainBytes i.val)
           ∧ (∀ i, (input.get i) = (Ss.get i).1 + ((pow128 : Nat) : Fp p) * (Ss.get i).2.1)
           ∧ (∀ i, ((Ss.get i).2.1 = ((phi : Nat) : Fp p) ∧ (Ss.get i).1.val < plo)
-                  ∨ (Ss.get i).2.1.val < phi)) := by
+                  ∨ (Ss.get i).2.1.val < phi)
+          ∧ (∀ i, Scalar.Canonical (Ss.get i))) := by
   enter_decl
   steps [pedersen_commitment_with_separator_spec (p := p) (N := N)
     (input := input) (separator := (0 : U 32))]
   case v => assumption
-  -- `(0 : U 32).toNat + i.val` reduces to `i.val` via `Nat.zero_add` (after
-  -- BitVec normalisation). Use `simpa` to align the inner spec's hypothesis
-  -- with the wrapper's goal.
+  rename_i hPost
+  simpa using hPost
+
+theorem pedersen_commitment_spec_canonical {p N}
+    [Lampe.Crypto.Bn254.Prime p]
+    {input : Tp.denote p (Tp.field.array N)} :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::hash::pedersen_commitment».call h![N] h![input])
+      (fun r =>
+        r = encodeCurvePoint
+              (∑ i, scalarValueNat
+                      (Scalar.canonicalDecomp (input.get i))
+                  • pedersenGenerator (p := p)
+                      defaultDomainBytes i.val)) := by
+  enter_decl
+  steps [pedersen_commitment_with_separator_spec_canonical (p := p) (N := N)
+    (input := input) (separator := (0 : U 32))]
   rename_i hPost
   simpa using hPost
 
 /-! ### `pedersen_hash` wrapper spec -/
 
-/-- Spec for `std::hash::pedersen_hash`. The body is the single call
-`pedersen_hash_with_separator(input, 0)`, so this spec is the
-`separator = 0` specialisation of
-`pedersen_hash_with_separator_spec`. -/
 theorem pedersen_hash_spec {p N}
     [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)} :
@@ -803,11 +836,33 @@ theorem pedersen_hash_spec {p N}
                           pedersenHashLengthBytes 0))
           ∧ (∀ i, (input.get i) = (Ss.get i).1 + ((pow128 : Nat) : Fp p) * (Ss.get i).2.1)
           ∧ (∀ i, ((Ss.get i).2.1 = ((phi : Nat) : Fp p) ∧ (Ss.get i).1.val < plo)
-                  ∨ (Ss.get i).2.1.val < phi)) := by
+                  ∨ (Ss.get i).2.1.val < phi)
+          ∧ (∀ i, Scalar.Canonical (Ss.get i))) := by
   enter_decl
   steps [pedersen_hash_with_separator_spec (p := p) (N := N)
     (input := input) (separator := (0 : U 32))]
   case v => assumption
+  rename_i hPost
+  simpa using hPost
+
+theorem pedersen_hash_spec_canonical {p N}
+    [Lampe.Crypto.Bn254.Prime p]
+    {input : Tp.denote p (Tp.field.array N)} :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::hash::pedersen_hash».call h![N] h![input])
+      (fun r =>
+        r = pointX
+              (encodeCurvePoint
+                ((∑ i : Fin N.toNat,
+                    scalarValueNat
+                        (Scalar.canonicalDecomp (input.get i))
+                    • pedersenGenerator (p := p)
+                        defaultDomainBytes i.val)
+                 + (N.toNat : ℕ) • pedersenGenerator (p := p)
+                        pedersenHashLengthBytes 0))) := by
+  enter_decl
+  steps [pedersen_hash_with_separator_spec_canonical (p := p) (N := N)
+    (input := input) (separator := (0 : U 32))]
   rename_i hPost
   simpa using hPost
 
