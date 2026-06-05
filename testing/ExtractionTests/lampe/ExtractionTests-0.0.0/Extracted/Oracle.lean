@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::oracle::use_oracles<>(x: Field) -> Field := {
   let y = {
     («ExtractionTests-0.0.0»::oracle::foo<> as λ(Field) -> Field)(x)

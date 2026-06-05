@@ -4,6 +4,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_struct_def «std-1.0.0-beta.14»::collections::map::Slot<K: Type, V: Type> {
   K,
   V,

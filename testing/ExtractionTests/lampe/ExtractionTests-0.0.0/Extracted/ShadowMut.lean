@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::shadow_mut::shadow_mut<>() -> Array<u32, 2: u32> := {
   let v = (#_ref returning & Vector<u32>)((#_mkVector returning Vector<u32>)((1: u32), (2: u32), (3: u32)));
   let (__0, v) = (#_vectorPopFront returning Tuple<u32, Vector<u32> >)((#_readRef returning Vector<u32>)(v));

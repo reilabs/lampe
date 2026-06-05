@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_global_def «std-1.0.0-beta.14»::hash::poseidon2::RATE: u32 = (3: u32);
 
 noir_def «std-1.0.0-beta.14»::hash::poseidon2::Poseidon2::hash<N: u32>(input: Array<Field, N: u32>, message_size: u32) -> Field := {

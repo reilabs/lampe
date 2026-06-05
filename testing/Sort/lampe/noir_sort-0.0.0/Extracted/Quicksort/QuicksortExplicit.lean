@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «noir_sort-0.0.0»::quicksort::quicksort_explicit::partition<T: Type, N: u32>(arr: & Array<T, N: u32>, low: u32, high: u32, sortfn: λ(T, T) -> bool) -> u32 := {
   (#_fresh returning u32)()
 }

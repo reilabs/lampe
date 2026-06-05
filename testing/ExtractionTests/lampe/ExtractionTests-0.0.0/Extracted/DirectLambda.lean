@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::direct_lambda::direct_lambda_call<>() -> Field := {
   let __0 = (fn(x: Field, y: Field): Field := (#_fAdd returning Field)(x, y));
   (__0 as λ(Field, Field) -> Field)((1: Field), (2: Field))

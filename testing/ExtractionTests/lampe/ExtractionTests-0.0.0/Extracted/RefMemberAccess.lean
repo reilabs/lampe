@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::ref_member_access::Bar::mutate<>(self: & «ExtractionTests-0.0.0»::ref_member_access::Bar<>) -> Unit := {
   ((*self: «ExtractionTests-0.0.0»::ref_member_access::Bar<>).0: Field) = (42: Field);
   #_skip

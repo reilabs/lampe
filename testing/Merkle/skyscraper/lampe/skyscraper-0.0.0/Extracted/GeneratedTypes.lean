@@ -6,5 +6,7 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_struct_def «skyscraper-0.0.0»::Skyscraper<> {}
 

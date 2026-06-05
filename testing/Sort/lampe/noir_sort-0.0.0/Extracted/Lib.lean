@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «noir_sort-0.0.0»::sort<T: Type, N: u32>(input: Array<T, N: u32>) -> Array<T, N: u32> := {
   let sorted = {
     («noir_sort-0.0.0»::quicksort::quicksort::quicksort<T, N: u32> as λ(Array<T, N: u32>) -> Array<T, N: u32>)(input)

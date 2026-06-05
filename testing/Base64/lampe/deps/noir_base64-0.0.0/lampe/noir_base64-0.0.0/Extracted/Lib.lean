@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_global_def «noir_base64-0.0.0»::defaults::BASE64_PADDING_CHAR: u8 = (61: u8);
 
 noir_global_def «noir_base64-0.0.0»::defaults::BASE64_ELEMENTS_PER_CHUNK: u32 = (40: u32);

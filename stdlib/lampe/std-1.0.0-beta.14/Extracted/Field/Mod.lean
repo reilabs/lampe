@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::field::assert_max_bit_size<BIT_SIZE: u32>(self: Field) -> Unit := {
   (#_staticAssert returning Unit)((#_uLt returning bool)(uConst!(BIT_SIZE: u32), (#_cast returning u32)((#_modulusNumBits returning u64)())), "BIT_SIZE must be less than modulus_num_bits");
   (#_applyRangeConstraint returning Unit)(self, uConst!(BIT_SIZE: u32));

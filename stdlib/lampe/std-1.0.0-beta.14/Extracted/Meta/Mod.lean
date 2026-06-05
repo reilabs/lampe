@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::«meta»::tests::returning_versus_macro_insertion<>() -> Unit := {
   #_unit
 }

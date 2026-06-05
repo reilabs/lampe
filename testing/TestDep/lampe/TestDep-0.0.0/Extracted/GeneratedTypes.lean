@@ -17,3 +17,5 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+

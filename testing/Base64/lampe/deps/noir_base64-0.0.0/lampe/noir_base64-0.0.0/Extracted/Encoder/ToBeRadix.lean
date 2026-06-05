@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «noir_base64-0.0.0»::encoder::to_be_radix::to_be_radix_64<N: u32>(x: Field) -> Array<u8, N: u32> := {
   let bytes = («std-1.0.0-beta.14»::field::to_le_bytes<((N * 3) / 4): u32> as λ(Field) -> Array<u8, ((N * 3) / 4): u32>)(x);
   let result = {

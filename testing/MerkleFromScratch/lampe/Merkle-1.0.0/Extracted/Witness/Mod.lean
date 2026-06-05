@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Merkle-1.0.0»::witness::weird_assert_eq<>(a: Field, b: Field) -> Unit := {
   let wit = {
     («Merkle-1.0.0»::witness::uncons::weird_eq_witness<> as λ(Field, Field) -> Field)(a, b)

@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::patterns::Option2::some<T: Type>(value: T) -> «ExtractionTests-0.0.0»::patterns::Option2<T> := {
   (#_makeData returning «ExtractionTests-0.0.0»::patterns::Option2<T>)(#_true, value)
 }

@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 def «ExtractionTests-0.0.0».TypeOrder.env : Env := Env.mk
   []
   []

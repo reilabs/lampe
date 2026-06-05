@@ -6,6 +6,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_struct_def «noir_sort-0.0.0»::SortResult<T: Type, N: u32> {
   Array<T, N: u32>,
   Array<u32, N: u32>,

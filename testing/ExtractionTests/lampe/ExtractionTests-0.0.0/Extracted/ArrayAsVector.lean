@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::array_as_vector::array_as_vector_shorthand<>() -> Vector<bool> := {
   let v = (#_asVector returning Vector<bool>)((#_mkArray returning Array<bool, 1: u32>)(#_false));
   v

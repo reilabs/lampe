@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::option::Option::none<T: Type>() -> «std-1.0.0-beta.14»::option::Option<T> := {
   (#_makeData returning «std-1.0.0-beta.14»::option::Option<T>)(#_false, (#_zeroed returning T)())
 }

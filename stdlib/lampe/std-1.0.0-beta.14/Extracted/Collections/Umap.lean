@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_37]<K: Type, V: Type> «std-1.0.0-beta.14»::default::Default<> for «std-1.0.0-beta.14»::collections::umap::Slot<K, V> where [] := {
   noir_def default<>() -> «std-1.0.0-beta.14»::collections::umap::Slot<K, V> := {
     (#_makeData returning «std-1.0.0-beta.14»::collections::umap::Slot<K, V>)((#_zeroed returning K)(), (#_zeroed returning V)(), #_false, #_false)

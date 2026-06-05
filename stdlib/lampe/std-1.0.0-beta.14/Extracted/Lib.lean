@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::print_oracle<T: Type>(with_newline: bool, input: T) -> Unit := {
   (#_fresh returning Unit)()
 }

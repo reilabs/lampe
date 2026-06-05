@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «noir_base64-0.0.0»::boundary_check::__boundary_check<Range: u32>(limit: u32) -> Array<Field, Range: u32> := {
   (#_fresh returning Array<Field, Range: u32>)()
 }

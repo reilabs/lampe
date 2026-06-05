@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Merkle-0.0.0»::witness::uncons::weird_eq_witness<>(a: Field, _b: Field) -> Field := {
   (#_fresh returning Field)()
 }

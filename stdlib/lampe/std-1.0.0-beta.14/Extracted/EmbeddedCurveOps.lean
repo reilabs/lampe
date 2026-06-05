@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint::double<>(self: «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<> := {
   («std-1.0.0-beta.14»::embedded_curve_ops::embedded_curve_add<> as λ(«std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>, «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>) -> «std-1.0.0-beta.14»::embedded_curve_ops::EmbeddedCurvePoint<>)(self, self)
 }

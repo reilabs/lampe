@@ -110,11 +110,6 @@ lemma List.perm_of_index_bijection
             · intro h
               have := bij.injective h
               cases this
-        all_goals first
-          | (rw [List.length_eraseIdx_of_lt]
-             · simp_all
-             · rw [len₂]; apply Fin.prop)
-          | assumption
     have t₁ : l₂ = (l₂.eraseIdx (f 0).toNat).insertIdx (f 0).toNat (l₂[(f 0).toNat]'(by rw [len₂]; apply Fin.prop)) := by
       rw [List.insertIdx_eraseIdx_getElem]
     have t₂ : h₁ :: l₁ = l₁.insertIdx 0 h₁ := by simp

@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_300]<> «std-1.0.0-beta.14»::cmp::Eq<> for «std-1.0.0-beta.14»::«meta»::op::UnaryOp<> where [] := {
   noir_def eq<>(self: «std-1.0.0-beta.14»::«meta»::op::UnaryOp<>, other: «std-1.0.0-beta.14»::«meta»::op::UnaryOp<>) -> bool := {
     (#_fEq returning bool)(self.0, other.0)

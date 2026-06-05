@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::aes128::aes128_encrypt<N: u32>(input: Array<u8, N: u32>, iv: Array<u8, 16: u32>, key: Array<u8, 16: u32>) -> Array<u8, ((N + 16) - (N % 16)): u32> := {
   let padding_length = (#_cast returning u8)((#_uSub returning u32)((16: u32), (#_uRem returning u32)(uConst!(N: u32), (16: u32))));
   let padded_input = (#_ref returning & Array<u8, ((N + 16) - (N % 16)): u32>)((#_mkRepeatedArray returning Array<u8, ((N + 16) - (N % 16)): u32>)((0: u8)));

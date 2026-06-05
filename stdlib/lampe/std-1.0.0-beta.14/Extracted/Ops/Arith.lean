@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_116]<> «std-1.0.0-beta.14»::ops::arith::Add<> for Field where [] := {
   noir_def add<>(self: Field, other: Field) -> Field := {
     (#_fAdd returning Field)(self, other)

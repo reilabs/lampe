@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Multiple-0.0.0»::bar::bar<>(x: Field) -> Field := {
   (#_fAdd returning Field)(x, (1: Field))
 }

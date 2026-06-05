@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::array::map<T: Type, N: u32, U: Type, Env: Type>(self: Array<T, N: u32>, f: λ(T) -> U) -> Array<U, N: u32> := {
   let uninitialized = (#_zeroed returning U)();
   let ret = (#_ref returning & Array<U, N: u32>)((#_mkRepeatedArray returning Array<U, N: u32>)(uninitialized));

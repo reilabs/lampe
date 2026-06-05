@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «ExtractionTests-0.0.0»::black_box_mut::black_box_mut<>(b: u32) -> u32 := {
   let d = (#_ref returning & u32)(b);
   let c = (#_ref returning & u32)((0: u32));

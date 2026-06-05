@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Merkle-1.0.0»::permute::permute<>(s: Array<Field, 2: u32>) -> Array<Field, 2: u32> := {
   let (l, r) = (#_makeData returning Tuple<Field, Field>)((#_arrayIndex returning Field)(s, (0: u32)), (#_arrayIndex returning Field)(s, (1: u32)));
   let (l, r) = (#_makeData returning Tuple<Field, Field>)((#_fAdd returning Field)(r, («Merkle-1.0.0»::utils::square<> as λ(Field) -> Field)(l)), l);

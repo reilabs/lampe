@@ -268,6 +268,12 @@ impl FileGenerator {
         writeln!(result, "import Lampe")?;
         writeln!(result)?;
         writeln!(result, "open Lampe")?;
+        writeln!(result)?;
+        // The generated wrappers re-declare argument names from the Noir
+        // source even when the Lean body does not use them. Silence the
+        // linter for this whole file so users do not see hundreds of
+        // unused-variable warnings on generated code.
+        writeln!(result, "set_option linter.unusedVariables false")?;
 
         writeln!(result)?;
         result.push_str(&extracted_code.content);

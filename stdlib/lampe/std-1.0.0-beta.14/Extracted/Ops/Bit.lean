@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_trait_impl[«std-1.0.0-beta.14».impl_208]<> «std-1.0.0-beta.14»::ops::bit::Not<> for bool where [] := {
   noir_def not<>(self: bool) -> bool := {
     (#_bNot returning bool)(self)

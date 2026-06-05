@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_global_def «ExtractionTests-0.0.0»::field_generics::A: Field = (4294967297: Field);
 
 noir_def «ExtractionTests-0.0.0»::field_generics::foo1<A: Field>() -> Field := {

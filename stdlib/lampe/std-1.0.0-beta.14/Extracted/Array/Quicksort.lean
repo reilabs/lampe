@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::array::quicksort::partition<T: Type, N: u32, Env: Type>(arr: & Array<T, N: u32>, low: u32, high: u32, sortfn: λ(T, T) -> bool) -> u32 := {
   (#_fresh returning u32)()
 }

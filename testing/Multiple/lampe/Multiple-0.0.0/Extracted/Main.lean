@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Multiple-0.0.0»::main<>(x: Field) -> Field := {
   let x = (#_ref returning & Field)(x);
   x = («Multiple-0.0.0»::foo::foo<> as λ(Field) -> Field)((#_readRef returning Field)(x));

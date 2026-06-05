@@ -6,6 +6,14 @@ import os
 import re
 import shutil
 import subprocess
+import sys
+
+# Force line-buffered stdout so progress prints actually appear when they're
+# called rather than at process exit. Under CI / pipe redirection Python's
+# stdout block-buffers by default, which makes the script look stuck mid-job
+# (e.g. "Running tests in stdlib..." showing up right before lake build emits
+# its first per-file line, ~30 min after the print actually ran).
+sys.stdout.reconfigure(line_buffering=True)
 
 # --- Start of copied part.
 # This method is used to resolve the project's root directory,

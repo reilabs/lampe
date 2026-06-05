@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 [[deprecated "This function has been moved to std::hash::keccakf1600"]]
 noir_def «std-1.0.0-beta.14»::hash::keccak::keccakf1600<>(input: Array<u64, 25: u32>) -> Array<u64, 25: u32> := {
   (#_keccakf1600 returning Array<u64, 25: u32>)(input)

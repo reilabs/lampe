@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 [[deprecated "std::collections::vec::Vec is deprecated, use the built-in vector type instead"]]
 noir_def «std-1.0.0-beta.14»::collections::vec::Vec::new<T: Type>() -> «std-1.0.0-beta.14»::collections::vec::Vec<T> := {
   (#_makeData returning «std-1.0.0-beta.14»::collections::vec::Vec<T>)((#_asVector returning Vector<T>)((#_mkArray returning Array<T, 0: u32>)()))

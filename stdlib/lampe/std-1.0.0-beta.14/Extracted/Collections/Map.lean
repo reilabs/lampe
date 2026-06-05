@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_global_def «std-1.0.0-beta.14»::collections::map::MAX_LOAD_FACTOR_NUMERATOR: u32 = (3: u32);
 
 noir_global_def «std-1.0.0-beta.14»::collections::map::MAX_LOAD_FACTOR_DENOMINATOR: u32 = (4: u32);

@@ -1,7 +1,7 @@
 pub mod quicksort;
 use crate::quicksort::quicksort::quicksort as quicksort;
 use crate::quicksort::quicksort_explicit::quicksort as quicksort_explicit;
-use dep::check_shuffle::{check_shuffle, get_shuffle_indices};
+use ::check_shuffle::{check_shuffle, get_shuffle_indices};
 
 /**
  * Given an input array of type T, return a sorted array.
@@ -104,16 +104,23 @@ where
 }
 
 mod test {
+    // These helpers are referenced as function-pointer arguments by
+    // Lampe-side test wrappers (e.g. `sort_via_u32_sorted_spec`).
+    // Nargo can't see Lampe callers, so we silence the unused-fn lint.
+
+    #[allow(dead_code)]
     fn sort_u32(a: u32, b: u32) -> bool {
         a <= b
     }
 
+    #[allow(dead_code)]
     unconstrained fn __sort_u32(a: u32, b: u32) -> bool {
         a <= b
     }
 
     // unconditional_lt will cost fewer constraints than the `<=` operator
     // as we do not need to constrain the case where `a > b`, and assign a boolean variable to the result
+    #[allow(dead_code)]
     fn unconditional_lt(_a: u32, _b: u32) {
         let a = _a as Field;
         let b = _b as Field;

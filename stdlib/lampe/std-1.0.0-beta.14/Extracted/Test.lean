@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «std-1.0.0-beta.14»::test::create_mock_oracle<N: u32>(name: String<N: u32>) -> Field := {
   (#_fresh returning Field)()
 }

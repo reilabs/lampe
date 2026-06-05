@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «Base64Test-0.0.0»::encode_with_padding<N: u32>(input: Array<u8, N: u32>) -> Array<u8, ((((N * 8) / 6) + (((N % 3) % 2) * 3)) + (((N % 3) / 2) * 2)): u32> := {
   («noir_base64-0.0.0»::encoder::Base64EncodeBE::encode<N: u32> as λ(Array<u8, N: u32>) -> Array<u8, ((((N * 8) / 6) + (((N % 3) % 2) * 3)) + (((N % 3) / 2) * 2)): u32>)(input)
 }
