@@ -1109,7 +1109,6 @@ theorem u8_wrapping_mul {p a b}
   enter_decl
   steps [Convert.as_field_for_u8_spec, Convert.as_u8_for_field_spec]
   simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
-  norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^16 := by apply BitVec.toNat_mul_toNat_lt
   have mul_lt_p : BitVec.toNat a * BitVec.toNat b < p.natVal := by linarith [gt.lt_prime]
@@ -1128,7 +1127,6 @@ theorem u16_wrapping_mul {p a b}
   enter_decl
   steps [Convert.as_field_for_u16_spec, Convert.as_u16_for_field_spec]
   simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
-  norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^32 := by apply BitVec.toNat_mul_toNat_lt
   have mul_lt_p : BitVec.toNat a * BitVec.toNat b < p.natVal := by linarith [gt.lt_prime]
@@ -1147,7 +1145,6 @@ theorem u32_wrapping_mul {p a b}
   enter_decl
   steps [Convert.as_field_for_u32_spec, Convert.as_u32_for_field_spec]
   simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
-  norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^64 := by apply BitVec.toNat_mul_toNat_lt
   have mul_lt_p : BitVec.toNat a * BitVec.toNat b < p.natVal := by linarith [gt.lt_prime]
@@ -1166,7 +1163,6 @@ theorem u64_wrapping_mul {p a b}
   enter_decl
   steps [Convert.as_field_for_u64_spec, Convert.as_u64_for_field_spec]
   simp_all only [Builtin.CastTp.cast, BitVec.natCast_eq_ofNat]
-  norm_cast
 
   have mul_max : BitVec.toNat a * BitVec.toNat b < 2^128 := by apply BitVec.toNat_mul_toNat_lt
   have mul_lt_p : BitVec.toNat a * BitVec.toNat b < p.natVal := by linarith [gt.lt_prime]
@@ -1270,7 +1266,6 @@ theorem u128_wrapping_mul {p a b}
   rcases low with ⟨low, low_lt_p⟩
   apply_fun ZMod.val at low_def
 
-  norm_cast at low_def
   rw [← Nat.cast_mul] at low_def
 
   rw [ZMod.val_natCast_of_lt ?lt] at low_def

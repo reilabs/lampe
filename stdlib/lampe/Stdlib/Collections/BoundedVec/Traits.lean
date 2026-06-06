@@ -62,6 +62,6 @@ theorem from_trait_spec {p T MaxLen Len array}
   steps [from_array_spec (p := p) (T := T) (MaxLen := MaxLen) (Len := Len) (array := array) hbounded]
   rename_i r hpost
   rcases hpost with ⟨hwf, hembed⟩
-  exact ⟨hwf, by simpa [hembed]⟩
+  exact ⟨hwf, by simp [hembed]⟩
 
 end Lampe.Stdlib.Collections.BoundedVec

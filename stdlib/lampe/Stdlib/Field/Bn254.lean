@@ -75,7 +75,7 @@ lemma sub_val_gt_pow128_of_lt {p} [Prime.BitsGT p 129] {a b : Fp p}
   have hbne : b ≠ 0 := by
     intro hbz
     subst hbz
-    simpa using h
+    simp at h
   haveI : NeZero b := ⟨hbne⟩
   have hneg : (-b).val = p.natVal - b.val := by
     simpa using (ZMod.val_neg_of_ne_zero b)
@@ -338,7 +338,7 @@ theorem assert_gt_intro {p a b} [Bn254.Prime p] :
   · exact ()
   apply STHoare.iteFalse_intro
   steps [decompose_intro (p := p), assert_gt_limbs_intro (p := p)]
-  simp [SLP.exists_pure] at *
+  simp at *
   rename_i _ a_lo a_hi ha_raw b_lo b_hi hb_raw _ hlimbs
   rcases ha_raw with ⟨ha_eq, ha_lo_lt, ha_hi_lt, ha_val⟩
   rcases hb_raw with ⟨hb_eq, hb_lo_lt, hb_hi_lt, hb_val⟩

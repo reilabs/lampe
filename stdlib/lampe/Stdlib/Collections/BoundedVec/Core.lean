@@ -91,7 +91,7 @@ lemma bounded_iff_wellFormed {p T MaxLen} (v : Repr p T MaxLen) :
 /-- `embed` never exceeds the concrete `len` (it is a `take`). -/
 lemma embed_length_le_len_toNat {p T MaxLen} (v : Repr p T MaxLen) :
     (embed v).length ≤ (len v).toNat := by
-  simpa [embed_length_eq_min_len_toNat (v := v)] using Nat.min_le_left (len v).toNat MaxLen.toNat
+  simp [embed_length_eq_min_len_toNat (v := v)]
 
 /-- `embed` always fits in capacity, regardless of `len`. -/
 lemma embed_length_le_MaxLen {p T MaxLen} (v : Repr p T MaxLen) :
@@ -120,7 +120,8 @@ lemma storage_get_modify_lenLens {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
     (h : ((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).isSome = true) :
     storage (((lenLens (p := p) (T := T) (MaxLen := MaxLen)).modify v n).get h) = storage v := by
   simp [storage, Lens.modify, Lens.get, Access.modify, Option.get_some]
-  cases v <;> rfl
+  cases v
+  rfl
 
 /-- Updating `len` with `lenLens` preserves the concrete `bounded` fact when the new `len` fits. -/
 lemma bounded_get_modify_lenLens_of_toNat_le {p T MaxLen} (v : Repr p T MaxLen) (n : U 32)
@@ -147,7 +148,7 @@ lemma wellFormed_get_modify_lenLens_of_le {p T MaxLen} (v : Repr p T MaxLen) (n 
 lemma u32_cast_vector_length_array_eq {p} {T : Tp} {Len : U 32} (array : Tp.denote p (T.array Len)) :
     (↑(List.Vector.length array) : U 32) = Len := by
   have : List.Vector.length array = Len.toNat := by rfl
-  simpa [this] using (BitVec.ofNat_toNat (x := Len))
+  simp [this]
 
 /-- If `len v = 0`, then the embedded list is empty (assuming the representation is bounded). -/
 lemma embed_nil_of_len_zero {p T MaxLen} {v : Repr p T MaxLen}
@@ -227,7 +228,7 @@ theorem BitVec.toNat_add_of_lt {x y : U 32} (hxy : x.toNat + y.toNat < 2 ^ 32) :
 
 lemma bitvec_ofNat_eq_of_toNat_eq {i : Nat} {x : U 32} (h : i = x.toNat) :
     BitVec.ofNat 32 i = x := by
-  simpa [h] using (BitVec.ofNat_toNat (x := x))
+  simp [h]
 
 @[scoped simp] lemma bitvec_ofNatLT_eq_ofNat {i : Nat} (h : i < 2 ^ 32) :
     BitVec.ofNatLT i h = BitVec.ofNat 32 i := by
@@ -447,7 +448,7 @@ lemma exceeded_len_lt_of_cond_true
   refine lt_of_le_of_ne hi_le ?_
   intro hi_eq
   exact hi_ne (by
-    simpa [hi_eq] using BitVec.ofNat_toNat (x := x))
+    simp [hi_eq])
 
 /-- Post-loop finalization for all `extend_from_*` proofs:
 given the loop invariant at completion, derive `wellFormed` and correct `embed` after updating `len`. -/

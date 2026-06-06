@@ -135,9 +135,7 @@ theorem neg_encodeCurvePoint {p}
       Lampe.Crypto.EmbeddedCurve.mkPoint,
       Lampe.Crypto.EmbeddedCurve.pointX,
       Lampe.Crypto.EmbeddedCurve.pointY,
-      Lampe.Crypto.EmbeddedCurve.pointIsInfinite,
-      WeierstrassCurve.Affine.Point.neg,
-      Lampe.Crypto.EmbeddedCurve.affineCurve_negY]
+      Lampe.Crypto.EmbeddedCurve.pointIsInfinite]
 
 def eq {p} (a b : Point.denote p) : Bool :=
   (Point.isInfinite a && Point.isInfinite b) ||
@@ -342,11 +340,11 @@ theorem point_eq_spec {p} {self other : Point.denote p} :
   obtain ⟨sx, sy, sinf, ⟨⟩⟩ := self
   obtain ⟨ox, oy, oinf, ⟨⟩⟩ := other
   cases sinf <;> cases oinf <;>
-    simp [Point.eq, Point.extEq, Point.canonicalizeInfinity, Point.infinity, Point.mk,
+    simp [Point.eq, Point.extEq, Point.canonicalizeInfinity, Point.infinity,
       Point.x, Point.y, Point.isInfinite, Lampe.Crypto.EmbeddedCurve.pointX,
       Lampe.Crypto.EmbeddedCurve.pointY, Lampe.Crypto.EmbeddedCurve.pointIsInfinite,
       Lampe.Crypto.EmbeddedCurve.pointAtInfinity, Lampe.Crypto.EmbeddedCurve.mkPoint,
-      Prod.mk.injEq, Bool.and_eq_true, decide_eq_true_eq]
+      Bool.and_eq_true, decide_eq_true_eq]
   -- After simp, three residual goals remain (cases produced in order ff, ft, tf, tt):
   -- false.false: sx=ox ∧ sy=oy ↔ (sx,sy,false,()) = (ox,oy,false,())
   · constructor
@@ -521,7 +519,8 @@ theorem point_add_spec {p} {self other : Point.denote p}
         Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (P + Q) := by
     subst hself
     subst hother
-    congr 1 <;> simp
+    congr 1
+    simp
   rw [hEq] at h
   exact h
 
@@ -555,7 +554,8 @@ theorem point_double_spec {p} {self : Point.denote p}
             (Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve) =
         Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (P + P) := by
     subst hself
-    congr 1 <;> simp
+    congr 1
+    simp
   rw [hEq] at h
   exact h
 
@@ -601,7 +601,8 @@ theorem point_sub_spec {p} {self other : Point.denote p}
     subst hself
     subst hother
     simp only [Point.neg_encodeCurvePoint]
-    congr 1 <;> simp
+    congr 1
+    simp
   rw [hEq] at h
   exact h
 
@@ -714,7 +715,7 @@ theorem scalar_from_field_spec {p} [Lampe.Stdlib.Field.Bn254.Prime p]
           scalar.val = lo.val + Lampe.Stdlib.Field.Bn254.pow128 * hi.val) := by
   enter_decl
   steps [Lampe.Stdlib.Field.Bn254.decompose_intro (p := p)]
-  simp [SLP.exists_pure, beq_true, decide_eq_true_eq] at *
+  simp [SLP.exists_pure] at *
   sl
   all_goals aesop
 
@@ -743,7 +744,7 @@ theorem scalar_from_bytes_spec {p bytes offset}
     [v ↦ ⟨.field, (256 ^ i : Fp p)⟩] ⋆
       [lo ↦ ⟨.field, Scalar.fromBytesLoAcc bytes offset i⟩] ⋆
       [hi ↦ ⟨.field, Scalar.fromBytesHiAcc bytes offset i⟩]
-  · simp [Scalar.fromBytesLoAcc, Scalar.fromBytesHiAcc]
+  · simp [Scalar.fromBytesHiAcc]
     sl
     all_goals simp
   · intro i _ hhi
@@ -761,7 +762,7 @@ theorem scalar_from_bytes_spec {p bytes offset}
             some (bytes[offset.toNat + 31 - i]'hvidxlt) := by
         rw [List.getElem?_eq_getElem hidxlt, List.Vector.toList_getElem]
         rfl
-      simp only [Scalar.byteAtField, Builtin.CastTp.cast, hmod,
+      simp only [Scalar.byteAtField, Builtin.CastTp.cast,
         Lens.modify, Option.get_some]
       rw [hge]
       simp [vector_get_eq_getElem, hmod]
@@ -778,7 +779,7 @@ theorem scalar_from_bytes_spec {p bytes offset}
             some (bytes[offset.toNat + 15 - i]'hvidxlt) := by
         rw [List.getElem?_eq_getElem hidxlt, List.Vector.toList_getElem]
         rfl
-      simp only [Scalar.byteAtField, Builtin.CastTp.cast, hmod,
+      simp only [Scalar.byteAtField, Builtin.CastTp.cast,
         Lens.modify, Option.get_some]
       rw [hge]
       simp [vector_get_eq_getElem, hmod]
@@ -914,7 +915,7 @@ private lemma points_get_eq_encode {p : Prime} {N : U 32}
   have h' := congrArg (fun l : List _ => l[i.val]?) h_enc
   simp only at h'
   rw [List.getElem?_eq_getElem hi_pts] at h'
-  rw [List.getElem?_eq_getElem (by simp [hi_Ps])] at h'
+  rw [List.getElem?_eq_getElem (by simp)] at h'
   simp [List.getElem_map] at h'
   exact h'
 

@@ -259,9 +259,8 @@ private theorem set_concrete_spec {p T MaxLen selfRef self index value}
   have hstorageProof :
       (storage self).set ⟨index.toNat, hindex_max⟩ value =
         (storage self).set ⟨index.toNat, lt_of_lt_of_le hindex hbounded⟩ value := by
-    simpa using
-      (vector_set_proof_irrel (v := storage self) (i := index.toNat)
-        (h1 := hindex_max) (h2 := lt_of_lt_of_le hindex hbounded) (x := value))
+    simp [vector_set_proof_irrel (v := storage self) (i := index.toNat)
+        (h1 := hindex_max) (h2 := lt_of_lt_of_le hindex hbounded) (x := value)]
   exact hstorage'.trans hstorageProof
 
 theorem set_spec {p T MaxLen selfRef self index value}
@@ -335,7 +334,9 @@ private theorem push_concrete_spec {p T MaxLen selfRef self elem}
   have hstorage :
       storage vUpd =
         (storage self).set ⟨(len self).toNat, hpush⟩ elem := by
-    unfold vUpd vStor storage; cases self <;> rfl
+    unfold vUpd vStor storage
+    cases self
+    rfl
   exact STHoare.consequence_post hstate fun _ =>
     SLP.singleton_entails_exists_star_lift
       (And.intro hlen hstorage)
@@ -579,7 +580,7 @@ theorem pop_spec {p T MaxLen selfRef self}
       have hret' : r = (embed self).getLast hnonempty := by
         have hlastEq := embed_getLast_eq_storage_get (v := self)
           (hb := hbounded) (hnonempty := hnonempty) (hnonzero := hnonzero) (hlast := hlast)
-        simpa [hret, hlastEq]
+        simp [hret, hlastEq]
       exact ⟨hwf', hembed', hret'⟩
 
 theorem from_parts_unchecked_spec {p T MaxLen array l}
@@ -647,7 +648,7 @@ theorem extend_from_array_spec {p T MaxLen Len selfRef self array}
       simpa [hcastLenNat, List.Vector.toList_length, this]
         using htakeV
     exact extend_from_finalize hlenV htakeV'
-      (by simpa [lenLens, len] using h_isSome)
+      h_isSome
       (by have := lt_of_le_of_lt hspace hMax_lt
           simpa [len, hcastLenNat, List.Vector.toList_length,
             BitVec.toNat_add_of_lt hsum_lt])
@@ -731,8 +732,7 @@ theorem extend_from_vector_spec {p T MaxLen selfRef self slice}
           embed self ++ slice := by
       simpa [nat_mod_4294967296 hslen_lt] using htakeV
     exact extend_from_finalize hlenV htakeV'
-      (by simpa [lenLens, len, bitvec_ofNatLT_eq_ofNat]
-            using h_isSome)
+      h_isSome
       (by simpa [len, BitVec.toNat_add_of_lt hsum_lt])
       (by simpa [hcastLenNat] using (BitVec.le_def).1 hnew_le)
 
@@ -857,7 +857,7 @@ theorem extend_from_bounded_vec_spec {p T MaxLen Len selfRef self vec}
         embed self ++ embed vec := by
       simpa [hlenVec] using htakeV
     exact extend_from_finalize hlenV htakeV'
-      (by simpa [lenLens, len] using h_isSom)
+      h_isSom
       (by simpa [len, hlenVec, BitVec.toNat_add_of_lt hsum_lt])
       ((BitVec.le_def).1 hnew_le)
 
