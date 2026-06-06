@@ -48,6 +48,16 @@ theorem sha256_compression_builtin_spec {p}
   exact STHoare.genericTotalPureBuiltin_intro Builtin.sha256Compression rfl () p env
     h![state, msg]
 
+/-- Spec for the `blake2s` foreign builtin: returns the concrete
+RFC 7693 BLAKE2s-256 32-byte digest of the length-`N` input. -/
+theorem blake2s_builtin_spec {p} {N : U 32}
+    {input : Tp.denote p ((Tp.u 8).array N)} :
+    STHoare p env ⟦⟧
+      (.callBuiltin [(Tp.u 8).array N] ((Tp.u 8).array (32 : U 32))
+        Builtin.blake2S h![input])
+      (fun r => r = Lampe.Crypto.Blake2s.blake2sHash input) := by
+  exact STHoare.genericTotalPureBuiltin_intro Builtin.blake2S rfl N p env h![input]
+
 theorem buildHasherDefault_default_spec {p H}
     {h_hasher : Hasher.hasImpl env H}
     {h_default : Default.hasDefaultImpl env H}
