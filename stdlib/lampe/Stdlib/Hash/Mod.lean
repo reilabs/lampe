@@ -29,6 +29,25 @@ theorem poseidon2_permutation4_spec {p}
   steps [Lampe.Stdlib.Hash.Poseidon2.poseidon2_permutation_builtin_spec]
   assumption
 
+/-- Spec for the `sha256_compression` foreign builtin: returns the
+concrete `Crypto.Sha256.compressOne` round-function output for the
+given 8-word chaining state and 16-word message block.
+
+The Noir signature is `(input: [u32; 16], state: [u32; 8]) -> [u32; 8]`
+whereas the builtin descriptor takes `(state, msg)`; the underlying
+`callBuiltin` therefore receives the two arrays in `(state, msg)`
+order, matching `compressOne state msg`. -/
+theorem sha256_compression_builtin_spec {p}
+    {state : Tp.denote p ((Tp.u 32).array (8 : U 32))}
+    {msg : Tp.denote p ((Tp.u 32).array (16 : U 32))} :
+    STHoare p env ⟦⟧
+      (.callBuiltin [(Tp.u 32).array (8 : U 32), (Tp.u 32).array (16 : U 32)]
+        ((Tp.u 32).array (8 : U 32))
+        Builtin.sha256Compression h![state, msg])
+      (fun r => r = Lampe.Crypto.Sha256.compressOne state msg) := by
+  exact STHoare.genericTotalPureBuiltin_intro Builtin.sha256Compression rfl () p env
+    h![state, msg]
+
 theorem buildHasherDefault_default_spec {p H}
     {h_hasher : Hasher.hasImpl env H}
     {h_default : Default.hasDefaultImpl env H}
