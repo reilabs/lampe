@@ -12,6 +12,7 @@ name = "Stdlib"
 [leanOptions]
 maxRecDepth = 2000
 linter.unusedVariables = false
+linter.unnecessarySimpa = false
 
 [[require]]
 name = "Lampe"
