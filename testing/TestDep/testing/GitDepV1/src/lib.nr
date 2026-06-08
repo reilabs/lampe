@@ -2,7 +2,9 @@ fn not_equal(x: Field, y: Field) -> bool {
     x != y
 }
 
+#[allow(dead_code)]
 global hello: str<16> = "hello-git-dep-v1";
+#[allow(dead_code)]
 global hello_git_dep_v1: str<16> = "hello-git-dep-v1";
 
 #[test]

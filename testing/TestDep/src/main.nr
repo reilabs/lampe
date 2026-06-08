@@ -1,5 +1,6 @@
 use local_dependency::Point;
 
+#[allow(dead_code)]
 fn make_point(x: Field, y: Field) -> Point {
     Point { x, y }
 }

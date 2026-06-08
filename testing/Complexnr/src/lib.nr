@@ -64,6 +64,7 @@ fn sqrt(value: Field, iterations: u32) -> Field {
 }
 
 // needs better implementation
+#[allow(dead_code)]
 fn magnitude(complex: Complex, iterations: u32) -> Field {
     let squared_mag = squared_magnitude(complex);
     sqrt(squared_mag, iterations)
