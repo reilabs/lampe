@@ -228,7 +228,6 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
       have i₂ : i + 1 ≤ 16 := by linarith
       simp [i₂, List.take_take]
       simp only [List.take_add_one, List.append_assoc]
-      congr 1
 
       have h32 : BitVec.toNat (32 : BitVec 32) = 32 := by decide
       have hbound : 16 + i < (List.Vector.toList bytes).length := by
@@ -297,7 +296,7 @@ theorem bar_intro : STHoare lp env ⟦⟧ («skyscraper-0.0.0::bar::bar».call h
       have : i + 1 < 4294967296 := by
         simp_all
         linarith
-      simp [Nat.mod_eq_of_lt, this, List.take_succ]
+      simp [Nat.mod_eq_of_lt, this, List.take_add_one]
       have hlt' : i < 16 := by simp_all
       simp_all [List.Vector.toList_length, Option.toList_some, List.Vector.get_eq_get_toList]
     · subst_vars

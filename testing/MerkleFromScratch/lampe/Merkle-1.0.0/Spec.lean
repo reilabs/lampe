@@ -304,7 +304,6 @@ theorem bar_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::bar::bar».call h![] 
       have i₂ : i + 1 ≤ 16 := by linarith
       simp [i₂, List.take_take]
       simp only [List.take_add_one, List.append_assoc]
-      congr 1
 
       have h32 : BitVec.toNat (32 : BitVec 32) = 32 := by decide
       have hbound : 16 + i < (List.Vector.toList bytes).length := by

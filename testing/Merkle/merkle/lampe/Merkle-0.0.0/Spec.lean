@@ -37,7 +37,7 @@ theorem List.Vector.takeF_all {v : List.Vector α n} : List.Vector.takeF v n (by
 theorem List.Vector.takeF_succ_eq_snoc_get {v : List.Vector α n} : List.Vector.takeF v (i + 1) hi = (List.Vector.takeF v i (by linarith)).snoc (v.get ⟨i, by linarith⟩) := by
   rcases v with ⟨v, rfl⟩
   apply List.Vector.eq
-  simp [List.Vector.takeF, List.Vector.congr, List.Vector.take, List.Vector.snoc, List.Vector.get, List.take_succ]
+  simp [List.Vector.takeF, List.Vector.congr, List.Vector.take, List.Vector.snoc, List.Vector.get, List.take_add_one]
 
 theorem recover_intro {H N idx proof item}
     (hHash : ∀ {a b}, STHoare Field.lp env
