@@ -36,7 +36,6 @@ def blackBox := stub
 def checkedTransmute := stub
 def derivePedersenGenerators := stub
 def fmtstrAsCtstring := stub
-def keccakf1600 := stub
 def mkFormatString := stub
 def recursiveAggregation := stub
 def sliceRefcount := stub
