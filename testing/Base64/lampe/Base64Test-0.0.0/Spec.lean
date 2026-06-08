@@ -39,14 +39,21 @@ theorem BASE64_ENCODE_BE_TABLE_spec {lp} :
   enter_decl; steps; simpa
 
 -- Specs for the two key sub-functions at concrete sizes.
--- split_into_six_bit_chunks<3, 4, 1>: "foo" bytes → 6-bit chunks
+-- split_into_six_bit_chunks<3, 4, 1>: "foo" bytes → 6-bit chunks.
+-- Kept as `sorry` for now: a closed proof exists in SplitTest.lean (`split_test`) but
+-- requires the `Prime.BitsGT lp 240` hypothesis (driven by `to_be_radix_64_spec`).
+-- This signature has no such hypothesis and is consumed by `encode_*_correct` below.
+-- Adding the hypothesis would force a cascade of changes through the encode specs;
+-- left intentionally open until the broader spec is rewired.
 theorem split_six_bit_with_pad_spec {lp} :
     STHoare lp «Base64Test-0.0.0».env ⟦⟧
       («noir_base64-0.0.0::encoder::split_into_six_bit_chunks».call h![3, 4, 1] h![⟨[102, 111, 111], rfl⟩])
       fun (v : List.Vector (BitVec 8) 4) => v = ⟨[25, 38, 61, 47], rfl⟩ := by
   sorry
 
--- split_into_six_bit_chunks<3, 4, 0>: same computation, no-pad variant
+-- split_into_six_bit_chunks<3, 4, 0>: same computation, no-pad variant.
+-- Same situation as `split_six_bit_with_pad_spec`: provable via SplitTest.lean style
+-- under `Prime.BitsGT lp 240`; left as `sorry` to keep the unconstrained signature.
 theorem split_six_bit_no_pad_spec {lp} :
     STHoare lp «Base64Test-0.0.0».env ⟦⟧
       («noir_base64-0.0.0::encoder::split_into_six_bit_chunks».call h![3, 4, 0] h![⟨[102, 111, 111], rfl⟩])
