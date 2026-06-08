@@ -20,7 +20,8 @@ namespace Lampe.Stdlib.Field.Bn254
 open Lampe
 open Lampe.Crypto
 open «std-1.0.0-beta.14» (env)
-open Lampe.Crypto.Bn254 (plo phi pow128 pow128_lt_prime pow128_val
+open Lampe (pow128)
+open Lampe.Crypto.Bn254 (plo phi pow128_lt_prime pow128_val
   val_add_one_of_lt limbs_gt_of_hi_gt sub_val_gt_pow128_of_lt)
 
 abbrev PLO := «std-1.0.0-beta.14::field::bn254::PLO»

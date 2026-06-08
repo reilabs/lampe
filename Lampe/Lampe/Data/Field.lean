@@ -87,6 +87,12 @@ instance {n : ℕ} {p : Prime} [BitsGT p (n + 1)] : BitsGT p n where
 
 end Prime
 
+/-- `2^128` as a `Nat`. Shared between BN254 limb decomposition and the
+embedded-curve scalar split: both Noir's `from_field_unsafe` BN254 split
+and Barretenberg's MSM gadget (`cycle_group::batch_mul`) use this constant
+as the low-limb base. -/
+def pow128 : Nat := 2 ^ 128
+
 @[reducible] def Fp (P : Prime) := ZMod P.natVal
 
 instance : DecidableEq (Fp P) := inferInstanceAs (DecidableEq (ZMod P.natVal))

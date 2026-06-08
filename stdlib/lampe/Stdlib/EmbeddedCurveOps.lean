@@ -20,10 +20,10 @@ return shape admits a high-level semantic statement has **two specs**:
   building-block when chaining bigger specs together; not part of the
   public interface.
 - The **public `theorem foo_spec`** — the canonical interface callers
-  consume. Stated against semantic projections (`Scalar.valueNat`,
+  consume. Stated against semantic projections (`Lampe.Crypto.EmbeddedCurve.scalarValueNat`,
   `Point.extEq`, Mathlib's `WeierstrassCurve.Affine.Point.add` /
   `n • P`, …) under appropriate well-formedness preconditions
-  (`Scalar.Canonical`, encoded-input hypotheses, …).
+  (`Lampe.Crypto.EmbeddedCurve.scalarCanonical`, encoded-input hypotheses, …).
 
 The public spec is always derivable from the private concrete spec
 plus algebraic lemmas in `Lampe.Crypto.EmbeddedCurve`. Functions whose
@@ -160,56 +160,26 @@ def denote (p : Prime) := Tp.denote p type
 
 def mk {p} (lo hi : Fp p) : Scalar.denote p := (lo, hi, ())
 
-def lo {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.scalarLo self
-
-def hi {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.scalarHi self
-
-def valueNat {p} (self : Scalar.denote p) : Nat :=
-  (Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val
-
-/-- Bridge: stdlib `Scalar.valueNat` agrees with the crypto-side
-`scalarValueNat`. The two definitions are equal modulo unfolding the
-two `pow128` constants, neither of which is `@[reducible]`. -/
-theorem valueNat_eq_scalarValueNat {p} (self : Scalar.denote p) :
-    Scalar.valueNat self = Lampe.Crypto.EmbeddedCurve.scalarValueNat self := by
-  simp [Scalar.valueNat, Scalar.lo, Scalar.hi,
-    Lampe.Crypto.EmbeddedCurve.scalarValueNat,
-    Lampe.Crypto.Bn254.pow128, Lampe.Crypto.EmbeddedCurve.pow128]
-
-/-- The canonical-representative predicate: limb-range canonicality
-matching Barretenberg's MSM gadget's in-circuit range constraints.
-Per `cycle_scalar.hpp`'s `LO_BITS = 128` and `HI_BITS = 126`, the
-gadget enforces `lo.val < 2^128 ∧ hi.val < 2^126` via
-`create_limbed_range_constraint` inside `cycle_group::batch_mul`.
-
-This is also the well-formedness condition under which `Scalar.eq`
-agrees with `Scalar.valueNat` equality. The `hi.val < 2^126` bound is
-the tighter of the two ranges; the `lo.val < 2^128` bound matches the
-low-limb width. -/
-def Canonical {p} (self : Scalar.denote p) : Prop :=
-  (Scalar.lo self).val < Lampe.Crypto.Bn254.pow128 ∧
-  (Scalar.hi self).val < 2 ^ 126
-
 /-- The canonical 128-bit-limb decomposition of a field element: split
 `f.val` as `(f.val % 2^128, f.val / 2^128)` and re-embed both halves
-into `Fp p`. This is the unique `Scalar.Canonical` witness whose limbs
-sum to `f` (see `Scalar.canonical_decomp_unique`). -/
+into `Fp p`. This is the unique `Lampe.Crypto.EmbeddedCurve.scalarCanonical`
+witness whose limbs sum to `f` (see `Scalar.canonical_decomp_unique`). -/
 def canonicalDecomp {p} (f : Fp p) : Scalar.denote p :=
   Scalar.mk
-    ((f.val % Lampe.Crypto.Bn254.pow128 : Nat) : Fp p)
-    ((f.val / Lampe.Crypto.Bn254.pow128 : Nat) : Fp p)
+    ((f.val % Lampe.pow128 : Nat) : Fp p)
+    ((f.val / Lampe.pow128 : Nat) : Fp p)
 
 def validOffset (offset : U 32) : Prop :=
   offset.toNat < 33
 
 @[simp] private theorem indexTpl_lo {p} (self : Scalar.denote p) :
-    Builtin.indexTpl self Member.head = Scalar.lo self := rfl
+    Builtin.indexTpl self Member.head = Lampe.Crypto.EmbeddedCurve.scalarLo self := rfl
 
 @[simp] private theorem indexTpl_hi {p} (self : Scalar.denote p) :
-    Builtin.indexTpl self Member.head.tail = Scalar.hi self := rfl
+    Builtin.indexTpl self Member.head.tail = Lampe.Crypto.EmbeddedCurve.scalarHi self := rfl
 
 def eq {p} (a b : Scalar.denote p) : Bool :=
-  decide (Scalar.hi a = Scalar.hi b) && decide (Scalar.lo a = Scalar.lo b)
+  decide (Lampe.Crypto.EmbeddedCurve.scalarHi a = Lampe.Crypto.EmbeddedCurve.scalarHi b) && decide (Lampe.Crypto.EmbeddedCurve.scalarLo a = Lampe.Crypto.EmbeddedCurve.scalarLo b)
 
 def byteAtField {p} (bytes : Tp.denote p ((Tp.u 8).array (64 : U 32))) (idx : Nat) : Fp p :=
   match (List.Vector.toList bytes)[idx]? with
@@ -244,8 +214,8 @@ def fromBytes? {p} (bytes : Tp.denote p ((Tp.u 8).array (64 : U 32)))
   simp [fromBytesHiAcc]
 
 @[simp] theorem valueNat_mk {p} {lo hi : Fp p} :
-    Scalar.valueNat (Scalar.mk lo hi) =
-      lo.val + Lampe.Crypto.Bn254.pow128 * hi.val := by
+    Lampe.Crypto.EmbeddedCurve.scalarValueNat (Scalar.mk lo hi) =
+      lo.val + Lampe.pow128 * hi.val := by
   rfl
 
 theorem fromBytes?_eq_some_of_validOffset {p}
@@ -387,36 +357,36 @@ private theorem scalar_eq_concrete_spec {p} {self other : Scalar.denote p} :
   steps
   all_goals try exact ()
   subst_vars
-  simp [Scalar.eq, Scalar.hi, Scalar.lo, eq_comm]
+  simp [Scalar.eq, Lampe.Crypto.EmbeddedCurve.scalarHi, Lampe.Crypto.EmbeddedCurve.scalarLo, eq_comm]
   rfl
 
 private lemma scalar_valueNat_inj_canonical {p}
     {self other : Scalar.denote p}
-    (hself : Scalar.Canonical self) (hother : Scalar.Canonical other)
-    (h : Scalar.valueNat self = Scalar.valueNat other) :
-    Scalar.lo self = Scalar.lo other ∧ Scalar.hi self = Scalar.hi other := by
+    (hself : Lampe.Crypto.EmbeddedCurve.scalarCanonical self) (hother : Lampe.Crypto.EmbeddedCurve.scalarCanonical other)
+    (h : Lampe.Crypto.EmbeddedCurve.scalarValueNat self = Lampe.Crypto.EmbeddedCurve.scalarValueNat other) :
+    Lampe.Crypto.EmbeddedCurve.scalarLo self = Lampe.Crypto.EmbeddedCurve.scalarLo other ∧ Lampe.Crypto.EmbeddedCurve.scalarHi self = Lampe.Crypto.EmbeddedCurve.scalarHi other := by
   obtain ⟨hslo, hshi⟩ := hself
   obtain ⟨holo, hohi⟩ := hother
-  simp [Scalar.valueNat] at h
+  simp [Lampe.Crypto.EmbeddedCurve.scalarValueNat] at h
   -- h : (lo self).val + pow128 * (hi self).val = (lo other).val + pow128 * (hi other).val
   -- with all four .val terms < pow128. Apply Nat-level uniqueness, then ZMod.val_injective.
-  have hlo : (Scalar.lo self).val = (Scalar.lo other).val ∧
-             (Scalar.hi self).val = (Scalar.hi other).val := by
+  have hlo : (Lampe.Crypto.EmbeddedCurve.scalarLo self).val = (Lampe.Crypto.EmbeddedCurve.scalarLo other).val ∧
+             (Lampe.Crypto.EmbeddedCurve.scalarHi self).val = (Lampe.Crypto.EmbeddedCurve.scalarHi other).val := by
     refine ⟨?_, ?_⟩
     · -- mod pow128 of both sides extracts lo
-      have : ((Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val)
-              % Lampe.Crypto.Bn254.pow128 =
-            ((Scalar.lo other).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi other).val)
-              % Lampe.Crypto.Bn254.pow128 := by rw [h]
+      have : ((Lampe.Crypto.EmbeddedCurve.scalarLo self).val + Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi self).val)
+              % Lampe.pow128 =
+            ((Lampe.Crypto.EmbeddedCurve.scalarLo other).val + Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi other).val)
+              % Lampe.pow128 := by rw [h]
       simp [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hslo, Nat.mod_eq_of_lt holo] at this
       exact this
     · -- div pow128 of both sides extracts hi
-      have hpos : 0 < Lampe.Crypto.Bn254.pow128 := by
-        simp [Lampe.Crypto.Bn254.pow128]
-      have hdiv : ((Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val)
-              / Lampe.Crypto.Bn254.pow128 =
-            ((Scalar.lo other).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi other).val)
-              / Lampe.Crypto.Bn254.pow128 := by rw [h]
+      have hpos : 0 < Lampe.pow128 := by
+        simp [Lampe.pow128]
+      have hdiv : ((Lampe.Crypto.EmbeddedCurve.scalarLo self).val + Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi self).val)
+              / Lampe.pow128 =
+            ((Lampe.Crypto.EmbeddedCurve.scalarLo other).val + Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi other).val)
+              / Lampe.pow128 := by rw [h]
       rw [Nat.add_mul_div_left _ _ hpos, Nat.add_mul_div_left _ _ hpos,
           Nat.div_eq_of_lt hslo, Nat.div_eq_of_lt holo] at hdiv
       simpa using hdiv
@@ -436,58 +406,58 @@ the Nat-level uniqueness of binary-expansion limbs.
 namespace Scalar
 
 private lemma p_lt_pow128_sq {p} [Lampe.Crypto.Bn254.Prime p] :
-    p.natVal < Lampe.Crypto.Bn254.pow128 *
-      Lampe.Crypto.Bn254.pow128 := by
+    p.natVal < Lampe.pow128 *
+      Lampe.pow128 := by
   have hmod : p.natVal =
       Lampe.Crypto.Bn254.plo +
-        Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi :=
+        Lampe.pow128 * Lampe.Crypto.Bn254.phi :=
     Lampe.Crypto.Bn254.Prime.natVal_eq_limbs
-  have hplo : Lampe.Crypto.Bn254.plo < Lampe.Crypto.Bn254.pow128 := by
-    unfold Lampe.Crypto.Bn254.plo Lampe.Crypto.Bn254.pow128; decide
-  have hphi : Lampe.Crypto.Bn254.phi < Lampe.Crypto.Bn254.pow128 := by
-    unfold Lampe.Crypto.Bn254.phi Lampe.Crypto.Bn254.pow128; decide
+  have hplo : Lampe.Crypto.Bn254.plo < Lampe.pow128 := by
+    unfold Lampe.Crypto.Bn254.plo Lampe.pow128; decide
+  have hphi : Lampe.Crypto.Bn254.phi < Lampe.pow128 := by
+    unfold Lampe.Crypto.Bn254.phi Lampe.pow128; decide
   -- plo + pow128 * phi < pow128 + pow128 * (pow128 - 1) = pow128 * pow128
-  have hphi_le : Lampe.Crypto.Bn254.phi + 1 ≤ Lampe.Crypto.Bn254.pow128 :=
+  have hphi_le : Lampe.Crypto.Bn254.phi + 1 ≤ Lampe.pow128 :=
     Nat.succ_le_of_lt hphi
   have h1 : Lampe.Crypto.Bn254.plo +
-      Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi
-        < Lampe.Crypto.Bn254.pow128 +
-          Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi :=
+      Lampe.pow128 * Lampe.Crypto.Bn254.phi
+        < Lampe.pow128 +
+          Lampe.pow128 * Lampe.Crypto.Bn254.phi :=
     Nat.add_lt_add_right hplo _
-  have h2 : Lampe.Crypto.Bn254.pow128 +
-      Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi =
-      Lampe.Crypto.Bn254.pow128 *
+  have h2 : Lampe.pow128 +
+      Lampe.pow128 * Lampe.Crypto.Bn254.phi =
+      Lampe.pow128 *
         (Lampe.Crypto.Bn254.phi + 1) := by ring
-  have h3 : Lampe.Crypto.Bn254.pow128 *
+  have h3 : Lampe.pow128 *
       (Lampe.Crypto.Bn254.phi + 1) ≤
-      Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.pow128 :=
+      Lampe.pow128 * Lampe.pow128 :=
     Nat.mul_le_mul_left _ hphi_le
   calc p.natVal = Lampe.Crypto.Bn254.plo +
-                  Lampe.Crypto.Bn254.pow128 *
+                  Lampe.pow128 *
                     Lampe.Crypto.Bn254.phi := hmod
-    _ < Lampe.Crypto.Bn254.pow128 +
-        Lampe.Crypto.Bn254.pow128 *
+    _ < Lampe.pow128 +
+        Lampe.pow128 *
           Lampe.Crypto.Bn254.phi := h1
-    _ = Lampe.Crypto.Bn254.pow128 *
+    _ = Lampe.pow128 *
         (Lampe.Crypto.Bn254.phi + 1) := h2
-    _ ≤ Lampe.Crypto.Bn254.pow128 *
-        Lampe.Crypto.Bn254.pow128 := h3
+    _ ≤ Lampe.pow128 *
+        Lampe.pow128 := h3
 
-/-- `canonicalDecomp f` satisfies `Scalar.Canonical`: both its low and
+/-- `canonicalDecomp f` satisfies `Lampe.Crypto.EmbeddedCurve.scalarCanonical`: both its low and
 high limbs fit in 128 bits. -/
 theorem canonicalDecomp_Canonical {p} [Lampe.Crypto.Bn254.Prime p]
-    (f : Fp p) : Scalar.Canonical (Scalar.canonicalDecomp f) := by
-  unfold Scalar.canonicalDecomp Scalar.Canonical Scalar.lo Scalar.hi
+    (f : Fp p) : Lampe.Crypto.EmbeddedCurve.scalarCanonical (Scalar.canonicalDecomp f) := by
+  unfold Scalar.canonicalDecomp Lampe.Crypto.EmbeddedCurve.scalarCanonical Lampe.Crypto.EmbeddedCurve.scalarLo Lampe.Crypto.EmbeddedCurve.scalarHi
   refine ⟨?_, ?_⟩
   · -- (((f.val % pow128 : Nat) : Fp p)).val < pow128
-    have hmod_lt : f.val % Lampe.Crypto.Bn254.pow128 <
-        Lampe.Crypto.Bn254.pow128 := by
+    have hmod_lt : f.val % Lampe.pow128 <
+        Lampe.pow128 := by
       apply Nat.mod_lt
-      unfold Lampe.Crypto.Bn254.pow128; decide
-    have hmod_lt_p : f.val % Lampe.Crypto.Bn254.pow128 < p.natVal :=
+      unfold Lampe.pow128; decide
+    have hmod_lt_p : f.val % Lampe.pow128 < p.natVal :=
       lt_of_lt_of_le hmod_lt (le_of_lt (Lampe.Crypto.Bn254.pow128_lt_prime (p := p)))
-    have : (((f.val % Lampe.Crypto.Bn254.pow128 : Nat) : Fp p)).val =
-        f.val % Lampe.Crypto.Bn254.pow128 :=
+    have : (((f.val % Lampe.pow128 : Nat) : Fp p)).val =
+        f.val % Lampe.pow128 :=
       ZMod.val_natCast_of_lt hmod_lt_p
     simp only [Lampe.Crypto.EmbeddedCurve.scalarLo, Scalar.mk]
     rw [this]
@@ -495,44 +465,44 @@ theorem canonicalDecomp_Canonical {p} [Lampe.Crypto.Bn254.Prime p]
   · -- (((f.val / pow128 : Nat) : Fp p)).val < 2 ^ 126.
     -- f.val < p = plo + pow128 * phi < pow128 * 2^126, so
     -- f.val / pow128 < 2^126 — matches the gadget's `HI_BITS = 126`.
-    have hpos : 0 < Lampe.Crypto.Bn254.pow128 := by
-      unfold Lampe.Crypto.Bn254.pow128; decide
+    have hpos : 0 < Lampe.pow128 := by
+      unfold Lampe.pow128; decide
     have hf : f.val < p.natVal := f.val_lt
     have hmod : p.natVal =
         Lampe.Crypto.Bn254.plo +
-          Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi :=
+          Lampe.pow128 * Lampe.Crypto.Bn254.phi :=
       Lampe.Crypto.Bn254.Prime.natVal_eq_limbs
     have hplo_lt_pow : Lampe.Crypto.Bn254.plo <
-        Lampe.Crypto.Bn254.pow128 := by
-      unfold Lampe.Crypto.Bn254.plo Lampe.Crypto.Bn254.pow128; decide
+        Lampe.pow128 := by
+      unfold Lampe.Crypto.Bn254.plo Lampe.pow128; decide
     have hphi_lt_2_126 : Lampe.Crypto.Bn254.phi < 2 ^ 126 := by
       unfold Lampe.Crypto.Bn254.phi; decide
     have hphi_succ_le : Lampe.Crypto.Bn254.phi + 1 ≤ 2 ^ 126 :=
       Nat.succ_le_of_lt hphi_lt_2_126
     -- f.val < p ≤ pow128 * (phi + 1) ≤ pow128 * 2^126.
-    have hp_lt_mul : p.natVal < Lampe.Crypto.Bn254.pow128 *
+    have hp_lt_mul : p.natVal < Lampe.pow128 *
         (Lampe.Crypto.Bn254.phi + 1) := by
-      have hexp : Lampe.Crypto.Bn254.pow128 *
+      have hexp : Lampe.pow128 *
           (Lampe.Crypto.Bn254.phi + 1) =
-          Lampe.Crypto.Bn254.pow128 +
-            Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi := by ring
+          Lampe.pow128 +
+            Lampe.pow128 * Lampe.Crypto.Bn254.phi := by ring
       omega
-    have hp_lt_2_126 : p.natVal < Lampe.Crypto.Bn254.pow128 * 2 ^ 126 :=
+    have hp_lt_2_126 : p.natVal < Lampe.pow128 * 2 ^ 126 :=
       lt_of_lt_of_le hp_lt_mul (Nat.mul_le_mul_left _ hphi_succ_le)
-    have hf_lt_2_126 : f.val < Lampe.Crypto.Bn254.pow128 * 2 ^ 126 :=
+    have hf_lt_2_126 : f.val < Lampe.pow128 * 2 ^ 126 :=
       lt_trans hf hp_lt_2_126
-    have hdiv_lt : f.val / Lampe.Crypto.Bn254.pow128 < 2 ^ 126 :=
+    have hdiv_lt : f.val / Lampe.pow128 < 2 ^ 126 :=
       Nat.div_lt_of_lt_mul (by simpa [Nat.mul_comm] using hf_lt_2_126)
     -- The weaker `< pow128` bound (used to map into Fp via val_natCast_of_lt).
-    have h2_126_lt_pow128 : (2 : Nat) ^ 126 < Lampe.Crypto.Bn254.pow128 := by
-      unfold Lampe.Crypto.Bn254.pow128; decide
-    have hdiv_lt_pow : f.val / Lampe.Crypto.Bn254.pow128 <
-        Lampe.Crypto.Bn254.pow128 :=
+    have h2_126_lt_pow128 : (2 : Nat) ^ 126 < Lampe.pow128 := by
+      unfold Lampe.pow128; decide
+    have hdiv_lt_pow : f.val / Lampe.pow128 <
+        Lampe.pow128 :=
       lt_trans hdiv_lt h2_126_lt_pow128
-    have hdiv_lt_p : f.val / Lampe.Crypto.Bn254.pow128 < p.natVal :=
+    have hdiv_lt_p : f.val / Lampe.pow128 < p.natVal :=
       lt_of_lt_of_le hdiv_lt_pow (le_of_lt (Lampe.Crypto.Bn254.pow128_lt_prime (p := p)))
-    have hval : (((f.val / Lampe.Crypto.Bn254.pow128 : Nat) : Fp p)).val =
-        f.val / Lampe.Crypto.Bn254.pow128 :=
+    have hval : (((f.val / Lampe.pow128 : Nat) : Fp p)).val =
+        f.val / Lampe.pow128 :=
       ZMod.val_natCast_of_lt hdiv_lt_p
     simp only [Lampe.Crypto.EmbeddedCurve.scalarHi, Scalar.mk]
     rw [hval]
@@ -542,34 +512,33 @@ theorem canonicalDecomp_Canonical {p} [Lampe.Crypto.Bn254.Prime p]
 `Fp p`) to the original field element. -/
 theorem canonicalDecomp_decomposes {p} [Lampe.Crypto.Bn254.Prime p]
     (f : Fp p) :
-    f = Scalar.lo (Scalar.canonicalDecomp f) +
-        ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) *
-          Scalar.hi (Scalar.canonicalDecomp f) := by
-  unfold Scalar.canonicalDecomp Scalar.lo Scalar.hi
-  simp only [Lampe.Crypto.EmbeddedCurve.scalarLo,
-    Lampe.Crypto.EmbeddedCurve.scalarHi, Scalar.mk]
+    f = Lampe.Crypto.EmbeddedCurve.scalarLo (Scalar.canonicalDecomp f) +
+        ((Lampe.pow128 : Nat) : Fp p) *
+          Lampe.Crypto.EmbeddedCurve.scalarHi (Scalar.canonicalDecomp f) := by
+  unfold Scalar.canonicalDecomp Lampe.Crypto.EmbeddedCurve.scalarLo Lampe.Crypto.EmbeddedCurve.scalarHi
+  simp only [Scalar.mk]
   -- Lift the Nat identity `f.val = f.val % pow128 + pow128 * (f.val / pow128)`
   -- to `Fp p`.
   have hNat : f.val =
-      f.val % Lampe.Crypto.Bn254.pow128 +
-        Lampe.Crypto.Bn254.pow128 *
-          (f.val / Lampe.Crypto.Bn254.pow128) := by
-    have := Nat.div_add_mod f.val Lampe.Crypto.Bn254.pow128
+      f.val % Lampe.pow128 +
+        Lampe.pow128 *
+          (f.val / Lampe.pow128) := by
+    have := Nat.div_add_mod f.val Lampe.pow128
     omega
   have hf : ((f.val : Nat) : Fp p) = f := ZMod.natCast_zmod_val f
   calc f = ((f.val : Nat) : Fp p) := hf.symm
-    _ = ((f.val % Lampe.Crypto.Bn254.pow128 +
-          Lampe.Crypto.Bn254.pow128 *
-            (f.val / Lampe.Crypto.Bn254.pow128) : Nat) : Fp p) := by rw [← hNat]
-    _ = ((f.val % Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) +
-          ((Lampe.Crypto.Bn254.pow128 *
-              (f.val / Lampe.Crypto.Bn254.pow128) : Nat) : Fp p) := by push_cast; ring
-    _ = ((f.val % Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) +
-          ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) *
-            ((f.val / Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) := by push_cast; ring
+    _ = ((f.val % Lampe.pow128 +
+          Lampe.pow128 *
+            (f.val / Lampe.pow128) : Nat) : Fp p) := by rw [← hNat]
+    _ = ((f.val % Lampe.pow128 : Nat) : Fp p) +
+          ((Lampe.pow128 *
+              (f.val / Lampe.pow128) : Nat) : Fp p) := by push_cast; ring
+    _ = ((f.val % Lampe.pow128 : Nat) : Fp p) +
+          ((Lampe.pow128 : Nat) : Fp p) *
+            ((f.val / Lampe.pow128 : Nat) : Fp p) := by push_cast; ring
 
 /-- Nat-level bound: under the `from_field_unsafe` canonical-range
-disjunction together with `Scalar.Canonical`, the Nat sum
+disjunction together with `Lampe.Crypto.EmbeddedCurve.scalarCanonical`, the Nat sum
 `lo.val + pow128 * hi.val` lies in `[0, p)` — i.e. matches `f.val`
 without modular wrap. Used by `canonical_decomp_unique` below.
 
@@ -578,19 +547,19 @@ the sum into `[pow128 * phi, p)`; branch 2 (`hi.val < phi`) plus
 canonical `lo` forces it into `[0, pow128 * phi)`. Either way, `< p`. -/
 private lemma valueNat_lt_p_of_canonical_disj {p}
     [Lampe.Crypto.Bn254.Prime p] {s : Scalar.denote p}
-    (hcanon : Scalar.Canonical s)
-    (hdisj : ((Scalar.hi s) = ((Lampe.Crypto.Bn254.phi : Nat) : Fp p)
-              ∧ (Scalar.lo s).val < Lampe.Crypto.Bn254.plo)
-            ∨ (Scalar.hi s).val < Lampe.Crypto.Bn254.phi) :
-    (Scalar.lo s).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi s).val < p.natVal := by
+    (hcanon : Lampe.Crypto.EmbeddedCurve.scalarCanonical s)
+    (hdisj : ((Lampe.Crypto.EmbeddedCurve.scalarHi s) = ((Lampe.Crypto.Bn254.phi : Nat) : Fp p)
+              ∧ (Lampe.Crypto.EmbeddedCurve.scalarLo s).val < Lampe.Crypto.Bn254.plo)
+            ∨ (Lampe.Crypto.EmbeddedCurve.scalarHi s).val < Lampe.Crypto.Bn254.phi) :
+    (Lampe.Crypto.EmbeddedCurve.scalarLo s).val + Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi s).val < p.natVal := by
   obtain ⟨hslo, hshi⟩ := hcanon
   have hmod : p.natVal =
       Lampe.Crypto.Bn254.plo +
-        Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi :=
+        Lampe.pow128 * Lampe.Crypto.Bn254.phi :=
     Lampe.Crypto.Bn254.Prime.natVal_eq_limbs
   have hphi_lt_pow : Lampe.Crypto.Bn254.phi <
-      Lampe.Crypto.Bn254.pow128 := by
-    unfold Lampe.Crypto.Bn254.phi Lampe.Crypto.Bn254.pow128; decide
+      Lampe.pow128 := by
+    unfold Lampe.Crypto.Bn254.phi Lampe.pow128; decide
   -- (phi : Fp p).val = phi (since phi < pow128 < p).
   have hphi_val : ((Lampe.Crypto.Bn254.phi : Nat) : Fp p).val =
       Lampe.Crypto.Bn254.phi := by
@@ -600,153 +569,151 @@ private lemma valueNat_lt_p_of_canonical_disj {p}
     exact ZMod.val_natCast_of_lt hphi_lt_p
   rcases hdisj with ⟨hhi_eq, hlo_lt_plo⟩ | hhi_lt_phi
   · -- Branch 1: lo.val < plo, hi.val = phi.
-    have hhi_val : (Scalar.hi s).val = Lampe.Crypto.Bn254.phi := by
+    have hhi_val : (Lampe.Crypto.EmbeddedCurve.scalarHi s).val = Lampe.Crypto.Bn254.phi := by
       rw [hhi_eq]; exact hphi_val
     rw [hhi_val]
     omega
   · -- Branch 2: hi.val < phi (so + 1 ≤ phi), with lo.val < pow128.
-    have hbound : (Scalar.lo s).val +
-        Lampe.Crypto.Bn254.pow128 * (Scalar.hi s).val <
-        Lampe.Crypto.Bn254.pow128 *
-          ((Scalar.hi s).val + 1) := by
-      have hexp : Lampe.Crypto.Bn254.pow128 *
-          ((Scalar.hi s).val + 1) =
-          Lampe.Crypto.Bn254.pow128 +
-            Lampe.Crypto.Bn254.pow128 * (Scalar.hi s).val := by ring
+    have hbound : (Lampe.Crypto.EmbeddedCurve.scalarLo s).val +
+        Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi s).val <
+        Lampe.pow128 *
+          ((Lampe.Crypto.EmbeddedCurve.scalarHi s).val + 1) := by
+      have hexp : Lampe.pow128 *
+          ((Lampe.Crypto.EmbeddedCurve.scalarHi s).val + 1) =
+          Lampe.pow128 +
+            Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi s).val := by ring
       rw [hexp]; omega
-    have hmul_le : Lampe.Crypto.Bn254.pow128 *
-        ((Scalar.hi s).val + 1) ≤
-        Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi :=
+    have hmul_le : Lampe.pow128 *
+        ((Lampe.Crypto.EmbeddedCurve.scalarHi s).val + 1) ≤
+        Lampe.pow128 * Lampe.Crypto.Bn254.phi :=
       Nat.mul_le_mul_left _ hhi_lt_phi
-    have hle_p : Lampe.Crypto.Bn254.pow128 *
+    have hle_p : Lampe.pow128 *
         Lampe.Crypto.Bn254.phi ≤ p.natVal := by
       rw [hmod]; omega
     linarith
 
 /-- The two main consequences used by uniqueness, packaged as the
-`Scalar.valueNat`-vs-`Fp p`-val bridge: under disjunction + canonical, the
+`Lampe.Crypto.EmbeddedCurve.scalarValueNat`-vs-`Fp p`-val bridge: under disjunction + canonical, the
 prover's Nat sum equals `f.val`. -/
 private lemma valueNat_eq_val_of_canonical_disj {p}
     [Lampe.Crypto.Bn254.Prime p] {f : Fp p} {s : Scalar.denote p}
-    (hcanon : Scalar.Canonical s)
-    (hdisj : ((Scalar.hi s) = ((Lampe.Crypto.Bn254.phi : Nat) : Fp p)
-              ∧ (Scalar.lo s).val < Lampe.Crypto.Bn254.plo)
-            ∨ (Scalar.hi s).val < Lampe.Crypto.Bn254.phi)
-    (hdecomp : f = Scalar.lo s +
-      ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * Scalar.hi s) :
-    Scalar.valueNat s = f.val := by
-  have hpow_val : ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p).val =
-      Lampe.Crypto.Bn254.pow128 := Lampe.Crypto.Bn254.pow128_val (p := p)
-  have hsum_lt_p : (Scalar.lo s).val +
-      Lampe.Crypto.Bn254.pow128 * (Scalar.hi s).val < p.natVal :=
+    (hcanon : Lampe.Crypto.EmbeddedCurve.scalarCanonical s)
+    (hdisj : ((Lampe.Crypto.EmbeddedCurve.scalarHi s) = ((Lampe.Crypto.Bn254.phi : Nat) : Fp p)
+              ∧ (Lampe.Crypto.EmbeddedCurve.scalarLo s).val < Lampe.Crypto.Bn254.plo)
+            ∨ (Lampe.Crypto.EmbeddedCurve.scalarHi s).val < Lampe.Crypto.Bn254.phi)
+    (hdecomp : f = Lampe.Crypto.EmbeddedCurve.scalarLo s +
+      ((Lampe.pow128 : Nat) : Fp p) * Lampe.Crypto.EmbeddedCurve.scalarHi s) :
+    Lampe.Crypto.EmbeddedCurve.scalarValueNat s = f.val := by
+  have hpow_val : ((Lampe.pow128 : Nat) : Fp p).val =
+      Lampe.pow128 := Lampe.Crypto.Bn254.pow128_val (p := p)
+  have hsum_lt_p : (Lampe.Crypto.EmbeddedCurve.scalarLo s).val +
+      Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi s).val < p.natVal :=
     valueNat_lt_p_of_canonical_disj hcanon hdisj
-  have hmul_lt : Lampe.Crypto.Bn254.pow128 * (Scalar.hi s).val < p.natVal := by
+  have hmul_lt : Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi s).val < p.natVal := by
     have := Nat.le_add_left
-      (Lampe.Crypto.Bn254.pow128 * (Scalar.hi s).val) (Scalar.lo s).val
+      (Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi s).val) (Lampe.Crypto.EmbeddedCurve.scalarLo s).val
     omega
-  have hmul_lt' : ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p).val *
-      (Scalar.hi s).val < p.natVal := by rw [hpow_val]; exact hmul_lt
-  have hmul_val : (((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * Scalar.hi s).val =
-      Lampe.Crypto.Bn254.pow128 * (Scalar.hi s).val := by
+  have hmul_lt' : ((Lampe.pow128 : Nat) : Fp p).val *
+      (Lampe.Crypto.EmbeddedCurve.scalarHi s).val < p.natVal := by rw [hpow_val]; exact hmul_lt
+  have hmul_val : (((Lampe.pow128 : Nat) : Fp p) * Lampe.Crypto.EmbeddedCurve.scalarHi s).val =
+      Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi s).val := by
     rw [ZMod.val_mul_of_lt hmul_lt', hpow_val]
-  have hsum_lt : (Scalar.lo s).val +
-      (((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * Scalar.hi s).val < p.natVal := by
+  have hsum_lt : (Lampe.Crypto.EmbeddedCurve.scalarLo s).val +
+      (((Lampe.pow128 : Nat) : Fp p) * Lampe.Crypto.EmbeddedCurve.scalarHi s).val < p.natVal := by
     rw [hmul_val]; exact hsum_lt_p
-  have hsum_val : ((Scalar.lo s) +
-      ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * Scalar.hi s).val =
-      (Scalar.lo s).val +
-        (((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * Scalar.hi s).val :=
+  have hsum_val : ((Lampe.Crypto.EmbeddedCurve.scalarLo s) +
+      ((Lampe.pow128 : Nat) : Fp p) * Lampe.Crypto.EmbeddedCurve.scalarHi s).val =
+      (Lampe.Crypto.EmbeddedCurve.scalarLo s).val +
+        (((Lampe.pow128 : Nat) : Fp p) * Lampe.Crypto.EmbeddedCurve.scalarHi s).val :=
     ZMod.val_add_of_lt hsum_lt
-  have hf_val : f.val = (Scalar.lo s).val +
-      Lampe.Crypto.Bn254.pow128 * (Scalar.hi s).val := by
+  have hf_val : f.val = (Lampe.Crypto.EmbeddedCurve.scalarLo s).val +
+      Lampe.pow128 * (Lampe.Crypto.EmbeddedCurve.scalarHi s).val := by
     have := congrArg ZMod.val hdecomp
     rw [hsum_val, hmul_val] at this
     exact this
-  unfold Scalar.valueNat
+  unfold Lampe.Crypto.EmbeddedCurve.scalarValueNat
   omega
 
 /-- **Canonical-limb uniqueness**: any decomposition `s` of a field
-element `f` that is `Scalar.Canonical` AND satisfies the
+element `f` that is `Lampe.Crypto.EmbeddedCurve.scalarCanonical` AND satisfies the
 `from_field_unsafe` canonical-range disjunction agrees with
 `canonicalDecomp f`.
 
 Combined with `canonicalDecomp_Canonical` and `canonicalDecomp_decomposes`,
 this is the existence-and-uniqueness statement
-`∃! s, Scalar.Canonical s ∧ disj s ∧ f = s.lo + 2^128 · s.hi` from the
+`∃! s, Lampe.Crypto.EmbeddedCurve.scalarCanonical s ∧ disj s ∧ f = s.lo + 2^128 · s.hi` from the
 MSM canonicalization plan.
 
-The canonical-range disjunction is essential — *both* `Scalar.Canonical`
+The canonical-range disjunction is essential — *both* `Lampe.Crypto.EmbeddedCurve.scalarCanonical`
 limbs alone do not suffice for uniqueness over BN254 (where
 `pow128^2 ≈ 4·p`, so a canonical pair can decompose `0` either as
 `(0, 0)` or as `(plo, phi)`). The disjunction breaks the tie. -/
 theorem canonical_decomp_unique {p} [Lampe.Crypto.Bn254.Prime p]
     {f : Fp p} {s : Scalar.denote p}
-    (hcanon : Scalar.Canonical s)
-    (hdisj : ((Scalar.hi s) = ((Lampe.Crypto.Bn254.phi : Nat) : Fp p)
-              ∧ (Scalar.lo s).val < Lampe.Crypto.Bn254.plo)
-            ∨ (Scalar.hi s).val < Lampe.Crypto.Bn254.phi)
-    (hdecomp : f = Scalar.lo s +
-      ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * Scalar.hi s) :
+    (hcanon : Lampe.Crypto.EmbeddedCurve.scalarCanonical s)
+    (hdisj : ((Lampe.Crypto.EmbeddedCurve.scalarHi s) = ((Lampe.Crypto.Bn254.phi : Nat) : Fp p)
+              ∧ (Lampe.Crypto.EmbeddedCurve.scalarLo s).val < Lampe.Crypto.Bn254.plo)
+            ∨ (Lampe.Crypto.EmbeddedCurve.scalarHi s).val < Lampe.Crypto.Bn254.phi)
+    (hdecomp : f = Lampe.Crypto.EmbeddedCurve.scalarLo s +
+      ((Lampe.pow128 : Nat) : Fp p) * Lampe.Crypto.EmbeddedCurve.scalarHi s) :
     s = Scalar.canonicalDecomp f := by
   -- Both s and canonicalDecomp f are canonical decomps of f whose Nat sums
   -- lie in [0, p). Hence their Nat sums equal f.val, so they agree as
   -- `valueNat`. Then `scalar_valueNat_inj_canonical` gives equal limbs.
-  have hcanon' : Scalar.Canonical (Scalar.canonicalDecomp f) :=
+  have hcanon' : Lampe.Crypto.EmbeddedCurve.scalarCanonical (Scalar.canonicalDecomp f) :=
     Scalar.canonicalDecomp_Canonical f
-  have hf_decomp : f = Scalar.lo (Scalar.canonicalDecomp f) +
-      ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) *
-        Scalar.hi (Scalar.canonicalDecomp f) :=
+  have hf_decomp : f = Lampe.Crypto.EmbeddedCurve.scalarLo (Scalar.canonicalDecomp f) +
+      ((Lampe.pow128 : Nat) : Fp p) *
+        Lampe.Crypto.EmbeddedCurve.scalarHi (Scalar.canonicalDecomp f) :=
     Scalar.canonicalDecomp_decomposes f
   -- canonicalDecomp's limbs satisfy the disjunction: its Nat sum equals f.val < p,
   -- which by hN1_eq forces either hi = phi ∧ lo < plo (when f.val ≥ pow128*phi)
   -- or hi.val < phi (when f.val < pow128*phi).
   have hd_disj :
-      ((Scalar.hi (Scalar.canonicalDecomp f)) =
+      ((Lampe.Crypto.EmbeddedCurve.scalarHi (Scalar.canonicalDecomp f)) =
           ((Lampe.Crypto.Bn254.phi : Nat) : Fp p)
-        ∧ (Scalar.lo (Scalar.canonicalDecomp f)).val <
+        ∧ (Lampe.Crypto.EmbeddedCurve.scalarLo (Scalar.canonicalDecomp f)).val <
             Lampe.Crypto.Bn254.plo)
-      ∨ (Scalar.hi (Scalar.canonicalDecomp f)).val <
+      ∨ (Lampe.Crypto.EmbeddedCurve.scalarHi (Scalar.canonicalDecomp f)).val <
             Lampe.Crypto.Bn254.phi := by
     -- Argue from f.val < p = plo + pow128*phi.
     have hmod : p.natVal =
         Lampe.Crypto.Bn254.plo +
-          Lampe.Crypto.Bn254.pow128 * Lampe.Crypto.Bn254.phi :=
+          Lampe.pow128 * Lampe.Crypto.Bn254.phi :=
       Lampe.Crypto.Bn254.Prime.natVal_eq_limbs
-    have hpow_pos : 0 < Lampe.Crypto.Bn254.pow128 := by
-      unfold Lampe.Crypto.Bn254.pow128; decide
+    have hpow_pos : 0 < Lampe.pow128 := by
+      unfold Lampe.pow128; decide
     have hf_lt : f.val < p.natVal := f.val_lt
     -- (lo, hi) = (f.val % pow128, f.val / pow128). Use Nat.div_add_mod.
-    have hdm : f.val % Lampe.Crypto.Bn254.pow128 +
-        Lampe.Crypto.Bn254.pow128 *
-          (f.val / Lampe.Crypto.Bn254.pow128) = f.val := by
-      have := Nat.div_add_mod f.val Lampe.Crypto.Bn254.pow128
+    have hdm : f.val % Lampe.pow128 +
+        Lampe.pow128 *
+          (f.val / Lampe.pow128) = f.val := by
+      have := Nat.div_add_mod f.val Lampe.pow128
       omega
     -- Identify lo.val and hi.val on the canonicalDecomp side.
-    have hlo_val : (Scalar.lo (Scalar.canonicalDecomp f)).val =
-        f.val % Lampe.Crypto.Bn254.pow128 := by
-      unfold Scalar.canonicalDecomp Scalar.lo Scalar.mk
-      simp only [Lampe.Crypto.EmbeddedCurve.scalarLo]
-      have hmod_lt_p : f.val % Lampe.Crypto.Bn254.pow128 < p.natVal := by
+    have hlo_val : (Lampe.Crypto.EmbeddedCurve.scalarLo (Scalar.canonicalDecomp f)).val =
+        f.val % Lampe.pow128 := by
+      unfold Scalar.canonicalDecomp Lampe.Crypto.EmbeddedCurve.scalarLo Scalar.mk
+      have hmod_lt_p : f.val % Lampe.pow128 < p.natVal := by
         have := Nat.mod_lt f.val hpow_pos
         have := Lampe.Crypto.Bn254.pow128_lt_prime (p := p)
         omega
       exact ZMod.val_natCast_of_lt hmod_lt_p
-    have hhi_val : (Scalar.hi (Scalar.canonicalDecomp f)).val =
-        f.val / Lampe.Crypto.Bn254.pow128 := by
-      unfold Scalar.canonicalDecomp Scalar.hi Scalar.mk
-      simp only [Lampe.Crypto.EmbeddedCurve.scalarHi]
+    have hhi_val : (Lampe.Crypto.EmbeddedCurve.scalarHi (Scalar.canonicalDecomp f)).val =
+        f.val / Lampe.pow128 := by
+      unfold Scalar.canonicalDecomp Lampe.Crypto.EmbeddedCurve.scalarHi Scalar.mk
       have hp_sq := p_lt_pow128_sq (p := p)
-      have hf_lt_sq : f.val < Lampe.Crypto.Bn254.pow128 *
-          Lampe.Crypto.Bn254.pow128 := lt_trans hf_lt hp_sq
-      have hdiv_lt : f.val / Lampe.Crypto.Bn254.pow128 <
-          Lampe.Crypto.Bn254.pow128 :=
+      have hf_lt_sq : f.val < Lampe.pow128 *
+          Lampe.pow128 := lt_trans hf_lt hp_sq
+      have hdiv_lt : f.val / Lampe.pow128 <
+          Lampe.pow128 :=
         Nat.div_lt_of_lt_mul (by simpa [Nat.mul_comm] using hf_lt_sq)
-      have hdiv_lt_p : f.val / Lampe.Crypto.Bn254.pow128 < p.natVal := by
+      have hdiv_lt_p : f.val / Lampe.pow128 < p.natVal := by
         have := Lampe.Crypto.Bn254.pow128_lt_prime (p := p)
         omega
       exact ZMod.val_natCast_of_lt hdiv_lt_p
     -- Now case-split on whether f.val < pow128 * phi.
-    by_cases hcase : f.val < Lampe.Crypto.Bn254.pow128 *
+    by_cases hcase : f.val < Lampe.pow128 *
         Lampe.Crypto.Bn254.phi
     · right
       rw [hhi_val]
@@ -756,23 +723,23 @@ theorem canonical_decomp_unique {p} [Lampe.Crypto.Bn254.Prime p]
       push_neg at hcase
       -- f.val ≥ pow128 * phi and f.val < p = plo + pow128*phi.
       -- So f.val = pow128*phi + r where r ∈ [0, plo).
-      have hr_lo : f.val - Lampe.Crypto.Bn254.pow128 *
+      have hr_lo : f.val - Lampe.pow128 *
           Lampe.Crypto.Bn254.phi < Lampe.Crypto.Bn254.plo := by
         omega
       -- f.val / pow128 = phi when pow128*phi ≤ f.val < pow128*(phi+1),
       -- and the upper bound is f.val < pow128*phi + pow128 (follows from r < plo < pow128).
       have hplo_lt_pow : Lampe.Crypto.Bn254.plo <
-          Lampe.Crypto.Bn254.pow128 := by
-        unfold Lampe.Crypto.Bn254.plo Lampe.Crypto.Bn254.pow128; decide
-      have hf_lt' : f.val < Lampe.Crypto.Bn254.pow128 *
+          Lampe.pow128 := by
+        unfold Lampe.Crypto.Bn254.plo Lampe.pow128; decide
+      have hf_lt' : f.val < Lampe.pow128 *
           (Lampe.Crypto.Bn254.phi + 1) := by
-        have : Lampe.Crypto.Bn254.pow128 *
+        have : Lampe.pow128 *
             (Lampe.Crypto.Bn254.phi + 1) =
-            Lampe.Crypto.Bn254.pow128 *
+            Lampe.pow128 *
               Lampe.Crypto.Bn254.phi +
-            Lampe.Crypto.Bn254.pow128 := by ring
+            Lampe.pow128 := by ring
         omega
-      have hdiv_eq : f.val / Lampe.Crypto.Bn254.pow128 =
+      have hdiv_eq : f.val / Lampe.pow128 =
           Lampe.Crypto.Bn254.phi := by
         apply Nat.div_eq_of_lt_le
         · rw [Nat.mul_comm]; exact hcase
@@ -780,34 +747,33 @@ theorem canonical_decomp_unique {p} [Lampe.Crypto.Bn254.Prime p]
       refine ⟨?_, ?_⟩
       · -- Goal: hi (canonicalDecomp f) = (↑phi : Fp p). Since hi := ((f.val / pow128 : Nat) : Fp p)
         -- and f.val / pow128 = phi.
-        unfold Scalar.canonicalDecomp Scalar.hi Scalar.mk
-        simp only [Lampe.Crypto.EmbeddedCurve.scalarHi]
+        unfold Scalar.canonicalDecomp Lampe.Crypto.EmbeddedCurve.scalarHi Scalar.mk
         rw [hdiv_eq]
       · -- Goal: (lo (canonicalDecomp f)).val < plo.
         rw [hlo_val]
         -- f.val % pow128 = f.val - pow128*phi (since pow128*phi ≤ f.val < pow128*(phi+1)).
-        have hmod_eq : f.val % Lampe.Crypto.Bn254.pow128 =
-            f.val - Lampe.Crypto.Bn254.pow128 *
+        have hmod_eq : f.val % Lampe.pow128 =
+            f.val - Lampe.pow128 *
               Lampe.Crypto.Bn254.phi := by
-          have hsub : f.val = (f.val - Lampe.Crypto.Bn254.pow128 *
-              Lampe.Crypto.Bn254.phi) + Lampe.Crypto.Bn254.pow128 *
+          have hsub : f.val = (f.val - Lampe.pow128 *
+              Lampe.Crypto.Bn254.phi) + Lampe.pow128 *
               Lampe.Crypto.Bn254.phi := by omega
           conv_lhs => rw [hsub]
           rw [Nat.add_mul_mod_self_left,
               Nat.mod_eq_of_lt (lt_of_lt_of_le hr_lo (le_of_lt hplo_lt_pow))]
         omega
   -- Both sides have equal valueNat (= f.val).
-  have hs_val_eq : Scalar.valueNat s = f.val :=
+  have hs_val_eq : Lampe.Crypto.EmbeddedCurve.scalarValueNat s = f.val :=
     valueNat_eq_val_of_canonical_disj hcanon hdisj hdecomp
-  have hd_val_eq : Scalar.valueNat (Scalar.canonicalDecomp f) = f.val :=
+  have hd_val_eq : Lampe.Crypto.EmbeddedCurve.scalarValueNat (Scalar.canonicalDecomp f) = f.val :=
     valueNat_eq_val_of_canonical_disj hcanon' hd_disj hf_decomp
   -- Combine: valueNat agrees, so limbs agree.
-  have hv_eq : Scalar.valueNat s = Scalar.valueNat (Scalar.canonicalDecomp f) := by
+  have hv_eq : Lampe.Crypto.EmbeddedCurve.scalarValueNat s = Lampe.Crypto.EmbeddedCurve.scalarValueNat (Scalar.canonicalDecomp f) := by
     rw [hs_val_eq, hd_val_eq]
   obtain ⟨hlo_eq, hhi_eq⟩ := scalar_valueNat_inj_canonical hcanon hcanon' hv_eq
   -- s and canonicalDecomp f are 3-tuples (lo, hi, ()); equality of lo, hi gives equality.
   obtain ⟨slo, shi, ⟨⟩⟩ := s
-  simp only [Scalar.lo, Scalar.hi, Lampe.Crypto.EmbeddedCurve.scalarLo,
+  simp only [Lampe.Crypto.EmbeddedCurve.scalarLo, Lampe.Crypto.EmbeddedCurve.scalarHi, Lampe.Crypto.EmbeddedCurve.scalarLo,
     Lampe.Crypto.EmbeddedCurve.scalarHi] at hlo_eq hhi_eq
   show ((slo, shi, PUnit.unit) : Scalar.denote p) = Scalar.canonicalDecomp f
   rw [hlo_eq, hhi_eq]
@@ -819,16 +785,16 @@ end Scalar
 canonical-limb hypotheses, Noir's bitwise scalar equality reflects
 semantic value-equality. -/
 theorem scalar_eq_spec {p} {self other : Scalar.denote p}
-    (hself : Scalar.Canonical self) (hother : Scalar.Canonical other) :
+    (hself : Lampe.Crypto.EmbeddedCurve.scalarCanonical self) (hother : Lampe.Crypto.EmbeddedCurve.scalarCanonical other) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::cmp::Eq».eq h![] Scalar.type h![] h![] h![self, other])
-      (fun r => r = true ↔ Scalar.valueNat self = Scalar.valueNat other) := by
+      (fun r => r = true ↔ Lampe.Crypto.EmbeddedCurve.scalarValueNat self = Lampe.Crypto.EmbeddedCurve.scalarValueNat other) := by
   steps [scalar_eq_concrete_spec]
   subst_vars
   simp [Scalar.eq]
   constructor
   · rintro ⟨hhi, hlo⟩
-    simp [Scalar.valueNat, hhi, hlo]
+    simp [Lampe.Crypto.EmbeddedCurve.scalarValueNat, hhi, hlo]
   · intro h
     obtain ⟨hlo, hhi⟩ := scalar_valueNat_inj_canonical hself hother h
     exact ⟨hhi, hlo⟩
@@ -1118,9 +1084,9 @@ theorem scalar_from_field_spec {p} [Lampe.Crypto.Bn254.Prime p]
       (fun r =>
         ∃∃ lo hi,
           r = Scalar.mk lo hi ∧
-          lo.val < Lampe.Crypto.Bn254.pow128 ∧
-          hi.val < Lampe.Crypto.Bn254.pow128 ∧
-          scalar.val = lo.val + Lampe.Crypto.Bn254.pow128 * hi.val) := by
+          lo.val < Lampe.pow128 ∧
+          hi.val < Lampe.pow128 ∧
+          scalar.val = lo.val + Lampe.pow128 * hi.val) := by
   enter_decl
   steps [Lampe.Stdlib.Field.Bn254.decompose_intro (p := p)]
   simp [SLP.exists_pure, beq_true, decide_eq_true_eq] at *
@@ -1229,12 +1195,12 @@ theorem scalar_hash_spec {p H stateRef}
     (h_hi_write : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
       («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
-        h![stateRef, Scalar.hi self])
+        h![stateRef, Lampe.Crypto.EmbeddedCurve.scalarHi self])
       (fun _ => [stateRef ↦ ⟨H, state1⟩]))
     (h_lo_write : STHoare p env
       [stateRef ↦ ⟨H, state1⟩]
       («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
-        h![stateRef, Scalar.lo self])
+        h![stateRef, Lampe.Crypto.EmbeddedCurve.scalarLo self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
@@ -1395,7 +1361,7 @@ private lemma points_get_eq_encode {p : Prime} {N : U 32}
 
 /-- Bridging lemma: when each point is exactly the encoding of `Ps i`,
 the MSM accumulator equals the canonical sum
-`∑ i, Scalar.valueNat (scalars i) • Ps i`. -/
+`∑ i, Lampe.Crypto.EmbeddedCurve.scalarValueNat (scalars i) • Ps i`. -/
 private lemma msmAccFinRange_eq_sum {p : Prime} {N : U 32}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
@@ -1403,17 +1369,17 @@ private lemma msmAccFinRange_eq_sum {p : Prime} {N : U 32}
     (h_enc : points.toList = Ps.toList.map Lampe.Crypto.EmbeddedCurve.encodeCurvePoint)
     (hOnCurve : ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome) :
     msmAccFinRange points scalars hOnCurve =
-      ∑ i, Scalar.valueNat (scalars.get i) • Ps.get i := by
+      ∑ i, Lampe.Crypto.EmbeddedCurve.scalarValueNat (scalars.get i) • Ps.get i := by
   unfold msmAccFinRange
   refine Finset.sum_congr rfl (fun i _ => ?_)
   have hSome :
       Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i) = some (Ps.get i) := by
     rw [points_get_eq_encode h_enc i]; simp
-  rw [Option.get_of_eq_some _ hSome, ← Scalar.valueNat_eq_scalarValueNat]
+  rw [Option.get_of_eq_some _ hSome]
 
 /-- Result-equation spec for `multi_scalar_mul`. When each input point is
 the encoding of a Mathlib `WeierstrassCurve.Affine.Point`, the result is
-`encodeCurvePoint (∑ Scalar.valueNat (scalars i) • Ps i)`. -/
+`encodeCurvePoint (∑ Lampe.Crypto.EmbeddedCurve.scalarValueNat (scalars i) • Ps i)`. -/
 theorem multi_scalar_mul_spec {p N}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
@@ -1425,7 +1391,7 @@ theorem multi_scalar_mul_spec {p N}
         h![N] h![points, scalars])
       (fun r =>
         r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          (∑ i, Scalar.valueNat (scalars.get i) • Ps.get i)) := by
+          (∑ i, Lampe.Crypto.EmbeddedCurve.scalarValueNat (scalars.get i) • Ps.get i)) := by
   have hOnCurve :
       ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome := by
     intro i
@@ -1444,7 +1410,7 @@ theorem multi_scalar_mul_canon_spec {p N}
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
         h![N] h![points, scalars])
-      (fun _ => ∀ i, Scalar.Canonical (scalars.get i)) := by
+      (fun _ => ∀ i, Lampe.Crypto.EmbeddedCurve.scalarCanonical (scalars.get i)) := by
   enter_decl
   steps
   apply STHoare.letIn_intro
@@ -1469,9 +1435,9 @@ theorem multi_scalar_mul_combined_spec {p N}
       («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
         h![N] h![points, scalars])
       (fun r =>
-        (∀ i, Scalar.Canonical (scalars.get i)) ∧
+        (∀ i, Lampe.Crypto.EmbeddedCurve.scalarCanonical (scalars.get i)) ∧
         r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          (∑ i, Scalar.valueNat (scalars.get i) • Ps.get i)) := by
+          (∑ i, Lampe.Crypto.EmbeddedCurve.scalarValueNat (scalars.get i) • Ps.get i)) := by
   have hOnCurve :
       ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome := by
     intro i
@@ -1558,11 +1524,9 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
       show [Point.generator] = [Lampe.Crypto.EmbeddedCurve.encodeCurvePoint Pgen]
       rw [h_gen]; rfl
     rw [msmAccFinRange_eq_sum (Ps := Ps) h_enc hOnCurve]
-    show (∑ i : Fin 1, Scalar.valueNat (scalarsVec.get i) • Ps.get i) = _
+    show (∑ i : Fin 1, Lampe.Crypto.EmbeddedCurve.scalarValueNat (scalarsVec.get i) • Ps.get i) = _
     rw [Fin.sum_univ_one]
-    show Scalar.valueNat scalar • Pgen =
-      Lampe.Crypto.EmbeddedCurve.scalarValueNat scalar • Pgen
-    rw [Scalar.valueNat_eq_scalarValueNat]
+    rfl
   rename_i hRet
   rw [hmsm] at hRet
   exact hRet
@@ -1579,8 +1543,6 @@ theorem fixed_base_scalar_mul_spec {p}
       (fun r =>
         r =
           Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-            (Scalar.valueNat scalar • Pgen)) := by
-  have h := fixed_base_scalar_mul_concrete_spec (p := p) (scalar := scalar)
+            (Lampe.Crypto.EmbeddedCurve.scalarValueNat scalar • Pgen)) := by
+  exact fixed_base_scalar_mul_concrete_spec (p := p) (scalar := scalar)
     (Pgen := Pgen) (h_gen := h_gen)
-  rw [Scalar.valueNat_eq_scalarValueNat]
-  exact h

@@ -18,7 +18,7 @@ private abbrev phi : Nat := Lampe.Crypto.Bn254.phi
 private abbrev plo : Nat := Lampe.Crypto.Bn254.plo
 
 /-- Local alias for `2^128` as a `Nat`. -/
-private abbrev pow128 : Nat := Lampe.Crypto.Bn254.pow128
+private abbrev pow128 : Nat := Lampe.pow128
 
 /-!
 # Stdlib specs for `std::hash` Pedersen wrappers
@@ -178,12 +178,12 @@ theorem from_field_unsafe_spec {p} [Lampe.Crypto.Bn254.Prime p]
   -- Bridge lemma: `(plo : Fp p).val = plo` under `[Bn254.Prime p]`. Used by the xhi=phi branch via aesop.
   have hplo_val : ((plo : Nat) : Fp p).val = plo := by
     have hplo_lt : (plo : Nat) < p.natVal := by
-      have : (plo : Nat) < Lampe.Crypto.Bn254.pow128 := by decide
+      have : (plo : Nat) < Lampe.pow128 := by decide
       linarith [this, Lampe.Crypto.Bn254.pow128_lt_prime (p := p)]
     simpa using (ZMod.val_natCast_of_lt hplo_lt)
   have hphi_val : ((phi : Nat) : Fp p).val = phi := by
     have hphi_lt : (phi : Nat) < p.natVal := by
-      have : (phi : Nat) < Lampe.Crypto.Bn254.pow128 := by decide
+      have : (phi : Nat) < Lampe.pow128 := by decide
       linarith [this, Lampe.Crypto.Bn254.pow128_lt_prime (p := p)]
     simpa using (ZMod.val_natCast_of_lt hphi_lt)
   intro v
@@ -208,14 +208,14 @@ theorem from_field_unsafe_spec {p} [Lampe.Crypto.Bn254.Prime p]
       have := hab
       rw [ha_xhi, hb_phi] at this
       simpa [hphi_val] using this
-    have hassert_eq : scalar = xlo + ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * xhi := by
+    have hassert_eq : scalar = xlo + ((Lampe.pow128 : Nat) : Fp p) * xhi := by
       simpa [decide_eq_true_eq] using hassert
     have hret_mk : vret = Scalar.mk xlo xhi := by
       simpa [Scalar.mk, HList.toTuple] using hret
     simp only [SLP.exists_pure]
     sl
     refine ⟨xhi, hret_mk, ?_, Or.inr h_xhi_val_lt⟩
-    show scalar = xlo + ((Lampe.Crypto.Bn254.pow128 : Nat) : Fp p) * xhi
+    show scalar = xlo + ((Lampe.pow128 : Nat) : Fp p) * xhi
     exact hassert_eq
 
 /-! ### `pedersen_commitment_with_separator` substantive spec -/
@@ -238,7 +238,7 @@ private def fromFieldUnsafeRel {p} [Lampe.Crypto.Bn254.Prime p]
 /-- Spec for `std::hash::pedersen_commitment_with_separator`. The
 existential witness `Ss` records the per-slot `(lo, hi)` limbs produced
 by `from_field_unsafe`, together with the limb-decomposition equation,
-the canonical-range disjunction, and `Scalar.Canonical (Ss.get i)`. -/
+the canonical-range disjunction, and `scalarCanonical (Ss.get i)`. -/
 theorem pedersen_commitment_with_separator_spec {p N}
     [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)}
@@ -256,7 +256,7 @@ theorem pedersen_commitment_with_separator_spec {p N}
           ∧ (∀ i, (input.get i) = (Ss.get i).1 + ((pow128 : Nat) : Fp p) * (Ss.get i).2.1)
           ∧ (∀ i, ((Ss.get i).2.1 = ((phi : Nat) : Fp p) ∧ (Ss.get i).1.val < plo)
                   ∨ (Ss.get i).2.1.val < phi)
-          ∧ (∀ i, Scalar.Canonical (Ss.get i))) := by
+          ∧ (∀ i, scalarCanonical (Ss.get i))) := by
   let Ps : List.Vector (affineCurve p).Point N.toNat :=
     List.Vector.ofFn (fun i => pedersenGenerator (p := p)
       defaultDomainBytes (separator.toNat + i.val))
@@ -330,7 +330,6 @@ theorem pedersen_commitment_with_separator_spec {p N}
   obtain ⟨hCanon, hSum⟩ := hMsm
   refine ⟨?_, ?_, ?_, ?_⟩
   ·
-    simp only [Scalar.valueNat_eq_scalarValueNat] at hSum
     have hPs_get : ∀ i : Fin N.toNat,
         Ps.get i = pedersenGenerator (p := p)
           defaultDomainBytes (separator.toNat + i.val) := by
@@ -416,7 +415,7 @@ theorem pedersen_hash_with_separator_spec {p N}
           ∧ (∀ i, (input.get i) = (Ss.get i).1 + ((pow128 : Nat) : Fp p) * (Ss.get i).2.1)
           ∧ (∀ i, ((Ss.get i).2.1 = ((phi : Nat) : Fp p) ∧ (Ss.get i).1.val < plo)
                   ∨ (Ss.get i).2.1.val < phi)
-          ∧ (∀ i, Scalar.Canonical (Ss.get i))) := by
+          ∧ (∀ i, scalarCanonical (Ss.get i))) := by
   let Ps : List.Vector (affineCurve p).Point (N.toNat + 1) :=
     List.Vector.ofFn (fun i : Fin (N.toNat + 1) =>
       if h : i.val < N.toNat then
@@ -571,7 +570,7 @@ theorem pedersen_hash_with_separator_spec {p N}
     rw [ZMod.val_natCast]
     apply Nat.mod_eq_of_lt
     have hNbnd : N.toNat < 2^32 := N.isLt
-    have hp128 : (2^32 : Nat) < Lampe.Crypto.Bn254.pow128 := by decide
+    have hp128 : (2^32 : Nat) < Lampe.pow128 := by decide
     have hpprime := Lampe.Crypto.Bn254.pow128_lt_prime (p := p)
     omega
   set Ps_full : List.Vector (affineCurve p).Point (N + 1).toNat :=
@@ -792,7 +791,7 @@ theorem pedersen_commitment_spec {p N}
           ∧ (∀ i, (input.get i) = (Ss.get i).1 + ((pow128 : Nat) : Fp p) * (Ss.get i).2.1)
           ∧ (∀ i, ((Ss.get i).2.1 = ((phi : Nat) : Fp p) ∧ (Ss.get i).1.val < plo)
                   ∨ (Ss.get i).2.1.val < phi)
-          ∧ (∀ i, Scalar.Canonical (Ss.get i))) := by
+          ∧ (∀ i, scalarCanonical (Ss.get i))) := by
   enter_decl
   steps [pedersen_commitment_with_separator_spec (p := p) (N := N)
     (input := input) (separator := (0 : U 32))]
@@ -837,7 +836,7 @@ theorem pedersen_hash_spec {p N}
           ∧ (∀ i, (input.get i) = (Ss.get i).1 + ((pow128 : Nat) : Fp p) * (Ss.get i).2.1)
           ∧ (∀ i, ((Ss.get i).2.1 = ((phi : Nat) : Fp p) ∧ (Ss.get i).1.val < plo)
                   ∨ (Ss.get i).2.1.val < phi)
-          ∧ (∀ i, Scalar.Canonical (Ss.get i))) := by
+          ∧ (∀ i, scalarCanonical (Ss.get i))) := by
   enter_decl
   steps [pedersen_hash_with_separator_spec (p := p) (N := N)
     (input := input) (separator := (0 : U 32))]

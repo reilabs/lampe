@@ -76,10 +76,8 @@ lemma affineCurve_addY {p : Prime} (x₁ x₂ y₁ slope : Fp p) :
   simp [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY]
   ring
 
-def pow128 : Nat := 2 ^ 128
-
 def scalarValueNat {p : Prime} (s : Scalar p) : Nat :=
-  (scalarLo s).val + pow128 * (scalarHi s).val
+  (scalarLo s).val + Lampe.pow128 * (scalarHi s).val
 
 /-- Per-scalar limb-range canonicality matching the in-circuit constraints
 that Barretenberg's MSM gadget (`cycle_group::batch_mul`) emits on every
@@ -89,7 +87,7 @@ high limb) is fixed by the Grumpkin scalar field being approximately 254
 bits wide: 128 + 126 = 254 covers the field with room to spare for
 canonicality. -/
 def scalarCanonical {p : Prime} (s : Scalar p) : Prop :=
-  (scalarLo s).val < pow128 ∧ (scalarHi s).val < 2 ^ 126
+  (scalarLo s).val < Lampe.pow128 ∧ (scalarHi s).val < 2 ^ 126
 
 def curvePoint? {p : Prime} (pt : Point p) : Option ((affineCurve p).Point) :=
   if pointIsInfinite pt then
