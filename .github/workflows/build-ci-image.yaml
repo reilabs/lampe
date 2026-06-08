@@ -54,6 +54,7 @@ jobs:
             RUST_TOOLCHAIN_STABLE=${{ steps.versions.outputs.rust_stable }}
             LEAN_TOOLCHAIN=${{ steps.versions.outputs.lean_toolchain }}
             NOIR_REV=${{ steps.versions.outputs.noir_rev }}
+            MATHLIB_REV=${{ steps.versions.outputs.mathlib_rev }}
       - name: Fail If Image Missing
         if: steps.check.outcome == 'failure' && !inputs.allow_push
         run: |

@@ -192,6 +192,14 @@ jobs:
           key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml') }}
           restore-keys: |
             lampe-build-${{ runner.os }}-
+      - name: Hydrate Mathlib Cache From Image
+        if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p "$HOME/.cache/mathlib"
+          if [ -d "${LAMPE_BAKED_MATHLIB_CACHE:-}" ]; then
+            cp -al "$LAMPE_BAKED_MATHLIB_CACHE/." "$HOME/.cache/mathlib/" \
+              2>/dev/null || cp -an "$LAMPE_BAKED_MATHLIB_CACHE/." "$HOME/.cache/mathlib/"
+          fi
       - name: Get Mathlib Cache
         if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' }}
         working-directory: Lampe
@@ -309,6 +317,14 @@ jobs:
       - name: Free Runner Disk Space
         if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
         uses: ./.github/actions/free-disk-space
+      - name: Hydrate Mathlib Cache From Image
+        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p "$HOME/.cache/mathlib"
+          if [ -d "${LAMPE_BAKED_MATHLIB_CACHE:-}" ]; then
+            cp -al "$LAMPE_BAKED_MATHLIB_CACHE/." "$HOME/.cache/mathlib/" \
+              2>/dev/null || cp -an "$LAMPE_BAKED_MATHLIB_CACHE/." "$HOME/.cache/mathlib/"
+          fi
       - name: Build Stdlib In Place
         if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
         run: |

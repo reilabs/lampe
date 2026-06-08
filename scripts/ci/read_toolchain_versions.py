@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import pathlib
 import re
@@ -39,6 +40,25 @@ def read_noir_rev(root: pathlib.Path) -> str:
     return cargo["dependencies"]["noirc_driver"]["rev"]
 
 
+def read_mathlib_rev(root: pathlib.Path) -> str:
+    """Read the mathlib revision both projects pin. Lampe and stdlib must
+    agree — otherwise the baked cache would only cover one of them."""
+    def rev_for(manifest: pathlib.Path) -> str:
+        data = json.loads(manifest.read_text())
+        for pkg in data["packages"]:
+            if pkg["name"] == "mathlib":
+                return pkg["rev"]
+        raise SystemExit(f"mathlib not pinned in {manifest}")
+
+    lampe_rev = rev_for(root / "Lampe" / "lake-manifest.json")
+    stdlib_rev = rev_for(root / "stdlib" / "lampe" / "lake-manifest.json")
+    if lampe_rev != stdlib_rev:
+        raise SystemExit(
+            "Lampe and stdlib mathlib revs differ; update them together."
+        )
+    return lampe_rev
+
+
 def write_output(key: str, value: str) -> None:
     output_path = os.environ.get("GITHUB_OUTPUT")
     if output_path:
@@ -53,18 +73,22 @@ def main() -> None:
     rust_stable = read_rust_stable(root)
     lean_toolchain = read_lean_toolchain(root)
     noir_rev = read_noir_rev(root)
+    mathlib_rev = read_mathlib_rev(root)
 
     lean_tag = lean_version_for_tag(lean_toolchain)
     noir_short = normalize_tag(noir_rev)[:4]
+    mathlib_short = normalize_tag(mathlib_rev)[:8]
     image_tag = (
         f"rust-{normalize_tag(rust_stable)}"
         f"-lean-{lean_tag}"
+        f"-mathlib-{mathlib_short}"
         f"-noir-{noir_short}"
     )
 
     write_output("rust_stable", rust_stable)
     write_output("lean_toolchain", lean_toolchain)
     write_output("noir_rev", noir_rev)
+    write_output("mathlib_rev", mathlib_rev)
     write_output("image_tag", image_tag)
 
 

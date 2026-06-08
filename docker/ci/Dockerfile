@@ -5,11 +5,13 @@ ARG RUST_TOOLCHAIN_STABLE=1.90.0
 ARG RUST_TOOLCHAIN_NIGHTLY=nightly
 ARG LEAN_TOOLCHAIN=leanprover/lean4:v4.21.0
 ARG NOIR_REV=
+ARG MATHLIB_REV=
 
 ENV RUSTUP_HOME=/opt/rustup
 ENV CARGO_HOME=/opt/cargo
 ENV ELAN_HOME=/opt/elan
 ENV PATH=/opt/cargo/bin:/opt/elan/bin:/root/.local/bin:$PATH
+ENV LAMPE_BAKED_MATHLIB_CACHE=/opt/lampe-cache/mathlib
 
 COPY scripts/requirements.txt /tmp/requirements.txt
 
@@ -52,3 +54,8 @@ RUN if [ -n "$NOIR_REV" ]; then \
         cp /opt/noir/target/release/nargo /usr/local/bin/nargo; \
         rm -rf /opt/noir/.git /opt/noir/target; \
     fi
+
+COPY docker/ci/bake-mathlib-cache.sh /tmp/bake-mathlib-cache.sh
+RUN MATHLIB_REV=${MATHLIB_REV} LEAN_TOOLCHAIN=${LEAN_TOOLCHAIN} \
+        bash /tmp/bake-mathlib-cache.sh \
+    && rm /tmp/bake-mathlib-cache.sh
