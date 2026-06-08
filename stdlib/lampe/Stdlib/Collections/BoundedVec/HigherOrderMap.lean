@@ -243,7 +243,7 @@ private theorem mapLike_constrained_loop_effectful_spec
 
         -- Instantiate the callback spec on this step.
         have hip_len : (xs.take i).length = i := by
-          simpa [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi_xs)]
+          simp [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi_xs)]
         let idx : U 32 := BitVec.ofNat 32 i
         have hidx_toNat : idx.toNat = i := by simpa [idx] using toNat_ofNat32 (i := i) pf
         have hprefix : xs.take i ++ [elem] <+: xs := by
@@ -255,7 +255,7 @@ private theorem mapLike_constrained_loop_effectful_spec
             (fun r => inv (xs.take i ++ [elem]) (List.take i (storage v).toList ++ [r])) := by
           simpa [hmin_i] using
             inv_step (ip := xs.take i) (op := List.take i (storage v).toList) (i := idx) (e := elem)
-              (by simpa [xs] using hprefix) (by simpa [hidx_toNat, hip_len])
+              (by simpa [xs] using hprefix) (by simp [hidx_toNat, hip_len])
 
         simp [hmin_i, hmin_succ] at *
         steps [STHoare.callLambda_intro (hlam := hlam)]
@@ -574,7 +574,7 @@ theorem any_spec {p T MaxLen Env self f fb}
       simp [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)]
       sl
     ·
-      simpa using (Nat.zero_le MaxLen.toNat)
+      simp [Nat.zero_le MaxLen.toNat]
     ·
       intro i hlo hhi
       steps
@@ -591,8 +591,6 @@ theorem any_spec {p T MaxLen Env self f fb}
 
       -- `steps` sometimes leaves a meta `R : SLP (State p)` for the frame. It is safe to instantiate
       -- it with `⊤` here (the loop invariant already carries all relevant resources).
-      all_goals (try exact (⊤ : SLP (State p)))
-
       -- Split on the guard `!exceeded_len` after the update.
       apply STHoare.ite_intro
       ·
@@ -645,7 +643,7 @@ theorem any_spec {p T MaxLen Env self f fb}
         ·
           -- Normalize `take i ++ [xs[i]]` to `take (i+1)` to discharge the remaining frame goal.
           have htake : xs.take i ++ [e] = xs.take (i + 1) := by
-            simpa [e] using (List.take_append_getElem (l := xs) (i := i) hi_xs)
+            simp [e, List.take_append_getElem (l := xs) (i := i) hi_xs]
           simp [htake]
           exact SLP.ent_star_top
         ·
@@ -812,18 +810,18 @@ private theorem forEachLike_constrained_loop_spec
         have hprefix : xs.take i ++ [x] <+: xs := by
           simpa [hx'] using (by simp [List.take_prefix])
         have hip_len : (xs.take i).length = i := by
-          simpa [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi_xs)]
+          simp [List.length_take, Nat.min_eq_left (Nat.le_of_lt hi_xs)]
         let idx : U 32 := BitVec.ofNat 32 i
         have hidx_toNat : idx.toNat = i := by simpa [idx] using toNat_ofNat32 (i := i) pf
         have hlam : STHoare p env (Inv (xs.take i)) (fb (mkArgs idx x)) (fun _ => Inv (xs.take i ++ [x])) := by
           simpa using inv_step (ip := xs.take i) (i := idx) (e := x)
-            (by simpa [xs] using hprefix) (by simpa [hidx_toNat, hip_len])
+            (by simpa [xs] using hprefix) (by simp [hidx_toNat, hip_len])
 
         have hmin_i : Nat.min i n = i := Nat.min_eq_left (Nat.le_of_lt hi_lt)
         have hmin_succ : Nat.min (i + 1) n = i + 1 := Nat.min_eq_left (Nat.succ_le_of_lt hi_lt)
         simp [hmin_i, hmin_succ] at *
         have htake_xs : xs.take (i + 1) = xs.take i ++ [x] := by
-          simpa [hx'] using (List.take_succ_eq_take_append_get (l := xs) (n := i) (hn := hi_xs))
+          simpa [hx'] using List.take_succ_eq_take_append_get (l := xs) (n := i) (hn := hi_xs)
         steps [STHoare.callLambda_intro (hlam := hlam)]
         case R => exact ⟦True⟧
         simp [htake_xs]
