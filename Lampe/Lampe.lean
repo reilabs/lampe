@@ -11,9 +11,9 @@ import Lampe.Builtin.Crypto.Blake2s
 import Lampe.Builtin.Crypto.Blake3
 import Lampe.Builtin.Crypto.Ecdsa
 import Lampe.Builtin.Crypto.EmbeddedCurve
-import Lampe.Builtin.Crypto.Hash
 import Lampe.Builtin.Crypto.Keccak
 import Lampe.Builtin.Crypto.Pedersen
+import Lampe.Builtin.Crypto.Poseidon2
 import Lampe.Builtin.Crypto.Sha256
 import Lampe.Builtin.Field
 import Lampe.Builtin.Lens
