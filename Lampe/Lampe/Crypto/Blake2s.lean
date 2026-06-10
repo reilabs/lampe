@@ -1,3 +1,4 @@
+import Lampe.Crypto.WordUtils
 import Lampe.Tp
 
 /-!
@@ -25,11 +26,9 @@ namespace Lampe.Crypto.Blake2s
 
 /-! ### Constants -/
 
-/-- BLAKE2s IV — same as SHA-256's initial hash values (RFC 7693
-section 2.6). -/
-def iv : Array (BitVec 32) :=
-  #[0x6a09e667#32, 0xbb67ae85#32, 0x3c6ef372#32, 0xa54ff53a#32,
-    0x510e527f#32, 0x9b05688c#32, 0x1f83d9ab#32, 0x5be0cd19#32]
+/-- BLAKE2s IV — exactly SHA-256's initial hash value (RFC 7693
+section 2.6), shared as `Lampe.Crypto.sha256IV`. -/
+def iv : Array (BitVec 32) := sha256IV
 
 /-- BLAKE2 σ permutation table (RFC 7693 section 2.7). Ten
 permutations of `0..15` selecting which message word feeds each G
@@ -54,10 +53,6 @@ def BLOCK_LEN : Nat := 64
 def OUT_LEN : Nat := 32
 
 /-! ### G mixing function and rounds -/
-
-/-- 32-bit rotate-right. -/
-@[inline] def rotr32 (x : BitVec 32) (n : Nat) : BitVec 32 :=
-  (x >>> n) ||| (x <<< (32 - n))
 
 /-- BLAKE2s G mixing function (RFC 7693 section 3.1). Updates four
 lanes `a, b, c, d` of the 16-word working state `v` using two message
@@ -129,46 +124,11 @@ def compress (h : Array (BitVec 32)) (m : Array (BitVec 32))
     hOut := hOut.set! i (h[i]! ^^^ v[i]! ^^^ v[i + 8]!)
   return hOut
 
-/-! ### Byte ↔ word conversion (little-endian) -/
+/-! ### Top-level entry points
 
-/-- Pack 4 little-endian bytes into a u32. -/
-def bytesToWord (b0 b1 b2 b3 : BitVec 8) : BitVec 32 :=
-  b0.zeroExtend 32 ||| (b1.zeroExtend 32 <<< (8 : Nat))
-    ||| (b2.zeroExtend 32 <<< (16 : Nat))
-    ||| (b3.zeroExtend 32 <<< (24 : Nat))
-
-/-- Pack 64 bytes (one BLAKE2s block) into 16 u32 little-endian words.
-The caller is responsible for zero-padding short final blocks. -/
-def blockBytesToWords (block : Array (BitVec 8)) : Array (BitVec 32) := Id.run do
-  let mut out : Array (BitVec 32) := Array.replicate 16 0
-  for i in [:16] do
-    let b0 := block[4*i]!
-    let b1 := block[4*i + 1]!
-    let b2 := block[4*i + 2]!
-    let b3 := block[4*i + 3]!
-    out := out.set! i (bytesToWord b0 b1 b2 b3)
-  return out
-
-/-- Unpack a u32 to 4 little-endian bytes. -/
-def wordToBytes (w : BitVec 32) : Array (BitVec 8) :=
-  #[ w.truncate 8,
-     (w >>> ( 8 : Nat)).truncate 8,
-     (w >>> (16 : Nat)).truncate 8,
-     (w >>> (24 : Nat)).truncate 8 ]
-
-/-- Serialise the 8-word chaining state as 32 little-endian bytes
-(BLAKE2s-256 digest). -/
-def stateTo32Bytes (h : Array (BitVec 32)) : Array (BitVec 8) := Id.run do
-  let mut out : Array (BitVec 8) := Array.replicate 32 0
-  for i in [:8] do
-    let bs := wordToBytes h[i]!
-    out := out.set! (4*i) bs[0]!
-    out := out.set! (4*i + 1) bs[1]!
-    out := out.set! (4*i + 2) bs[2]!
-    out := out.set! (4*i + 3) bs[3]!
-  return out
-
-/-! ### Top-level entry points -/
+Byte ↔ word conversion (`bytesToWord`, `blockBytesToWords`,
+`wordToBytes`, `stateTo32Bytes`, `padBlock`) is shared with BLAKE3 via
+`Lampe.Crypto.WordUtils`. -/
 
 /-- Initial chaining state for unkeyed BLAKE2s-256. RFC 7693 section
 2.5: `h[0] := IV[0] XOR (0x0101kknn)` where `kk = 0` (no key) and
@@ -180,12 +140,6 @@ def initialState : Array (BitVec 32) := Id.run do
   let mut h := iv
   h := h.set! 0 (h[0]! ^^^ 0x01010020#32)
   return h
-
-/-- Pad a block of fewer than 64 bytes up to 64 bytes with trailing
-zeros. -/
-def padBlock (block : Array (BitVec 8)) : Array (BitVec 8) :=
-  if block.size ≥ BLOCK_LEN then block.extract 0 BLOCK_LEN
-  else block ++ Array.replicate (BLOCK_LEN - block.size) 0
 
 /-- Sequential BLAKE2s compression over an arbitrary-length byte
 input. Implements the loop from RFC 7693 section 3.3:
@@ -215,6 +169,14 @@ def blake2sHashBytes (input : Array (BitVec 8)) : Array (BitVec 8) := Id.run do
       let t : BitVec 64 := BitVec.ofNat 64 bytesSoFar
       h := compress h (blockBytesToWords block) t isLast
   return stateTo32Bytes h
+
+/-- `blake2sHashBytes` always produces exactly the 32-byte digest. -/
+theorem size_blake2sHashBytes (input : Array (BitVec 8)) :
+    (blake2sHashBytes input).size = 32 := by
+  simp only [blake2sHashBytes]
+  split
+  · exact size_stateTo32Bytes _
+  · exact size_stateTo32Bytes _
 
 /-- Concrete BLAKE2s hash. Matches the signature the foreign builtin
 descriptor uses: input is a length-`N` array of bytes, output is the

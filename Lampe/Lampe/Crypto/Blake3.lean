@@ -1,3 +1,4 @@
+import Lampe.Crypto.WordUtils
 import Lampe.Tp
 
 /-!
@@ -27,10 +28,9 @@ namespace Lampe.Crypto.Blake3
 
 /-! ### Constants -/
 
-/-- BLAKE3 IV (same as SHA-256's initial hash values). -/
-def iv : Array (BitVec 32) :=
-  #[0x6a09e667#32, 0xbb67ae85#32, 0x3c6ef372#32, 0xa54ff53a#32,
-    0x510e527f#32, 0x9b05688c#32, 0x1f83d9ab#32, 0x5be0cd19#32]
+/-- BLAKE3 IV — exactly SHA-256's initial hash value, shared as
+`Lampe.Crypto.sha256IV`. -/
+def iv : Array (BitVec 32) := sha256IV
 
 /-- Message-word permutation applied between rounds. -/
 def msgPermutation : Array Nat :=
@@ -49,10 +49,6 @@ def BLOCK_LEN : Nat := 64
 def CHUNK_LEN : Nat := 1024
 
 /-! ### G mixing function and rounds -/
-
-/-- 32-bit rotate-right. -/
-@[inline] def rotr32 (x : BitVec 32) (n : Nat) : BitVec 32 :=
-  (x >>> n) ||| (x <<< (32 - n))
 
 /-- BLAKE3 G mixing function: update four state lanes a/b/c/d using two
 message words mx/my (BLAKE3 spec §2.3). -/
@@ -128,54 +124,11 @@ def compress (cv : Array (BitVec 32)) (blockWords : Array (BitVec 32))
     s := s.set! (i + 8) (s[i+8]! ^^^ cv[i]!)
   return s
 
-/-! ### Byte ↔ word conversion (little-endian) -/
+/-! ### Chunk and parent processing
 
-/-- Pack 4 little-endian bytes into a u32. -/
-def bytesToWord (b0 b1 b2 b3 : BitVec 8) : BitVec 32 :=
-  b0.zeroExtend 32 ||| (b1.zeroExtend 32 <<< (8 : Nat))
-    ||| (b2.zeroExtend 32 <<< (16 : Nat))
-    ||| (b3.zeroExtend 32 <<< (24 : Nat))
-
-/-- Pack 64 bytes into 16 u32 little-endian words. The input array is
-expected to have at least `start + 64` valid bytes; positions past
-`inputLen` (the logical length) are zero-padded by the caller. -/
-def blockBytesToWords (block : Array (BitVec 8)) : Array (BitVec 32) := Id.run do
-  let mut out : Array (BitVec 32) := Array.replicate 16 0
-  for i in [:16] do
-    let b0 := block[4*i]!
-    let b1 := block[4*i + 1]!
-    let b2 := block[4*i + 2]!
-    let b3 := block[4*i + 3]!
-    out := out.set! i (bytesToWord b0 b1 b2 b3)
-  return out
-
-/-- Unpack a u32 to 4 little-endian bytes. -/
-def wordToBytes (w : BitVec 32) : Array (BitVec 8) :=
-  #[ w.truncate 8,
-     (w >>> ( 8 : Nat)).truncate 8,
-     (w >>> (16 : Nat)).truncate 8,
-     (w >>> (24 : Nat)).truncate 8 ]
-
-/-- Serialize the first 8 words of a state as 32 little-endian bytes
-(BLAKE3 default output length). -/
-def stateTo32Bytes (s : Array (BitVec 32)) : Array (BitVec 8) := Id.run do
-  let mut out : Array (BitVec 8) := Array.replicate 32 0
-  for i in [:8] do
-    let bs := wordToBytes s[i]!
-    out := out.set! (4*i) bs[0]!
-    out := out.set! (4*i + 1) bs[1]!
-    out := out.set! (4*i + 2) bs[2]!
-    out := out.set! (4*i + 3) bs[3]!
-  return out
-
-/-! ### Chunk and parent processing -/
-
-/-- Pad an arbitrary-length byte slice to a multiple of 64 bytes with
-zero bytes. Returns the padded array and the original length (as the
-final block's `blockLen` field). -/
-def padBlock (bytes : Array (BitVec 8)) : Array (BitVec 8) :=
-  if bytes.size ≥ 64 then bytes.extract 0 64
-  else bytes ++ Array.replicate (64 - bytes.size) 0
+Byte ↔ word conversion (`bytesToWord`, `blockBytesToWords`,
+`wordToBytes`, `stateTo32Bytes`, `padBlock`) is shared with BLAKE2s
+via `Lampe.Crypto.WordUtils`. -/
 
 /-- Process one chunk of up to 1024 bytes through up to 16 block
 compressions. Returns the chaining value (first 8 words) by default,

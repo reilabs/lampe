@@ -1,3 +1,4 @@
+import Lampe.Crypto.WordUtils
 import Lampe.Tp
 
 /-!
@@ -60,17 +61,16 @@ def roundConstants : List.Vector (BitVec 32) 64 :=
 
 /-- FIPS 180-4 §5.3.3: SHA-256 initial hash value `H(0)`. First 32
 bits of the fractional parts of the square roots of the first 8
-primes. Re-exported here for use in test vectors. -/
+primes. The constant itself lives in `Lampe.Crypto.sha256IV` (it is
+also the BLAKE2s/BLAKE3 IV); this re-exports it at the `List.Vector`
+shape used by the test vectors. -/
 def initialHash : List.Vector (BitVec 32) 8 :=
-  ⟨[ 0x6a09e667#32, 0xbb67ae85#32, 0x3c6ef372#32, 0xa54ff53a#32,
-     0x510e527f#32, 0x9b05688c#32, 0x1f83d9ab#32, 0x5be0cd19#32 ],
-   by rfl⟩
+  ⟨sha256IV.toList, by rfl⟩
 
-/-! ### Bit-mixing helpers (FIPS 180-4 §4.1.2) -/
+/-! ### Bit-mixing helpers (FIPS 180-4 §4.1.2)
 
-/-- 32-bit rotate-right. -/
-@[inline] def rotr32 (x : BitVec 32) (n : Nat) : BitVec 32 :=
-  (x >>> n) ||| (x <<< (32 - n))
+`rotr32` is shared with the BLAKE models via
+`Lampe.Crypto.WordUtils`. -/
 
 /-- Logical right shift, expressed at the same arity as `rotr32` for
 symmetry. -/

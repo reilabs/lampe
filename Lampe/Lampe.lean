@@ -41,6 +41,7 @@ import Lampe.Crypto.Secp256k1.Prime
 import Lampe.Crypto.Secp256r1
 import Lampe.Crypto.Secp256r1.Prime
 import Lampe.Crypto.Sha256
+import Lampe.Crypto.WordUtils
 import Lampe.Data.Digits
 import Lampe.Data.Field
 import Lampe.Data.HList
