@@ -58,7 +58,7 @@ theorem blake2s_builtin_spec {p} {N : U 32}
       (fun r => r = Lampe.Crypto.Blake2s.blake2sHash input) := by
   exact STHoare.genericTotalPureBuiltin_intro Builtin.blake2S rfl N p env h![input]
 
-private theorem blake3_builtin_spec {p} {N : U 32}
+theorem blake3_builtin_spec {p} {N : U 32}
     {input : Tp.denote p ((Tp.u 8).array N)} :
     STHoare p env ⟦⟧
       (.callBuiltin [(Tp.u 8).array N] ((Tp.u 8).array (32 : U 32))
