@@ -13,13 +13,14 @@ Inputs follow the canonical BLAKE3 test-vector convention
 `input[i] = i % 251`. Lengths cover empty input, sub-block,
 block-boundary, chunk-boundary, and multi-chunk tree cases.
 
-Regenerate with `scripts/blake3_ref.py`.
+Regenerate with `scripts/gen/blake3_ref.py`.
 -/
 
 namespace Tests.Blake3
 
 open Lampe.Crypto.Blake3
 
+-- BEGIN generated blake3 test vectors --
 -- empty: input = [i % 251 for i in 0..0], len = 0
 private def emptyIn : Array (BitVec 8) :=
   #[]
@@ -82,5 +83,6 @@ private def twoChunksIn : Array (BitVec 8) :=
 private def twoChunksOut : Array (BitVec 8) :=
   #[0xe7#8, 0x76#8, 0xb6#8, 0x02#8, 0x8c#8, 0x7c#8, 0xd2#8, 0x2a#8, 0x4d#8, 0x0b#8, 0xa1#8, 0x82#8, 0xa8#8, 0xbf#8, 0x62#8, 0x20#8, 0x5d#8, 0x2e#8, 0xf5#8, 0x76#8, 0x46#8, 0x7e#8, 0x83#8, 0x8e#8, 0xd6#8, 0xf2#8, 0x52#8, 0x9b#8, 0x85#8, 0xfb#8, 0xa2#8, 0x4a#8]
 example : blake3HashBytes twoChunksIn = twoChunksOut := by native_decide
+-- END generated blake3 test vectors --
 
 end Tests.Blake3

@@ -21,7 +21,7 @@ taken from the official BLAKE3 Python binding (`pip install blake3`),
 which is maintained by the BLAKE3 team and known to match the
 published `test_vectors.json`.
 
-Regenerate test vectors with `scripts/blake3_ref.py`.
+Regenerate test vectors with `scripts/gen/blake3_ref.py`.
 -/
 
 namespace Lampe.Crypto.Blake3

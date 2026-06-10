@@ -9,10 +9,15 @@ The input pattern matches the canonical test vector spec:
   input[i] = i % 251
 
 Lampe's concrete BLAKE3 implementation is validated against these
-vectors via native_decide theorems.
+vectors via `native_decide`.
+
+Usage:
+    python3 scripts/gen/blake3_ref.py <path/to/Blake3.lean>
 """
 
 import sys
+
+from _lean import update_region
 
 try:
     import blake3
@@ -33,32 +38,6 @@ except ImportError:
 #   2048 : two full chunks (tree depth 1, symmetric)
 TEST_LENGTHS = [0, 1, 63, 64, 65, 1023, 1024, 1025, 2048]
 
-
-def canonical_input(n: int) -> bytes:
-    return bytes(i % 251 for i in range(n))
-
-
-def emit_test_vector(name: str, n: int) -> None:
-    inp = canonical_input(n)
-    digest = blake3.blake3(inp).digest()
-    # Lean BitVec 8 literal: 0xNN#8
-    def lane(b): return f"0x{b:02x}#8"
-    out_lanes = ", ".join(lane(b) for b in digest)
-    print(f"-- {name}: input = [i % 251 for i in 0..{n}], len = {n}")
-    # Input: use the canonical formula i % 251 rather than 1024+ literals.
-    print(f"private def {name}In : Array (BitVec 8) :=")
-    if n == 0:
-        print(f"  #[]")
-    else:
-        print(f"  ((List.range {n}).map (fun i => BitVec.ofNat 8 (i % 251))).toArray")
-    print(f"private def {name}Out : Array (BitVec 8) :=")
-    print(f"  #[{out_lanes}]")
-    print(f"theorem blake3_{name}_correct :")
-    print(f"    blake3HashBytes {name}In = {name}Out := by native_decide")
-    print()
-
-
-# Tag-friendly names for the lengths
 NAMES = {
     0: "empty",
     1: "oneByte",
@@ -71,5 +50,44 @@ NAMES = {
     2048: "twoChunks",
 }
 
-for n in TEST_LENGTHS:
-    emit_test_vector(NAMES[n], n)
+
+def canonical_input(n: int) -> bytes:
+    return bytes(i % 251 for i in range(n))
+
+
+def lane(b: int) -> str:
+    return f"0x{b:02x}#8"
+
+
+def vector_lines(name: str, n: int) -> list[str]:
+    inp = canonical_input(n)
+    digest = blake3.blake3(inp).digest()
+    out_lanes = ", ".join(lane(b) for b in digest)
+    lines = [f"-- {name}: input = [i % 251 for i in 0..{n}], len = {n}"]
+    lines.append(f"private def {name}In : Array (BitVec 8) :=")
+    if n == 0:
+        lines.append("  #[]")
+    else:
+        lines.append(
+            f"  ((List.range {n}).map (fun i => BitVec.ofNat 8 (i % 251))).toArray"
+        )
+    lines.append(f"private def {name}Out : Array (BitVec 8) :=")
+    lines.append(f"  #[{out_lanes}]")
+    lines.append(f"example : blake3HashBytes {name}In = {name}Out := by native_decide")
+    return lines
+
+
+def build_body() -> str:
+    blocks = ["\n".join(vector_lines(NAMES[n], n)) for n in TEST_LENGTHS]
+    return "\n\n".join(blocks)
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("usage: blake3_ref.py <path/to/Blake3.lean>", file=sys.stderr)
+        sys.exit(1)
+    update_region(sys.argv[1], build_body(), label="blake3 test vectors")
+
+
+if __name__ == "__main__":
+    main()

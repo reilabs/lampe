@@ -19,7 +19,7 @@ vectors (`"abc"` etc.) are anchored against Python's
 `hashlib.blake2s`, which wraps the BLAKE2 reference implementation
 (`libb2`).
 
-Regenerate test vectors with `scripts/blake2s_ref.py`.
+Regenerate test vectors with `scripts/gen/blake2s_ref.py`.
 -/
 
 namespace Lampe.Crypto.Blake2s
