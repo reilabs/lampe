@@ -30,6 +30,7 @@ import Lampe.Crypto.Bn254
 import Lampe.Crypto.Bn254.Prime
 import Lampe.Crypto.Bn254.Sqrt
 import Lampe.Crypto.Ecdsa
+import Lampe.Crypto.Ecdsa.Verify
 import Lampe.Crypto.EmbeddedCurve
 import Lampe.Crypto.Keccak
 import Lampe.Crypto.MathlibBridge

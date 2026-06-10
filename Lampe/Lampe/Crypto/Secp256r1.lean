@@ -1,3 +1,4 @@
+import Lampe.Crypto.Ecdsa.Verify
 import Lampe.Crypto.MathlibBridge
 import Lampe.Crypto.Secp256r1.Prime
 import Mathlib.Algebra.Field.ZMod
@@ -40,47 +41,14 @@ def G_nonsingular : W.Nonsingular Gx Gy := by native_decide
 
 def G : W.Point := WeierstrassCurve.Affine.Point.some (x := Gx) (y := Gy) G_nonsingular
 
-def bytesToNatBE (bs : Array (BitVec 8)) : Nat :=
-  bs.foldl (fun acc b => acc * 256 + b.toNat) 0
-
-private def orderPow (base exp : Nat) : Nat := Id.run do
-  let mut result : Nat := 1
-  let mut b : Nat := base % orderN
-  let mut e : Nat := exp
-  for _ in [:256] do
-    if e % 2 = 1 then
-      result := (result * b) % orderN
-    e := e / 2
-    b := (b * b) % orderN
-  return result
-
-@[inline] private def orderInv (a : Nat) : Nat := orderPow a (orderN - 2)
-
+/-- ECDSA verification on secp256r1 / P-256 (FIPS 186-4 §6.4.2): the
+generic `Ecdsa.verifyBytes` instantiated with the curve parameters
+above. -/
 def verifyBytes
     (pkX pkY : Array (BitVec 8))
     (sig : Array (BitVec 8))
-    (msgHash : Array (BitVec 8)) : Bool := Id.run do
-  let r := bytesToNatBE (sig.extract 0 32)
-  let s := bytesToNatBE (sig.extract 32 64)
-  if r = 0 then return false
-  if r ≥ orderN then return false
-  if s = 0 then return false
-  if s ≥ orderN then return false
-  let qx : F := ((bytesToNatBE pkX : Nat) : F)
-  let qy : F := ((bytesToNatBE pkY : Nat) : F)
-  if hQ : W.Nonsingular qx qy then
-    let z := bytesToNatBE msgHash
-    let zRed := z % orderN
-    let sInv := orderInv s
-    let u1 := (zRed * sInv) % orderN
-    let u2 := (r * sInv) % orderN
-    let Q : W.Point := WeierstrassCurve.Affine.Point.some (x := qx) (y := qy) hQ
-    let R : W.Point := scalarMul G u1 + scalarMul Q u2
-    match R with
-    | .zero => return false
-    | @WeierstrassCurve.Affine.Point.some _ _ _ xr _ _ => return (xr.val % orderN) = r
-  else
-    return false
+    (msgHash : Array (BitVec 8)) : Bool :=
+  Ecdsa.verifyBytes (W := W) orderN G pkX pkY sig msgHash
 
 /-! ### Test vectors. Reproducible via `scripts/secp256r1_ref.py`. -/
 
