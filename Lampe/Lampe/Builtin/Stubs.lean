@@ -30,10 +30,8 @@ def stub : Builtin := {
 -- to match the name in extracted code that comes from Noir.
 def arrayRefcount := stub
 def asWitness := stub
-def assertConstant := stub
 def blackBox := stub
 def checkedTransmute := stub
-def derivePedersenGenerators := stub
 def fmtstrAsCtstring := stub
 def mkFormatString := stub
 def recursiveAggregation := stub
