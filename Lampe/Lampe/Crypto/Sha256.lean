@@ -22,9 +22,9 @@ References:
   - §5.3.3 Initial hash value H(0)
   - §6.2.2 Hash computation (the compression we implement)
 
-Validation: see test vectors at the bottom. They are copied verbatim
-from FIPS 180-2 "Secure Hash Standard" Appendix B — both the single-
-block "abc" example (B.1) and the two-block
+Validation: see `Lampe/Tests/Sha256.lean`. The vectors there are
+copied verbatim from FIPS 180-2 "Secure Hash Standard" Appendix B —
+both the single-block "abc" example (B.1) and the two-block
 "abcdbcdec...mnopnopq" example (B.2), the latter giving us a
 non-trivial intermediate compression-state target H^(1) as well as the
 final hash H^(2).
@@ -214,78 +214,5 @@ def compress
     (msg   : Tp.denote p ((Tp.u 32).array (16 : U 32))) :
     Tp.denote p ((Tp.u 32).array (8 : U 32)) :=
   compressOne state msg
-
-/-! ### Test vectors
-
-All vectors below are copy-pasted verbatim from FIPS 180-2 Appendix B
-(the SHA-256 worked examples). No third-party / re-derived references
-are involved: the padded message blocks, the intermediate hash value
-H^(1), and the final hash are exactly the byte sequences printed in the
-standard.
-
-- B.1: single-block "abc" example. One compression of the IV against
-  the padded "abc" block produces the published SHA-256("abc").
-- B.2: two-block "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
-  example. Block 1 takes the IV to the intermediate state H^(1); block
-  2 takes H^(1) to the final hash H^(2). We test both compressions. -/
-
-/-- FIPS 180-2 §B.1: padded "abc" block. -/
-private def abcMsg : List.Vector (BitVec 32) 16 :=
-  ⟨[ 0x61626380#32, 0x00000000#32, 0x00000000#32, 0x00000000#32,
-     0x00000000#32, 0x00000000#32, 0x00000000#32, 0x00000000#32,
-     0x00000000#32, 0x00000000#32, 0x00000000#32, 0x00000000#32,
-     0x00000000#32, 0x00000000#32, 0x00000000#32, 0x00000018#32 ],
-   by rfl⟩
-
-/-- FIPS 180-2 §B.1: the final hash value (also the published
-SHA-256("abc")). -/
-private def abcOut : List.Vector (BitVec 32) 8 :=
-  ⟨[ 0xba7816bf#32, 0x8f01cfea#32, 0x414140de#32, 0x5dae2223#32,
-     0xb00361a3#32, 0x96177a9c#32, 0xb410ff61#32, 0xf20015ad#32 ],
-   by rfl⟩
-
-theorem sha256_abc_correct :
-    compressOne initialHash abcMsg = abcOut := by native_decide
-
-/-- FIPS 180-2 §B.2: first padded block of the two-block example,
-W_0 through W_15 as printed in the standard. -/
-private def longMsgBlock1 : List.Vector (BitVec 32) 16 :=
-  ⟨[ 0x61626364#32, 0x62636465#32, 0x63646566#32, 0x64656667#32,
-     0x65666768#32, 0x66676869#32, 0x6768696a#32, 0x68696a6b#32,
-     0x696a6b6c#32, 0x6a6b6c6d#32, 0x6b6c6d6e#32, 0x6c6d6e6f#32,
-     0x6d6e6f70#32, 0x6e6f7071#32, 0x80000000#32, 0x00000000#32 ],
-   by rfl⟩
-
-/-- FIPS 180-2 §B.2: intermediate hash value H^(1) after processing
-block 1, copied verbatim from the standard. -/
-private def longMsgIntermediate : List.Vector (BitVec 32) 8 :=
-  ⟨[ 0x85e655d6#32, 0x417a1795#32, 0x3363376a#32, 0x624cde5c#32,
-     0x76e09589#32, 0xcac5f811#32, 0xcc4b32c1#32, 0xf20e533a#32 ],
-   by rfl⟩
-
-theorem sha256_long_msg_block1_correct :
-    compressOne initialHash longMsgBlock1 = longMsgIntermediate := by
-  native_decide
-
-/-- FIPS 180-2 §B.2: second padded block of the two-block example.
-All zeros except the 64-bit length field 0x00000000_000001c0 (448 bits
-in big-endian). -/
-private def longMsgBlock2 : List.Vector (BitVec 32) 16 :=
-  ⟨[ 0x00000000#32, 0x00000000#32, 0x00000000#32, 0x00000000#32,
-     0x00000000#32, 0x00000000#32, 0x00000000#32, 0x00000000#32,
-     0x00000000#32, 0x00000000#32, 0x00000000#32, 0x00000000#32,
-     0x00000000#32, 0x00000000#32, 0x00000000#32, 0x000001c0#32 ],
-   by rfl⟩
-
-/-- FIPS 180-2 §B.2: final hash value H^(2), copied verbatim. Also the
-published SHA-256("abcdbcdec..."). -/
-private def longMsgFinal : List.Vector (BitVec 32) 8 :=
-  ⟨[ 0x248d6a61#32, 0xd20638b8#32, 0xe5c02693#32, 0x0c3e6039#32,
-     0xa33ce459#32, 0x64ff2167#32, 0xf6ecedd4#32, 0x19db06c1#32 ],
-   by rfl⟩
-
-theorem sha256_long_msg_block2_correct :
-    compressOne longMsgIntermediate longMsgBlock2 = longMsgFinal := by
-  native_decide
 
 end Lampe.Crypto.Sha256
