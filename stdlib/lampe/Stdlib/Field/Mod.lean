@@ -921,7 +921,7 @@ theorem pow_32_intro {p self exponent} :
         (tp := Tp.field)
         (v := self ^ RadixVec.ofDigitsBE' (List.take 32 digits.toList)))
 
-theorem lt_intro {p self another} [Lampe.Stdlib.Field.Bn254.Prime p] :
+theorem lt_intro {p self another} [Lampe.Crypto.Bn254.Prime p] :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::field::lt».call h![] h![self, another])
       (fun r => r = decide (self.val < another.val)) := by

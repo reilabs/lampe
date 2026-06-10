@@ -25,6 +25,8 @@ import Lampe.Builtin.Vector
 import Lampe.Crypto.Aes128
 import Lampe.Crypto.Blake2s
 import Lampe.Crypto.Blake3
+import Lampe.Crypto.Bn254
+import Lampe.Crypto.Bn254.Prime
 import Lampe.Crypto.Ecdsa
 import Lampe.Crypto.EmbeddedCurve
 import Lampe.Crypto.Keccak
