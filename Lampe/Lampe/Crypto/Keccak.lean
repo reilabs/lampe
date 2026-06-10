@@ -111,7 +111,7 @@ def keccakF1600State (a : State) : State :=
 /-! ### Entry point matching the builtin descriptor -/
 
 /-- Concrete Keccak-f[1600] over the Lampe state shape. Matches the
-opaque signature the builtin descriptor uses. -/
+signature the builtin descriptor uses. -/
 def keccakF1600 {p : Prime}
     (input : Tp.denote p ((Tp.u 64).array (25 : U 32))) :
     Tp.denote p ((Tp.u 64).array (25 : U 32)) :=

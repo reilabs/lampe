@@ -14,7 +14,7 @@ References:
 - Reference C implementation:
   https://github.com/BLAKE2/BLAKE2/tree/master/ref
 
-Validation: see test vectors at the bottom. The canonical RFC 7693
+Validation: see `Lampe/Tests/Blake2s.lean`. The canonical RFC 7693
 vectors (`"abc"` etc.) are anchored against Python's
 `hashlib.blake2s`, which wraps the BLAKE2 reference implementation
 (`libb2`).
