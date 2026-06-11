@@ -38,8 +38,8 @@ def pointX {p : Prime} (pt : Point p) : Fp p := pt.1
 def pointY {p : Prime} (pt : Point p) : Fp p := pt.2.1
 def pointIsInfinite {p : Prime} (pt : Point p) : Bool := pt.2.2.1
 
-def scalarLo {p : Prime} (s : Scalar p) : Fp p := s.1
-def scalarHi {p : Prime} (s : Scalar p) : Fp p := s.2.1
+def Scalar.lo {p : Prime} (s : Scalar p) : Fp p := s.1
+def Scalar.hi {p : Prime} (s : Scalar p) : Fp p := s.2.1
 
 @[reducible]
 def mkPoint {p : Prime} (x y : Fp p) (isInfinite : Bool) : Point p := (x, y, isInfinite, ())
@@ -78,8 +78,12 @@ lemma affineCurve_addY {p : Prime} (x₁ x₂ y₁ slope : Fp p) :
 
 def pow128 : Nat := 2 ^ 128
 
-def scalarValueNat {p : Prime} (s : Scalar p) : Nat :=
-  (scalarLo s).val + pow128 * (scalarHi s).val
+namespace Scalar
+
+def valueNat {p : Prime} (s : Scalar p) : Nat :=
+  s.lo.val + pow128 * s.hi.val
+
+end Scalar
 
 -- Decidability of `Equation` / `Nonsingular` comes from the generic instances
 -- in `Lampe.Crypto.MathlibBridge`.

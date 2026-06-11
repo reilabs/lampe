@@ -158,20 +158,21 @@ def denote (p : Prime) := Tp.denote p type
 
 def mk {p} (lo hi : Fp p) : Scalar.denote p := (lo, hi, ())
 
-def lo {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.scalarLo self
+def lo {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.Scalar.lo self
 
-def hi {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.scalarHi self
+def hi {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.Scalar.hi self
 
 def valueNat {p} (self : Scalar.denote p) : Nat :=
   (Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val
 
 /-- Bridge: stdlib `Scalar.valueNat` agrees with the crypto-side
-`scalarValueNat`. The two definitions are equal modulo unfolding the
+`Lampe.Crypto.EmbeddedCurve.Scalar.valueNat`. The two definitions are
+equal modulo unfolding the
 two `pow128` constants, neither of which is `@[reducible]`. -/
-theorem valueNat_eq_scalarValueNat {p} (self : Scalar.denote p) :
-    Scalar.valueNat self = Lampe.Crypto.EmbeddedCurve.scalarValueNat self := by
+theorem valueNat_eq_crypto_valueNat {p} (self : Scalar.denote p) :
+    Scalar.valueNat self = Lampe.Crypto.EmbeddedCurve.Scalar.valueNat self := by
   simp [Scalar.valueNat, Scalar.lo, Scalar.hi,
-    Lampe.Crypto.EmbeddedCurve.scalarValueNat,
+    Lampe.Crypto.EmbeddedCurve.Scalar.valueNat,
     Lampe.Crypto.Bn254.pow128, Lampe.Crypto.EmbeddedCurve.pow128]
 
 /-- The canonical-representative predicate: each limb fits in 128 bits.
@@ -845,7 +846,7 @@ private def msmAccFinRange {p : Prime} {N : U 32}
     (scalars : Tp.denote p (Scalar.type.array N))
     (h : ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome) :
     (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point :=
-  ∑ i, Lampe.Crypto.EmbeddedCurve.scalarValueNat (scalars.get i) •
+  ∑ i, Lampe.Crypto.EmbeddedCurve.Scalar.valueNat (scalars.get i) •
     (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).get (h i)
 
 theorem multi_scalar_mul_builtin_spec {p N}
@@ -935,7 +936,7 @@ private lemma msmAccFinRange_eq_sum {p : Prime} {N : U 32}
   have hSome :
       Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i) = some (Ps.get i) := by
     rw [points_get_eq_encode h_enc i]; simp
-  rw [Option.get_of_eq_some _ hSome, ← Scalar.valueNat_eq_scalarValueNat]
+  rw [Option.get_of_eq_some _ hSome, ← Scalar.valueNat_eq_crypto_valueNat]
 
 /-- Canonical spec for `multi_scalar_mul`: when each input point is
 the encoding of a Mathlib `WeierstrassCurve.Affine.Point`, the MSM
@@ -972,7 +973,7 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
       («std-1.0.0-beta.14::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
       (fun r =>
         r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          (Lampe.Crypto.EmbeddedCurve.scalarValueNat scalar • Pgen)) := by
+          (Lampe.Crypto.EmbeddedCurve.Scalar.valueNat scalar • Pgen)) := by
   enter_decl
   -- The MSM here is over the singleton arrays `[generator]` and `[scalar]`. We prove
   -- the on-curve hypothesis specialised to that singleton (knowing the only entry is
@@ -1006,7 +1007,7 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
   -- Reduce via the bridge lemma + `Fin.sum_univ_one` for the singleton.
   have hmsm :
       msmAccFinRange pointsVec scalarsVec hOnCurve =
-        Lampe.Crypto.EmbeddedCurve.scalarValueNat scalar • Pgen := by
+        Lampe.Crypto.EmbeddedCurve.Scalar.valueNat scalar • Pgen := by
     let Ps : List.Vector (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point ((1 : U 32).toNat) :=
       ⟨[Pgen], rfl⟩
     have h_enc : pointsVec.toList = Ps.toList.map Lampe.Crypto.EmbeddedCurve.encodeCurvePoint := by
@@ -1016,8 +1017,8 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
     show (∑ i : Fin 1, Scalar.valueNat (scalarsVec.get i) • Ps.get i) = _
     rw [Fin.sum_univ_one]
     show Scalar.valueNat scalar • Pgen =
-      Lampe.Crypto.EmbeddedCurve.scalarValueNat scalar • Pgen
-    rw [Scalar.valueNat_eq_scalarValueNat]
+      Lampe.Crypto.EmbeddedCurve.Scalar.valueNat scalar • Pgen
+    rw [Scalar.valueNat_eq_crypto_valueNat]
   rename_i hRet
   rw [hmsm] at hRet
   exact hRet
@@ -1045,5 +1046,5 @@ theorem fixed_base_scalar_mul_spec {p}
             (Scalar.valueNat scalar • Pgen)) := by
   have h := fixed_base_scalar_mul_concrete_spec (p := p) (scalar := scalar)
     (Pgen := Pgen) (h_gen := h_gen)
-  rw [Scalar.valueNat_eq_scalarValueNat]
+  rw [Scalar.valueNat_eq_crypto_valueNat]
   exact h

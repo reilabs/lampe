@@ -21,7 +21,7 @@ def embeddedCurveAdd := newGenericPureBuiltin
 
 /--
 Noir's `multi_scalar_mul_array_return` foreign builtin. The result is
-`∑ᵢ (scalarValueNat sᵢ) • Pᵢ` computed via Mathlib's `+` and `nsmul`.
+`∑ᵢ (Scalar.valueNat sᵢ) • Pᵢ` computed via Mathlib's `+` and `nsmul`.
 On-curve obligation is a precondition: every input point must lift
 through `curvePoint?`.
 -/
@@ -31,7 +31,7 @@ def multiScalarMul := newGenericPureBuiltin
     ⟨∀ i, (curvePoint? (points.get i)).isSome,
       fun h =>
         let acc : (affineCurve p).Point :=
-          ∑ i, scalarValueNat (scalars.get i) • (curvePoint? (points.get i)).get (h i)
+          ∑ i, Scalar.valueNat (scalars.get i) • (curvePoint? (points.get i)).get (h i)
         ⟨[encodeCurvePoint acc], by simp⟩⟩)
 
 end Lampe.Builtin
