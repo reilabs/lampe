@@ -12,7 +12,7 @@ jobs:
   build-ci-image:
     uses: ./.github/workflows/build-ci-image.yaml
     with:
-      allow_push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      allow_push: true
   
   run-tests:
     name: Test Noir
