@@ -6,6 +6,7 @@ import Stdlib.Hash.Mod
 namespace Lampe.Stdlib.EmbeddedCurveOps
 
 open «std-1.0.0-beta.14»
+open Lampe.Crypto.EmbeddedCurve
 
 /-!
 ### Spec layering convention
@@ -16,9 +17,8 @@ return shape admits a high-level semantic statement has **two specs**:
 
 - A **`private theorem foo_concrete_spec`** — faithfully restates the
   imperative Noir source (e.g. `r = Scalar.eq self other`,
-  `r = Lampe.Crypto.EmbeddedCurve.add self other`). Used as a proof
-  building-block when chaining bigger specs together; not part of the
-  public interface.
+  `r = Point.neg self`). Used as a proof building-block when chaining
+  bigger specs together; not part of the public interface.
 - The **public `theorem foo_spec`** — the canonical interface callers
   consume. Stated against semantic projections (`Scalar.valueNat`,
   `Point.extEq`, Mathlib's `WeierstrassCurve.Affine.Point.add` /
@@ -50,19 +50,19 @@ def type := «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint».tp h![
 @[reducible]
 def denote (p : Prime) := Tp.denote p type
 
-@[simp] theorem type_eq_crypto_pointTp : Point.type = Lampe.Crypto.EmbeddedCurve.pointTp := rfl
+@[simp] theorem type_eq_crypto_pointTp : Point.type = pointTp := rfl
 
 def mk {p} (x y : Fp p) (isInfinite : Bool) : Point.denote p :=
-  Lampe.Crypto.EmbeddedCurve.mkPoint x y isInfinite
+  mkPoint x y isInfinite
 
-def x {p} (self : Point.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.pointX self
+def x {p} (self : Point.denote p) : Fp p := pointX self
 
-def y {p} (self : Point.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.pointY self
+def y {p} (self : Point.denote p) : Fp p := pointY self
 
 def isInfinite {p} (self : Point.denote p) : Bool :=
-  Lampe.Crypto.EmbeddedCurve.pointIsInfinite self
+  pointIsInfinite self
 
-def infinity {p} : Point.denote p := Lampe.Crypto.EmbeddedCurve.pointAtInfinity
+def infinity {p} : Point.denote p := pointAtInfinity
 
 def generator {p} : Point.denote p :=
   Point.mk 1 17631683881184975370165255887551781615748388533673675138860 false
@@ -114,28 +114,28 @@ def neg {p} (self : Point.denote p) : Point.denote p :=
 group negation under the encoding. Used to bridge `point_sub_spec`
 to the Mathlib `P - Q` form. -/
 theorem neg_encodeCurvePoint {p}
-    (P : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point) :
-    Point.neg (Lampe.Crypto.EmbeddedCurve.encodeCurvePoint P) =
-      Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (-P) := by
+    (P : (affineCurve p).Point) :
+    Point.neg (encodeCurvePoint P) =
+      encodeCurvePoint (-P) := by
   rcases P with _ | @⟨x, y, hNs⟩
-  · show Point.neg (Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          (0 : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point)) =
-        Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          (-(0 : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point))
+  · show Point.neg (encodeCurvePoint
+          (0 : (affineCurve p).Point)) =
+        encodeCurvePoint
+          (-(0 : (affineCurve p).Point))
     rw [neg_zero]
-    simp [Point.neg, Lampe.Crypto.EmbeddedCurve.encodeCurvePoint,
-      Lampe.Crypto.EmbeddedCurve.pointAtInfinity,
-      Lampe.Crypto.EmbeddedCurve.mkPoint,
+    simp [Point.neg, encodeCurvePoint,
+      pointAtInfinity,
+      mkPoint,
       Point.x, Point.y, Point.isInfinite, Point.mk,
-      Lampe.Crypto.EmbeddedCurve.pointX,
-      Lampe.Crypto.EmbeddedCurve.pointY,
-      Lampe.Crypto.EmbeddedCurve.pointIsInfinite]
+      pointX,
+      pointY,
+      pointIsInfinite]
   · simp [Point.neg, Point.x, Point.y, Point.isInfinite, Point.mk,
-      Lampe.Crypto.EmbeddedCurve.encodeCurvePoint,
-      Lampe.Crypto.EmbeddedCurve.mkPoint,
-      Lampe.Crypto.EmbeddedCurve.pointX,
-      Lampe.Crypto.EmbeddedCurve.pointY,
-      Lampe.Crypto.EmbeddedCurve.pointIsInfinite]
+      encodeCurvePoint,
+      mkPoint,
+      pointX,
+      pointY,
+      pointIsInfinite]
 
 def eq {p} (a b : Point.denote p) : Bool :=
   (Point.isInfinite a && Point.isInfinite b) ||
@@ -154,33 +154,9 @@ def type := «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar».tp h!
 @[reducible]
 def denote (p : Prime) := Tp.denote p type
 
-@[simp] theorem type_eq_crypto_scalarTp : Scalar.type = Lampe.Crypto.EmbeddedCurve.scalarTp := rfl
+@[simp] theorem type_eq_crypto_scalarTp : Scalar.type = scalarTp := rfl
 
 def mk {p} (lo hi : Fp p) : Scalar.denote p := (lo, hi, ())
-
-def lo {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.Scalar.lo self
-
-def hi {p} (self : Scalar.denote p) : Fp p := Lampe.Crypto.EmbeddedCurve.Scalar.hi self
-
-def valueNat {p} (self : Scalar.denote p) : Nat :=
-  (Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val
-
-/-- Bridge: stdlib `Scalar.valueNat` agrees with the crypto-side
-`Lampe.Crypto.EmbeddedCurve.Scalar.valueNat`. The two definitions are
-equal modulo unfolding the
-two `pow128` constants, neither of which is `@[reducible]`. -/
-theorem valueNat_eq_crypto_valueNat {p} (self : Scalar.denote p) :
-    Scalar.valueNat self = Lampe.Crypto.EmbeddedCurve.Scalar.valueNat self := by
-  simp [Scalar.valueNat, Scalar.lo, Scalar.hi,
-    Lampe.Crypto.EmbeddedCurve.Scalar.valueNat,
-    Lampe.Crypto.Bn254.pow128, Lampe.Crypto.EmbeddedCurve.pow128]
-
-/-- The canonical-representative predicate: each limb fits in 128 bits.
-This is the well-formedness condition under which `Scalar.eq` agrees
-with `Scalar.valueNat` equality. -/
-def Canonical {p} (self : Scalar.denote p) : Prop :=
-  (Scalar.lo self).val < Lampe.Crypto.Bn254.pow128 ∧
-  (Scalar.hi self).val < Lampe.Crypto.Bn254.pow128
 
 def validOffset (offset : U 32) : Prop :=
   offset.toNat < 33
@@ -228,7 +204,7 @@ def fromBytes? {p} (bytes : Tp.denote p ((Tp.u 8).array (64 : U 32)))
 
 @[simp] theorem valueNat_mk {p} {lo hi : Fp p} :
     Scalar.valueNat (Scalar.mk lo hi) =
-      lo.val + Lampe.Crypto.Bn254.pow128 * hi.val := by
+      lo.val + Lampe.pow128 * hi.val := by
   rfl
 
 theorem fromBytes?_eq_some_of_validOffset {p}
@@ -305,12 +281,12 @@ private theorem point_neg_concrete_spec {p} {self : Point.denote p} :
 /-- Canonical spec for `Neg::neg` on `EmbeddedCurvePoint`: under an
 encoded-input hypothesis, negation agrees with Mathlib's group `-P`. -/
 theorem point_neg_spec {p} {self : Point.denote p}
-    {P : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point}
-    (hself : self = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint P) :
+    {P : (affineCurve p).Point}
+    (hself : self = encodeCurvePoint P) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::ops::arith::Neg».neg h![] Point.type h![] h![] h![self])
-      (fun r => r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (-P)) := by
-  have hEq : Point.neg self = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (-P) := by
+      (fun r => r = encodeCurvePoint (-P)) := by
+  have hEq : Point.neg self = encodeCurvePoint (-P) := by
     subst hself
     exact Point.neg_encodeCurvePoint P
   have h := point_neg_concrete_spec (p := p) (self := self)
@@ -342,9 +318,9 @@ theorem point_eq_spec {p} {self other : Point.denote p} :
   obtain ⟨ox, oy, oinf, ⟨⟩⟩ := other
   cases sinf <;> cases oinf <;>
     simp [Point.eq, Point.extEq, Point.canonicalizeInfinity, Point.infinity,
-      Point.x, Point.y, Point.isInfinite, Lampe.Crypto.EmbeddedCurve.pointX,
-      Lampe.Crypto.EmbeddedCurve.pointY, Lampe.Crypto.EmbeddedCurve.pointIsInfinite,
-      Lampe.Crypto.EmbeddedCurve.pointAtInfinity, Lampe.Crypto.EmbeddedCurve.mkPoint,
+      Point.x, Point.y, Point.isInfinite, pointX,
+      pointY, pointIsInfinite,
+      pointAtInfinity, mkPoint,
       Bool.and_eq_true, decide_eq_true_eq]
   -- After simp, three residual goals remain (cases produced in order ff, ft, tf, tt):
   -- false.false: sx=ox ∧ sy=oy ↔ (sx,sy,false,()) = (ox,oy,false,())
@@ -373,38 +349,6 @@ private theorem scalar_eq_concrete_spec {p} {self other : Scalar.denote p} :
   simp [Scalar.eq, Scalar.hi, Scalar.lo, eq_comm]
   rfl
 
-private lemma scalar_valueNat_inj_canonical {p}
-    {self other : Scalar.denote p}
-    (hself : Scalar.Canonical self) (hother : Scalar.Canonical other)
-    (h : Scalar.valueNat self = Scalar.valueNat other) :
-    Scalar.lo self = Scalar.lo other ∧ Scalar.hi self = Scalar.hi other := by
-  obtain ⟨hslo, hshi⟩ := hself
-  obtain ⟨holo, hohi⟩ := hother
-  simp [Scalar.valueNat] at h
-  -- h : (lo self).val + pow128 * (hi self).val = (lo other).val + pow128 * (hi other).val
-  -- with all four .val terms < pow128. Apply Nat-level uniqueness, then ZMod.val_injective.
-  have hlo : (Scalar.lo self).val = (Scalar.lo other).val ∧
-             (Scalar.hi self).val = (Scalar.hi other).val := by
-    refine ⟨?_, ?_⟩
-    · -- mod pow128 of both sides extracts lo
-      have : ((Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val)
-              % Lampe.Crypto.Bn254.pow128 =
-            ((Scalar.lo other).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi other).val)
-              % Lampe.Crypto.Bn254.pow128 := by rw [h]
-      simp [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hslo, Nat.mod_eq_of_lt holo] at this
-      exact this
-    · -- div pow128 of both sides extracts hi
-      have hpos : 0 < Lampe.Crypto.Bn254.pow128 := by
-        simp [Lampe.Crypto.Bn254.pow128]
-      have hdiv : ((Scalar.lo self).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi self).val)
-              / Lampe.Crypto.Bn254.pow128 =
-            ((Scalar.lo other).val + Lampe.Crypto.Bn254.pow128 * (Scalar.hi other).val)
-              / Lampe.Crypto.Bn254.pow128 := by rw [h]
-      rw [Nat.add_mul_div_left _ _ hpos, Nat.add_mul_div_left _ _ hpos,
-          Nat.div_eq_of_lt hslo, Nat.div_eq_of_lt holo] at hdiv
-      simpa using hdiv
-  exact ⟨ZMod.val_injective _ hlo.1, ZMod.val_injective _ hlo.2⟩
-
 /-- Canonical spec for `Eq::eq` on `EmbeddedCurveScalar`: under
 canonical-limb hypotheses, Noir's bitwise scalar equality reflects
 semantic value-equality. -/
@@ -420,27 +364,28 @@ theorem scalar_eq_spec {p} {self other : Scalar.denote p}
   · rintro ⟨hhi, hlo⟩
     simp [Scalar.valueNat, hhi, hlo]
   · intro h
-    obtain ⟨hlo, hhi⟩ := scalar_valueNat_inj_canonical hself hother h
+    obtain ⟨hlo, hhi⟩ :=
+      Scalar.valueNat_inj_canonical hself hother h
     exact ⟨hhi, hlo⟩
 
 theorem embedded_curve_add_builtin_spec {p}
     {point1 point2 : Point.denote p}
     (hOnCurve :
-      (Lampe.Crypto.EmbeddedCurve.curvePoint? point1).isSome ∧
-        (Lampe.Crypto.EmbeddedCurve.curvePoint? point2).isSome) :
+      (curvePoint? point1).isSome ∧
+        (curvePoint? point2).isSome) :
     STHoare p env ⟦⟧
       (.callBuiltin [Point.type, Point.type, .bool] (Point.type.array 1)
         Builtin.embeddedCurveAdd h![point1, point2, true])
       (fun r =>
         r =
-          (⟨[Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-                ((Lampe.Crypto.EmbeddedCurve.curvePoint? point1).get hOnCurve.1 +
-                  (Lampe.Crypto.EmbeddedCurve.curvePoint? point2).get hOnCurve.2)],
+          (⟨[encodeCurvePoint
+                ((curvePoint? point1).get hOnCurve.1 +
+                  (curvePoint? point2).get hOnCurve.2)],
               by simp⟩ : Tp.denote p (Point.type.array 1))) := by
   unfold Builtin.embeddedCurveAdd
   show STHoare p env _
-    (.callBuiltin [Lampe.Crypto.EmbeddedCurve.pointTp, Lampe.Crypto.EmbeddedCurve.pointTp, .bool]
-      (Lampe.Crypto.EmbeddedCurve.pointTp.array 1) _ h![point1, point2, true]) _
+    (.callBuiltin [pointTp, pointTp, .bool]
+      (pointTp.array 1) _ h![point1, point2, true]) _
   apply STHoare.pureBuiltin_intro_consequence (a := ())
   any_goals rfl
   rintro ⟨h1, h2⟩
@@ -449,15 +394,15 @@ theorem embedded_curve_add_builtin_spec {p}
 theorem embedded_curve_add_inner_spec {p}
     {point1 point2 : Point.denote p}
     (hOnCurve :
-      (Lampe.Crypto.EmbeddedCurve.curvePoint? point1).isSome ∧
-        (Lampe.Crypto.EmbeddedCurve.curvePoint? point2).isSome) :
+      (curvePoint? point1).isSome ∧
+        (curvePoint? point2).isSome) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::embedded_curve_add_inner».call
         h![] h![point1, point2])
       (fun r =>
-        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          ((Lampe.Crypto.EmbeddedCurve.curvePoint? point1).get hOnCurve.1 +
-            (Lampe.Crypto.EmbeddedCurve.curvePoint? point2).get hOnCurve.2)) := by
+        r = encodeCurvePoint
+          ((curvePoint? point1).get hOnCurve.1 +
+            (curvePoint? point2).get hOnCurve.2)) := by
   enter_decl
   steps [embedded_curve_add_builtin_spec (hOnCurve := hOnCurve)]
   simpa
@@ -465,15 +410,15 @@ theorem embedded_curve_add_inner_spec {p}
 theorem embedded_curve_add_spec {p}
     {point1 point2 : Point.denote p}
     (hOnCurve :
-      (Lampe.Crypto.EmbeddedCurve.curvePoint? point1).isSome ∧
-        (Lampe.Crypto.EmbeddedCurve.curvePoint? point2).isSome) :
+      (curvePoint? point1).isSome ∧
+        (curvePoint? point2).isSome) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::embedded_curve_add».call
         h![] h![point1, point2])
       (fun r =>
-        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          ((Lampe.Crypto.EmbeddedCurve.curvePoint? point1).get hOnCurve.1 +
-            (Lampe.Crypto.EmbeddedCurve.curvePoint? point2).get hOnCurve.2)) := by
+        r = encodeCurvePoint
+          ((curvePoint? point1).get hOnCurve.1 +
+            (curvePoint? point2).get hOnCurve.2)) := by
   enter_decl
   steps
   all_goals try exact ()
@@ -483,14 +428,14 @@ theorem embedded_curve_add_spec {p}
 
 private theorem point_add_concrete_spec {p} {self other : Point.denote p}
     (hOnCurve :
-      (Lampe.Crypto.EmbeddedCurve.curvePoint? self).isSome ∧
-        (Lampe.Crypto.EmbeddedCurve.curvePoint? other).isSome) :
+      (curvePoint? self).isSome ∧
+        (curvePoint? other).isSome) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::ops::arith::Add».add h![] Point.type h![] h![] h![self, other])
       (fun r =>
-        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          ((Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve.1 +
-            (Lampe.Crypto.EmbeddedCurve.curvePoint? other).get hOnCurve.2)) := by
+        r = encodeCurvePoint
+          ((curvePoint? self).get hOnCurve.1 +
+            (curvePoint? other).get hOnCurve.2)) := by
   resolve_trait
   steps [embedded_curve_add_spec (hOnCurve := hOnCurve)]
   assumption
@@ -499,25 +444,25 @@ private theorem point_add_concrete_spec {p} {self other : Point.denote p}
 encoded-input hypotheses, Noir's point addition agrees with Mathlib's
 affine short-Weierstrass group law on `(affineCurve p).Point`. -/
 theorem point_add_spec {p} {self other : Point.denote p}
-    {P Q : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point}
-    (hself : self = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint P)
-    (hother : other = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint Q) :
+    {P Q : (affineCurve p).Point}
+    (hself : self = encodeCurvePoint P)
+    (hother : other = encodeCurvePoint Q) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::ops::arith::Add».add h![] Point.type h![] h![] h![self, other])
-      (fun r => r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (P + Q)) := by
+      (fun r => r = encodeCurvePoint (P + Q)) := by
   have hOnCurve :
-      (Lampe.Crypto.EmbeddedCurve.curvePoint? self).isSome ∧
-        (Lampe.Crypto.EmbeddedCurve.curvePoint? other).isSome := by
+      (curvePoint? self).isSome ∧
+        (curvePoint? other).isSome := by
     subst hself
     subst hother
     simp
   have h := point_add_concrete_spec (p := p) (self := self) (other := other)
     (hOnCurve := hOnCurve)
   have hEq :
-      Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          ((Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve.1 +
-            (Lampe.Crypto.EmbeddedCurve.curvePoint? other).get hOnCurve.2) =
-        Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (P + Q) := by
+      encodeCurvePoint
+          ((curvePoint? self).get hOnCurve.1 +
+            (curvePoint? other).get hOnCurve.2) =
+        encodeCurvePoint (P + Q) := by
     subst hself
     subst hother
     congr 1
@@ -526,13 +471,13 @@ theorem point_add_spec {p} {self other : Point.denote p}
   exact h
 
 private theorem point_double_concrete_spec {p} {self : Point.denote p}
-    (hOnCurve : (Lampe.Crypto.EmbeddedCurve.curvePoint? self).isSome) :
+    (hOnCurve : (curvePoint? self).isSome) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint::double».call h![] h![self])
       (fun r =>
-        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          ((Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve +
-            (Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve)) := by
+        r = encodeCurvePoint
+          ((curvePoint? self).get hOnCurve +
+            (curvePoint? self).get hOnCurve)) := by
   enter_decl
   steps [embedded_curve_add_spec (hOnCurve := ⟨hOnCurve, hOnCurve⟩)]
   assumption
@@ -540,20 +485,20 @@ private theorem point_double_concrete_spec {p} {self : Point.denote p}
 /-- Canonical spec for `EmbeddedCurvePoint::double`: under an
 encoded-input hypothesis, doubling agrees with Mathlib's `P + P`. -/
 theorem point_double_spec {p} {self : Point.denote p}
-    {P : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point}
-    (hself : self = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint P) :
+    {P : (affineCurve p).Point}
+    (hself : self = encodeCurvePoint P) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint::double».call h![] h![self])
-      (fun r => r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (P + P)) := by
-  have hOnCurve : (Lampe.Crypto.EmbeddedCurve.curvePoint? self).isSome := by
+      (fun r => r = encodeCurvePoint (P + P)) := by
+  have hOnCurve : (curvePoint? self).isSome := by
     subst hself
     simp
   have h := point_double_concrete_spec (p := p) (self := self) (hOnCurve := hOnCurve)
   have hEq :
-      Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          ((Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve +
-            (Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve) =
-        Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (P + P) := by
+      encodeCurvePoint
+          ((curvePoint? self).get hOnCurve +
+            (curvePoint? self).get hOnCurve) =
+        encodeCurvePoint (P + P) := by
     subst hself
     congr 1
     simp
@@ -562,14 +507,14 @@ theorem point_double_spec {p} {self : Point.denote p}
 
 private theorem point_sub_concrete_spec {p} {self other : Point.denote p}
     (hOnCurve :
-      (Lampe.Crypto.EmbeddedCurve.curvePoint? self).isSome ∧
-        (Lampe.Crypto.EmbeddedCurve.curvePoint? (Point.neg other)).isSome) :
+      (curvePoint? self).isSome ∧
+        (curvePoint? (Point.neg other)).isSome) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::ops::arith::Sub».sub h![] Point.type h![] h![] h![self, other])
       (fun r =>
-        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          ((Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve.1 +
-            (Lampe.Crypto.EmbeddedCurve.curvePoint? (Point.neg other)).get hOnCurve.2)) := by
+        r = encodeCurvePoint
+          ((curvePoint? self).get hOnCurve.1 +
+            (curvePoint? (Point.neg other)).get hOnCurve.2)) := by
   resolve_trait
   steps [point_neg_concrete_spec, point_add_concrete_spec (hOnCurve := hOnCurve)]
   simpa [Point.neg]
@@ -578,15 +523,15 @@ private theorem point_sub_concrete_spec {p} {self other : Point.denote p}
 encoded-input hypotheses, point subtraction agrees with Mathlib's
 group `P - Q` (equivalently `P + (-Q)`). -/
 theorem point_sub_spec {p} {self other : Point.denote p}
-    {P Q : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point}
-    (hself : self = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint P)
-    (hother : other = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint Q) :
+    {P Q : (affineCurve p).Point}
+    (hself : self = encodeCurvePoint P)
+    (hother : other = encodeCurvePoint Q) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::ops::arith::Sub».sub h![] Point.type h![] h![] h![self, other])
-      (fun r => r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (P + (-Q))) := by
+      (fun r => r = encodeCurvePoint (P + (-Q))) := by
   have hOnCurve :
-      (Lampe.Crypto.EmbeddedCurve.curvePoint? self).isSome ∧
-        (Lampe.Crypto.EmbeddedCurve.curvePoint? (Point.neg other)).isSome := by
+      (curvePoint? self).isSome ∧
+        (curvePoint? (Point.neg other)).isSome := by
     subst hself
     subst hother
     refine ⟨by simp, ?_⟩
@@ -595,10 +540,10 @@ theorem point_sub_spec {p} {self other : Point.denote p}
   have h := point_sub_concrete_spec (p := p) (self := self) (other := other)
     (hOnCurve := hOnCurve)
   have hEq :
-      Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          ((Lampe.Crypto.EmbeddedCurve.curvePoint? self).get hOnCurve.1 +
-            (Lampe.Crypto.EmbeddedCurve.curvePoint? (Point.neg other)).get hOnCurve.2) =
-        Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (P + (-Q)) := by
+      encodeCurvePoint
+          ((curvePoint? self).get hOnCurve.1 +
+            (curvePoint? (Point.neg other)).get hOnCurve.2) =
+        encodeCurvePoint (P + (-Q)) := by
     subst hself
     subst hother
     simp only [Point.neg_encodeCurvePoint]
@@ -703,6 +648,34 @@ theorem point_hash_spec {p H stateRef}
       (h_x_write := h_x_write)
       (h_y_write := h_y_write)
 
+/-- A limb decomposition of a field value is automatically canonical:
+`scalar.val < r_scalar < 2^254` forces the high limb below `2^126`. -/
+private lemma canonical_mk_of_decomp {p} [Lampe.Crypto.Bn254.Prime p]
+    {scalar lo hi : Fp p}
+    (hlo : lo.val < Lampe.pow128)
+    (heq : scalar.val = lo.val + Lampe.pow128 * hi.val) :
+    Scalar.Canonical (Scalar.mk lo hi) := by
+  have hval_lt : scalar.val < p.natVal := ZMod.val_lt scalar
+  have hp : p.natVal = Lampe.Crypto.Bn254.r_scalar :=
+    Lampe.Crypto.Bn254.Prime.natVal_eq_r_scalar
+  have hr : Lampe.Crypto.Bn254.r_scalar < 2 ^ 254 := by
+    unfold Lampe.Crypto.Bn254.r_scalar
+    decide
+  have hpow : Lampe.pow128 = 2 ^ 128 := rfl
+  have hhi : hi.val < 2 ^ 126 := by
+    have h1 : Lampe.pow128 * hi.val < 2 ^ 254 := by omega
+    rw [hpow] at h1
+    have h2 : (2 : Nat) ^ 254 = 2 ^ 128 * 2 ^ 126 := by norm_num
+    rw [h2] at h1
+    exact Nat.lt_of_mul_lt_mul_left h1
+  exact ⟨hlo, hhi⟩
+
+/-- Spec for `EmbeddedCurveScalar::from_field`. Besides the limb
+decomposition that the body's `decompose` call enforces, the
+postcondition carries `Scalar.Canonical (Scalar.mk lo hi)`: since
+`scalar.val < p < 2^254`, the `Nat` equation already forces
+`hi.val < 2^126`, so callers get the MSM gadget's canonicality
+precondition for free. -/
 theorem scalar_from_field_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Fp p} :
     STHoare p env ⟦⟧
@@ -711,14 +684,15 @@ theorem scalar_from_field_spec {p} [Lampe.Crypto.Bn254.Prime p]
       (fun r =>
         ∃∃ lo hi,
           r = Scalar.mk lo hi ∧
-          lo.val < Lampe.Crypto.Bn254.pow128 ∧
-          hi.val < Lampe.Crypto.Bn254.pow128 ∧
-          scalar.val = lo.val + Lampe.Crypto.Bn254.pow128 * hi.val) := by
+          lo.val < Lampe.pow128 ∧
+          hi.val < Lampe.pow128 ∧
+          scalar.val = lo.val + Lampe.pow128 * hi.val ∧
+          Scalar.Canonical (Scalar.mk lo hi)) := by
   enter_decl
   steps [Lampe.Stdlib.Field.Bn254.decompose_intro (p := p)]
   simp [SLP.exists_pure] at *
   sl
-  all_goals aesop
+  all_goals aesop (add safe forward canonical_mk_of_decomp)
 
 set_option maxRecDepth 4096 in
 /-- Success spec for `EmbeddedCurveScalar::from_bytes`.
@@ -844,28 +818,36 @@ structure). -/
 private def msmAccFinRange {p : Prime} {N : U 32}
     (points : Tp.denote p (Point.type.array N))
     (scalars : Tp.denote p (Scalar.type.array N))
-    (h : ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome) :
-    (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point :=
-  ∑ i, Lampe.Crypto.EmbeddedCurve.Scalar.valueNat (scalars.get i) •
-    (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).get (h i)
+    (h : ∀ i, (curvePoint? (points.get i)).isSome) :
+    (affineCurve p).Point :=
+  ∑ i, Scalar.valueNat (scalars.get i) •
+    (curvePoint? (points.get i)).get (h i)
 
+/-- Builtin-level MSM spec — result equation only.
+
+The builtin's underlying precondition includes `Scalar.Canonical`
+(modelling the gadget's `create_limbed_range_constraint`); we discharge
+that canonicality requirement inside the proof but do not surface it
+here. Callers that also need the canonicality fact (notably the
+Pedersen `_spec_canonical` proofs) consume
+`multi_scalar_mul_builtin_combined_spec` instead. -/
 theorem multi_scalar_mul_builtin_spec {p N}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
-    (hOnCurve : ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome) :
+    (hOnCurve : ∀ i, (curvePoint? (points.get i)).isSome) :
     STHoare p env ⟦⟧
       (.callBuiltin [Point.type.array N, Scalar.type.array N, .bool] (Point.type.array 1)
         Builtin.multiScalarMul h![points, scalars, true])
       (fun r =>
         r =
-          (⟨[Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+          (⟨[encodeCurvePoint
                 (msmAccFinRange points scalars hOnCurve)],
               by simp⟩ : Tp.denote p (Point.type.array 1))) := by
   unfold Builtin.multiScalarMul
   show STHoare p env _
-    (.callBuiltin [Lampe.Crypto.EmbeddedCurve.pointTp.array N,
-        Lampe.Crypto.EmbeddedCurve.scalarTp.array N, .bool]
-      (Lampe.Crypto.EmbeddedCurve.pointTp.array 1) _ h![points, scalars, true]) _
+    (.callBuiltin [pointTp.array N,
+        scalarTp.array N, .bool]
+      (pointTp.array 1) _ h![points, scalars, true]) _
   apply STHoare.pureBuiltin_intro_consequence (a := N)
   any_goals rfl
   intro h
@@ -874,19 +856,19 @@ theorem multi_scalar_mul_builtin_spec {p N}
 private theorem multi_scalar_mul_concrete_spec {p N}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
-    (hOnCurve : ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome) :
+    (hOnCurve : ∀ i, (curvePoint? (points.get i)).isSome) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
         h![N] h![points, scalars])
       (fun r =>
-        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+        r = encodeCurvePoint
           (msmAccFinRange points scalars hOnCurve)) := by
   enter_decl
   steps
   apply STHoare.letIn_intro
     (Q := fun r : Tp.denote p (Point.type.array 1) =>
       ⟦r =
-        (⟨[Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+        (⟨[encodeCurvePoint
               (msmAccFinRange points scalars hOnCurve)],
             by simp⟩ : Tp.denote p (Point.type.array 1))⟧)
   · exact multi_scalar_mul_builtin_spec (p := p) (N := N)
@@ -896,14 +878,44 @@ private theorem multi_scalar_mul_concrete_spec {p N}
     subst_vars
     rfl
 
+/-- Combined builtin spec: result equation **and** canonicality
+(the gadget's `create_limbed_range_constraint` postcondition,
+`LO_BITS = 128`, `HI_BITS = 126`, composable with the downstream
+uniqueness machinery `Scalar.canonicalDecomp_unique`). This is
+the spec callers use when they need both facts without going through
+two separate spec applications. The proof is direct because the
+builtin's precondition gives us both `onCurve` and canonicality. -/
+theorem multi_scalar_mul_builtin_combined_spec {p N}
+    {points : Tp.denote p (Point.type.array N)}
+    {scalars : Tp.denote p (Scalar.type.array N)}
+    (hOnCurve : ∀ i, (curvePoint? (points.get i)).isSome) :
+    STHoare p env ⟦⟧
+      (.callBuiltin [Point.type.array N, Scalar.type.array N, .bool] (Point.type.array 1)
+        Builtin.multiScalarMul h![points, scalars, true])
+      (fun r =>
+        (∀ i, Scalar.Canonical (scalars.get i)) ∧
+        r =
+          (⟨[encodeCurvePoint
+                (msmAccFinRange points scalars hOnCurve)],
+              by simp⟩ : Tp.denote p (Point.type.array 1))) := by
+  unfold Builtin.multiScalarMul
+  show STHoare p env _
+    (.callBuiltin [pointTp.array N,
+        scalarTp.array N, .bool]
+      (pointTp.array 1) _ h![points, scalars, true]) _
+  apply STHoare.pureBuiltin_intro_consequence (a := N)
+  any_goals rfl
+  rintro ⟨_, hCan⟩
+  exact ⟨hCan, rfl⟩
+
 /-- Helper: if `points.toList = Ps.toList.map encodeCurvePoint`, then `points.get i =
 encodeCurvePoint (Ps.get i)` for every `i`. -/
 private lemma points_get_eq_encode {p : Prime} {N : U 32}
     {points : Tp.denote p (Point.type.array N)}
-    {Ps : List.Vector (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point N.toNat}
-    (h_enc : points.toList = Ps.toList.map Lampe.Crypto.EmbeddedCurve.encodeCurvePoint)
+    {Ps : List.Vector (affineCurve p).Point N.toNat}
+    (h_enc : points.toList = Ps.toList.map encodeCurvePoint)
     (i : Fin N.toNat) :
-    points.get i = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint (Ps.get i) := by
+    points.get i = encodeCurvePoint (Ps.get i) := by
   have hi_pts : i.val < points.toList.length := by
     rw [List.Vector.toList_length]; exact i.isLt
   have hi_Ps : i.val < Ps.toList.length := by
@@ -926,35 +938,35 @@ the MSM accumulator equals the canonical sum
 private lemma msmAccFinRange_eq_sum {p : Prime} {N : U 32}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
-    {Ps : List.Vector (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point N.toNat}
-    (h_enc : points.toList = Ps.toList.map Lampe.Crypto.EmbeddedCurve.encodeCurvePoint)
-    (hOnCurve : ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome) :
+    {Ps : List.Vector (affineCurve p).Point N.toNat}
+    (h_enc : points.toList = Ps.toList.map encodeCurvePoint)
+    (hOnCurve : ∀ i, (curvePoint? (points.get i)).isSome) :
     msmAccFinRange points scalars hOnCurve =
       ∑ i, Scalar.valueNat (scalars.get i) • Ps.get i := by
   unfold msmAccFinRange
   refine Finset.sum_congr rfl (fun i _ => ?_)
   have hSome :
-      Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i) = some (Ps.get i) := by
+      curvePoint? (points.get i) = some (Ps.get i) := by
     rw [points_get_eq_encode h_enc i]; simp
-  rw [Option.get_of_eq_some _ hSome, ← Scalar.valueNat_eq_crypto_valueNat]
+  rw [Option.get_of_eq_some _ hSome]
 
-/-- Canonical spec for `multi_scalar_mul`: when each input point is
-the encoding of a Mathlib `WeierstrassCurve.Affine.Point`, the MSM
-result is the encoding of `∑ᵢ Scalar.valueNat (scalars i) • Ps i`. -/
+/-- Result-equation spec for `multi_scalar_mul`. When each input point is
+the encoding of a Mathlib `WeierstrassCurve.Affine.Point`, the result is
+`encodeCurvePoint (∑ Scalar.valueNat (scalars i) • Ps i)`. -/
 theorem multi_scalar_mul_spec {p N}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
-    {Ps : List.Vector (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point N.toNat}
+    {Ps : List.Vector (affineCurve p).Point N.toNat}
     (h_enc :
-      points.toList = Ps.toList.map Lampe.Crypto.EmbeddedCurve.encodeCurvePoint) :
+      points.toList = Ps.toList.map encodeCurvePoint) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
         h![N] h![points, scalars])
       (fun r =>
-        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+        r = encodeCurvePoint
           (∑ i, Scalar.valueNat (scalars.get i) • Ps.get i)) := by
   have hOnCurve :
-      ∀ i, (Lampe.Crypto.EmbeddedCurve.curvePoint? (points.get i)).isSome := by
+      ∀ i, (curvePoint? (points.get i)).isSome := by
     intro i
     rw [points_get_eq_encode h_enc i]
     simp
@@ -963,17 +975,70 @@ theorem multi_scalar_mul_spec {p N}
   rw [msmAccFinRange_eq_sum h_enc hOnCurve] at h
   exact h
 
+/-- Combined wrapper spec: result equation and canonicality together.
+Used by Pedersen `_spec_canonical` proofs to extract both facts in a
+single `steps` invocation. -/
+theorem multi_scalar_mul_combined_spec {p N}
+    {points : Tp.denote p (Point.type.array N)}
+    {scalars : Tp.denote p (Scalar.type.array N)}
+    {Ps : List.Vector (affineCurve p).Point N.toNat}
+    (h_enc :
+      points.toList = Ps.toList.map encodeCurvePoint) :
+    STHoare p env ⟦⟧
+      («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
+        h![N] h![points, scalars])
+      (fun r =>
+        (∀ i, Scalar.Canonical (scalars.get i)) ∧
+        r = encodeCurvePoint
+          (∑ i, Scalar.valueNat (scalars.get i) • Ps.get i)) := by
+  have hOnCurve :
+      ∀ i, (curvePoint? (points.get i)).isSome := by
+    intro i
+    rw [points_get_eq_encode h_enc i]
+    simp
+  -- Compose result-eq spec and canon spec at the wrapper level by
+  -- proving inline: re-run the body of multi_scalar_mul (which is
+  -- multi_scalar_mul_array_return(...)[0]) using the combined builtin
+  -- spec for the body's builtin call.
+  enter_decl
+  steps
+  apply STHoare.letIn_intro
+    (Q := fun r : Tp.denote p (Point.type.array 1) =>
+      ⟦(∀ i, Scalar.Canonical (scalars.get i)) ∧
+       r =
+        (⟨[encodeCurvePoint
+              (msmAccFinRange points scalars hOnCurve)],
+            by simp⟩ : Tp.denote p (Point.type.array 1))⟧)
+  · exact multi_scalar_mul_builtin_combined_spec (p := p) (N := N)
+      (points := points) (scalars := scalars) (hOnCurve := hOnCurve)
+  · intro r
+    steps
+    -- After steps, the conjunction `(canon ∧ r = ⟨[...], _⟩)` is in
+    -- scope. Extract and rebuild the goal's conjunction with the
+    -- bridged sum form.
+    have hPair :
+        (∀ i, Scalar.Canonical (scalars.get i)) ∧
+        r = (⟨[encodeCurvePoint
+                (msmAccFinRange points scalars hOnCurve)],
+            by simp⟩ : Tp.denote p (Point.type.array 1)) := by assumption
+    obtain ⟨hCan, hr⟩ := hPair
+    refine ⟨hCan, ?_⟩
+    subst hr
+    subst_vars
+    rw [msmAccFinRange_eq_sum h_enc hOnCurve]
+    rfl
+
 private theorem fixed_base_scalar_mul_concrete_spec {p}
     {scalar : Scalar.denote p}
-    {Pgen : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point}
+    {Pgen : (affineCurve p).Point}
     (h_gen :
       (Point.generator : Point.denote p) =
-        Lampe.Crypto.EmbeddedCurve.encodeCurvePoint Pgen) :
+        encodeCurvePoint Pgen) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
       (fun r =>
-        r = Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
-          (Lampe.Crypto.EmbeddedCurve.Scalar.valueNat scalar • Pgen)) := by
+        r = encodeCurvePoint
+          (Scalar.valueNat scalar • Pgen)) := by
   enter_decl
   -- The MSM here is over the singleton arrays `[generator]` and `[scalar]`. We prove
   -- the on-curve hypothesis specialised to that singleton (knowing the only entry is
@@ -984,7 +1049,7 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
     ⟨[scalar], by simp⟩ with hscalarsVec
   have hOnCurve :
       ∀ i,
-        (Lampe.Crypto.EmbeddedCurve.curvePoint?
+        (curvePoint?
           (List.Vector.get pointsVec i)).isSome := by
     intro i
     have hgi : List.Vector.get pointsVec i = Point.generator := by
@@ -993,8 +1058,8 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
       interval_cases k
       rfl
     have hcp :
-        Lampe.Crypto.EmbeddedCurve.curvePoint? (List.Vector.get pointsVec i) =
-          Lampe.Crypto.EmbeddedCurve.curvePoint? Point.generator :=
+        curvePoint? (List.Vector.get pointsVec i) =
+          curvePoint? Point.generator :=
       congrArg _ hgi
     rw [hcp, h_gen]
     simp
@@ -1003,22 +1068,18 @@ private theorem fixed_base_scalar_mul_concrete_spec {p}
       (points := pointsVec)
       (scalars := scalarsVec)
       (hOnCurve := hOnCurve)]
-  -- The hypothesis a✝ states v = encodeCurvePoint (msmAccFinRange pointsVec scalarsVec hOnCurve).
-  -- Reduce via the bridge lemma + `Fin.sum_univ_one` for the singleton.
   have hmsm :
       msmAccFinRange pointsVec scalarsVec hOnCurve =
-        Lampe.Crypto.EmbeddedCurve.Scalar.valueNat scalar • Pgen := by
-    let Ps : List.Vector (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point ((1 : U 32).toNat) :=
+        Scalar.valueNat scalar • Pgen := by
+    let Ps : List.Vector (affineCurve p).Point ((1 : U 32).toNat) :=
       ⟨[Pgen], rfl⟩
-    have h_enc : pointsVec.toList = Ps.toList.map Lampe.Crypto.EmbeddedCurve.encodeCurvePoint := by
-      show [Point.generator] = [Lampe.Crypto.EmbeddedCurve.encodeCurvePoint Pgen]
+    have h_enc : pointsVec.toList = Ps.toList.map encodeCurvePoint := by
+      show [Point.generator] = [encodeCurvePoint Pgen]
       rw [h_gen]; rfl
     rw [msmAccFinRange_eq_sum (Ps := Ps) h_enc hOnCurve]
     show (∑ i : Fin 1, Scalar.valueNat (scalarsVec.get i) • Ps.get i) = _
     rw [Fin.sum_univ_one]
-    show Scalar.valueNat scalar • Pgen =
-      Lampe.Crypto.EmbeddedCurve.Scalar.valueNat scalar • Pgen
-    rw [Scalar.valueNat_eq_crypto_valueNat]
+    rfl
   rename_i hRet
   rw [hmsm] at hRet
   exact hRet
@@ -1031,20 +1092,19 @@ generator `Point.generator` is the encoding of some Mathlib
 The hypothesis `h_gen` is a side condition because proving
 `(affineCurve p).Nonsingular 1 <generator-y>` for an arbitrary `p`
 requires knowing the concrete characteristic; downstream callers
-that pin `p` to BN254 discharge it directly. -/
+that pin `p` to BN254 discharge it directly (see
+`Lampe.Stdlib.EmbeddedCurveOps.Bn254.fixed_base_scalar_mul_bn254_spec`). -/
 theorem fixed_base_scalar_mul_spec {p}
     {scalar : Scalar.denote p}
-    {Pgen : (Lampe.Crypto.EmbeddedCurve.affineCurve p).Point}
+    {Pgen : (affineCurve p).Point}
     (h_gen :
       (Point.generator : Point.denote p) =
-        Lampe.Crypto.EmbeddedCurve.encodeCurvePoint Pgen) :
+        encodeCurvePoint Pgen) :
     STHoare p env ⟦⟧
       («std-1.0.0-beta.14::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
       (fun r =>
         r =
-          Lampe.Crypto.EmbeddedCurve.encodeCurvePoint
+          encodeCurvePoint
             (Scalar.valueNat scalar • Pgen)) := by
-  have h := fixed_base_scalar_mul_concrete_spec (p := p) (scalar := scalar)
+  exact fixed_base_scalar_mul_concrete_spec (p := p) (scalar := scalar)
     (Pgen := Pgen) (h_gen := h_gen)
-  rw [Scalar.valueNat_eq_crypto_valueNat]
-  exact h
