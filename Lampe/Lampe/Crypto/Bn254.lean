@@ -34,9 +34,6 @@ def plo : Nat := 53438638232309528389504892708671455233
 /-- High limb of the BN254 scalar-field prime: `r_scalar / 2^128`. -/
 def phi : Nat := 64323764613183177041862057485226039389
 
-/-- Limb base `2^128`. -/
-def pow128 : Nat := 2 ^ 128
-
 /-- The numeric content of `Bn254.Prime`: the prime decomposes as
 `plo + 2^128 * phi`. Equivalent to `p.natVal = r_scalar`. -/
 private lemma r_scalar_eq_limbs : r_scalar = plo + pow128 * phi := by
