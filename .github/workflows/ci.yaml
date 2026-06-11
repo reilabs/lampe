@@ -6,6 +6,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+# One run per ref: a new push cancels the previous in-flight PR run instead
+# of racing it (two parallel runs would each build and push the same image
+# tag). Runs on main are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   packages: write
