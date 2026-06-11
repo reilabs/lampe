@@ -35,7 +35,6 @@ except NameError:
     project_root = get_project_root()
 # --- End of copied part.
 
-lakefile_toml_path = project_root / 'testing' / 'MerkleFromScratch' / 'lampe' / 'lakefile.toml'
 rust_cargo_toml_path = project_root / 'Cargo.toml'
 ci_noir_yaml_path = project_root / '.github' / 'workflows' / 'ci-noir.yaml'
 
@@ -54,22 +53,6 @@ def load_json(path):
 def write_json(path, data):
     with open(path, mode="w") as f:
         json.dump(data, f, indent=1)
-
-def set_packages_dir(toml, packages_dir):
-    toml['packagesDir'] = packages_dir
-    return toml
-
-def set_toml_packages_dir(toml_path, packages_dir):
-    lakefile_toml = load_toml(toml_path)
-
-    set_packages_dir(lakefile_toml, packages_dir)
-
-    write_toml(toml_path, lakefile_toml)
-
-def set_manifest_packages_dir(manifest_path, packages_dir):
-    manifest = load_json(manifest_path)
-    manifest['packagesDir'] = packages_dir
-    write_json(manifest_path, manifest)
 
 def load_yaml(path):
     with open(path, mode="r") as f:
@@ -92,47 +75,36 @@ def change_required_dep_to_path_by_regex(toml, name_regex, path):
 
     return toml
 
+# The rewrite helpers below only write when they actually change something:
+# several CI cache keys hash the rewritten files (lakefile.toml,
+# lake-manifest.json), and a byte-changing no-op write (e.g. re-serializing
+# a manifest that lake formatted differently) silently changes those keys
+# between restore and save.
 def change_toml_required_dep_to_path_by_regex(toml_path, name_regex, path):
     lakefile_toml = load_toml(toml_path)
+    original = dumps(lakefile_toml)
 
     change_required_dep_to_path_by_regex(lakefile_toml, name_regex, path)
 
-    write_toml(toml_path, lakefile_toml)
-
-def change_required_lampe_to_path(toml, path):
-    for i, v in enumerate(toml['require']):
-        if v['name'] != 'Lampe':
-                continue
-
-        keys = list(v.keys())
-        for key in keys:
-            if key == 'name':
-                    continue
-            del v[key]
-
-        v['path'] = path
-
-    return toml
-
-def change_toml_required_lampe_to_path(toml_path, lampe_path):
-    lakefile_toml = load_toml(toml_path)
-
-    change_required_lampe_to_path(lakefile_toml, lampe_path)
-
-    write_toml(toml_path, lakefile_toml)
+    if dumps(lakefile_toml) != original:
+        write_toml(toml_path, lakefile_toml)
 
 def change_manifest_required_dep_to_path_by_regex(manifest_path, name_regex, path):
     manifest = load_json(manifest_path)
     compiled_name_regex = re.compile(name_regex)
+    changed = False
 
     for package in manifest.get('packages', []):
         if not compiled_name_regex.match(package.get('name', '')):
             continue
         if package.get('type') != 'path':
             continue
-        package['dir'] = path
+        if package.get('dir') != path:
+            package['dir'] = path
+            changed = True
 
-    write_json(manifest_path, manifest)
+    if changed:
+        write_json(manifest_path, manifest)
 
 def read_noir_version():
     rust_cargo_toml = load_toml(rust_cargo_toml_path)

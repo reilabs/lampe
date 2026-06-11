@@ -57,7 +57,6 @@ def parse_args():
 def prepare_lampe(lake_cmd):
     """Build a local version of lampe if use_local is set"""
     pushd @(project_root / "Lampe")
-    $(@(lake_cmd) exe cache get)
     $(@(lake_cmd) build)
     popd
 
@@ -110,7 +109,7 @@ def process_test(test_dir, lake_dir, log_file, lampe_cmd, lake_cmd, log_stdout, 
             lakefile_path = Path("lakefile.toml")
             lakefile_lampe_relative_path = "../../../Lampe"
 
-            change_toml_required_lampe_to_path(lakefile_path, lakefile_lampe_relative_path)
+            change_toml_required_dep_to_path_by_regex(lakefile_path, '^Lampe$', lakefile_lampe_relative_path)
 
             $(@(lake_cmd) update)
 
