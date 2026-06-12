@@ -92,3 +92,15 @@ jobs:
         run: |
           echo "CI image ghcr.io/reilabs/lampe-ci:${{ needs.check.outputs.image_tag }} is missing and cannot be built from a fork."
           exit 1
+
+  # Branch protection requires a check named "build-ci-image / Build CI Image";
+  # this job reports that context and fails if any of the jobs above failed.
+  gate:
+    name: Build CI Image
+    needs: [check, build, guard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Job Results
+        run: |
+          [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" != "true" ]
