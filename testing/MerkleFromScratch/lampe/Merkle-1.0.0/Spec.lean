@@ -6,7 +6,7 @@ import Lampe
 import ProvenZk
 
 import Mathlib.Data.Vector.Snoc
-import Stdlib.Stdlib
+import Stdlib
 
 open Lampe «Merkle-1.0.0» «Merkle-1.0.0».Field
 

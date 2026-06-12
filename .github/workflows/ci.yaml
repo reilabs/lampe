@@ -306,6 +306,9 @@ jobs:
         run: chmod +x target/release/lampe
       - name: Test Stdlib Extraction
         run: ./stdlib/test.xsh
+      - name: Make All (Stdlib)
+        working-directory: stdlib/lampe
+        run: lake exe mk_all --check --lib Stdlib
 
   end-to-end:
     name: E2E Tests

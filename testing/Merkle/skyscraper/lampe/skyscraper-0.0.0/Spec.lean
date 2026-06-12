@@ -4,7 +4,7 @@ import «skyscraper-0.0.0».Extracted
 import «skyscraper-0.0.0».Field
 import «skyscraper-0.0.0».Ref
 
-import Stdlib.Stdlib
+import Stdlib
 import Mathlib.Data.Vector.Defs
 
 open Lampe

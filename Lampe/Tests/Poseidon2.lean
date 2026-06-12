@@ -29,7 +29,7 @@ namespace BN254Vectors
 
 -- Concrete BN254/T4 reference vectors for the Noir/TACEO validation path.
 
-abbrev Fr := ZMod scalarModulus
+abbrev Fr := ZMod r_scalar
 
 def vals (state : List.Vector Fr 4) : List Nat :=
   state.toList.map ZMod.val
