@@ -5,5 +5,4 @@
 /target
 .idea
 .vscode
-
-testing/MerkleFromScratch/lampe/lake-manifest.json
+__pycache__/

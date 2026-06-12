@@ -7,18 +7,22 @@ on:
         type: boolean
     outputs:
       image_tag:
-        value: ${{ jobs.build.outputs.image_tag }}
+        value: ${{ jobs.check.outputs.image_tag }}
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  build:
-    name: Build CI Image
+  check:
+    name: Check CI Image
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.versions.outputs.image_tag }}
+      exists: ${{ steps.exists.outputs.exists }}
+      rust_stable: ${{ steps.versions.outputs.rust_stable }}
+      lean_toolchain: ${{ steps.versions.outputs.lean_toolchain }}
+      noir_rev: ${{ steps.versions.outputs.noir_rev }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -31,15 +35,38 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Check CI Image
-        id: check
+      - name: Probe Image Manifest
+        id: probe
         continue-on-error: true
-        run: python3 scripts/ci/verify_ci_image.py ghcr.io/reilabs/lampe-ci:${{ steps.versions.outputs.image_tag }}
+        run: docker manifest inspect ghcr.io/reilabs/lampe-ci:${{ steps.versions.outputs.image_tag }} > /dev/null
+      - name: Record Image Existence
+        id: exists
+        run: |
+          if [ "${{ steps.probe.outcome }}" = "success" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build And Push CI Image
+    needs: check
+    if: needs.check.outputs.exists != 'true' && inputs.allow_push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Free Runner Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Log In To GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set Up Docker Buildx
-        if: steps.check.outcome == 'failure' && inputs.allow_push
         uses: docker/setup-buildx-action@v3
       - name: Build And Push Image
-        if: steps.check.outcome == 'failure' && inputs.allow_push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -49,13 +76,31 @@ jobs:
           tags: |
             ghcr.io/reilabs/lampe-ci:latest
             ghcr.io/reilabs/lampe-ci:sha-${{ github.sha }}
-            ghcr.io/reilabs/lampe-ci:${{ steps.versions.outputs.image_tag }}
+            ghcr.io/reilabs/lampe-ci:${{ needs.check.outputs.image_tag }}
           build-args: |
-            RUST_TOOLCHAIN_STABLE=${{ steps.versions.outputs.rust_stable }}
-            LEAN_TOOLCHAIN=${{ steps.versions.outputs.lean_toolchain }}
-            NOIR_REV=${{ steps.versions.outputs.noir_rev }}
-      - name: Fail If Image Missing
-        if: steps.check.outcome == 'failure' && !inputs.allow_push
+            RUST_TOOLCHAIN_STABLE=${{ needs.check.outputs.rust_stable }}
+            LEAN_TOOLCHAIN=${{ needs.check.outputs.lean_toolchain }}
+            NOIR_REV=${{ needs.check.outputs.noir_rev }}
+
+  guard:
+    name: Fail If Image Missing
+    needs: check
+    if: needs.check.outputs.exists != 'true' && !inputs.allow_push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report Missing Image
         run: |
-          echo "CI image ghcr.io/reilabs/lampe-ci:${{ steps.versions.outputs.image_tag }} is missing and cannot be built from a fork."
+          echo "CI image ghcr.io/reilabs/lampe-ci:${{ needs.check.outputs.image_tag }} is missing and cannot be built from a fork."
           exit 1
+
+  # Branch protection requires a check named "build-ci-image / Build CI Image";
+  # this job reports that context and fails if any of the jobs above failed.
+  gate:
+    name: Build CI Image
+    needs: [check, build, guard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Job Results
+        run: |
+          [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" != "true" ]

@@ -4,7 +4,6 @@ import argparse
 from pathlib import Path
 import os
 import re
-import shutil
 import subprocess
 import sys
 
@@ -93,7 +92,7 @@ def run_tests(dir):
 
     if selected_test == "":
         test_cases = []
-        for item in test_cases_dir.iterdir():
+        for item in sorted(test_cases_dir.iterdir()):
             if item.is_dir() and not item.name.startswith('.') and item != test_cases_dir:
                 test_cases.append(item)
     else:
@@ -184,8 +183,8 @@ def _git(args, capture=False):
     )
 
 def assert_extraction_matches(test_dir):
-    # We now run extraction in-place under the checked-in test directory,
-    # so reproducibility is checked by asking git whether the working tree
+    # Extraction runs in-place under the checked-in test directory, so
+    # reproducibility is checked by asking git whether the working tree
     # under that directory matches HEAD.
     #
     # Files we deliberately do NOT compare:
@@ -193,7 +192,7 @@ def assert_extraction_matches(test_dir):
     #   - lakefile.toml   -> the CLI is allowed to regenerate it but the
     #                        path = "..." entries for Lampe/stdlib may be
     #                        formatted slightly differently than what is
-    #                        checked in; the old diff also excluded this.
+    #                        checked in.
     #   - lake-manifest.json -> lake resolves it at build time from inputRev.
     rel = test_dir.relative_to(project_root)
     pathspecs = [
@@ -223,7 +222,13 @@ def assert_extraction_matches(test_dir):
         )
 
 def build_lake(lampe_dir):
-    subprocess.run(["lake", "exe", "cache", "get"], check=True, cwd=lampe_dir)
+    # `cache get` is best-effort recovery, not a hard dependency. In CI the
+    # image bakes a complete `.ltar` store at $MATHLIB_CACHE_DIR, so this is
+    # an offline restore of mathlib oleans into whatever clones lake
+    # materialized under the shared $LAKE_PKG_DIR; locally the cloud cache
+    # may not serve the pinned revision at all. Either way `lake build` can
+    # always finish from source, so a failure here must not fail the test.
+    subprocess.run(["lake", "exe", "cache", "get"], check=False, cwd=lampe_dir)
     subprocess.run(["lake", "build"], check=True, cwd=lampe_dir)
 
 def rewrite_lampe_stdlib_deps_to_path(lampe_dir):
@@ -254,25 +259,15 @@ def rewrite_lampe_stdlib_deps_to_path(lampe_dir):
 def link_packages_dir(lampe_dir):
     # Point each test's `.lake/packages` at the shared `$LAKE_PKG_DIR`
     # cache so consecutive tests reuse the same mathlib / proven-zk /
-    # batteries clones. The lakefile and manifest both spell the dir as
-    # `.lake/packages`, so the symlink is enough; no further rewriting
-    # is required for the package cache to work.
-    packages_root_env = os.environ.get("LAKE_PKG_DIR")
-    if not packages_root_env:
-        return
-    packages_root = Path(packages_root_env)
-    packages_root.mkdir(parents=True, exist_ok=True)
-    lake_dir = lampe_dir / ".lake"
-    lake_dir.mkdir(parents=True, exist_ok=True)
-    packages_link = lake_dir / "packages"
-    if packages_link.is_symlink() or packages_link.exists():
-        if packages_link.is_symlink() or not packages_link.is_dir():
-            packages_link.unlink()
-        else:
-            shutil.rmtree(packages_link)
-    packages_link.symlink_to(
-        os.path.relpath(packages_root, lake_dir),
-        target_is_directory=True,
+    # batteries clones. The symlink logic lives in the helper script so
+    # CI workflow steps can run the same thing.
+    subprocess.run(
+        [
+            sys.executable,
+            str(project_root / "scripts" / "ci" / "link_lake_packages.py"),
+            str(lampe_dir),
+        ],
+        check=True,
     )
 
 def run_test(dir_path, update_mode):

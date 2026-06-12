@@ -6,6 +6,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+# One run per ref: a new push cancels the previous in-flight PR run instead
+# of racing it (two parallel runs would each build and push the same image
+# tag). Runs on main are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   packages: write
@@ -16,12 +23,85 @@ jobs:
     with:
       allow_push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
+  keys:
+    name: Compute Cache Keys
+    runs-on: ubuntu-latest
+    outputs:
+      rustfmt_key: ${{ steps.keys.outputs.rustfmt_key }}
+      rustlint_key: ${{ steps.keys.outputs.rustlint_key }}
+      rusttest_key: ${{ steps.keys.outputs.rusttest_key }}
+      cli_key: ${{ steps.keys.outputs.cli_key }}
+      lampe_key: ${{ steps.keys.outputs.lampe_key }}
+      stdlib_key: ${{ steps.keys.outputs.stdlib_key }}
+      e2e_key: ${{ steps.keys.outputs.e2e_key }}
+      rustfmt_hit: ${{ steps.rustfmt.outputs.cache-hit }}
+      rustlint_hit: ${{ steps.rustlint.outputs.cache-hit }}
+      rusttest_hit: ${{ steps.rusttest.outputs.cache-hit }}
+      e2e_hit: ${{ steps.e2e.outputs.cache-hit }}
+      lampe_hit: ${{ steps.lampe.outputs.cache-hit }}
+      stdlib_hit: ${{ steps.stdlib.outputs.cache-hit }}
+    steps:
+      - name: Checkout Current Branch
+        uses: actions/checkout@v6
+      - name: Compute Keys
+        id: keys
+        run: |
+          {
+            echo "rustfmt_key=rustfmt-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}"
+            echo "rustlint_key=rustlint-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}"
+            echo "rusttest_key=rusttest-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}"
+            echo "cli_key=cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}"
+            echo "lampe_key=lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json') }}"
+            echo "stdlib_key=stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/test.xsh', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}"
+            echo "e2e_key=e2e-${{ runner.os }}-${{ hashFiles('testing/**', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml', '!**/.lake/**') }}"
+          } >> "$GITHUB_OUTPUT"
+      - name: Probe Rustfmt Cache
+        id: rustfmt
+        uses: actions/cache/restore@v5
+        with:
+          path: .ci-cache/rustfmt
+          key: ${{ steps.keys.outputs.rustfmt_key }}
+          lookup-only: true
+      - name: Probe Rust Lint Cache
+        id: rustlint
+        uses: actions/cache/restore@v5
+        with:
+          path: .ci-cache/rustlint
+          key: ${{ steps.keys.outputs.rustlint_key }}
+          lookup-only: true
+      - name: Probe Rust Test Cache
+        id: rusttest
+        uses: actions/cache/restore@v5
+        with:
+          path: .ci-cache/rusttest
+          key: ${{ steps.keys.outputs.rusttest_key }}
+          lookup-only: true
+      - name: Probe E2E Cache
+        id: e2e
+        uses: actions/cache/restore@v5
+        with:
+          path: .ci-cache/e2e
+          key: ${{ steps.keys.outputs.e2e_key }}
+          lookup-only: true
+      - name: Probe Lampe Build Cache
+        id: lampe
+        uses: actions/cache/restore@v5
+        with:
+          path: Lampe/.lake/build
+          key: ${{ steps.keys.outputs.lampe_key }}
+          lookup-only: true
+      - name: Probe Stdlib Build Cache
+        id: stdlib
+        uses: actions/cache/restore@v5
+        with:
+          path: stdlib/lampe/.lake/build
+          key: ${{ steps.keys.outputs.stdlib_key }}
+          lookup-only: true
+
   ensure-noir-version:
     name: Check Noir Versions
     needs: build-ci-image
     runs-on: ubuntu-latest
-    env:
-      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -35,10 +115,9 @@ jobs:
 
   check-rust-formatting:
     name: Check Rust Formatting
-    needs: [build-ci-image]
+    needs: [build-ci-image, keys]
+    if: needs.keys.outputs.rustfmt_hit != 'true'
     runs-on: ubuntu-latest
-    env:
-      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -49,27 +128,23 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: recursive
-      - name: Restore Rustfmt Cache
-        id: rustfmt-cache
-        uses: actions/cache@v5
-        with:
-          path: .ci-cache/rustfmt
-          key: rustfmt-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
       - name: Check Formatting
-        if: ${{ steps.rustfmt-cache.outputs.cache-hit != 'true' }}
         run: cargo +nightly fmt --all -- --check
       - name: Mark Rustfmt Cache
-        if: ${{ steps.rustfmt-cache.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p .ci-cache/rustfmt
           echo "ok" > .ci-cache/rustfmt/success
+      - name: Save Rustfmt Cache
+        uses: actions/cache/save@v5
+        with:
+          path: .ci-cache/rustfmt
+          key: ${{ needs.keys.outputs.rustfmt_key }}
 
   lint-rust:
     name: Lint Rust
-    needs: [build-ci-image]
+    needs: [build-ci-image, keys]
+    if: needs.keys.outputs.rustlint_hit != 'true'
     runs-on: ubuntu-latest
-    env:
-      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -78,27 +153,23 @@ jobs:
     steps:
       - name: Checkout Current Branch
         uses: actions/checkout@v6
-      - name: Restore Rust Lint Cache
-        id: rustlint-cache
-        uses: actions/cache@v5
-        with:
-          path: .ci-cache/rustlint
-          key: rustlint-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
       - name: Lint (Clippy)
-        if: ${{ steps.rustlint-cache.outputs.cache-hit != 'true' }}
         run: RUSTFLAGS="-Dwarnings" cargo clippy --all-targets --all-features
       - name: Mark Rust Lint Cache
-        if: ${{ steps.rustlint-cache.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p .ci-cache/rustlint
           echo "ok" > .ci-cache/rustlint/success
+      - name: Save Rust Lint Cache
+        uses: actions/cache/save@v5
+        with:
+          path: .ci-cache/rustlint
+          key: ${{ needs.keys.outputs.rustlint_key }}
 
   test-rust:
     name: Test Rust
-    needs: [build-ci-image]
+    needs: [build-ci-image, keys]
+    if: needs.keys.outputs.rusttest_hit != 'true'
     runs-on: ubuntu-latest
-    env:
-      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -107,30 +178,25 @@ jobs:
     steps:
       - name: Checkout Current Branch
         uses: actions/checkout@v6
-      - name: Restore Rust Test Cache
-        id: rusttest-cache
-        uses: actions/cache@v5
-        with:
-          path: .ci-cache/rusttest
-          key: rusttest-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
       - name: Test (Cargo)
-        if: ${{ steps.rusttest-cache.outputs.cache-hit != 'true' }}
         run: cargo test --all
       - name: Remove Build Artifacts
-        if: ${{ steps.rusttest-cache.outputs.cache-hit != 'true' }}
         run: rm -rf target
       - name: Mark Rust Test Cache
-        if: ${{ steps.rusttest-cache.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p .ci-cache/rusttest
           echo "ok" > .ci-cache/rusttest/success
+      - name: Save Rust Test Cache
+        uses: actions/cache/save@v5
+        with:
+          path: .ci-cache/rusttest
+          key: ${{ needs.keys.outputs.rusttest_key }}
 
   build-rust:
     name: Build CLI
-    needs: [build-ci-image, check-rust-formatting, lint-rust, test-rust]
+    needs: [build-ci-image, keys, check-rust-formatting, lint-rust, test-rust]
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
-    env:
-      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -144,12 +210,11 @@ jobs:
         uses: actions/cache@v5
         with:
           path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
+          key: ${{ needs.keys.outputs.cli_key }}
       - name: Build (Cargo)
         if: ${{ steps.cli-cache.outputs.cache-hit != 'true' }}
         run: cargo build --release
       - name: Upload CLI Artifact
-        if: ${{ steps.cli-cache.outputs.cache-hit != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: lampe-cli-${{ github.sha }}
@@ -157,10 +222,9 @@ jobs:
 
   build-lean:
     name: Build Lampe
-    needs: [build-ci-image]
+    needs: [build-ci-image, keys]
+    if: needs.keys.outputs.lampe_hit != 'true'
     runs-on: ubuntu-latest
-    env:
-      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -172,64 +236,40 @@ jobs:
         with:
           sparse-checkout: |
             Lampe
+            scripts/ci
             stdlib/lampe/lean-toolchain
             stdlib/lampe/lake-manifest.json
       - name: Set Lake Package Dir
         run: |
           mkdir -p "$RUNNER_TEMP/lake-packages"
           echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
-      - name: Restore Lake Packages Cache
-        id: lake-packages-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: ${{ env.LAKE_PKG_DIR }}
-          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
+      - name: Point Lampe Lake Packages At Shared Dir
+        run: python3 scripts/ci/link_lake_packages.py Lampe
       - name: Restore Lampe Build Cache
-        id: lampe-build-cache
         uses: actions/cache@v5
         with:
           path: Lampe/.lake/build
-          key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml') }}
+          key: ${{ needs.keys.outputs.lampe_key }}
           restore-keys: |
             lampe-build-${{ runner.os }}-
       - name: Get Mathlib Cache
-        if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' }}
         working-directory: Lampe
-        run: lake exe cache get
+        run: lake exe cache get || echo "cache get failed; continuing so the build step surfaces the real error"
       - name: Make All (Lampe)
-        if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' }}
         working-directory: Lampe
         run: lake exe mk_all --check --lib Lampe
       - name: Build Lampe
-        if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' }}
         working-directory: Lampe
         run: lake build
       - name: Test Lampe
-        if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' }}
         working-directory: Lampe
         run: lake test
-      - name: Check Lake Packages Cache Contents
-        id: lake-packages-content
-        if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' && steps.lake-packages-cache.outputs.cache-hit != 'true' }}
-        run: |
-          if [ -n "$(find "$LAKE_PKG_DIR" -mindepth 1 -print -quit)" ]; then
-            echo "has_files=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_files=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Save Lake Packages Cache
-        if: ${{ steps.lampe-build-cache.outputs.cache-hit != 'true' && steps.lake-packages-cache.outputs.cache-hit != 'true' && steps.lake-packages-content.outputs.has_files == 'true' }}
-        uses: actions/cache/save@v5
-        with:
-          path: ${{ env.LAKE_PKG_DIR }}
-          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
 
   build-stdlib:
     name: Build Stdlib
-    needs: [build-ci-image, build-rust, build-lean, ensure-noir-version]
+    needs: [build-ci-image, keys, build-rust, build-lean, ensure-noir-version]
+    if: ${{ !failure() && !cancelled() && needs.keys.outputs.stdlib_hit != 'true' }}
     runs-on: ubuntu-latest
-    env:
-      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -242,101 +282,36 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/lake-packages"
           echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
-      - name: Restore Lake Packages Cache
-        id: lake-packages-cache
+      - name: Restore Lampe Build Cache
         uses: actions/cache/restore@v5
         with:
-          path: ${{ env.LAKE_PKG_DIR }}
-          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
-      - name: Restore Lampe Build Cache
-        uses: actions/cache@v5
-        with:
           path: Lampe/.lake/build
-          key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml') }}
+          key: ${{ needs.keys.outputs.lampe_key }}
           restore-keys: |
             lampe-build-${{ runner.os }}-
       - name: Restore Stdlib Build Cache
-        id: stdlib-build-cache
         uses: actions/cache@v5
         with:
           path: stdlib/lampe/.lake/build
-          key: stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/test.xsh', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          key: ${{ needs.keys.outputs.stdlib_key }}
           restore-keys: |
             stdlib-build-${{ runner.os }}-
-      - name: Restore CLI Cache
-        id: cli-cache
-        uses: actions/cache@v5
-        with:
-          path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
-      - name: Check CLI Binary
-        id: cli-check
-        run: |
-          if [ -x target/release/lampe ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          fi
       - name: Download CLI Artifact
-        if: ${{ steps.cli-check.outputs.found != 'true' }}
-        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: lampe-cli-${{ github.sha }}
           path: target/release
-      - name: Re-check CLI Binary
-        id: cli-check-2
-        run: |
-          if [ -x target/release/lampe ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Build CLI (Fallback)
-        if: ${{ steps.cli-check-2.outputs.found != 'true' }}
-        run: cargo build --release
       - name: Ensure CLI Executable
+        # upload-artifact zips files and drops the exec bit.
         run: chmod +x target/release/lampe
       - name: Test Stdlib Extraction
-        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
         run: ./stdlib/test.xsh
-      - name: Point Stdlib Lake Packages At Shared Cache
-        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
-        run: |
-          mkdir -p stdlib/lampe/.lake
-          rm -rf stdlib/lampe/.lake/packages
-          ln -s "$LAKE_PKG_DIR" stdlib/lampe/.lake/packages
-      - name: Free Runner Disk Space
-        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
-        uses: ./.github/actions/free-disk-space
-      - name: Build Stdlib In Place
-        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' }}
-        run: |
-          cd stdlib/lampe
-          lake exe cache get
-          lake build
-      - name: Check Lake Packages Cache Contents
-        id: lake-packages-content
-        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' && steps.lake-packages-cache.outputs.cache-hit != 'true' }}
-        run: |
-          if [ -n "$(find "$LAKE_PKG_DIR" -mindepth 1 -print -quit)" ]; then
-            echo "has_files=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_files=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Save Lake Packages Cache
-        if: ${{ steps.stdlib-build-cache.outputs.cache-hit != 'true' && steps.lake-packages-cache.outputs.cache-hit != 'true' && steps.lake-packages-content.outputs.has_files == 'true' }}
-        uses: actions/cache/save@v5
-        with:
-          path: ${{ env.LAKE_PKG_DIR }}
-          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
 
   end-to-end:
     name: E2E Tests
-    needs: [build-ci-image, build-rust, build-stdlib, build-lean, ensure-noir-version]
+    needs: [build-ci-image, keys, build-rust, build-stdlib, build-lean, ensure-noir-version]
+    if: ${{ !failure() && !cancelled() && needs.keys.outputs.e2e_hit != 'true' }}
     runs-on: ubuntu-latest
-    env:
-      CI_IMAGE: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
     container:
       image: ghcr.io/reilabs/lampe-ci:${{ needs.build-ci-image.outputs.image_tag }}
       credentials:
@@ -349,78 +324,40 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/lake-packages"
           echo "LAKE_PKG_DIR=$RUNNER_TEMP/lake-packages" >> "$GITHUB_ENV"
-      - name: Restore Lake Packages Cache
+      - name: Restore Lampe Build Cache
         uses: actions/cache/restore@v5
         with:
-          path: ${{ env.LAKE_PKG_DIR }}
-          key: lake-packages-${{ runner.os }}-${{ hashFiles('Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json') }}
-      - name: Restore Lampe Build Cache
-        uses: actions/cache@v5
-        with:
           path: Lampe/.lake/build
-          key: lampe-build-${{ runner.os }}-${{ hashFiles('Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml') }}
+          key: ${{ needs.keys.outputs.lampe_key }}
           restore-keys: |
             lampe-build-${{ runner.os }}-
       - name: Restore Stdlib Build Cache
         uses: actions/cache/restore@v5
         with:
           path: stdlib/lampe/.lake/build
-          key: stdlib-build-${{ runner.os }}-${{ hashFiles('stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/test.xsh', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**') }}
+          key: ${{ needs.keys.outputs.stdlib_key }}
           restore-keys: |
             stdlib-build-${{ runner.os }}-
       - name: Point Stdlib Lake Packages At Shared Cache
-        run: |
-          mkdir -p stdlib/lampe/.lake
-          rm -rf stdlib/lampe/.lake/packages
-          ln -s "$LAKE_PKG_DIR" stdlib/lampe/.lake/packages
-      - name: Restore CLI Cache
-        id: cli-cache
-        uses: actions/cache@v5
-        with:
-          path: target/release/lampe
-          key: cli-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/lean-toolchain') }}
-      - name: Check CLI Binary
-        id: cli-check
-        run: |
-          if [ -x target/release/lampe ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          fi
+        run: python3 scripts/ci/link_lake_packages.py stdlib/lampe
       - name: Download CLI Artifact
-        if: ${{ steps.cli-check.outputs.found != 'true' }}
-        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: lampe-cli-${{ github.sha }}
           path: target/release
-      - name: Re-check CLI Binary
-        id: cli-check-2
-        run: |
-          if [ -x target/release/lampe ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Build CLI (Fallback)
-        if: ${{ steps.cli-check-2.outputs.found != 'true' }}
-        run: cargo build --release
       - name: Ensure CLI Executable
+        # upload-artifact zips files and drops the exec bit.
         run: chmod +x target/release/lampe
-      - name: Restore E2E Cache
-        id: e2e-cache
-        uses: actions/cache@v5
-        with:
-          path: .ci-cache/e2e
-          key: e2e-${{ runner.os }}-${{ hashFiles('testing/**', 'scripts/test.xsh', 'scripts/utils.xsh', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'src/**', 'Lampe/**/*.lean', 'Lampe/**/*.toml', 'Lampe/**/*.json', 'Lampe/lean-toolchain', 'Lampe/lake-manifest.json', 'Lampe/lakefile.toml', 'stdlib/src/**', 'stdlib/Nargo.toml', 'stdlib/lampe/**/*.lean', 'stdlib/lampe/lean-toolchain', 'stdlib/lampe/lake-manifest.json', 'stdlib/lampe/lakefile.toml') }}
       - name: Free Runner Disk Space
-        if: ${{ steps.e2e-cache.outputs.cache-hit != 'true' }}
         uses: ./.github/actions/free-disk-space
       - name: Run Test Script
-        if: ${{ steps.e2e-cache.outputs.cache-hit != 'true' }}
         run: ./testing/test.xsh
       - name: Mark E2E Cache
-        if: ${{ steps.e2e-cache.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p .ci-cache/e2e
           echo "ok" > .ci-cache/e2e/success
+      - name: Save E2E Cache
+        uses: actions/cache/save@v5
+        with:
+          path: .ci-cache/e2e
+          key: ${{ needs.keys.outputs.e2e_key }}

@@ -32,7 +32,7 @@
    "inherited": false,
    "dir": "../../../../Lampe",
    "configFile": "lakefile.lean"},
-  {"url": "https://github.com/leanprover-community/mathlib4.git",
+  {"url": "https://github.com/leanprover-community/mathlib4",
    "type": "git",
    "subDir": null,
    "scope": "",

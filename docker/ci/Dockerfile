@@ -52,3 +52,48 @@ RUN if [ -n "$NOIR_REV" ]; then \
         cp /opt/noir/target/release/nargo /usr/local/bin/nargo; \
         rm -rf /opt/noir/.git /opt/noir/target; \
     fi
+
+# Bake mathlib's `.ltar` store into the image so CI jobs depend on neither
+# mathlib's cloud olean cache nor GitHub-cache round-trips. Only the store
+# (~0.4GB) ships in the image: a fully built dependency tree unpacks to ~8GB
+# more, and GitHub's hosted runners guarantee only ~14GB free while
+# container-job image pulls happen before any job step can free disk, so a
+# tree-carrying image makes every pull a coin flip against the runner's free
+# space. CI jobs instead clone the dependency sources into a host-side shared
+# dir and `lake exe cache get` decompresses offline from this store.
+#
+# bake_mathlib_cache.sh populates the store at image-build time, cheapest
+# source first:
+#   1. `lake exe cache get-` (download only, no decompression) in the bake
+#      workspace, when mathlib's cloud cache still serves the pinned rev.
+#   2. Full source build + `lake exe cache pack` from the built tree.
+# The bake workspace reuses Lampe's lakefile and manifest so the packed
+# revisions always match the pin; lake needs only the config files (not the
+# Lampe sources) to materialize and build dependency targets. Each step is
+# gated on the store still being too small to be a complete mathlib cache
+# (mathlib is ~7k modules, one `.ltar` per module).
+#
+# `cache pack` must run with the mathlib clone as the workspace root and with
+# the dependency clones physically inside mathlib's own `.lake/packages`,
+# mirroring mathlib's CI: `.ltar` archives store workspace-root-relative
+# paths (`.lake/build/...` for mathlib itself, `.lake/packages/<dep>/...`
+# for dependencies), and `cache get` in downstream workspaces relies on
+# exactly that layout (it redirects mathlib's own modules to the package dir
+# at decompression time and dependency modules resolve to the same relative
+# paths). Packing from a downstream root, or with the dependencies behind a
+# symlink, bakes wrong (downstream-prefixed or absolute) paths into the
+# archives. The script therefore moves the dependencies under the mathlib
+# root for the pack; mathlib's manifest pins exactly the revisions Lampe
+# inherits, so lake accepts them as-is.
+#
+# Everything except the store is transient: the clones and build artifacts
+# are deleted in the same RUN that created them, so they never reach a
+# layer. An image with a missing or partial store would silently push every
+# CI job back onto mathlib's cloud cache or a full source build, so the bake
+# fails instead of shipping one.
+ENV MATHLIB_CACHE_DIR=/opt/mathlib-cache
+
+COPY Lampe/lean-toolchain Lampe/lakefile.lean Lampe/lake-manifest.json \
+    docker/ci/bake_mathlib_cache.sh /opt/lake-bake/
+
+RUN /opt/lake-bake/bake_mathlib_cache.sh

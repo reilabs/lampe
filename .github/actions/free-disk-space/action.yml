@@ -1,20 +1,25 @@
 name: 'Free Runner Disk Space'
 description: >-
-  Drop the bind-mounted /opt/hostedtoolcache before heavy lake/mathlib
-  steps. GH-hosted Ubuntu runners preinstall ~14 GB of language
-  toolchains (Python/Node/Ruby/Go/Java/.NET) under that path, which the
-  container sees as /__t. Our jobs never use any of it, but
-  `lake exe cache get` decompresses ~8 k mathlib oleans into the same
-  disk and the combined peak occasionally exceeds the runner disk
+  Drop the preinstalled toolchain bloat before heavy lake/mathlib or
+  docker-build steps. GH-hosted Ubuntu runners preinstall ~14 GB of language
+  toolchains (Python/Node/Ruby/Go/Java/.NET) under /opt/hostedtoolcache,
+  which container jobs see bind-mounted as /__t. Our jobs never use any of
+  it, but `lake exe cache get` decompresses ~8 k mathlib oleans into the
+  same disk and the combined peak occasionally exceeds the runner disk
   limit, manifesting as `No space left on device` mid-decompression.
-  Drop the tool cache proactively to give decompression headroom.
+  Inside a container the action clears /__t; on the host it removes the
+  tool cache plus the Android SDK and .NET trees.
 runs:
   using: 'composite'
   steps:
-    - name: Free /opt/hostedtoolcache
+    - name: Free Preinstalled Toolchains
       shell: bash
       run: |
         set -eu
         df -h /
-        rm -rf /__t/*
+        if [ -d /__t ]; then
+          rm -rf /__t/*
+        else
+          sudo rm -rf /opt/hostedtoolcache /usr/local/lib/android /usr/share/dotnet
+        fi
         df -h /
