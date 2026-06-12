@@ -45,7 +45,7 @@ theorem fixed_base_scalar_mul_bn254_spec
       («std-1.0.0-beta.14::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
       (fun r =>
         r = encodeCurvePoint
-          (Lampe.Stdlib.EmbeddedCurveOps.Scalar.valueNat scalar • generatorPoint)) :=
+          (Scalar.valueNat scalar • generatorPoint)) :=
   Lampe.Stdlib.EmbeddedCurveOps.fixed_base_scalar_mul_spec
     (Pgen := generatorPoint) generator_eq_encodeCurvePoint
 
