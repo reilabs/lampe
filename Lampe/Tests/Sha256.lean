@@ -4,15 +4,16 @@ import Lampe.Crypto.Sha256
 /-!
 # Sha256 compression — driver-level test vectors
 
-These re-run the FIPS 180-2 Appendix B SHA-256 worked examples through
-the public `Crypto.Sha256.compressOne` entry point. The same vectors are
-also covered (as `private` theorems) inside `Lampe/Crypto/Sha256.lean`;
-duplicating them at the Tests layer makes them visible to `lake test`
-and protects the public surface from accidental regressions.
+These run the FIPS 180-2 Appendix B SHA-256 worked examples through
+the public `Crypto.Sha256.compressOne` entry point. All vectors are
+copied verbatim from the standard: the padded message blocks, the
+intermediate hash value H^(1), and the final hashes are exactly the
+byte sequences printed there.
 
 Reference: FIPS 180-2 "Secure Hash Standard" Appendix B (single-block
-"abc" example in §B.1; two-block "abcdbcdec..." example in §B.2, from
-which we take the final hash).
+"abc" example in §B.1; two-block "abcdbcdec..." example in §B.2, whose
+two compressions give us the intermediate state H^(1) and the final
+hash H^(2)).
 
   https://csrc.nist.gov/csrc/media/publications/fips/180/2/archive/
   2002-08-01/documents/fips180-2.pdf
@@ -37,6 +38,22 @@ example :
       =
     ⟨[ 0xba7816bf#32, 0x8f01cfea#32, 0x414140de#32, 0x5dae2223#32,
        0xb00361a3#32, 0x96177a9c#32, 0xb410ff61#32, 0xf20015ad#32 ],
+     by rfl⟩ := by native_decide
+
+/-- FIPS 180-2 §B.2: first-block compression of the two-block example
+takes the IV to the intermediate hash value H^(1) printed in the
+standard. -/
+example :
+    compressOne
+        initialHash
+        ⟨[ 0x61626364#32, 0x62636465#32, 0x63646566#32, 0x64656667#32,
+           0x65666768#32, 0x66676869#32, 0x6768696a#32, 0x68696a6b#32,
+           0x696a6b6c#32, 0x6a6b6c6d#32, 0x6b6c6d6e#32, 0x6c6d6e6f#32,
+           0x6d6e6f70#32, 0x6e6f7071#32, 0x80000000#32, 0x00000000#32 ],
+         by rfl⟩
+      =
+    ⟨[ 0x85e655d6#32, 0x417a1795#32, 0x3363376a#32, 0x624cde5c#32,
+       0x76e09589#32, 0xcac5f811#32, 0xcc4b32c1#32, 0xf20e533a#32 ],
      by rfl⟩ := by native_decide
 
 /-- FIPS 180-2 §B.2: second-block compression of the two-block example

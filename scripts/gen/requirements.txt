@@ -1,0 +1,6 @@
+# Dev-only deps for the reference generators under scripts/.
+# Not installed by CI; the CI image bakes scripts/requirements.txt only.
+blake3         # blake3_ref.py
+cryptography   # aes128_ref.py
+ecdsa          # secp256k1_ref.py, secp256r1_ref.py
+sympy          # gen_pratt.py

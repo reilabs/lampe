@@ -99,13 +99,13 @@ lemma prime_sub_pow128_gt {p} [Lampe.Prime.BitsGT p 129] : p.natVal - pow128 > p
   exact (Nat.lt_sub_iff_add_lt).2 hsum
 
 lemma sub_val_gt_pow128_of_lt {p} [Lampe.Prime.BitsGT p 129] {a b : Fp p}
-    (ha : a.val < pow128) (hb : b.val ≤ pow128) (h : a.val < b.val) :
+    (_ha : a.val < pow128) (hb : b.val ≤ pow128) (h : a.val < b.val) :
     (a - b).val > pow128 := by
   have hb_lt : b.val < p.natVal := lt_of_le_of_lt hb (pow128_lt_prime (p := p))
   have hbne : b ≠ 0 := by
     intro hbz
     subst hbz
-    simpa using h
+    simp at h
   haveI : NeZero b := ⟨hbne⟩
   have hneg : (-b).val = p.natVal - b.val := by
     simpa using (ZMod.val_neg_of_ne_zero b)

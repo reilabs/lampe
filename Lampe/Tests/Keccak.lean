@@ -43,10 +43,8 @@ private def zerosOut : List.Vector (BitVec 64) 25 :=
     0x1841f924a2c509e4#64, 0x16f53526e70465c2#64, 0x75f644e97f30a13b#64,
     0xeaf1ff7b5ceca249#64], by decide⟩
 
--- Vector 1: kernel-checked via plain `decide` with bumped `maxRecDepth`.
-set_option maxRecDepth 4096 in
 theorem keccakF1600_zeros_correct :
-    (keccakF1600State zerosIn).toList = zerosOut.toList := by decide
+    (keccakF1600State zerosIn).toList = zerosOut.toList := by native_decide
 
 /-! ### Vector 2: second application
 XKCP `KeccakF-1600-IntermediateValues.txt`, "state after permutation"
@@ -63,9 +61,7 @@ private def secondOut : List.Vector (BitVec 64) 25 :=
     0x202a9ec5faa3cce8#64, 0x5b3402464e1c3db6#64, 0x609f4e62a44c1059#64,
     0x20d06cd26a8fbf5c#64], by decide⟩
 
--- Vector 2: kernel-checked via plain `decide` with bumped `maxRecDepth`.
-set_option maxRecDepth 4096 in
 theorem keccakF1600_second_correct :
-    (keccakF1600State zerosOut).toList = secondOut.toList := by decide
+    (keccakF1600State zerosOut).toList = secondOut.toList := by native_decide
 
 end Tests.Keccak
