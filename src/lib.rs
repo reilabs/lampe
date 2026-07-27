@@ -248,7 +248,7 @@ fn use_globals() -> [Field; 2] {
         let slice_source = r"
 fn use_slice() -> Field {
     let s = [1,2,3];
-    let t = s.as_slice();
+    let t = s.as_vector();
     t[0]
 }
 ";
@@ -737,7 +737,7 @@ pub struct Foo {}
 
 impl HasConst for Foo {
     let N: u32 = 5;
-    let M: i32 = -7;
+    let M: i32 = -7i32;
 
     fn double_n() -> u32 {
         Self::N * 2
