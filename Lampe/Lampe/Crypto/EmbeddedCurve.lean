@@ -21,12 +21,12 @@ comes from `Lampe.Crypto.MathlibBridge`.
 
 @[reducible]
 def pointTp : Tp :=
-  .tuple (some "«std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint»")
+  .tuple (some "«std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurvePoint»")
     [.field, .field, .bool]
 
 @[reducible]
 def scalarTp : Tp :=
-  .tuple (some "«std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar»")
+  .tuple (some "«std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurveScalar»")
     [.field, .field]
 
 @[reducible]

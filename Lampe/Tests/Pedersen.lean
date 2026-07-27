@@ -9,7 +9,7 @@ Verifies the pure `pedersenCommitment` and `pedersenHash` functions
 forms guaranteed by the stdlib `_spec_canonical` theorems — against
 Aztec's published test vectors (from `assert_pedersen` in the Noir
 stdlib, extracted at
-`stdlib/lampe/std-1.0.0-beta.14/Extracted/Hash/Mod.lean` starting at
+`stdlib/lampe/std-1.0.0-beta.25/Extracted/Hash/Mod.lean` starting at
 line 251).
 
 Inputs are `[1, 2, ..., N]` as Fields, separator = N. Outputs are
