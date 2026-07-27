@@ -39,9 +39,10 @@ asserts that everything else in the repository agrees with it.
    `noirc_frontend` / `nargo` APIs between the two releases. This regenerates `Cargo.lock` as a
    side effect (if version resolution conflicts appear between the new noir crates and old locked
    versions, a full `cargo update` is the simplest fix). This step is where the real work usually
-   is; the rest is mechanical. Note that `cargo test` fixtures in `src/lib.rs` are written in
-   Noir, so *language*-level changes (removed methods, changed literal rules, etc.) can require
-   updating the fixtures themselves, not just the extractor.
+   is; the rest is mechanical. Note that `cargo test` fixtures in `src/lib.rs` and the test
+   projects under `testing/` are written in Noir, so *language*-level changes (removed methods,
+   changed literal syntax, etc.) can require updating the fixtures themselves — including the
+   versions of any git dependencies they pin (e.g. `noir_base64`) — not just the extractor.
 
 5. **Re-vendor the Noir stdlib**:
    - Replace `stdlib/src/` with `noir_stdlib/src` from the pinned rev (see
