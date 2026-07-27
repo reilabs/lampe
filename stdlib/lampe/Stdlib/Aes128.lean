@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 import Lampe.Crypto.Aes128
 
@@ -22,7 +22,7 @@ This file proves `aes128_encrypt<N>` evaluates to
 
 namespace Lampe.Stdlib.Aes128
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 open Lampe.Crypto
 
 /-- Direct builtin spec: `aes128Encrypt` applied to an input,
@@ -49,7 +49,7 @@ theorem aes128_encrypt_spec {p} {N : U 32}
     {key : Tp.denote p ((Tp.u 8).array (16 : U 32))}
     (hN : N.toNat + 16 < 2^32) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::aes128::aes128_encrypt».call h![N] h![input, iv, key])
+      («std-1.0.0-beta.25::aes128::aes128_encrypt».call h![N] h![input, iv, key])
       (fun r => r.toList =
         Crypto.Aes128.aes128CbcEncryptRaw key iv (Crypto.Aes128.pkcs7Pad input.toList)) := by
   set M : U 32 := (N.add 16).sub (N.umod 16) with hMdef

@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 import Lampe.Crypto.Poseidon2
 import Stdlib.Default
@@ -7,17 +7,17 @@ import Stdlib.Vector
 
 namespace Lampe.Stdlib.Hash.Poseidon2
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 open Lampe.Crypto
 
 abbrev Poseidon2Tp : Tp :=
-  «std-1.0.0-beta.14::hash::poseidon2::Poseidon2».tp h![]
+  «std-1.0.0-beta.25::hash::poseidon2::Poseidon2».tp h![]
 
 abbrev Poseidon2Repr (p : Prime) : Type :=
   Tp.denote p Poseidon2Tp
 
 abbrev Poseidon2HasherTp : Tp :=
-  «std-1.0.0-beta.14::hash::poseidon2::Poseidon2Hasher».tp h![]
+  «std-1.0.0-beta.25::hash::poseidon2::Poseidon2Hasher».tp h![]
 
 abbrev Poseidon2HasherRepr (p : Prime) : Type :=
   Tp.denote p Poseidon2HasherTp
@@ -451,7 +451,7 @@ private abbrev HasherFinishLoopInv {p}
 theorem default_spec {p}
     : STHoare p env ⟦⟧
         (Lampe.Stdlib.Default.default h![]
-          («std-1.0.0-beta.14::hash::poseidon2::Poseidon2Hasher».tp h![]) h![] h![] h![])
+          («std-1.0.0-beta.25::hash::poseidon2::Poseidon2Hasher».tp h![]) h![] h![] h![])
         (fun r => r = Tuple.mk h![([] : List (Tp.denote p .field))]) := by
   resolve_trait
   steps
@@ -460,7 +460,7 @@ theorem default_spec {p}
 
 theorem rate_spec {p}
     : STHoare p env ⟦⟧
-        («std-1.0.0-beta.14::hash::poseidon2::RATE».call h![] h![])
+        («std-1.0.0-beta.25::hash::poseidon2::RATE».call h![] h![])
         (fun r => r = (3 : U 32)) := by
   enter_decl
   steps
@@ -469,7 +469,7 @@ theorem rate_spec {p}
 
 theorem new_spec {p} {iv : Tp.denote p .field}
     : STHoare p env ⟦⟧
-        («std-1.0.0-beta.14::hash::poseidon2::Poseidon2::new».call h![] h![iv])
+        («std-1.0.0-beta.25::hash::poseidon2::Poseidon2::new».call h![] h![iv])
         (fun r => r = spongeToRepr (Crypto.Poseidon2.Sponge.init (Crypto.Poseidon2.noirParams4 p) iv)) := by
   enter_decl
   steps [rate_spec]
@@ -490,7 +490,7 @@ theorem perform_duplex_spec {p selfRef}
     {squeezeMode : Bool}
     : STHoare p env
         [selfRef ↦ ⟨Poseidon2Tp, mkPoseidon2Repr cache state cacheSize squeezeMode⟩]
-        («std-1.0.0-beta.14::hash::poseidon2::Poseidon2::perform_duplex».call h![] h![selfRef])
+        («std-1.0.0-beta.25::hash::poseidon2::Poseidon2::perform_duplex».call h![] h![selfRef])
         (fun _ =>
           [selfRef ↦ ⟨Poseidon2Tp,
             performDuplexRepr (mkPoseidon2Repr cache state cacheSize squeezeMode)⟩]) := by
@@ -528,7 +528,7 @@ theorem absorb_spec {p selfRef}
     (hout : absorbRepr? self input = some out)
     : STHoare p env
         [selfRef ↦ ⟨Poseidon2Tp, self⟩]
-        («std-1.0.0-beta.14::hash::poseidon2::Poseidon2::absorb».call h![] h![selfRef, input])
+        («std-1.0.0-beta.25::hash::poseidon2::Poseidon2::absorb».call h![] h![selfRef, input])
         (fun _ => [selfRef ↦ ⟨Poseidon2Tp, out⟩]) := by
   rcases self with ⟨cache, state, cacheSize, squeezeMode, unitTail⟩
   cases unitTail
@@ -651,7 +651,7 @@ theorem squeeze_spec {p selfRef}
     (hout : squeezeRepr? self = some (out, outSelf))
     : STHoare p env
         [selfRef ↦ ⟨Poseidon2Tp, self⟩]
-        («std-1.0.0-beta.14::hash::poseidon2::Poseidon2::squeeze».call h![] h![selfRef])
+        («std-1.0.0-beta.25::hash::poseidon2::Poseidon2::squeeze».call h![] h![selfRef])
         (fun r => [selfRef ↦ ⟨Poseidon2Tp, outSelf⟩] ⋆ ⟦r = out⟧) := by
   rcases self with ⟨cache, state, cacheSize, squeezeMode, unit0⟩
   simp [squeezeRepr?, reprToSponge, Crypto.Poseidon2.Sponge.squeeze?,
@@ -684,7 +684,7 @@ theorem hash_internal_spec {p}
         inLen.toNat
         isVariableLength) = some out)
     : STHoare p env ⟦⟧
-        («std-1.0.0-beta.14::hash::poseidon2::Poseidon2::hash_internal».call h![N]
+        («std-1.0.0-beta.25::hash::poseidon2::Poseidon2::hash_internal».call h![N]
           h![input, inLen, isVariableLength])
         (fun r => r = out) := by
   enter_decl
@@ -762,7 +762,7 @@ theorem hash_spec {p}
         messageSize.toNat
         (messageSize ≠ N) = some out)
     : STHoare p env ⟦⟧
-        («std-1.0.0-beta.14::hash::poseidon2::Poseidon2::hash».call h![N]
+        («std-1.0.0-beta.25::hash::poseidon2::Poseidon2::hash».call h![N]
           h![input, messageSize])
         (fun r => r = out) := by
   enter_decl
@@ -774,7 +774,7 @@ theorem hasher_write_spec {p selfRef}
     {input : Fp p}
     : STHoare p env
         [selfRef ↦ ⟨Poseidon2HasherTp, mkPoseidon2HasherRepr inputs⟩]
-        («std-1.0.0-beta.14::hash::Hasher».write h![] Poseidon2HasherTp h![] h![]
+        («std-1.0.0-beta.25::hash::Hasher».write h![] Poseidon2HasherTp h![] h![]
           h![selfRef, input])
         (fun _ => [selfRef ↦ ⟨Poseidon2HasherTp, mkPoseidon2HasherRepr (inputs ++ [input])⟩]) := by
   resolve_trait
@@ -789,7 +789,7 @@ theorem hasher_finish_spec {p}
         inputs.length
         false = some out)
     : STHoare p env ⟦⟧
-        («std-1.0.0-beta.14::hash::Hasher».finish h![] Poseidon2HasherTp h![] h![]
+        («std-1.0.0-beta.25::hash::Hasher».finish h![] Poseidon2HasherTp h![] h![]
           h![mkPoseidon2HasherRepr inputs])
         (fun r => r = out) := by
   resolve_trait

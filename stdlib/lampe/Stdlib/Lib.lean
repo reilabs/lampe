@@ -1,9 +1,9 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Lib
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 
 set_option maxHeartbeats 800000 in
 /--
@@ -13,7 +13,7 @@ to step through print calls when verifying your programs.
 -/
 theorem println_spec {p T a}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::println».call h![T] h![a])
+    («std-1.0.0-beta.25::println».call h![T] h![a])
     (fun r => r = ()) := by
   enter_decl
   step_as (⟦⟧) (fun r => r = ())
@@ -32,7 +32,7 @@ to step through print calls when verifying your programs.
 -/
 theorem print_spec {p T a}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::print».call h![T] h![a])
+    («std-1.0.0-beta.25::print».call h![T] h![a])
     (fun r => r = ()) := by
   enter_decl
   step_as (⟦⟧) (fun r => r = ())

@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 import Stdlib.EmbeddedCurveOps
 import Stdlib.Field.Bn254
@@ -6,7 +6,7 @@ import Stdlib.Hash.Mod
 
 namespace Lampe.Stdlib.Hash.Pedersen
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 open Lampe.Builtin (bytesToList)
 open Lampe.Crypto.EmbeddedCurve
 open Lampe.Crypto.Pedersen
@@ -71,7 +71,7 @@ theorem derive_generators_spec {p} {N M : U 32}
     {domainBytes : Tp.denote p ((Tp.u 8).array M)}
     {startIdx : U 32} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::derive_generators».call h![N, M]
+      («std-1.0.0-beta.25::hash::derive_generators».call h![N, M]
         h![domainBytes, startIdx])
       (fun r =>
         r = derivePedersenGenerators p
@@ -118,7 +118,7 @@ below. -/
 theorem from_field_unsafe_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Fp p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::from_field_unsafe».call h![] h![scalar])
+      («std-1.0.0-beta.25::hash::from_field_unsafe».call h![] h![scalar])
       (fun r =>
         ∃∃ xlo xhi,
           r = Scalar.mk xlo xhi ∧
@@ -223,7 +223,7 @@ private theorem pedersen_commitment_with_separator_spec {p N}
     {input : Tp.denote p (Tp.field.array N)}
     {separator : U 32} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::pedersen_commitment_with_separator».call h![N]
+      («std-1.0.0-beta.25::hash::pedersen_commitment_with_separator».call h![N]
         h![input, separator])
       (fun r =>
         ∃∃ Ss : List.Vector (Scalar.denote p) N.toNat,
@@ -325,7 +325,7 @@ theorem pedersen_commitment_with_separator_spec_canonical {p N}
     {input : Tp.denote p (Tp.field.array N)}
     {separator : U 32} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::pedersen_commitment_with_separator».call h![N]
+      («std-1.0.0-beta.25::hash::pedersen_commitment_with_separator».call h![N]
         h![input, separator])
       (fun r =>
         r = pedersenCommitment p defaultDomainBytes input separator.toNat) := by
@@ -370,7 +370,7 @@ private theorem pedersen_hash_with_separator_spec {p N}
     {input : Tp.denote p (Tp.field.array N)}
     {separator : U 32} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::pedersen_hash_with_separator».call h![N]
+      («std-1.0.0-beta.25::hash::pedersen_hash_with_separator».call h![N]
         h![input, separator])
       (fun r =>
         ∃∃ Ss : List.Vector (Scalar.denote p) N.toNat,
@@ -502,7 +502,7 @@ private theorem pedersen_hash_with_separator_spec {p N}
     simp
   set lenScalar : Tp.denote p Scalar.type :=
     HList.toTuple p h![(Builtin.CastTp.cast N : Fp p), (Builtin.CastTp.cast ↑(0 : Fp p) : Fp p)]
-      (some «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar».name) with hLenScalar_def
+      (some «std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurveScalar».name) with hLenScalar_def
   set lenGen : Tp.denote p Point.type :=
     length_generator.get ⟨BitVec.toNat ↑(0 : U 32), hLgBdd⟩ with hLenGen_def
   set sFull : Tp.denote p (Scalar.type.array (N + 1)) :=
@@ -697,7 +697,7 @@ theorem pedersen_hash_with_separator_spec_canonical {p N}
     {input : Tp.denote p (Tp.field.array N)}
     {separator : U 32} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::pedersen_hash_with_separator».call h![N]
+      («std-1.0.0-beta.25::hash::pedersen_hash_with_separator».call h![N]
         h![input, separator])
       (fun r =>
         r = pedersenHash p defaultDomainBytes input separator.toNat) := by
@@ -733,7 +733,7 @@ theorem pedersen_commitment_spec_canonical {p N}
     [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::pedersen_commitment».call h![N] h![input])
+      («std-1.0.0-beta.25::hash::pedersen_commitment».call h![N] h![input])
       (fun r =>
         r = pedersenCommitment p defaultDomainBytes input 0) := by
   enter_decl
@@ -748,7 +748,7 @@ theorem pedersen_hash_spec_canonical {p N}
     [Lampe.Crypto.Bn254.Prime p]
     {input : Tp.denote p (Tp.field.array N)} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::pedersen_hash».call h![N] h![input])
+      («std-1.0.0-beta.25::hash::pedersen_hash».call h![N] h![input])
       (fun r =>
         r = pedersenHash p defaultDomainBytes input 0) := by
   enter_decl

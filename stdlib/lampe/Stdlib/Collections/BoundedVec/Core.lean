@@ -1,9 +1,9 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Collections.BoundedVec
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 
 /-!
 Core semantic interface for Noir `collections::bounded_vec::BoundedVec`.
@@ -17,7 +17,7 @@ This file intentionally contains no Hoare triples and no "constructor-style" upd
 -/
 
 abbrev bvTp (T : Tp) (MaxLen : U 32) : Tp :=
-  «std-1.0.0-beta.14::collections::bounded_vec::BoundedVec».tp h![T, MaxLen]
+  «std-1.0.0-beta.25::collections::bounded_vec::BoundedVec».tp h![T, MaxLen]
 
 abbrev Repr (p : Prime) (T : Tp) (MaxLen : U 32) : Type :=
   Tp.denote p (bvTp T MaxLen)
@@ -369,6 +369,20 @@ lemma embed_eq_dropLast_of_pop_update {p T MaxLen} {v v' : Repr p T MaxLen}
   rw [embed_dropLast_eq_take_pred hb hnonempty]
   simp only [embed, active, hstorage, List.Vector.toList_set, List.take_set]
   conv_lhs => rw [List.set_eq_of_length_le (by simp [hlen])]
+  have hv : (len v').toNat = (len v - 1).toNat := by simp [hlen]
+  rw [hv, htoNat_sub]
+
+/-- Variant of `embed_eq_dropLast_of_pop_update` for beta.25's `pop`, which no
+longer zeroes the popped slot: the storage is unchanged. -/
+lemma embed_eq_dropLast_of_pop_update' {p T MaxLen} {v v' : Repr p T MaxLen}
+    (hb : bounded v) (hnonempty : embed v ≠ [])
+    (hnonzero : (0 : U 32) < len v)
+    (hlen : len v' = len v - 1)
+    (hstorage : storage v' = storage v) :
+    embed v' = (embed v).dropLast := by
+  have htoNat_sub := toNat_len_sub_one (v := v) hnonzero
+  rw [embed_dropLast_eq_take_pred hb hnonempty]
+  simp only [embed, active, hstorage]
   have hv : (len v').toNat = (len v - 1).toNat := by simp [hlen]
   rw [hv, htoNat_sub]
 

@@ -1,6 +1,6 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Collections.Umap
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
