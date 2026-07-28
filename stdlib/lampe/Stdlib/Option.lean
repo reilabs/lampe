@@ -76,21 +76,26 @@ theorem some_spec {p T v} : STHoare p env ⟦⟧ («std-1.0.0-beta.25::option::O
   subst_vars
   rfl
 
-theorem is_none_spec {p T v} : STHoare p env ⟦⟧
-    («std-1.0.0-beta.25::option::Option::is_none».call h![T] h![v])
-    (fun r => r = (toOption v).isNone) := by
+-- Note: since beta.25, `is_none` and `is_some` take `&self`, so their specs are ref-style.
+theorem is_none_spec {p T v}
+    {selfRef : Ref («std-1.0.0-beta.25::option::Option».tp h![T])} :
+    STHoare p env [selfRef ↦ ⟨«std-1.0.0-beta.25::option::Option».tp h![T], v⟩]
+      («std-1.0.0-beta.25::option::Option::is_none».call h![T] h![selfRef])
+      (fun r => [selfRef ↦ ⟨«std-1.0.0-beta.25::option::Option».tp h![T], v⟩] ⋆
+        ⟦r = (toOption v).isNone⟧) := by
   enter_decl
   steps
-  subst_vars
-  simp
+  simp_all [option_fst_eq_toOption_isSome, Option.not_isSome]
 
-theorem is_some_spec {p T v} : STHoare p env ⟦⟧
-    («std-1.0.0-beta.25::option::Option::is_some».call h![T] h![v])
-    (fun r => r = (toOption v).isSome) := by
+theorem is_some_spec {p T v}
+    {selfRef : Ref («std-1.0.0-beta.25::option::Option».tp h![T])} :
+    STHoare p env [selfRef ↦ ⟨«std-1.0.0-beta.25::option::Option».tp h![T], v⟩]
+      («std-1.0.0-beta.25::option::Option::is_some».call h![T] h![selfRef])
+      (fun r => [selfRef ↦ ⟨«std-1.0.0-beta.25::option::Option».tp h![T], v⟩] ⋆
+        ⟦r = (toOption v).isSome⟧) := by
   enter_decl
   steps
-  subst_vars
-  simp
+  simp_all [option_fst_eq_toOption_isSome]
 
 theorem unwrap_spec {p T v} : STHoare p env ⟦⟧
     («std-1.0.0-beta.25::option::Option::unwrap».call h![T] h![v])
@@ -363,6 +368,7 @@ theorem or_else_pure_spec {p T E P self default default_b}
     subst_vars
     simp_all
 
+set_option maxHeartbeats 1000000 in
 theorem xor_spec {p T self other}
   : STHoare p env ⟦⟧
     («std-1.0.0-beta.25::option::Option::xor».call h![T] h![self, other])
@@ -409,6 +415,7 @@ theorem filter_none_spec {p T E self pred}
   steps [none_spec]
   simp_all
 
+set_option maxHeartbeats 1000000 in
 theorem filter_some_spec {p T E P Q self pred pred_b}
     (self_is_some : (toOption self).isSome)
     (pred_f : STHoare p env P (pred_b h![(toOption self).get self_is_some]) Q)
@@ -692,7 +699,7 @@ theorem expect_spec {p T N MT v message}
   enter_decl
   steps [is_some_spec]
   subst_vars
-  simp_all
+  exact option_snd_eq_toOption_get_of_isSome v_is_some
 
 theorem unwrap_or_spec {p T v default} :
     STHoare p env ⟦⟧

@@ -23,11 +23,13 @@ theorem poseidon2_permutation4_spec {p}
     {input : Tp.denote p (Tp.field.array (4 : U 32))}
     : STHoare p env ⟦⟧
         («std-1.0.0-beta.25::hash::poseidon2_permutation».call h![(4 : U 32)]
-          h![input, (4 : U 32)])
+          h![input])
         (fun r => r = Lampe.Crypto.Poseidon2.noirPermutation4 input) := by
   enter_decl
-  steps [Lampe.Stdlib.Hash.Poseidon2.poseidon2_permutation_builtin_spec]
-  assumption
+  steps [Lampe.Stdlib.Hash.Poseidon2.config_state_size_spec,
+    Lampe.Stdlib.Hash.Poseidon2.poseidon2_permutation_builtin_spec]
+  · assumption
+  all_goals simp_all
 
 /-- Spec for the `sha256_compression` foreign builtin: returns the
 concrete `Crypto.Sha256.compressOne` round-function output for the
@@ -138,21 +140,7 @@ theorem field_hash_spec {p H stateRef}
   resolve_trait
   steps [h_write_spec]
 
-theorem u1_hash_spec {p H stateRef}
-    {self : U 1}
-    {state final : Tp.denote p H}
-    {h_hasher : Hasher.hasImpl env H}
-    (h_write_spec : STHoare p env
-      [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
-        h![stateRef, @Builtin.CastTp.cast (.u 1) .field _ p self])
-      (fun _ => [stateRef ↦ ⟨H, final⟩]))
-    : STHoare p env
-        [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.25::hash::Hash».hash h![] (.u 1) h![] h![H] h![self, stateRef])
-        (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
-  resolve_trait
-  steps [h_write_spec]
+-- Note: `u1` was removed in Noir 1.0.0-beta.25, so the corresponding `u1_hash_spec` is gone.
 
 theorem u8_hash_spec {p H stateRef}
     {self : U 8}

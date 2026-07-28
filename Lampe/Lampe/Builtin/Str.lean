@@ -34,8 +34,24 @@ number of bytes it contains, not the number of characters (regardless of the enc
 
 In Noir, this corresponds to `from<let N: u32>(bytes: [u8, N]) -> str<N>`.
 -/
-def arrayAsStrUnchecked := newGenericTotalPureBuiltin 
+def arrayAsStrUnchecked := newGenericTotalPureBuiltin
   (fun n => ⟨[(Tp.u 8).array n], (.str n)⟩)
   (fun _ h![a] => arrayAsStr! a)
+
+/--
+Defines the construction of a format string from its literal template and the values interpolated
+into it.
+
+Lampe models format strings as their literal template text (`FormatString len tps` is defeq to
+`String`), so this returns the template converted to a Lean string and ignores the interpolated
+values. The generic parameters are the template length `s`, the format string length `n`, the
+types of the interpolated values `argTps`, and the format string's argument tuple type `tp`.
+
+In Noir, this corresponds to the compiler-internal construction of `fmtstr<N, T>` literals.
+-/
+def mkFormatString := newGenericTotalPureBuiltin
+  (fun (a : U 32 × U 32 × List Tp × Tp) => ⟨.str a.1 :: a.2.2.1, .fmtStr a.2.1 a.2.2.2⟩)
+  (fun _ args => match args with
+    | .cons s _ => NoirStr.toString s)
 
 end Lampe.Builtin

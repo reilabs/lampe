@@ -95,102 +95,70 @@ private lemma strAsBytes_hash_length_eq {p} :
       (Lampe.NoirStr.of "pedersen_hash_length") = pedersenHashLengthBytes := by
   rfl
 
-/-! ### `from_field_unsafe` wrapper spec -/
+/-! ### `EmbeddedCurveScalar::from_field` wrapper spec
 
-/-- Spec for `std::hash::from_field_unsafe`. The body decomposes
-`scalar` into two field limbs `xlo, xhi` via the `decompose_hint`
-oracle and then enforces
+Since beta.25, `std::hash::from_field_unsafe` is gone: the Pedersen wrappers
+call `EmbeddedCurveScalar::from_field`, which decomposes through the *safe*
+`bn254::decompose`. The wrapper below restates `scalar_from_field_spec` in the
+limb-relation form (`fromFieldUnsafeRel`) that the loop invariants consume. -/
 
-```
-scalar = xlo + 2^128 * xhi                  -- limb decomposition
-(xhi, xlo) <ₗₑₓ (PHI, PLO)                  -- canonical-range
-```
+private theorem lift_mono' [LawfulHeap α] {P Q : Prop}
+    (h : P → Q) : (⟦P⟧ : SLP α) ⊢ ⟦Q⟧ := by
+  intro st hst; unfold SLP.lift at *; exact ⟨h hst.1, hst.2⟩
 
-where `PLO + 2^128 * PHI = p` is the BN254 scalar-field prime
-limb decomposition. The output `EmbeddedCurveScalar` is
-`Scalar.mk xlo xhi`.
+private lemma rel_of_val_decomp {p} [Lampe.Crypto.Bn254.Prime p]
+    {x lo hi : Fp p} (hlo : lo.val < Lampe.pow128)
+    (hval : x.val = lo.val + Lampe.pow128 * hi.val) :
+    x = lo + ((pow128 : Nat) : Fp p) * hi ∧
+      ((hi = ((phi : Nat) : Fp p) ∧ lo.val < plo) ∨ hi.val < phi) := by
+  have hxlt : x.val < p.natVal := ZMod.val_lt x
+  have hp : p.natVal = plo + Lampe.pow128 * phi :=
+    Lampe.Crypto.Bn254.Prime.natVal_eq_limbs
+  constructor
+  · have hcast := congrArg (fun n : ℕ => ((n : ℕ) : Fp p)) hval
+    push_cast at hcast
+    simpa [ZMod.natCast_val, ZMod.cast_id] using hcast
+  · by_cases hc : hi.val < phi
+    · exact Or.inr hc
+    · left
+      have hge : phi ≤ hi.val := Nat.le_of_not_lt hc
+      have hplo_lt : plo < Lampe.pow128 := by
+        unfold plo Lampe.Crypto.Bn254.plo Lampe.pow128
+        decide
+      have h1 : Lampe.pow128 * hi.val ≤ x.val := by omega
+      have h2 : Lampe.pow128 * hi.val < Lampe.pow128 * (phi + 1) := by
+        have : Lampe.pow128 * (phi + 1) = Lampe.pow128 * phi + Lampe.pow128 := by ring
+        omega
+      have hhi_le : hi.val < phi + 1 := Nat.lt_of_mul_lt_mul_left h2
+      have hhi_eq : hi.val = phi := by omega
+      rw [hhi_eq] at hval
+      refine ⟨?_, by omega⟩
+      have := congrArg (fun n : ℕ => ((n : ℕ) : Fp p)) hhi_eq
+      simpa [ZMod.natCast_val, ZMod.natCast_zmod_val] using this
 
-Unlike `decompose`, `from_field_unsafe` does **not** call
-`assert_max_bit_size<128>` on the limbs, so the per-limb bounds
-`xlo.val, xhi.val < 2^128` are *not* part of the postcondition;
-the constraint enforced is the canonical-range disjunction
-below. -/
-theorem from_field_unsafe_spec {p} [Lampe.Crypto.Bn254.Prime p]
+private theorem from_field_rel_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Fp p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.25::hash::from_field_unsafe».call h![] h![scalar])
+      («std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurveScalar::from_field».call
+        h![] h![scalar])
       (fun r =>
         ∃∃ xlo xhi,
           r = Scalar.mk xlo xhi ∧
-          scalar = xlo + (pow128 : Fp p) * xhi ∧
-          ((xhi = (phi : Fp p) ∧ xlo.val < plo) ∨ xhi.val < phi)) := by
-  enter_decl
-  apply STHoare.letIn_intro
-    (Q := fun (_ : Tp.denote p (Tp.tuple none [Tp.field, Tp.field])) => ⟦⟧)
-  · steps [Lampe.Stdlib.Field.Bn254.decompose_hint_intro (p := p)]
-  intro xlo_xhi
-  steps [Lampe.Stdlib.Field.Bn254.two_pow_128_spec (p := p),
-    Lampe.Stdlib.Field.Bn254.phi_spec (p := p),
-    Lampe.Stdlib.Field.Bn254.plo_spec (p := p),
-    Lampe.Stdlib.Field.Bn254.assert_lt_intro (p := p)]
-  rename_i hxlo hxhi _ hassert
-  -- Bind the ite result and case-split on the condition.
-  apply STHoare.letIn_intro
-    (Q := fun (v : Tp.denote p (Tp.tuple none [Tp.field, Tp.field])) =>
-      ⟦v = (if decide (xhi = (phi : Fp p)) then (xlo, (plo : Fp p), ())
-            else (xhi, (phi : Fp p), ()))⟧)
-  · -- Prove the ite produces the expected tuple.
-    apply STHoare.ite_intro
-    · intro h_eq
-      steps [Lampe.Stdlib.Field.Bn254.plo_spec (p := p)]
-      subst_vars
-      simp_all
-    · intro h_ne
-      steps [Lampe.Stdlib.Field.Bn254.phi_spec (p := p)]
-      subst_vars
-      simp_all
-  -- Bridge lemma: `(plo : Fp p).val = plo` under `[Bn254.Prime p]`. Used by the xhi=phi branch via aesop.
-  have hplo_val : ((plo : Nat) : Fp p).val = plo := by
-    have hplo_lt : (plo : Nat) < p.natVal := by
-      have : (plo : Nat) < Lampe.pow128 := by decide
-      linarith [this, Lampe.Crypto.Bn254.pow128_lt_prime (p := p)]
-    simpa using (ZMod.val_natCast_of_lt hplo_lt)
-  have hphi_val : ((phi : Nat) : Fp p).val = phi := by
-    have hphi_lt : (phi : Nat) < p.natVal := by
-      have : (phi : Nat) < Lampe.pow128 := by decide
-      linarith [this, Lampe.Crypto.Bn254.pow128_lt_prime (p := p)]
-    simpa using (ZMod.val_natCast_of_lt hphi_lt)
-  intro v
-  -- Discharge the ⟦ v = ... ⟧ pure precondition and split on the bool.
-  by_cases h_xhi : xhi = (phi : Fp p)
-  · -- Branch: xhi = phi, so v = (xlo, plo, ()). After assert_lt(xlo, plo) we get xlo.val < plo.
-    have h_xhi_eq : decide (xhi = (phi : Fp p)) = true := by simp [h_xhi]
-    simp only [h_xhi_eq, if_true] at *
-    steps [Lampe.Stdlib.Field.Bn254.assert_lt_intro (p := p)]
-    simp [SLP.exists_pure] at *
-    sl
-    aesop
-  · -- Branch: xhi ≠ phi, so v = (xhi, phi, ()). After assert_lt(xhi, phi) we get xhi.val < phi.
-    have h_xhi_eq : decide (xhi = (phi : Fp p)) = false := by simp [h_xhi]
-    rw [h_xhi_eq] at *
-    simp only [Bool.false_eq_true, if_false] at *
-    steps [Lampe.Stdlib.Field.Bn254.assert_lt_intro (p := p)]
-    rename_i _ hv_eq ha_eq hb_eq hab vret hret
-    have ha_xhi : a = xhi := by rw [ha_eq, hv_eq]; rfl
-    have hb_phi : b = ((phi : Nat) : Fp p) := by rw [hb_eq, hv_eq]; rfl
-    have h_xhi_val_lt : xhi.val < phi := by
-      have := hab
-      rw [ha_xhi, hb_phi] at this
-      simpa [hphi_val] using this
-    have hassert_eq : scalar = xlo + ((Lampe.pow128 : Nat) : Fp p) * xhi := by
-      simpa [decide_eq_true_eq] using hassert
-    have hret_mk : vret = Scalar.mk xlo xhi := by
-      simpa [Scalar.mk, HList.toTuple] using hret
-    simp only [SLP.exists_pure]
-    sl
-    refine ⟨xhi, hret_mk, ?_, Or.inr h_xhi_val_lt⟩
-    show scalar = xlo + ((Lampe.pow128 : Nat) : Fp p) * xhi
-    exact hassert_eq
+          scalar = xlo + ((pow128 : Nat) : Fp p) * xhi ∧
+          ((xhi = ((phi : Nat) : Fp p) ∧ xlo.val < plo) ∨ xhi.val < phi)) := by
+  apply STHoare.consequence SLP.entails_self ?_
+    (scalar_from_field_spec (p := p) (scalar := scalar))
+  intro r
+  refine SLP.star_mono_r ?_
+  apply SLP.exists_intro_l
+  intro lo
+  apply SLP.exists_intro_l
+  intro hi
+  refine SLP.exists_intro_r (a := lo) (SLP.exists_intro_r (a := hi) (lift_mono' ?_))
+  rintro ⟨hmk, hlo, _hhi, hval, _hcanon⟩
+  obtain ⟨hfp, hdisj⟩ := rel_of_val_decomp (x := scalar) hlo hval
+  exact ⟨hmk, hfp, hdisj⟩
+
 
 /-! ### `pedersen_commitment_with_separator` substantive spec -/
 
@@ -254,7 +222,7 @@ private theorem pedersen_commitment_with_separator_spec {p N}
     simp at hj
   · simp
   · intro i hlo hhi
-    steps [from_field_unsafe_spec (p := p)]
+    steps [from_field_rel_spec (p := p)]
     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
       zero_le, Builtin.CastTp.cast,
       BitVec.truncate_eq_setWidth, BitVec.setWidth_eq, BitVec.toNat_ofNatLT,
@@ -435,7 +403,7 @@ private theorem pedersen_hash_with_separator_spec {p N}
     simp at hj
   · simp
   · intro i hlo hhi
-    steps [from_field_unsafe_spec (p := p)]
+    steps [from_field_rel_spec (p := p)]
     sl
     rename_i s_prev g_prev hPrefix hCast1 xlo xhi hRes hModS hCast2 hModG _
     obtain ⟨h_mk, h_scalar, h_range⟩ := hRes
