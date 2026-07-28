@@ -150,11 +150,12 @@ theorem sbox_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils::sbox».call h
   all_goals decide
 
 theorem sgn0_intro : STHoare lp env ⟦⟧ («Merkle-1.0.0::utils::sgn0».call h![] h![input])
-    fun (output: BitVec 1) => output = input.val % 2 := by
+    fun (output : Bool) => output = ((@Builtin.CastTp.cast Tp.field (Tp.u 8) _ lp input) % 2 == 1) := by
   enter_decl
   simp only [«Merkle-1.0.0::utils::sgn0»]
   steps
-  simp_all
+  subst_vars
+  rfl
 
 theorem as_array_intro input (hi : input.length = 32) : STHoare lp env ⟦⟧
     («Merkle-1.0.0::utils::as_array».call h![] h![input])
