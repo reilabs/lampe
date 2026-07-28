@@ -41,6 +41,18 @@ mod tests {
         Project,
     };
 
+    /// Runs `f` on a thread with a stack large enough for the Noir
+    /// elaborator's recursion, which exceeds the default test-thread stack in
+    /// debug builds.
+    fn with_large_stack<R: Send + 'static>(f: impl FnOnce() -> R + Send + 'static) -> R {
+        std::thread::Builder::new()
+            .stack_size(16 * 1024 * 1024)
+            .spawn(f)
+            .expect("spawning large-stack thread")
+            .join()
+            .expect("joining large-stack thread")
+    }
+
     /// Set up a mock Noir project for extraction
     fn set_up_project(main_source: &str) -> std::io::Result<(TempDir, Project)> {
         let temp_dir = tempdir().expect("creating temp_dir");
@@ -68,8 +80,15 @@ authors = [""]
 
     /// Returns a tuple of warnings and a string representation of the extracted
     /// files
-    #[expect(clippy::format_push_string)]
     fn display_extraction_results(main_source: &str) -> std::io::Result<(Vec<String>, String)> {
+        let main_source = main_source.to_string();
+        with_large_stack(move || display_extraction_results_inner(&main_source))
+    }
+
+    #[expect(clippy::format_push_string)]
+    fn display_extraction_results_inner(
+        main_source: &str,
+    ) -> std::io::Result<(Vec<String>, String)> {
         let (temp_dir, mock_project) = set_up_project(main_source)?;
 
         let warnings = mock_project
@@ -103,6 +122,11 @@ authors = [""]
     /// Returns the generated crate data for testing the generator instead of
     /// the writer.
     fn get_crate_data(main_source: &str) -> Result<Crate, crate::Error> {
+        let main_source = main_source.to_string();
+        with_large_stack(move || get_crate_data_inner(&main_source))
+    }
+
+    fn get_crate_data_inner(main_source: &str) -> Result<Crate, crate::Error> {
         let (temp_dir, mock_project) = set_up_project(main_source).unwrap();
 
         // Prevent the temp directory from being deleted so that we can read the

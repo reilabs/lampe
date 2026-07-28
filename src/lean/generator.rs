@@ -3968,6 +3968,7 @@ fn type_is_variable_with_id(typ: &NoirType, id: TypeVariableId) -> bool {
     }
 }
 
+#[must_use]
 pub fn sanitize_generic_name(name: &str) -> String {
     let name = name.strip_prefix("Self::").unwrap_or(name);
     name.replace("::", "_").replace(' ', "_").replace(['<', '>'], "")
