@@ -24,8 +24,8 @@ pub fn sbox(v: u8) -> u8 {
 }
 
 // NOTE: adapted from stdlib
-pub fn sgn0(self: Field) -> u1 {
-    self as u1
+pub fn sgn0(self: Field) -> bool {
+    (self as u8) % 2 == 1
 }
 
 // NOTE: adapted from stdlib

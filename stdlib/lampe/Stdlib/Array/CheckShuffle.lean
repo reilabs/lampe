@@ -1,10 +1,10 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 import Stdlib.Cmp
 
 namespace Lampe.Stdlib.Array.CheckShuffle
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 
 lemma get_cast : ∀{M}{α} {l : List α}{h : M = List.length l} {i : Fin M}, l.get (h ▸ i) = l[i.val]'(by cases i; apply lt_of_lt_of_eq (by assumption) h) := by
   intros
@@ -130,17 +130,20 @@ lemma List.perm_of_index_bijection
     assumption
 
 lemma get_index_spec: STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::array::check_shuffle::__get_index».call h![N] h![indices, idx])
+    («std-1.0.0-beta.25::array::check_shuffle::__get_index».call h![N] h![indices, idx])
     (fun r => True) := by
   enter_decl
   steps
 
 theorem check_shuffle_spec
+    {lhsRef rhsRef : Ref (.array T N)}
+    {lhs rhs : Tp.denote p (.array T N)}
     (t_eq : Cmp.Eq.hasImpl env T)
     (t_eq_spec : ∀a b, STHoare p env ⟦⟧ (Cmp.Eq.eq h![] T h![] h![] h![a, b]) fun r: Bool => ⟦r ↔ a = b⟧)
-  : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::array::check_shuffle::check_shuffle».call h![T, N] h![lhs, rhs])
-    (fun _ => List.Perm lhs.toList rhs.toList) := by
+  : STHoare p env ([lhsRef ↦ ⟨.array T N, lhs⟩] ⋆ [rhsRef ↦ ⟨.array T N, rhs⟩])
+    («std-1.0.0-beta.25::array::check_shuffle::check_shuffle».call h![T, N] h![lhsRef, rhsRef])
+    (fun _ => [lhsRef ↦ ⟨.array T N, lhs⟩] ⋆ [rhsRef ↦ ⟨.array T N, rhs⟩] ⋆
+      ⟦List.Perm lhs.toList rhs.toList⟧) := by
   enter_decl
   steps
   step_as (⟦⟧) (fun _ => ⟦⟧)
@@ -166,10 +169,12 @@ theorem check_shuffle_spec
 
   rename ∀_, ∃_, _ = _ => shuffle_indices_surj
 
-  loop_inv nat fun i _ ilt => ∀(k : Fin i), lhs.get (k.castLE ilt) = rhs[(shuffle_indices.get $ k.castLE ilt).toNat]?
-  · intro k
+  loop_inv nat fun i _ ilt => [lhsRef ↦ ⟨.array T N, lhs⟩] ⋆ [rhsRef ↦ ⟨.array T N, rhs⟩] ⋆
+    ⟦∀(k : Fin i), lhs.get (k.castLE ilt) = rhs[(shuffle_indices.get $ k.castLE ilt).toNat]?⟧
+  · sl
+    intro k
     fin_cases k
-  · simp
+    simp
   · intro i _ ilt
     steps [t_eq_spec]
 
@@ -231,9 +236,12 @@ theorem check_shuffle_spec
 /--
 Shows that the shuffle check cannot succeed with the given inputs.
 -/
-example {t_eq : Cmp.Eq.hasImpl env (.u 8)} :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::array::check_shuffle::check_shuffle».call h![.u 8, 3] h![⟨[1, 2, 3], by simp⟩, ⟨[1, 2, 2], by simp⟩])
+example {t_eq : Cmp.Eq.hasImpl env (.u 8)}
+    {lhsRef rhsRef : Ref (.array (.u 8) 3)} :
+    STHoare p env
+      ([lhsRef ↦ ⟨.array (.u 8) 3, ⟨[1, 2, 3], by simp⟩⟩] ⋆
+        [rhsRef ↦ ⟨.array (.u 8) 3, ⟨[1, 2, 2], by simp⟩⟩])
+      («std-1.0.0-beta.25::array::check_shuffle::check_shuffle».call h![.u 8, 3] h![lhsRef, rhsRef])
       (fun _ => False) := by
   steps [check_shuffle_spec]
   · simp_all

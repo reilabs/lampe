@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 import Stdlib.Field.Basic
 
@@ -19,14 +19,14 @@ namespace Lampe.Stdlib.Field.Bn254
 
 open Lampe
 open Lampe.Crypto
-open «std-1.0.0-beta.14» (env)
+open «std-1.0.0-beta.25» (env)
 open Lampe (pow128)
 open Lampe.Crypto.Bn254 (plo phi pow128_lt_prime pow128_val
   val_add_one_of_lt limbs_gt_of_hi_gt sub_val_gt_pow128_of_lt)
 
-abbrev PLO := «std-1.0.0-beta.14::field::bn254::PLO»
-abbrev PHI := «std-1.0.0-beta.14::field::bn254::PHI»
-abbrev TWO_POW_128 := «std-1.0.0-beta.14::field::bn254::TWO_POW_128»
+abbrev PLO := «std-1.0.0-beta.25::field::bn254::PLO»
+abbrev PHI := «std-1.0.0-beta.25::field::bn254::PHI»
+abbrev TWO_POW_128 := «std-1.0.0-beta.25::field::bn254::TWO_POW_128»
 
 theorem plo_spec {p} :
     STHoare p env ⟦⟧
@@ -58,7 +58,7 @@ theorem two_pow_128_spec {p} :
 -- FIXME: steps requires this even tho it's an empty postcondition
 theorem lte_hint_intro {p a b} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::bn254::lte_hint».call h![] h![a, b])
+      («std-1.0.0-beta.25::field::bn254::lte_hint».call h![] h![a, b])
       (fun _ => ⟦⟧) := by
   enter_decl
   steps
@@ -66,14 +66,14 @@ theorem lte_hint_intro {p a b} :
 -- FIXME: steps requires this even tho it's an empty postcondition
 theorem decompose_hint_intro {p x} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::bn254::decompose_hint».call h![] h![x])
+      («std-1.0.0-beta.25::field::bn254::decompose_hint».call h![] h![x])
       (fun _ => ⟦⟧) := by
   enter_decl
   steps
 
 theorem assert_gt_limbs_intro {p a b} [Prime.BitsGT p 129] :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::bn254::assert_gt_limbs».call h![] h![a, b])
+      («std-1.0.0-beta.25::field::bn254::assert_gt_limbs».call h![] h![a, b])
       (fun _ => ⟦
         (a.1.val < pow128 ∧ a.2.1.val < pow128 ∧ b.1.val < pow128 ∧ b.2.1.val < pow128) →
           a.1.val + pow128 * a.2.1.val > b.1.val + pow128 * b.2.1.val
@@ -147,7 +147,7 @@ theorem assert_gt_limbs_intro {p a b} [Prime.BitsGT p 129] :
 
 theorem decompose_intro {p x} [Bn254.Prime p] :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::bn254::decompose».call h![] h![x])
+      («std-1.0.0-beta.25::field::bn254::decompose».call h![] h![x])
       (fun r =>
         ∃∃ xlo xhi,
           r = (xlo, xhi, ()) ∧
@@ -225,7 +225,7 @@ theorem decompose_intro {p x} [Bn254.Prime p] :
 
 theorem assert_gt_intro {p a b} [Bn254.Prime p] :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::bn254::assert_gt».call h![] h![a, b])
+      («std-1.0.0-beta.25::field::bn254::assert_gt».call h![] h![a, b])
       (fun _ => a.val > b.val) := by
   enter_decl
   steps
@@ -249,7 +249,7 @@ theorem assert_gt_intro {p a b} [Bn254.Prime p] :
 
 theorem assert_lt_intro {p a b} [Bn254.Prime p] :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::bn254::assert_lt».call h![] h![a, b])
+      («std-1.0.0-beta.25::field::bn254::assert_lt».call h![] h![a, b])
       (fun _ => a.val < b.val) := by
   enter_decl
   steps [assert_gt_intro (p := p)]
@@ -257,14 +257,14 @@ theorem assert_lt_intro {p a b} [Bn254.Prime p] :
 
 theorem field_less_than_intro {p x y} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::field_less_than».call h![] h![x, y])
+      («std-1.0.0-beta.25::field::field_less_than».call h![] h![x, y])
       (fun _ => ⟦⟧) := by
   enter_decl
   steps
 
 theorem gt_intro {p a b} [Bn254.Prime p] :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::bn254::gt».call h![] h![a, b])
+      («std-1.0.0-beta.25::field::bn254::gt».call h![] h![a, b])
       (fun r => r = decide (a.val > b.val)) := by
   enter_decl
   steps
@@ -297,7 +297,7 @@ theorem gt_intro {p a b} [Bn254.Prime p] :
 
 theorem lt_intro {p a b} [Bn254.Prime p] :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::field::bn254::lt».call h![] h![a, b])
+      («std-1.0.0-beta.25::field::bn254::lt».call h![] h![a, b])
       (fun r => r = decide (a.val < b.val)) := by
   enter_decl
   steps [gt_intro (p := p)]

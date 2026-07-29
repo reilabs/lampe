@@ -217,6 +217,7 @@ fn extract_project(
     let report_errors = |diagnostics: &[CustomDiagnostic]| {
         noirc_errors::reporter::report_all(
             project.nargo_file_manager.as_file_map(),
+            &noirc_errors::function_locations::FunctionLocations::default(),
             diagnostics,
             false,
             false,

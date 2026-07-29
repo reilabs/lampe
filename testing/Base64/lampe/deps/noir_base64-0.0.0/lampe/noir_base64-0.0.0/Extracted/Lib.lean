@@ -21,9 +21,9 @@ noir_def «noir_base64-0.0.0»::encode_and_decode<>() -> Unit := {
   let input = "The quick brown fox jumps over the lazy dog, while 42 ravens perch atop a rusty mailbox.";
   let base64_encoded = "VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZywgd2hpbGUgNDIgcmF2ZW5zIHBlcmNoIGF0b3AgYSBydXN0eSBtYWlsYm94Lg==";
   let encoded = («noir_base64-0.0.0»::encoder::Base64EncodeBE::encode<88: u32> as λ(Array<u8, 88: u32>) -> Array<u8, 120: u32>)((#_strAsBytes returning Array<u8, 88: u32>)(input));
-  (#_assert returning Unit)(((Array<u8, 120: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 120: u32>, Array<u8, 120: u32>) -> bool)(encoded, (#_strAsBytes returning Array<u8, 120: u32>)(base64_encoded)));
+  (#_assert returning Unit)(((Array<u8, 120: u32> as «std-1.0.0-beta.25»::cmp::Eq<>)::eq<> as λ(Array<u8, 120: u32>, Array<u8, 120: u32>) -> bool)(encoded, (#_strAsBytes returning Array<u8, 120: u32>)(base64_encoded)));
   let decoded = («noir_base64-0.0.0»::decoder::Base64DecodeBE::decode<120: u32, 88: u32> as λ(Array<u8, 120: u32>) -> Array<u8, 88: u32>)(encoded);
-  (#_assert returning Unit)(((Array<u8, 88: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 88: u32>, Array<u8, 88: u32>) -> bool)(decoded, (#_strAsBytes returning Array<u8, 88: u32>)(input)));
+  (#_assert returning Unit)(((Array<u8, 88: u32> as «std-1.0.0-beta.25»::cmp::Eq<>)::eq<> as λ(Array<u8, 88: u32>, Array<u8, 88: u32>) -> bool)(decoded, (#_strAsBytes returning Array<u8, 88: u32>)(input)));
   #_skip
 }
 
@@ -31,9 +31,9 @@ noir_def «noir_base64-0.0.0»::encode_and_decode_no_pad<>() -> Unit := {
   let input = "The quick brown fox jumps over the lazy dog, while 42 ravens perch atop a rusty mailbox.";
   let base64_encoded = "VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZywgd2hpbGUgNDIgcmF2ZW5zIHBlcmNoIGF0b3AgYSBydXN0eSBtYWlsYm94Lg";
   let encoded = («noir_base64-0.0.0»::encoder::Base64EncodeBENoPad::encode<88: u32> as λ(Array<u8, 88: u32>) -> Array<u8, 118: u32>)((#_strAsBytes returning Array<u8, 88: u32>)(input));
-  (#_assert returning Unit)(((Array<u8, 118: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 118: u32>, Array<u8, 118: u32>) -> bool)(encoded, (#_strAsBytes returning Array<u8, 118: u32>)(base64_encoded)));
+  (#_assert returning Unit)(((Array<u8, 118: u32> as «std-1.0.0-beta.25»::cmp::Eq<>)::eq<> as λ(Array<u8, 118: u32>, Array<u8, 118: u32>) -> bool)(encoded, (#_strAsBytes returning Array<u8, 118: u32>)(base64_encoded)));
   let decoded = («noir_base64-0.0.0»::decoder::Base64DecodeBENoPad::decode<118: u32, 88: u32> as λ(Array<u8, 118: u32>) -> Array<u8, 88: u32>)(encoded);
-  (#_assert returning Unit)(((Array<u8, 88: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u8, 88: u32>, Array<u8, 88: u32>) -> bool)(decoded, (#_strAsBytes returning Array<u8, 88: u32>)(input)));
+  (#_assert returning Unit)(((Array<u8, 88: u32> as «std-1.0.0-beta.25»::cmp::Eq<>)::eq<> as λ(Array<u8, 88: u32>, Array<u8, 88: u32>) -> bool)(decoded, (#_strAsBytes returning Array<u8, 88: u32>)(input)));
   #_skip
 }
 

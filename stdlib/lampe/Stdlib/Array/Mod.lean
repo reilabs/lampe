@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Stdlib.Array.CheckShuffle
 import Stdlib.Convert
 import Stdlib.Tp
@@ -9,24 +9,57 @@ import Lampe
 namespace Lampe.Stdlib.Array
 namespace Lampe.Stdlib.List
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 
 set_option Lampe.pp.Expr true
 set_option Lampe.pp.STHoare true
 
-theorem map_spec {p T N U Env l f fb}
+private lemma modify_array_isSome_bound {p tp} {K : U 32} {v : Tp.denote p (tp.array K)}
+    {idx : U 32} {x : Tp.denote p tp}
+    (hmod : ((Lens.nil.cons (Access.array idx)).modify v x).isSome = true) :
+    idx.toNat < K.toNat := by
+  by_contra h
+  simp [Lens.modify, Access.modify, h] at hmod
+
+private lemma modify_array_get {p tp} {K : U 32} (v : Tp.denote p (tp.array K)) (idx : U 32)
+    (x : Tp.denote p tp) (hidx : idx.toNat < K.toNat)
+    {hmod : ((Lens.nil.cons (Access.array idx)).modify v x).isSome = true} :
+    ((Lens.nil.cons (Access.array idx)).modify v x).get hmod =
+      List.Vector.set v ⟨idx.toNat, hidx⟩ x := by
+  simp [Lens.modify, Access.modify, hidx]
+
+private lemma take_set_succ_prefix {α} {v a : List α} {i : ℕ} {x : α}
+    (hv : i < v.length) (ha : i < a.length)
+    (hloop : v.take i = a.take i) (hx : x = a[i]'ha) :
+    (v.set i x).take (i + 1) = a.take (i + 1) := by
+  have hv' : i < (v.set i x).length := by simpa using hv
+  rw [List.take_succ_eq_append_getElem hv', List.take_succ_eq_append_getElem ha,
+    List.take_set_of_le (le_refl _), hloop, List.getElem_set_self, hx]
+
+private lemma take_set_append_succ {α} {v la lb : List α} {m i k : ℕ} {x : α}
+    (hk : k = m + i) (hv : k < v.length) (hb : i < lb.length)
+    (hloop : v.take (m + i) = la ++ lb.take i) (hx : x = lb[i]'hb) :
+    (v.set k x).take (m + (i + 1)) = la ++ lb.take (i + 1) := by
+  subst hk
+  have h1 : m + (i + 1) = (m + i) + 1 := by omega
+  have hv' : m + i < (v.set (m + i) x).length := by simpa using hv
+  rw [h1, List.take_succ_eq_append_getElem hv', List.take_set_of_le (le_refl _), hloop,
+    List.take_succ_eq_append_getElem hb, List.getElem_set_self, hx, List.append_assoc]
+
+theorem map_spec {p T N U Env l f fb} {selfRef : Ref (T.array N)}
     (inv : List (T.denote p) → List (U.denote p) → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (op : List (U.denote p)) (e : T.denote p),
       (ip ++ [e] <+: l.toList) → STHoare p env (inv ip op) (fb h![e])
         (fun r => inv (ip ++ [e]) (op ++ [r])))
   : STHoare p env
-    ((inv [] []) ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::array::map».call h![T, N, U, Env] h![l, f])
-    (fun r => inv l.toList r.toList ⋆ [λf ↦ fb]) := by
+    ([selfRef ↦ ⟨T.array N, l⟩] ⋆ (inv [] []) ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::map».call h![T, N, U, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv l.toList r.toList ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
   loop_inv nat fun i _ _ => ∃∃v,
-    [ret ↦ ⟨U.array N, v⟩] ⋆ (inv (l.take i).toList (v.take i).toList) ⋆ [λf ↦ fb]
+    [ret ↦ ⟨U.array N, v⟩] ⋆ [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      (inv (l.take i).toList (v.take i).toList) ⋆ [λf ↦ fb]
   · sl
   · simp
   · intro i hlo hhi
@@ -45,7 +78,8 @@ theorem map_spec {p T N U Env l f fb}
       Lens.get, Access.modify, Option.bind_eq_bind, Option.bind_some,
       Option.bind_fun_some]
 
-    have : i < (v.toList.set i «#v_5»).length := by simp_all
+    rename U.denote p => mapped
+    have : i < (v.toList.set i mapped).length := by simp_all
     have hi_lt_N : i < BitVec.toNat N := by simp_all
     simp only [dif_pos hi_lt_N, Option.get_some, List.Vector.toList_set]
     conv => rhs; enter [1, 2]; rw [List.take_succ_eq_append_getElem this]
@@ -77,29 +111,30 @@ theorem map_spec {p T N U Env l f fb}
   simp only [a, List.take_length]
   sl
 
-theorem map_pure_spec {p T N U Env l f fb fEmb}
+theorem map_pure_spec {p T N U Env l f fb fEmb} {selfRef : Ref (T.array N)}
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
-  : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::array::map».call h![T, N, U, Env] h![l, f])
-    (fun r => r.toList = l.toList.map fEmb) := by
+  : STHoare p env ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::map».call h![T, N, U, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ ⟦r.toList = l.toList.map fEmb⟧) := by
   steps [map_spec (inv := fun i o => o = i.map fEmb)]
   · simp
   · assumption
   · intros; steps [inv_pure]; simp_all
 
-theorem mapi_spec {p T N U Env l f fb}
+theorem mapi_spec {p T N U Env l f fb} {selfRef : Ref (T.array N)}
     (inv : List (T.denote p) → List (U.denote p) → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (op : List (U.denote p)) (e : T.denote p),
       ((ip ++ [e]) <+: l.toList) → STHoare p env (inv ip op) (fb h![ip.length, e])
         (fun r => inv (ip ++ [e]) (op ++ [r])))
   : STHoare p env
-    (inv [] [] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::array::mapi».call h![T, N, U, Env] h![l, f])
-    (fun r => inv l.toList r.toList ⋆ [λf ↦ fb]) := by
+    ([selfRef ↦ ⟨T.array N, l⟩] ⋆ inv [] [] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::mapi».call h![T, N, U, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv l.toList r.toList ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
   loop_inv nat fun i _ _ =>
-    ∃∃v, [ret ↦ ⟨U.array N, v⟩] ⋆ inv (l.take i).toList (v.take i).toList ⋆ [λf ↦ fb]
+    ∃∃v, [ret ↦ ⟨U.array N, v⟩] ⋆ [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      inv (l.take i).toList (v.take i).toList ⋆ [λf ↦ fb]
   · sl
   · simp
   · intro i hlo hhi
@@ -132,7 +167,8 @@ theorem mapi_spec {p T N U Env l f fb}
       Lens.get, Access.modify, ↓reduceDIte, Option.bind_eq_bind, Option.bind_some,
       Option.bind_fun_some, Option.get_some, List.Vector.toList_set, BitVec.toNat_ofNat]
 
-    have hlen : i < (v.toList.set i «#v_5»).length := by simp_all
+    rename U.denote p => mapped
+    have hlen : i < (v.toList.set i mapped).length := by simp_all
     conv => rhs; enter [1, 2]; rw [List.take_succ_eq_append_getElem hlen]
     simp only [List.getElem_set hlen, if_true]
     conv => rhs; enter [1, 2, 1]; apply List.take_set_of_le (by rfl)
@@ -157,11 +193,11 @@ theorem mapi_spec {p T N U Env l f fb}
   simp only [a, List.take_length]
   sl
 
-theorem mapi_pure_spec {p T N U Env l f fb fEmb}
+theorem mapi_pure_spec {p T N U Env l f fb fEmb} {selfRef : Ref (T.array N)}
     (inv_pure : ∀i x, (h : i < l.length) → STHoare p env ⟦⟧ (fb h![i, x]) (fun r => r = fEmb i x))
-  : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::array::mapi».call h![T, N, U, Env] h![l, f])
-    (fun r => r.toList = l.toList.mapIdx fEmb) := by
+  : STHoare p env ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::mapi».call h![T, N, U, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ ⟦r.toList = l.toList.mapIdx fEmb⟧) := by
   steps [mapi_spec (inv := fun i o => o = i.mapIdx fEmb)]
   · simp
   · assumption
@@ -179,18 +215,19 @@ theorem mapi_pure_spec {p T N U Env l f fb fEmb}
 
     simp_all
 
-theorem for_each_spec {p T N Env l f fb}
+theorem for_each_spec {p T N Env l f fb} {selfRef : Ref (T.array N)}
     (inv : List (T.denote p) → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (e : T.denote p),
       ((ip ++ [e]) <+: l.toList) → STHoare p env (inv ip) (fb h![e]) (fun _ => inv (ip ++ [e])))
   : STHoare p env
-    (inv [] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::array::for_each».call h![T, N, Env] h![l, f])
-    (fun _ => inv l.toList ⋆ [λf ↦ fb]) := by
+    ([selfRef ↦ ⟨T.array N, l⟩] ⋆ inv [] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::for_each».call h![T, N, Env] h![selfRef, f])
+    (fun _ => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv l.toList ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  loop_inv nat fun i _ _ => inv (l.take i).toList ⋆ [λf ↦ fb]
-  · simp
+  loop_inv nat fun i _ _ => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv (l.take i).toList ⋆ [λf ↦ fb]
+  · sl
+    simp
   · intro i hlo hhi
     steps
     simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
@@ -201,28 +238,25 @@ theorem for_each_spec {p T N Env l f fb}
     steps [STHoare.callLambda_intro (hlam := this)]
     simp_all only [List.Vector.toList_take, List.take_append_getElem]
     sl
+  ·
+    steps
+    have l1 : BitVec.toNat (↑(List.Vector.length l) : U 32) = l.toList.length := by simp
+    simp only [l1, List.Vector.toList_take, List.take_length]
+    sl
 
-  steps
-  simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-    BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, zero_le,
-    List.Vector.toList_take]
-  have l1 : BitVec.toNat N = l.toList.length := by simp
-  conv => lhs; enter [1, 1]; rw [l1]
-  simp only [List.take_length]
-  sl
-
-theorem for_eachi_spec {p T N Env l f fb}
+theorem for_eachi_spec {p T N Env l f fb} {selfRef : Ref (T.array N)}
     (inv : List (T.denote p) → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (e : T.denote p),
       ((ip ++ [e] <+: l.toList) → STHoare p env (inv ip) (fb h![ip.length, e]) (fun _ => inv (ip ++ [e]))))
   : STHoare p env
-    (inv [] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::array::for_eachi».call h![T, N, Env] h![l, f])
-    (fun _ => inv l.toList ⋆ [λf ↦ fb]) := by
+    ([selfRef ↦ ⟨T.array N, l⟩] ⋆ inv [] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::for_eachi».call h![T, N, Env] h![selfRef, f])
+    (fun _ => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv l.toList ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  loop_inv nat fun i _ _ => inv (l.take i).toList ⋆ [λf ↦ fb]
-  · simp
+  loop_inv nat fun i _ _ => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv (l.take i).toList ⋆ [λf ↦ fb]
+  · sl
+    simp
   · intro i hlo hhi
     steps
     simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
@@ -249,81 +283,82 @@ theorem for_eachi_spec {p T N Env l f fb}
       List.Vector.toList_take, List.length_take, List.Vector.toList_length, BitVec.toNat_ofNat,
       Nat.reducePow, List.take_append_getElem]
     sl
+  ·
+    steps
+    have l1 : BitVec.toNat (↑(List.Vector.length l) : U 32) = l.toList.length := by simp
+    simp only [l1, List.Vector.toList_take, List.take_length]
+    sl
 
-  steps
-  simp_all only [BitVec.natCast_eq_ofNat, BitVec.toNat_intCast, Int.reducePow,
-    EuclideanDomain.zero_mod, Int.toNat_zero, BitVec.ofNat_toNat, BitVec.setWidth_eq, zero_le,
-    List.Vector.toList_take]
-  have l1 : BitVec.toNat N = l.toList.length := by simp
-  conv => lhs; enter [1, 1]; rw [l1]
-  simp only [List.take_length]
-  sl
-
-theorem fold_spec {p T N U Env l a f fb}
+theorem fold_spec {p T N U Env l a f fb} {selfRef : Ref (T.array N)}
     (inv : List (T.denote p) → U.denote p → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (accum : U.denote p) (e : T.denote p),
       ((ip ++ [e] <+: l.toList) → STHoare p env (inv ip accum) (fb h![accum, e])
         (fun r => inv (ip ++ [e]) r)))
   : STHoare p env
-    (inv [] a ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::array::fold».call h![T, N, U, Env] h![l, a, f])
-    (fun r => (inv l.toList r) ⋆ [λf ↦ fb]) := by
+    ([selfRef ↦ ⟨T.array N, l⟩] ⋆ inv [] a ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::fold».call h![T, N, U, Env] h![selfRef, a, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ (inv l.toList r) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  step_as ([accumulator ↦ ⟨U, a⟩] ⋆ [λf ↦ fb] ⋆ inv [] a)
-    (fun _ => ∃∃v, [accumulator ↦ ⟨U, v⟩] ⋆ [λf ↦ fb] ⋆ inv l.toList v)
-  steps
-  loop_inv nat fun i _ _ => ∃∃v, [accumulator ↦ ⟨U, v⟩] ⋆ [λf ↦ fb] ⋆ inv (l.take i).toList v
-  · sl
-  · simp
-  · intro i hlo hhi
+  apply STHoare.letIn_intro
+    (Q := fun _ => ∃∃v, [accumulator ↦ ⟨U, v⟩] ⋆ [selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb] ⋆
+      inv l.toList v)
+  ·
     steps
-    simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_le, Builtin.CastTp.cast,
-      BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-      BitVec.toNat_ofNatLT, List.Vector.toList_take]
-    generalize_proofs
-    rename U.denote p => v
+    -- `steps` stalls on the loop-lowering alias `let ζi0 = selfRef`; substitute it and resume.
+    · subst ζi0
+      sl
+    subst ζi0
+    steps
+    loop_inv nat fun i _ _ => ∃∃v, [accumulator ↦ ⟨U, v⟩] ⋆ [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      [λf ↦ fb] ⋆ inv (l.take i).toList v
+    · sl
+    · simp
+    · intro i hlo hhi
+      steps
+      simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
+        zero_le, Builtin.CastTp.cast,
+        BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+        BitVec.toNat_ofNatLT, List.Vector.toList_take]
+      generalize_proofs
+      rename U.denote p => v
 
-    have := inv_spec (l.take i).toList v (l.toList[i]'(by simp_all)) (by simp [List.take_prefix])
-    steps [STHoare.callLambda_intro (hlam := this)]
+      have := inv_spec (l.take i).toList v (l.toList[i]'(by simp_all)) (by simp [List.take_prefix])
+      steps [STHoare.callLambda_intro (hlam := this)]
 
-    simp_all only [List.Vector.toList_take, List.take_append_getElem, Lens.modify, Option.get_some]
+      simp_all only [List.Vector.toList_take, List.take_append_getElem, Lens.modify, Option.get_some]
+      sl
+    ·
+      steps
+      have l1 : BitVec.toNat (↑(List.Vector.length l) : BitVec 32) = l.toList.length := by simp
+      simp only [l1, List.Vector.toList_take, List.take_length]
+      sl
+  ·
+    intro _
+    steps
+    subst_vars
     sl
 
-  steps
-  simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-    BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, zero_le,
-    List.Vector.toList_take]
-
-  have l1 : BitVec.toNat N = l.toList.length := by simp
-  simp only [l1, List.take_length]
-  sl
-
-  steps
-  subst_vars
-  sl
-
-theorem fold_pure_spec {p T N U Env l a f fb fEmb}
+theorem fold_pure_spec {p T N U Env l a f fb fEmb} {selfRef : Ref (T.array N)}
     (inv_pure : ∀a x, STHoare p env ⟦⟧ (fb h![a, x]) (fun r => r = fEmb a x))
-  : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::array::fold».call h![T, N, U, Env] h![l, a, f])
-    (fun r => r = l.toList.foldl fEmb a ⋆ [λf ↦ fb]) := by
+  : STHoare p env ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::fold».call h![T, N, U, Env] h![selfRef, a, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ ⟦r = l.toList.foldl fEmb a⟧ ⋆ [λf ↦ fb]) := by
   steps [fold_spec (inv := fun xs v => v = xs.foldl fEmb a)]
   · rfl
   · assumption
   · intros; steps [inv_pure]; simp_all
 
-theorem reduce_spec {p T N Env l f fb}
+theorem reduce_spec {p T N Env l f fb} {selfRef : Ref (T.array N)}
     (l_len_gt : l.length > 0)
     (inv : List (T.denote p) → T.denote p → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (acc : T.denote p) (e : T.denote p),
       ((ip ++ [e] <+: l.toList.tail) → STHoare p env (inv ip acc) (fb h![acc, e])
         (fun r => inv (ip ++ [e]) r)))
   : STHoare p env
-    (inv [] l[0] ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::array::reduce».call h![T, N, Env] h![l, f])
-    (fun r => inv l.toList.tail r ⋆ [λf ↦ fb]) := by
+    ([selfRef ↦ ⟨T.array N, l⟩] ⋆ inv [] l[0] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::reduce».call h![T, N, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv l.toList.tail r ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
   rcases l_def : l with ⟨ts, l_prf⟩
@@ -336,7 +371,8 @@ theorem reduce_spec {p T N Env l f fb}
       lt_add_iff_pos_left, add_pos_iff, zero_lt_one, or_true, BitVec.toNat_intCast, Int.reducePow,
       EuclideanDomain.zero_mod, Int.toNat_zero, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat,
       BitVec.setWidth_eq] at *
-    loop_inv nat fun i _ _ => ∃∃v, [accumulator ↦ ⟨T, v⟩] ⋆ [λf ↦ fb] ⋆ inv (r.take (i - 1)) v
+    loop_inv nat fun i _ _ => ∃∃v, [accumulator ↦ ⟨T, v⟩] ⋆
+      [selfRef ↦ ⟨T.array N, ⟨init :: r, l_prf⟩⟩] ⋆ [λf ↦ fb] ⋆ inv (r.take (i - 1)) v
     · sl
     · simp only [BitVec.toNat_intCast, Int.reducePow, Int.reduceMod, Int.toNat_one]; omega
     · intro i hlo hhi
@@ -374,67 +410,74 @@ theorem reduce_spec {p T N Env l f fb}
     subst_vars
     sl
 
-theorem reduce_pure_spec {p T N Env l f fb fEmb}
+theorem reduce_pure_spec {p T N Env l f fb fEmb} {selfRef : Ref (T.array N)}
     (l_len_gt : l.length > 0)
     (inv_pure : ∀a x, STHoare p env ⟦⟧ (fb h![a, x]) (fun r => r = fEmb a x))
-  : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::array::reduce».call h![T, N, Env] h![l, f])
-    (fun r => r = l.toList.tail.foldl fEmb l[0] ⋆ [λf ↦ fb]) := by
+  : STHoare p env ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::reduce».call h![T, N, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      ⟦r = l.toList.tail.foldl fEmb l[0]⟧ ⋆ [λf ↦ fb]) := by
   steps [reduce_spec (inv := fun xs v => v = xs.foldl fEmb l[0])]
   · rfl
   · assumption
   · intros; steps [inv_pure]; simp_all
 
-theorem all_spec {p T N Env l f fb}
+theorem all_spec {p T N Env l f fb} {selfRef : Ref (T.array N)}
     (inv : List (T.denote p) → Bool → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (op : Bool) (e : T.denote p),
       ((ip ++ [e] <+: l.toList) → STHoare p env (inv ip op) (fb h![e])
         (fun r => inv (ip ++ [e]) (op ∧ r))))
   : STHoare p env
-    (inv [] true ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::array::all».call h![T, N, Env] h![l, f])
-    (fun r => inv l.toList r ⋆ [λf ↦ fb]) := by
+    ([selfRef ↦ ⟨T.array N, l⟩] ⋆ inv [] true ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::all».call h![T, N, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv l.toList r ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  step_as ([ret ↦ ⟨.bool, true⟩] ⋆ (inv [] true) ⋆ [λf ↦ fb])
-    (fun r => ∃∃b, [ret ↦ ⟨.bool, b⟩] ⋆ (inv l.toList b) ⋆ [λf ↦ fb])
-
-  steps
-  loop_inv nat fun i _ _ => ∃∃b, [ret ↦ ⟨.bool, b⟩] ⋆ (inv (l.toList.take i) b) ⋆ [λf ↦ fb]
-  · sl
-  · simp
-  · intro i hlo hhi
+  apply STHoare.letIn_intro
+    (Q := fun _ => ∃∃b, [ret ↦ ⟨.bool, b⟩] ⋆ [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      (inv l.toList b) ⋆ [λf ↦ fb])
+  ·
     steps
-    simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_le, Builtin.CastTp.cast,
-      BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-      BitVec.toNat_ofNatLT]
-    generalize_proofs
-    rename Tp.denote p .bool => b
-
-    have := inv_spec (l.toList.take i) b (l.toList[i]'(by simp_all)) (by simp [List.take_prefix])
-    steps [STHoare.callLambda_intro (hlam := this)]
-    simp_all only [Bool.decide_and, Bool.decide_eq_true, Bool.forall_bool, Bool.false_and,
-      Bool.true_and, List.take_append_getElem, Lens.modify, Option.get_some]
-    sl
-    exact ()
-  · simp_all only [Bool.decide_and, Bool.decide_eq_true, Bool.forall_bool, Bool.false_and,
-    Bool.true_and, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, SLP.star_true]
+    -- `steps` stalls on the loop-lowering alias `let ζi0 = selfRef`; substitute it and resume.
+    · subst ζi0
+      sl
+    subst ζi0
     steps
+    loop_inv nat fun i _ _ => ∃∃b, [ret ↦ ⟨.bool, b⟩] ⋆ [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      (inv (l.toList.take i) b) ⋆ [λf ↦ fb]
+    · sl
+    · simp
+    · intro i hlo hhi
+      steps
+      simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
+        zero_le, Builtin.CastTp.cast,
+        BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+        BitVec.toNat_ofNatLT]
+      generalize_proofs
+      rename Tp.denote p .bool => b
 
-    have : l.toList.length = N.toNat := by simp
-    simp only [←this, List.take_length]
+      have := inv_spec (l.toList.take i) b (l.toList[i]'(by simp_all)) (by simp [List.take_prefix])
+      steps [STHoare.callLambda_intro (hlam := this)]
+      simp_all only [Bool.decide_and, Bool.decide_eq_true, Bool.forall_bool, Bool.false_and,
+        Bool.true_and, List.take_append_getElem, Lens.modify, Option.get_some]
+      sl
+      exact ()
+    ·
+      steps
+      have l1 : BitVec.toNat (↑(List.Vector.length l) : U 32) = l.toList.length := by simp
+      simp only [l1, List.take_length]
+      sl
+  ·
+    intro _
+    steps
+    subst_vars
     sl
 
-  steps
-  subst_vars
-  sl
-
-theorem all_pure_spec {p T N Env l f fb fEmb}
+theorem all_pure_spec {p T N Env l f fb fEmb} {selfRef : Ref (T.array N)}
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
-  : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::array::all».call h![T, N, Env] h![l, f])
-    (fun r => r = l.toList.all fEmb) := by
+  : STHoare p env ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::all».call h![T, N, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ ⟦r = l.toList.all fEmb⟧) := by
   steps [all_spec (inv := fun x r => r = x.all fEmb)]
   · simp
   · assumption
@@ -444,55 +487,62 @@ theorem all_pure_spec {p T N Env l f fb fEmb}
       List.all_cons, List.all_nil, Bool.and_true]
     rw [←List.all_eq]
 
-theorem any_spec {p T N Env l f fb}
+theorem any_spec {p T N Env l f fb} {selfRef : Ref (T.array N)}
     (inv : List (T.denote p) → Bool → SLP (State p))
     (inv_spec : ∀(ip : List (T.denote p)) (op : Bool) (e : T.denote p),
       ((ip ++ [e] <+: l.toList) → STHoare p env (inv ip op) (fb h![e])
         (fun r => inv (ip ++ [e]) (op ∨ r))))
   : STHoare p env
-    (inv [] false ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::array::any».call h![T, N, Env] h![l, f])
-    (fun r => inv l.toList r ⋆ [λf ↦ fb]) := by
+    ([selfRef ↦ ⟨T.array N, l⟩] ⋆ inv [] false ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::any».call h![T, N, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ inv l.toList r ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
-  step_as ([ret ↦ ⟨.bool, false⟩] ⋆ (inv [] false) ⋆ [λf ↦ fb])
-    (fun r => ∃∃b, [ret ↦ ⟨.bool, b⟩] ⋆ (inv l.toList b) ⋆ [λf ↦ fb])
-
-  steps
-  loop_inv nat fun i _ _ => ∃∃b, [ret ↦ ⟨.bool, b⟩] ⋆ (inv (l.toList.take i) b) ⋆ [λf ↦ fb]
-  · sl
-  · simp
-  · intro i hlo hhi
+  apply STHoare.letIn_intro
+    (Q := fun _ => ∃∃b, [ret ↦ ⟨.bool, b⟩] ⋆ [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      (inv l.toList b) ⋆ [λf ↦ fb])
+  ·
     steps
-    simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_le, Builtin.CastTp.cast,
-      BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
-      BitVec.toNat_ofNatLT]
-    generalize_proofs
-    rename Tp.denote p .bool => b
-
-    have := inv_spec (l.toList.take i) b (l.toList[i]'(by simp_all)) (by simp [List.take_prefix])
-    steps [STHoare.callLambda_intro (hlam := this)]
-    simp_all only [Bool.decide_or, Bool.decide_eq_true, Bool.forall_bool, Bool.false_or,
-      Bool.true_or, List.take_append_getElem, Lens.modify, Option.get_some]
-    sl
-    exact ()
-  · simp_all only [Bool.forall_bool, BitVec.natCast_eq_ofNat, BitVec.ofNat_toNat, BitVec.setWidth_eq, SLP.star_true]
+    -- `steps` stalls on the loop-lowering alias `let ζi0 = selfRef`; substitute it and resume.
+    · subst ζi0
+      sl
+    subst ζi0
     steps
+    loop_inv nat fun i _ _ => ∃∃b, [ret ↦ ⟨.bool, b⟩] ⋆ [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      (inv (l.toList.take i) b) ⋆ [λf ↦ fb]
+    · sl
+    · simp
+    · intro i hlo hhi
+      steps
+      simp_all only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
+        zero_le, Builtin.CastTp.cast,
+        BitVec.truncate_eq_setWidth, BitVec.setWidth_eq,
+        BitVec.toNat_ofNatLT]
+      generalize_proofs
+      rename Tp.denote p .bool => b
 
-    have : l.toList.length = N.toNat := by simp
-    simp only [←this, List.take_length]
+      have := inv_spec (l.toList.take i) b (l.toList[i]'(by simp_all)) (by simp [List.take_prefix])
+      steps [STHoare.callLambda_intro (hlam := this)]
+      simp_all only [Bool.decide_or, Bool.decide_eq_true, Bool.forall_bool, Bool.false_or,
+        Bool.true_or, List.take_append_getElem, Lens.modify, Option.get_some]
+      sl
+      exact ()
+    ·
+      steps
+      have l1 : BitVec.toNat (↑(List.Vector.length l) : U 32) = l.toList.length := by simp
+      simp only [l1, List.take_length]
+      sl
+  ·
+    intro _
+    steps
+    subst_vars
     sl
 
-  steps
-  subst_vars
-  sl
-
-theorem any_pure_spec {p T N Env l f fb fEmb}
+theorem any_pure_spec {p T N Env l f fb fEmb} {selfRef : Ref (T.array N)}
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
-  : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::array::any».call h![T, N, Env] h![l, f])
-    (fun r => r = l.toList.any fEmb) := by
+  : STHoare p env ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::any».call h![T, N, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆ ⟦r = l.toList.any fEmb⟧) := by
   steps [any_spec (inv := fun x r => r = x.any fEmb)]
   · simp
   · assumption
@@ -502,97 +552,66 @@ theorem any_pure_spec {p T N Env l f fb fEmb}
       List.any_cons, List.any_nil, Bool.or_false]
     rw [←List.any_eq]
 
-theorem concat_spec: STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::array::concat».call h![T, M, N] h![a₁, a₂])
-    (fun r => r.toList = a₁.toList ++ a₂.toList) := by
+set_option maxHeartbeats 1000000 in
+theorem concat_spec {p} {T : Tp} {M N : U 32}
+    {a₁ : List.Vector (Tp.denote p T) M.toNat} {a₂ : List.Vector (Tp.denote p T) N.toNat}
+    {selfRef : Ref (T.array M)} : STHoare p env
+    [selfRef ↦ ⟨T.array M, a₁⟩]
+    («std-1.0.0-beta.25::array::concat».call h![T, M, N] h![selfRef, a₂])
+    (fun r => [selfRef ↦ ⟨T.array M, a₁⟩] ⋆ ⟦r.toList = a₁.toList ++ a₂.toList⟧) := by
   enter_decl
   steps
 
-  loop_inv nat fun i _ _ => ∃∃v, [result ↦ ⟨T.array (M + N), v⟩] ⋆ (v.toList.take i = a₁.toList.take i)
+  loop_inv nat fun i _ _ => ∃∃v, [result ↦ ⟨T.array (M + N), v⟩] ⋆
+    [selfRef ↦ ⟨T.array M, a₁⟩] ⋆ (v.toList.take i = a₁.toList.take i)
   · sl
     simp
   · simp
   · intro i hil hiu
     steps
-    rename Option.isSome _ = true => hp
-    simp at hp
-    have hi_bound : i < (BitVec.toNat M + BitVec.toNat N) % 4294967296 := by
-      by_contra h
-      push_neg at h
-      rw [dif_neg (by omega)] at hp
-      simp at hp
-    rw [List.take_succ_eq_append_getElem ?lt1, List.take_succ_eq_append_getElem ?lt2]
-    case lt1 => simp_all
-    case lt2 => simp_all
-    simp only [BitVec.toNat_add, Nat.reducePow, BitVec.add_eq, Lens.modify, Lens.get, Access.modify,
-      BitVec.toNat_ofNatLT, Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some,
-      dif_pos hi_bound]
-    -- `congr 1` splits into the take and getElem halves.
-    rename_i _v hloop hcast _ _
-    generalize_proofs hb1 hb2
-    set X := List.Vector.set _v ⟨i, hi_bound⟩
-            (List.Vector.get a₁ ⟨BitVec.toNat (Builtin.CastTp.cast
-              (BitVec.ofNatLT i hb1 : Tp.denote p (Tp.u 32))), hcast⟩) with hX
-    show List.take i (List.Vector.toList ((Option.some X).get hb2)) ++
-         [(List.Vector.toList ((Option.some X).get hb2))[i] ] = _
-    show List.take i (List.Vector.toList X) ++ [(List.Vector.toList X)[i] ] = _
-    congr 1
-    · rw [hX, List.Vector.toList_set, List.take_set_of_le (le_refl _)]
-      exact hloop
-    · -- Goal: [(toList X)[i]] = [a₁.toList[i]]. Use `List.singleton_inj`-like reduction.
-      have h0 : (List.Vector.toList X)[i] = (List.Vector.toList a₁)[i] := by
-        simp only [hX, List.Vector.toList_set, List.getElem_set_self]
-        simp [List.Vector.toList, List.Vector.get, BitVec.toNat_ofNatLT]
-      exact congrArg (fun x => [x]) h0
+    rename Tp.denote _ (Tp.array _ (_ + _)) => vv
+    rename List.take _ _ = _ => hloop
+    rename Option.isSome _ = true => hmod
+    have hidx := modify_array_isSome_bound hmod
+    rw [modify_array_get _ _ _ hidx]
+    simp only [Builtin.CastTp.cast, BitVec.setWidth_eq, BitVec.toNat_ofNatLT,
+      List.Vector.toList_set]
+    have hivlen : i < (List.Vector.toList vv).length := by
+      revert hidx
+      simp [Builtin.CastTp.cast, BitVec.setWidth_eq, BitVec.toNat_ofNatLT, BitVec.toNat_add,
+        BitVec.add_eq]
+    apply take_set_succ_prefix hivlen ?ha hloop ?hx
+    case ha => simp_all
+    case hx => simp [List.Vector.get_eq_get_toList, List.get_eq_getElem]
 
   steps
 
-  loop_inv nat fun i _ _ => ∃∃v, [result ↦ ⟨T.array (M + N), v⟩] ⋆ (v.toList.take (M.toNat + i) = a₁.toList ++ a₂.toList.take i)
+  loop_inv nat fun i _ _ => ∃∃v, [result ↦ ⟨T.array (M + N), v⟩] ⋆
+    [selfRef ↦ ⟨T.array M, a₁⟩] ⋆ (v.toList.take (M.toNat + i) = a₁.toList ++ a₂.toList.take i)
   · sl
     simp_all
   · simp
   · intro i hil hiu
     steps
-    rw [←add_assoc, List.take_add_one, List.take_add_one, ←List.append_assoc]
-    have hi_eq : i_4238.toNat = M.toNat + i := by
-      subst i_4238
-      simp only [BitVec.toNat_add]
-      rw [Nat.mod_eq_of_lt (by assumption), add_comm]
-      rfl
-    rename Option.isSome _ = true => hp
-    simp at hp
-    have hi_bound : BitVec.toNat i_4238 < (BitVec.toNat M + BitVec.toNat N) % 4294967296 := by
-      by_contra h
-      push_neg at h
-      rw [dif_neg (by omega)] at hp
-      simp at hp
-    simp only [BitVec.toNat_add, Nat.reducePow, BitVec.add_eq, Lens.modify, Lens.get, Access.modify, Option.bind_eq_bind, Option.bind_some, Option.bind_fun_some,
-      dif_pos hi_bound]
-    rename List.Vector _ _ => _v
-    rename (List.Vector.toList _).take _ = _ => hloop
-    rename BitVec.toNat _ < BitVec.toNat _ => hcast
-    generalize_proofs hb1 hb2
-    set X := List.Vector.set _v ⟨BitVec.toNat i_4238, hi_bound⟩
-            (List.Vector.get a₂ ⟨BitVec.toNat (Builtin.CastTp.cast
-              (BitVec.ofNatLT i hb1 : Tp.denote p (Tp.u 32))), hcast⟩) with hX
-    show List.take (BitVec.toNat M + i) (List.Vector.toList X) ++
-         (List.Vector.toList X)[BitVec.toNat M + i]?.toList = _
-    congr 1
-    · rw [hX, List.Vector.toList_set, List.take_set_of_le (show BitVec.toNat M + i ≤ BitVec.toNat i_4238 by rw [hi_eq])]
-      exact hloop
-    · have hbnd : BitVec.toNat M + i < (BitVec.toNat M + BitVec.toNat N) % 4294967296 := by
-        rw [← hi_eq]; exact hi_bound
-      have h0 : (List.Vector.toList X)[BitVec.toNat M + i]? = some
-          (List.Vector.get a₂ ⟨BitVec.toNat (Builtin.CastTp.cast
-              (BitVec.ofNatLT i hb1 : Tp.denote p (Tp.u 32))), hcast⟩) := by
-        simp only [hX, List.Vector.toList_set, List.getElem?_set, hi_eq]
-        simp [hbnd]
-      have h1 : (List.Vector.toList a₂)[i]? = some (List.Vector.get a₂
-            ⟨BitVec.toNat (Builtin.CastTp.cast
-              (BitVec.ofNatLT i hb1 : Tp.denote p (Tp.u 32))), hcast⟩) := by
-        simp [List.Vector.toList, List.Vector.get,
-          BitVec.toNat_ofNatLT]
-      rw [h0, h1]
+    rename Tp.denote _ (Tp.array _ (_ + _)) => vv
+    rename List.take _ _ = _ => hloop
+    rename Option.isSome _ = true => hmod
+    rename BitVec.toNat _ + BitVec.toNat M < _ => hof
+    have hidx := modify_array_isSome_bound hmod
+    rw [modify_array_get _ _ _ hidx]
+    have hof' : i + BitVec.toNat M < 4294967296 := by
+      revert hof
+      simp [BitVec.toNat_ofNatLT]
+    have hivlen : i + BitVec.toNat M < (List.Vector.toList vv).length := by
+      revert hidx
+      simp [BitVec.toNat_add, BitVec.toNat_ofNatLT, BitVec.add_eq, Nat.mod_eq_of_lt hof']
+    have hia : i < (List.Vector.toList a₂).length := by simp_all
+    simp only [Builtin.CastTp.cast, BitVec.setWidth_eq, BitVec.toNat_ofNatLT,
+      BitVec.toNat_add, BitVec.add_eq, List.Vector.toList_set, Nat.mod_eq_of_lt hof']
+    apply take_set_append_succ ?hk ?hv hia hloop ?hx
+    case hk => omega
+    case hv => simpa using hivlen
+    case hx => simp [List.Vector.get_eq_get_toList, List.get_eq_getElem]
   steps
   rename List.take _ _ = _ ++ _ => hp
   rw [List.take_of_length_le ?le1, List.take_of_length_le ?le2] at hp
@@ -617,22 +636,44 @@ output is sorted.
 Note that we have intentionally omitted an impure theorem for `sort_via` as we can envision no sane
 use-case for impure comparator functions.
 -/
-theorem sort_via_spec {p T N Env l f fb}
+theorem sort_via_spec {p T N Env l f fb} {selfRef : Ref (T.array N)}
     {t_eq : Cmp.Eq.hasImpl env T}
     (t_eq_spec : ∀a b, STHoare p env ⟦⟧ (Cmp.Eq.eq h![] T h![] h![] h![a, b])
       (fun r : Bool => ⟦r ↔ a = b⟧))
     {fEmb : T.denote p → T.denote p → Bool}
     (f_spec : ∀a b, STHoare p env ⟦⟧ (fb h![a, b]) (fun r => r = fEmb a b))
-  : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::array::sort_via».call h![T, N, Env] h![l, f])
-    (fun r => List.OrderedBy (fEmb · · = true) r.toList ∧ List.Perm l.toList r.toList) := by
+  : STHoare p env ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::sort_via».call h![T, N, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      ⟦List.OrderedBy (fEmb · · = true) r.toList ∧ List.Perm l.toList r.toList⟧) := by
   enter_decl
 
   let r_def := fun a b => fEmb a b = true
 
+  -- Since beta.25 the whole implementation is guarded by `if N != 0`.
+  steps
+  apply STHoare.ite_intro
+  swap
+  ·
+    -- `N = 0`: the function returns `*self` unchanged.
+    intro hcond
+    steps
+    have hN0 : N.toNat = 0 := by
+      by_contra h
+      simp_all
+    have hnil : List.Vector.toList l = [] := by
+      apply List.eq_nil_of_length_eq_zero
+      simp [hN0]
+    subst_vars
+    refine ⟨?_, ?_⟩
+    · rw [hnil]; exact List.OrderedBy.nil
+    · exact List.Perm.refl _
+
+  intro hne
   -- The call to `std::array::quicksort::quicksort` is just an unconstrained function, so returns
   -- a fresh value. We can say nothing else about it.
-  step_as ([λf ↦ fb]) (fun _ => [λf ↦ fb])
+  step_as ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    (fun _ => [selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
   · steps
     enter_decl
     steps
@@ -640,8 +681,9 @@ theorem sort_via_spec {p T N Env l f fb}
   steps
   any_goals exact ()
 
-  step_as ([λf ↦ fb]) (fun _ => [λf ↦ fb] ⋆
-    List.OrderedBy r_def sorted.toList ∧ List.Perm l.toList sorted.toList)
+  step_as ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    (fun _ => [selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb] ⋆
+      List.OrderedBy r_def sorted.toList ∧ List.Perm l.toList sorted.toList)
 
   apply STHoare.ite_intro
   any_goals intros; contradiction
@@ -649,19 +691,23 @@ theorem sort_via_spec {p T N Env l f fb}
   intro cond
   steps
 
-  rename_i one_lt_n
   have zero_lt_n : 0 < N.toNat := by
-    simp_all only [Bool.not_false]
-    exact one_lt_n
+    subst_vars
+    by_contra h
+    simp_all
+    exact hne (BitVec.eq_of_toNat_eq (by simpa using h))
   have n_eq_len : sorted.toList.length = N.toNat := by simp_all
 
-  loop_inv nat fun i _ _ => [λf ↦ fb] ⋆ List.OrderedBy r_def (sorted.toList.take (i + 1))
-  · simp only [BitVec.toNat_intCast, Int.reducePow, EuclideanDomain.zero_mod, Int.toNat_zero,
-      zero_add]
-
-    rw [List.take_add_one, List.take_zero, List.getElem?_eq_getElem (by omega)]
-    apply List.OrderedBy.singleton
-  · simp
+  loop_inv nat fun i _ _ => [selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb] ⋆
+    List.OrderedBy r_def (sorted.toList.take (i + 1))
+  ·
+    sl
+    -- `take (0 + 1)` has at most one element, so it is trivially ordered.
+    · intro j hj
+      simp at hj
+      try omega
+    -- `sl` side goal: `0 ≤ N - 1` on loop bounds.
+    simp
   · intro i hlo hhi
     steps
     rename List.OrderedBy _ _ => pfx_ordered
@@ -710,7 +756,8 @@ theorem sort_via_spec {p T N Env l f fb}
     assumption
 
   · steps [CheckShuffle.check_shuffle_spec t_eq t_eq_spec]
-    rename_i ord perm _
+    rename List.OrderedBy _ _ => ord
+    rename List.Perm _ _ => perm
     rw [BitVec.toNat_sub_of_le (by assumption)] at ord
     simp only [←n_eq_len, BitVec.toNat_intCast, Int.reducePow, Int.reduceMod, Int.toNat_one] at ord
     rw [Nat.sub_add_cancel (by omega)] at ord
@@ -728,22 +775,21 @@ ordered by the provided relation.
 
 See `sort_via_spec` for a similar theorem that does not impose this restriction.
 -/
-theorem sort_via_trans_spec {p T N Env l f fb}
+theorem sort_via_trans_spec {p T N Env l f fb} {selfRef : Ref (T.array N)}
     {t_eq : Cmp.Eq.hasImpl env T}
     (t_eq_spec : ∀a b, STHoare p env ⟦⟧ (Cmp.Eq.eq h![] T h![] h![] h![a, b])
       (fun r : Bool => ⟦r ↔ a = b⟧))
     {fEmb : T.denote p → T.denote p → Bool}
     (fEmb_trans : Transitive (fEmb · · = true))
     (f_spec : ∀a b, STHoare p env ⟦⟧ (fb h![a, b]) (fun r => r = fEmb a b))
-  : STHoare p env [λf ↦ fb]
-    («std-1.0.0-beta.14::array::sort_via».call h![T, N, Env] h![l, f])
-    (fun r => List.Pairwise (fEmb · · = true) r.toList ∧ List.Perm l.toList r.toList) := by
+  : STHoare p env ([selfRef ↦ ⟨T.array N, l⟩] ⋆ [λf ↦ fb])
+    («std-1.0.0-beta.25::array::sort_via».call h![T, N, Env] h![selfRef, f])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      ⟦List.Pairwise (fEmb · · = true) r.toList ∧ List.Perm l.toList r.toList⟧) := by
   steps [sort_via_spec (t_eq := t_eq) t_eq_spec f_spec]
-  constructor
   rename_i a
   rcases a with ⟨ord_by, perm⟩
-  exact List.OrderedBy.trans_eq_Sorted ord_by fEmb_trans
-  simp_all
+  exact ⟨List.OrderedBy.trans_eq_Sorted ord_by fEmb_trans, perm⟩
 
 /--
 This theorem asserts that `std::array::sort` implements a valid sort (namely that the output is
@@ -762,7 +808,7 @@ the output is sorted.
 This theorem is pure, as we argue that there is no sensible use-case for impure `Ord` and `Eq`
 implementations for `T`.
 -/
-theorem sort_spec {p T N l}
+theorem sort_spec {p T N l} {selfRef : Ref (T.array N)}
     {t_eq : Cmp.Eq.hasImpl env T}
     (t_eq_spec : ∀a b, STHoare p env ⟦⟧ (Cmp.Eq.eq h![] T h![] h![] h![a, b])
       (fun r : Bool => ⟦r ↔ a = b⟧))
@@ -770,10 +816,11 @@ theorem sort_spec {p T N l}
     (t_ord_emb : Tp.comparator p T)
     (t_ord_spec : ∀a b, STHoare p env ⟦⟧ (Cmp.Ord.cmp h![] T h![] h![] h![a, b])
       (fun r => r = Cmp.Ord.fromOrdering (t_ord_emb a b)))
-  : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::array::sort».call h![T, N] h![l])
-    (fun r => List.OrderedBy (Cmp.Ord.le_emb t_ord_emb · ·) r.toList
-      ∧ List.Perm l.toList r.toList) := by
+  : STHoare p env [selfRef ↦ ⟨T.array N, l⟩]
+    («std-1.0.0-beta.25::array::sort».call h![T, N] h![selfRef])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      ⟦List.OrderedBy (Cmp.Ord.le_emb t_ord_emb · ·) r.toList
+        ∧ List.Perm l.toList r.toList⟧) := by
   enter_decl
   steps
 
@@ -799,7 +846,7 @@ ordered by the provided relation.
 
 See `sort_spec` for a similar theorem that does not impose this restriction.
 -/
-theorem sort_trans_spec {p T N l}
+theorem sort_trans_spec {p T N l} {selfRef : Ref (T.array N)}
     {t_eq : Cmp.Eq.hasImpl env T}
     (t_eq_spec : ∀a b, STHoare p env ⟦⟧ (Cmp.Eq.eq h![] T h![] h![] h![a, b])
       (fun r : Bool => ⟦r ↔ a = b⟧))
@@ -808,16 +855,16 @@ theorem sort_trans_spec {p T N l}
     (t_ord_trans : Std.TransCmp t_ord_emb)
     (t_ord_spec : ∀a b, STHoare p env ⟦⟧ (Cmp.Ord.cmp h![] T h![] h![] h![a, b])
       (fun r => r = Cmp.Ord.fromOrdering (t_ord_emb a b)))
-  : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::array::sort».call h![T, N] h![l])
-    (fun r => List.Pairwise (Cmp.Ord.le_emb t_ord_emb · ·) r.toList
-      ∧ List.Perm l.toList r.toList) := by
+  : STHoare p env [selfRef ↦ ⟨T.array N, l⟩]
+    («std-1.0.0-beta.25::array::sort».call h![T, N] h![selfRef])
+    (fun r => [selfRef ↦ ⟨T.array N, l⟩] ⋆
+      ⟦List.Pairwise (Cmp.Ord.le_emb t_ord_emb · ·) r.toList
+        ∧ List.Perm l.toList r.toList⟧) := by
   steps [sort_spec (t_eq := t_eq) t_eq_spec (t_ord := t_ord) t_ord_emb t_ord_spec]
-  constructor
   rename_i a
   rcases a with ⟨ord_by, perm⟩
-  apply List.OrderedBy.trans_eq_Sorted ord_by (Cmp.Ord.le_emb_trans t_ord_emb t_ord_trans)
-  simp_all
+  exact ⟨List.OrderedBy.trans_eq_Sorted ord_by (Cmp.Ord.le_emb_trans t_ord_emb t_ord_trans),
+    perm⟩
 
 theorem convert_from_str_spec {p N s}
   : STHoare p env ⟦⟧

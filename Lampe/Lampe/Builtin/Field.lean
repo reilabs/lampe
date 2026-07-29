@@ -133,16 +133,16 @@ Represents the builtin that returns the bit representation of the modulus of a f
 little-endian format.
 -/
 def modulusLeBits : Builtin := newTotalPureBuiltin
-  ⟨[], (.vector (.u 1))⟩
-  (fun {p} h![] => (RadixVec.toDigitsLE' 2 p.natVal).map BitVec.ofFin)
+  ⟨[], (.vector .bool)⟩
+  (fun {p} h![] => (RadixVec.toDigitsLE' 2 p.natVal).map Digit.toBool)
 
 /--
 Represents the builtin that returns the bit representation of the modulus of a field in
 big-endian format.
 -/
 def modulusBeBits : Builtin := newTotalPureBuiltin
-  ⟨[], (.vector (.u 1))⟩
-  (fun {p} h![] => (RadixVec.toDigitsBE' 2 p.natVal).map BitVec.ofFin)
+  ⟨[], (.vector .bool)⟩
+  (fun {p} h![] => (RadixVec.toDigitsBE' 2 p.natVal).map Digit.toBool)
 
 /--
 Represents the builtin that returns the byte representation of the modulus of a field in
@@ -174,9 +174,9 @@ Represents the builtin that converts a field element to its bit representation i
 Fails if `f ≥ 2^s`.
 -/
 def toLeBits : Builtin := newGenericBuiltin
-  (fun s => ([.field], .array (.u 1) s))
+  (fun s => ([.field], .array .bool s))
   fun _ h![f] output =>
-    f = RadixVec.ofDigitsLE (r := 2) (output.map BitVec.toFin)
+    f = RadixVec.ofDigitsLE (r := 2) (output.map Bool.toDigit)
 
 /--
 Represents the builtin that converts a field element to its bit representation in big-endian format.
@@ -184,9 +184,9 @@ Represents the builtin that converts a field element to its bit representation i
 Fails if `f ≥ 2^s`.
 -/
 def toBeBits : Builtin := newGenericBuiltin
-  (fun s => ([.field], .array (.u 1) s))
+  (fun s => ([.field], .array .bool s))
   fun _ h![f] output =>
-    f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin)
+    f = RadixVec.ofDigitsBE (r := 2) (output.map Bool.toDigit)
 
 /--
 Represents the builtin that converts a field element to its radix representation in little-endian

@@ -8,7 +8,7 @@ open Lampe
 set_option linter.unusedVariables false
 
 noir_def «noir_base64-0.0.0»::encoder::to_be_radix::to_be_radix_64<N: u32>(x: Field) -> Array<u8, N: u32> := {
-  let bytes = («std-1.0.0-beta.14»::field::to_le_bytes<((N * 3) / 4): u32> as λ(Field) -> Array<u8, ((N * 3) / 4): u32>)(x);
+  let bytes = («std-1.0.0-beta.25»::field::to_le_bytes<((N * 3) / 4): u32> as λ(Field) -> Array<u8, ((N * 3) / 4): u32>)(x);
   let result = {
     («noir_base64-0.0.0»::encoder::to_be_radix::to_be_radix_64_decomposition<((N * 3) / 4): u32, N: u32> as λ(Array<u8, ((N * 3) / 4): u32>) -> Array<u8, N: u32>)(bytes)
   };

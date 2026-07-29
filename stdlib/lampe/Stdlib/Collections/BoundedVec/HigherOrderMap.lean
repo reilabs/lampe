@@ -2,7 +2,7 @@ import Stdlib.Collections.BoundedVec.Methods
 
 namespace Lampe.Stdlib.Collections.BoundedVec
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 
 /-!
 Higher-order method specs for Noir `BoundedVec`: `map` and `mapi` (pure variants).
@@ -10,23 +10,28 @@ Higher-order method specs for Noir `BoundedVec`: `map` and `mapi` (pure variants
 This module is imported by `Stdlib.Collections.BoundedVec` as part of the public API surface.
 -/
 
-private theorem len_concrete_spec' {p T MaxLen self} :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::len».call h![T, MaxLen] h![self])
-      (fun r => r = len self) := by
+private theorem len_concrete_spec' {p T MaxLen self}
+    {selfRef : Ref (bvTp T MaxLen)} :
+    STHoare p env [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::len».call h![T, MaxLen]
+        h![selfRef])
+      (fun r => [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆ ⟦r = len self⟧) := by
   enter_decl
   steps
-  simpa [len]
+  simp_all [len]
 
 private theorem get_unchecked_concrete_spec' {p T MaxLen self index}
+    {selfRef : Ref (bvTp T MaxLen)}
     (hindex : index.toNat < MaxLen.toNat) :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::get_unchecked».call h![T, MaxLen]
-        h![self, index])
-      (fun r => r = (storage self)[index.toNat]'hindex) := by
+    STHoare p env [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::get_unchecked».call h![T, MaxLen]
+        h![selfRef, index])
+      (fun r => [selfRef ↦ ⟨bvTp T MaxLen, self⟩]
+        ⋆ ⟦r = (storage self)[index.toNat]'hindex⟧) := by
   enter_decl
   steps
-  simpa [storage]
+  simp_all [storage, List.Vector.get, List.Vector.getElem_def, BitVec.setWidth_eq]
+  try rfl
 
 @[simp]
 private theorem len_modify_head_tail {p T MaxLen}
@@ -120,6 +125,7 @@ private theorem mapLike_constrained_loop_effectful_spec
     {T : Tp} {MaxLen : U 32} {Out : Tp}
     {Args : List Tp}
     {self : Repr p T MaxLen}
+    {selfRef : Ref (bvTp T MaxLen)}
     {f : FuncRef Args Out}
     {fb : HList (Tp.denote p) Args → Expr (Tp.denote p) Out}
     {mkArgs : U 32 → Tp.denote p T → HList (Tp.denote p) Args}
@@ -137,21 +143,21 @@ private theorem mapLike_constrained_loop_effectful_spec
   : STHoare p env
       ([ret ↦ ⟨bvTp Out MaxLen,
         ((Lens.nil.cons (Access.tuple Member.head.tail)).modify vnew (len self)).get hmod⟩] ⋆
-        [λf ↦ fb] ⋆ inv [] [])
+        [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆ [λf ↦ fb] ⋆ inv [] [])
       (Expr.letIn
         (Expr.loop (↑0) MaxLen fun i =>
           expr!![
             {
               let lenFn =
-                («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
-                  as λ(splice!(bvTp T MaxLen)) -> u32);
-              let selfLen = (lenFn as λ(splice!(bvTp T MaxLen)) -> u32)(self);
+                («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
+                  as λ(splice!((bvTp T MaxLen).ref)) -> u32);
+              let selfLen = (lenFn as λ(splice!((bvTp T MaxLen).ref)) -> u32)(selfRef);
               let cond = (#_uLt returning bool)(i, selfLen);
               if cond then {
                 let getUncheckedFn =
-                  («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
-                    as λ(splice!(bvTp T MaxLen), u32) -> T);
-                let elem = (getUncheckedFn as λ(splice!(bvTp T MaxLen), u32) -> T)(self, i);
+                  («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
+                    as λ(splice!((bvTp T MaxLen).ref), u32) -> T);
+                let elem = (getUncheckedFn as λ(splice!((bvTp T MaxLen).ref), u32) -> T)(selfRef, i);
                 let tmp = splice!(Expr.call Args Out f (mkArgs i elem));
                 splice!(Expr.modifyLens (tp₁ := bvTp Out MaxLen) (tp₂ := Out) ret tmp
                   ((Lens.nil.cons (Access.tuple Member.head)).cons (Access.array i)));
@@ -162,7 +168,8 @@ private theorem mapLike_constrained_loop_effectful_spec
         fun _ => Expr.skip)
       (fun _ =>
         ∃∃ v : Repr p Out MaxLen,
-          [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆ [λf ↦ fb] ⋆ ⟦bounded v⟧ ⋆ inv (embed self) (embed v)) := by
+          [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+            ⟦bounded v⟧ ⋆ inv (embed self) (embed v)) := by
   set xs : List (T.denote p) := embed self
   set n : Nat := (len self).toNat
   have hn_le : n ≤ MaxLen.toNat := by
@@ -175,8 +182,9 @@ private theorem mapLike_constrained_loop_effectful_spec
       ∃∃ v : Repr p Out MaxLen,
         [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆
           [λf ↦ fb] ⋆
-            inv (xs.take (Nat.min i n)) (List.take (Nat.min i n) (storage v).toList) ⋆
-              ⟦len v = len self ∧ bounded v⟧
+            [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+              inv (xs.take (Nat.min i n)) (List.take (Nat.min i n) (storage v).toList) ⋆
+                ⟦len v = len self ∧ bounded v⟧
 
   apply (STHoare.letIn_intro (Q := fun _ => Inv MaxLen.toNat))
   ·
@@ -224,7 +232,7 @@ private theorem mapLike_constrained_loop_effectful_spec
         have hiMax : i32.toNat < MaxLen.toNat := hi_toNat ▸ hhi
         have hget :=
           get_unchecked_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)
-            (index := i32) (hindex := hiMax)
+            (selfRef := selfRef) (index := i32) (hindex := hiMax)
         steps [hget]
 
         have hi_embed : i < (embed self).length := by simpa [xs, hx_len] using hi_lt
@@ -303,11 +311,13 @@ private theorem mapLike_constrained_loop_effectful_spec
     intro _
     let Qfinal : SLP (State p) :=
       ∃∃ v : Repr p Out MaxLen,
-        [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆ [λf ↦ fb] ⋆ ⟦bounded v⟧ ⋆ inv xs (embed v)
+        [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+          ⟦bounded v⟧ ⋆ inv xs (embed v)
     have hInv_to_Q : Inv MaxLen.toNat ⊢ Qfinal := by
       dsimp [Inv, Qfinal]
       refine SLP.exists_mono fun v => ?_
-      refine SLP.star_mono SLP.entails_self (SLP.star_mono SLP.entails_self ?_)
+      refine SLP.star_mono SLP.entails_self
+        (SLP.star_mono SLP.entails_self (SLP.star_mono SLP.entails_self ?_))
       rw [SLP.star_comm]; apply SLP.pure_left; intro ⟨hlenV, hbV⟩
       have hlenNat : (len v).toNat = n := by simpa [n] using congrArg BitVec.toNat hlenV
       refine SLP.pure_right hbV fun st hinv => ?_
@@ -330,16 +340,18 @@ Note: `inv` must describe only external state effects; it is framed disjointly f
 `ret` heaplet used to build the output vector (same assumption as `Stdlib.Vector.map_spec`).
 -/
 theorem map_effectful_spec {p T MaxLen Out Env self f fb}
+    {selfRef : Ref (bvTp T MaxLen)}
     (hwf_self : wellFormed self)
     (inv : List (T.denote p) → List (Out.denote p) → SLP (State p))
     (inv_step :
       ∀ (ip : List (T.denote p)) (op : List (Out.denote p)) (e : T.denote p),
         (ip ++ [e] <+: embed self) →
           STHoare p env (inv ip op) (fb h![e]) (fun r => inv (ip ++ [e]) (op ++ [r])))
-  : STHoare p env (inv [] [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
-        h![self, f])
-      (fun r => ⟦wellFormed r⟧ ⋆ inv (embed self) (embed r)) := by
+  : STHoare p env (inv [] [] ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
+        h![selfRef, f])
+      (fun r => ⟦wellFormed r⟧ ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+        inv (embed self) (embed r)) := by
   enter_decl
   have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
   set xs : List (T.denote p) := embed self
@@ -355,7 +367,8 @@ theorem map_effectful_spec {p T MaxLen Out Env self f fb}
       ∃∃ v : Repr p Out MaxLen,
         [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆
           [λf ↦ fb] ⋆
-            ⟦bounded v⟧ ⋆ inv xs (embed v)))
+            [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+              ⟦bounded v⟧ ⋆ inv xs (embed v)))
   ·
     apply STHoare.ite_intro_of_false rfl
     steps
@@ -372,7 +385,7 @@ theorem map_effectful_spec {p T MaxLen Out Env self f fb}
     simpa [xs] using
       (mapLike_constrained_loop_effectful_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out)
         (Args := [T]) (mkArgs := fun _ a => h![a])
-        (self := self) (f := f) (fb := fb) (ret := ret)
+        (self := self) (selfRef := selfRef) (f := f) (fb := fb) (ret := ret)
         (hb := hb) (hmod := hmod) (inv := inv) (inv_step := inv_step'))
   ·
     intro _
@@ -384,6 +397,7 @@ theorem map_effectful_spec {p T MaxLen Out Env self f fb}
       simpa [hb] using hwf
 
 theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
+    {selfRef : Ref (bvTp T MaxLen)}
     (hwf_self : wellFormed self)
     (inv : List (T.denote p) → List (Out.denote p) → SLP (State p))
     (inv_step :
@@ -391,10 +405,11 @@ theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
         (ip ++ [e] <+: embed self) →
         i.toNat = ip.length →
           STHoare p env (inv ip op) (fb h![i, e]) (fun r => inv (ip ++ [e]) (op ++ [r])))
-  : STHoare p env (inv [] [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
-        h![self, f])
-      (fun r => ⟦wellFormed r⟧ ⋆ inv (embed self) (embed r)) := by
+  : STHoare p env (inv [] [] ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
+        h![selfRef, f])
+      (fun r => ⟦wellFormed r⟧ ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+        inv (embed self) (embed r)) := by
   enter_decl
   have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
   set xs : List (T.denote p) := embed self
@@ -409,7 +424,8 @@ theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
       ∃∃ v : Repr p Out MaxLen,
         [ret ↦ ⟨bvTp Out MaxLen, v⟩] ⋆
           [λf ↦ fb] ⋆
-            ⟦bounded v⟧ ⋆ inv xs (embed v)))
+            [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+              ⟦bounded v⟧ ⋆ inv xs (embed v)))
   ·
     apply STHoare.ite_intro_of_false rfl
     steps
@@ -418,7 +434,7 @@ theorem mapi_effectful_spec {p T MaxLen Out Env self f fb}
     simpa [xs] using
       (mapLike_constrained_loop_effectful_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out)
         (Args := [Tp.u 32, T]) (mkArgs := fun i a => h![i, a])
-        (self := self) (f := f) (fb := fb) (ret := ret)
+        (self := self) (selfRef := selfRef) (f := f) (fb := fb) (ret := ret)
         (hb := hb) (hmod := hmod) (inv := inv) (inv_step := inv_step))
   ·
     intro _
@@ -441,25 +457,32 @@ private lemma lambda_entails_lift_star_left
   SLP.pure_right hP SLP.entails_self
 
 theorem map_pure_spec {p T MaxLen Out Env self f fb fEmb}
+    {selfRef : Ref (bvTp T MaxLen)}
     (hwf_self : wellFormed self)
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
-  : STHoare p env [λf ↦ fb]
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
-        h![self, f])
-      (fun r => wellFormed r ∧ embed r = (embed self).map fEmb) := by
+  : STHoare p env ([λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::map».call h![T, MaxLen, Out, Env]
+        h![selfRef, f])
+      (fun r => [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+        ⟦wellFormed r ∧ embed r = (embed self).map fEmb⟧) := by
   -- Corollary of `map_effectful_spec` with the pure invariant `inv ip op := ⟦op = ip.map fEmb⟧`.
   refine STHoare.consequence
-      (H₁ := ⟦([] : List (Out.denote p)) = ([] : List (T.denote p)).map fEmb⟧ ⋆ [λf ↦ fb])
-      (Q₁ := fun r => ⟦wellFormed r⟧ ⋆ ⟦embed r = (embed self).map fEmb⟧)
+      (H₁ := ⟦([] : List (Out.denote p)) = ([] : List (T.denote p)).map fEmb⟧ ⋆ [λf ↦ fb] ⋆
+        [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+      (Q₁ := fun r => ⟦wellFormed r⟧ ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+        ⟦embed r = (embed self).map fEmb⟧)
       ?_ ?_ ?_
-  · -- Pre: `[λf ↦ fb] ⊢ ⟦[] = [].map fEmb⟧ ⋆ [λf ↦ fb]`.
-    exact lambda_entails_lift_star_left (by simp)
-  · -- Post: `(⟦wellFormed r⟧ ⋆ ⟦embed r = ...⟧) ⋆ ⊤ ⊢ ⟦wellFormed r ∧ embed r = ...⟧ ⋆ ⊤`.
+  · -- Pre: add the trivial `⟦[] = [].map fEmb⟧` on the left.
+    exact SLP.pure_right (by simp) SLP.entails_self
+  · -- Post: fold the two lifts around the `selfRef` chunk into one.
     intro r
-    simp only [SLP.lift_star_lift]
-    exact SLP.entails_self
+    rw [SLP.star_assoc]
+    apply SLP.pure_left
+    intro hwfR
+    exact SLP.star_mono (SLP.star_mono_l (SLP.lift_mono fun hembR => ⟨hwfR, hembR⟩))
+      SLP.entails_self
   · refine map_effectful_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out) (Env := Env)
-        (self := self) (f := f) (fb := fb) hwf_self
+        (self := self) (selfRef := selfRef) (f := f) (fb := fb) hwf_self
         (inv := fun ip op => ⟦op = ip.map fEmb⟧)
         (inv_step := ?_)
     intro ip op e _
@@ -477,27 +500,34 @@ theorem map_pure_spec {p T MaxLen Out Env self f fb fEmb}
     exact SLP.pure_right (by simp [hr, hop]) SLP.entails_top
 
 theorem mapi_pure_spec {p T MaxLen Out Env self f fb fEmb}
+    {selfRef : Ref (bvTp T MaxLen)}
     (hwf_self : wellFormed self)
     (inv_pure : ∀ (i : U 32) (a : Tp.denote p T),
         (hi : i.toNat < (embed self).length) →
           STHoare p env ⟦⟧ (fb h![i, a]) (fun r => r = fEmb i.toNat a))
-  : STHoare p env [λf ↦ fb]
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
-        h![self, f])
-      (fun r => wellFormed r ∧ embed r = (embed self).mapIdx fEmb) := by
+  : STHoare p env ([λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::mapi».call h![T, MaxLen, Out, Env]
+        h![selfRef, f])
+      (fun r => [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+        ⟦wellFormed r ∧ embed r = (embed self).mapIdx fEmb⟧) := by
   -- Corollary of `mapi_effectful_spec` with the pure invariant `inv ip op := ⟦op = ip.mapIdx fEmb⟧`.
   refine STHoare.consequence
-      (H₁ := ⟦([] : List (Out.denote p)) = ([] : List (T.denote p)).mapIdx fEmb⟧ ⋆ [λf ↦ fb])
-      (Q₁ := fun r => ⟦wellFormed r⟧ ⋆ ⟦embed r = (embed self).mapIdx fEmb⟧)
+      (H₁ := ⟦([] : List (Out.denote p)) = ([] : List (T.denote p)).mapIdx fEmb⟧ ⋆ [λf ↦ fb] ⋆
+        [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+      (Q₁ := fun r => ⟦wellFormed r⟧ ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆
+        ⟦embed r = (embed self).mapIdx fEmb⟧)
       ?_ ?_ ?_
-  · -- Pre: `[λf ↦ fb] ⊢ ⟦[] = [].mapIdx fEmb⟧ ⋆ [λf ↦ fb]`.
-    exact lambda_entails_lift_star_left (by simp)
-  · -- Post: `(⟦wellFormed r⟧ ⋆ ⟦embed r = ...⟧) ⋆ ⊤ ⊢ ⟦wellFormed r ∧ embed r = ...⟧ ⋆ ⊤`.
+  · -- Pre: add the trivial `⟦[] = [].mapIdx fEmb⟧` on the left.
+    exact SLP.pure_right (by simp) SLP.entails_self
+  · -- Post: fold the two lifts around the `selfRef` chunk into one.
     intro r
-    simp only [SLP.lift_star_lift]
-    exact SLP.entails_self
+    rw [SLP.star_assoc]
+    apply SLP.pure_left
+    intro hwfR
+    exact SLP.star_mono (SLP.star_mono_l (SLP.lift_mono fun hembR => ⟨hwfR, hembR⟩))
+      SLP.entails_self
   · refine mapi_effectful_spec (p := p) (T := T) (MaxLen := MaxLen) (Out := Out) (Env := Env)
-        (self := self) (f := f) (fb := fb) hwf_self
+        (self := self) (selfRef := selfRef) (f := f) (fb := fb) hwf_self
         (inv := fun ip op => ⟦op = ip.mapIdx fEmb⟧)
         (inv_step := ?_)
     intro ip op i e hprefix hip_len
@@ -532,7 +562,7 @@ theorem any_spec {p T MaxLen Env self f fb}
           STHoare p env (inv ip op) (fb h![e]) (fun r => inv (ip ++ [e]) (op ∨ r)))
   : STHoare p env
       (inv [] false ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
         h![self, f])
       (fun r => inv (embed self) r ⋆ [λf ↦ fb]) := by
   enter_decl
@@ -691,7 +721,7 @@ theorem any_pure_spec {p T MaxLen Env self f fb fEmb}
     (hwf_self : wellFormed self)
     (inv_pure : ∀a, STHoare p env ⟦⟧ (fb h![a]) (fun r => r = fEmb a))
   : STHoare p env [λf ↦ fb]
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::any».call h![T, MaxLen, Env]
         h![self, f])
       (fun r => r = (embed self).any fEmb) := by
   -- Specialize `any_spec` with a pure invariant `op = ip.any fEmb`.
@@ -723,6 +753,7 @@ private theorem forEachLike_constrained_loop_spec
     {T : Tp} {MaxLen : U 32}
     {Args : List Tp}
     {self : Repr p T MaxLen}
+    {selfRef : Ref (bvTp T MaxLen)}
     {f : FuncRef Args Tp.unit}
     {fb : HList (Tp.denote p) Args → Expr (Tp.denote p) Tp.unit}
     {mkArgs : U 32 → Tp.denote p T → HList (Tp.denote p) Args}
@@ -734,28 +765,28 @@ private theorem forEachLike_constrained_loop_spec
         i.toNat = ip.length →
           STHoare p env (Inv ip) (fb (mkArgs i e)) (fun _ => Inv (ip ++ [e])))
   : STHoare p env
-      (Inv [] ⋆ [λf ↦ fb])
+      ([selfRef ↦ ⟨bvTp T MaxLen, self⟩] ⋆ [λf ↦ fb] ⋆ Inv [])
       (Expr.letIn
         (Expr.loop (↑0) MaxLen fun i =>
           expr!![
             {
               let lenFn =
-                («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
-                  as λ(splice!(bvTp T MaxLen)) -> u32);
-              let selfLen = (lenFn as λ(splice!(bvTp T MaxLen)) -> u32)(self);
+                («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::len»<T, MaxLen : u32>
+                  as λ(splice!((bvTp T MaxLen).ref)) -> u32);
+              let selfLen = (lenFn as λ(splice!((bvTp T MaxLen).ref)) -> u32)(selfRef);
               let cond = (#_uLt returning bool)(i, selfLen);
               if cond then {
                 let getUncheckedFn =
-                  («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
-                    as λ(splice!(bvTp T MaxLen), u32) -> T);
-                let elem = (getUncheckedFn as λ(splice!(bvTp T MaxLen), u32) -> T)(self, i);
+                  («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::get_unchecked»<T, MaxLen : u32>
+                    as λ(splice!((bvTp T MaxLen).ref), u32) -> T);
+                let elem = (getUncheckedFn as λ(splice!((bvTp T MaxLen).ref), u32) -> T)(selfRef, i);
                 splice!(Expr.call Args Tp.unit f (mkArgs i elem));
                 #_skip
               }
             }
           ])
         fun _ => Expr.skip)
-      (fun _ => Inv (embed self) ⋆ [λf ↦ fb]) := by
+      (fun _ => Inv (embed self) ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩]) := by
   set xs : List (T.denote p) := embed self
   set n : Nat := (len self).toNat
   have hn_le : n ≤ MaxLen.toNat := by
@@ -763,16 +794,19 @@ private theorem forEachLike_constrained_loop_spec
   have hx_len : xs.length = n := by
     simpa [xs, n] using embed_length_eq_len_toNat (v := self) hb
   -- Peel `let _ := (for i in 0..MaxLen { ... }) in skip`.
-  apply (STHoare.letIn_intro (Q := fun _ => Inv xs ⋆ [λf ↦ fb]))
+  apply (STHoare.letIn_intro
+    (Q := fun _ => Inv xs ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩]))
   ·
-    loop_inv nat (fun i _ _ => Inv (xs.take (Nat.min i n)) ⋆ [λf ↦ fb])
+    loop_inv nat (fun i _ _ =>
+      Inv (xs.take (Nat.min i n)) ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+    ·
+      -- initial entailment (`sl` leaves the `0 ≤ MaxLen` loop-bound side goal)
+      sl
+      simp
     ·
       -- postcondition weakening
       simp only [Nat.min_eq_right hn_le, List.take_of_length_le (Nat.le_of_eq hx_len)]
-      exact SLP.ent_star_top
-    ·
-      -- 0 ≤ MaxLen.toNat
-      simp [Nat.zero_le MaxLen.toNat]
+      sl
     ·
       intro i hlo hhi
       have pf : i < 2 ^ 32 := lt_two_pow_of_lt_maxLen (MaxLen := MaxLen) hhi
@@ -793,7 +827,7 @@ private theorem forEachLike_constrained_loop_spec
           simp [hmodNat]; exact hhi
         have hget :=
           get_unchecked_concrete_spec' (p := p) (T := T) (MaxLen := MaxLen) (self := self)
-            (index := BitVec.ofNatLT i pf) (hindex := hiMax)
+            (selfRef := selfRef) (index := BitVec.ofNatLT i pf) (hindex := hiMax)
         steps [hget]
         subst getUncheckedFn
         steps [hget]
@@ -838,7 +872,7 @@ private theorem forEachLike_constrained_loop_spec
     intro _
     steps
 
-theorem for_each_spec {T Env p MaxLen self f fb}
+theorem for_each_spec {T Env p MaxLen self f fb} {selfRef : Ref (bvTp T MaxLen)}
     (hwf_self : wellFormed self)
     (Inv : List (Tp.denote p T) → SLP (State p))
     (h_inv :
@@ -846,10 +880,10 @@ theorem for_each_spec {T Env p MaxLen self f fb}
         (lp ++ [e] <+: embed self) →
           STHoare p env (Inv lp) (fb h![e]) (fun _ => Inv (lp ++ [e])))
   : STHoare p env
-      (Inv [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::for_each».call h![T, MaxLen, Env]
-        h![self, f])
-      (fun _ => Inv (embed self) ⋆ [λf ↦ fb]) := by
+      (Inv [] ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::for_each».call h![T, MaxLen, Env]
+        h![selfRef, f])
+      (fun _ => Inv (embed self) ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩]) := by
   enter_decl
   have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
   -- Reduce `isUnconstrained()` (always `false`) and enter the constrained branch.
@@ -857,15 +891,14 @@ theorem for_each_spec {T Env p MaxLen self f fb}
   all_goals (try exact ())
   apply STHoare.ite_intro_of_false rfl
   steps
-  rw [SLP.star_comm]
   apply forEachLike_constrained_loop_spec (p := p) (T := T) (MaxLen := MaxLen)
     (Args := [T]) (mkArgs := fun _ a => h![a])
-    (self := self) (f := f) (fb := fb)
+    (self := self) (selfRef := selfRef) (f := f) (fb := fb)
     (hb := hb) (Inv := Inv) (inv_step := by
       intro ip i e hprefix _
       exact h_inv (lp := ip) (e := e) hprefix)
 
-theorem for_eachi_spec {T Env p MaxLen self f fb}
+theorem for_eachi_spec {T Env p MaxLen self f fb} {selfRef : Ref (bvTp T MaxLen)}
     (hwf_self : wellFormed self)
     (inv : List (T.denote p) → SLP (State p))
     (inv_spec :
@@ -873,10 +906,10 @@ theorem for_eachi_spec {T Env p MaxLen self f fb}
         (ip ++ [e] <+: embed self) →
           STHoare p env (inv ip) (fb h![ip.length, e]) (fun _ => inv (ip ++ [e])))
   : STHoare p env
-      (inv [] ⋆ [λf ↦ fb])
-      («std-1.0.0-beta.14::collections::bounded_vec::BoundedVec::for_eachi».call h![T, MaxLen, Env]
-        h![self, f])
-      (fun _ => inv (embed self) ⋆ [λf ↦ fb]) := by
+      (inv [] ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩])
+      («std-1.0.0-beta.25::collections::bounded_vec::BoundedVec::for_eachi».call h![T, MaxLen, Env]
+        h![selfRef, f])
+      (fun _ => inv (embed self) ⋆ [λf ↦ fb] ⋆ [selfRef ↦ ⟨bvTp T MaxLen, self⟩]) := by
   enter_decl
   have hb : bounded self := (bounded_iff_wellFormed (v := self)).2 hwf_self
   -- Reduce `isUnconstrained()` (always `false`) and enter the constrained branch.
@@ -884,10 +917,9 @@ theorem for_eachi_spec {T Env p MaxLen self f fb}
   all_goals (try exact ())
   apply STHoare.ite_intro_of_false rfl
   steps
-  rw [SLP.star_comm]
   apply forEachLike_constrained_loop_spec (p := p) (T := T) (MaxLen := MaxLen)
     (Args := [Tp.u 32, T]) (mkArgs := fun i a => h![i, a])
-    (self := self) (f := f) (fb := fb)
+    (self := self) (selfRef := selfRef) (f := f) (fb := fb)
     (hb := hb) (Inv := inv) (inv_step := by
       intro ip i e hprefix hip_len
       have i_eq_len : (ip).length = i.toNat := by omega

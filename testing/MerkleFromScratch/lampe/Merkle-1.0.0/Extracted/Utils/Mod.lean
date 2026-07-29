@@ -31,8 +31,8 @@ noir_def «Merkle-1.0.0»::utils::sbox<>(v: u8) -> u8 := {
   (#_uXor returning u8)(v, x6)
 }
 
-noir_def «Merkle-1.0.0»::utils::sgn0<>(self: Field) -> u1 := {
-  (#_cast returning u1)(self)
+noir_def «Merkle-1.0.0»::utils::sgn0<>(self: Field) -> bool := {
+  (#_uEq returning bool)((#_uRem returning u8)((#_cast returning u8)(self), (2: u8)), (1: u8))
 }
 
 noir_def «Merkle-1.0.0»::utils::as_array<>(self: Vector<u8>) -> Array<u8, 32: u32> := {
