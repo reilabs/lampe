@@ -13,8 +13,13 @@ open Lean Elab
 
 /--
 Views `stx` as a compile-time-constant element of an array literal, returning a term for its
-denoted value (the surrounding list ascription supplies the expected type). Returns `none` for
-anything that is not a numeric or boolean literal.
+denoted value. Returns `none` for anything that is not a numeric or boolean literal.
+
+Note that the element's own Noir-level type ascription (`$n : $_`) is dropped: the returned
+term is a bare Lean numeral (or `Bool` literal), which later elaborates against the expected
+element type `Tp.denote p tp` imposed by the hoisted definition's type ascription — via that
+type's `OfNat` (resp. `Neg`) instance. Dropping the ascription is sound because extraction
+always ascribes every element with the array's element type.
 -/
 private partial def litArrayElem (stx : TSyntax `noir_expr) :
     Elab.Command.CommandElabM (Option (TSyntax `term)) := do
@@ -61,12 +66,23 @@ private def hoistLiteralArrays (baseName : Name) (stx : Syntax) :
     | `(noir_expr|(#_ $nm:ident returning $tp)( $args,* )) => do
       let isArray := nm.getId == `mkArray
       unless isArray || nm.getId == `mkVector do return none
+      -- Empty literals stay on the general path: they are already cheap, and there would be
+      -- nothing to hoist.
       if args.getElems.isEmpty then return none
+      -- All-or-nothing: view every element as a compile-time constant; if any element is not
+      -- one (`mapM id` folds `Array (Option _)` into `Option (Array _)`), leave the whole
+      -- literal on the general `mkArray`/`mkVector` path.
       let elems ← args.getElems.mapM litArrayElem
       let some elems := elems.mapM id | return none
+      -- Elaborate the surface type annotation into a `Tp` term; it becomes the builtin's
+      -- parameter and, projected via `Tp.arrayElem`/`Tp.vectorElem`, the element type of the
+      -- hoisted list.
       let arrTp ← MonadDSL.run (makeNoirType tp)
-      -- Emit the element list in chunks joined by `++` so that the nesting depth of the
-      -- elaborated term stays bounded regardless of the array length.
+      -- A `[…]` literal expands to a right-nested chain of `List.cons`, so a single literal of
+      -- all `n` elements would make the elaborator recurse to depth `n` (overflowing its stack
+      -- for large `n`). Emitting the elements as 256-element `[…]` chunks joined by `++` caps
+      -- the depth contributed by any one literal at 256, leaving only the far shallower
+      -- (`n / 256`-deep) `++` spine.
       let chunkSize := 256
       let mut chunks : Array (Array (TSyntax `term)) := #[]
       let mut i := 0
@@ -77,10 +93,18 @@ private def hoistLiteralArrays (baseName : Name) (stx : Syntax) :
       for c in chunks.pop.reverse do
         body ← `([$c,*] ++ $body)
       let idx ← counter.modifyGet fun i => (i, i + 1)
+      -- `#` cannot appear in Noir identifiers, so the auxiliary name can never collide with an
+      -- extracted definition.
       let auxId := mkIdent <| Name.mkSimple s!"{baseName.getString!}#lits{idx}"
       let elemTp ← if isArray then `(Tp.arrayElem $arrTp) else `(Tp.vectorElem $arrTp)
+      -- Elaborate the auxiliary definition immediately, as its own command: the deep element
+      -- list is type-checked exactly once, here, and every later mention of the array — in the
+      -- extracted body and in proof goals — is just this constant.
       Elab.Command.elabCommand <| ←
         `(def $auxId ($pId : Prime) : List (Tp.denote $pId $elemTp) := $body)
+      -- Replace the literal with a raw `Expr.callBuiltin` via the `splice!` escape hatch
+      -- (bypassing the surface grammar, which has no syntax for data-carrying builtins). The
+      -- call takes no argument expressions — the elements travel inside the builtin.
       let repl ← if isArray then
         `(noir_expr|
           splice!( Expr.callBuiltin [] $arrTp (Builtin.mkValArray $arrTp $auxId) h![] ))

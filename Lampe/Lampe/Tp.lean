@@ -281,7 +281,17 @@ match tp with
 
 end
 
-/-- The element type of an array type (or `.unit` for non-array types). -/
+/--
+The element type of an array type (or `.unit` for non-array types).
+
+This and the projections below exist so that `Builtin.mkValArray`/`mkValVector` can state their
+signatures in terms of the *whole* array/vector type they are given. They are `@[reducible]` so
+that e.g. `(Tp.array tp n).arrayElem` reduces to `tp` during unification — the Hoare triple
+produced for a `mkValArray` call (see `Tactic/Steps.lean`) is stated at the projected type
+`.array arrTp.arrayElem arrTp.arraySize`, and must unify with goals stated at the original
+array type. The `.unit`/`0` fallbacks for non-matching types are never reached by the
+elaborator; they just make the projections total.
+-/
 @[reducible]
 def Tp.arrayElem : Tp → Tp
   | .array tp _ => tp
