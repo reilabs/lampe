@@ -63,7 +63,8 @@ Elaborates an expression in the Noir eDSL, primarily intended for debugging.
 It is intended to be used with `#check`, such as `#check expr!![1 : u8]`.
 -/
 elab "expr!![" expr:noir_expr "]" : term => do
-  let term ← MonadDSL.run $ makeExpr expr none none
+  let term ← MonadDSL.run do
+    wrapSharedTypeLets (←makeExpr expr none none)
   Elab.Term.elabTerm term none
 
 /--
