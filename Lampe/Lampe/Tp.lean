@@ -281,6 +281,24 @@ match tp with
 
 end
 
+/-- The element type of an array type (or `.unit` for non-array types). -/
+@[reducible]
+def Tp.arrayElem : Tp → Tp
+  | .array tp _ => tp
+  | _ => .unit
+
+/-- The length of an array type (or `0` for non-array types). -/
+@[reducible]
+def Tp.arraySize : Tp → U 32
+  | .array _ n => n
+  | _ => 0
+
+/-- The element type of a vector (slice) type (or `.unit` for non-vector types). -/
+@[reducible]
+def Tp.vectorElem : Tp → Tp
+  | .vector tp => tp
+  | _ => .unit
+
 /-- Index into a `Tp.denoteArgs` tuple by `Member` witness. -/
 @[reducible]
 def Tp.denoteArgs.getByMember : {tps : List Tp} → Tp.denoteArgs p tps → Member tp tps → Tp.denote p tp

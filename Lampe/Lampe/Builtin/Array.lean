@@ -92,6 +92,30 @@ def mkRepeatedArray := newGenericTotalPureBuiltin
   (fun (num, _) h![val] => List.Vector.replicate num.toNat val)
 
 /--
+Interprets a list of element values as an array of length `n`, truncating or zero-padding as
+needed. The length proof is the generic `List.takeD_length`, so no per-instance proof obligation
+arises when constructing concrete arrays this way.
+-/
+def valArray {p : Prime} (tp : Tp) (n : U 32) (vals : List (Tp.denote p tp)) :
+    Tp.denote p (.array tp n) :=
+  ⟨vals.takeD n.toNat (Tp.zero p tp), List.takeD_length _ _ _⟩
+
+/--
+Defines the builtin constructor for arrays whose elements are all compile-time constants.
+
+The element values are carried by the builtin itself as a (prime-generic) denoted list, rather
+than as per-element expressions. The Lampe elaborator emits this builtin — with `vals` referencing
+a hoisted auxiliary definition — for array literals all of whose elements are numeric literals.
+This keeps both the extracted term and every proof goal mentioning the array shallow (a single
+constant), in contrast to the general `mkArray` path which `letIn`-binds each element and so
+produces terms whose depth grows with the array length.
+-/
+def mkValArray (arrTp : Tp) (vals : (p : Prime) → List (Tp.denote p arrTp.arrayElem)) :=
+  newGenericTotalPureBuiltin
+    (fun (_ : Unit) => ⟨[], .array arrTp.arrayElem arrTp.arraySize⟩)
+    (fun _ h![] => valArray arrTp.arrayElem arrTp.arraySize (vals _))
+
+/--
 Defines the indexing of a array `l : Array tp n` with `i : U 32`
 We make the following assumptions:
 - If `i < n`, then the builtin returns `l[i] : Tp.denote tp`

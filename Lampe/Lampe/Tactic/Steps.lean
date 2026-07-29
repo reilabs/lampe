@@ -158,6 +158,13 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := (List.length $argTypes, _)) rfl))
         | ``Lampe.Builtin.mkRepeatedArray =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedArray (a := (_, _)) rfl))
+        | ``Lampe.Builtin.mkValArray =>
+          let some arrTp := builtin.getAppArgs[0]? | throwError "malformed mkValArray"
+          let some vals := builtin.getAppArgs[1]? | throwError "malformed mkValArray"
+          let arrTp ← arrTp.toSyntax
+          let vals ← vals.toSyntax
+          return some
+            (←``(genericTotalPureBuiltin_intro (Builtin.mkValArray $arrTp $vals) (a := ()) rfl))
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro))
         | ``Lampe.Builtin.arrayLen =>
           let some argTps :=  val.getAppArgs[1]? | throwError "malformed arrayLen"
@@ -176,6 +183,13 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkVector (a := (List.length $argTypes, _)) rfl))
         | ``Lampe.Builtin.mkRepeatedVector =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedVector (a := _) rfl))
+        | ``Lampe.Builtin.mkValVector =>
+          let some tp := builtin.getAppArgs[0]? | throwError "malformed mkValVector"
+          let some vals := builtin.getAppArgs[1]? | throwError "malformed mkValVector"
+          let tp ← tp.toSyntax
+          let vals ← vals.toSyntax
+          return some
+            (←``(genericTotalPureBuiltin_intro (Builtin.mkValVector $tp $vals) (a := ()) rfl))
         | ``Lampe.Builtin.vectorPushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.vectorPushBack rfl))
         | ``Lampe.Builtin.vectorPushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.vectorPushFront rfl))
         | ``Lampe.Builtin.vectorIndex => return some (←``(vectorIndex_intro))

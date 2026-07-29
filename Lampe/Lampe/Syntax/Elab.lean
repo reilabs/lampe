@@ -11,18 +11,101 @@ open Lean Elab
 
 -- DSL: TERMS -------------------------------------------------------------------------------------
 
+/--
+Views `stx` as a compile-time-constant element of an array literal, returning a term for its
+denoted value (the surrounding list ascription supplies the expected type). Returns `none` for
+anything that is not a numeric or boolean literal.
+-/
+private partial def litArrayElem (stx : TSyntax `noir_expr) :
+    Elab.Command.CommandElabM (Option (TSyntax `term)) := do
+  match stx with
+  | `(noir_expr|($e:noir_expr)) => litArrayElem e
+  | `(noir_expr|$n:num : $_) => return some (←`($n))
+  | `(noir_expr|-$n:num : $_) => return some (←`((-$n)))
+  | `(noir_expr|#_true) => return some (←`(true))
+  | `(noir_expr|#_false) => return some (←`(false))
+  | _ => return none
+
+/-- Applies `f` to every node of `stx` top-down, replacing a node (without descending into the
+replacement) whenever `f` returns `some`. -/
+private partial def replaceSyntaxTopDownM [Monad m] (f : Syntax → m (Option Syntax))
+    (stx : Syntax) : m Syntax := do
+  match ← f stx with
+  | some new => return new
+  | none => match stx with
+    | .node info kind args => return .node info kind (← args.mapM (replaceSyntaxTopDownM f))
+    | s => return s
+
+/--
+Rewrites every `#_ mkArray` / `#_ mkVector` call in `stx` whose arguments are all compile-time
+constants into a single `Builtin.mkValArray` / `Builtin.mkValVector` call (via the `splice!`
+escape hatch), hoisting the element values into an auxiliary definition named
+`«<baseName>#lits<i>»`.
+
+The general `mkArray` path `letIn`-binds every element, so an `n`-element literal produces a term
+(and, later, proof goals) of depth `O(n)`; every recursive traversal of such a term — during
+elaboration, `simp`, or unification — then needs recursion depth and time proportional to `n`,
+which makes large array literals unusably slow. After this rewrite the extracted body and all
+goals about it contain only the (shallow) auxiliary constant, so their cost is independent of the
+array size. The auxiliary definition elaborates the deep list literal exactly once.
+
+Arrays with any non-constant element (e.g. a function call) are left on the general path.
+-/
+private def hoistLiteralArrays (baseName : Name) (stx : Syntax) :
+    Elab.Command.CommandElabM Syntax := do
+  let counter ← IO.mkRef (0 : Nat)
+  let pId := mkIdent `p
+  let rewrite (node : Syntax) : Elab.Command.CommandElabM (Option Syntax) := do
+    let tnode : TSyntax `noir_expr := ⟨node⟩
+    match tnode with
+    | `(noir_expr|(#_ $nm:ident returning $tp)( $args,* )) => do
+      let isArray := nm.getId == `mkArray
+      unless isArray || nm.getId == `mkVector do return none
+      if args.getElems.isEmpty then return none
+      let elems ← args.getElems.mapM litArrayElem
+      let some elems := elems.mapM id | return none
+      let arrTp ← MonadDSL.run (makeNoirType tp)
+      -- Emit the element list in chunks joined by `++` so that the nesting depth of the
+      -- elaborated term stays bounded regardless of the array length.
+      let chunkSize := 256
+      let mut chunks : Array (Array (TSyntax `term)) := #[]
+      let mut i := 0
+      while i < elems.size do
+        chunks := chunks.push (elems.extract i (min (i + chunkSize) elems.size))
+        i := i + chunkSize
+      let mut body ← `([$(chunks.back!),*])
+      for c in chunks.pop.reverse do
+        body ← `([$c,*] ++ $body)
+      let idx ← counter.modifyGet fun i => (i, i + 1)
+      let auxId := mkIdent <| Name.mkSimple s!"{baseName.getString!}#lits{idx}"
+      let elemTp ← if isArray then `(Tp.arrayElem $arrTp) else `(Tp.vectorElem $arrTp)
+      Elab.Command.elabCommand <| ←
+        `(def $auxId ($pId : Prime) : List (Tp.denote $pId $elemTp) := $body)
+      let repl ← if isArray then
+        `(noir_expr|
+          splice!( Expr.callBuiltin [] $arrTp (Builtin.mkValArray $arrTp $auxId) h![] ))
+      else
+        `(noir_expr|
+          splice!( Expr.callBuiltin [] $arrTp (Builtin.mkValVector $elemTp $auxId) h![] ))
+      return some repl.raw
+    | _ => return none
+  replaceSyntaxTopDownM rewrite stx
+
 /-- Elaborates a function definition written in the Noir eDSL. -/
 elab d:noir_depr? "noir_def" decl:noir_fn_def : command => do
+  let baseName ← makeNoirIdent decl.raw[0]
+  let decl : TSyntax `noir_fn_def := ⟨← hoistLiteralArrays baseName.getId decl.raw⟩
   let (name, decl) ← makeFnDecl decl
   let decl ← match (←parseDeprecatedMessage d) with
   | some msg => `(
-    @[deprecated $name $(Syntax.mkStrLit msg) (since := "")] 
+    @[deprecated $name $(Syntax.mkStrLit msg) (since := "")]
     def $name : FunctionDecl := $decl)
   | none => `(def $name : FunctionDecl := $decl)
   Elab.Command.elabCommand decl
 
 /-- Elaborates a trait implementation written in the Noir eDSL. -/
 elab "noir_trait_impl[" defName:ident "]" impl:noir_trait_impl : command => do
+  let impl : TSyntax `noir_trait_impl := ⟨← hoistLiteralArrays defName.getId impl.raw⟩
   let (name, impl) ← makeTraitImpl impl
   let decl ← `(def $defName : String × TraitImpl := ($(Syntax.mkStrLit name.getId.toString), $impl))
   Elab.Command.elabCommand decl
