@@ -83,6 +83,7 @@ inductive Omni : (Γ : Env) → (st : State p) → (expr : Expr (Tp.denote p) tp
   Omni Γ st (Expr.callBuiltin argTps outTp b args) Q
 | loopDone :
   lo ≥ hi →
+  Q (some (st, ())) →
   Omni Γ st (.loop lo hi body) Q
 | loopNext {s} {lo hi : U s} {body} :
   lo < hi →
@@ -216,8 +217,10 @@ theorem frame {p Γ tp} {st₁ st₂ : State p} {e : Expr (Tp.denote p) tp} {Q} 
       . rw [hin₄]
   | loopDone =>
     intro
-    constructor
-    assumption
+    apply loopDone (by assumption)
+    simp only
+    repeat apply Exists.intro
+    tauto
   | loopNext =>
     intro
     apply loopNext (by assumption)
