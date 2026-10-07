@@ -413,6 +413,10 @@ Used by `simpOnlyGoal` and the `reduce_fn_body` tactic.
 private partial def reduceBetaIotaMatch (e : Lean.Expr) : Lean.MetaM Lean.Expr := do
   let step (e : Lean.Expr) : Lean.MetaM Lean.Expr := Lean.Meta.withTransparency .all do
     let e := e.headBeta
+    -- Zeta: noir_def bodies `let`-bind their shared type annotations (`makeNoirTypeShared`);
+    -- substituting them away here restores the fully-expanded body shape the rest of the
+    -- machinery expects.
+    let e := if let .letE _ _ v b _ := e then b.instantiate1 v else e
     let e := match ← Lean.Meta.reduceMatcher? e with
       | .reduced e' => e'
       | _ => e
@@ -738,6 +742,8 @@ def elabEnterDecl : Tactic := fun _ => do
     let goalType ← goal.getType
     let reduceOne (e : Lean.Expr) : Lean.MetaM Lean.Expr := do
       let e := e.headBeta
+      -- Zeta for the `let`-bound shared type annotations; see `reduceBetaIotaMatch`.
+      let e := if let .letE _ _ v b _ := e then b.instantiate1 v else e
       let e := match ← Lean.Meta.reduceMatcher? e with
         | .reduced e' => e'
         | _ => e

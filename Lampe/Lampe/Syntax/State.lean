@@ -24,6 +24,16 @@ structure LambdaParam where
 /-- The state for the desugaring process from the DSL syntax into native Lean/lampe constructs. -/
 structure DSLState where
   nextFresh : Nat
+  /--
+  Maps the (printed) syntax of a type annotation to the identifier its built term has been bound
+  to, so that repeated annotations reuse one binding. See `makeNoirTypeShared`.
+  -/
+  sharedTypeCache : Std.HashMap String Lean.Ident := {}
+  /--
+  The bindings backing `sharedTypeCache`, in creation order. `wrapSharedTypeLets` emits these as
+  `let`s around the finished term.
+  -/
+  sharedTypeLets : Array (Lean.Ident × TSyntax `term) := #[]
 
 /--
 The monad under which the desugaring operations all operate.
@@ -52,7 +62,68 @@ instance [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
 /-- Runs the DSL monad beginning with an empty state. -/
 def MonadDSL.run [Monad m] [MonadQuotation m] [MonadExceptOf Exception m] [MonadError m]
     (a : StateT DSLState m α) : m α :=
-  StateT.run' a ⟨0⟩
+  StateT.run' a ⟨0, {}, #[]⟩
+
+/--
+The number of syntax nodes a type annotation must have before it is worth sharing via
+`makeNoirTypeShared`. Small types (`u32`, generic parameters, …) are cheap to re-elaborate, and
+`let`-binding them would only add noise.
+-/
+def sharedTypeThreshold : Nat := 16
+
+/-- The number of nodes in a syntax tree, used as the size measure for `sharedTypeThreshold`. -/
+private partial def syntaxWeight : Syntax → Nat
+| .node _ _ args => args.foldl (fun acc s => acc + syntaxWeight s) 1
+| _ => 1
+
+/-- Whether the syntax contains a hole (`_`), whose elaboration is context-dependent and which
+therefore can never be shared between use sites. -/
+private partial def containsHole : Syntax → Bool
+| s@(.node _ _ args) => s.isOfKind ``Lean.Parser.Term.hole || args.any containsHole
+| _ => false
+
+/--
+Builds the term for the provided type annotation, sharing the result between identical
+annotations within one run of the DSL monad.
+
+Extracted code repeats the same (frequently enormous) type annotation on every call, builtin,
+and reference that touches the type. Building the term anew for each occurrence makes the
+generated definition — and its elaboration cost — grow with the number of occurrences rather
+than the number of distinct types. Instead, the first occurrence of a sufficiently large type
+binds its term to a fresh identifier (registered in the state; `wrapSharedTypeLets` later emits
+the `let` for it), and every further occurrence elaborates to just that identifier. Since
+`let`-bound variables are definitionally transparent, downstream elaboration and unification
+treat the identifier exactly like the type it abbreviates.
+
+Types below `sharedTypeThreshold`, and types whose built term contains a context-dependent hole
+(`_`), fall back to plain `makeNoirType`.
+-/
+def makeNoirTypeShared [MonadDSL m] (stx : TSyntax `noir_type) : m (TSyntax `term) := do
+  if syntaxWeight stx.raw < sharedTypeThreshold then
+    makeNoirType stx
+  else
+    let key := toString stx.raw
+    if let some ident := (←get).sharedTypeCache[key]? then
+      return ident
+    let t ← makeNoirType stx
+    if containsHole t.raw then
+      return t
+    let ident ← modifyGet fun s =>
+      let ident := mkIdent $ Name.mkSimple s!"#tp_{s.sharedTypeLets.size}"
+      (ident, { s with
+        sharedTypeCache := s.sharedTypeCache.insert key ident
+        sharedTypeLets := s.sharedTypeLets.push (ident, t) })
+    return ident
+
+/--
+Wraps `body` in `let`-bindings for every type shared (via `makeNoirTypeShared`) during the
+current run of the DSL monad. Must be applied to the finished term before it leaves the run —
+and, since the shared types may mention the definition's generic parameters, at a point that is
+still under the generics' binders.
+-/
+def wrapSharedTypeLets [MonadDSL m] (body : TSyntax `term) : m (TSyntax `term) := do
+  (←get).sharedTypeLets.foldrM (init := body) fun (ident, t) acc =>
+    `(let $ident : Lampe.Tp := $t; $acc)
 
 /--
 Retrieves the name if provided, or generates a fresh name if none is available.
