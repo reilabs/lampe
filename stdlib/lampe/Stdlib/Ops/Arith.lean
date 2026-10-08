@@ -1,4 +1,4 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Init.Data.BitVec.Lemmas
 import Lampe
 import Stdlib.Convert
@@ -8,7 +8,7 @@ import Stdlib.Tuple
 
 namespace Lampe.Stdlib.Ops.Arith
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 open Lampe.Stdlib
 
 set_option Lampe.pp.Expr false
@@ -17,15 +17,15 @@ set_option Lampe.pp.STHoare false
 /-- A shorthand for a call to the `std::ops::arith::Add::add` method. -/
 @[reducible]
 def add {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Add».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Add».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Add».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Add».add.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Add».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Add».add.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Add».add.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::Add».add.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Add».add.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::Add».add generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::arith::Add».add.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::Add».add generics Self associatedTypes fnGenerics
 
 theorem field_add_spec {p a b}
   : STHoare p env ⟦⟧
@@ -81,15 +81,6 @@ theorem u8_add_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_add_spec {p a b}
-  : STHoare p env ⟦⟧
-    (add h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a + b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_add_spec {p a b}
   : STHoare p env ⟦⟧
     (add h![] (.i 8) h![] h![] h![a, b])
@@ -129,15 +120,15 @@ theorem i64_add_spec {p a b}
 /-- A shorthand for a call to the `std::ops::arith::Sub::sub` method. -/
 @[reducible]
 def sub {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Sub».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Sub».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Sub».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Sub».sub.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Sub».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Sub».sub.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Sub».sub.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::Sub».sub.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Sub».sub.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::Sub».sub generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::arith::Sub».sub.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::Sub».sub generics Self associatedTypes fnGenerics
 
 theorem field_sub_spec {p a b}
   : STHoare p env ⟦⟧
@@ -193,15 +184,6 @@ theorem u8_sub_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_sub_spec {p a b}
-  : STHoare p env ⟦⟧
-    (sub h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a - b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_sub_spec {p a b}
   : STHoare p env ⟦⟧
     (sub h![] (.i 8) h![] h![] h![a, b])
@@ -241,15 +223,15 @@ theorem i64_sub_spec {p a b}
 /-- A shorthand for a call to the `std::ops::arith::Mul::mul` method. -/
 @[reducible]
 def mul {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Mul».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Mul».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Mul».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Mul».mul.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Mul».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Mul».mul.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Mul».mul.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::Mul».mul.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Mul».mul.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::Mul».mul generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::arith::Mul».mul.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::Mul».mul generics Self associatedTypes fnGenerics
 
 theorem field_mul_spec {p a b}
   : STHoare p env ⟦⟧
@@ -305,15 +287,6 @@ theorem u8_mul_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_mul_spec {p a b}
-  : STHoare p env ⟦⟧
-    (mul h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a * b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_mul_spec {p a b}
   : STHoare p env ⟦⟧
     (mul h![] (.i 8) h![] h![] h![a, b])
@@ -353,15 +326,15 @@ theorem i64_mul_spec {p a b}
 /-- A shorthand for a call to the `std::ops::arith::Div::div` method. -/
 @[reducible]
 def div {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Div».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Div».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Div».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Div».div.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Div».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Div».div.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Div».div.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::Div».div.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Div».div.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::Div».div generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::arith::Div».div.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::Div».div generics Self associatedTypes fnGenerics
 
 theorem field_div_spec {p a b}
   : STHoare p env ⟦⟧
@@ -417,15 +390,6 @@ theorem u8_div_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_div_spec {p a b}
-  : STHoare p env ⟦⟧
-    (div h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a / b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_div_spec {p a b}
   : STHoare p env ⟦⟧
     (div h![] (.i 8) h![] h![] h![a, b])
@@ -465,15 +429,15 @@ theorem i64_div_spec {p a b}
 /-- A shorthand for a call to the `std::ops::arith::Rem::rem` method. -/
 @[reducible]
 def rem {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Rem».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Rem».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Rem».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Rem».rem.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Rem».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Rem».rem.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Rem».rem.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::Rem».rem.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Rem».rem.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::Rem».rem generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::arith::Rem».rem.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::Rem».rem generics Self associatedTypes fnGenerics
 
 theorem u128_rem_spec {p a b}
   : STHoare p env ⟦⟧
@@ -520,15 +484,6 @@ theorem u8_rem_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_rem_spec {p a b}
-  : STHoare p env ⟦⟧
-    (rem h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a % b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_rem_spec {p a b}
   : STHoare p env ⟦⟧
     (rem h![] (.i 8) h![] h![] h![a, b])
@@ -568,15 +523,15 @@ theorem i64_rem_spec {p a b}
 /-- A shorthand for a call to the `std::ops::arith::Neg::neg` method. -/
 @[reducible]
 def neg {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Neg».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Neg».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Neg».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::Neg».neg.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Neg».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::Neg».neg.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Neg».neg.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::Neg».neg.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::Neg».neg.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::Neg».neg generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::arith::Neg».neg.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::Neg».neg generics Self associatedTypes fnGenerics
 
 theorem field_neg_spec {p a}
   : STHoare p env ⟦⟧
@@ -626,25 +581,15 @@ theorem i64_neg_spec {p a}
 /-- A shorthand for a call to the `std::ops::arith::WrappingAdd::wrapping_add` method. -/
 @[reducible]
 def wrapping_add {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingAdd».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingAdd».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingAdd».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingAdd».wrapping_add.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingAdd».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingAdd».wrapping_add.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::WrappingAdd».wrapping_add.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::WrappingAdd».wrapping_add.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::WrappingAdd».wrapping_add.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::WrappingAdd».wrapping_add generics Self associatedTypes fnGenerics
-
-theorem u1_wrapping_add_spec {p a b}
-  : STHoare p env ⟦⟧
-    (wrapping_add h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a + b) := by
-  resolve_trait
-  steps
-  subst_vars
-  simp only [BitVec.xor_eq]
-  rw [←BitVec.add_eq_xor]
+      («std-1.0.0-beta.25::ops::arith::WrappingAdd».wrapping_add.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::WrappingAdd».wrapping_add generics Self associatedTypes fnGenerics
 
 theorem u8_wrapping_add_spec {p a b}
     [gt : Prime.BitsGT p 9]
@@ -813,25 +758,15 @@ theorem field_wrapping_add_spec {p a b}
 /-- A shorthand for a call to the `std::ops::arith::WrappingSub::wrapping_sub` method. -/
 @[reducible]
 def wrapping_sub {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingSub».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingSub».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingSub».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingSub».wrapping_sub.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingSub».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingSub».wrapping_sub.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::WrappingSub».wrapping_sub.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::WrappingSub».wrapping_sub.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::WrappingSub».wrapping_sub.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::WrappingSub».wrapping_sub generics Self associatedTypes fnGenerics
-
-theorem u1_wrapping_sub_spec {p a b}
-  : STHoare p env ⟦⟧
-    (wrapping_sub h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a - b) := by
-  resolve_trait
-  steps
-  subst_vars
-  simp only [BitVec.xor_eq]
-  rw [←BitVec.sub_eq_xor]
+      («std-1.0.0-beta.25::ops::arith::WrappingSub».wrapping_sub.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::WrappingSub».wrapping_sub generics Self associatedTypes fnGenerics
 
 theorem u8_wrapping_sub_spec {p a b}
     [gt : Prime.BitsGT p 129]
@@ -1080,24 +1015,15 @@ theorem field_wrapping_sub_spec {p a b}
 /-- A shorthand for a call to the `std::ops::arith::WrappingMul::wrapping_mul` method. -/
 @[reducible]
 def wrapping_mul {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingMul».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingMul».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingMul».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::arith::WrappingMul».wrapping_mul.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingMul».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::arith::WrappingMul».wrapping_mul.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::WrappingMul».wrapping_mul.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::arith::WrappingMul».wrapping_mul.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::arith::WrappingMul».wrapping_mul.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::arith::WrappingMul».wrapping_mul generics Self associatedTypes fnGenerics
-
-theorem u1_wrapping_mul_spec {p a b}
-  : STHoare p env ⟦⟧
-    (wrapping_mul h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a * b) := by
-  resolve_trait
-  steps
-  subst_vars
-  rw [←BitVec.mul_eq_and]
+      («std-1.0.0-beta.25::ops::arith::WrappingMul».wrapping_mul.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::arith::WrappingMul».wrapping_mul generics Self associatedTypes fnGenerics
 
 theorem u8_wrapping_mul {p a b}
     [gt : Prime.BitsGT p 16]
@@ -1173,7 +1099,7 @@ theorem u64_wrapping_mul {p a b}
 
 theorem two_pow_64_spec {p}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::ops::arith::two_pow_64».call h![] h![])
+    («std-1.0.0-beta.25::ops::arith::two_pow_64».call h![] h![])
     (fun r => r = Integer.two_pow_64) := by
   enter_decl
   steps
@@ -1183,7 +1109,7 @@ theorem two_pow_64_spec {p}
 set_option maxHeartbeats 800000 in
 theorem split_into_64_bit_limbs_spec {p a} [gt : Prime.BitsGT p 128]
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::ops::arith::split_into_64_bit_limbs».call h![] h![a])
+    («std-1.0.0-beta.25::ops::arith::split_into_64_bit_limbs».call h![] h![a])
     (fun r => r = Integer.split64 a) := by
   enter_decl
   step_as (⟦⟧) (fun _ => ⟦⟧)

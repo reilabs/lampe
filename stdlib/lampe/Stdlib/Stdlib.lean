@@ -1,5 +1,5 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 
 namespace Lampe.Stdlib
 
-export «std-1.0.0-beta.14» (env)
+export «std-1.0.0-beta.25» (env)

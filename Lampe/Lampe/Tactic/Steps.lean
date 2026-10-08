@@ -147,6 +147,8 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
 
         | ``Lampe.Builtin.strAsBytes => return some (←``(strAsBytes_intro))
         | ``Lampe.Builtin.arrayAsStrUnchecked => return some (←``(arrayAsStrUnchecked_intro))
+        | ``Lampe.Builtin.mkFormatString =>
+          return some (←``(genericTotalPureBuiltin_intro Builtin.mkFormatString (a := (_, _, _, _)) rfl))
 
         | ``Lampe.Builtin.isUnconstrained =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.isUnconstrained rfl))

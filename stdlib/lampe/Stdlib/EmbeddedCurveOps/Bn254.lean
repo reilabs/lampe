@@ -41,8 +41,8 @@ condition of the generic spec is discharged automatically by pinning
 to `Bn254.prime`. -/
 theorem fixed_base_scalar_mul_bn254_spec
     {scalar : Lampe.Stdlib.EmbeddedCurveOps.Scalar.denote Bn254.prime} :
-    STHoare Bn254.prime «std-1.0.0-beta.14».env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
+    STHoare Bn254.prime «std-1.0.0-beta.25».env ⟦⟧
+      («std-1.0.0-beta.25::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
       (fun r =>
         r = encodeCurvePoint
           (Scalar.valueNat scalar • generatorPoint)) :=

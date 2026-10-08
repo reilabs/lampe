@@ -21,12 +21,12 @@ comes from `Lampe.Crypto.MathlibBridge`.
 
 @[reducible]
 def pointTp : Tp :=
-  .tuple (some "«std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint»")
-    [.field, .field, .bool]
+  .tuple (some "«std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurvePoint»")
+    [.field, .field]
 
 @[reducible]
 def scalarTp : Tp :=
-  .tuple (some "«std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar»")
+  .tuple (some "«std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurveScalar»")
     [.field, .field]
 
 @[reducible]
@@ -37,7 +37,13 @@ def Scalar (p : Prime) := Tp.denote p scalarTp
 
 def pointX {p : Prime} (pt : Point p) : Fp p := pt.1
 def pointY {p : Prime} (pt : Point p) : Fp p := pt.2.1
-def pointIsInfinite {p : Prime} (pt : Point p) : Bool := pt.2.2.1
+
+/-- Since Noir 1.0.0-beta.25 the point at infinity is canonically `(0, 0)`
+(the struct has no `is_infinite` flag any more); `(0, 0)` never satisfies the
+curve equation `y² = x³ - 17` for the BN254 base field, so the encoding is
+unambiguous. -/
+def pointIsInfinite {p : Prime} (pt : Point p) : Bool :=
+  decide (pt.1 = 0) && decide (pt.2.1 = 0)
 
 def Scalar.lo {p : Prime} (s : Scalar p) : Fp p := s.1
 def Scalar.hi {p : Prime} (s : Scalar p) : Fp p := s.2.1
@@ -46,13 +52,25 @@ def Scalar.hi {p : Prime} (s : Scalar p) : Fp p := s.2.1
 def mkScalar {p : Prime} (lo hi : Fp p) : Scalar p := (lo, hi, ())
 
 @[reducible]
-def mkPoint {p : Prime} (x y : Fp p) (isInfinite : Bool) : Point p := (x, y, isInfinite, ())
+def mkPoint {p : Prime} (x y : Fp p) : Point p := (x, y, ())
 
 @[reducible]
-def pointAtInfinity {p : Prime} : Point p := mkPoint 0 0 true
+def pointAtInfinity {p : Prime} : Point p := mkPoint 0 0
 
 def canonicalizeInfinity {p : Prime} (pt : Point p) : Point p :=
   if pointIsInfinite pt then pointAtInfinity else pt
+
+/-- With the beta.25 `(0, 0)`-encoding of infinity, every point value is
+already canonical. -/
+@[simp]
+theorem canonicalizeInfinity_eq_self {p : Prime} (pt : Point p) :
+    canonicalizeInfinity pt = pt := by
+  obtain ⟨x, y, ⟨⟩⟩ := pt
+  by_cases h : pointIsInfinite ((x, y, ()) : Point p) = true
+  · have hxy := h
+    simp only [pointIsInfinite, Bool.and_eq_true, decide_eq_true_eq] at hxy
+    simp [canonicalizeInfinity, h, pointAtInfinity, mkPoint, hxy.1, hxy.2]
+  · simp [canonicalizeInfinity, h]
 
 def curveB {p : Prime} : Fp p := -17
 
@@ -494,7 +512,7 @@ def curvePoint? {p : Prime} (pt : Point p) : Option ((affineCurve p).Point) :=
 
 def encodeCurvePoint {p : Prime} : (affineCurve p).Point → Point p
   | 0 => pointAtInfinity
-  | .some (x := x) (y := y) _ => mkPoint x y false
+  | .some (x := x) (y := y) _ => mkPoint x y
 
 @[simp]
 theorem curvePoint?_infinity {p : Prime} :
@@ -540,31 +558,66 @@ theorem curvePoint?_eq_some_some_iff {p : Prime} {pt : Point p} {x y : Fp p}
 @[simp] theorem encodeCurvePoint_some {p : Prime} {x y : Fp p}
     (hNs : (affineCurve p).Nonsingular x y) :
     encodeCurvePoint (WeierstrassCurve.Affine.Point.some (x := x) (y := y) hNs) =
-      mkPoint x y false := rfl
+      mkPoint x y := rfl
 
 theorem encodeCurvePoint_curvePoint? {p : Prime} {pt : Point p} {P : (affineCurve p).Point}
     (hP : curvePoint? pt = some P) :
     encodeCurvePoint P = canonicalizeInfinity pt := by
   rcases P with (_ | @⟨x, y, hNs⟩)
   · have hInf : pointIsInfinite pt = true := curvePoint?_eq_some_zero_iff.mp hP
-    simp [encodeCurvePoint, canonicalizeInfinity, hInf,
-      ]
+    obtain ⟨x', y', ⟨⟩⟩ := pt
+    simp only [pointIsInfinite, Bool.and_eq_true, decide_eq_true_eq] at hInf
+    simp [encodeCurvePoint, canonicalizeInfinity, pointIsInfinite, hInf.1, hInf.2,
+      pointAtInfinity, mkPoint]
   · obtain ⟨hFin, hx, hy⟩ := curvePoint?_eq_some_some_iff.mp hP
-    obtain ⟨x', y', inf, ⟨⟩⟩ := pt
-    simp only [pointX, pointY, pointIsInfinite] at hFin hx hy
-    subst hFin
+    obtain ⟨x', y', ⟨⟩⟩ := pt
+    simp only [pointX, pointY] at hx hy
     subst hx
     subst hy
-    simp [encodeCurvePoint, canonicalizeInfinity, pointIsInfinite, mkPoint]
+    simp [encodeCurvePoint, canonicalizeInfinity, hFin, mkPoint]
 
-@[simp] theorem curvePoint?_encodeCurvePoint {p : Prime} (P : (affineCurve p).Point) :
+/-- `(17 : Fp p)` is nonzero for the BN254 base field (its modulus far exceeds 17). -/
+lemma seventeen_ne_zero {p : Prime} [Bn254.Prime p] : (17 : Fp p) ≠ 0 := by
+  have h17lt : (17 : Nat) < p.natVal := by
+    have hp := Bn254.pow128_lt_prime (p := p)
+    have : (17 : Nat) < Lampe.pow128 := by unfold Lampe.pow128; decide
+    omega
+  intro h
+  have hval : ((17 : Nat) : Fp p).val = 17 := ZMod.val_natCast_of_lt h17lt
+  rw [show (((17 : Nat) : Fp p)) = (17 : Fp p) by norm_num, h] at hval
+  simp at hval
+
+/-- `(0, 0)` is not on `y² = x³ - 17`, so the beta.25 infinity encoding is
+unambiguous over the BN254 base field. -/
+lemma not_nonsingular_origin {p : Prime} [Bn254.Prime p] :
+    ¬ (affineCurve p).Nonsingular 0 0 := by
+  intro h
+  have heq := h.1
+  simp [WeierstrassCurve.Affine.Equation, WeierstrassCurve.Affine.polynomial, curveB] at heq
+  rw [show Polynomial.evalEval (0 : Fp p) 0 (Polynomial.C Polynomial.X) = 0 from by
+    simp [Polynomial.evalEval]] at heq
+  exact seventeen_ne_zero (p := p) (by linear_combination heq)
+
+lemma pointIsInfinite_mkPoint_of_nonsingular {p : Prime} [Bn254.Prime p] {x y : Fp p}
+    (hNs : (affineCurve p).Nonsingular x y) :
+    pointIsInfinite (mkPoint x y : Point p) = false := by
+  by_contra hInf
+  simp only [Bool.not_eq_false, pointIsInfinite, Bool.and_eq_true, decide_eq_true_eq] at hInf
+  obtain ⟨hx, hy⟩ := hInf
+  subst hx
+  subst hy
+  exact not_nonsingular_origin hNs
+
+@[simp] theorem curvePoint?_encodeCurvePoint {p : Prime} [Bn254.Prime p]
+    (P : (affineCurve p).Point) :
     curvePoint? (encodeCurvePoint P) = some P := by
   rcases P with (_ | @⟨x, y, hNs⟩)
   · show curvePoint? (encodeCurvePoint (0 : (affineCurve p).Point)) = some 0
     rw [encodeCurvePoint_zero, curvePoint?_infinity]
-  · have hFin : pointIsInfinite (mkPoint x y false : Point p) = false := rfl
-    have hxy : (affineCurve p).Nonsingular (pointX (mkPoint x y false : Point p))
-        (pointY (mkPoint x y false : Point p)) := hNs
+  · have hFin : pointIsInfinite (mkPoint x y : Point p) = false :=
+      pointIsInfinite_mkPoint_of_nonsingular hNs
+    have hxy : (affineCurve p).Nonsingular (pointX (mkPoint x y : Point p))
+        (pointY (mkPoint x y : Point p)) := hNs
     simp [encodeCurvePoint, curvePoint?_some_of_finite_nonsingular hFin hxy,
           pointX, pointY, mkPoint]
 

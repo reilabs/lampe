@@ -226,9 +226,21 @@ partial def makeExpr [MonadDSL m]
       k
   emitBuiltin
 
+-- The `#_unitEq` builtin has its own token (see Rules.lean), so it needs its
+-- own call case.
+| `(noir_expr|(#_unitEq returning $tp)( $args,* )) =>
+  let emitBuiltin : m (TSyntax `term) := makeArgs args.getElems fun args => do
+    let argVals ← makeHListLit args
+    wrapInLet
+      (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin "unitEq") $argVals))
+      binder
+      k
+  emitBuiltin
+
 -- Bare function refs
 | `(noir_expr|$ref:noir_funcref) => match ref with
   | `(noir_funcref|(#_ $_:ident returning $_))
+  | `(noir_funcref|(#_unitEq returning $_))
   | `(noir_funcref|(#_ projectRef $_ returning $_)) =>
     throwError "Encountered builtin {ref} as bare function reference"
 

@@ -8,7 +8,6 @@ import Stdlib.Collections.BoundedVec.Core
 import Stdlib.Collections.BoundedVec.HigherOrderMap
 import Stdlib.Collections.BoundedVec.Methods
 import Stdlib.Collections.BoundedVec.Traits
-import Stdlib.Collections.Map
 import Stdlib.Collections.Umap
 import Stdlib.Compat
 import Stdlib.Convert

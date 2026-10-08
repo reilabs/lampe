@@ -100,7 +100,7 @@ private def liftWithParity {p : Prime} (x y : Fp p) (signBit : Bool) :
     Option ((affineCurve p).Point) :=
   let y_final : Fp p :=
     if (y.val % 2 == 1) == signBit then y else (-y)
-  curvePoint? (mkPoint x y_final false)
+  curvePoint? (mkPoint x y_final)
 
 /--
 Single hash-to-curve attempt for `(preimage, attempt)`. Builds the

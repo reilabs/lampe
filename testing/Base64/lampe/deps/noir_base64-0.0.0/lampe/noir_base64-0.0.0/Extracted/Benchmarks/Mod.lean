@@ -15,28 +15,28 @@ noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610_url_safe<>(input: A
   («noir_base64-0.0.0»::encoder::Base64EncodeBEUrlSafe::encode<610: u32> as λ(Array<u8, 610: u32>) -> Array<u8, 814: u32>)(input)
 }
 
-noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610_var<>(input: «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 816: u32> := {
-  («noir_base64-0.0.0»::encoder::Base64EncodeBE::encode_var<610: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 816: u32>)(input)
+noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610_var<>(input: «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 816: u32> := {
+  («noir_base64-0.0.0»::encoder::Base64EncodeBE::encode_var<610: u32> as λ(«std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 816: u32>)(input)
 }
 
-noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610_url_safe_var<>(input: «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 814: u32> := {
-  («noir_base64-0.0.0»::encoder::Base64EncodeBEUrlSafe::encode_var<610: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 814: u32>)(input)
+noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610_url_safe_var<>(input: «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 814: u32> := {
+  («noir_base64-0.0.0»::encoder::Base64EncodeBEUrlSafe::encode_var<610: u32> as λ(«std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 814: u32>)(input)
 }
 
 noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610_no_pad<>(input: Array<u8, 610: u32>) -> Array<u8, 814: u32> := {
   («noir_base64-0.0.0»::encoder::Base64EncodeBENoPad::encode<610: u32> as λ(Array<u8, 610: u32>) -> Array<u8, 814: u32>)(input)
 }
 
-noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610_var_no_pad<>(input: «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 814: u32> := {
-  («noir_base64-0.0.0»::encoder::Base64EncodeBENoPad::encode_var<610: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 814: u32>)(input)
+noir_def «noir_base64-0.0.0»::benchmarks::bench_encode_610_var_no_pad<>(input: «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 814: u32> := {
+  («noir_base64-0.0.0»::encoder::Base64EncodeBENoPad::encode_var<610: u32> as λ(«std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 814: u32>)(input)
 }
 
 noir_def «noir_base64-0.0.0»::benchmarks::bench_decode_610<>(input: Array<u8, 816: u32>) -> Array<u8, 610: u32> := {
   («noir_base64-0.0.0»::decoder::Base64DecodeBE::decode<816: u32, 610: u32> as λ(Array<u8, 816: u32>) -> Array<u8, 610: u32>)(input)
 }
 
-noir_def «noir_base64-0.0.0»::benchmarks::bench_decode_610_var<>(input: «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 816: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32> := {
-  let r = («noir_base64-0.0.0»::decoder::Base64DecodeBE::decode_var<816: u32, 610: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 816: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32>)(input);
+noir_def «noir_base64-0.0.0»::benchmarks::bench_decode_610_var<>(input: «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 816: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32> := {
+  let r = («noir_base64-0.0.0»::decoder::Base64DecodeBE::decode_var<816: u32, 610: u32> as λ(«std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 816: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32>)(input);
   r
 }
 
@@ -44,8 +44,8 @@ noir_def «noir_base64-0.0.0»::benchmarks::bench_decode_610_no_pad<>(input: Arr
   («noir_base64-0.0.0»::decoder::Base64DecodeBENoPad::decode<816: u32, 610: u32> as λ(Array<u8, 816: u32>) -> Array<u8, 610: u32>)(input)
 }
 
-noir_def «noir_base64-0.0.0»::benchmarks::bench_decode_610_var_no_pad<>(input: «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 816: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32> := {
-  let r = («noir_base64-0.0.0»::decoder::Base64DecodeBENoPad::decode_var<816: u32, 610: u32> as λ(«std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 816: u32>) -> «std-1.0.0-beta.14»::collections::bounded_vec::BoundedVec<u8, 610: u32>)(input);
+noir_def «noir_base64-0.0.0»::benchmarks::bench_decode_610_var_no_pad<>(input: «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 816: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32> := {
+  let r = («noir_base64-0.0.0»::decoder::Base64DecodeBENoPad::decode_var<816: u32, 610: u32> as λ(«std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 816: u32>) -> «std-1.0.0-beta.25»::collections::bounded_vec::BoundedVec<u8, 610: u32>)(input);
   r
 }
 

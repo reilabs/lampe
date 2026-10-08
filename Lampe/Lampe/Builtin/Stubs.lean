@@ -33,7 +33,6 @@ def asWitness := stub
 def blackBox := stub
 def checkedTransmute := stub
 def fmtstrAsCtstring := stub
-def mkFormatString := stub
 def recursiveAggregation := stub
 def sliceRefcount := stub
 def strAsCtstring := stub

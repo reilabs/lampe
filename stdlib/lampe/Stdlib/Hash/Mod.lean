@@ -1,33 +1,35 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 import Stdlib.Default
 import Stdlib.Hash.Poseidon2
 
 namespace Lampe.Stdlib.Hash
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 
 abbrev BuildHasherDefaultTp (H : Tp) : Tp :=
-  «std-1.0.0-beta.14::hash::BuildHasherDefault».tp h![H]
+  «std-1.0.0-beta.25::hash::BuildHasherDefault».tp h![H]
 
 abbrev Hasher.hasImpl (env : Env) (tp : Tp) :=
-  «std-1.0.0-beta.14::hash::Hasher».hasImpl env h![] tp
+  «std-1.0.0-beta.25::hash::Hasher».hasImpl env h![] tp
 
 abbrev HashTrait.hasImpl (env : Env) (tp : Tp) :=
-  «std-1.0.0-beta.14::hash::Hash».hasImpl env h![] tp
+  «std-1.0.0-beta.25::hash::Hash».hasImpl env h![] tp
 
 def buildHasherDefaultRepr {p H} : Tp.denote p (BuildHasherDefaultTp H) :=
-  HList.toTuple p h![] (some «std-1.0.0-beta.14::hash::BuildHasherDefault».name)
+  HList.toTuple p h![] (some «std-1.0.0-beta.25::hash::BuildHasherDefault».name)
 
 theorem poseidon2_permutation4_spec {p}
     {input : Tp.denote p (Tp.field.array (4 : U 32))}
     : STHoare p env ⟦⟧
-        («std-1.0.0-beta.14::hash::poseidon2_permutation».call h![(4 : U 32)]
-          h![input, (4 : U 32)])
+        («std-1.0.0-beta.25::hash::poseidon2_permutation».call h![(4 : U 32)]
+          h![input])
         (fun r => r = Lampe.Crypto.Poseidon2.noirPermutation4 input) := by
   enter_decl
-  steps [Lampe.Stdlib.Hash.Poseidon2.poseidon2_permutation_builtin_spec]
-  assumption
+  steps [Lampe.Stdlib.Hash.Poseidon2.config_state_size_spec,
+    Lampe.Stdlib.Hash.Poseidon2.poseidon2_permutation_builtin_spec]
+  · assumption
+  all_goals simp_all
 
 /-- Spec for the `sha256_compression` foreign builtin: returns the
 concrete `Crypto.Sha256.compressOne` round-function output for the
@@ -74,7 +76,7 @@ reduces to the builtin call. -/
 theorem blake3_spec {p} {N : U 32}
     {input : Tp.denote p ((Tp.u 8).array N)} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::hash::blake3».call h![N] h![input])
+      («std-1.0.0-beta.25::hash::blake3».call h![N] h![input])
       (fun r => r = Lampe.Crypto.Blake3.blake3Hash input) := by
   enter_decl
   -- Reduce `isUnconstrained()` (always `false`); the body becomes
@@ -116,7 +118,7 @@ theorem buildHasherDefault_build_hasher_spec {p H}
       (Lampe.Stdlib.Default.default h![] H h![] h![] h![])
       (fun r => r = h))
     : STHoare p env ⟦⟧
-        («std-1.0.0-beta.14::hash::BuildHasher».build_hasher
+        («std-1.0.0-beta.25::hash::BuildHasher».build_hasher
           h![] (BuildHasherDefaultTp H) h![H] h![] h![buildHasherDefaultRepr (H := H)])
         (fun r => r = h) := by
   resolve_trait
@@ -129,30 +131,16 @@ theorem field_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![] h![stateRef, self])
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![] h![stateRef, self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] .field h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] .field h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
 
-theorem u1_hash_spec {p H stateRef}
-    {self : U 1}
-    {state final : Tp.denote p H}
-    {h_hasher : Hasher.hasImpl env H}
-    (h_write_spec : STHoare p env
-      [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
-        h![stateRef, @Builtin.CastTp.cast (.u 1) .field _ p self])
-      (fun _ => [stateRef ↦ ⟨H, final⟩]))
-    : STHoare p env
-        [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 1) h![] h![H] h![self, stateRef])
-        (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
-  resolve_trait
-  steps [h_write_spec]
+-- Note: `u1` was removed in Noir 1.0.0-beta.25, so the corresponding `u1_hash_spec` is gone.
 
 theorem u8_hash_spec {p H stateRef}
     {self : U 8}
@@ -160,12 +148,12 @@ theorem u8_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 8) .field _ p self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 8) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.u 8) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -176,12 +164,12 @@ theorem u16_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 16) .field _ p self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 16) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.u 16) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -192,12 +180,12 @@ theorem u32_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 32) .field _ p self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 32) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.u 32) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -208,12 +196,12 @@ theorem u64_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 64) .field _ p self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 64) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.u 64) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -224,12 +212,12 @@ theorem u128_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 128) .field _ p self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.u 128) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.u 128) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -240,13 +228,13 @@ theorem i8_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 8) .field _ p
           (@Builtin.CastTp.cast (.i 8) (.u 8) _ p self)])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.i 8) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.i 8) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -257,13 +245,13 @@ theorem i16_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 16) .field _ p
           (@Builtin.CastTp.cast (.i 16) (.u 16) _ p self)])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.i 16) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.i 16) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -274,13 +262,13 @@ theorem i32_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 32) .field _ p
           (@Builtin.CastTp.cast (.i 32) (.u 32) _ p self)])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.i 32) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.i 32) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -291,13 +279,13 @@ theorem i64_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast (.u 64) .field _ p
           (@Builtin.CastTp.cast (.i 64) (.u 64) _ p self)])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] (.i 64) h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] (.i 64) h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -308,12 +296,12 @@ theorem bool_hash_spec {p H stateRef}
     {h_hasher : Hasher.hasImpl env H}
     (h_write_spec : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, @Builtin.CastTp.cast .bool .field _ p self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] .bool h![] h![H] h![self, stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] .bool h![] h![H] h![self, stateRef])
         (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   steps [h_write_spec]
@@ -322,7 +310,7 @@ theorem unit_hash_spec {p H stateRef}
     {state : Tp.denote p H}
     : STHoare p env
         [stateRef ↦ ⟨H, state⟩]
-        («std-1.0.0-beta.14::hash::Hash».hash h![] .unit h![] h![H] h![(), stateRef])
+        («std-1.0.0-beta.25::hash::Hash».hash h![] .unit h![] h![H] h![(), stateRef])
         (fun _ => [stateRef ↦ ⟨H, state⟩]) := by
   resolve_trait
   steps

@@ -25,7 +25,7 @@ import «ExtractionTests-0.0.0».Extracted.TraitAssociatedConst
 import «ExtractionTests-0.0.0».Extracted.TypeOrder
 import «ExtractionTests-0.0.0».Extracted.UnconstrainedReturn
 import «ExtractionTests-0.0.0».Extracted.UnitReturn
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 
 namespace «ExtractionTests-0.0.0»
 
@@ -53,4 +53,4 @@ def env := AliasMemberAccess.env
   ++ TypeOrder.env
   ++ UnconstrainedReturn.env
   ++ UnitReturn.env
-  ++ «std-1.0.0-beta.14».env
+  ++ «std-1.0.0-beta.25».env

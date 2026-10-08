@@ -586,21 +586,21 @@ theorem getLens_intro {lens : Lens (Tp.denote p) tp₁ tp₂} :
 -- Field
 
 theorem toLeBits_intro {f : Tp.denote p Tp.field} :
-    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array N) Builtin.toLeBits h![f])
-    fun output => f = RadixVec.ofDigitsLE (r := 2) (output.map BitVec.toFin) := by
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] (Tp.bool.array N) Builtin.toLeBits h![f])
+    fun output => f = RadixVec.ofDigitsLE (r := 2) (output.map Bool.toDigit) := by
   apply STHoare.consequence
   case h_hoare =>
-    apply genericBuiltin_intro (sgn := fun s => ([.field], .array (.u 1) s))
+    apply genericBuiltin_intro (sgn := fun s => ([.field], .array .bool s))
   · apply SLP.entails_self
   · intro
     apply SLP.entails_self
 
 theorem toBeBits_intro {f : Tp.denote p Tp.field} :
-    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] ((Tp.u 1).array s) Builtin.toBeBits h![f])
-    fun output => f = RadixVec.ofDigitsBE (r := 2) (output.map BitVec.toFin) := by
+    STHoare p Γ ⟦⟧ (.callBuiltin [Tp.field] (Tp.bool.array s) Builtin.toBeBits h![f])
+    fun output => f = RadixVec.ofDigitsBE (r := 2) (output.map Bool.toDigit) := by
   apply STHoare.consequence
   case h_hoare =>
-    apply genericBuiltin_intro (sgn := fun s => ([.field], .array (.u 1) s))
+    apply genericBuiltin_intro (sgn := fun s => ([.field], .array .bool s))
   · apply SLP.entails_self
   · intro
     apply SLP.entails_self

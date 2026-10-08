@@ -1,11 +1,11 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 import Stdlib.Field.Bn254
 import Stdlib.Hash.Mod
 
 namespace Lampe.Stdlib.EmbeddedCurveOps
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 open Lampe.Crypto.EmbeddedCurve
 
 /-!
@@ -44,7 +44,7 @@ namespace Point
 
 /-- A useful shorthand for the type of the embedded curve point. -/
 @[reducible]
-def type := «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint».tp h![]
+def type := «std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurvePoint».tp h![]
 
 /-- A useful shorthand for declaring the type of values of the embedded curve point. -/
 @[reducible]
@@ -52,8 +52,8 @@ def denote (p : Prime) := Tp.denote p type
 
 @[simp] theorem type_eq_crypto_pointTp : Point.type = pointTp := rfl
 
-def mk {p} (x y : Fp p) (isInfinite : Bool) : Point.denote p :=
-  mkPoint x y isInfinite
+def mk {p} (x y : Fp p) : Point.denote p :=
+  mkPoint x y
 
 def x {p} (self : Point.denote p) : Fp p := pointX self
 
@@ -65,7 +65,7 @@ def isInfinite {p} (self : Point.denote p) : Bool :=
 def infinity {p} : Point.denote p := pointAtInfinity
 
 def generator {p} : Point.denote p :=
-  Point.mk 1 17631683881184975370165255887551781615748388533673675138860 false
+  Point.mk 1 17631683881184975370165255887551781615748388533673675138860
 
 def canonicalizeInfinity {p} (self : Point.denote p) : Point.denote p :=
   if Point.isInfinite self then Point.infinity else self
@@ -81,8 +81,7 @@ def extEq {p} (self other : Point.denote p) : Prop :=
 @[simp] private theorem indexTpl_y {p} (self : Point.denote p) :
     Builtin.indexTpl self Member.head.tail = Point.y self := rfl
 
-@[simp] private theorem indexTpl_isInfinite {p} (self : Point.denote p) :
-    Builtin.indexTpl self Member.head.tail.tail = Point.isInfinite self := rfl
+-- Since beta.25 there is no `is_infinite` member: infinity is canonically `(0, 0)`.
 
 @[simp] theorem canonicalizeInfinity_of_infinite {p} {self : Point.denote p}
     (h : Point.isInfinite self = true) :
@@ -105,10 +104,21 @@ def extEq {p} (self other : Point.denote p) : Prop :=
   · simp [Point.canonicalizeInfinity, h]
   · simp [Point.canonicalizeInfinity, h]
 
+@[simp] theorem canonicalizeInfinity_eq_self {p} (self : Point.denote p) :
+    Point.canonicalizeInfinity self = self := by
+  obtain ⟨x, y, ⟨⟩⟩ := self
+  by_cases h : Point.isInfinite ((x, y, ()) : Point.denote p) = true
+  · have hxy := h
+    simp only [Point.isInfinite, pointIsInfinite, Bool.and_eq_true,
+      decide_eq_true_eq] at hxy
+    simp [Point.canonicalizeInfinity, h, Point.infinity, pointAtInfinity, mkPoint,
+      hxy.1, hxy.2]
+  · simp [Point.canonicalizeInfinity, h]
+
 @[simp] theorem extEq_refl {p} (self : Point.denote p) : Point.extEq self self := rfl
 
 def neg {p} (self : Point.denote p) : Point.denote p :=
-  Point.mk (Point.x self) (-(Point.y self)) (Point.isInfinite self)
+  Point.mk (Point.x self) (-(Point.y self))
 
 /-- `Point.neg` on an encoded Mathlib curve point matches Mathlib's
 group negation under the encoding. Used to bridge `point_sub_spec`
@@ -138,9 +148,7 @@ theorem neg_encodeCurvePoint {p}
       pointIsInfinite]
 
 def eq {p} (a b : Point.denote p) : Bool :=
-  (Point.isInfinite a && Point.isInfinite b) ||
-    (decide (Point.isInfinite a = Point.isInfinite b) &&
-      decide (Point.x a = Point.x b) && decide (Point.y a = Point.y b))
+  decide (Point.x a = Point.x b) && decide (Point.y a = Point.y b)
 
 end Point
 
@@ -148,7 +156,7 @@ namespace Scalar
 
 /-- A useful shorthand for the type of the embedded curve scalar. -/
 @[reducible]
-def type := «std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar».tp h![]
+def type := «std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurveScalar».tp h![]
 
 /-- A useful shorthand for declaring the type of values of the embedded curve scalar. -/
 @[reducible]
@@ -242,7 +250,7 @@ end Scalar
 
 theorem point_at_infinity_spec {p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity».call
+      («std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurvePoint::point_at_infinity».call
         h![] h![])
       (fun r => r = Point.infinity) := by
   enter_decl
@@ -252,7 +260,7 @@ theorem point_at_infinity_spec {p} :
 
 theorem generator_spec {p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint::generator».call h![] h![])
+      («std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurvePoint::generator».call h![] h![])
       (fun r => r = Point.generator) := by
   enter_decl
   steps
@@ -261,7 +269,7 @@ theorem generator_spec {p} :
 
 theorem scalar_new_spec {p} {lo hi : Fp p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar::new».call
+      («std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurveScalar::new».call
         h![] h![lo, hi])
       (fun r => r = Scalar.mk lo hi) := by
   enter_decl
@@ -271,7 +279,7 @@ theorem scalar_new_spec {p} {lo hi : Fp p} :
 
 private theorem point_neg_concrete_spec {p} {self : Point.denote p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::ops::arith::Neg».neg h![] Point.type h![] h![] h![self])
+      («std-1.0.0-beta.25::ops::arith::Neg».neg h![] Point.type h![] h![] h![self])
       (fun r => r = Point.neg self) := by
   resolve_trait
   steps
@@ -284,7 +292,7 @@ theorem point_neg_spec {p} {self : Point.denote p}
     {P : (affineCurve p).Point}
     (hself : self = encodeCurvePoint P) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::ops::arith::Neg».neg h![] Point.type h![] h![] h![self])
+      («std-1.0.0-beta.25::ops::arith::Neg».neg h![] Point.type h![] h![] h![self])
       (fun r => r = encodeCurvePoint (-P)) := by
   have hEq : Point.neg self = encodeCurvePoint (-P) := by
     subst hself
@@ -295,7 +303,7 @@ theorem point_neg_spec {p} {self : Point.denote p}
 
 private theorem point_eq_concrete_spec {p} {self other : Point.denote p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::cmp::Eq».eq h![] Point.type h![] h![] h![self, other])
+      («std-1.0.0-beta.25::cmp::Eq».eq h![] Point.type h![] h![] h![self, other])
       (fun r => r = Point.eq self other) := by
   resolve_trait
   reduce_fn_body
@@ -310,36 +318,25 @@ boolean reflects extensional equality (`Point.extEq`, i.e. equality
 modulo the canonical infinity representative). -/
 theorem point_eq_spec {p} {self other : Point.denote p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::cmp::Eq».eq h![] Point.type h![] h![] h![self, other])
+      («std-1.0.0-beta.25::cmp::Eq».eq h![] Point.type h![] h![] h![self, other])
       (fun r => r = true ↔ Point.extEq self other) := by
   steps [point_eq_concrete_spec]
   subst_vars
-  obtain ⟨sx, sy, sinf, ⟨⟩⟩ := self
-  obtain ⟨ox, oy, oinf, ⟨⟩⟩ := other
-  cases sinf <;> cases oinf <;>
-    simp [Point.eq, Point.extEq, Point.canonicalizeInfinity, Point.infinity,
-      Point.x, Point.y, Point.isInfinite, pointX,
-      pointY, pointIsInfinite,
-      pointAtInfinity, mkPoint,
-      Bool.and_eq_true, decide_eq_true_eq]
-  -- After simp, three residual goals remain (cases produced in order ff, ft, tf, tt):
-  -- false.false: sx=ox ∧ sy=oy ↔ (sx,sy,false,()) = (ox,oy,false,())
-  · constructor
-    · rintro ⟨rfl, rfl⟩; rfl
-    · intro h
-      refine ⟨?_, ?_⟩
-      · exact (Prod.mk.inj h).1
-      · exact (Prod.mk.inj (Prod.mk.inj h).2).1
-  -- false.true: ¬ (sx,sy,false,()) = (0,0,true,())
+  obtain ⟨sx, sy, ⟨⟩⟩ := self
+  obtain ⟨ox, oy, ⟨⟩⟩ := other
+  simp [Point.eq, Point.extEq, Point.x, Point.y, pointX, pointY,
+    Bool.and_eq_true, decide_eq_true_eq]
+  constructor
+  · rintro ⟨rfl, rfl⟩
+    rfl
   · intro h
-    exact Bool.false_ne_true (Prod.mk.inj (Prod.mk.inj (Prod.mk.inj h).2).2).1
-  -- true.false: ¬ (0,0,true,()) = (ox,oy,false,())
-  · intro h
-    exact Bool.false_ne_true (Prod.mk.inj (Prod.mk.inj (Prod.mk.inj h).2).2).1.symm
+    injection h with h1 h2
+    injection h2 with h2 _
+    exact ⟨h1, h2⟩
 
 private theorem scalar_eq_concrete_spec {p} {self other : Scalar.denote p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::cmp::Eq».eq h![] Scalar.type h![] h![] h![self, other])
+      («std-1.0.0-beta.25::cmp::Eq».eq h![] Scalar.type h![] h![] h![self, other])
       (fun r => r = Scalar.eq self other) := by
   resolve_trait
   reduce_fn_body
@@ -355,7 +352,7 @@ semantic value-equality. -/
 theorem scalar_eq_spec {p} {self other : Scalar.denote p}
     (hself : Scalar.Canonical self) (hother : Scalar.Canonical other) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::cmp::Eq».eq h![] Scalar.type h![] h![] h![self, other])
+      («std-1.0.0-beta.25::cmp::Eq».eq h![] Scalar.type h![] h![] h![self, other])
       (fun r => r = true ↔ Scalar.valueNat self = Scalar.valueNat other) := by
   steps [scalar_eq_concrete_spec]
   subst_vars
@@ -391,13 +388,13 @@ theorem embedded_curve_add_builtin_spec {p}
   rintro ⟨h1, h2⟩
   rfl
 
-theorem embedded_curve_add_inner_spec {p}
+theorem embedded_curve_add_spec {p}
     {point1 point2 : Point.denote p}
     (hOnCurve :
       (curvePoint? point1).isSome ∧
         (curvePoint? point2).isSome) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::embedded_curve_add_inner».call
+      («std-1.0.0-beta.25::embedded_curve_ops::embedded_curve_add».call
         h![] h![point1, point2])
       (fun r =>
         r = encodeCurvePoint
@@ -405,33 +402,15 @@ theorem embedded_curve_add_inner_spec {p}
             (curvePoint? point2).get hOnCurve.2)) := by
   enter_decl
   steps [embedded_curve_add_builtin_spec (hOnCurve := hOnCurve)]
-  simpa
-
-theorem embedded_curve_add_spec {p}
-    {point1 point2 : Point.denote p}
-    (hOnCurve :
-      (curvePoint? point1).isSome ∧
-        (curvePoint? point2).isSome) :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::embedded_curve_add».call
-        h![] h![point1, point2])
-      (fun r =>
-        r = encodeCurvePoint
-          ((curvePoint? point1).get hOnCurve.1 +
-            (curvePoint? point2).get hOnCurve.2)) := by
-  enter_decl
-  steps
-  all_goals try exact ()
-  apply STHoare.iteFalse_intro
-  steps [embedded_curve_add_inner_spec (hOnCurve := hOnCurve)]
-  assumption
+  subst_vars
+  rfl
 
 private theorem point_add_concrete_spec {p} {self other : Point.denote p}
     (hOnCurve :
       (curvePoint? self).isSome ∧
         (curvePoint? other).isSome) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::ops::arith::Add».add h![] Point.type h![] h![] h![self, other])
+      («std-1.0.0-beta.25::ops::arith::Add».add h![] Point.type h![] h![] h![self, other])
       (fun r =>
         r = encodeCurvePoint
           ((curvePoint? self).get hOnCurve.1 +
@@ -443,12 +422,12 @@ private theorem point_add_concrete_spec {p} {self other : Point.denote p}
 /-- Canonical spec for `Add::add` on `EmbeddedCurvePoint`: under
 encoded-input hypotheses, Noir's point addition agrees with Mathlib's
 affine short-Weierstrass group law on `(affineCurve p).Point`. -/
-theorem point_add_spec {p} {self other : Point.denote p}
+theorem point_add_spec {p} [Lampe.Crypto.Bn254.Prime p] {self other : Point.denote p}
     {P Q : (affineCurve p).Point}
     (hself : self = encodeCurvePoint P)
     (hother : other = encodeCurvePoint Q) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::ops::arith::Add».add h![] Point.type h![] h![] h![self, other])
+      («std-1.0.0-beta.25::ops::arith::Add».add h![] Point.type h![] h![] h![self, other])
       (fun r => r = encodeCurvePoint (P + Q)) := by
   have hOnCurve :
       (curvePoint? self).isSome ∧
@@ -473,7 +452,7 @@ theorem point_add_spec {p} {self other : Point.denote p}
 private theorem point_double_concrete_spec {p} {self : Point.denote p}
     (hOnCurve : (curvePoint? self).isSome) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint::double».call h![] h![self])
+      («std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurvePoint::double».call h![] h![self])
       (fun r =>
         r = encodeCurvePoint
           ((curvePoint? self).get hOnCurve +
@@ -484,11 +463,11 @@ private theorem point_double_concrete_spec {p} {self : Point.denote p}
 
 /-- Canonical spec for `EmbeddedCurvePoint::double`: under an
 encoded-input hypothesis, doubling agrees with Mathlib's `P + P`. -/
-theorem point_double_spec {p} {self : Point.denote p}
+theorem point_double_spec {p} [Lampe.Crypto.Bn254.Prime p] {self : Point.denote p}
     {P : (affineCurve p).Point}
     (hself : self = encodeCurvePoint P) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurvePoint::double».call h![] h![self])
+      («std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurvePoint::double».call h![] h![self])
       (fun r => r = encodeCurvePoint (P + P)) := by
   have hOnCurve : (curvePoint? self).isSome := by
     subst hself
@@ -510,7 +489,7 @@ private theorem point_sub_concrete_spec {p} {self other : Point.denote p}
       (curvePoint? self).isSome ∧
         (curvePoint? (Point.neg other)).isSome) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::ops::arith::Sub».sub h![] Point.type h![] h![] h![self, other])
+      («std-1.0.0-beta.25::ops::arith::Sub».sub h![] Point.type h![] h![] h![self, other])
       (fun r =>
         r = encodeCurvePoint
           ((curvePoint? self).get hOnCurve.1 +
@@ -522,12 +501,12 @@ private theorem point_sub_concrete_spec {p} {self other : Point.denote p}
 /-- Canonical spec for `Sub::sub` on `EmbeddedCurvePoint`: under
 encoded-input hypotheses, point subtraction agrees with Mathlib's
 group `P - Q` (equivalently `P + (-Q)`). -/
-theorem point_sub_spec {p} {self other : Point.denote p}
+theorem point_sub_spec {p} [Lampe.Crypto.Bn254.Prime p] {self other : Point.denote p}
     {P Q : (affineCurve p).Point}
     (hself : self = encodeCurvePoint P)
     (hother : other = encodeCurvePoint Q) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::ops::arith::Sub».sub h![] Point.type h![] h![] h![self, other])
+      («std-1.0.0-beta.25::ops::arith::Sub».sub h![] Point.type h![] h![] h![self, other])
       (fun r => r = encodeCurvePoint (P + (-Q))) := by
   have hOnCurve :
       (curvePoint? self).isSome ∧
@@ -552,101 +531,30 @@ theorem point_sub_spec {p} {self other : Point.denote p}
   rw [hEq] at h
   exact h
 
-theorem point_hash_infinite_spec {p H stateRef}
-    {self : Point.denote p}
-    {state final : Tp.denote p H}
-    {h_hasher : Lampe.Stdlib.Hash.Hasher.hasImpl env H}
-    (h_inf : Point.isInfinite self = true)
-    (h_bool_write : STHoare p env
-      [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
-        h![stateRef, @Builtin.CastTp.cast .bool .field _ p (Point.isInfinite self)])
-      (fun _ => [stateRef ↦ ⟨H, final⟩]))
-    : STHoare p env
-      [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hash».hash h![] Point.type h![] h![H] h![self, stateRef])
-      (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
-  resolve_trait
-  reduce_fn_body
-  steps
-  apply STHoare.ite_intro_of_true h_inf
-  steps [Lampe.Stdlib.Hash.bool_hash_spec (h_write_spec := h_bool_write)]
-  assumption
-
-theorem point_hash_finite_spec {p H stateRef}
+theorem point_hash_spec {p H stateRef}
     {self : Point.denote p}
     {state state1 final : Tp.denote p H}
     {h_hasher : Lampe.Stdlib.Hash.Hasher.hasImpl env H}
-    (h_fin : Point.isInfinite self = false)
     (h_x_write : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, Point.x self])
       (fun _ => [stateRef ↦ ⟨H, state1⟩]))
     (h_y_write : STHoare p env
       [stateRef ↦ ⟨H, state1⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, Point.y self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hash».hash h![] Point.type h![] h![H] h![self, stateRef])
+      («std-1.0.0-beta.25::hash::Hash».hash h![] Point.type h![] h![H] h![self, stateRef])
       (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
-  reduce_fn_body
-  steps
-  apply STHoare.ite_intro_of_false h_fin
   steps [Lampe.Stdlib.Hash.field_hash_spec (h_write_spec := h_x_write),
     Lampe.Stdlib.Hash.field_hash_spec (h_write_spec := h_y_write)]
   all_goals assumption
 
-theorem point_hash_spec {p H stateRef}
-    {self : Point.denote p}
-    {state final : Tp.denote p H}
-    {h_hasher : Lampe.Stdlib.Hash.Hasher.hasImpl env H}
-    (h_write :
-      if Point.isInfinite self then
-        STHoare p env
-          [stateRef ↦ ⟨H, state⟩]
-          («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
-            h![stateRef, @Builtin.CastTp.cast .bool .field _ p (Point.isInfinite self)])
-          (fun _ => [stateRef ↦ ⟨H, final⟩])
-      else
-        ∃ state1,
-          STHoare p env
-            [stateRef ↦ ⟨H, state⟩]
-            («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
-              h![stateRef, Point.x self])
-            (fun _ => [stateRef ↦ ⟨H, state1⟩]) ∧
-          STHoare p env
-            [stateRef ↦ ⟨H, state1⟩]
-            («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
-              h![stateRef, Point.y self])
-            (fun _ => [stateRef ↦ ⟨H, final⟩]))
-    : STHoare p env
-      [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hash».hash h![] Point.type h![] h![H] h![self, stateRef])
-      (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
-  by_cases h_inf : Point.isInfinite self = true
-  · simp [h_inf] at h_write
-    have h_bool_write :
-        STHoare p env
-          [stateRef ↦ ⟨H, state⟩]
-          («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
-            h![stateRef, @Builtin.CastTp.cast .bool .field _ p (Point.isInfinite self)])
-          (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
-      simpa [h_inf] using h_write
-    exact point_hash_infinite_spec
-      (h_hasher := h_hasher)
-      (h_inf := h_inf)
-      (h_bool_write := h_bool_write)
-  · simp [h_inf] at h_write
-    rcases h_write with ⟨state1, h_x_write, h_y_write⟩
-    exact point_hash_finite_spec
-      (h_hasher := h_hasher)
-      (h_fin := by simpa using h_inf)
-      (h_x_write := h_x_write)
-      (h_y_write := h_y_write)
+
 
 /-- A limb decomposition of a field value is automatically canonical:
 `scalar.val < r_scalar < 2^254` forces the high limb below `2^126`. -/
@@ -679,7 +587,7 @@ precondition for free. -/
 theorem scalar_from_field_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Fp p} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar::from_field».call
+      («std-1.0.0-beta.25::embedded_curve_ops::EmbeddedCurveScalar::from_field».call
         h![] h![scalar])
       (fun r =>
         ∃∃ lo hi,
@@ -695,99 +603,7 @@ theorem scalar_from_field_spec {p} [Lampe.Crypto.Bn254.Prime p]
   all_goals aesop (add safe forward canonical_mk_of_decomp)
 
 set_option maxRecDepth 4096 in
-/-- Success spec for `EmbeddedCurveScalar::from_bytes`.
-
-The caller must guarantee `offset.toNat + 31 < 64`; otherwise the
-Noir loop body indexes `bytes[offset + 31 - i]` (u32 arithmetic) past
-the end of the 64-byte array and the circuit aborts. No
-`scalar_from_bytes_oob_spec` is currently exposed because Lampe
-lacks a standardized failure-spec convention in this project; see
-the investigation note immediately below this declaration. -/
-theorem scalar_from_bytes_spec {p bytes offset}
-    (hbound : offset.toNat + 31 < 64) :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar::from_bytes».call
-        h![] h![bytes, offset])
-      (fun r =>
-        r =
-          Scalar.mk
-            (Scalar.fromBytesLoAcc bytes offset 16)
-            (Scalar.fromBytesHiAcc bytes offset 16)) := by
-  enter_decl
-  steps
-  loop_inv nat fun i _ _ =>
-    [v ↦ ⟨.field, (256 ^ i : Fp p)⟩] ⋆
-      [lo ↦ ⟨.field, Scalar.fromBytesLoAcc bytes offset i⟩] ⋆
-      [hi ↦ ⟨.field, Scalar.fromBytesHiAcc bytes offset i⟩]
-  · simp [Scalar.fromBytesHiAcc]
-    sl
-    all_goals simp
-  · intro i _ hhi
-    have hhi_nat : i < 16 := by simpa using hhi
-    steps
-    · rw [Scalar.fromBytesLoAcc_succ]
-      have hmod := sub_add_mod_eq i 31 offset.toNat (by omega) (by omega)
-      have hidxlt : offset.toNat + 31 - i < (List.Vector.toList bytes).length := by
-        simp
-        omega
-      have hvidxlt : offset.toNat + 31 - i < 64 := by
-        simpa using hidxlt
-      have hge :
-          (List.Vector.toList bytes)[offset.toNat + 31 - i]? =
-            some (bytes[offset.toNat + 31 - i]'hvidxlt) := by
-        rw [List.getElem?_eq_getElem hidxlt, List.Vector.toList_getElem]
-        rfl
-      simp only [Scalar.byteAtField, Builtin.CastTp.cast,
-        Lens.modify, Option.get_some]
-      rw [hge]
-      simp [vector_get_eq_getElem, hmod]
-      rfl
-    · rw [Scalar.fromBytesHiAcc_succ]
-      have hmod := sub_add_mod_eq i 15 offset.toNat (by omega) (by omega)
-      have hidxlt : offset.toNat + 15 - i < (List.Vector.toList bytes).length := by
-        simp
-        omega
-      have hvidxlt : offset.toNat + 15 - i < 64 := by
-        simpa using hidxlt
-      have hge :
-          (List.Vector.toList bytes)[offset.toNat + 15 - i]? =
-            some (bytes[offset.toNat + 15 - i]'hvidxlt) := by
-        rw [List.getElem?_eq_getElem hidxlt, List.Vector.toList_getElem]
-        rfl
-      simp only [Scalar.byteAtField, Builtin.CastTp.cast,
-        Lens.modify, Option.get_some]
-      rw [hge]
-      simp [vector_get_eq_getElem, hmod]
-      rfl
-  steps
-  subst_vars
-  rfl
-
-theorem scalar_from_bytes_some_spec {p bytes offset scalar}
-    (hsome : Scalar.fromBytes? bytes offset = some scalar) :
-    STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::EmbeddedCurveScalar::from_bytes».call
-        h![] h![bytes, offset])
-      (fun r => r = scalar) := by
-  have hvalid : Scalar.validOffset offset := by
-    by_cases h : Scalar.validOffset offset
-    · exact h
-    · rw [Scalar.fromBytes?_eq_none_of_not_validOffset h] at hsome
-      contradiction
-  have hbound : offset.toNat + 31 < 64 := by
-    have hoff : offset.toNat < 33 := by
-      simpa [Scalar.validOffset] using hvalid
-    omega
-  have hcanonical :
-      scalar =
-        Scalar.mk
-          (Scalar.fromBytesLoAcc bytes offset 16)
-          (Scalar.fromBytesHiAcc bytes offset 16) := by
-    have := hsome
-    rw [Scalar.fromBytes?_eq_some_of_validOffset hvalid] at this
-    exact (Option.some.inj this).symm
-  steps [scalar_from_bytes_spec (p := p) (bytes := bytes) (offset := offset) hbound]
-  simpa [hcanonical]
+-- Note: `EmbeddedCurveScalar::from_bytes` was removed in Noir 1.0.0-beta.25.
 
 theorem scalar_hash_spec {p H stateRef}
     {self : Scalar.denote p}
@@ -795,17 +611,17 @@ theorem scalar_hash_spec {p H stateRef}
     {h_hasher : Lampe.Stdlib.Hash.Hasher.hasImpl env H}
     (h_hi_write : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, Scalar.hi self])
       (fun _ => [stateRef ↦ ⟨H, state1⟩]))
     (h_lo_write : STHoare p env
       [stateRef ↦ ⟨H, state1⟩]
-      («std-1.0.0-beta.14::hash::Hasher».write h![] H h![] h![]
+      («std-1.0.0-beta.25::hash::Hasher».write h![] H h![] h![]
         h![stateRef, Scalar.lo self])
       (fun _ => [stateRef ↦ ⟨H, final⟩]))
     : STHoare p env
       [stateRef ↦ ⟨H, state⟩]
-      («std-1.0.0-beta.14::hash::Hash».hash h![] Scalar.type h![] h![H] h![self, stateRef])
+      («std-1.0.0-beta.25::hash::Hash».hash h![] Scalar.type h![] h![H] h![self, stateRef])
       (fun _ => [stateRef ↦ ⟨H, final⟩]) := by
   resolve_trait
   reduce_fn_body
@@ -858,7 +674,7 @@ private theorem multi_scalar_mul_concrete_spec {p N}
     {scalars : Tp.denote p (Scalar.type.array N)}
     (hOnCurve : ∀ i, (curvePoint? (points.get i)).isSome) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
+      («std-1.0.0-beta.25::embedded_curve_ops::multi_scalar_mul».call
         h![N] h![points, scalars])
       (fun r =>
         r = encodeCurvePoint
@@ -935,7 +751,7 @@ private lemma points_get_eq_encode {p : Prime} {N : U 32}
 /-- Bridging lemma: when each point is exactly the encoding of `Ps i`,
 the MSM accumulator equals the canonical sum
 `∑ i, Scalar.valueNat (scalars i) • Ps i`. -/
-private lemma msmAccFinRange_eq_sum {p : Prime} {N : U 32}
+private lemma msmAccFinRange_eq_sum {p : Prime} [Lampe.Crypto.Bn254.Prime p] {N : U 32}
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
     {Ps : List.Vector (affineCurve p).Point N.toNat}
@@ -953,14 +769,14 @@ private lemma msmAccFinRange_eq_sum {p : Prime} {N : U 32}
 /-- Result-equation spec for `multi_scalar_mul`. When each input point is
 the encoding of a Mathlib `WeierstrassCurve.Affine.Point`, the result is
 `encodeCurvePoint (∑ Scalar.valueNat (scalars i) • Ps i)`. -/
-theorem multi_scalar_mul_spec {p N}
+theorem multi_scalar_mul_spec {p N} [Lampe.Crypto.Bn254.Prime p]
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
     {Ps : List.Vector (affineCurve p).Point N.toNat}
     (h_enc :
       points.toList = Ps.toList.map encodeCurvePoint) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
+      («std-1.0.0-beta.25::embedded_curve_ops::multi_scalar_mul».call
         h![N] h![points, scalars])
       (fun r =>
         r = encodeCurvePoint
@@ -978,14 +794,14 @@ theorem multi_scalar_mul_spec {p N}
 /-- Combined wrapper spec: result equation and canonicality together.
 Used by Pedersen `_spec_canonical` proofs to extract both facts in a
 single `steps` invocation. -/
-theorem multi_scalar_mul_combined_spec {p N}
+theorem multi_scalar_mul_combined_spec {p N} [Lampe.Crypto.Bn254.Prime p]
     {points : Tp.denote p (Point.type.array N)}
     {scalars : Tp.denote p (Scalar.type.array N)}
     {Ps : List.Vector (affineCurve p).Point N.toNat}
     (h_enc :
       points.toList = Ps.toList.map encodeCurvePoint) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::multi_scalar_mul».call
+      («std-1.0.0-beta.25::embedded_curve_ops::multi_scalar_mul».call
         h![N] h![points, scalars])
       (fun r =>
         (∀ i, Scalar.Canonical (scalars.get i)) ∧
@@ -1028,14 +844,14 @@ theorem multi_scalar_mul_combined_spec {p N}
     rw [msmAccFinRange_eq_sum h_enc hOnCurve]
     rfl
 
-private theorem fixed_base_scalar_mul_concrete_spec {p}
+private theorem fixed_base_scalar_mul_concrete_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Scalar.denote p}
     {Pgen : (affineCurve p).Point}
     (h_gen :
       (Point.generator : Point.denote p) =
         encodeCurvePoint Pgen) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
+      («std-1.0.0-beta.25::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
       (fun r =>
         r = encodeCurvePoint
           (Scalar.valueNat scalar • Pgen)) := by
@@ -1094,14 +910,14 @@ The hypothesis `h_gen` is a side condition because proving
 requires knowing the concrete characteristic; downstream callers
 that pin `p` to BN254 discharge it directly (see
 `Lampe.Stdlib.EmbeddedCurveOps.Bn254.fixed_base_scalar_mul_bn254_spec`). -/
-theorem fixed_base_scalar_mul_spec {p}
+theorem fixed_base_scalar_mul_spec {p} [Lampe.Crypto.Bn254.Prime p]
     {scalar : Scalar.denote p}
     {Pgen : (affineCurve p).Point}
     (h_gen :
       (Point.generator : Point.denote p) =
         encodeCurvePoint Pgen) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
+      («std-1.0.0-beta.25::embedded_curve_ops::fixed_base_scalar_mul».call h![] h![scalar])
       (fun r =>
         r =
           encodeCurvePoint

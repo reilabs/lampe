@@ -9,7 +9,7 @@ use nargo::{
     workspace::Workspace,
 };
 use noirc_driver::{check_crate, CompileOptions};
-use noirc_frontend::hir::ParsedFiles;
+use noirc_frontend::hir::{LspMode, ParsedFiles};
 
 use crate::{
     lean::generator::LeanGenerator,
@@ -65,7 +65,7 @@ impl<'file_manager, 'parsed_files> Project<'file_manager, 'parsed_files> {
         let (mut context, crate_id) =
             prepare_package(self.nargo_file_manager, self.nargo_parsed_files, package);
         // Enables reference tracking in the internal context.
-        context.activate_lsp_mode();
+        context.activate_lsp_mode(LspMode::Full);
 
         // Perform compilation to check the code within it.
         let ((), warnings) = check_crate(

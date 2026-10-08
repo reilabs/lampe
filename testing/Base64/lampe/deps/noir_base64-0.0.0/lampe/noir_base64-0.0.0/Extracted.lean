@@ -7,8 +7,9 @@ import «noir_base64-0.0.0».Extracted.Encoder
 import «noir_base64-0.0.0».Extracted.Encoder.ToBeRadix
 import «noir_base64-0.0.0».Extracted.GeneratedTypes
 import «noir_base64-0.0.0».Extracted.Lib
+import «noir_base64-0.0.0».Extracted.OracleTest
 import «noir_base64-0.0.0».Extracted.Tables
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 
 namespace «noir_base64-0.0.0»
 
@@ -18,5 +19,6 @@ def env := Benchmarks.Mod.env
   ++ Encoder.ToBeRadix.env
   ++ Encoder.env
   ++ Lib.env
+  ++ OracleTest.env
   ++ Tables.env
-  ++ «std-1.0.0-beta.14».env
+  ++ «std-1.0.0-beta.25».env

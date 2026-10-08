@@ -97,7 +97,6 @@ pub enum BuiltinType {
 
 const fn integer_bit_size_to_u8(s: IntegerBitSize) -> u8 {
     match s {
-        IntegerBitSize::One => 1,
         IntegerBitSize::Eight => 8,
         IntegerBitSize::Sixteen => 16,
         IntegerBitSize::ThirtyTwo => 32,

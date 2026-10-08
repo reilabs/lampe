@@ -8,7 +8,7 @@ open Lampe
 set_option linter.unusedVariables false
 
 noir_def «skyscraper-0.0.0»::bar::bar<>(a: Field) -> Field := {
-  let bytes = («std-1.0.0-beta.14»::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(a);
+  let bytes = («std-1.0.0-beta.25»::field::to_le_bytes<32: u32> as λ(Field) -> Array<u8, 32: u32>)(a);
   let new_left = (#_ref returning & Array<u8, 16: u32>)((#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8)));
   let new_right = (#_ref returning & Array<u8, 16: u32>)((#_mkRepeatedArray returning Array<u8, 16: u32>)((0: u8)));
   for i in (0: u32) .. (16: u32) do {
@@ -31,8 +31,8 @@ noir_def «skyscraper-0.0.0»::bar::bar<>(a: Field) -> Field := {
     };
     #_skip
   };
-  let new_bytes_array = («std-1.0.0-beta.14»::vector::as_array<u8, 32: u32> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_readRef returning Vector<u8>)(new_bytes));
-  («std-1.0.0-beta.14»::field::from_le_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
+  let new_bytes_array = («std-1.0.0-beta.25»::vector::as_array<u8, 32: u32> as λ(Vector<u8>) -> Array<u8, 32: u32>)((#_readRef returning Vector<u8>)(new_bytes));
+  («std-1.0.0-beta.25»::field::from_le_bytes<32: u32> as λ(Array<u8, 32: u32>) -> Field)(new_bytes_array)
 }
 
 def «skyscraper-0.0.0».Bar.env : Env := Env.mk

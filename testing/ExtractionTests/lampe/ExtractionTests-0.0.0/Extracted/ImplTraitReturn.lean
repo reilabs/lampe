@@ -7,7 +7,7 @@ open Lampe
 
 set_option linter.unusedVariables false
 
-noir_trait_impl[«ExtractionTests-0.0.0».impl_437]<> «ExtractionTests-0.0.0»::impl_trait_return::Foo<> for «ExtractionTests-0.0.0»::impl_trait_return::Bar<> where [] := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_453]<> «ExtractionTests-0.0.0»::impl_trait_return::Foo<> for «ExtractionTests-0.0.0»::impl_trait_return::Bar<> where [] := {
   noir_def foo<>(self: «ExtractionTests-0.0.0»::impl_trait_return::Bar<>) -> Field := {
     (42: Field)
   };
@@ -17,7 +17,7 @@ noir_trait_impl[«ExtractionTests-0.0.0».impl_437]<> «ExtractionTests-0.0.0»:
   };
 }
 
-noir_trait_impl[«ExtractionTests-0.0.0».impl_438]<> «ExtractionTests-0.0.0»::impl_trait_return::Foo<> for «ExtractionTests-0.0.0»::impl_trait_return::Baz<> where [] := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_454]<> «ExtractionTests-0.0.0»::impl_trait_return::Foo<> for «ExtractionTests-0.0.0»::impl_trait_return::Baz<> where [] := {
   noir_def foo<>(self: «ExtractionTests-0.0.0»::impl_trait_return::Baz<>) -> Field := {
     self.0
   };
@@ -49,4 +49,4 @@ noir_def «ExtractionTests-0.0.0»::impl_trait_return::use_baz<>() -> Field := {
 
 def «ExtractionTests-0.0.0».ImplTraitReturn.env : Env := Env.mk
   [«ExtractionTests-0.0.0::impl_trait_return::call_foo», «ExtractionTests-0.0.0::impl_trait_return::get_impl_bar», «ExtractionTests-0.0.0::impl_trait_return::get_impl_baz», «ExtractionTests-0.0.0::impl_trait_return::use_bar», «ExtractionTests-0.0.0::impl_trait_return::use_baz»]
-  [«ExtractionTests-0.0.0».impl_437, «ExtractionTests-0.0.0».impl_438]
+  [«ExtractionTests-0.0.0».impl_453, «ExtractionTests-0.0.0».impl_454]

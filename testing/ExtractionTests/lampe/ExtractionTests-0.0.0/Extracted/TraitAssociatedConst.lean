@@ -7,13 +7,13 @@ open Lampe
 
 set_option linter.unusedVariables false
 
-noir_trait_impl[«ExtractionTests-0.0.0».impl_439]<> «ExtractionTests-0.0.0»::trait_associated_const::HasConst<> for «ExtractionTests-0.0.0»::trait_associated_const::Foo<> where [] := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_455]<> «ExtractionTests-0.0.0»::trait_associated_const::HasConst<> for «ExtractionTests-0.0.0»::trait_associated_const::Foo<> where [] := {
   noir_def double_n<N: u32>() -> u32 := {
     (#_uMul returning u32)(uConst!(N: u32), (2: u32))
   };
 }
 
-noir_trait_impl[«ExtractionTests-0.0.0».impl_440]<> «ExtractionTests-0.0.0»::trait_associated_const::HasConst<> for «ExtractionTests-0.0.0»::trait_associated_const::Bar<> where [] := {
+noir_trait_impl[«ExtractionTests-0.0.0».impl_456]<> «ExtractionTests-0.0.0»::trait_associated_const::HasConst<> for «ExtractionTests-0.0.0»::trait_associated_const::Bar<> where [] := {
   noir_def double_n<N: u32>() -> u32 := {
     (#_uMul returning u32)(uConst!(N: u32), (2: u32))
   };
@@ -41,4 +41,4 @@ noir_def «ExtractionTests-0.0.0»::trait_associated_const::use_bar_array<>() ->
 
 def «ExtractionTests-0.0.0».TraitAssociatedConst.env : Env := Env.mk
   [«ExtractionTests-0.0.0::trait_associated_const::double_foo», «ExtractionTests-0.0.0::trait_associated_const::double_bar», «ExtractionTests-0.0.0::trait_associated_const::poly_array», «ExtractionTests-0.0.0::trait_associated_const::use_foo_array», «ExtractionTests-0.0.0::trait_associated_const::use_bar_array»]
-  [«ExtractionTests-0.0.0».impl_439, «ExtractionTests-0.0.0».impl_440]
+  [«ExtractionTests-0.0.0».impl_455, «ExtractionTests-0.0.0».impl_456]

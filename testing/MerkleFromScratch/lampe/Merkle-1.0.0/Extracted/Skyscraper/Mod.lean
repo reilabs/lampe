@@ -7,7 +7,7 @@ open Lampe
 
 set_option linter.unusedVariables false
 
-noir_trait_impl[«Merkle-1.0.0».impl_432]<> «Merkle-1.0.0»::hasher::BinaryHasher<Field> for «Merkle-1.0.0»::skyscraper::Skyscraper<> where [] := {
+noir_trait_impl[«Merkle-1.0.0».impl_448]<> «Merkle-1.0.0»::hasher::BinaryHasher<Field> for «Merkle-1.0.0»::skyscraper::Skyscraper<> where [] := {
   noir_def hash<>(a: Field, b: Field) -> Field := {
     let x = («Merkle-1.0.0»::permute::permute<> as λ(Array<Field, 2: u32>) -> Array<Field, 2: u32>)((#_mkArray returning Array<Field, 2: u32>)(a, b));
     (#_fAdd returning Field)((#_arrayIndex returning Field)(x, (0: u32)), a)
@@ -16,4 +16,4 @@ noir_trait_impl[«Merkle-1.0.0».impl_432]<> «Merkle-1.0.0»::hasher::BinaryHas
 
 def «Merkle-1.0.0».Skyscraper.Mod.env : Env := Env.mk
   []
-  [«Merkle-1.0.0».impl_432]
+  [«Merkle-1.0.0».impl_448]

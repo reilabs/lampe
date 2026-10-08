@@ -1,32 +1,32 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Stdlib.Cmp
 import Lampe
 
 namespace Lampe.Stdlib.Option
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 open Cmp.Ord
 
 set_option Lampe.pp.Expr false
 set_option Lampe.pp.STHoare false
 
 /--
-Convert a Lean option into a Noir `std-1.0.0-beta.14::option::Option`.
+Convert a Lean option into a Noir `std-1.0.0-beta.25::option::Option`.
 
-We recommend providing the user with `std-1.0.0-beta.14::option::Option`s at the boundary of the theorem for any
+We recommend providing the user with `std-1.0.0-beta.25::option::Option`s at the boundary of the theorem for any
 option values 'created' by the theorem.
 -/
-def fromOption {p t} : Option (t.denote p) -> («std-1.0.0-beta.14::option::Option».tp h![t] |>.denote p)
+def fromOption {p t} : Option (t.denote p) -> («std-1.0.0-beta.25::option::Option».tp h![t] |>.denote p)
 | none => (false, Tp.zero p t, ())
 | some val => (true, val, ())
 
 /--
-Convert a Noir `std-1.0.0-beta.14::option::Option` into a Lean option.
+Convert a Noir `std-1.0.0-beta.25::option::Option` into a Lean option.
 
-We recommend converting user-provided `std-1.0.0-beta.14::option::Option`s from the user, and converting them
+We recommend converting user-provided `std-1.0.0-beta.25::option::Option`s from the user, and converting them
 within the theorem.
 -/
-def toOption {p t} : («std-1.0.0-beta.14::option::Option».tp h![t] |>.denote p) -> Option (t.denote p)
+def toOption {p t} : («std-1.0.0-beta.25::option::Option».tp h![t] |>.denote p) -> Option (t.denote p)
 | (false, _, _) => none
 | (true, val, _) => some val
 
@@ -36,14 +36,14 @@ lemma fromOption_toOption_id : toOption (fromOption v) = v := by
 
 @[simp]
 lemma option_fst_eq_toOption_isSome {p T}
-    {v : Tp.denote p $ «std-1.0.0-beta.14::option::Option».tp h![T]}
+    {v : Tp.denote p $ «std-1.0.0-beta.25::option::Option».tp h![T]}
   : Builtin.indexTpl v Member.head = (toOption v).isSome := by
   rcases v with ⟨_|_, _⟩
   all_goals rfl
 
 @[simp]
 lemma option_snd_eq_toOption_get_of_isSome {p T}
-    {v : Tp.denote p $ «std-1.0.0-beta.14::option::Option».tp h![T]}
+    {v : Tp.denote p $ «std-1.0.0-beta.25::option::Option».tp h![T]}
     (v_is_some : (toOption v).isSome = true)
   : Builtin.indexTpl v Member.head.tail = (toOption v).get v_is_some := by
   rcases v with ⟨_|_, _, _⟩
@@ -62,38 +62,43 @@ lemma bind_def_of_isSome {α β} {v : Option α} {f : α → Option β} (v_is_so
   rcases (Option.isSome_iff_exists.mp v_is_some) with ⟨_, rfl⟩
   simp_all
 
-theorem none_spec {p T} : STHoare p env ⟦⟧ («std-1.0.0-beta.14::option::Option::none».call h![T] h![])
+theorem none_spec {p T} : STHoare p env ⟦⟧ («std-1.0.0-beta.25::option::Option::none».call h![T] h![])
     (fun v => v = fromOption none) := by
   enter_decl
   steps
   subst_vars
   rfl
 
-theorem some_spec {p T v} : STHoare p env ⟦⟧ («std-1.0.0-beta.14::option::Option::some».call h![T] h![v])
+theorem some_spec {p T v} : STHoare p env ⟦⟧ («std-1.0.0-beta.25::option::Option::some».call h![T] h![v])
     (fun r => r = fromOption (some v)) := by
   enter_decl
   steps
   subst_vars
   rfl
 
-theorem is_none_spec {p T v} : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::is_none».call h![T] h![v])
-    (fun r => r = (toOption v).isNone) := by
+-- Note: since beta.25, `is_none` and `is_some` take `&self`, so their specs are ref-style.
+theorem is_none_spec {p T v}
+    {selfRef : Ref («std-1.0.0-beta.25::option::Option».tp h![T])} :
+    STHoare p env [selfRef ↦ ⟨«std-1.0.0-beta.25::option::Option».tp h![T], v⟩]
+      («std-1.0.0-beta.25::option::Option::is_none».call h![T] h![selfRef])
+      (fun r => [selfRef ↦ ⟨«std-1.0.0-beta.25::option::Option».tp h![T], v⟩] ⋆
+        ⟦r = (toOption v).isNone⟧) := by
   enter_decl
   steps
-  subst_vars
-  simp
+  simp_all [option_fst_eq_toOption_isSome, Option.not_isSome]
 
-theorem is_some_spec {p T v} : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::is_some».call h![T] h![v])
-    (fun r => r = (toOption v).isSome) := by
+theorem is_some_spec {p T v}
+    {selfRef : Ref («std-1.0.0-beta.25::option::Option».tp h![T])} :
+    STHoare p env [selfRef ↦ ⟨«std-1.0.0-beta.25::option::Option».tp h![T], v⟩]
+      («std-1.0.0-beta.25::option::Option::is_some».call h![T] h![selfRef])
+      (fun r => [selfRef ↦ ⟨«std-1.0.0-beta.25::option::Option».tp h![T], v⟩] ⋆
+        ⟦r = (toOption v).isSome⟧) := by
   enter_decl
   steps
-  subst_vars
-  simp
+  simp_all [option_fst_eq_toOption_isSome]
 
 theorem unwrap_spec {p T v} : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::unwrap».call h![T] h![v])
+    («std-1.0.0-beta.25::option::Option::unwrap».call h![T] h![v])
     (fun r => ∃h, r = (toOption v).get h) := by
   enter_decl
   steps
@@ -101,7 +106,7 @@ theorem unwrap_spec {p T v} : STHoare p env ⟦⟧
   rename _ = true => v
   use v
   subst_vars
-  rename Tp.denote p («std-1.0.0-beta.14::option::Option».tp _) => h
+  rename Tp.denote p («std-1.0.0-beta.25::option::Option».tp _) => h
   rcases h with ⟨(_|_), _, _⟩
   · contradiction
   · rfl
@@ -109,7 +114,7 @@ theorem unwrap_spec {p T v} : STHoare p env ⟦⟧
 theorem map_none_spec {p T U E f v}
     (v_is_none : (toOption v).isNone)
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::map».call h![T, U, E] h![v, f])
+    («std-1.0.0-beta.25::option::Option::map».call h![T, U, E] h![v, f])
     (fun r => r = fromOption none) := by
   enter_decl
   steps
@@ -124,7 +129,7 @@ theorem map_some_spec {p T U E f fb v P Q}
     (h_lam : STHoare p env P (fb h![(toOption v).get v_is_some]) Q)
   : STHoare p env
     (P ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::option::Option::map».call h![T, U, E] h![v, f])
+    («std-1.0.0-beta.25::option::Option::map».call h![T, U, E] h![v, f])
     (fun r => (∃∃vin, r = fromOption (some vin) ⋆ Q vin) ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
@@ -142,7 +147,7 @@ theorem map_pure_spec {p T U E P f fb v}
     (h_f : ∀arg, STHoare p env P (fb h![arg]) (fun r => r = f_emb arg ⋆ P))
   : STHoare p env
     (P ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::option::Option::map».call h![T, U, E] h![v, f])
+    («std-1.0.0-beta.25::option::Option::map».call h![T, U, E] h![v, f])
     (fun r => r = fromOption ((toOption v).map f_emb) ⋆ P) := by
   by_cases h : (toOption v).isSome = true
   · steps [map_some_spec h (h_f _)]
@@ -154,7 +159,7 @@ theorem map_pure_spec {p T U E P f fb v}
 theorem map_or_none_spec {p T U E v default f}
     (v_is_none : (toOption v).isNone)
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::map_or».call h![T, U, E] h![v, default, f])
+    («std-1.0.0-beta.25::option::Option::map_or».call h![T, U, E] h![v, default, f])
     (fun r => r = default) := by
   enter_decl
   steps
@@ -169,7 +174,7 @@ theorem map_or_some_spec {p T U E v f fb default P Q}
     (h_lam : STHoare p env P (fb h![(toOption v).get v_is_some]) Q)
   : STHoare p env
     (P ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::option::Option::map_or».call h![T, U, E] h![v, default, f])
+    («std-1.0.0-beta.25::option::Option::map_or».call h![T, U, E] h![v, default, f])
     (fun r => Q r ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
@@ -185,7 +190,7 @@ theorem map_or_pure_spec {p T U E P v f fb default}
     (h_f : ∀arg, STHoare p env P (fb h![arg]) (fun r => r = f_emb arg ⋆ P))
   : STHoare p env
     (P ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::option::Option::map_or».call h![T, U, E] h![v, default, f])
+    («std-1.0.0-beta.25::option::Option::map_or».call h![T, U, E] h![v, default, f])
     (fun r => r = ((toOption v).map f_emb).getD default ⋆ P) := by
   by_cases h : (toOption v).isSome = true
   · steps [map_or_some_spec (E := E) h (h_f _)]
@@ -199,7 +204,7 @@ theorem map_or_else_none_spec {p T U E1 E2 P Q v default default_b func}
     (default_f : STHoare p env P (default_b h![]) Q)
   : STHoare p env
     (P ⋆ [λdefault ↦ default_b])
-    («std-1.0.0-beta.14::option::Option::map_or_else».call h![T, U, E1, E2] h![v, default, func])
+    («std-1.0.0-beta.25::option::Option::map_or_else».call h![T, U, E1, E2] h![v, default, func])
     (fun r => Q r ⋆ [λdefault ↦ default_b]) := by
   enter_decl
   steps
@@ -213,7 +218,7 @@ theorem map_or_else_some_spec {p T U E1 E2 P Q v default func func_b}
     (func_f : STHoare p env P (func_b h![(toOption v).get v_is_some]) Q)
   : STHoare p env
     (P ⋆ [λfunc ↦ func_b])
-    («std-1.0.0-beta.14::option::Option::map_or_else».call h![T, U, E1, E2] h![v, default, func])
+    («std-1.0.0-beta.25::option::Option::map_or_else».call h![T, U, E1, E2] h![v, default, func])
     (fun r => Q r ⋆ [λfunc ↦ func_b]) := by
   enter_decl
   steps
@@ -231,7 +236,7 @@ theorem map_or_else_pure_spec {p T U E1 E2 P v default default_b func func_b}
     (func_f : ∀arg, STHoare p env P (func_b h![arg]) (fun r => r = func_emb arg ⋆ P))
   : STHoare p env
     (P ⋆ [λdefault ↦ default_b] ⋆ [λfunc ↦ func_b])
-    («std-1.0.0-beta.14::option::Option::map_or_else».call h![T, U, E1, E2] h![v, default, func])
+    («std-1.0.0-beta.25::option::Option::map_or_else».call h![T, U, E1, E2] h![v, default, func])
     (fun r => r = ((toOption v).map func_emb).getD default_emb ⋆ P) := by
   by_cases h : (toOption v).isSome = true
   · steps [map_or_else_some_spec (E1 := E1) (E2 := E2) h (func_f _)]
@@ -245,7 +250,7 @@ theorem map_or_else_pure_spec {p T U E1 E2 P v default default_b func func_b}
 
 theorem and_spec {p T v w}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::and».call h![T] h![v, w])
+    («std-1.0.0-beta.25::option::Option::and».call h![T] h![v, w])
     (fun r => r = if (toOption v).isSome then w else fromOption none) := by
   enter_decl
   steps [is_none_spec]
@@ -260,7 +265,7 @@ theorem and_spec {p T v w}
 theorem and_then_none_spec {p T U E self f}
     (self_is_none : (toOption self).isNone)
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::and_then».call h![T, U, E] h![self, f])
+    («std-1.0.0-beta.25::option::Option::and_then».call h![T, U, E] h![self, f])
     (fun r => r = fromOption none) := by
   enter_decl
   steps
@@ -275,7 +280,7 @@ theorem and_then_some_spec {p T U E P Q self f fb}
     (f_lam : STHoare p env P (fb h![(toOption self).get self_is_some]) Q)
   : STHoare p env
     (P ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::option::Option::and_then».call h![T, U, E] h![self, f])
+    («std-1.0.0-beta.25::option::Option::and_then».call h![T, U, E] h![self, f])
     (fun r => Q r ⋆ [λf ↦ fb]) := by
   enter_decl
   steps
@@ -287,11 +292,11 @@ theorem and_then_some_spec {p T U E P Q self f fb}
   steps [STHoare.callLambda_intro (hlam := f_lam)]
 
 theorem and_then_pure_spec {p T U E P self f fb}
-    {f_emb : T.denote p → (Tp.denote p $ «std-1.0.0-beta.14::option::Option».tp h![U])}
+    {f_emb : T.denote p → (Tp.denote p $ «std-1.0.0-beta.25::option::Option».tp h![U])}
     (f_f : ∀arg, STHoare p env P (fb h![arg]) (fun r => r = f_emb arg ⋆ P))
   : STHoare p env
     (P ⋆ [λf ↦ fb])
-    («std-1.0.0-beta.14::option::Option::and_then».call h![T, U, E] h![self, f])
+    («std-1.0.0-beta.25::option::Option::and_then».call h![T, U, E] h![self, f])
     (fun r => r = ((toOption self).map f_emb).getD (fromOption none) ⋆ P) := by
   by_cases h : (toOption self).isSome = true
   · steps [and_then_some_spec (E := E) h (f_f _)]
@@ -303,7 +308,7 @@ theorem and_then_pure_spec {p T U E P self f fb}
 
 theorem or_spec {p T self default}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::or».call h![T] h![self, default])
+    («std-1.0.0-beta.25::option::Option::or».call h![T] h![self, default])
     (fun r => r = if (toOption self).isSome then self else default) := by
   enter_decl
   steps
@@ -325,7 +330,7 @@ theorem or_else_none_spec {p T E P Q self default default_b}
     (default_f : STHoare p env P (default_b h![]) Q)
   : STHoare p env
     (P ⋆ [λdefault ↦ default_b])
-    («std-1.0.0-beta.14::option::Option::or_else».call h![T, E] h![self, default])
+    («std-1.0.0-beta.25::option::Option::or_else».call h![T, E] h![self, default])
     (fun r => Q r ⋆ [λdefault ↦ default_b]) := by
   enter_decl
   steps
@@ -337,7 +342,7 @@ theorem or_else_none_spec {p T E P Q self default default_b}
 theorem or_else_some_spec {p T E self default}
     (self_is_some : (toOption self).isSome)
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::or_else».call h![T, E] h![self, default])
+    («std-1.0.0-beta.25::option::Option::or_else».call h![T, E] h![self, default])
     (fun r => r = self) := by
   enter_decl
   steps
@@ -348,11 +353,11 @@ theorem or_else_some_spec {p T E self default}
   simp_all
 
 theorem or_else_pure_spec {p T E P self default default_b}
-    {default_emb : Tp.denote p $ «std-1.0.0-beta.14::option::Option».tp h![T]}
+    {default_emb : Tp.denote p $ «std-1.0.0-beta.25::option::Option».tp h![T]}
     (default_f : STHoare p env P (default_b h![]) (fun r => r = default_emb ⋆ P))
   : STHoare p env
     (P ⋆ [λdefault ↦ default_b])
-    («std-1.0.0-beta.14::option::Option::or_else».call h![T, E] h![self, default])
+    («std-1.0.0-beta.25::option::Option::or_else».call h![T, E] h![self, default])
     (fun r => (r = if (toOption self).isSome then self else default_emb) ⋆ P) := by
   by_cases h : (toOption self).isSome = true
   . steps [or_else_some_spec h]
@@ -363,9 +368,10 @@ theorem or_else_pure_spec {p T E P self default default_b}
     subst_vars
     simp_all
 
+set_option maxHeartbeats 1000000 in
 theorem xor_spec {p T self other}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::xor».call h![T] h![self, other])
+    («std-1.0.0-beta.25::option::Option::xor».call h![T] h![self, other])
     (fun r => r = if (toOption self).isSome then
         if (toOption other).isSome then fromOption none else self
       else if (toOption other).isSome then
@@ -398,7 +404,7 @@ theorem xor_spec {p T self other}
 theorem filter_none_spec {p T E self pred}
     (self_is_none : (toOption self).isNone)
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::filter».call h![T, E] h![self, pred])
+    («std-1.0.0-beta.25::option::Option::filter».call h![T, E] h![self, pred])
     (fun r => r = fromOption none) := by
   enter_decl
   steps
@@ -409,12 +415,13 @@ theorem filter_none_spec {p T E self pred}
   steps [none_spec]
   simp_all
 
+set_option maxHeartbeats 1000000 in
 theorem filter_some_spec {p T E P Q self pred pred_b}
     (self_is_some : (toOption self).isSome)
     (pred_f : STHoare p env P (pred_b h![(toOption self).get self_is_some]) Q)
   : STHoare p env
     (P ⋆ [λpred ↦ pred_b])
-    («std-1.0.0-beta.14::option::Option::filter».call h![T, E] h![self, pred])
+    («std-1.0.0-beta.25::option::Option::filter».call h![T, E] h![self, pred])
     (fun r => ∃∃b, Q b ⋆ r = if b then self else fromOption none) := by
   enter_decl
   steps
@@ -440,7 +447,7 @@ theorem filter_some_spec {p T E P Q self pred pred_b}
 
 theorem flatten_spec {p T opt}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::option::Option::flatten».call h![T] h![opt])
+    («std-1.0.0-beta.25::option::Option::flatten».call h![T] h![opt])
     (fun r => r = (toOption opt).getD (fromOption none)) := by
   enter_decl
   steps
@@ -462,7 +469,7 @@ theorem flatten_spec {p T opt}
 set_option maxRecDepth 2000 in
 theorem default_spec {p T}
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::default::Default».default h![] («std-1.0.0-beta.14::option::Option».tp h![T]) h![] h![] h![])
+    («std-1.0.0-beta.25::default::Default».default h![] («std-1.0.0-beta.25::option::Option».tp h![T]) h![] h![] h![])
     (fun r => r = fromOption none) := by
   resolve_trait
   steps [none_spec]
@@ -470,15 +477,15 @@ theorem default_spec {p T}
 
 set_option maxRecDepth 2000 in
 theorem eq_spec {p T self other P Q}
-    {t_eq : «std-1.0.0-beta.14::cmp::Eq».hasImpl env h![] T}
+    {t_eq : «std-1.0.0-beta.25::cmp::Eq».hasImpl env h![] T}
     {eq_f : (h_self : (toOption self).isSome)
           → (h_other : (toOption other).isSome)
           → STHoare p env P
-            («std-1.0.0-beta.14::cmp::Eq».eq h![] T h![] h![]
+            («std-1.0.0-beta.25::cmp::Eq».eq h![] T h![] h![]
               h![(toOption self).get h_self, (toOption other).get h_other])
             Q}
   : STHoare p env P
-    («std-1.0.0-beta.14::cmp::Eq».eq h![] («std-1.0.0-beta.14::option::Option».tp h![T]) h![] h![] h![self, other])
+    («std-1.0.0-beta.25::cmp::Eq».eq h![] («std-1.0.0-beta.25::option::Option».tp h![T]) h![] h![] h![self, other])
     (fun r => if h : (toOption self).isSome ∧ (toOption other).isSome then
         Q r else (r = ((toOption self).isSome == (toOption other).isSome))) := by
   resolve_trait
@@ -512,13 +519,13 @@ theorem eq_spec {p T self other P Q}
       assumption
 
 theorem eq_pure_spec {p T self other}
-    {t_eq : «std-1.0.0-beta.14::cmp::Eq».hasImpl env h![] T}
+    {t_eq : «std-1.0.0-beta.25::cmp::Eq».hasImpl env h![] T}
     {t_eq_emb : T.denote p → T.denote p → Prop}
     (h_eq : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::cmp::Eq».eq h![] T h![] h![] h![a, b])
+      («std-1.0.0-beta.25::cmp::Eq».eq h![] T h![] h![] h![a, b])
       (fun r : Bool => r = t_eq_emb a b))
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::cmp::Eq».eq h![] («std-1.0.0-beta.14::option::Option».tp h![T]) h![] h![] h![self, other])
+    («std-1.0.0-beta.25::cmp::Eq».eq h![] («std-1.0.0-beta.25::option::Option».tp h![T]) h![] h![] h![self, other])
     (fun r : Bool => r = Option.Rel t_eq_emb (toOption self) (toOption other)) := by
   apply STHoare.consequence_frame
   apply eq_spec
@@ -561,14 +568,14 @@ theorem eq_pure_spec {p T self other}
 set_option maxRecDepth 2000 in
 theorem hash_spec {p T H self P Q R}
     {state : Tp.denote p $ Tp.ref H}
-    {t_hash : «std-1.0.0-beta.14::hash::Hash».hasImpl env h![] T}
+    {t_hash : «std-1.0.0-beta.25::hash::Hash».hasImpl env h![] T}
     {t_hash_f : (h_self : (toOption self).isSome) → STHoare p env Q
-      («std-1.0.0-beta.14::hash::Hash».hash h![] T h![] h![H] h![(toOption self).get h_self, state]) fun _ => R}
-    {bool_hash : «std-1.0.0-beta.14::hash::Hash».hasImpl env h![] Tp.bool}
+      («std-1.0.0-beta.25::hash::Hash».hash h![] T h![] h![H] h![(toOption self).get h_self, state]) fun _ => R}
+    {bool_hash : «std-1.0.0-beta.25::hash::Hash».hasImpl env h![] Tp.bool}
     {bool_hash_f : STHoare p env P
-      («std-1.0.0-beta.14::hash::Hash».hash h![] Tp.bool h![] h![H] h![(toOption self).isSome, state]) fun _ => Q}
+      («std-1.0.0-beta.25::hash::Hash».hash h![] Tp.bool h![] h![H] h![(toOption self).isSome, state]) fun _ => Q}
   : STHoare p env P
-    («std-1.0.0-beta.14::hash::Hash».hash h![] («std-1.0.0-beta.14::option::Option».tp h![T]) h![] h![H] h![self, state])
+    («std-1.0.0-beta.25::hash::Hash».hash h![] («std-1.0.0-beta.25::option::Option».tp h![T]) h![] h![H] h![self, state])
     (fun _ => if (toOption self).isSome then R else Q) := by
   resolve_trait
   steps
@@ -594,15 +601,15 @@ theorem hash_spec {p T H self P Q R}
 
 set_option maxRecDepth 2000 in
 theorem cmp_spec {p T self other P Q}
-    {t_ord : «std-1.0.0-beta.14::cmp::Ord».hasImpl env h![] T}
+    {t_ord : «std-1.0.0-beta.25::cmp::Ord».hasImpl env h![] T}
     (t_ord_f : (h_self : (toOption self).isSome)
              → (h_other : (toOption other).isSome)
              → STHoare p env P
-               («std-1.0.0-beta.14::cmp::Ord».cmp h![] T h![] h![]
+               («std-1.0.0-beta.25::cmp::Ord».cmp h![] T h![] h![]
                 h![(toOption self).get h_self, (toOption other).get h_other])
                Q)
   : STHoare p env P
-    («std-1.0.0-beta.14::cmp::Ord».cmp h![] («std-1.0.0-beta.14::option::Option».tp h![T]) h![] h![] h![self, other])
+    («std-1.0.0-beta.25::cmp::Ord».cmp h![] («std-1.0.0-beta.25::option::Option».tp h![T]) h![] h![] h![self, other])
     (fun r => if (toOption self).isSome then
       if (toOption other).isSome then Q r else r = fromOrdering .gt
     else if (toOption other).isSome then r = fromOrdering .lt else
@@ -643,13 +650,13 @@ theorem cmp_spec {p T self other P Q}
 
 set_option maxRecDepth 2000 in
 theorem cmp_pure_spec {p T self other}
-    {t_ord : «std-1.0.0-beta.14::cmp::Ord».hasImpl env h![] T}
-    {t_ord_emb : T.denote p → T.denote p → («std-1.0.0-beta.14::cmp::Ordering».tp h![] |>.denote p)}
+    {t_ord : «std-1.0.0-beta.25::cmp::Ord».hasImpl env h![] T}
+    {t_ord_emb : T.denote p → T.denote p → («std-1.0.0-beta.25::cmp::Ordering».tp h![] |>.denote p)}
     (t_ord_f : ∀a b, STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::cmp::Ord».cmp h![] T h![] h![] h![a, b])
+      («std-1.0.0-beta.25::cmp::Ord».cmp h![] T h![] h![] h![a, b])
       (fun r => r = t_ord_emb a b))
   : STHoare p env ⟦⟧
-    («std-1.0.0-beta.14::cmp::Ord».cmp h![] («std-1.0.0-beta.14::option::Option».tp h![T]) h![] h![] h![self, other])
+    («std-1.0.0-beta.25::cmp::Ord».cmp h![] («std-1.0.0-beta.25::option::Option».tp h![T]) h![] h![] h![self, other])
     (fun r => r = if h : (toOption self).isSome then
       if g : (toOption other).isSome then
         t_ord_emb ((toOption self).get h) ((toOption other).get g)
@@ -687,16 +694,16 @@ theorem cmp_pure_spec {p T self other}
 theorem expect_spec {p T N MT v message}
     (v_is_some : (toOption v).isSome) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::option::Option::expect».call h![T, N, MT] h![v, message])
+      («std-1.0.0-beta.25::option::Option::expect».call h![T, N, MT] h![v, message])
       (fun r => r = (toOption v).get v_is_some) := by
   enter_decl
   steps [is_some_spec]
   subst_vars
-  simp_all
+  exact option_snd_eq_toOption_get_of_isSome v_is_some
 
 theorem unwrap_or_spec {p T v default} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::option::Option::unwrap_or».call h![T] h![v, default])
+      («std-1.0.0-beta.25::option::Option::unwrap_or».call h![T] h![v, default])
       (fun r => r = (toOption v).getD default) := by
   enter_decl
   steps
@@ -718,7 +725,7 @@ theorem unwrap_or_else_none_spec {p T E v default default_b P Q}
     (h_lam : STHoare p env P (default_b h![]) Q) :
     STHoare p env
       (P ⋆ [λdefault ↦ default_b])
-      («std-1.0.0-beta.14::option::Option::unwrap_or_else».call h![T, E] h![v, default])
+      («std-1.0.0-beta.25::option::Option::unwrap_or_else».call h![T, E] h![v, default])
       (fun r => Q r ⋆ [λdefault ↦ default_b]) := by
   enter_decl
   steps
@@ -730,7 +737,7 @@ theorem unwrap_or_else_none_spec {p T E v default default_b P Q}
 theorem unwrap_or_else_some_spec {p T E v default}
     (v_is_some : (toOption v).isSome) :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::option::Option::unwrap_or_else».call h![T, E] h![v, default])
+      («std-1.0.0-beta.25::option::Option::unwrap_or_else».call h![T, E] h![v, default])
       (fun r => r = (toOption v).get v_is_some) := by
   enter_decl
   steps
@@ -745,7 +752,7 @@ theorem unwrap_or_else_some_spec {p T E v default}
 
 theorem unwrap_unchecked_spec {p T v} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::option::Option::unwrap_unchecked».call h![T] h![v])
+      («std-1.0.0-beta.25::option::Option::unwrap_unchecked».call h![T] h![v])
       (fun r => ∀ h : (toOption v).isSome, r = (toOption v).get h) := by
   enter_decl
   steps

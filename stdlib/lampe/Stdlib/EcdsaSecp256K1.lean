@@ -1,9 +1,9 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.EcdsaSecp256K1
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 
 private theorem ecdsaSecp256K1_builtin_spec {p}
     {pkX pkY : Tp.denote p ((Tp.u 8).array (32 : U 32))}
@@ -27,7 +27,7 @@ theorem verify_signature_spec {p}
     {sig : Tp.denote p ((Tp.u 8).array (64 : U 32))}
     {msg : Tp.denote p ((Tp.u 8).array (32 : U 32))} :
     STHoare p env ⟦⟧
-      («std-1.0.0-beta.14::ecdsa_secp256k1::verify_signature».call
+      («std-1.0.0-beta.25::ecdsa_secp256k1::verify_signature».call
         h![] h![pkX, pkY, sig, msg])
       (fun r => r = Lampe.Crypto.Ecdsa.secp256k1Verify pkX pkY sig msg) := by
   enter_decl

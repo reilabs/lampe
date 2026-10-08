@@ -12,7 +12,7 @@ pub fn bar(a: Field) -> Field {
         new_right[i] = sbox(bytes[16 + i]);
     }
 
-    let mut new_bytes = new_right.as_slice();
+    let mut new_bytes = new_right.as_vector();
 
     for elem in new_left {
         new_bytes = new_bytes.push_back(elem);

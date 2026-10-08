@@ -15,9 +15,10 @@ use itertools::Itertools;
 use nargo::workspace::Workspace;
 use noirc_errors::Location;
 use noirc_frontend::{
-    ast::{BinaryOpKind, FunctionKind, Ident, IntegerBitSize, UnaryOp},
+    ast::{BinaryOpKind, FunctionKind, Ident, UnaryOp},
     graph::CrateId,
     hir::{
+        comptime::Integer as NoirInteger,
         def_map::{LocalModuleId, ModuleData, ModuleDefId},
         type_check::generics::TraitGenerics,
         Context,
@@ -181,6 +182,12 @@ pub struct LeanGenerator<'file_manager, 'parsed_files, 'workspace> {
 
     /// A supply of fresh names.
     name_supply: FreshNameSupply,
+
+    /// The concrete `Self` type of the trait impl currently being generated,
+    /// if any. Trait default methods that are not overridden by an impl are
+    /// materialized with `Self` left abstract (bound to itself), so when
+    /// generating them under a concrete impl we resolve `Self` to this type.
+    current_impl_self_type: RefCell<Option<NoirType>>,
 }
 
 /// Utility functions for the Lean generator.
@@ -213,6 +220,7 @@ impl<'file_manager, 'parsed_files, 'workspace>
             known_files,
             resolved_crate_names: RefCell::new(HashMap::new()),
             name_supply: FreshNameSupply::new(),
+            current_impl_self_type: RefCell::new(None),
         }
     }
 
@@ -262,7 +270,7 @@ impl LeanGenerator<'_, '_, '_> {
             if let Some(dep_id) = g.node_weight(node_idx) {
                 matches!(
                     *dep_id,
-                    DependencyId::Struct(_) | DependencyId::Alias(_) | DependencyId::Trait(_)
+                    DependencyId::DataType(_) | DependencyId::Alias(_) | DependencyId::Trait(_)
                 )
             } else {
                 false
@@ -307,7 +315,7 @@ impl LeanGenerator<'_, '_, '_> {
                         let def_order = dep_weights
                             .clone()
                             .into_iter()
-                            .position(|item| *item == DependencyId::Struct(id));
+                            .position(|item| *item == DependencyId::DataType(id));
                         self.name_supply.reset();
                         let struct_def = self.generate_struct_def(id);
                         let name = quote_lean_keywords(&struct_def.name);
@@ -386,7 +394,7 @@ impl LeanGenerator<'_, '_, '_> {
                 .type_attributes(&id)
                 .iter()
                 .find_map(|attr| match &attr.kind {
-                    SecondaryAttributeKind::Deprecated(msg) => Some(msg.clone()),
+                    SecondaryAttributeKind::Deprecated(_, msg) => Some(msg.clone()),
                     _ => None,
                 }),
         );
@@ -444,7 +452,7 @@ impl LeanGenerator<'_, '_, '_> {
                 expr: TypeExpr::builtin(BuiltinTag::Field, &[]),
                 kind: Kind::Type,
             },
-            NoirType::Array(count, typ) => Type::array(
+            NoirType::Array(typ, count) => Type::array(
                 self.generate_lean_type_value(typ, bindings),
                 self.generate_lean_type_value(count, bindings),
             ),
@@ -491,14 +499,22 @@ impl LeanGenerator<'_, '_, '_> {
                 if let Some(bindings) = bindings {
                     bindings.get(&tv.id()).map_or_else(
                         || self.generate_ty_var(tv, None),
-                        |(_, kind, typ)| match kind {
-                            NoirKind::Numeric(n) => match n.as_ref() {
-                                NoirType::Constant(..) => {
-                                    self.generate_lean_type_value(n.as_ref(), Some(bindings))
-                                }
+                        |(_, kind, typ)| {
+                            // A variable bound to itself (as `Self` is in
+                            // materialized trait default methods) must not
+                            // recurse with the same bindings forever.
+                            if type_is_variable_with_id(typ, tv.id()) {
+                                return self.generate_lean_type_value(typ, None);
+                            }
+                            match kind {
+                                NoirKind::Numeric(n) => match n.as_ref() {
+                                    NoirType::Constant(..) => {
+                                        self.generate_lean_type_value(n.as_ref(), Some(bindings))
+                                    }
+                                    _ => self.generate_lean_type_value(typ, Some(bindings)),
+                                },
                                 _ => self.generate_lean_type_value(typ, Some(bindings)),
-                            },
-                            _ => self.generate_lean_type_value(typ, Some(bindings)),
+                            }
                         },
                     )
                 } else {
@@ -514,14 +530,25 @@ impl LeanGenerator<'_, '_, '_> {
                                 Some(sanitize_generic_name(&ng.name)),
                             )
                         },
-                        |(_, kind, typ)| match kind {
-                            NoirKind::Numeric(n) => match n.as_ref() {
-                                NoirType::Constant(..) => {
-                                    self.generate_lean_type_value(n.as_ref(), Some(bindings))
-                                }
+                        |(_, kind, typ)| {
+                            // A variable bound to itself (as `Self` is in
+                            // materialized trait default methods) must not
+                            // recurse with the same bindings forever.
+                            if type_is_variable_with_id(typ, ng.type_var.id()) {
+                                return self.generate_ty_var(
+                                    &ng.type_var,
+                                    Some(sanitize_generic_name(&ng.name)),
+                                );
+                            }
+                            match kind {
+                                NoirKind::Numeric(n) => match n.as_ref() {
+                                    NoirType::Constant(..) => {
+                                        self.generate_lean_type_value(n.as_ref(), Some(bindings))
+                                    }
+                                    _ => self.generate_lean_type_value(typ, Some(bindings)),
+                                },
                                 _ => self.generate_lean_type_value(typ, Some(bindings)),
-                            },
-                            _ => self.generate_lean_type_value(typ, Some(bindings)),
+                            }
                         },
                     )
                 } else {
@@ -548,11 +575,21 @@ impl LeanGenerator<'_, '_, '_> {
                     Type::immutable_reference(typ)
                 }
             }
-            NoirType::Constant(felt, kind) => {
-                let felt_value = felt.to_string();
-                let kind = self.expect_constant_numeric_kind(kind);
+            NoirType::Constant(value) => {
+                let (value, kind) = match value {
+                    NoirInteger::Field(felt) => (felt.to_string(), Kind::Field),
+                    NoirInteger::I8(v) => (v.to_string(), Kind::I(8)),
+                    NoirInteger::I16(v) => (v.to_string(), Kind::I(16)),
+                    NoirInteger::I32(v) => (v.to_string(), Kind::I(32)),
+                    NoirInteger::I64(v) => (v.to_string(), Kind::I(64)),
+                    NoirInteger::U8(v) => (v.to_string(), Kind::U(8)),
+                    NoirInteger::U16(v) => (v.to_string(), Kind::U(16)),
+                    NoirInteger::U32(v) => (v.to_string(), Kind::U(32)),
+                    NoirInteger::U64(v) => (v.to_string(), Kind::U(64)),
+                    NoirInteger::U128(v) => (v.to_string(), Kind::U(128)),
+                };
 
-                Type::numeric_const(&felt_value, kind)
+                Type::numeric_const(&value, kind)
             }
             NoirType::InfixExpr(..) => {
                 // Substitute any bound type variables and canonicalize the
@@ -609,6 +646,7 @@ impl LeanGenerator<'_, '_, '_> {
                 QuotedType::FunctionDefinition => "FunctionDefinition",
                 QuotedType::Module => "Module",
                 QuotedType::CtString => "CtString",
+                QuotedType::Location => "Location",
             }
             .to_string(),
         );
@@ -710,8 +748,17 @@ impl LeanGenerator<'_, '_, '_> {
                 self.generate_lean_type_value(&b, None)
             }
             TypeBinding::Unbound(id, kind) => {
-                let kind = self.generate_kind(kind);
                 let name = name.unwrap_or_else(|| format!("_tv{id:?}"));
+                // An abstract `Self` inside a trait impl (from a trait
+                // default method the impl did not override) resolves to the
+                // impl's concrete self type.
+                if name == "Self" {
+                    let current_self = self.current_impl_self_type.borrow().clone();
+                    if let Some(self_ty) = current_self {
+                        return self.generate_lean_type_value(&self_ty, None);
+                    }
+                }
+                let kind = self.generate_kind(kind);
                 Type::variable(name, kind)
             }
         }
@@ -899,7 +946,6 @@ impl LeanGenerator<'_, '_, '_> {
                 Box::new(NoirType::Unit),
                 false,
             ),
-            NoirType::Integer(Signedness::Unsigned, IntegerBitSize::One),
             NoirType::Vector(Box::new(dummy_generic.clone())),
             NoirType::String(Box::new(dummy_generic.clone())),
             NoirType::Tuple(vec![dummy_generic; 0]),
@@ -1078,7 +1124,8 @@ impl LeanGenerator<'_, '_, '_> {
             self.context
                 .def_interner
                 .function_attributes(id)
-                .get_deprecated_note(),
+                .get_deprecated()
+                .map(|(_, note)| note),
         );
 
         let generics = self.gather_function_generic_patterns(function_meta);
@@ -1304,6 +1351,11 @@ impl LeanGenerator<'_, '_, '_> {
         // If type patterns have the same name and kind, they are the same variable at
         // the definition site, so we can correctly unique them.
         data.iter()
+            .filter(|g| {
+                // Inside a trait impl, `Self` is fixed by the impl and so is
+                // never a generic pattern.
+                !(g.name.as_str() == "Self" && self.current_impl_self_type.borrow().is_some())
+            })
             .map(|g| self.generate_lean_type_pattern_from_resolved_generic(g))
             .unique()
             .collect_vec()
@@ -1449,7 +1501,11 @@ impl LeanGenerator<'_, '_, '_> {
             NoirType::NamedGeneric(ng) => match &*ng.type_var.borrow() {
                 TypeBinding::Bound(tp) => self.gather_unbound_vars_patterns(tp, seen),
                 TypeBinding::Unbound(id, _) => {
-                    if seen.contains(id) {
+                    // Inside a trait impl, `Self` is fixed by the impl and so
+                    // is never a generic pattern.
+                    let self_is_concrete = sanitize_generic_name(&ng.name) == "Self"
+                        && self.current_impl_self_type.borrow().is_some();
+                    if seen.contains(id) || self_is_concrete {
                         Vec::default()
                     } else {
                         seen.insert(*id);
@@ -1535,6 +1591,12 @@ impl LeanGenerator<'_, '_, '_> {
         let global_data = self.context.def_interner.get_global(*id);
         let statement = self.context.def_interner.statement(&global_data.let_statement);
         let def_info = self.context.def_interner.definition(global_data.definition_id);
+
+        // Trait associated constants surface as placeholder globals; they are
+        // extracted via their trait definitions instead.
+        if matches!(statement, HirStatement::TraitAssociatedConstant) {
+            return None;
+        }
 
         let HirStatement::Let(binding) = statement else {
             eprintln!("Skipping global with invalid statement: {statement:?}");
@@ -1635,11 +1697,15 @@ impl LeanGenerator<'_, '_, '_> {
         // the definition site, so we can correctly unique them.
         let generic_vars = self.gather_trait_impl_generics(impl_id, &trait_impl);
 
+        let previous_self_type = self
+            .current_impl_self_type
+            .replace(Some(trait_impl.typ.clone()));
         let methods = trait_impl
             .methods
             .iter()
             .map(|m| self.generate_trait_function_def(*m, &generic_vars))
             .collect_vec();
+        self.current_impl_self_type.replace(previous_self_type);
 
         TraitImplementation {
             name,
@@ -1703,6 +1769,12 @@ impl LeanGenerator<'_, '_, '_> {
         patterns.into_iter().unique().collect_vec()
     }
 
+    /// Generates the definition of a trait impl method.
+    ///
+    /// # Panics
+    ///
+    /// - If the method has no elaborated body (e.g. it is a bodyless stub),
+    ///   as every method in a trait impl is expected to have one.
     pub fn generate_trait_function_def(
         &self,
         id: FuncId,
@@ -1730,12 +1802,47 @@ impl LeanGenerator<'_, '_, '_> {
             .filter(|g| !trait_generics.contains(g))
             .unique()
             .collect_vec();
-        let mut prologue = vec![];
-        let body = self.generate_expr(
-            self.context.def_interner.function(&id).as_expr(),
-            &mut prologue,
-        );
-        let body = wrap_in_block_if_needed(prologue, body);
+        // Methods marked `#[builtin]`/`#[foreign]` have no elaborated body, so
+        // we synthesize one that forwards to the builtin in question, exactly
+        // as if the method body were a call to the corresponding intrinsic.
+        let body = if matches!(
+            function_meta.kind,
+            FunctionKind::Builtin | FunctionKind::LowLevel
+        ) {
+            let func_kind = &self
+                .context
+                .def_interner
+                .function_attributes(&id)
+                .function
+                .as_ref()
+                .expect("Builtins must have attributes")
+                .0
+                .kind;
+            let builtin_name = match func_kind {
+                FunctionAttributeKind::Builtin(b) => b.clone(),
+                FunctionAttributeKind::Foreign(f) => f.clone(),
+                _ => panic!("Unsupported function kind {func_kind:?} encountered for builtin"),
+            };
+            let call = self.generate_builtin_call(
+                &builtin_name,
+                function_meta.parameters.0.iter().collect_vec(),
+                return_type.clone(),
+            );
+            Expression::Block(Block {
+                statements: Vec::default(),
+                expression: Some(Box::new(call)),
+            })
+        } else {
+            let mut prologue = vec![];
+            let body_expr = self
+                .context
+                .def_interner
+                .function(&id)
+                .try_as_expr()
+                .unwrap_or_else(|| panic!("Trait impl method `{name}` has no elaborated body"));
+            let body = self.generate_expr(body_expr, &mut prologue);
+            wrap_in_block_if_needed(prologue, body)
+        };
 
         FunctionDefinition {
             name,
@@ -2892,12 +2999,8 @@ impl LeanGenerator<'_, '_, '_> {
                 }
             },
             HirLiteral::Bool(bool) => Expression::Literal(Literal::Bool(*bool)),
-            HirLiteral::Integer(signed_field) => {
-                let value = format!(
-                    "{}{}",
-                    if signed_field.is_negative() { "-" } else { "" },
-                    signed_field.absolute_value()
-                );
+            HirLiteral::Integer(int) => {
+                let value = int.to_string();
 
                 let literal = NumericLiteral {
                     value,
@@ -2906,7 +3009,10 @@ impl LeanGenerator<'_, '_, '_> {
 
                 Expression::Literal(Literal::Numeric(literal))
             }
-            HirLiteral::Str(value) => Expression::Literal(Literal::String(value.clone())),
+            HirLiteral::Str(value) => Expression::Literal(Literal::String(
+                String::from_utf8(value.clone())
+                    .expect("Encountered non-UTF-8 string literal during compilation"),
+            )),
             HirLiteral::FmtStr(parts, vars, _) => {
                 let template = Expression::Literal(Literal::String(
                     parts.iter().map(ToString::to_string).join("{}"),
@@ -3244,6 +3350,9 @@ impl LeanGenerator<'_, '_, '_> {
                 panic!("Encountered comptime statement during compilation when none should exist")
             }
             HirStatement::Error => panic!("Encountered error statement during compilation"),
+            HirStatement::TraitAssociatedConstant => {
+                panic!("Encountered trait associated constant placeholder in function body")
+            }
         }
     }
 
@@ -3847,6 +3956,18 @@ impl LeanGenerator<'_, '_, '_> {
 
 /// Replaces invalid characters within a generic name to create a recognizable
 /// but valid generic name.
+#[must_use]
+/// Returns `true` if `typ` is a type variable (or named generic) whose
+/// underlying variable is `id`, i.e. a binding of `id` to `typ` is an
+/// identity binding.
+fn type_is_variable_with_id(typ: &NoirType, id: TypeVariableId) -> bool {
+    match typ {
+        NoirType::TypeVariable(tv) => tv.id() == id,
+        NoirType::NamedGeneric(ng) => ng.type_var.id() == id,
+        _ => false,
+    }
+}
+
 #[must_use]
 pub fn sanitize_generic_name(name: &str) -> String {
     let name = name.strip_prefix("Self::").unwrap_or(name);

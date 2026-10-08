@@ -94,6 +94,20 @@ example (p : Prime) (s : Bool) (n d : U 32) :
   intro tpl
   rfl
 
+/-- Indexing a later member is unaffected by replacing the head. -/
+@[simp]
+theorem index_head_replaced_tpl_tail {tps : List Tp} {tp tp' : Tp}
+    (tpl : Tp.denoteArgs p (tp :: tps)) (v : Tp.denote p tp) (m : Member tp' tps) :
+    indexTpl (p := p) (replaceTuple' tpl Member.head v) (Member.tail m) =
+      indexTpl tpl (Member.tail m) := rfl
+
+/-- Indexing the head is unaffected by replacing a later member. -/
+@[simp]
+theorem index_tail_replaced_tpl_head {tps : List Tp} {tp tp' : Tp}
+    (tpl : Tp.denoteArgs p (tp :: tps)) (m : Member tp' tps) (v : Tp.denote p tp') :
+    indexTpl (p := p) (replaceTuple' tpl (Member.tail m) v) Member.head =
+      indexTpl tpl Member.head := rfl
+
 @[simp]
 theorem index_replaced_tpl :
   indexTpl (replaceTuple' tpl mem v') mem = v' := by

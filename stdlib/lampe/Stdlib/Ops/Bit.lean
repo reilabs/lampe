@@ -1,9 +1,9 @@
-import «std-1.0.0-beta.14».Extracted
+import «std-1.0.0-beta.25».Extracted
 import Lampe
 
 namespace Lampe.Stdlib.Ops.Bit
 
-open «std-1.0.0-beta.14»
+open «std-1.0.0-beta.25»
 
 set_option Lampe.pp.Expr false
 set_option Lampe.pp.STHoare false
@@ -11,15 +11,15 @@ set_option Lampe.pp.STHoare false
 /-- A shorthand for a call to the `std::ops::bit::Not::not` method. -/
 @[reducible]
 def not {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Not».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Not».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Not».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Not».not.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Not».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Not».not.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::Not».not.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::bit::Not».not.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::Not».not.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::bit::Not».not generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::bit::Not».not.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::bit::Not».not generics Self associatedTypes fnGenerics
 
 theorem bool_not_spec {p a}
   : STHoare p env ⟦⟧
@@ -75,15 +75,6 @@ theorem u8_not_spec {p a}
   reduce_fn_body at *
   simp_all
 
-theorem u1_not_spec {p a}
-  : STHoare p env ⟦⟧
-    (not h![] (.u 1) h![] h![] h![a])
-    (fun r => r = a.not) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_not_spec {p a}
   : STHoare p env ⟦⟧
     (not h![] (.i 8) h![] h![] h![a])
@@ -123,15 +114,15 @@ theorem i64_not_spec {p a}
 /-- A shorthand for a call to the `std::ops::bit::BitOr::bitor` method. -/
 @[reducible]
 def bitOr {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitOr».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitOr».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitOr».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitOr».bitor.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitOr».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitOr».bitor.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::BitOr».bitor.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::bit::BitOr».bitor.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::BitOr».bitor.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::bit::BitOr».bitor generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::bit::BitOr».bitor.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::bit::BitOr».bitor generics Self associatedTypes fnGenerics
 
 theorem bool_bit_or_spec {p a b}
   : STHoare p env ⟦⟧
@@ -188,15 +179,6 @@ theorem u8_bit_or_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_bit_or_spec {p a b}
-  : STHoare p env ⟦⟧
-    (bitOr h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a.or b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_bit_or_spec {p a b}
   : STHoare p env ⟦⟧
     (bitOr h![] (.i 8) h![] h![] h![a, b])
@@ -236,15 +218,15 @@ theorem i64_bit_or_spec {p a b}
 /-- A shorthand for a call to the `std::ops::bit::BitOr::bitand` method. -/
 @[reducible]
 def bitAnd {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitAnd».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitAnd».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitAnd».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitAnd».bitand.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitAnd».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitAnd».bitand.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::BitAnd».bitand.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::bit::BitAnd».bitand.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::BitAnd».bitand.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::bit::BitAnd».bitand generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::bit::BitAnd».bitand.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::bit::BitAnd».bitand generics Self associatedTypes fnGenerics
 
 theorem bool_bit_and_spec {p a b}
   : STHoare p env ⟦⟧
@@ -301,15 +283,6 @@ theorem u8_bit_and_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_bit_and_spec {p a b}
-  : STHoare p env ⟦⟧
-    (bitAnd h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a.and b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_bit_and_spec {p a b}
   : STHoare p env ⟦⟧
     (bitAnd h![] (.i 8) h![] h![] h![a, b])
@@ -349,15 +322,15 @@ theorem i64_bit_and_spec {p a b}
 /-- A shorthand for a call to the `std::ops::bit::BitXor::bitxor` method. -/
 @[reducible]
 def bitXor {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitXor».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitXor».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitXor».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::BitXor».bitxor.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitXor».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::BitXor».bitxor.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::BitXor».bitxor.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::bit::BitXor».bitxor.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::BitXor».bitxor.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::bit::BitXor».bitxor generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::bit::BitXor».bitxor.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::bit::BitXor».bitxor generics Self associatedTypes fnGenerics
 
 theorem bool_bit_xor_spec {p a b}
   : STHoare p env ⟦⟧
@@ -414,15 +387,6 @@ theorem u8_bit_xor_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_bit_xor_spec {p a b}
-  : STHoare p env ⟦⟧
-    (bitXor h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a.xor b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_bit_xor_spec {p a b}
   : STHoare p env ⟦⟧
     (bitXor h![] (.i 8) h![] h![] h![a, b])
@@ -462,15 +426,15 @@ theorem i64_bit_xor_spec {p a b}
 /-- A shorthand for a call to the `std::ops::bit::Shl::shl` method. -/
 @[reducible]
 def shl {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Shl».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Shl».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Shl».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Shl».shl.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Shl».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Shl».shl.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::Shl».shl.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::bit::Shl».shl.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::Shl».shl.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::bit::Shl».shl generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::bit::Shl».shl.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::bit::Shl».shl generics Self associatedTypes fnGenerics
 
 theorem u128_shl_spec {p a b}
   : STHoare p env ⟦⟧
@@ -517,15 +481,6 @@ theorem u8_shl_spec {p a b}
   reduce_fn_body at *
   simp_all
 
-theorem u1_shl_spec {p a b}
-  : STHoare p env ⟦⟧
-    (shl h![] (.u 1) h![] h![] h![a, b])
-    (fun r => r = a <<< b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
 theorem i8_shl_spec {p a b}
   : STHoare p env ⟦⟧
     (shl h![] (.i 8) h![] h![] h![a, b])
@@ -565,15 +520,15 @@ theorem i64_shl_spec {p a b}
 /-- A shorthand for a call to the `std::ops::bit::Shr::shr` method. -/
 @[reducible]
 def shr {p}
-    (generics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Shr».«#genericKinds»)
+    (generics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Shr».«#genericKinds»)
     (Self : Tp)
-    (associatedTypes : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Shr».«#associatedTypesKinds»)
-    (fnGenerics : HList Kind.denote «std-1.0.0-beta.14::ops::bit::Shr».shr.«#genericKinds»)
+    (associatedTypes : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Shr».«#associatedTypesKinds»)
+    (fnGenerics : HList Kind.denote «std-1.0.0-beta.25::ops::bit::Shr».shr.«#genericKinds»)
   : HList (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::Shr».shr.«#inputs» generics Self associatedTypes fnGenerics)
+      («std-1.0.0-beta.25::ops::bit::Shr».shr.«#inputs» generics Self associatedTypes fnGenerics)
   → Expr (Tp.denote p)
-      («std-1.0.0-beta.14::ops::bit::Shr».shr.«#output» generics Self associatedTypes fnGenerics) :=
-  «std-1.0.0-beta.14::ops::bit::Shr».shr generics Self associatedTypes fnGenerics
+      («std-1.0.0-beta.25::ops::bit::Shr».shr.«#output» generics Self associatedTypes fnGenerics) :=
+  «std-1.0.0-beta.25::ops::bit::Shr».shr generics Self associatedTypes fnGenerics
 
 theorem u128_shr_spec {p a b}
   : STHoare p env ⟦⟧
@@ -614,15 +569,6 @@ theorem u16_shr_spec {p a b}
 theorem u8_shr_spec {p a b}
   : STHoare p env ⟦⟧
     (shr h![] (.u 8) h![] h![] h![a, b])
-    (fun r => r = a >>> b) := by
-  resolve_trait
-  steps
-  reduce_fn_body at *
-  simp_all
-
-theorem u1_shr_spec {p a b}
-  : STHoare p env ⟦⟧
-    (shr h![] (.u 1) h![] h![] h![a, b])
     (fun r => r = a >>> b) := by
   resolve_trait
   steps

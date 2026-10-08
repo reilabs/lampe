@@ -5,6 +5,8 @@ import Lampe
 
 open Lampe
 
+set_option linter.unusedVariables false
+
 noir_def «LocalDepWithLampe-1.0.0»::not_equal<>(x: Field, y: Field) -> bool := {
   (#_fNeq returning bool)(x, y)
 }

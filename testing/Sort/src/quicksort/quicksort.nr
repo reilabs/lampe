@@ -23,7 +23,7 @@ unconstrained fn quicksort_loop<T, let N: u32>(arr: &mut [T; N], low: u32, high:
 where
     T: std::cmp::Ord,
 {
-    let mut stack: [(u32, u32)] = &[(low, high)];
+    let mut stack: [(u32, u32)] = @[(low, high)];
     // TODO(https://github.com/noir-lang/noir_sort/issues/22): use 'loop' once it's stabilized
     for _ in 0..2 * N {
         if stack.len() == 0 {

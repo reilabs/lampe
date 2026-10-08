@@ -262,6 +262,24 @@ def toDigitsLE' (r : Radix) (n : Nat) : List (Digit r) :=
 instance : OfNat Radix 2 where
   ofNat := ⟨2, by simp⟩
 
+/-- The binary digit corresponding to a boolean bit. -/
+def _root_.Bool.toDigit (b : Bool) : Digit 2 := if b then 1 else 0
+
+/-- The boolean bit corresponding to a binary digit. -/
+def _root_.Lampe.Digit.toBool (d : Digit 2) : Bool := d = 1
+
+@[simp] theorem _root_.Bool.toDigit_true : Bool.toDigit true = 1 := rfl
+@[simp] theorem _root_.Bool.toDigit_false : Bool.toDigit false = 0 := rfl
+
+@[simp] theorem _root_.Lampe.Digit.toBool_toDigit (d : Digit 2) : d.toBool.toDigit = d := by
+  fin_cases d <;> rfl
+
+@[simp] theorem _root_.Bool.toBool_toDigit (b : Bool) : b.toDigit.toBool = b := by
+  cases b <;> rfl
+
+@[simp] theorem _root_.Bool.toDigit_val_eq_toNat (b : Bool) : b.toDigit.val = b.toNat := by
+  cases b <;> rfl
+
 lemma ofDigitsBE_cons {r : Radix} {d : Nat} {x : Digit r}
     {xs : List.Vector (Digit r) d} :
     ofDigitsBE (r := r) (x ::ᵥ xs) = (x.val * r.val ^ d + ofDigitsBE xs) := by
