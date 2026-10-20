@@ -529,7 +529,8 @@ theorem concat_spec: STHoare p env ⟦⟧
       dif_pos hi_bound]
     -- `congr 1` splits into the take and getElem halves.
     rename_i _v hloop hcast _ _
-    generalize_proofs hb1 hb2
+    -- `CastTp` is a `Prop`, so the cast's instance argument is also generalized, first.
+    generalize_proofs hct hb1 hb2
     set X := List.Vector.set _v ⟨i, hi_bound⟩
             (List.Vector.get a₁ ⟨BitVec.toNat (Builtin.CastTp.cast
               (BitVec.ofNatLT i hb1 : Tp.denote p (Tp.u 32))), hcast⟩) with hX
@@ -571,7 +572,8 @@ theorem concat_spec: STHoare p env ⟦⟧
     rename List.Vector _ _ => _v
     rename (List.Vector.toList _).take _ = _ => hloop
     rename BitVec.toNat _ < BitVec.toNat _ => hcast
-    generalize_proofs hb1 hb2
+    -- `CastTp` is a `Prop`, so the cast's instance argument is also generalized, first.
+    generalize_proofs hct hb1 hb2
     set X := List.Vector.set _v ⟨BitVec.toNat i_4238, hi_bound⟩
             (List.Vector.get a₂ ⟨BitVec.toNat (Builtin.CastTp.cast
               (BitVec.ofNatLT i hb1 : Tp.denote p (Tp.u 32))), hcast⟩) with hX
