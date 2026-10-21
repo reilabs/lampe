@@ -31,6 +31,19 @@ def mkRepeatedVector := newGenericTotalPureBuiltin
   (fun _ h![n, val] => List.replicate n.toNat val)
 
 /--
+Defines the builtin constructor for vectors (slices) whose elements are all compile-time
+constants. The element values are carried by the builtin itself as a (prime-generic) denoted
+list; see `Builtin.mkValArray` for a step-by-step account of the construction.
+-/
+def mkValVector (tp : Tp) (vals : (p : Prime) → List (Tp.denote p tp)) :=
+  newGenericTotalPureBuiltin
+    (fun (_ : Unit) => ⟨[], .vector tp⟩)
+    -- Simpler than the array case: a vector denotes as a bare `List` with no length invariant,
+    -- so `vals p` is already a value of the output type and is returned directly — no `takeD`
+    -- reshaping and no length lemma are needed.
+    (fun _ h![] => vals _)
+
+/--
 Defines the indexing of a vector `l : List tp` with `i : U 32`
 We make the following assumptions:
 - If `i < l.length`, then the builtin returns `l[i] : Tp.denote tp`

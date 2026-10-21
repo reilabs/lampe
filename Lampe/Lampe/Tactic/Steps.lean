@@ -158,6 +158,23 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkArray (a := (List.length $argTypes, _)) rfl))
         | ``Lampe.Builtin.mkRepeatedArray =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedArray (a := (_, _)) rfl))
+        | ``Lampe.Builtin.mkValArray =>
+          -- `mkValArray` is a parameterized builtin, so the goal mentions it fully applied as
+          -- `Builtin.mkValArray arrTp vals`. Pull those two arguments out of the goal's
+          -- builtin expression…
+          let some arrTp := builtin.getAppArgs[0]? | throwError "malformed mkValArray"
+          let some vals := builtin.getAppArgs[1]? | throwError "malformed mkValArray"
+          -- …reify them back into syntax…
+          let arrTp ← arrTp.toSyntax
+          let vals ← vals.toSyntax
+          -- …and re-apply them inside the closing term, so that the intro lemma's hypothesis
+          -- `b = newGenericTotalPureBuiltin sgn desc` unfolds `mkValArray` one step and closes
+          -- by `rfl`, inferring `sgn`/`desc` from that equation. The generic argument is `()`
+          -- since `mkValArray` carries all its data in its parameters. The resulting
+          -- postcondition is `v = Builtin.valArray _ _ (vals p)` — a single shallow constant,
+          -- regardless of how many elements the literal has.
+          return some
+            (←``(genericTotalPureBuiltin_intro (Builtin.mkValArray $arrTp $vals) (a := ()) rfl))
         | ``Lampe.Builtin.arrayIndex => return some (←``(arrayIndex_intro))
         | ``Lampe.Builtin.arrayLen =>
           let some argTps :=  val.getAppArgs[1]? | throwError "malformed arrayLen"
@@ -176,6 +193,15 @@ def getClosingTerm (val : Lean.Expr) : TacticM (Option (TSyntax `term)) := withT
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkVector (a := (List.length $argTypes, _)) rfl))
         | ``Lampe.Builtin.mkRepeatedVector =>
           return some (←``(genericTotalPureBuiltin_intro Builtin.mkRepeatedVector (a := _) rfl))
+        | ``Lampe.Builtin.mkValVector =>
+          -- Same shape as the `mkValArray` case above, with the element type in place of the
+          -- whole array type.
+          let some tp := builtin.getAppArgs[0]? | throwError "malformed mkValVector"
+          let some vals := builtin.getAppArgs[1]? | throwError "malformed mkValVector"
+          let tp ← tp.toSyntax
+          let vals ← vals.toSyntax
+          return some
+            (←``(genericTotalPureBuiltin_intro (Builtin.mkValVector $tp $vals) (a := ()) rfl))
         | ``Lampe.Builtin.vectorPushBack => return some (←``(genericTotalPureBuiltin_intro Builtin.vectorPushBack rfl))
         | ``Lampe.Builtin.vectorPushFront => return some (←``(genericTotalPureBuiltin_intro Builtin.vectorPushFront rfl))
         | ``Lampe.Builtin.vectorIndex => return some (←``(vectorIndex_intro))
