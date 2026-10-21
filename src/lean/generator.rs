@@ -3252,7 +3252,44 @@ impl LeanGenerator<'_, '_, '_> {
             sanitize_variable_name(self.context.def_interner.definition_name(fors.identifier.id));
 
         let start_range = Box::new(self.generate_expr(fors.start_range, out));
-        let end_range = Box::new(self.generate_expr(fors.end_range, out));
+        let end_range = self.generate_expr(fors.end_range, out);
+        // Noir's `start..=end` ranges are inclusive, while the Lean loop is
+        // half-open, so an inclusive upper bound becomes `end + 1`. This mirrors
+        // the rewrite Noir's own SSA generation performs for constant bounds
+        // below the type's maximum (see `codegen_for` in
+        // `noirc_evaluator/src/ssa/ssa_gen/mod.rs`).
+        //
+        // Note: when `end` is the maximum value of the index type, `end + 1`
+        // overflows, which the Lampe model treats as failure, whereas the real
+        // program iterates up to and including `end` (Noir generates a
+        // `break`-based loop for that case). Modelling that faithfully would
+        // require an inclusive-loop primitive in the Lean semantics; until
+        // then this diverges for that corner case.
+        let end_range = if fors.inclusive {
+            let bound_ty_noir = self.resolve_bound_type(fors.end_range);
+            let bound_type = self.generate_lean_type_value(&bound_ty_noir, None);
+            let builtin_ty = self
+                .unfold_alias(bound_ty_noir)
+                .try_into()
+                .ok()
+                .expect("Inclusive for-loop bound is not a builtin integer type");
+            let builtin_name =
+                builtin::try_infix_into_builtin_name(BinaryOpKind::Add, builtin_ty, builtin_ty)
+                    .expect("Inclusive for-loop bound type does not support addition");
+            let one = Expression::Literal(Literal::Numeric(NumericLiteral {
+                value: "1".to_string(),
+                typ:   bound_type.clone(),
+            }));
+            let add_target = Expression::builtin_call_ref(builtin_name.as_str(), &bound_type);
+            Expression::Call(Call {
+                function:    Box::new(add_target),
+                params:      vec![end_range, one],
+                return_type: bound_type,
+            })
+        } else {
+            end_range
+        };
+        let end_range = Box::new(end_range);
         let mut body_prologue = vec![];
         let body = self.generate_expr(fors.block, &mut body_prologue);
         let body = Box::new(wrap_in_block_if_needed(body_prologue, body));
