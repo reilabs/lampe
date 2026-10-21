@@ -69,8 +69,8 @@ partial def extractFuncSignature [MonadDSL m]
   → m (Array (TSyntax `term) × TSyntax `term)
 | `(noir_type|λ( $paramTypes,* ) → $returnType)
 | `(noir_type|λ( $paramTypes,* ) -> $returnType) => do
-  let paramTypesExtracted ← paramTypes.getElems.mapM fun p => makeNoirType p
-  let returnTypeExtracted ← makeNoirType returnType
+  let paramTypesExtracted ← paramTypes.getElems.mapM fun p => makeNoirTypeShared p
+  let returnTypeExtracted ← makeNoirTypeShared returnType
   pure (paramTypesExtracted, returnTypeExtracted)
 | s => throwError "{s} was not a valid function type expression"
 
@@ -86,7 +86,7 @@ partial def makePat [MonadDSL m] : TSyntax `noir_pat -> m Binder
 def makeLambdaParam [MonadDSL m] (p : TSyntax `noir_lam_param) : m LambdaParam := match p with
 | `(noir_lam_param|$pat:noir_pat : $ty) => do
   let pat ← makePat pat
-  let ty ← makeNoirType ty
+  let ty ← makeNoirTypeShared ty
   pure ⟨pat, ty⟩
 | _ => throwUnsupportedSyntax
 
@@ -162,8 +162,10 @@ partial def makeExpr [MonadDSL m]
   wrapInLet t binder k
 
 -- Literals
-| `(noir_expr|$n:num : $tp) => do wrapInLet (←``(Expr.litNum $(←makeNoirType tp) $n)) binder k
-| `(noir_expr|-$n:num : $tp) => do wrapInLet (←``(Expr.litNum $(←makeNoirType tp) (-$n))) binder k
+| `(noir_expr|$n:num : $tp) => do
+  wrapInLet (←``(Expr.litNum $(←makeNoirTypeShared tp) $n)) binder k
+| `(noir_expr|-$n:num : $tp) => do
+  wrapInLet (←``(Expr.litNum $(←makeNoirTypeShared tp) (-$n))) binder k
 | `(noir_expr|$s:str) => do wrapInLet (←``(Expr.litStr (String.length $s) (NoirStr.of $s))) binder k
 | `(noir_expr|#_true) => do wrapInLet (←``(Expr.litNum Tp.bool 1)) binder k
 | `(noir_expr|#_false) => do wrapInLet (←``(Expr.litNum Tp.bool 0)) binder k
@@ -221,7 +223,7 @@ partial def makeExpr [MonadDSL m]
   let emitBuiltin : m (TSyntax `term) := makeArgs args.getElems fun args => do
     let argVals ← makeHListLit args
     wrapInLet
-      (←``(Expr.callBuiltin _ $(←makeNoirType tp) $(←makeBuiltin name.getId.toString) $argVals))
+      (←``(Expr.callBuiltin _ $(←makeNoirTypeShared tp) $(←makeBuiltin name.getId.toString) $argVals))
       binder
       k
   emitBuiltin
@@ -258,7 +260,7 @@ partial def makeExpr [MonadDSL m]
     let traitName := Syntax.mkStrLit (←makeNoirIdent tName).getId.toString
     let methodName := Syntax.mkStrLit (←makeNoirIdent fName).getId.toString
     let (paramTypes, outType) ← extractFuncSignature tp
-    let selfTp ← makeNoirType selfTp
+    let selfTp ← makeNoirTypeShared selfTp
 
     wrapInLet
       (← ``(Expr.fn
@@ -327,7 +329,7 @@ partial def makeLambda [MonadDSL m]
   → (k : Option $ TSyntax `term → m (TSyntax `term))
   → m (TSyntax `term)
 | `(noir_lambda|fn( $params,* ): $retType := $body), binder, k => do
-  let retType : TSyntax `term ← makeNoirType retType
+  let retType : TSyntax `term ← makeNoirTypeShared retType
   let params ← params.getElems.mapM makeLambdaParam
   let paramTypes ← makeListLit (params.map fun p => p.type)
   let paramNames ← params.mapM fun b => match b.binder with
@@ -396,25 +398,41 @@ partial def makeArgs [MonadDSL m]
 end
 
 
+/-- As `makeFuncParam`, but sharing the parameter's type term via `makeNoirTypeShared`. -/
+def makeFuncParamShared [MonadDSL m]
+    (param : TSyntax `noir_func_param)
+  : m FuncParam := match param with
+| `(noir_func_param|$name:ident : $type) => do pure ⟨name, ←makeNoirTypeShared type⟩
+| `(noir_func_param|_ : $type) => do pure ⟨mkIdent $ Name.mkSimple "_", ←makeNoirTypeShared type⟩
+| _ => throwUnsupportedSyntax
+
 /--
 Builds a function declaration from the provided syntax, or returns an error if the syntax is
 invalid.
+
+The parameter and return types are built in the same DSL-monad run as the body so that all three
+share type terms (see `makeNoirTypeShared`); the shared `let`s are emitted around the
+`⟨argTps, outTp, body⟩` tuple — inside the match on the generics, since the types may mention
+the generic parameters it binds.
 -/
 def makeFnDecl [MonadUtil m] (syn : Syntax) : m (Lean.Ident × TSyntax `term) := match syn with
 | `(noir_fn_def|$name:noir_ident < $generics,* >( $params,* ) → $returnType := $body)
 | `(noir_fn_def|$name:noir_ident < $generics,* >( $params,* ) -> $returnType := $body) => do
   let name ← makeNoirIdent name
   let (genericKinds, genericDefs) ← makeGenericDefTerms generics.getElems
-  let params ← params.getElems.mapM makeFuncParam
-  let body ← MonadDSL.run do
-    makeExpr body none none
+  let inner ← MonadDSL.run do
+    let params ← params.getElems.mapM makeFuncParamShared
+    let returnType ← makeNoirTypeShared returnType
+    let body ← makeExpr body none none
+    let tuple ← `(⟨
+        $(←makeListLit $ params.map fun ⟨_, t⟩ => t),
+        $returnType,
+        fun args => match args with
+        | $(←makeHListLit $ params.map fun ⟨i, _⟩ => (i : TSyntax `term)) => $body
+      ⟩)
+    wrapSharedTypeLets tuple
   let lambda ← ``(fun rep generics => match generics with
-  | $(genericDefs) => ⟨
-      $(←makeListLit $ params.map fun ⟨_, t⟩ => t),
-      $(←makeNoirType returnType),
-      fun args => match args with
-      | $(←makeHListLit $ params.map fun ⟨i, _⟩ => (i : TSyntax `term)) => $body
-    ⟩
+  | $(genericDefs) => $inner
   )
   let syn ← ``(FunctionDecl.mk
               $(Syntax.mkStrLit name.getId.toString) $ Function.mk $genericKinds $lambda)
