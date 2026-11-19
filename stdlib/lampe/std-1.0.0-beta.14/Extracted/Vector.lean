@@ -188,12 +188,12 @@ noir_def «std-1.0.0-beta.14»::vector::any<T: Type, Env: Type>(self: Vector<T>,
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::map_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((«std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)()), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)())));
+  (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)((«std-1.0.0-beta.14»::vector::map<Field, Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)((#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)()), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)())));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::mapi_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)((«std-1.0.0-beta.14»::vector::mapi<u32, Unit> as λ(Vector<u32>, λ(u32, u32) -> u32) -> Vector<u32>)((#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)()), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)())));
+  (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)((«std-1.0.0-beta.14»::vector::mapi<u32, u32, Unit> as λ(Vector<u32>, λ(u32, u32) -> u32) -> Vector<u32>)((#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)()), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 0: u32>)())));
   #_skip
 }
 
@@ -213,7 +213,7 @@ noir_def «std-1.0.0-beta.14»::vector::test::for_eachi_empty<>() -> Unit := {
 
 noir_def «std-1.0.0-beta.14»::vector::test::map_example<>() -> Unit := {
   let a = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)));
-  let b = («std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
+  let b = («std-1.0.0-beta.14»::vector::map<Field, Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
   (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(b, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field)))));
   (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(a, (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field)))));
   #_skip
@@ -221,7 +221,7 @@ noir_def «std-1.0.0-beta.14»::vector::test::map_example<>() -> Unit := {
 
 noir_def «std-1.0.0-beta.14»::vector::test::mapi_example<>() -> Unit := {
   let a = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)));
-  let b = («std-1.0.0-beta.14»::vector::mapi<u32, Unit> as λ(Vector<u32>, λ(u32, u32) -> u32) -> Vector<u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
+  let b = («std-1.0.0-beta.14»::vector::mapi<u32, u32, Unit> as λ(Vector<u32>, λ(u32, u32) -> u32) -> Vector<u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
   (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(b, (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32)))));
   (#_assert returning Unit)(((Vector<u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<u32>, Vector<u32>) -> bool)(a, (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32)))));
   #_skip
@@ -416,21 +416,21 @@ noir_def «std-1.0.0-beta.14»::vector::test::remove_end_out_of_bounds<>() -> Un
 
 noir_def «std-1.0.0-beta.14»::vector::test::fold_empty<>() -> Unit := {
   let empty = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 0: u32>)());
-  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(empty, (10: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
+  let result = («std-1.0.0-beta.14»::vector::fold<Field, Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(empty, (10: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
   (#_assert returning Unit)((#_fEq returning bool)(result, (10: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::fold_single<>() -> Unit := {
   let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 1: u32>)((5: Field)));
-  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(vector, (10: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
+  let result = («std-1.0.0-beta.14»::vector::fold<Field, Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(vector, (10: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
   (#_assert returning Unit)((#_fEq returning bool)(result, (15: Field)));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::vector::test::fold_multiple<>() -> Unit := {
   let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 4: u32>)((1: Field), (2: Field), (3: Field), (4: Field)));
-  let result = («std-1.0.0-beta.14»::vector::fold<Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(vector, (0: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
+  let result = («std-1.0.0-beta.14»::vector::fold<Field, Field, Unit> as λ(Vector<Field>, Field, λ(Field, Field) -> Field) -> Field)(vector, (0: Field), (fn(acc: Field, x: Field): Field := (#_fAdd returning Field)(acc, x)));
   (#_assert returning Unit)((#_fEq returning bool)(result, (10: Field)));
   #_skip
 }
@@ -575,7 +575,7 @@ noir_def «std-1.0.0-beta.14»::vector::test::as_array_multiple<>() -> Unit := {
 
 noir_def «std-1.0.0-beta.14»::vector::test::chain_operations<>() -> Unit := {
   let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 5: u32>)((1: u32), (2: u32), (3: u32), (4: u32), (5: u32)));
-  let result = («std-1.0.0-beta.14»::vector::fold<u32, Unit> as λ(Vector<u32>, u32, λ(u32, u32) -> u32) -> u32)((«std-1.0.0-beta.14»::vector::map<u32, Unit> as λ(Vector<u32>, λ(u32) -> u32) -> Vector<u32>)((«std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_uEq returning bool)((#_uRem returning u32)(x, (2: u32)), (0: u32)))), (fn(x: u32): u32 := (#_uMul returning u32)(x, (2: u32)))), (0: u32), (fn(acc: u32, x: u32): u32 := (#_uAdd returning u32)(acc, x)));
+  let result = («std-1.0.0-beta.14»::vector::fold<u32, u32, Unit> as λ(Vector<u32>, u32, λ(u32, u32) -> u32) -> u32)((«std-1.0.0-beta.14»::vector::map<u32, u32, Unit> as λ(Vector<u32>, λ(u32) -> u32) -> Vector<u32>)((«std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_uEq returning bool)((#_uRem returning u32)(x, (2: u32)), (0: u32)))), (fn(x: u32): u32 := (#_uMul returning u32)(x, (2: u32)))), (0: u32), (fn(acc: u32, x: u32): u32 := (#_uAdd returning u32)(acc, x)));
   (#_assert returning Unit)((#_uEq returning bool)(result, (12: u32)));
   #_skip
 }
@@ -583,8 +583,8 @@ noir_def «std-1.0.0-beta.14»::vector::test::chain_operations<>() -> Unit := {
 noir_def «std-1.0.0-beta.14»::vector::test::nested_operations<>() -> Unit := {
   let vector = (#_asVector returning Vector<u32>)((#_mkArray returning Array<u32, 4: u32>)((1: u32), (2: u32), (3: u32), (4: u32)));
   let filtered = («std-1.0.0-beta.14»::vector::filter<u32, Unit> as λ(Vector<u32>, λ(u32) -> bool) -> Vector<u32>)(vector, (fn(x: u32): bool := (#_uGt returning bool)(x, (1: u32))));
-  let mapped = («std-1.0.0-beta.14»::vector::map<u32, Unit> as λ(Vector<u32>, λ(u32) -> u32) -> Vector<u32>)(filtered, (fn(x: u32): u32 := (#_uMul returning u32)(x, x)));
-  let sum = («std-1.0.0-beta.14»::vector::fold<u32, Unit> as λ(Vector<u32>, u32, λ(u32, u32) -> u32) -> u32)(mapped, (0: u32), (fn(acc: u32, x: u32): u32 := (#_uAdd returning u32)(acc, x)));
+  let mapped = («std-1.0.0-beta.14»::vector::map<u32, u32, Unit> as λ(Vector<u32>, λ(u32) -> u32) -> Vector<u32>)(filtered, (fn(x: u32): u32 := (#_uMul returning u32)(x, x)));
+  let sum = («std-1.0.0-beta.14»::vector::fold<u32, u32, Unit> as λ(Vector<u32>, u32, λ(u32, u32) -> u32) -> u32)(mapped, (0: u32), (fn(acc: u32, x: u32): u32 := (#_uAdd returning u32)(acc, x)));
   (#_assert returning Unit)((#_uEq returning bool)(sum, (29: u32)));
   #_skip
 }
@@ -638,7 +638,7 @@ noir_def «std-1.0.0-beta.14»::vector::test::complex_predicates<>() -> Unit := 
 
 noir_def «std-1.0.0-beta.14»::vector::test::identity_operations<>() -> Unit := {
   let vector = (#_asVector returning Vector<Field>)((#_mkArray returning Array<Field, 5: u32>)((1: Field), (2: Field), (3: Field), (4: Field), (5: Field)));
-  let mapped_identity = («std-1.0.0-beta.14»::vector::map<Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)(vector, (fn(x: Field): Field := x));
+  let mapped_identity = («std-1.0.0-beta.14»::vector::map<Field, Field, Unit> as λ(Vector<Field>, λ(Field) -> Field) -> Vector<Field>)(vector, (fn(x: Field): Field := x));
   (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(mapped_identity, vector));
   let filtered_all = («std-1.0.0-beta.14»::vector::filter<Field, Unit> as λ(Vector<Field>, λ(Field) -> bool) -> Vector<Field>)(vector, (fn(__0: Field): bool := #_true));
   (#_assert returning Unit)(((Vector<Field> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Vector<Field>, Vector<Field>) -> bool)(filtered_all, vector));

@@ -314,10 +314,8 @@ fn call_trait2_unbound<T>(x : T, y : T) -> Field where T : WeirdAdd {
     3
 }
 ";
-        let result = display_extraction_results(unbound_source);
-        assert!(result.is_ok());
-
-        print!("{}", result.unwrap().1);
+        let (_, output) = display_extraction_results(unbound_source).unwrap();
+        assert!(output.contains("::call_trait2<T, T> as"));
     }
 
     #[test]
@@ -348,6 +346,30 @@ fn call_trait2_unbound(x: u64, y: u64) -> Field {
         assert!(result.is_ok());
 
         print!("{}", result.unwrap().1);
+    }
+
+    #[test]
+    fn repeated_numeric_call_generics() {
+        let source = r"
+trait HasWidth {
+    let WIDTH: u32;
+}
+struct Word {}
+impl HasWidth for Word {
+    let WIDTH: u32 = 8;
+}
+fn dimensions<T, let A: u32, let B: u32, let C: u32>() -> [u32; <T as HasWidth>::WIDTH]
+where T: HasWidth {
+    [A + B + C; <T as HasWidth>::WIDTH]
+}
+fn use_dimensions() -> [u32; 8] {
+    dimensions::<Word, 8, 4, 8>()
+}
+";
+        let (_, output) = display_extraction_results(source).unwrap();
+        assert!(output.contains(
+            "::dimensions<«MockProject-0.0.0»::Word<>, 8: u32, 4: u32, 8: u32, 8: u32> as"
+        ));
     }
 
     #[test]

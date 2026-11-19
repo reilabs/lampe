@@ -1197,19 +1197,25 @@ impl LeanGenerator<'_, '_, '_> {
         // If it is a trait function we only want to gather direct generics, but if it
         // is a free function def we need to gather the generics from the impl scope as
         // well.
-        let primary = if data.trait_impl.is_some() || data.trait_id.is_some() {
+        let is_trait_method = data.trait_impl.is_some() || data.trait_id.is_some();
+        let generics = if is_trait_method {
             &data.direct_generics
         } else {
             &data.all_generics
-        }
-        .iter()
-        .map(|rg| {
-            self.generate_lean_type_value(
-                &NoirType::TypeVariable(rg.type_var.clone()),
-                Some(bindings),
-            )
-        })
-        .collect_vec();
+        };
+        // A where-clause can mention a declared parameter again. Deduplicate by
+        // parameter ID so distinct parameters can have the same value.
+        let mut seen = HashSet::new();
+        let mut values = generics
+            .iter()
+            .filter(|rg| seen.insert(rg.type_var.id()))
+            .map(|rg| {
+                self.generate_lean_type_value(
+                    &NoirType::TypeVariable(rg.type_var.clone()),
+                    Some(bindings),
+                )
+            })
+            .collect_vec();
 
         // For non-trait functions, also surface the implicit generics that
         // come from where-clause trait constraints (e.g. associated
@@ -1219,24 +1225,22 @@ impl LeanGenerator<'_, '_, '_> {
         // them, applying the call's instantiation bindings so that concrete
         // calls like `poly_array::<Foo>()` carry the impl's bound numeric
         // value rather than the abstract type-variable name.
-        let mut constraint_vals = Vec::new();
-        if !(data.trait_impl.is_some() || data.trait_id.is_some()) {
-            let mut seen = HashSet::<TypeVariableId>::new();
+        if !is_trait_method {
             let mut visit = |slf: &Self, typ: &NoirType| {
                 slf.gather_unbound_vars_with_bindings(typ, &mut seen, bindings)
             };
             for constraint in &data.trait_constraints {
-                constraint_vals.extend(visit(self, &constraint.typ));
+                values.extend(visit(self, &constraint.typ));
                 for gen in &constraint.trait_bound.trait_generics.ordered {
-                    constraint_vals.extend(visit(self, gen));
+                    values.extend(visit(self, gen));
                 }
                 for gen in &constraint.trait_bound.trait_generics.named {
-                    constraint_vals.extend(visit(self, &gen.typ));
+                    values.extend(visit(self, &gen.typ));
                 }
             }
         }
 
-        primary.into_iter().chain(constraint_vals).unique().collect()
+        values
     }
 
     /// Like [`Self::gather_unbound_vars_values`] but applies the provided

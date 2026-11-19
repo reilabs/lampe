@@ -326,7 +326,7 @@ noir_def «std-1.0.0-beta.14»::collections::map::test::test_quadratic_probe_fun
   let map = ((«std-1.0.0-beta.14»::collections::map::HashMap<Field, Field, 1000: u32, «std-1.0.0-beta.14»::hash::BuildHasherDefault<«std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> > > as «std-1.0.0-beta.14»::default::Default<>)::default<> as λ() -> «std-1.0.0-beta.14»::collections::map::HashMap<Field, Field, 1000: u32, «std-1.0.0-beta.14»::hash::BuildHasherDefault<«std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> > >)();
   let hash1 = (123: u32);
   let attempt1 = (1000000: u32);
-  let result = («std-1.0.0-beta.14»::collections::map::HashMap::quadratic_probe<Field, 1000: u32, «std-1.0.0-beta.14»::hash::BuildHasherDefault<«std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> > > as λ(«std-1.0.0-beta.14»::collections::map::HashMap<Field, Field, 1000: u32, «std-1.0.0-beta.14»::hash::BuildHasherDefault<«std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> > >, u32, u32) -> u32)(map, hash1, attempt1);
+  let result = («std-1.0.0-beta.14»::collections::map::HashMap::quadratic_probe<Field, Field, 1000: u32, «std-1.0.0-beta.14»::hash::BuildHasherDefault<«std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> > > as λ(«std-1.0.0-beta.14»::collections::map::HashMap<Field, Field, 1000: u32, «std-1.0.0-beta.14»::hash::BuildHasherDefault<«std-1.0.0-beta.14»::hash::poseidon2::Poseidon2Hasher<> > >, u32, u32) -> u32)(map, hash1, attempt1);
   (#_assert returning Unit)((#_uEq returning bool)(result, (123: u32)));
   #_skip
 }
