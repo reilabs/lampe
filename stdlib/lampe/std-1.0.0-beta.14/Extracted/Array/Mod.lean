@@ -149,7 +149,7 @@ noir_trait_impl[«std-1.0.0-beta.14».impl_24]<N: u32> «std-1.0.0-beta.14»::co
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::map_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Array<Field, 0: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> bool)((«std-1.0.0-beta.14»::array::map<Field, 0: u32, Unit> as λ(Array<Field, 0: u32>, λ(Field) -> Field) -> Array<Field, 0: u32>)((#_mkArray returning Array<Field, 0: u32>)(), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkArray returning Array<Field, 0: u32>)()));
+  (#_assert returning Unit)(((Array<Field, 0: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> bool)((«std-1.0.0-beta.14»::array::map<Field, 0: u32, Field, Unit> as λ(Array<Field, 0: u32>, λ(Field) -> Field) -> Array<Field, 0: u32>)((#_mkArray returning Array<Field, 0: u32>)(), (fn(x: Field): Field := (#_fAdd returning Field)(x, (1: Field)))), (#_mkArray returning Array<Field, 0: u32>)()));
   #_skip
 }
 
@@ -200,7 +200,7 @@ noir_def «std-1.0.0-beta.14»::array::test::test_sort_via_100_values<>() -> Uni
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::mapi_empty<>() -> Unit := {
-  (#_assert returning Unit)(((Array<u32, 0: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 0: u32>, Array<u32, 0: u32>) -> bool)((«std-1.0.0-beta.14»::array::mapi<u32, 0: u32, Unit> as λ(Array<u32, 0: u32>, λ(u32, u32) -> u32) -> Array<u32, 0: u32>)((#_mkArray returning Array<u32, 0: u32>)(), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_mkArray returning Array<u32, 0: u32>)()));
+  (#_assert returning Unit)(((Array<u32, 0: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 0: u32>, Array<u32, 0: u32>) -> bool)((«std-1.0.0-beta.14»::array::mapi<u32, 0: u32, u32, Unit> as λ(Array<u32, 0: u32>, λ(u32, u32) -> u32) -> Array<u32, 0: u32>)((#_mkArray returning Array<u32, 0: u32>)(), (fn(i: u32, x: u32): u32 := (#_uAdd returning u32)((#_uMul returning u32)(i, x), (1: u32)))), (#_mkArray returning Array<u32, 0: u32>)()));
   #_skip
 }
 
@@ -218,14 +218,14 @@ noir_def «std-1.0.0-beta.14»::array::test::for_eachi_empty<>() -> Unit := {
 
 noir_def «std-1.0.0-beta.14»::array::test::map_example<>() -> Unit := {
   let a = (#_mkArray returning Array<Field, 3: u32>)((1: Field), (2: Field), (3: Field));
-  let b = («std-1.0.0-beta.14»::array::map<Field, 3: u32, Unit> as λ(Array<Field, 3: u32>, λ(Field) -> Field) -> Array<Field, 3: u32>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
+  let b = («std-1.0.0-beta.14»::array::map<Field, 3: u32, Field, Unit> as λ(Array<Field, 3: u32>, λ(Field) -> Field) -> Array<Field, 3: u32>)(a, (fn(a: Field): Field := (#_fMul returning Field)(a, (2: Field))));
   (#_assert returning Unit)(((Array<Field, 3: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 3: u32>, Array<Field, 3: u32>) -> bool)(b, (#_mkArray returning Array<Field, 3: u32>)((2: Field), (4: Field), (6: Field))));
   #_skip
 }
 
 noir_def «std-1.0.0-beta.14»::array::test::mapi_example<>() -> Unit := {
   let a = (#_mkArray returning Array<u32, 3: u32>)((1: u32), (2: u32), (3: u32));
-  let b = («std-1.0.0-beta.14»::array::mapi<u32, 3: u32, Unit> as λ(Array<u32, 3: u32>, λ(u32, u32) -> u32) -> Array<u32, 3: u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
+  let b = («std-1.0.0-beta.14»::array::mapi<u32, 3: u32, u32, Unit> as λ(Array<u32, 3: u32>, λ(u32, u32) -> u32) -> Array<u32, 3: u32>)(a, (fn(i: u32, a: u32): u32 := (#_uAdd returning u32)(i, (#_uMul returning u32)(a, (2: u32)))));
   (#_assert returning Unit)(((Array<u32, 3: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<u32, 3: u32>, Array<u32, 3: u32>) -> bool)(b, (#_mkArray returning Array<u32, 3: u32>)((2: u32), (5: u32), (8: u32))));
   #_skip
 }
@@ -289,7 +289,7 @@ noir_def «std-1.0.0-beta.14»::array::test::concat_something_with_zero_length<>
 noir_def «std-1.0.0-beta.14»::array::test::concat_zero_lengths<>() -> Unit := {
   let arr1 = (#_mkArray returning Array<Field, 0: u32>)();
   let arr2 = (#_mkArray returning Array<Field, 0: u32>)();
-  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 0: u32> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> Array<Field, 0: u32>)(arr1, arr2);
+  let concatenated_arr = («std-1.0.0-beta.14»::array::concat<Field, 0: u32, 0: u32> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> Array<Field, 0: u32>)(arr1, arr2);
   (#_assert returning Unit)(((Array<Field, 0: u32> as «std-1.0.0-beta.14»::cmp::Eq<>)::eq<> as λ(Array<Field, 0: u32>, Array<Field, 0: u32>) -> bool)(concatenated_arr, (#_mkArray returning Array<Field, 0: u32>)()));
   #_skip
 }
