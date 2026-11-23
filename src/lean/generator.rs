@@ -1221,7 +1221,16 @@ impl LeanGenerator<'_, '_, '_> {
         // value rather than the abstract type-variable name.
         let mut constraint_vals = Vec::new();
         if !(data.trait_impl.is_some() || data.trait_id.is_some()) {
-            let mut seen = HashSet::<TypeVariableId>::new();
+            // The primary generics are already in the list: seed `seen` with
+            // their variables, so that only new variables are added.
+            // Deduplicating by *value* instead would drop a generic whose value
+            // repeats another's (e.g. `concat::<u8, 32, 32>` would become
+            // `concat::<u8, 32>`).
+            let mut seen = data
+                .all_generics
+                .iter()
+                .map(|rg| rg.type_var.id())
+                .collect::<HashSet<TypeVariableId>>();
             let mut visit = |slf: &Self, typ: &NoirType| {
                 slf.gather_unbound_vars_with_bindings(typ, &mut seen, bindings)
             };
@@ -1236,7 +1245,7 @@ impl LeanGenerator<'_, '_, '_> {
             }
         }
 
-        primary.into_iter().chain(constraint_vals).unique().collect()
+        primary.into_iter().chain(constraint_vals).collect()
     }
 
     /// Like [`Self::gather_unbound_vars_values`] but applies the provided

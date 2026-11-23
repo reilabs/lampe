@@ -109,3 +109,18 @@ theorem use_bar_array_spec {lp} :
   steps
   subst_vars
   rfl
+
+-- Repeated call-site generics (issue #319): `total_len::<2, 2>` keeps both
+-- generics, so `same_lengths` extracts, type-checks and returns 4.
+abbrev RepeatedGenericsEnv := «ExtractionTests-0.0.0».RepeatedGenerics.env
+
+theorem same_lengths_spec {lp} :
+    STHoare lp RepeatedGenericsEnv ⟦⟧
+      («ExtractionTests-0.0.0::repeated_generics::same_lengths».call h![] h![])
+      fun v => v = (4 : U 32) := by
+  enter_decl
+  steps
+  enter_decl
+  steps
+  simp_all
+  rfl
