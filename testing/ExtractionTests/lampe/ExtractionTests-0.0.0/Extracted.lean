@@ -17,6 +17,7 @@ import «ExtractionTests-0.0.0».Extracted.NestedMemberAccess
 import «ExtractionTests-0.0.0».Extracted.Oracle
 import «ExtractionTests-0.0.0».Extracted.Patterns
 import «ExtractionTests-0.0.0».Extracted.RefMemberAccess
+import «ExtractionTests-0.0.0».Extracted.RepeatedGenerics
 import «ExtractionTests-0.0.0».Extracted.ReservedKeywords
 import «ExtractionTests-0.0.0».Extracted.ShadowMut
 import «ExtractionTests-0.0.0».Extracted.SignedGeneric
@@ -45,6 +46,7 @@ def env := AliasMemberAccess.env
   ++ Oracle.env
   ++ Patterns.env
   ++ RefMemberAccess.env
+  ++ RepeatedGenerics.env
   ++ ReservedKeywords.env
   ++ ShadowMut.env
   ++ SignedGeneric.env
