@@ -30,7 +30,7 @@ To install and test the `lampe` tool, please ensure that you have both Rust's `c
 2. **Set Up the Rust Version:** Enter the directory using `cd lampe` and run `rustup install` to set
    up the correct rust toolchain.
 
-3. **Build the Lampe CLI:** Run `cargo install` to build the CLI and make it available on your path.
+3. **Build the Lampe CLI:** Run `cargo build --release` to build the CLI and make it available on your path.
 
 4. **Build the Lean Project:** While not strictly necessary at this stage, this will ensure that you
    have all the necessary dependencies and the correct lean toolchain. Please be aware that this
@@ -108,4 +108,3 @@ If you would like to contribute code or documentation (non-code contributions ar
 to this repository, please take a look at our [contributing](./docs/CONTRIBUTING.md) documentation.
 It provides an overview of how to get up and running, as well as what the contribution process looks
 like for this repository.
-
